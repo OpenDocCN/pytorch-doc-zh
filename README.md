@@ -165,6 +165,6 @@ pytorch-doc-zh <port>
 * 不然你TM在GitHub开源，然后又说不让转载，你TM有病吧！
 * 禁止商业化，符合协议规范，备注地址来源，**重点: 不需要**发邮件给我们申请
 
-## 赞助我们
+## 赞助我
 
-<img src="http://data.apachecn.org/img/about/donate.jpg" alt="微信&支付宝" />
+<img src="https://img-blog.csdnimg.cn/20200112005920729.png" alt="微信&支付宝" />
