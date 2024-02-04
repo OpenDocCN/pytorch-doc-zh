@@ -1,333 +1,497 @@
 - en: PyTorch Profiler With TensorBoard
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 使用TensorBoard的PyTorch分析器
 - en: 原文：[https://pytorch.org/tutorials/intermediate/tensorboard_profiler_tutorial.html](https://pytorch.org/tutorials/intermediate/tensorboard_profiler_tutorial.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/intermediate/tensorboard_profiler_tutorial.html](https://pytorch.org/tutorials/intermediate/tensorboard_profiler_tutorial.html)
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-intermediate-tensorboard-profiler-tutorial-py)
     to download the full example code
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[这里](#sphx-glr-download-intermediate-tensorboard-profiler-tutorial-py)下载完整示例代码
 - en: This tutorial demonstrates how to use TensorBoard plugin with PyTorch Profiler
     to detect performance bottlenecks of the model.
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程演示了如何使用TensorBoard插件与PyTorch分析器来检测模型的性能瓶颈。
 - en: Introduction
+  id: totrans-5
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 介绍
 - en: PyTorch 1.8 includes an updated profiler API capable of recording the CPU side
     operations as well as the CUDA kernel launches on the GPU side. The profiler can
     visualize this information in TensorBoard Plugin and provide analysis of the performance
     bottlenecks.
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch 1.8包括一个更新的分析器API，能够记录CPU端操作以及GPU端的CUDA内核启动。分析器可以在TensorBoard插件中可视化这些信息，并提供性能瓶颈的分析。
 - en: In this tutorial, we will use a simple Resnet model to demonstrate how to use
     TensorBoard plugin to analyze model performance.
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，我们将使用一个简单的Resnet模型来演示如何使用TensorBoard插件来分析模型性能。
 - en: Setup
+  id: totrans-8
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 设置
 - en: 'To install `torch` and `torchvision` use the following command:'
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 要安装`torch`和`torchvision`，请使用以下命令：
 - en: '[PRE0]'
+  id: totrans-10
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: Steps
+  id: totrans-11
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 步骤
 - en: Prepare the data and model
+  id: totrans-12
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 准备数据和模型
 - en: Use profiler to record execution events
+  id: totrans-13
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 使用分析器记录执行事件
 - en: Run the profiler
+  id: totrans-14
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 运行分析器
 - en: Use TensorBoard to view results and analyze model performance
+  id: totrans-15
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 使用TensorBoard查看结果并分析模型性能
 - en: Improve performance with the help of profiler
+  id: totrans-16
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 通过分析器提高性能
 - en: Analyze performance with other advanced features
+  id: totrans-17
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 使用其他高级功能分析性能
 - en: 'Additional Practices: Profiling PyTorch on AMD GPUs'
+  id: totrans-18
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 额外练习：在AMD GPU上对PyTorch进行分析
 - en: 1\. Prepare the data and model
+  id: totrans-19
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 1. 准备数据和模型
 - en: 'First, import all necessary libraries:'
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 首先，导入所有必要的库：
 - en: '[PRE1]'
+  id: totrans-21
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Then prepare the input data. For this tutorial, we use the CIFAR10 dataset.
     Transform it to the desired format and use `DataLoader` to load each batch.
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后准备输入数据。在本教程中，我们使用CIFAR10数据集。将其转换为所需的格式，并使用`DataLoader`加载每批数据。
 - en: '[PRE2]'
+  id: totrans-23
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Next, create Resnet model, loss function, and optimizer objects. To run on GPU,
     move model and loss to GPU device.
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，创建Resnet模型、损失函数和优化器对象。要在GPU上运行，请将模型和损失移动到GPU设备。
 - en: '[PRE3]'
+  id: totrans-25
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: Define the training step for each batch of input data.
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 为每批输入数据定义训练步骤。
 - en: '[PRE4]'
+  id: totrans-27
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: 2\. Use profiler to record execution events
+  id: totrans-28
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 2. 使用分析器记录执行事件
 - en: 'The profiler is enabled through the context manager and accepts several parameters,
     some of the most useful are:'
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过上下文管理器启用分析器，并接受几个参数，其中一些最有用的是：
 - en: '`schedule` - callable that takes step (int) as a single parameter and returns
     the profiler action to perform at each step.'
+  id: totrans-30
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`schedule` - 接受步骤（int）作为单个参数并返回每个步骤执行的分析器操作的可调用函数。'
 - en: In this example with `wait=1, warmup=1, active=3, repeat=1`, profiler will skip
     the first step/iteration, start warming up on the second, record the following
     three iterations, after which the trace will become available and on_trace_ready
     (when set) is called. In total, the cycle repeats once. Each cycle is called a
     “span” in TensorBoard plugin.
+  id: totrans-31
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 在此示例中，使用`wait=1, warmup=1, active=3, repeat=1`，分析器将跳过第一步/迭代，从第二步开始热身，记录接下来的三次迭代，之后跟踪将变为可用，并调用on_trace_ready（如果设置）。总共，循环重复一次。在TensorBoard插件中，每个循环称为“span”。
 - en: During `wait` steps, the profiler is disabled. During `warmup` steps, the profiler
     starts tracing but the results are discarded. This is for reducing the profiling
     overhead. The overhead at the beginning of profiling is high and easy to bring
     skew to the profiling result. During `active` steps, the profiler works and records
     events.
+  id: totrans-32
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 在`wait`步骤期间，分析器被禁用。在`warmup`步骤期间，分析器开始跟踪，但结果被丢弃。这是为了减少分析的开销。在分析开始时，开销很高，容易给分析结果带来偏差。在`active`步骤期间，分析器工作并记录事件。
 - en: '`on_trace_ready` - callable that is called at the end of each cycle; In this
     example we use `torch.profiler.tensorboard_trace_handler` to generate result files
     for TensorBoard. After profiling, result files will be saved into the `./log/resnet18`
     directory. Specify this directory as a `logdir` parameter to analyze profile in
     TensorBoard.'
+  id: totrans-33
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`on_trace_ready` - 在每个周期结束时调用的可调用函数；在本示例中，我们使用`torch.profiler.tensorboard_trace_handler`生成TensorBoard的结果文件。分析后，结果文件将保存在`./log/resnet18`目录中。将此目录指定为`logdir`参数以在TensorBoard中分析配置文件。'
 - en: '`record_shapes` - whether to record shapes of the operator inputs.'
+  id: totrans-34
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`record_shapes` - 是否记录操作符输入的形状。'
 - en: '`profile_memory` - Track tensor memory allocation/deallocation. Note, for old
     version of pytorch with version before 1.10, if you suffer long profiling time,
     please disable it or upgrade to new version.'
+  id: totrans-35
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`profile_memory` - 跟踪张量内存分配/释放。请注意，对于旧版本的PyTorch（1.10之前的版本），如果遇到长时间的分析时间，请禁用它或升级到新版本。'
 - en: '`with_stack` - Record source information (file and line number) for the ops.
     If the TensorBoard is launched in VS Code ([reference](https://code.visualstudio.com/docs/datascience/pytorch-support#_tensorboard-integration)),
     clicking a stack frame will navigate to the specific code line.'
+  id: totrans-36
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`with_stack` - 记录操作的源信息（文件和行号）。如果在VS Code中启动了TensorBoard（[参考链接](https://code.visualstudio.com/docs/datascience/pytorch-support#_tensorboard-integration)），点击堆栈帧将导航到特定的代码行。'
 - en: '[PRE5]'
+  id: totrans-37
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: Alternatively, the following non-context manager start/stop is supported as
     well.
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 另外，也支持以下非上下文管理器的启动/停止。
 - en: '[PRE6]'
+  id: totrans-39
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: 3\. Run the profiler
+  id: totrans-40
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 3. 运行分析器
 - en: Run the above code. The profiling result will be saved under `./log/resnet18`
     directory.
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 运行上述代码。分析结果将保存在`./log/resnet18`目录下。
 - en: 4\. Use TensorBoard to view results and analyze model performance
+  id: totrans-42
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 4. 使用TensorBoard查看结果并分析模型性能
 - en: Note
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: TensorBoard Plugin support has been deprecated, so some of these functions may
     not work as previously. Please take a look at the replacement, [HTA](https://github.com/pytorch/kineto/tree/main#holistic-trace-analysis).
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: TensorBoard插件支持已被弃用，因此一些这些功能可能不再像以前那样工作。请查看替代方案，[HTA](https://github.com/pytorch/kineto/tree/main#holistic-trace-analysis)。
 - en: Install PyTorch Profiler TensorBoard Plugin.
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: 安装PyTorch分析器TensorBoard插件。
 - en: '[PRE7]'
+  id: totrans-46
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: Launch the TensorBoard.
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: 启动TensorBoard。
 - en: '[PRE8]'
+  id: totrans-48
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: Open the TensorBoard profile URL in Google Chrome browser or Microsoft Edge
     browser (**Safari is not supported**).
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: 在Google Chrome浏览器或Microsoft Edge浏览器中打开TensorBoard配置文件URL（**不支持Safari**）。
 - en: '[PRE9]'
+  id: totrans-50
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: You could see Profiler plugin page as shown below.
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可以看到如下所示的Profiler插件页面。
 - en: Overview
+  id: totrans-52
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 概述
 - en: '[![../_static/img/profiler_overview1.png](../Images/7bf5bbd17de6da63afc38b29b8c8f0d2.png)](../_static/img/profiler_overview1.png)'
+  id: totrans-53
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_static/img/profiler_overview1.png](../Images/7bf5bbd17de6da63afc38b29b8c8f0d2.png)](../_static/img/profiler_overview1.png)'
 - en: The overview shows a high-level summary of model performance.
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: 概述显示了模型性能的高级摘要。
 - en: The “GPU Summary” panel shows the GPU configuration, GPU usage and Tensor Cores
     usage. In this example, the GPU Utilization is low. The details of these metrics
     are [here](https://github.com/pytorch/kineto/blob/main/tb_plugin/docs/gpu_utilization.md).
+  id: totrans-55
   prefs: []
   type: TYPE_NORMAL
+  zh: “GPU摘要”面板显示GPU配置、GPU使用情况和张量核心使用情况。在此示例中，GPU利用率较低。这些指标的详细信息在[这里](https://github.com/pytorch/kineto/blob/main/tb_plugin/docs/gpu_utilization.md)。
 - en: The “Step Time Breakdown” shows distribution of time spent in each step over
     different categories of execution. In this example, you can see the `DataLoader`
     overhead is significant.
+  id: totrans-56
   prefs: []
   type: TYPE_NORMAL
+  zh: “步骤时间分解”显示在不同执行类别上花费在每个步骤中的时间的分布。在此示例中，您可以看到`DataLoader`的开销很大。
 - en: The bottom “Performance Recommendation” uses the profiling data to automatically
     highlight likely bottlenecks, and gives you actionable optimization suggestions.
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: 底部的“性能建议”使用分析数据自动突出显示可能的瓶颈，并为您提供可操作的优化建议。
 - en: You can change the view page in left “Views” dropdown list.
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可以在左侧的“视图”下拉列表中更改视图页面。
 - en: '![](../Images/f8e0d2a9bdc16d06848a55ae706a357e.png)'
+  id: totrans-59
   prefs: []
   type: TYPE_IMG
+  zh: '![](../Images/f8e0d2a9bdc16d06848a55ae706a357e.png)'
 - en: Operator view
+  id: totrans-60
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 操作员视图
 - en: The operator view displays the performance of every PyTorch operator that is
     executed either on the host or device.
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: 操作员视图显示了在主机或设备上执行的每个PyTorch操作员的性能。
 - en: '[![../_static/img/profiler_operator_view.png](../Images/4fae99315367a1998f977b76a2fc6526.png)](../_static/img/profiler_operator_view.png)'
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_static/img/profiler_operator_view.png](../Images/4fae99315367a1998f977b76a2fc6526.png)](../_static/img/profiler_operator_view.png)'
 - en: The “Self” duration does not include its child operators’ time. The “Total”
     duration includes its child operators’ time.
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: “自身”持续时间不包括其子操作员的时间。“总”持续时间包括其子操作员的时间。
 - en: View call stack
+  id: totrans-64
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 查看调用堆栈
 - en: Click the `View Callstack` of an operator, the operators with same name but
     different call stacks will be shown. Then click a `View Callstack` in this sub-table,
     the call stack frames will be shown.
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: 单击操作员的“查看调用堆栈”，将显示具有相同名称但不同调用堆栈的操作员。然后单击此子表中的“查看调用堆栈”，将显示调用堆栈帧。
 - en: '[![../_static/img/profiler_callstack.png](../Images/0d8e7045d34fb23f544d1fdb71ccb79b.png)](../_static/img/profiler_callstack.png)'
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_static/img/profiler_callstack.png](../Images/0d8e7045d34fb23f544d1fdb71ccb79b.png)](../_static/img/profiler_callstack.png)'
 - en: If the TensorBoard is launched inside VS Code ([Launch Guide](https://devblogs.microsoft.com/python/python-in-visual-studio-code-february-2021-release/#tensorboard-integration)),
     clicking a call stack frame will navigate to the specific code line.
+  id: totrans-67
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果在VS Code中启动了TensorBoard（[启动指南](https://devblogs.microsoft.com/python/python-in-visual-studio-code-february-2021-release/#tensorboard-integration)），单击调用堆栈帧将导航到特定的代码行。
 - en: '[![../_static/img/profiler_vscode.png](../Images/75f42648d12a47e893905f678287a967.png)](../_static/img/profiler_vscode.png)'
+  id: totrans-68
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_static/img/profiler_vscode.png](../Images/75f42648d12a47e893905f678287a967.png)](../_static/img/profiler_vscode.png)'
 - en: Kernel view
+  id: totrans-69
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 内核视图
 - en: The GPU kernel view shows all kernels’ time spent on GPU.
+  id: totrans-70
   prefs: []
   type: TYPE_NORMAL
+  zh: GPU内核视图显示GPU上花费的所有内核时间。
 - en: '[![../_static/img/profiler_kernel_view.png](../Images/5122dd95514210b1325de9e54574173f.png)](../_static/img/profiler_kernel_view.png)'
+  id: totrans-71
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_static/img/profiler_kernel_view.png](../Images/5122dd95514210b1325de9e54574173f.png)](../_static/img/profiler_kernel_view.png)'
 - en: 'Tensor Cores Used: Whether this kernel uses Tensor Cores.'
+  id: totrans-72
   prefs: []
   type: TYPE_NORMAL
+  zh: 是否使用张量核心：此内核是否使用张量核心。
 - en: 'Mean Blocks per SM: Blocks per SM = Blocks of this kernel / SM number of this
     GPU. If this number is less than 1, it indicates the GPU multiprocessors are not
     fully utilized. “Mean Blocks per SM” is weighted average of all runs of this kernel
     name, using each run’s duration as weight.'
+  id: totrans-73
   prefs: []
   type: TYPE_NORMAL
+  zh: 每个SM的平均块数：每个SM的块数=此内核的块数/此GPU的SM数。如果此数字小于1，则表示GPU多处理器未充分利用。“每个SM的平均块数”是此内核名称的所有运行的加权平均值，使用每次运行的持续时间作为权重。
 - en: 'Mean Est. Achieved Occupancy: Est. Achieved Occupancy is defined in this column’s
     tooltip. For most cases such as memory bandwidth bounded kernels, the higher the
     better. “Mean Est. Achieved Occupancy” is weighted average of all runs of this
     kernel name, using each run’s duration as weight.'
+  id: totrans-74
   prefs: []
   type: TYPE_NORMAL
+  zh: 平均估计实现占用率：此列的工具提示中定义了估计实现占用率。对于大多数情况，如内存带宽受限的内核，数值越高越好。“平均估计实现占用率”是此内核名称的所有运行的加权平均值，使用每次运行的持续时间作为权重。
 - en: Trace view
+  id: totrans-75
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 跟踪视图
 - en: The trace view shows timeline of profiled operators and GPU kernels. You can
     select it to see details as below.
+  id: totrans-76
   prefs: []
   type: TYPE_NORMAL
+  zh: 跟踪视图显示了受监视的操作员和GPU内核的时间轴。您可以选择它以查看以下详细信息。
 - en: '[![../_static/img/profiler_trace_view1.png](../Images/be1bf500afaf7c10bd7f7f8a30fa1ef9.png)](../_static/img/profiler_trace_view1.png)'
+  id: totrans-77
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_static/img/profiler_trace_view1.png](../Images/be1bf500afaf7c10bd7f7f8a30fa1ef9.png)](../_static/img/profiler_trace_view1.png)'
 - en: You can move the graph and zoom in/out with the help of right side toolbar.
     And keyboard can also be used to zoom and move around inside the timeline. The
     ‘w’ and ‘s’ keys zoom in centered around the mouse, and the ‘a’ and ‘d’ keys move
     the timeline left and right. You can hit these keys multiple times until you see
     a readable representation.
+  id: totrans-78
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可以使用右侧工具栏移动图形并放大/缩小。键盘也可以用于在时间轴内部缩放和移动。‘w’和‘s’键以鼠标为中心放大，‘a’和‘d’键将时间轴向左或向右移动。您可以多次按这些键，直到看到可读的表示。
 - en: If a backward operator’s “Incoming Flow” field is with value “forward correspond
     to backward”, you can click the text to get its launching forward operator.
+  id: totrans-79
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果后向操作员的“传入流”字段的值为“前向对应后向”，则可以单击文本以获取其启动前向操作员。
 - en: '[![../_static/img/profiler_trace_view_fwd_bwd.png](../Images/cb82608044c7382139065f9e79f1a99d.png)](../_static/img/profiler_trace_view_fwd_bwd.png)'
+  id: totrans-80
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_static/img/profiler_trace_view_fwd_bwd.png](../Images/cb82608044c7382139065f9e79f1a99d.png)](../_static/img/profiler_trace_view_fwd_bwd.png)'
 - en: In this example, we can see the event prefixed with `enumerate(DataLoader)`
     costs a lot of time. And during most of this period, the GPU is idle. Because
     this function is loading data and transforming data on host side, during which
     the GPU resource is wasted.
+  id: totrans-81
   prefs: []
   type: TYPE_NORMAL
 - en: 5\. Improve performance with the help of profiler
+  id: totrans-82
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
@@ -336,65 +500,84 @@
     by default. User could enable multi-process data loading by setting the parameter
     `num_workers`. [Here](https://pytorch.org/docs/stable/data.html#single-and-multi-process-data-loading)
     is more details.
+  id: totrans-83
   prefs: []
   type: TYPE_NORMAL
 - en: In this example, we follow the “Performance Recommendation” and set `num_workers`
     as below, pass a different name such as `./log/resnet18_4workers` to `tensorboard_trace_handler`,
     and run it again.
+  id: totrans-84
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE10]'
+  id: totrans-85
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: Then let’s choose the recently profiled run in left “Runs” dropdown list.
+  id: totrans-86
   prefs: []
   type: TYPE_NORMAL
 - en: '[![../_static/img/profiler_overview2.png](../Images/837967744e5997b8debc071b27685596.png)](../_static/img/profiler_overview2.png)'
+  id: totrans-87
   prefs: []
   type: TYPE_NORMAL
 - en: From the above view, we can find the step time is reduced to about 76ms comparing
     with previous run’s 132ms, and the time reduction of `DataLoader` mainly contributes.
+  id: totrans-88
   prefs: []
   type: TYPE_NORMAL
 - en: '[![../_static/img/profiler_trace_view2.png](../Images/9126a2827ef47b32d4dd38a1e813505e.png)](../_static/img/profiler_trace_view2.png)'
+  id: totrans-89
   prefs: []
   type: TYPE_NORMAL
 - en: From the above view, we can see that the runtime of `enumerate(DataLoader)`
     is reduced, and the GPU utilization is increased.
+  id: totrans-90
   prefs: []
   type: TYPE_NORMAL
 - en: 6\. Analyze performance with other advanced features
+  id: totrans-91
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
 - en: Memory view
+  id: totrans-92
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: To profile memory, `profile_memory` must be set to `True` in arguments of `torch.profiler.profile`.
+  id: totrans-93
   prefs: []
   type: TYPE_NORMAL
 - en: You can try it by using existing example on Azure
+  id: totrans-94
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE11]'
+  id: totrans-95
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: The profiler records all memory allocation/release events and allocator’s internal
     state during profiling. The memory view consists of three components as shown
     in the following.
+  id: totrans-96
   prefs: []
   type: TYPE_NORMAL
 - en: '[![../_static/img/profiler_memory_view.png](../Images/c6251499e3b25e142059d0e53c1c3007.png)](../_static/img/profiler_memory_view.png)'
+  id: totrans-97
   prefs: []
   type: TYPE_NORMAL
 - en: The components are memory curve graph, memory events table and memory statistics
     table, from top to bottom, respectively.
+  id: totrans-98
   prefs: []
   type: TYPE_NORMAL
 - en: The memory type could be selected in “Device” selection box. For example, “GPU0”
     means the following table only shows each operator’s memory usage on GPU 0, not
     including CPU or other GPUs.
+  id: totrans-99
   prefs: []
   type: TYPE_NORMAL
 - en: 'The memory curve shows the trends of memory consumption. The “Allocated” curve
@@ -402,18 +585,22 @@
     mechanism is employed in CUDA allocator and some other allocators. The “Reserved”
     curve shows the total memory that is reserved by the allocator. You can left click
     and drag on the graph to select events in the desired range:'
+  id: totrans-100
   prefs: []
   type: TYPE_NORMAL
 - en: '[![../_static/img/profiler_memory_curve_selecting.png](../Images/e9ec73bd94cda9e0afe2f7d66988efb3.png)](../_static/img/profiler_memory_curve_selecting.png)'
+  id: totrans-101
   prefs: []
   type: TYPE_NORMAL
 - en: After selection, the three components will be updated for the restricted time
     range, so that you can gain more information about it. By repeating this process,
     you can zoom into a very fine-grained detail. Right click on the graph will reset
     the graph to the initial state.
+  id: totrans-102
   prefs: []
   type: TYPE_NORMAL
 - en: '[![../_static/img/profiler_memory_curve_single.png](../Images/b34a9076e55573e9c29e772fd4fc8238.png)](../_static/img/profiler_memory_curve_single.png)'
+  id: totrans-103
   prefs: []
   type: TYPE_NORMAL
 - en: In the memory events table, the allocation and release events are paired into
@@ -424,6 +611,7 @@
     is of little help. It will be shown as `aten::ones (aten::empty)` in this special
     case. The “Allocation Time”, “Release Time” and “Duration” columns’ data might
     be missing if the event occurs outside of the time range.
+  id: totrans-104
   prefs: []
   type: TYPE_NORMAL
 - en: In the memory statistics table, the “Size Increase” column sums up all allocation
@@ -435,23 +623,30 @@
     Size Increase” only count the memory usage increase at current level of call stack.
     Finally, the “Allocation Size” column sums up all allocation without considering
     the memory release.
+  id: totrans-105
   prefs: []
   type: TYPE_NORMAL
 - en: Distributed view
+  id: totrans-106
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: The plugin now supports distributed view on profiling DDP with NCCL/GLOO as
     backend.
+  id: totrans-107
   prefs: []
   type: TYPE_NORMAL
 - en: 'You can try it by using existing example on Azure:'
+  id: totrans-108
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE12]'
+  id: totrans-109
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: '[![../_static/img/profiler_distributed_view.png](../Images/bc5ec09af445c3714c07c9bc3c7fb515.png)](../_static/img/profiler_distributed_view.png)'
+  id: totrans-110
   prefs: []
   type: TYPE_NORMAL
 - en: The “Computation/Communication Overview” shows computation/communication ratio
@@ -459,23 +654,28 @@
     issue among workers. For example, if the computation + overlapping time of one
     worker is much larger than others, there may be a problem of load balance or this
     worker may be a straggler.
+  id: totrans-111
   prefs: []
   type: TYPE_NORMAL
 - en: The “Synchronizing/Communication Overview” shows the efficiency of communication.
     “Data Transfer Time” is the time for actual data exchanging. “Synchronizing Time”
     is the time for waiting and synchronizing with other workers.
+  id: totrans-112
   prefs: []
   type: TYPE_NORMAL
 - en: If one worker’s “Synchronizing Time” is much shorter than that of other workers’,
     this worker may be a straggler which may have more computation workload than other
     workers’.
+  id: totrans-113
   prefs: []
   type: TYPE_NORMAL
 - en: The “Communication Operations Stats” summarizes the detailed statistics of all
     communication ops in each worker.
+  id: totrans-114
   prefs: []
   type: TYPE_NORMAL
 - en: '7\. Additional Practices: Profiling PyTorch on AMD GPUs'
+  id: totrans-115
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
@@ -483,88 +683,117 @@
     consisting of drivers, development tools, and APIs. We can run the above mentioned
     steps on AMD GPUs. In this section, we will use Docker to install the ROCm base
     development image before installing PyTorch.
+  id: totrans-116
   prefs: []
   type: TYPE_NORMAL
 - en: For the purpose of example, let’s create a directory called `profiler_tutorial`,
     and save the code in **Step 1** as `test_cifar10.py` in this directory.
+  id: totrans-117
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE13]'
+  id: totrans-118
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: At the time of this writing, the Stable(`2.1.1`) Linux version of PyTorch on
     ROCm Platform is [ROCm 5.6](https://pytorch.org/get-started/locally/).
+  id: totrans-119
   prefs: []
   type: TYPE_NORMAL
 - en: Obtain a base Docker image with the correct user-space ROCm version installed
     from [Docker Hub](https://hub.docker.com/repository/docker/rocm/dev-ubuntu-20.04).
+  id: totrans-120
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: It is `rocm/dev-ubuntu-20.04:5.6`.
+  id: totrans-121
   prefs: []
   type: TYPE_NORMAL
 - en: 'Start the ROCm base Docker container:'
+  id: totrans-122
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '[PRE14]'
+  id: totrans-123
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: Inside the container, install any dependencies needed for installing the wheels
     package.
+  id: totrans-124
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '[PRE15]'
+  id: totrans-125
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: 'Install the wheels:'
+  id: totrans-126
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '[PRE16]'
+  id: totrans-127
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: 'Install the `torch_tb_profiler`, and then, run the Python file `test_cifar10.py`:'
+  id: totrans-128
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '[PRE17]'
+  id: totrans-129
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: 'Now, we have all the data needed to view in TensorBoard:'
+  id: totrans-130
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE18]'
+  id: totrans-131
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: 'Choose different views as described in **Step 4**. For example, below is the
     **Operator** View:'
+  id: totrans-132
   prefs: []
   type: TYPE_NORMAL
 - en: '[![../_static/img/profiler_rocm_tensorboard_operartor_view.png](../Images/766def45c853a562ade085a166bc7a98.png)](../_static/img/profiler_rocm_tensorboard_operartor_view.png)'
+  id: totrans-133
   prefs: []
   type: TYPE_NORMAL
 - en: At the time this section is written, **Trace** view does not work and it displays
     nothing. You can work around by typing `chrome://tracing` in your Chrome Browser.
+  id: totrans-134
   prefs: []
   type: TYPE_NORMAL
 - en: Copy the `trace.json` file under `~/profiler_tutorial/log/resnet18` directory
     to the Windows.
+  id: totrans-135
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: You may need to copy the file by using `scp` if the file is located in a remote
     location.
+  id: totrans-136
   prefs: []
   type: TYPE_NORMAL
 - en: Click **Load** button to load the trace JSON file from the `chrome://tracing`
     page in the browser.
+  id: totrans-137
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '[![../_static/img/profiler_rocm_chrome_trace_view.png](../Images/576f0fdbe384c09bd227cc973cbf6ecd.png)](../_static/img/profiler_rocm_chrome_trace_view.png)'
+  id: totrans-138
   prefs: []
   type: TYPE_NORMAL
 - en: As mentioned previously, you can move the graph and zoom in and out. You can
@@ -572,37 +801,57 @@
     keys zoom in centered around the mouse, and the `a` and `d` keys move the timeline
     left and right. You can hit these keys multiple times until you see a readable
     representation.
+  id: totrans-139
   prefs: []
   type: TYPE_NORMAL
+  zh: 如前所述，您可以移动图形并放大或缩小。您还可以使用键盘在时间轴内部放大和移动。 `w`和`s`键以鼠标为中心放大，`a`和`d`键将时间轴向左或向右移动。您可以多次按这些键，直到看到可读的表示。
 - en: Learn More
+  id: totrans-140
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 了解更多
 - en: Take a look at the following documents to continue your learning, and feel free
     to open an issue [here](https://github.com/pytorch/kineto/issues).
+  id: totrans-141
   prefs: []
   type: TYPE_NORMAL
+  zh: 查看以下文档以继续学习，并随时在[此处](https://github.com/pytorch/kineto/issues)提出问题。
 - en: '[PyTorch TensorBoard Profiler Github](https://github.com/pytorch/kineto/tree/master/tb_plugin)'
+  id: totrans-142
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[PyTorch TensorBoard Profiler Github](https://github.com/pytorch/kineto/tree/master/tb_plugin)'
 - en: '[torch.profiler API](https://pytorch.org/docs/master/profiler.html)'
+  id: totrans-143
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[torch.profiler API](https://pytorch.org/docs/master/profiler.html)'
 - en: '[HTA](https://github.com/pytorch/kineto/tree/main#holistic-trace-analysis)'
+  id: totrans-144
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[HTA](https://github.com/pytorch/kineto/tree/main#holistic-trace-analysis)'
 - en: '**Total running time of the script:** ( 0 minutes 0.000 seconds)'
+  id: totrans-145
   prefs: []
   type: TYPE_NORMAL
+  zh: '**脚本的总运行时间：**（0分钟0.000秒）'
 - en: '[`Download Python source code: tensorboard_profiler_tutorial.py`](../_downloads/67e47b6d6793c700666471b688068f72/tensorboard_profiler_tutorial.py)'
+  id: totrans-146
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Python源代码：tensorboard_profiler_tutorial.py`](../_downloads/67e47b6d6793c700666471b688068f72/tensorboard_profiler_tutorial.py)'
 - en: '[`Download Jupyter notebook: tensorboard_profiler_tutorial.ipynb`](../_downloads/0aec568a42e89122e5ca293c86289287/tensorboard_profiler_tutorial.ipynb)'
+  id: totrans-147
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Jupyter笔记本：tensorboard_profiler_tutorial.ipynb`](../_downloads/0aec568a42e89122e5ca293c86289287/tensorboard_profiler_tutorial.ipynb)'
 - en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  id: totrans-148
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Sphinx-Gallery生成的画廊](https://sphinx-gallery.github.io)'

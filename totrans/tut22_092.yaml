@@ -1,398 +1,587 @@
 - en: Facilitating New Backend Integration by PrivateUse1
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 通过PrivateUse1促进新后端集成
 - en: 原文：[https://pytorch.org/tutorials/advanced/privateuseone.html](https://pytorch.org/tutorials/advanced/privateuseone.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/advanced/privateuseone.html](https://pytorch.org/tutorials/advanced/privateuseone.html)
 - en: In this tutorial we will walk through some necessary steps to integrate a new
     backend living outside `pytorch/pytorch` repo by `PrivateUse1`. Note that this
     tutorial assumes that you already have a basic understanding of PyTorch. you are
     an advanced user of PyTorch.
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，我们将逐步介绍通过`PrivateUse1`将存放在`pytorch/pytorch`存储库之外的新后端集成的一些必要步骤。请注意，本教程假定您已经对PyTorch有基本的了解，您是PyTorch的高级用户。
 - en: Note
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: This tutorial only involves the parts related to the PrivateUse1 mechanism that
     facilitates the integration of new devices, and other parts will not be covered.
     At the same time, not all the modules involved in this tutorial are required,
     and you can choose the modules that are helpful to you according to your actual
     needs.
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程仅涉及与PrivateUse1机制相关的部分，以促进新设备的集成，其他部分将不予涵盖。同时，并非所有本教程涉及的模块都是必需的，您可以根据实际需求选择对您有帮助的模块。
 - en: What is PrivateUse1?
+  id: totrans-5
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: PrivateUse1是什么？
 - en: 'Prior to Pytorch 2.0, PyTorch provided three reserved dispatch keys (and their
     corresponding Autograd keys) for prototyping out-of-tree backend extensions, the
     three dispatch keys are as follows:'
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 在Pytorch 2.0之前，PyTorch为原型外后端扩展提供了三个保留的调度键（及其对应的Autograd键），这三个调度键如下：
 - en: '`PrivateUse1/AutogradPrivateUse1`'
+  id: totrans-7
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`PrivateUse1/AutogradPrivateUse1`'
 - en: '`PrivateUse2/AutogradPrivateUse2`'
+  id: totrans-8
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`PrivateUse2/AutogradPrivateUse2`'
 - en: '`PrivateUse3/AutogradPrivateUse3`'
+  id: totrans-9
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`PrivateUse3/AutogradPrivateUse3`'
 - en: After the prototype verification is passed, you can apply for a private key
     for the new backend, such as CUDA, XLA, MPS, and so on.
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 原型验证通过后，可以申请新后端的私钥，如CUDA、XLA、MPS等。
 - en: 'However, with the rapid development of PyTorch, more and more hardware manufacturers
     are trying to integrate their backends into PyTorch, which might cause the following
     problems:'
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 然而，随着PyTorch的快速发展，越来越多的硬件制造商尝试将他们的后端集成到PyTorch中，这可能会引发以下问题：
 - en: Every new backend integration involves a lot of file modification
+  id: totrans-12
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 每个新后端集成都涉及大量文件修改
 - en: There is currently a hard limit on the number of Dispatch Keys (`DispatchKeySet`
     64-bit limit)
+  id: totrans-13
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 目前对调度键数量（DispatchKeySet 64位限制）有硬性限制
 - en: Note
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: There is also a problem with integrating the new backend into PyTorch through
     the PrivateUse1 Key, as it is impossible to integrate many backends at the same
     time. Fortunately, these out-of-tree backends are rarely used simultaneously.
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过PrivateUse1 Key将新后端集成到PyTorch中也存在问题，因为不可能同时集成多个后端。幸运的是，这些原型外后端很少同时使用。
 - en: In view of the above reasons, the community began to recommend new backend to
     be integrated into the PyTorch via `PrivateUse1`.
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 鉴于上述原因，社区开始建议通过`PrivateUse1`将新后端集成到PyTorch中。
 - en: However, the previous `PrivateUse1` mechanism is not fully capable of integrating
     with the new backend, because it lacks some related support in certain modules,
     such as Storage, AMP, Distributed, and so on.
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 然而，之前的`PrivateUse1`机制并不能完全与新后端集成，因为在某些模块中缺乏相关支持，如Storage、AMP、Distributed等。
 - en: With the arrival of Pytorch 2.1.0, a series of optimizations and enhancements
     have been made for `PrivateUse1` in terms of new backend integration, and it is
     now possible to support the integration of new devices rapidly and efficiently.
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: 随着Pytorch 2.1.0的到来，针对`PrivateUse1`的一系列优化和增强已经针对新后端集成进行了，现在可以快速高效地支持新设备的集成。
 - en: How to integrate new backend via PrivateUse1
+  id: totrans-19
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 如何通过PrivateUse1集成新后端
 - en: 'In this section, we will discuss the details of integrating the new backend
     into Pytorch via `PrivateUse1`, which mainly consists of the following parts:'
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本节中，我们将讨论通过`PrivateUse1`将新后端集成到Pytorch中的细节，主要包括以下部分：
 - en: Register kernels for the new backend.
+  id: totrans-21
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 为新后端注册内核。
 - en: Register generator for the new backend.
+  id: totrans-22
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 为新后端注册生成器。
 - en: Register device guard for the new backend.
+  id: totrans-23
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 为新后端注册设备保护。
 - en: Register serialization and deserialization functions for new backend metadata.
+  id: totrans-24
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 为新后端元数据注册序列化和反序列化函数。
 - en: Other Modules.
+  id: totrans-25
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 其他模块。
 - en: Register kernels for the new backend
+  id: totrans-26
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 为新后端注册内核
 - en: 'The new backend may have some high-performance implementations of operator,
     which can be registered to the dispatcher by `TORCH_LIBRARY_IMPL` API described
     in [Registering a Dispatched Operator in C++](dispatcher). This involves several
     situations:'
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 新后端可能具有一些高性能的运算符实现，可以通过`TORCH_LIBRARY_IMPL` API在[Registering a Dispatched Operator
+    in C++](dispatcher)中描述的方式注册到调度程序。这涉及几种情况：
 - en: Register all the forward operators supported by the new backend to the dispatcher,
     and register the fallback at the same time, so that when the new backend does
     not support some operators, these operators can fall back to the CPU for execution
     to ensure the availability of functions.
+  id: totrans-28
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 为新后端支持的所有前向运算符注册到调度程序，并同时注册回退，以便当新后端不支持某些运算符时，这些运算符可以回退到CPU执行，以确保功能的可用性。
 - en: '[PRE0]'
+  id: totrans-29
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: Register kernels from `torch::autograd::Function` to the dispatcher by `AutogradPrivateUse1`,
     if it is necessary for new backend to override `PyTorch Autograd layer`, the dispatcher
     and autograd system will automatically call the forward and backward implementations
     of these operators.
+  id: totrans-30
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 如果新后端需要覆盖`PyTorch Autograd layer`，则通过`AutogradPrivateUse1`将`torch::autograd::Function`的内核注册到调度程序，调度程序和自动求导系统将自动调用这些运算符的前向和后向实现。
 - en: '[PRE1]'
+  id: totrans-31
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Register kernels which want to support [automatic mixed precision (AMP)](https://pytorch.org/docs/stable/amp.html)
     and fallback mechanism to the dispatcher by `AutocastPrivateUse1`, the autocast
     system will automatically call these kernels when needed.
+  id: totrans-32
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 通过`AutocastPrivateUse1`将想要支持[自动混合精度（AMP）](https://pytorch.org/docs/stable/amp.html)和回退机制的内核注册到调度程序，当需要时，自动转换系统将自动调用这些内核。
 - en: '[PRE2]'
+  id: totrans-33
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: 'What needs to be added is that if you want to support AMP in a new backend,
     you need to register a new `BackendModule` by `torch._register_device_module("backend_name",
     BackendModule)`, and the `BackendModule` needs to have the following APIs:'
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 需要补充的是，如果要在新后端支持AMP，需要通过`torch._register_device_module("backend_name", BackendModule)`注册一个新的`BackendModule`，并且`BackendModule`需要具有以下API：
 - en: '`get_amp_supported_dtype() -> List[torch.dtype]`'
+  id: totrans-35
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`get_amp_supported_dtype() -> List[torch.dtype]`'
 - en: get the supported dtypes on the new backend in AMP, which might support one
     more `dtype`.
+  id: totrans-36
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 在AMP中获取新后端支持的`dtype`，可能支持一个以上的`dtype`。
 - en: '`is_autocast_enabled() -> bool`'
+  id: totrans-37
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`is_autocast_enabled() -> bool`'
 - en: check the AMP is enabled or not on the new backend.
+  id: totrans-38
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 检查新后端是否启用AMP。
 - en: '`get_autocast_dtype() -> torch.dtype`'
+  id: totrans-39
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`get_autocast_dtype() -> torch.dtype`'
 - en: get the supported `dtype` on the new backend in AMP, which is set by `set_autocast_dtype`
     or the default `dtype`, and the default `dtype` is `torch.float16`.
+  id: totrans-40
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 在AMP中获取新后端支持的`dtype`，该`dtype`由`set_autocast_dtype`或默认`dtype`设置，而默认`dtype`为`torch.float16`。
 - en: '`set_autocast_enabled(bool) -> None`'
+  id: totrans-41
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`set_autocast_enabled(bool) -> None`'
 - en: enable or disable AMP on the new backend.
+  id: totrans-42
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 在新后端上启用或禁用AMP。
 - en: '`set_autocast_dtype(dtype) -> None`'
+  id: totrans-43
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`set_autocast_dtype(dtype) -> None`'
 - en: set the supported `dtype` on the new backend in AMP, and the `dtype` be contained
     in the `dtypes` got from `get_amp_supported_dtype`.
+  id: totrans-44
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 在AMP中设置新后端支持的`dtype`，并且`dtype`包含在从`get_amp_supported_dtype`获取的`dtypes`中。
 - en: Register generator for the new backend
+  id: totrans-45
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 为新后端注册生成器
 - en: It is necessary to support generators corresponding to new devices. Currently,
     `PrivateUse1` can dynamically register custom generators, which are mainly divided
     into the following steps.
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 需要支持与新设备对应的生成器。目前，`PrivateUse1`可以动态注册自定义生成器，主要分为以下几个步骤。
 - en: Inherit the `GeneratorImpl` class to implement the generator class corresponding
     to the new backend, and implement various general methods.
+  id: totrans-47
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 继承`GeneratorImpl`类以实现与新后端对应的生成器类，并实现各种通用方法。
 - en: 'Define a new backend `builder` with a single parameter: `device index`.'
+  id: totrans-48
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 定义一个带有单个参数`device index`的新后端`builder`。
 - en: Call `REGISTER_GENERATOR_PRIVATEUSE1` macro to complete dynamic registration.
+  id: totrans-49
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 调用`REGISTER_GENERATOR_PRIVATEUSE1`宏完成动态注册。
 - en: '[PRE3]'
+  id: totrans-50
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: Register device guard for the new backend
+  id: totrans-51
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 为新后端注册设备保护
 - en: PyTorch provides functionalities related to device, stream, and event switching
     via `DeviceGuard`. This function is also applicable to `PrivateUse1` Key.
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch通过`DeviceGuard`提供了与设备、流和事件切换相关的功能。这个功能也适用于`PrivateUse1`关键。
 - en: Inherit the `DeviceGuardImplInterface` class to implement the various general
     methods corresponding to the new backend.
+  id: totrans-53
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 继承`DeviceGuardImplInterface`类以实现与新后端对应的各种通用方法。
 - en: Call `C10_REGISTER_GUARD_IMPL` macro to complete dynamic registration.
+  id: totrans-54
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 调用`C10_REGISTER_GUARD_IMPL`宏完成动态注册。
 - en: '[PRE4]'
+  id: totrans-55
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: Register serialization and deserialization functions for new backend metadata
+  id: totrans-56
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 为新后端元数据注册序列化和反序列化函数
 - en: 'PyTorch is currently able to dynamically register serialization/deserialization
     functions to support the serialization and deserialization of new backend additional
     metadata named `backend_meta_` in class `TensorImpl.ExtraMeta`. You can refer
     to the following steps:'
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch目前能够动态注册序列化/反序列化函数，以支持在`TensorImpl.ExtraMeta`类中命名为`backend_meta_`的新后端附加元数据的序列化和反序列化。您可以参考以下步骤：
 - en: Inherit the `BackendMeta` class to implement `CustomBackendMetadata` corresponding
     to the new backend and various fields of the new backend can be customized in
     the class.
+  id: totrans-58
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 继承`BackendMeta`类以实现与新后端对应的`CustomBackendMetadata`，并且新后端的各个字段可以在类中自定义。
 - en: Implement the serialization and deserialization functions of the new backend,
     the function signatures are `void(const at::Tensor&, std::unordered_map<std::string,
     bool>&)`.
+  id: totrans-59
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 实现新后端的序列化和反序列化函数，函数签名为`void(const at::Tensor&, std::unordered_map<std::string,
+    bool>&)`。
 - en: Call the `TensorBackendMetaRegistry` macro to complete dynamic registration.
+  id: totrans-60
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 调用`TensorBackendMetaRegistry`宏完成动态注册。
 - en: '[PRE5]'
+  id: totrans-61
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: Other Modules
+  id: totrans-62
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 其他模块
 - en: In addition to the above-mentioned parts, there are some other modules that
     can be expanded through `PrivateUse1`, such as `distributed collective communication`,
     `benchmark timer`, and others, which will be added in the future. One example
     about `PrivateUse1` integration is [Ascend NPU](https://github.com/ascend/pytorch).
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: 除了上述部分外，还有一些其他模块可以通过`PrivateUse1`进行扩展，例如`分布式集体通信`、`基准计时器`等，这些将在未来添加。关于`PrivateUse1`集成的一个示例是[Ascend
+    NPU](https://github.com/ascend/pytorch)。
 - en: How to Improve User Experience with Privateuse1
+  id: totrans-64
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 如何通过Privateuse1改进用户体验
 - en: The primary goal of integrating new devices through `PrivateUse1` is to meet
     the basic functional requirements, and the next thing to do is to improve usability,
     which mainly involves the following aspects.
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过`PrivateUse1`集成新设备的主要目标是满足基本的功能要求，接下来要做的是改进可用性，主要涉及以下几个方面。
 - en: Register new backend module to Pytorch.
+  id: totrans-66
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 向PyTorch注册新的后端模块。
 - en: Generate methods and properties related to the new backend.
+  id: totrans-67
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 生成与新后端相关的方法和属性。
 - en: Generate methods and properties related to the new backend.
+  id: totrans-68
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 生成与新后端相关的方法和属性。
 - en: Register new backend module to Pytorch
+  id: totrans-69
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 向PyTorch注册新的后端模块
 - en: 'Some CUDA-related interfaces in PyTorch can be called through the following
     form: `torch.cuda.xxx`. Therefore, in order to comply with user habits, the new
     backend implemented through the `PrivateUse1` mechanism should also provide similar
     interfaces.'
+  id: totrans-70
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch中的一些与CUDA相关的接口可以通过以下形式调用：`torch.cuda.xxx`。因此，为了符合用户习惯，通过`PrivateUse1`机制实现的新后端也应该提供类似的接口。
 - en: 'For example, using `Ascend NPU`:'
+  id: totrans-71
   prefs: []
   type: TYPE_NORMAL
+  zh: 例如，使用`Ascend NPU`：
 - en: '[PRE6]'
+  id: totrans-72
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: After doing the above operations, users can call some exclusive APIs of `Ascend
     NPU` through `torch.npu.xxx`
+  id: totrans-73
   prefs: []
   type: TYPE_NORMAL
+  zh: 完成上述操作后，用户可以通过`torch.npu.xxx`调用`Ascend NPU`的一些独有API。
 - en: Rename PrivateUse1 to a custom name for the new backend
+  id: totrans-74
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 将PrivateUse1重命名为新后端的自定义名称
 - en: '`PrivateUse1` Key is the internal mechanism of the new backend integrated into
     PyTorch. For users, compared with `PrivateUse1`, the custom name strongly related
     to the new backend should be more friendly.'
+  id: totrans-75
   prefs: []
   type: TYPE_NORMAL
+  zh: '`PrivateUse1` 键是集成到 PyTorch 中的新后端的内部机制。对于用户来说，与 `PrivateUse1` 相比，与新后端密切相关的自定义名称应该更加友好。'
 - en: Taking the `Ascend NPU` as an example, the first usage will be more user-friendly.
+  id: totrans-76
   prefs: []
   type: TYPE_NORMAL
+  zh: 以 `Ascend NPU` 为例，第一种用法将更加用户友好。
 - en: '[PRE7]'
+  id: totrans-77
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: Now, PyTorch provides a new C++/Python API for the self-named `PrivateUse1`
     backend, which is very simple to use.
+  id: totrans-78
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，PyTorch为自命名的 `PrivateUse1` 后端提供了一个新的 C++/Python API，非常简单易用。
 - en: '[PRE8]'
+  id: totrans-79
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: '[PRE9]'
+  id: totrans-80
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: Generate methods and properties related to the new backend
+  id: totrans-81
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 生成与新后端相关的方法和属性
 - en: After renaming `PrivateUse1` to a custome name, automatically generate properties
     and methods related to the new backend name in the `Tensor, nn, Storage` modules
     for the new backend.
+  id: totrans-82
   prefs: []
   type: TYPE_NORMAL
+  zh: 将 `PrivateUse1` 重命名为自定义名称后，在新后端的 `Tensor, nn, Storage` 模块中自动生成与新后端名称相关的属性和方法。
 - en: 'Here is an example for `Ascend NPU`:'
+  id: totrans-83
   prefs: []
   type: TYPE_NORMAL
+  zh: 这里以 `Ascend NPU` 为例：
 - en: '[PRE10]'
+  id: totrans-84
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: 'Then, you can use the following methods and properties:'
+  id: totrans-85
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后，您可以使用以下方法和属性：
 - en: '[PRE11]'
+  id: totrans-86
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: Future Work
+  id: totrans-87
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 未来工作
 - en: 'The improvement of the `PrivateUse1` mechanism is still in progress, so the
     integration method of `PrivateUse1` of the new module will be added in turn. Here
     are a few items that we are actively working on:'
+  id: totrans-88
   prefs: []
   type: TYPE_NORMAL
+  zh: '`PrivateUse1` 机制的改进仍在进行中，因此新模块的 `PrivateUse1` 集成方法将逐步添加。以下是我们正在积极开展的几个项目：'
 - en: Add the integration method of `distributed collective communication`.
+  id: totrans-89
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 添加 `分布式集体通信` 的集成方法。
 - en: Add the integration method of `benchmark timer`.
+  id: totrans-90
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 添加 `基准计时器` 的集成方法。
 - en: Conclusion
+  id: totrans-91
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 结论
 - en: This tutorial walked you through the process of integrating new backends into
     PyTorch via `PrivateUse1`, including but not limited to operator registration,
     generator registration, device guard registration, and so on. At the same time,
     some methods are introduced to improve the user experience.
+  id: totrans-92
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程指导您通过 `PrivateUse1` 将新后端集成到 PyTorch 中的过程，包括但不限于运算符注册、生成器注册、设备保护注册等。同时，介绍了一些方法来改善用户体验。

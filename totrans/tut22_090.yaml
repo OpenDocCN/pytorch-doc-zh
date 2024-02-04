@@ -3,11 +3,13 @@
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 在C++中注册一个分发的运算符
 - en: 原文：[https://pytorch.org/tutorials/advanced/dispatcher.html](https://pytorch.org/tutorials/advanced/dispatcher.html)
   id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: '[https://pytorch.org/tutorials/advanced/dispatcher.html](https://pytorch.org/tutorials/advanced/dispatcher.html)'
 - en: 'The dispatcher is an internal component of PyTorch which is responsible for
     figuring out what code should actually get run when you call a function like `torch::add`.
     This can be nontrivial, because PyTorch operations need to handle a lot of cross-cutting
@@ -16,33 +18,39 @@
   id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 分发器是PyTorch的一个内部组件，负责确定在调用诸如`torch::add`这样的函数时实际运行哪些代码。这可能并不简单，因为PyTorch操作需要处理许多“层叠”在彼此之上的交叉关注点。以下是它处理的一些事项的示例：
 - en: Switching between the CPU and CUDA implementations of an operator, depending
     on the devices of the input tensors.
   id: totrans-3
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 根据输入张量的设备在CPU和CUDA实现之间切换运算符。
 - en: Switching between the autograd and backend implementations of an operator, depending
     on whether or not autograd handling is necessary.
   id: totrans-4
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在是否需要自动微分处理的情况下，在运算符的自动微分和后端实现之间切换。
 - en: Applying autocasting when necessary for automatic mixed precision.
   id: totrans-5
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在需要自动混合精度时应用自动转换。
 - en: Applying batching rules when an operator is run under a `vmap` call.
   id: totrans-6
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在`vmap`调用下运行运算符时应用批处理规则。
 - en: Tracing execution of operations, if you are tracing a model for export.
   id: totrans-7
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 跟踪操作的执行，如果您正在跟踪一个模型以进行导出。
 - en: If in your [custom operator code](torch_script_custom_ops) you find yourself
     manually writing if statements to handle these cases, the dispatcher APIs can
     help organize your code. (Conversely, if your custom operator is very simple and
@@ -51,6 +59,7 @@
   id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果在您的[自定义运算符代码](torch_script_custom_ops)中发现自己手动编写if语句来处理这些情况，分发器API可以帮助组织您的代码。（相反，如果您的自定义运算符非常简单且仅用于CPU推断，则可能不需要使用分发器，只需使用基本API。）
 - en: In this tutorial, we will describe how to structure a custom operator registration
     to use the dispatcher to organize various components. We’ll assume that you are
     familiar with how to [register an operator](torch_script_custom_ops) and how to
@@ -58,11 +67,13 @@
   id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，我们将描述如何结构化自定义运算符注册以使用分发器来组织各种组件。我们假设您已经熟悉如何[注册运算符](torch_script_custom_ops)以及如何编写[自定义自动微分函数](cpp_autograd)。
 - en: Defining schema and backend implementations
   id: totrans-10
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 定义模式和后端实现
 - en: The general principle behind the dispatcher is that it divides the implementation
     of an operator into multiple kernels, each of which implements functionality for
     a specific *dispatch key*, e.g. CPU, CUDA. The dispatcher determines what the
@@ -74,6 +85,7 @@
   id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 分发器背后的一般原则是将运算符的实现分成多个内核，每个内核为特定的*分发键*实现功能，例如CPU、CUDA。分发器确定在调用运算符时最高优先级的分发键是什么（这是通过查看张量参数以及一些线程本地状态来完成的），并将控制权转移到该分发键的内核。最终效果是当您调用一个运算符时，我们首先执行自动微分内核，然后根据传入张量的设备类型重新分发到后端内核。
 - en: 'Let’s take a look at the various parts involved in making this happen. First,
     we must define the schema for the operator in question. Unlike simple pybind11-style
     operator registration, we don’t actually provide an implementation of our operator
@@ -82,6 +94,7 @@
   id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们看看使这一切发生所涉及的各个部分。首先，我们必须为所讨论的运算符定义模式。与简单的pybind11风格的运算符注册不同，我们此时实际上并没有提供我们运算符的实现；我们只提供一个模式字符串，指定所有其他内核将遵守的运算符类型签名：
 - en: '[PRE0]'
   id: totrans-13
   prefs: []
@@ -92,6 +105,7 @@
   id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，我们需要实际提供一些这个运算符的实现。具体来说，这是一个在CPU上进行加法的非常简单的实现：
 - en: '[PRE1]'
   id: totrans-15
   prefs: []
@@ -106,6 +120,7 @@
   id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们想要将这个函数注册为`myops::myadd`的实现。然而，简单的注册方式（`def("myadd", myadd_cpu)`）会注册内核在所有情况下运行，即使张量不是CPU张量！（在内部，我们将这些称为“全能”内核，因为它们涵盖所有情况。）为了确保`myadd_cpu`仅在CPU张量上运行，我们可以使用`TORCH_LIBRARY_IMPL`宏：
 - en: '[PRE2]'
   id: totrans-17
   prefs: []
@@ -119,6 +134,7 @@
   id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: '`TORCH_LIBRARY_IMPL`让我们为特定分发键（在本例中为CPU）上的运算符注册实现。每次调用`impl`都会将CPU内核与相应的运算符关联起来（我们之前在`TORCH_LIBRARY`块中定义）。如果我们还有一个CUDA实现`myadd_cuda`，我们可以在单独的`TORCH_LIBRARY_IMPL`块中注册它：'
 - en: '[PRE3]'
   id: totrans-19
   prefs: []
@@ -131,6 +147,7 @@
   id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 这些注册可以跨文件或甚至跨库边界拆分；例如，您可以将这两个`TORCH_LIBRARY_IMPL`块编译到单独的`myops_cpu`和`myops_cuda`动态库中。一般来说，您的注册结构将如下所示：
 - en: A single `TORCH_LIBRARY` that lists every custom operator in your namespace
     in a centralized place.
   id: totrans-21
