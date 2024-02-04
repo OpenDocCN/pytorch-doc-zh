@@ -238,31 +238,38 @@
   id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: TCMalloc 和 JeMalloc 都使用线程本地缓存来减少线程同步的开销，并通过使用自旋锁和每个线程的竞技场来减少锁争用。TCMalloc 和 JeMalloc
+    减少了不必要的内存分配和释放的开销。两个分配器通过大小对内存分配进行分类，以减少内存碎片化的开销。
 - en: With the launcher, users can easily experiment with different memory allocators
     by choosing one of the three launcher knobs *–enable_tcmalloc* (TCMalloc), *–enable_jemalloc*
     (JeMalloc), *–use_default_allocator* (PTMalloc).
   id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用启动器，用户可以通过选择三个启动器旋钮之一来轻松尝试不同的内存分配器 *–enable_tcmalloc*（TCMalloc）、*–enable_jemalloc*（JeMalloc）、*–use_default_allocator*（PTMalloc）。
 - en: Exercise
   id: totrans-31
   prefs:
   - PREF_H5
   type: TYPE_NORMAL
+  zh: 练习
 - en: Let’s profile PTMalloc vs. JeMalloc.
   id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们对比 PTMalloc 和 JeMalloc 进行分析。
 - en: We will use the launcher to designate the memory allocator, and to bind the
     workload to physical cores of the first socket to avoid any NUMA complication
     – to profile the effect of memory allocator only.
   id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们将使用启动器指定内存分配器，并将工作负载绑定到第一个插槽的物理核心，以避免任何 NUMA 复杂性 – 仅对内存分配器的影响进行分析。
 - en: 'The following example measures the average inference time of ResNet50:'
   id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下示例测量了 ResNet50 的平均推理时间：
 - en: '[PRE0]'
   id: totrans-35
   prefs: []
@@ -272,29 +279,35 @@
   id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们收集一级 TMA 指标。
 - en: '[![../_images/32.png](../Images/92b08c13c370b320e540a278fa5c05a3.png)](../_images/32.png)'
   id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_images/32.png](../Images/92b08c13c370b320e540a278fa5c05a3.png)](../_images/32.png)'
 - en: Level-1 TMA shows that both PTMalloc and JeMalloc are bounded by the backend.
     More than half of the execution time was stalled by the backend. Let’s go one
     level deeper.
   id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 一级 TMA 显示 PTMalloc 和 JeMalloc 都受后端限制。超过一半的执行时间被后端阻塞。让我们再深入一层。
 - en: '[![../_images/41.png](../Images/4c4e1618b6431d1689b0e0c84efef1d3.png)](../_images/41.png)'
   id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_images/41.png](../Images/4c4e1618b6431d1689b0e0c84efef1d3.png)](../_images/41.png)'
 - en: Level-2 TMA shows that the Back End Bound was caused by Memory Bound. Let’s
     go one level deeper.
   id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: 二级 TMA 显示后端受限是由内存受限引起的。让我们再深入一层。
 - en: '[![../_images/51.png](../Images/20c7abc0c93bd57ad7a3dd3655c2f294.png)](../_images/51.png)'
   id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_images/51.png](../Images/20c7abc0c93bd57ad7a3dd3655c2f294.png)](../_images/51.png)'
 - en: Most of the metrics under the Memory Bound identify which level of the memory
     hierarchy from the L1 cache to main memory is the bottleneck. A hotspot bounded
     at a given level indicates that most of the data was being retrieved from that
@@ -305,45 +318,58 @@
   id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 大多数内存受限指标确定了从 L1 缓存到主存储器的内存层次结构中的瓶颈。在给定级别上受限的热点表明大部分数据是从该缓存或内存级别检索的。优化应该专注于将数据移动到核心附近。三级
+    TMA 显示 PTMalloc 受 DRAM Bound 限制。另一方面，JeMalloc 受 L1 Bound 限制 – JeMalloc 将数据移动到核心附近，从而实现更快的执行。
 - en: Let’s look at Intel® VTune Profiler ITT trace. In the example script, we have
     annotated each *step_x* of the inference loop.
   id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们看看 Intel® VTune Profiler ITT 跟踪。在示例脚本中，我们已经注释了推理循环的每个 *step_x*。
 - en: '[![../_images/61.png](../Images/ecb098b61b1ff2137e4d3a18ab854273.png)](../_images/61.png)'
   id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_images/61.png](../Images/ecb098b61b1ff2137e4d3a18ab854273.png)](../_images/61.png)'
 - en: Each step is traced in the timeline graph. The duration of model inference on
     the last step (step_99) decreased from 304.308 ms to 261.843 ms.
   id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: 时间轴图中跟踪了每个步骤。在最后一步（step_99）的模型推理持续时间从 304.308 毫秒减少到 261.843 毫秒。
 - en: Exercise with TorchServe
   id: totrans-46
   prefs:
   - PREF_H5
   type: TYPE_NORMAL
+  zh: 使用 TorchServe 进行练习
 - en: Let’s profile PTMalloc vs. JeMalloc with TorchServe.
   id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们使用 TorchServe 对比 PTMalloc 和 JeMalloc 进行分析。
 - en: We will use [TorchServe apache-bench benchmarking](https://github.com/pytorch/serve/tree/master/benchmarks#benchmarking-with-apache-bench)
     with ResNet50 FP32, batch size 32, concurrency 32, requests 8960\. All other parameters
     are the same as the [default parameters](https://github.com/pytorch/serve/tree/master/benchmarks#benchmark-parameters).
   id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们将使用 [TorchServe apache-bench 基准测试](https://github.com/pytorch/serve/tree/master/benchmarks#benchmarking-with-apache-bench)
+    进行 ResNet50 FP32、批量大小 32、并发数 32、请求数 8960\. 其他所有参数与 [默认参数](https://github.com/pytorch/serve/tree/master/benchmarks#benchmark-parameters)
+    相同。
 - en: 'As in the previous exercise, we will use the launcher to designate the memory
     allocator, and to bind the workload to physical cores of the first socket. To
     do so, user simply needs to add a few lines in [config.properties](https://pytorch.org/serve/configuration.html#config-properties-file):'
   id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: 与之前的练习一样，我们将使用启动器指定内存分配器，并将工作负载绑定到第一个插槽的物理核心。为此，用户只需在 [config.properties](https://pytorch.org/serve/configuration.html#config-properties-file)
+    中添加几行即可：
 - en: PTMalloc
   id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: PTMalloc
 - en: '[PRE1]'
   id: totrans-51
   prefs: []
@@ -353,6 +379,7 @@
   id: totrans-52
   prefs: []
   type: TYPE_NORMAL
+  zh: JeMalloc
 - en: '[PRE2]'
   id: totrans-53
   prefs: []
@@ -362,18 +389,22 @@
   id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们收集一级 TMA 指标。
 - en: '[![../_images/71.png](../Images/5f87dd66115567eb48eaa61c41e17b25.png)](../_images/71.png)'
   id: totrans-55
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_images/71.png](../Images/5f87dd66115567eb48eaa61c41e17b25.png)](../_images/71.png)'
 - en: Let’s go one level deeper.
   id: totrans-56
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们再深入一层。
 - en: '[![../_images/81.png](../Images/23960c03e87ed20b8dc0954e8d420e20.png)](../_images/81.png)'
   id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_images/81.png](../Images/23960c03e87ed20b8dc0954e8d420e20.png)](../_images/81.png)'
 - en: Let’s use Intel® VTune Profiler ITT to annotate [TorchServe inference scope](https://github.com/pytorch/serve/blob/master/ts/torch_handler/base_handler.py#L188)
     to profile at inference-level granularity. As [TorchServe Architecture](https://github.com/pytorch/serve/blob/master/docs/internals.md#torchserve-architecture)
     consists of several sub-components, including the Java frontend for handling request/response,
@@ -382,6 +413,10 @@
   id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们使用 Intel® VTune Profiler ITT 对 [TorchServe 推理范围](https://github.com/pytorch/serve/blob/master/ts/torch_handler/base_handler.py#L188)
+    进行注释，以便以推理级别的粒度进行分析。由于 [TorchServe 架构](https://github.com/pytorch/serve/blob/master/docs/internals.md#torchserve-architecture)
+    包括几个子组件，包括用于处理请求/响应的 Java 前端和用于在模型上运行实际推理的 Python 后端，因此使用 Intel® VTune Profiler
+    ITT 限制在推理级别收集跟踪数据是有帮助的。
 - en: '[![../_images/9.png](../Images/503e0ca767cc22bc9c9fcad2ebb78311.png)](../_images/9.png)'
   id: totrans-59
   prefs: []
