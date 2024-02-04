@@ -708,11 +708,14 @@
   id: totrans-107
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，使用Intel® PyTorch扩展，Conv + ReLU操作符被融合，CPU时间从803微秒减少到248微秒，加速了3.2倍。oneDNN
+    eltwise后操作使得可以将一个原语与一个逐元素原语融合。这是最流行的融合类型之一：一个eltwise（通常是激活函数，如ReLU）与前面的卷积或内积。请查看下一节中显示的oneDNN详细日志。
 - en: Channels Last Memory Format
   id: totrans-108
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: Channels Last内存格式
 - en: When invoking *ipex.optimize* on model, Intel® Extension for PyTorch* automatically
     converts the model to optimized memory format, channels last. Channels last is
     a memory format that is more friendly to Intel Architecture. Compared to PyTorch
@@ -722,6 +725,9 @@
   id: totrans-109
   prefs: []
   type: TYPE_NORMAL
+  zh: 在模型上调用*ipex.optimize*时，Intel® PyTorch扩展会自动将模型转换为优化的内存格式，即channels last。Channels
+    last是一种更适合Intel架构的内存格式。与PyTorch默认的channels first NCHW（batch, channels, height,
+    width）内存格式相比，channels last NHWC（batch, height, width, channels）内存格式通常可以加速卷积神经网络，具有更好的缓存局部性。
 - en: One thing to note is that it is expensive to convert memory format. So it’s
     better to convert the memory format prior to deployment once, and keep the memory
     format conversion minimum during deployment. As the data propagates through model’s
@@ -733,15 +739,19 @@
   id: totrans-110
   prefs: []
   type: TYPE_NORMAL
+  zh: 需要注意的一点是，转换内存格式是昂贵的。因此最好在部署之前将内存格式转换一次，并在部署过程中尽量减少内存格式转换。当数据通过模型的层传播时，最后通道的内存格式会通过连续的支持最后通道的层（例如，Conv2d
+    -> ReLU -> Conv2d）保持不变，转换仅在不支持最后通道的层之间进行。有关更多详细信息，请参阅[内存格式传播](https://www.intel.com/content/www/us/en/develop/documentation/onednn-developer-guide-and-reference/top/programming-model/memory-format-propagation.html)。
 - en: Exercise
   id: totrans-111
   prefs:
   - PREF_H5
   type: TYPE_NORMAL
+  zh: 练习
 - en: Let’s demonstrate channels last optimization.
   id: totrans-112
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们演示最后通道优化。
 - en: '[PRE5]'
   id: totrans-113
   prefs: []
@@ -754,59 +764,71 @@
   id: totrans-114
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们将使用[oneDNN详细模式](https://oneapi-src.github.io/oneDNN/dev_guide_verbose.html)，这是一个帮助收集有关oneDNN图级别信息的工具，例如操作融合、执行oneDNN原语所花费的内核执行时间。有关更多信息，请参考[oneDNN文档](https://oneapi-src.github.io/oneDNN/index.html)。
 - en: '[![../_images/161.png](../Images/52018fb59ebe653af37a7e977764e699.png)](../_images/161.png)[![../_images/171.png](../Images/466f4685aff041f4d0f735aaae4593d5.png)](../_images/171.png)'
   id: totrans-115
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_images/161.png](../Images/52018fb59ebe653af37a7e977764e699.png)](../_images/161.png)[![../_images/171.png](../Images/466f4685aff041f4d0f735aaae4593d5.png)](../_images/171.png)'
 - en: Above is oneDNN verbose from channels first. We can verify that there are reorders
     from weight and data, then do computation, and finally reorder output back.
   id: totrans-116
   prefs: []
   type: TYPE_NORMAL
+  zh: 以上是来自通道首的oneDNN详细信息。我们可以验证从权重和数据进行重新排序，然后进行计算，最后将输出重新排序。
 - en: '[![../_images/181.png](../Images/37fca356cd849c6f51a0b2d155565535.png)](../_images/181.png)'
   id: totrans-117
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_images/181.png](../Images/37fca356cd849c6f51a0b2d155565535.png)](../_images/181.png)'
 - en: Above is oneDNN verbose from channels last. We can verify that channels last
     memory format avoids unnecessary reorders.
   id: totrans-118
   prefs: []
   type: TYPE_NORMAL
+  zh: 以上是来自通道最后的oneDNN详细信息。我们可以验证通道最后的内存格式避免了不必要的重新排序。
 - en: Performance Boost with Intel® Extension for PyTorch*
   id: totrans-119
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 使用Intel® PyTorch扩展提升性能
 - en: Below summarizes performance boost of TorchServe with Intel® Extension for PyTorch*
     for ResNet50 and BERT-base-uncased.
   id: totrans-120
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下总结了TorchServe与Intel® Extension for PyTorch*在ResNet50和BERT-base-uncased上的性能提升。
 - en: '[![../_images/191.png](../Images/70692f21eb61fe41d0b7a67d8ae8a54d.png)](../_images/191.png)'
   id: totrans-121
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_images/191.png](../Images/70692f21eb61fe41d0b7a67d8ae8a54d.png)](../_images/191.png)'
 - en: Exercise with TorchServe
   id: totrans-122
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 使用TorchServe进行练习
 - en: Let’s profile Intel® Extension for PyTorch* optimizations with TorchServe.
   id: totrans-123
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们使用TorchServe来分析Intel® Extension for PyTorch*的优化。
 - en: We will use [TorchServe apache-bench benchmarking](https://github.com/pytorch/serve/tree/master/benchmarks#benchmarking-with-apache-bench)
     with ResNet50 FP32 TorchScript, batch size 32, concurrency 32, requests 8960\.
     All other parameters are the same as the [default parameters](https://github.com/pytorch/serve/tree/master/benchmarks#benchmark-parameters).
   id: totrans-124
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们将使用ResNet50 FP32 TorchScript的[TorchServe apache-bench基准测试](https://github.com/pytorch/serve/tree/master/benchmarks#benchmarking-with-apache-bench)，批量大小为32，并发数为32，请求为8960。所有其他参数与[默认参数](https://github.com/pytorch/serve/tree/master/benchmarks#benchmark-parameters)相同。
 - en: 'As in the previous exercise, we will use the launcher to bind the workload
     to physical cores of the first socket. To do so, user simply needs to add a few
     lines in [config.properties](https://github.com/pytorch/serve/tree/master/benchmarks#benchmark-parameters):'
   id: totrans-125
   prefs: []
   type: TYPE_NORMAL
+  zh: 与上一个练习一样，我们将使用启动器将工作负载绑定到第一个插槽的物理核心。为此，用户只需在[config.properties](https://github.com/pytorch/serve/tree/master/benchmarks#benchmark-parameters)中添加几行代码：
 - en: '[PRE6]'
   id: totrans-126
   prefs: []
@@ -816,20 +838,24 @@
   id: totrans-127
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们收集一级TMA指标。
 - en: '[![../_images/20.png](../Images/90ff6d2c5ef9b558de384a1a802a7781.png)](../_images/20.png)'
   id: totrans-128
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_images/20.png](../Images/90ff6d2c5ef9b558de384a1a802a7781.png)](../_images/20.png)'
 - en: Level-1 TMA shows that both are bounded by the backend. As discussed earlier,
     the majority of untuned deep learning workloads will be Back End Bound. Notice
     the Back End Bound reduced from 70.0 to 54.1\. Let’s go one level deeper.
   id: totrans-129
   prefs: []
   type: TYPE_NORMAL
+  zh: Level-1 TMA 显示两者都受到后端的限制。正如之前讨论的，大多数未调整的深度学习工作负载将受到后端的限制。注意后端限制从70.0降至54.1。让我们再深入一层。
 - en: '[![../_images/211.png](../Images/7986245e21288e28a0d187026c929c7d.png)](../_images/211.png)'
   id: totrans-130
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_images/211.png](../Images/7986245e21288e28a0d187026c929c7d.png)](../_images/211.png)'
 - en: As discussed earlier, Back End Bound has two submetrics – Memory Bound and Core
     Bound. Memory Bound indicates the workload is under-optimized or under-utilized,
     and ideally memory-bound operations can be improved to core-bound by optimizing
