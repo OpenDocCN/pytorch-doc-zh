@@ -649,20 +649,24 @@
   id: totrans-105
   prefs: []
   type: TYPE_NORMAL
+  zh: 在内存统计表中，“大小增加”列总结了所有分配大小并减去所有内存释放大小，即在此运算符之后内存使用量的净增加。“自身大小增加”列类似于“大小增加”，但它不计算子运算符的分配。关于ATen运算符的实现细节，一些运算符可能调用其他运算符，因此内存分配可以发生在调用堆栈的任何级别。也就是说，“自身大小增加”仅计算当前调用堆栈级别的内存使用量增加。最后，“分配大小”列总结了所有分配，而不考虑内存释放。
 - en: Distributed view
   id: totrans-106
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 分布式视图
 - en: The plugin now supports distributed view on profiling DDP with NCCL/GLOO as
     backend.
   id: totrans-107
   prefs: []
   type: TYPE_NORMAL
+  zh: 插件现在支持使用NCCL/GLOO作为后端在分布式DDP上进行性能分析。
 - en: 'You can try it by using existing example on Azure:'
   id: totrans-108
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可以通过在Azure上使用现有示例来尝试：
 - en: '[PRE12]'
   id: totrans-109
   prefs: []
@@ -672,6 +676,7 @@
   id: totrans-110
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_static/img/profiler_distributed_view.png](../Images/bc5ec09af445c3714c07c9bc3c7fb515.png)](../_static/img/profiler_distributed_view.png)'
 - en: The “Computation/Communication Overview” shows computation/communication ratio
     and their overlapping degree. From this view, User can figure out load balance
     issue among workers. For example, if the computation + overlapping time of one
@@ -680,28 +685,33 @@
   id: totrans-111
   prefs: []
   type: TYPE_NORMAL
+  zh: “计算/通信概述”显示了计算/通信比和它们的重叠程度。从这个视图中，用户可以找出工作人员之间的负载平衡问题。例如，如果一个工作人员的计算+重叠时间比其他工作人员的大得多，那么可能存在负载平衡问题，或者这个工作人员可能是一个慢工作者。
 - en: The “Synchronizing/Communication Overview” shows the efficiency of communication.
     “Data Transfer Time” is the time for actual data exchanging. “Synchronizing Time”
     is the time for waiting and synchronizing with other workers.
   id: totrans-112
   prefs: []
   type: TYPE_NORMAL
+  zh: “同步/通信概述”显示了通信的效率。“数据传输时间”是实际数据交换的时间。“同步时间”是等待和与其他工作人员同步的时间。
 - en: If one worker’s “Synchronizing Time” is much shorter than that of other workers’,
     this worker may be a straggler which may have more computation workload than other
     workers’.
   id: totrans-113
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果一个工作人员的“同步时间”比其他工作人员的短得多，那么这个工作人员可能是一个比其他工作人员有更多计算工作量的慢工作者。
 - en: The “Communication Operations Stats” summarizes the detailed statistics of all
     communication ops in each worker.
   id: totrans-114
   prefs: []
   type: TYPE_NORMAL
+  zh: “通信操作统计”总结了每个工作人员中所有通信操作的详细统计信息。
 - en: '7\. Additional Practices: Profiling PyTorch on AMD GPUs'
   id: totrans-115
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 7. 附加实践：在AMD GPU上对PyTorch进行性能分析
 - en: The AMD ROCm Platform is an open-source software stack designed for GPU computation,
     consisting of drivers, development tools, and APIs. We can run the above mentioned
     steps on AMD GPUs. In this section, we will use Docker to install the ROCm base
@@ -709,11 +719,13 @@
   id: totrans-116
   prefs: []
   type: TYPE_NORMAL
+  zh: AMD ROCm平台是一个为GPU计算设计的开源软件堆栈，包括驱动程序、开发工具和API。我们可以在AMD GPU上运行上述提到的步骤。在本节中，我们将使用Docker在安装PyTorch之前安装ROCm基础开发镜像。
 - en: For the purpose of example, let’s create a directory called `profiler_tutorial`,
     and save the code in **Step 1** as `test_cifar10.py` in this directory.
   id: totrans-117
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了示例，让我们创建一个名为`profiler_tutorial`的目录，并将**步骤1**中的代码保存为`test_cifar10.py`在这个目录中。
 - en: '[PRE13]'
   id: totrans-118
   prefs: []
@@ -724,21 +736,25 @@
   id: totrans-119
   prefs: []
   type: TYPE_NORMAL
+  zh: 在撰写本文时，ROCm平台上PyTorch的稳定（`2.1.1`）Linux版本是[ROCm 5.6](https://pytorch.org/get-started/locally/)。
 - en: Obtain a base Docker image with the correct user-space ROCm version installed
     from [Docker Hub](https://hub.docker.com/repository/docker/rocm/dev-ubuntu-20.04).
   id: totrans-120
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 从[Docker Hub](https://hub.docker.com/repository/docker/rocm/dev-ubuntu-20.04)获取安装了正确用户空间ROCm版本的基础Docker镜像。
 - en: It is `rocm/dev-ubuntu-20.04:5.6`.
   id: totrans-121
   prefs: []
   type: TYPE_NORMAL
+  zh: 它是`rocm/dev-ubuntu-20.04:5.6`。
 - en: 'Start the ROCm base Docker container:'
   id: totrans-122
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 启动ROCm基础Docker容器：
 - en: '[PRE14]'
   id: totrans-123
   prefs: []
@@ -750,6 +766,7 @@
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在容器内，安装安装wheels包所需的任何依赖项。
 - en: '[PRE15]'
   id: totrans-125
   prefs: []
@@ -760,6 +777,7 @@
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 安装wheels：
 - en: '[PRE16]'
   id: totrans-127
   prefs: []
@@ -770,6 +788,7 @@
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 安装`torch_tb_profiler`，然后运行Python文件`test_cifar10.py`：
 - en: '[PRE17]'
   id: totrans-129
   prefs: []
@@ -779,6 +798,7 @@
   id: totrans-130
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，我们有了在TensorBoard中查看所需的所有数据：
 - en: '[PRE18]'
   id: totrans-131
   prefs: []
@@ -789,36 +809,43 @@
   id: totrans-132
   prefs: []
   type: TYPE_NORMAL
+  zh: 选择不同的视图，如**步骤4**中所述。例如，下面是**操作员**视图：
 - en: '[![../_static/img/profiler_rocm_tensorboard_operartor_view.png](../Images/766def45c853a562ade085a166bc7a98.png)](../_static/img/profiler_rocm_tensorboard_operartor_view.png)'
   id: totrans-133
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_static/img/profiler_rocm_tensorboard_operartor_view.png](../Images/766def45c853a562ade085a166bc7a98.png)](../_static/img/profiler_rocm_tensorboard_operartor_view.png)'
 - en: At the time this section is written, **Trace** view does not work and it displays
     nothing. You can work around by typing `chrome://tracing` in your Chrome Browser.
   id: totrans-134
   prefs: []
   type: TYPE_NORMAL
+  zh: 在撰写本节时，**跟踪**视图不起作用，不显示任何内容。您可以通过在Chrome浏览器中输入`chrome://tracing`来解决问题。
 - en: Copy the `trace.json` file under `~/profiler_tutorial/log/resnet18` directory
     to the Windows.
   id: totrans-135
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 将`trace.json`文件复制到`~/profiler_tutorial/log/resnet18`目录下的Windows。
 - en: You may need to copy the file by using `scp` if the file is located in a remote
     location.
   id: totrans-136
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果文件位于远程位置，您可能需要使用`scp`来复制文件。
 - en: Click **Load** button to load the trace JSON file from the `chrome://tracing`
     page in the browser.
   id: totrans-137
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 点击**加载**按钮，从浏览器中的`chrome://tracing`页面加载跟踪JSON文件。
 - en: '[![../_static/img/profiler_rocm_chrome_trace_view.png](../Images/576f0fdbe384c09bd227cc973cbf6ecd.png)](../_static/img/profiler_rocm_chrome_trace_view.png)'
   id: totrans-138
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_static/img/profiler_rocm_chrome_trace_view.png](../Images/576f0fdbe384c09bd227cc973cbf6ecd.png)](../_static/img/profiler_rocm_chrome_trace_view.png)'
 - en: As mentioned previously, you can move the graph and zoom in and out. You can
     also use keyboard to zoom and move around inside the timeline. The `w` and `s`
     keys zoom in centered around the mouse, and the `a` and `d` keys move the timeline

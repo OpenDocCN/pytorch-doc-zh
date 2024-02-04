@@ -1,21 +1,31 @@
 - en: Parametrizations Tutorial
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 参数化教程
 - en: 原文：[https://pytorch.org/tutorials/intermediate/parametrizations.html](https://pytorch.org/tutorials/intermediate/parametrizations.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 作者：[Mario Lezcano](https://github.com/lezcano)
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-intermediate-parametrizations-py) to download
     the full example code
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[这里](#sphx-glr-download-intermediate-parametrizations-py)下载完整示例代码
 - en: '**Author**: [Mario Lezcano](https://github.com/lezcano)'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，您将学习如何实现并使用此模式来对模型进行约束。这样做就像编写自己的`nn.Module`一样容易。
 - en: Regularizing deep-learning models is a surprisingly challenging task. Classical
     techniques such as penalty methods often fall short when applied on deep models
     due to the complexity of the function being optimized. This is particularly problematic
@@ -33,310 +43,469 @@
     This method controls the Lipschitz constant of the network by dividing its parameters
     by their [spectral norm](https://en.wikipedia.org/wiki/Matrix_norm#Special_cases),
     rather than their Frobenius norm.
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 对深度学习模型进行正则化是一项令人惊讶的挑战。传统技术，如惩罚方法，通常在应用于深度模型时效果不佳，因为被优化的函数的复杂性。当处理病态模型时，这一点尤为棘手。这些模型的示例包括在长序列上训练的RNN和GAN。近年来已经提出了许多技术来对这些模型进行正则化并改善它们的收敛性。对于循环模型，已经提出控制RNN的循环核的奇异值以使其具有良好条件性。例如，可以通过使循环核[正交](https://en.wikipedia.org/wiki/Orthogonal_matrix)来实现这一点。另一种正则化循环模型的方法是通过“[权重归一化](https://pytorch.org/docs/stable/generated/torch.nn.utils.weight_norm.html)”。该方法建议将参数的学习与其范数的学习分离。为此，将参数除以其[Frobenius范数](https://en.wikipedia.org/wiki/Matrix_norm#Frobenius_norm)，并学习一个编码其范数的单独参数。类似的正则化方法也适用于以“[谱归一化](https://pytorch.org/docs/stable/generated/torch.nn.utils.spectral_norm.html)”命名的GAN。该方法通过将网络的参数除以其[谱范数](https://en.wikipedia.org/wiki/Matrix_norm#Special_cases)而不是其Frobenius范数来控制网络的Lipschitz常数。
 - en: 'All these methods have a common pattern: they all transform a parameter in
     an appropriate way before using it. In the first case, they make it orthogonal
     by using a function that maps matrices to orthogonal matrices. In the case of
     weight and spectral normalization, they divide the original parameter by its norm.'
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 所有这些方法都有一个共同的模式：它们在使用参数之前以适当的方式转换参数。在第一种情况下，它们通过使用将矩阵映射到正交矩阵的函数使其正交。在权重和谱归一化的情况下，它们通过将原始参数除以其范数来实现。
 - en: More generally, all these examples use a function to put extra structure on
     the parameters. In other words, they use a function to constrain the parameters.
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 更一般地，所有这些示例都使用一个函数在参数上添加额外的结构。换句话说，它们使用一个函数来约束参数。
 - en: In this tutorial, you will learn how to implement and use this pattern to put
     constraints on your model. Doing so is as easy as writing your own `nn.Module`.
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 它没有将层和参数化分开。如果参数化更加困难，我们将不得不为要在其中使用它的每个层重新编写其代码。
 - en: 'Requirements: `torch>=1.9.0`'
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 要求：`torch>=1.9.0`
 - en: Implementing parametrizations by hand
+  id: totrans-10
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 参数化简介
 - en: Assume that we want to have a square linear layer with symmetric weights, that
     is, with weights `X` such that `X = Xᵀ`. One way to do so is to copy the upper-triangular
     part of the matrix into its lower-triangular part
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 假设我们想要一个具有对称权重的正方形线性层，即具有权重`X`，使得`X = Xᵀ`。一种方法是将矩阵的上三角部分复制到其下三角部分
 - en: '[PRE0]'
+  id: totrans-12
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: We can then use this idea to implement a linear layer with symmetric weights
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后我们可以使用这个想法来实现具有对称权重的线性层
 - en: '[PRE1]'
+  id: totrans-14
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: The layer can be then used as a regular linear layer
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后可以将该层用作常规线性层
 - en: '[PRE2]'
+  id: totrans-16
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: 'This implementation, although correct and self-contained, presents a number
     of problems:'
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 尽管这种实现是正确且独立的，但存在一些问题：
 - en: It reimplements the layer. We had to implement the linear layer as `x @ A`.
     This is not very problematic for a linear layer, but imagine having to reimplement
     a CNN or a Transformer…
+  id: totrans-18
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 它重新实现了该层。我们必须将线性层实现为`x @ A`。对于线性层来说，这并不是非常困难，但想象一下必须重新实现CNN或Transformer…
 - en: It does not separate the layer and the parametrization. If the parametrization
     were more difficult, we would have to rewrite its code for each layer that we
     want to use it in.
+  id: totrans-19
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 手动实现参数化
 - en: It recomputes the parametrization every time we use the layer. If we use the
     layer several times during the forward pass, (imagine the recurrent kernel of
     an RNN), it would compute the same `A` every time that the layer is called.
+  id: totrans-20
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 每次使用该层时都会重新计算参数化。如果在前向传递期间多次使用该层（想象一下RNN的循环核），它将在每次调用该层时计算相同的`A`。
 - en: Introduction to parametrizations
+  id: totrans-21
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/intermediate/parametrizations.html](https://pytorch.org/tutorials/intermediate/parametrizations.html)
 - en: Parametrizations can solve all these problems as well as others.
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数化可以解决所有这些问题以及其他问题。
 - en: Let’s start by reimplementing the code above using `torch.nn.utils.parametrize`.
     The only thing that we have to do is to write the parametrization as a regular
     `nn.Module`
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们从使用`torch.nn.utils.parametrize`重新实现上面的代码开始。我们唯一需要做的就是将参数化编写为常规的`nn.Module`
 - en: '[PRE3]'
+  id: totrans-24
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: This is all we need to do. Once we have this, we can transform any regular layer
     into a symmetric layer by doing
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: 这就是我们需要做的全部。一旦我们有了这个，我们可以通过以下方式将任何常规层转换为对称层
 - en: '[PRE4]'
+  id: totrans-26
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: Now, the matrix of the linear layer is symmetric
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，线性层的矩阵是对称的
 - en: '[PRE5]'
+  id: totrans-28
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: We can do the same thing with any other layer. For example, we can create a
     CNN with [skew-symmetric](https://en.wikipedia.org/wiki/Skew-symmetric_matrix)
     kernels. We use a similar parametrization, copying the upper-triangular part with
     signs reversed into the lower-triangular part
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们可以对任何其他层执行相同的操作。例如，我们可以创建一个具有[斜对称](https://en.wikipedia.org/wiki/Skew-symmetric_matrix)核的CNN。我们使用类似的参数化，将上三角部分的符号反转复制到下三角部分
 - en: '[PRE6]'
+  id: totrans-30
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: Inspecting a parametrized module
+  id: totrans-31
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 检查参数化模块
 - en: 'When a module is parametrized, we find that the module has changed in three
     ways:'
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 当一个模块被参数化时，我们发现模块以三种方式发生了变化：
 - en: '`model.weight` is now a property'
+  id: totrans-33
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: '`model.weight`现在是一个属性'
 - en: It has a new `module.parametrizations` attribute
+  id: totrans-34
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 它有一个新的`module.parametrizations`属性
 - en: The unparametrized weight has been moved to `module.parametrizations.weight.original`
+  id: totrans-35
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 未参数化的权重已移动到`module.parametrizations.weight.original`
 - en: After parametrizing `weight`, `layer.weight` is turned into a [Python property](https://docs.python.org/3/library/functions.html#property).
     This property computes `parametrization(weight)` every time we request `layer.weight`
     just as we did in our implementation of `LinearSymmetric` above.
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 在对`weight`进行参数化之后，`layer.weight`被转换为[Python属性](https://docs.python.org/3/library/functions.html#property)。每当我们请求`layer.weight`时，此属性会计算`parametrization(weight)`，就像我们在上面的`LinearSymmetric`实现中所做的那样。
 - en: Registered parametrizations are stored under a `parametrizations` attribute
     within the module.
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 注册的参数化存储在模块内的`parametrizations`属性下。
 - en: '[PRE7]'
+  id: totrans-38
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: This `parametrizations` attribute is an `nn.ModuleDict`, and it can be accessed
     as such
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个`parametrizations`属性是一个`nn.ModuleDict`，可以像这样访问
 - en: '[PRE8]'
+  id: totrans-40
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: Each element of this `nn.ModuleDict` is a `ParametrizationList`, which behaves
     like an `nn.Sequential`. This list will allow us to concatenate parametrizations
     on one weight. Since this is a list, we can access the parametrizations indexing
     it. Here’s where our `Symmetric` parametrization sits
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个`nn.ModuleDict`的每个元素都是一个`ParametrizationList`，它的行为类似于`nn.Sequential`。这个列表将允许我们在一个权重上连接参数化。由于这是一个列表，我们可以通过索引访问参数化。这就是我们的`Symmetric`参数化所在的地方
 - en: '[PRE9]'
+  id: totrans-42
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: The other thing that we notice is that, if we print the parameters, we see that
     the parameter `weight` has been moved
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们注意到的另一件事是，如果我们打印参数，我们会看到参数`weight`已经移动
 - en: '[PRE10]'
+  id: totrans-44
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: It now sits under `layer.parametrizations.weight.original`
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: 它现在位于`layer.parametrizations.weight.original`下
 - en: '[PRE11]'
+  id: totrans-46
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: Besides these three small differences, the parametrization is doing exactly
     the same as our manual implementation
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: 除了这三个小差异之外，参数化与我们的手动实现完全相同
 - en: '[PRE12]'
+  id: totrans-48
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: Parametrizations are first-class citizens
+  id: totrans-49
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 参数化是一流公民
 - en: Since `layer.parametrizations` is an `nn.ModuleList`, it means that the parametrizations
     are properly registered as submodules of the original module. As such, the same
     rules for registering parameters in a module apply to register a parametrization.
     For example, if a parametrization has parameters, these will be moved from CPU
     to CUDA when calling `model = model.cuda()`.
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于`layer.parametrizations`是一个`nn.ModuleList`，这意味着参数化已正确注册为原始模块的子模块。因此，在模块中注册参数的相同规则也适用于注册参数化。例如，如果参数化具有参数，则在调用`model
+    = model.cuda()`时，这些参数将从CPU移动到CUDA。
 - en: Caching the value of a parametrization
+  id: totrans-51
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 缓存参数化的值
 - en: Parametrizations come with an inbuilt caching system via the context manager
     `parametrize.cached()`
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数化通过上下文管理器`parametrize.cached()`具有内置的缓存系统
 - en: '[PRE13]'
+  id: totrans-53
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: Concatenating parametrizations
+  id: totrans-54
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 连接参数化
 - en: Concatenating two parametrizations is as easy as registering them on the same
     tensor. We may use this to create more complex parametrizations from simpler ones.
     For example, the [Cayley map](https://en.wikipedia.org/wiki/Cayley_transform#Matrix_map)
     maps the skew-symmetric matrices to the orthogonal matrices of positive determinant.
     We can concatenate `Skew` and a parametrization that implements the Cayley map
     to get a layer with orthogonal weights
+  id: totrans-55
   prefs: []
   type: TYPE_NORMAL
+  zh: 连接两个参数化就像在同一个张量上注册它们一样简单。我们可以使用这个来从简单的参数化创建更复杂的参数化。例如，[Cayley映射](https://en.wikipedia.org/wiki/Cayley_transform#Matrix_map)将斜对称矩阵映射到正行列式的正交矩阵。我们可以连接`Skew`和一个实现Cayley映射的参数化，以获得具有正交权重的层
 - en: '[PRE14]'
+  id: totrans-56
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: This may also be used to prune a parametrized module, or to reuse parametrizations.
     For example, the matrix exponential maps the symmetric matrices to the Symmetric
     Positive Definite (SPD) matrices But the matrix exponential also maps the skew-symmetric
     matrices to the orthogonal matrices. Using these two facts, we may reuse the parametrizations
     before to our advantage
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: 这也可以用来修剪一个参数化模块，或者重用参数化。例如，矩阵指数将对称矩阵映射到对称正定（SPD）矩阵，但矩阵指数也将斜对称矩阵映射到正交矩阵。利用这两个事实，我们可以重用之前的参数化以获得优势
 - en: '[PRE15]'
+  id: totrans-58
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: Initializing parametrizations
+  id: totrans-59
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 初始化参数化
 - en: Parametrizations come with a mechanism to initialize them. If we implement a
     method `right_inverse` with signature
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数化带有初始化它们的机制。如果我们实现一个带有签名的`right_inverse`方法
 - en: '[PRE16]'
+  id: totrans-61
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: it will be used when assigning to the parametrized tensor.
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
+  zh: 当分配给参数化张量时将使用它。
 - en: Let’s upgrade our implementation of the `Skew` class to support this
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们升级我们的`Skew`类的实现，以支持这一点
 - en: '[PRE17]'
+  id: totrans-64
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: We may now initialize a layer that is parametrized with `Skew`
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们可以初始化一个使用`Skew`参数化的层
 - en: '[PRE18]'
+  id: totrans-66
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: This `right_inverse` works as expected when we concatenate parametrizations.
     To see this, let’s upgrade the Cayley parametrization to also support being initialized
+  id: totrans-67
   prefs: []
   type: TYPE_NORMAL
+  zh: 当我们连接参数化时，这个`right_inverse`按预期工作。为了看到这一点，让我们将Cayley参数化升级，以支持初始化
 - en: '[PRE19]'
+  id: totrans-68
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE19]'
 - en: This initialization step can be written more succinctly as
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个初始化步骤可以更简洁地写成
 - en: '[PRE20]'
+  id: totrans-70
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE20]'
 - en: 'The name of this method comes from the fact that we would often expect that
     `forward(right_inverse(X)) == X`. This is a direct way of rewriting that the forward
     after the initialization with value `X` should return the value `X`. This constraint
     is not strongly enforced in practice. In fact, at times, it might be of interest
     to relax this relation. For example, consider the following implementation of
     a randomized pruning method:'
+  id: totrans-71
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个方法的名称来自于我们经常期望`forward(right_inverse(X)) == X`。这是一种直接重写的方式，即初始化为值`X`后的前向传播应该返回值`X`。在实践中，这个约束并不是强制执行的。事实上，有时可能有兴趣放宽这种关系。例如，考虑以下随机修剪方法的实现：
 - en: '[PRE21]'
+  id: totrans-72
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE21]'
 - en: In this case, it is not true that for every matrix A `forward(right_inverse(A))
     == A`. This is only true when the matrix `A` has zeros in the same positions as
     the mask. Even then, if we assign a tensor to a pruned parameter, it will comes
     as no surprise that tensor will be, in fact, pruned
+  id: totrans-73
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这种情况下，并非对于每个矩阵A都成立`forward(right_inverse(A)) == A`。只有当矩阵`A`在与掩码相同的位置有零时才成立。即使是这样，如果我们将一个张量分配给一个被修剪的参数，那么这个张量实际上将被修剪也就不足为奇了
 - en: '[PRE22]'
+  id: totrans-74
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE22]'
 - en: Removing parametrizations
+  id: totrans-75
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 移除参数化
 - en: We may remove all the parametrizations from a parameter or a buffer in a module
     by using `parametrize.remove_parametrizations()`
+  id: totrans-76
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们可以通过使用`parametrize.remove_parametrizations()`从模块中的参数或缓冲区中移除所有参数化
 - en: '[PRE23]'
+  id: totrans-77
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE23]'
 - en: When removing a parametrization, we may choose to leave the original parameter
     (i.e. that in `layer.parametriations.weight.original`) rather than its parametrized
     version by setting the flag `leave_parametrized=False`
+  id: totrans-78
   prefs: []
   type: TYPE_NORMAL
+  zh: 在移除参数化时，我们可以选择保留原始参数（即`layer.parametriations.weight.original`中的参数），而不是其参数化版本，方法是设置标志`leave_parametrized=False`
 - en: '[PRE24]'
+  id: totrans-79
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE24]'
 - en: '**Total running time of the script:** ( 0 minutes 0.000 seconds)'
+  id: totrans-80
   prefs: []
   type: TYPE_NORMAL
+  zh: '**脚本的总运行时间：**（0分钟0.000秒）'
 - en: '[`Download Python source code: parametrizations.py`](../_downloads/621174a140b9f76910c50ed4afb0e621/parametrizations.py)'
+  id: totrans-81
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Python源代码：parametrizations.py`](../_downloads/621174a140b9f76910c50ed4afb0e621/parametrizations.py)'
 - en: '[`Download Jupyter notebook: parametrizations.ipynb`](../_downloads/c9153ca254003481aecc7a760a7b046f/parametrizations.ipynb)'
+  id: totrans-82
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Jupyter笔记本：parametrizations.ipynb`](../_downloads/c9153ca254003481aecc7a760a7b046f/parametrizations.ipynb)'
 - en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  id: totrans-83
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Sphinx-Gallery生成的画廊](https://sphinx-gallery.github.io)'

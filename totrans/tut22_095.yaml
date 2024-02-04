@@ -1,111 +1,166 @@
 - en: Hyperparameter tuning with Ray Tune
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 使用Ray Tune进行超参数调整
 - en: 原文：[https://pytorch.org/tutorials/beginner/hyperparameter_tuning_tutorial.html](https://pytorch.org/tutorials/beginner/hyperparameter_tuning_tutorial.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/beginner/hyperparameter_tuning_tutorial.html](https://pytorch.org/tutorials/beginner/hyperparameter_tuning_tutorial.html)
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-beginner-hyperparameter-tuning-tutorial-py)
     to download the full example code
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[这里](#sphx-glr-download-beginner-hyperparameter-tuning-tutorial-py)下载完整的示例代码
 - en: Hyperparameter tuning can make the difference between an average model and a
     highly accurate one. Often simple things like choosing a different learning rate
     or changing a network layer size can have a dramatic impact on your model performance.
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 超参数调整可以使普通模型和高度准确的模型之间产生巨大差异。通常简单的事情，比如选择不同的学习率或改变网络层大小，都可以对模型性能产生显著影响。
 - en: Fortunately, there are tools that help with finding the best combination of
     parameters. [Ray Tune](https://docs.ray.io/en/latest/tune.html) is an industry
     standard tool for distributed hyperparameter tuning. Ray Tune includes the latest
     hyperparameter search algorithms, integrates with TensorBoard and other analysis
     libraries, and natively supports distributed training through [Ray’s distributed
     machine learning engine](https://ray.io/).
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 幸运的是，有一些工具可以帮助找到最佳参数组合。[Ray Tune](https://docs.ray.io/en/latest/tune.html)是一个行业标准的分布式超参数调整工具。Ray
+    Tune包括最新的超参数搜索算法，与TensorBoard和其他分析库集成，并通过[Ray的分布式机器学习引擎](https://ray.io/)原生支持分布式训练。
 - en: In this tutorial, we will show you how to integrate Ray Tune into your PyTorch
     training workflow. We will extend [this tutorial from the PyTorch documentation](https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html)
     for training a CIFAR10 image classifier.
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，我们将向您展示如何将Ray Tune集成到PyTorch训练工作流程中。我们将扩展[来自PyTorch文档的这个教程](https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html)，用于训练CIFAR10图像分类器。
 - en: As you will see, we only need to add some slight modifications. In particular,
     we need to
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 正如您将看到的，我们只需要添加一些轻微的修改。特别是，我们需要
 - en: wrap data loading and training in functions,
+  id: totrans-8
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 将数据加载和训练封装在函数中，
 - en: make some network parameters configurable,
+  id: totrans-9
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 使一些网络参数可配置，
 - en: add checkpointing (optional),
+  id: totrans-10
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 添加检查点（可选），
 - en: and define the search space for the model tuning
+  id: totrans-11
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 并定义模型调优的搜索空间
 - en: 'To run this tutorial, please make sure the following packages are installed:'
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: 要运行此教程，请确保安装了以下软件包：
 - en: '`ray[tune]`: Distributed hyperparameter tuning library'
+  id: totrans-13
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`ray[tune]`：分布式超参数调整库'
 - en: '`torchvision`: For the data transformers'
+  id: totrans-14
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`torchvision`：用于数据转换器'
 - en: Setup / Imports
+  id: totrans-15
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 设置/导入
 - en: 'Let’s start with the imports:'
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们从导入开始：
 - en: '[PRE0]'
+  id: totrans-17
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: Most of the imports are needed for building the PyTorch model. Only the last
     three imports are for Ray Tune.
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: 大部分导入都是用于构建PyTorch模型。只有最后三个导入是为了Ray Tune。
 - en: Data loaders
+  id: totrans-19
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 数据加载器
 - en: We wrap the data loaders in their own function and pass a global data directory.
     This way we can share a data directory between different trials.
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们将数据加载器封装在自己的函数中，并传递一个全局数据目录。这样我们可以在不同的试验之间共享一个数据目录。
 - en: '[PRE1]'
+  id: totrans-21
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Configurable neural network
+  id: totrans-22
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 可配置的神经网络
 - en: 'We can only tune those parameters that are configurable. In this example, we
     can specify the layer sizes of the fully connected layers:'
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们只能调整可配置的参数。在这个例子中，我们可以指定全连接层的层大小：
 - en: '[PRE2]'
+  id: totrans-24
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: The train function
+  id: totrans-25
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 训练函数
 - en: Now it gets interesting, because we introduce some changes to the example [from
     the PyTorch documentation](https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html).
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在变得有趣了，因为我们对示例进行了一些更改[来自PyTorch文档](https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html)。
 - en: We wrap the training script in a function `train_cifar(config, data_dir=None)`.
     The `config` parameter will receive the hyperparameters we would like to train
     with. The `data_dir` specifies the directory where we load and store the data,
@@ -113,182 +168,273 @@
     optimizer state at the start of the run, if a checkpoint is provided. Further
     down in this tutorial you will find information on how to save the checkpoint
     and what it is used for.
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们将训练脚本封装在一个函数`train_cifar(config, data_dir=None)`中。`config`参数将接收我们想要训练的超参数。`data_dir`指定我们加载和存储数据的目录，以便多次运行可以共享相同的数据源。如果提供了检查点，我们还会在运行开始时加载模型和优化器状态。在本教程的后面部分，您将找到有关如何保存检查点以及它的用途的信息。
 - en: '[PRE3]'
+  id: totrans-28
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: 'The learning rate of the optimizer is made configurable, too:'
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 优化器的学习率也是可配置的：
 - en: '[PRE4]'
+  id: totrans-30
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: We also split the training data into a training and validation subset. We thus
     train on 80% of the data and calculate the validation loss on the remaining 20%.
     The batch sizes with which we iterate through the training and test sets are configurable
     as well.
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们还将训练数据分成训练集和验证集。因此，我们在80%的数据上进行训练，并在剩余的20%上计算验证损失。我们可以配置通过训练和测试集的批处理大小。
 - en: Adding (multi) GPU support with DataParallel
+  id: totrans-32
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 使用DataParallel添加（多）GPU支持
 - en: 'Image classification benefits largely from GPUs. Luckily, we can continue to
     use PyTorch’s abstractions in Ray Tune. Thus, we can wrap our model in `nn.DataParallel`
     to support data parallel training on multiple GPUs:'
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: 图像分类在很大程度上受益于GPU。幸运的是，我们可以继续在Ray Tune中使用PyTorch的抽象。因此，我们可以将我们的模型包装在`nn.DataParallel`中，以支持在多个GPU上进行数据并行训练：
 - en: '[PRE5]'
+  id: totrans-34
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: 'By using a `device` variable we make sure that training also works when we
     have no GPUs available. PyTorch requires us to send our data to the GPU memory
     explicitly, like this:'
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过使用`device`变量，我们确保在没有GPU可用时训练也能正常进行。PyTorch要求我们明确将数据发送到GPU内存，就像这样：
 - en: '[PRE6]'
+  id: totrans-36
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: The code now supports training on CPUs, on a single GPU, and on multiple GPUs.
     Notably, Ray also supports [fractional GPUs](https://docs.ray.io/en/master/using-ray-with-gpus.html#fractional-gpus)
     so we can share GPUs among trials, as long as the model still fits on the GPU
     memory. We’ll come back to that later.
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在的代码支持在CPU上、单个GPU上和多个GPU上进行训练。值得注意的是，Ray还支持[分数GPU](https://docs.ray.io/en/master/using-ray-with-gpus.html#fractional-gpus)，因此我们可以在试验之间共享GPU，只要模型仍适合GPU内存。我们稍后会回到这个问题。
 - en: Communicating with Ray Tune
+  id: totrans-38
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 与Ray Tune通信
 - en: 'The most interesting part is the communication with Ray Tune:'
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 最有趣的部分是与Ray Tune的通信：
 - en: '[PRE7]'
+  id: totrans-40
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: Here we first save a checkpoint and then report some metrics back to Ray Tune.
     Specifically, we send the validation loss and accuracy back to Ray Tune. Ray Tune
     can then use these metrics to decide which hyperparameter configuration lead to
     the best results. These metrics can also be used to stop bad performing trials
     early in order to avoid wasting resources on those trials.
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这里，我们首先保存一个检查点，然后将一些指标报告给Ray Tune。具体来说，我们将验证损失和准确率发送回Ray Tune。然后，Ray Tune可以使用这些指标来决定哪种超参数配置会产生最佳结果。这些指标也可以用来及早停止表现不佳的试验，以避免浪费资源在这些试验上。
 - en: The checkpoint saving is optional, however, it is necessary if we wanted to
     use advanced schedulers like [Population Based Training](https://docs.ray.io/en/latest/tune/examples/pbt_guide.html).
     Also, by saving the checkpoint we can later load the trained models and validate
     them on a test set. Lastly, saving checkpoints is useful for fault tolerance,
     and it allows us to interrupt training and continue training later.
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 检查点保存是可选的，但是如果我们想要使用高级调度程序（如[基于种群的训练](https://docs.ray.io/en/latest/tune/examples/pbt_guide.html)），则是必要的。此外，通过保存检查点，我们可以稍后加载训练好的模型并在测试集上验证。最后，保存检查点对于容错性很有用，它允许我们中断训练并稍后继续训练。
 - en: Full training function
+  id: totrans-43
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 完整的训练函数
 - en: 'The full code example looks like this:'
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 完整的代码示例如下：
 - en: '[PRE8]'
+  id: totrans-45
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: As you can see, most of the code is adapted directly from the original example.
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 正如您所看到的，大部分代码直接从原始示例中适应而来。
 - en: Test set accuracy
+  id: totrans-47
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 测试集准确率
 - en: 'Commonly the performance of a machine learning model is tested on a hold-out
     test set with data that has not been used for training the model. We also wrap
     this in a function:'
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: 通常，机器学习模型的性能是在一个保留的测试集上测试的，该测试集包含未用于训练模型的数据。我们也将这包装在一个函数中：
 - en: '[PRE9]'
+  id: totrans-49
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: The function also expects a `device` parameter, so we can do the test set validation
     on a GPU.
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: 该函数还期望一个`device`参数，因此我们可以在GPU上对测试集进行验证。
 - en: Configuring the search space
+  id: totrans-51
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 配置搜索空间
 - en: 'Lastly, we need to define Ray Tune’s search space. Here is an example:'
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
+  zh: 最后，我们需要定义Ray Tune的搜索空间。这是一个示例：
 - en: '[PRE10]'
+  id: totrans-53
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: The `tune.choice()` accepts a list of values that are uniformly sampled from.
     In this example, the `l1` and `l2` parameters should be powers of 2 between 4
     and 256, so either 4, 8, 16, 32, 64, 128, or 256. The `lr` (learning rate) should
     be uniformly sampled between 0.0001 and 0.1\. Lastly, the batch size is a choice
     between 2, 4, 8, and 16.
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: '`tune.choice()`接受一个从中均匀抽样的值列表。在这个例子中，`l1`和`l2`参数应该是介于4和256之间的2的幂次方，因此可以是4、8、16、32、64、128或256。`lr`（学习率）应该在0.0001和0.1之间均匀抽样。最后，批量大小是2、4、8和16之间的选择。'
 - en: At each trial, Ray Tune will now randomly sample a combination of parameters
     from these search spaces. It will then train a number of models in parallel and
     find the best performing one among these. We also use the `ASHAScheduler` which
     will terminate bad performing trials early.
+  id: totrans-55
   prefs: []
   type: TYPE_NORMAL
+  zh: 在每次试验中，Ray Tune现在将从这些搜索空间中随机抽样一组参数的组合。然后，它将并行训练多个模型，并在其中找到表现最佳的模型。我们还使用`ASHAScheduler`，它将及早终止表现不佳的试验。
 - en: 'We wrap the `train_cifar` function with `functools.partial` to set the constant
     `data_dir` parameter. We can also tell Ray Tune what resources should be available
     for each trial:'
+  id: totrans-56
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们使用`functools.partial`将`train_cifar`函数包装起来，以设置常量`data_dir`参数。我们还可以告诉Ray Tune每个试验应该有哪些资源可用：
 - en: '[PRE11]'
+  id: totrans-57
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: You can specify the number of CPUs, which are then available e.g. to increase
     the `num_workers` of the PyTorch `DataLoader` instances. The selected number of
     GPUs are made visible to PyTorch in each trial. Trials do not have access to GPUs
     that haven’t been requested for them - so you don’t have to care about two trials
     using the same set of resources.
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可以指定CPU的数量，然后可以将其用于增加PyTorch `DataLoader`实例的`num_workers`。所选数量的GPU在每个试验中对PyTorch可见。试验没有访问未为其请求的GPU
+    - 因此您不必担心两个试验使用相同的资源集。
 - en: Here we can also specify fractional GPUs, so something like `gpus_per_trial=0.5`
     is completely valid. The trials will then share GPUs among each other. You just
     have to make sure that the models still fit in the GPU memory.
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这里，我们还可以指定分数GPU，因此像`gpus_per_trial=0.5`这样的东西是完全有效的。试验将在彼此之间共享GPU。您只需确保模型仍适合GPU内存。
 - en: After training the models, we will find the best performing one and load the
     trained network from the checkpoint file. We then obtain the test set accuracy
     and report everything by printing.
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: 训练模型后，我们将找到表现最佳的模型，并从检查点文件中加载训练好的网络。然后，我们获得测试集准确率，并通过打印报告所有内容。
 - en: 'The full main function looks like this:'
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: 完整的主函数如下：
 - en: '[PRE12]'
+  id: totrans-62
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: '[PRE13]'
+  id: totrans-63
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: 'If you run the code, an example output could look like this:'
+  id: totrans-64
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您运行代码，示例输出可能如下所示：
 - en: '[PRE14]'
+  id: totrans-65
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: Most trials have been stopped early in order to avoid wasting resources. The
     best performing trial achieved a validation accuracy of about 47%, which could
     be confirmed on the test set.
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了避免浪费资源，大多数试验都被提前停止了。表现最好的试验实现了约47%的验证准确率，这可以在测试集上得到确认。
 - en: So that’s it! You can now tune the parameters of your PyTorch models.
+  id: totrans-67
   prefs: []
   type: TYPE_NORMAL
+  zh: 就是这样！您现在可以调整PyTorch模型的参数了。
 - en: '**Total running time of the script:** ( 9 minutes 49.698 seconds)'
+  id: totrans-68
   prefs: []
   type: TYPE_NORMAL
+  zh: '**脚本的总运行时间：**（9分钟49.698秒）'
 - en: '[`Download Python source code: hyperparameter_tuning_tutorial.py`](../_downloads/b2e3bdbf14ea1e9b3a80770f0a498037/hyperparameter_tuning_tutorial.py)'
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Python源代码：hyperparameter_tuning_tutorial.py`](../_downloads/b2e3bdbf14ea1e9b3a80770f0a498037/hyperparameter_tuning_tutorial.py)'
 - en: '[`Download Jupyter notebook: hyperparameter_tuning_tutorial.ipynb`](../_downloads/30bcc2970bf630097b13789b5cdcea48/hyperparameter_tuning_tutorial.ipynb)'
+  id: totrans-70
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Jupyter笔记本：hyperparameter_tuning_tutorial.ipynb`](../_downloads/30bcc2970bf630097b13789b5cdcea48/hyperparameter_tuning_tutorial.ipynb)'
 - en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  id: totrans-71
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Sphinx-Gallery生成的画廊](https://sphinx-gallery.github.io)'
