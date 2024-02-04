@@ -1,287 +1,443 @@
 - en: Inductor CPU backend debugging and profiling
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 电感器CPU后端调试和性能分析
 - en: 原文：[https://pytorch.org/tutorials/intermediate/inductor_debug_cpu.html](https://pytorch.org/tutorials/intermediate/inductor_debug_cpu.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/intermediate/inductor_debug_cpu.html](https://pytorch.org/tutorials/intermediate/inductor_debug_cpu.html)
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-intermediate-inductor-debug-cpu-py) to download
     the full example code
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[这里](#sphx-glr-download-intermediate-inductor-debug-cpu-py)下载完整示例代码
 - en: '**Authors**: [Xuan Liao](https://github.com/Valentine233), [Haozhe Zhu](https://github.com/zhuhaozhe),
     [Jiong Gong](https://github.com/jgong5), [Weihan Wang](https://github.com/EikanWang)'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '**作者**: [Xuan Liao](https://github.com/Valentine233), [Haozhe Zhu](https://github.com/zhuhaozhe),
+    [Jiong Gong](https://github.com/jgong5), [Weihan Wang](https://github.com/EikanWang)'
 - en: Overview
+  id: totrans-5
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 概述
 - en: PyTorch 2.0 introduced the compilation API called `torch.compile`. This new
     feature offers a significant speedup over eager mode execution through graph-level
     optimization powered by the default Inductor backend.
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch 2.0引入了名为`torch.compile`的编译API。这一新功能通过默认的电感器后端提供的图级优化，显著加快了急切模式执行的速度。
 - en: This tutorial is intended to provide an in-depth introduction on the debugging
     and performance profiling on Inductor CPU backend by delving into the intricacies
     of `torch.compile`.
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程旨在通过深入研究`torch.compile`的复杂性，提供有关电感器CPU后端调试和性能分析的深入介绍。
 - en: Meanwhile, you may also find related tutorials about `torch.compile` around
     [basic usage](https://pytorch.org/tutorials/intermediate/torch_compile_tutorial.html),
     comprehensive [troubleshooting](https://pytorch.org/docs/stable/dynamo/troubleshooting.html)
     and GPU-specific knowledge like [GPU performance profiling](https://github.com/pytorch/pytorch/blob/main/docs/source/compile/profiling_torch_compile.rst).
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 同时，您还可以在[基本用法](https://pytorch.org/tutorials/intermediate/torch_compile_tutorial.html)、全面的[故障排除](https://pytorch.org/docs/stable/dynamo/troubleshooting.html)和GPU特定知识（如[GPU性能分析](https://github.com/pytorch/pytorch/blob/main/docs/source/compile/profiling_torch_compile.rst)）周围找到与`torch.compile`相关的教程。
 - en: We will start debugging with a motivating example that triggers compilation
     issues and accuracy problems by demonstrating the process of debugging to pinpoint
     the problems.
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们将从一个激励示例开始调试，通过演示调试过程来准确定位问题，触发编译问题和准确性问题。
 - en: By enabling logging and exploring the underlying generated code, you can learn
     how to narrow down the failure step by step and finally figure out the route cause.
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过启用日志记录并探索生成的底层代码，您可以逐步学习如何缩小失败范围，最终找出根本原因。
 - en: Following that, we will proceed to discuss how to profile the compiled code
     and, through a performance comparison with eager mode, elaborate on the reasons
     why `torch.compile` can provide an additional performance boost compared to its
     eager counterpart.
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，我们将讨论如何对编译后的代码进行性能分析，并通过与急切模式的性能比较详细说明为什么`torch.compile`可以提供额外的性能提升，与其急切模式相比。
 - en: Debugging
+  id: totrans-12
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 调试
 - en: 'Here is a simple example to run the `torch.compile` using Inductor and compare
     its result with eager mode:'
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: 这里有一个简单的示例，使用Inductor运行`torch.compile`并将其结果与急切模式进行比较：
 - en: '[PRE0]'
+  id: totrans-14
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: 'The correct implementation of `neg` in the `cpp` codegen is as follows:'
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 在`cpp`代码生成中，`neg`的正确实现如下：
 - en: '[PRE1]'
+  id: totrans-16
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: In order to demonstrate the debugging, we will modify the function to a wrong
     one later.
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了演示调试，我们将稍后将函数修改为错误的。
 - en: Get more logging information
+  id: totrans-18
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 获取更多日志信息
 - en: 'No debugging information would be provided if you run this simple example by
     default. In order to get more useful debugging and logging information, we usually
     add a `TORCH_COMPILE_DEBUG` environment variable like below:'
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您默认运行这个简单示例，将不会提供调试信息。为了获得更多有用的调试和日志信息，通常我们会添加一个`TORCH_COMPILE_DEBUG`环境变量，如下所示：
 - en: '[PRE2]'
+  id: totrans-20
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: 'This would print more debug information in the output logs and also dump the
     intermediate IRs generated during the codegen process. You can find the dumped
     file paths in the log like below:'
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 这将在输出日志中打印更多的调试信息，并且在代码生成过程中生成的中间IR也会被转储。您可以在日志中找到转储文件路径，如下所示：
 - en: '[PRE3]'
+  id: totrans-22
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: 'In this directory, the following files are saved for debugging purposes:'
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这个目录中，以下文件被保存用于调试目的：
 - en: '| File | Description |'
+  id: totrans-24
   prefs: []
   type: TYPE_TB
+  zh: '| 文件 | 描述 |'
 - en: '| --- | --- |'
+  id: totrans-25
   prefs: []
   type: TYPE_TB
+  zh: '| --- | --- |'
 - en: '| `fx_graph_runnable.py` | Executable FX graph, after decomposition, before
     pattern match |'
+  id: totrans-26
   prefs: []
   type: TYPE_TB
+  zh: '| `fx_graph_runnable.py` | 可执行的FX图，在分解之后，在模式匹配之前 |'
 - en: '| `fx_graph_transformed.py` | Transformed FX graph, after pattern match |'
+  id: totrans-27
   prefs: []
   type: TYPE_TB
+  zh: '| `fx_graph_transformed.py` | 经过模式匹配后的转换后的FX图 |'
 - en: '| `ir_post_fusion.txt` | Inductor IR before fusion |'
+  id: totrans-28
   prefs: []
   type: TYPE_TB
+  zh: '| `ir_post_fusion.txt` | 融合前的电感IR |'
 - en: '| `ir_pre_fusion.txt` | Inductor IR after fusion |'
+  id: totrans-29
   prefs: []
   type: TYPE_TB
+  zh: '| `ir_pre_fusion.txt` | 融合后的电感IR |'
 - en: '| `output_code.py` | Generated Python code for graph, with C++/Triton kernels
     |'
+  id: totrans-30
   prefs: []
   type: TYPE_TB
+  zh: '| `output_code.py` | 生成的用于图形的Python代码，带有C++/Triton内核 |'
 - en: Note that `fx_graph_runnable.py` and `output_code.py` are both runnable and
     editable in order to make debugging easier. Here are the main parts of code extracted
     from the files and we correlate the C++ generated line with the FX code line.
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，为了更容易调试，`fx_graph_runnable.py`和`output_code.py`都是可运行和可编辑的。以下是从文件中提取的代码的主要部分，我们将C++生成的行与FX代码行进行了对应。
 - en: '`fx_graph_runnable`:'
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: '`fx_graph_runnable`:'
 - en: '[PRE4]'
+  id: totrans-33
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: 'C++ kernel in `output_code`:'
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: '`output_code`中的C++内核：'
 - en: '[PRE5]'
+  id: totrans-35
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: Determine component of error
+  id: totrans-36
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 确定错误的组件
 - en: When encountering errors or accuracy problems, a straightforward solution to
     find the bug is to narrow down the problem. The first thing to do is to determine
     the component where the error occurs. Luckily, it can be simply achieved by changing
     the backend of `torch.compile`.
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 在遇到错误或准确性问题时，找到错误的一个直接解决方案是缩小问题范围。首先要做的是确定错误发生的组件。幸运的是，通过更改`torch.compile`的后端就可以简单实现。
 - en: '| Code | Description |'
+  id: totrans-38
   prefs: []
   type: TYPE_TB
+  zh: '| 代码 | 描述 |'
 - en: '| --- | --- |'
+  id: totrans-39
   prefs: []
   type: TYPE_TB
+  zh: '| --- | --- |'
 - en: '| `torch.compile(fn, backend="eager")` | Enable Dynamo |'
+  id: totrans-40
   prefs: []
   type: TYPE_TB
+  zh: '| `torch.compile(fn, backend="eager")` | 启用Dynamo |'
 - en: '| `torch.compile(fn, backend="aot_eager")` | Enable Dynamo + AOT Autograd |'
+  id: totrans-41
   prefs: []
   type: TYPE_TB
+  zh: '| `torch.compile(fn, backend="aot_eager")` | 启用Dynamo + AOT Autograd |'
 - en: '| `torch.compile(fn, backend="inductor")` | Enable Dynamo + AOT Autograd +
     Inductor |'
+  id: totrans-42
   prefs: []
   type: TYPE_TB
+  zh: '| `torch.compile(fn, backend="inductor")` | 启用Dynamo + AOT Autograd + Inductor
+    |'
 - en: If the model can successfully run when the backend is set to `eager` or `aot_eager`
     while it fails with `inductor`, we can narrow down the failure to Inductor.
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果模型在将后端设置为`eager`或`aot_eager`时可以成功运行，而在`inductor`时失败，我们可以将失败缩小到Inductor。
 - en: Compilation error
+  id: totrans-44
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 编译错误
 - en: 'As we know, the evolved chain of graph-level optimization is like:'
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: 正如我们所知，图级优化的演变链是这样的：
 - en: '[PRE6]'
+  id: totrans-46
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: If you encounter a compilation error, there is something wrong when compiling
     C++ kernels in the output code. This type of error indicates that bugs are introduced
     when lowering IR nodes to output code. The root cause of compilation error is
     usually shown in the traceback log.
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果遇到编译错误，说明在输出代码中编译C++内核时出现了问题。这种类型的错误表明在将IR节点降级为输出代码时引入了错误。编译错误的根本原因通常在回溯日志中显示。
 - en: 'For example, the `neg` function is modified like this:'
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: 例如，`neg`函数被修改如下：
 - en: '[PRE7]'
+  id: totrans-49
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: The logging gives the following compile error with a rather clear reason.
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: 日志记录显示了以下编译错误，原因相当明确。
 - en: '[PRE8]'
+  id: totrans-51
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: Let us also see the corresponding C++ kernel in output code and IR node.
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们也看看输出代码和IR节点中对应的C++内核。
 - en: 'C++ kernel:'
+  id: totrans-53
   prefs: []
   type: TYPE_NORMAL
+  zh: C++内核：
 - en: '[PRE9]'
+  id: totrans-54
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: 'IR node:'
+  id: totrans-55
   prefs: []
   type: TYPE_NORMAL
+  zh: IR节点：
 - en: '[PRE10]'
+  id: totrans-56
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: According to the traceback logging, the compilation error is caused by the data
     type inconsistency of `max_propagate_nan`’s inputs. By checking the C++ kernel,
     we know that `tmp2` is no longer `long` after doing `-` as `tmp0` is `long`. We
     can easily match `-` and `max_propagate_nan` in C++ kernel with `ops.neg` and
     `ops.maximum` in IR node respectively.
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: 根据回溯日志，编译错误是由于`max_propagate_nan`的输入数据类型不一致造成的。通过检查C++内核，我们知道在执行`-`后，`tmp2`不再是`long`，因为`tmp0`是`long`。我们可以在C++内核中使用`ops.neg`和`ops.maximum`分别匹配`-`和`max_propagate_nan`。
 - en: Now we successfully find that the root cause is the implementation of `ops.neg`
     in `cpp` codegen, which silently changes the data type when doing `neg`.
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们成功找到了根本原因，即在`cpp`代码生成中`ops.neg`的实现，当执行`neg`时会悄悄地更改数据类型。
 - en: Accuracy debugging
+  id: totrans-59
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 准确性调试
 - en: Otherwise, if the model runs with other errors or accuracy problem, you can
     use the PyTorch debugging tool called [Minifier](https://pytorch.org/functorch/stable/notebooks/minifier.html).
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: 否则，如果模型运行时出现其他错误或准确性问题，可以使用名为[Minifier](https://pytorch.org/functorch/stable/notebooks/minifier.html)的PyTorch调试工具。
 - en: 'The core idea of `Minifier` is to keep removing the nodes and inputs of graph
     until finding the minimal graph with problem. It helps to automatically generate
     a minified problematic graph through 4 strategies: truncating suffix, delta debugging,
     eliminating dead code and removing unused inputs.'
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: '`Minifier`的核心思想是不断删除图的节点和输入，直到找到具有问题的最小图。它通过4种策略自动生成一个经过缩小的有问题的图：截断后缀、增量调试、消除死代码和删除未使用的输入。'
 - en: We will now show the debugging process for the accuracy problem with the help
     of `Minifer`. The accuracy problem refers to the case where the outputs of backends
     eager and inductor are different.
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们将展示如何通过`Minifer`来调试准确性问题。准确性问题指的是后端eager和inductor的输出不同的情况。
 - en: 'For instance, we modify the example like this:'
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: 例如，我们将示例修改如下：
 - en: '[PRE11]'
+  id: totrans-64
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: 'And also modify the `neg` function:'
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: 还要修改`neg`函数：
 - en: '[PRE12]'
+  id: totrans-66
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: 'An accuracy problem would be raised as follows:'
+  id: totrans-67
   prefs: []
   type: TYPE_NORMAL
+  zh: 准确性问题将如下提出：
 - en: '[PRE13]'
+  id: totrans-68
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: 'To debug an accuracy problem with Minifier, two environment variables are needed:'
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: 要调试Minifier的准确性问题，需要两个环境变量：
 - en: '[PRE14]'
+  id: totrans-70
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: 'Which gives us logging information that demonstrates the steps of minifying:'
+  id: totrans-71
   prefs: []
   type: TYPE_NORMAL
+  zh: 这给我们提供了记录信息，展示了缩小步骤的过程：
 - en: '[PRE15]'
+  id: totrans-72
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: 'After running, we get the final minified graph with the target node `neg`:'
+  id: totrans-73
   prefs: []
   type: TYPE_NORMAL
+  zh: 运行后，我们得到了目标节点`neg`的最终缩小图：
 - en: '[PRE16]'
+  id: totrans-74
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: For more usage details about Minifier, please refer to [Troubleshooting](https://pytorch.org/docs/stable/dynamo/troubleshooting.html).
+  id: totrans-75
   prefs: []
   type: TYPE_NORMAL
+  zh: 关于Minifier的更多使用细节，请参考[Troubleshooting](https://pytorch.org/docs/stable/dynamo/troubleshooting.html)。
 - en: Performance profiling
+  id: totrans-76
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 性能分析
 - en: Within this section, we will demonstrate the process of conducting performance
     analysis for a model that has been compiled using the Inductor CPU backend. In
     the example below, we benchmark a Hugging Face Transformer model `MobileBertForQuestionAnswering`
@@ -290,66 +446,103 @@
     Platinum 8358 CPU @ 2.60GHz and run benchmark on the first socket to demonstrate
     the optimization within this section. We set following environment variable as
     a best practice to benchmark on Intel(R) CPU.
+  id: totrans-77
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本节中，我们将演示使用Inductor CPU后端编译的模型进行性能分析的过程。在下面的示例中，我们使用急切模式和Inductor图模式对Hugging
+    Face Transformer模型`MobileBertForQuestionAnswering`进行基准测试。基准测试后打印出Inductor的执行时间和加速比。我们使用Intel(R)
+    Xeon(R) Platinum 8358 CPU @ 2.60GHz，并在第一个插槽上运行基准测试，以展示本节中的优化。我们设置以下环境变量作为在Intel(R)
+    CPU上进行基准测试的最佳实践。
 - en: '[PRE17]'
+  id: totrans-78
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: '[PRE18]'
+  id: totrans-79
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: '[PRE19]'
+  id: totrans-80
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE19]'
 - en: 'Output:'
+  id: totrans-81
   prefs: []
   type: TYPE_NORMAL
+  zh: 输出：
 - en: '[PRE20]'
+  id: totrans-82
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE20]'
 - en: In our own testing, we find the Inductor CPU backend speed up the model by around
     2.355x.
+  id: totrans-83
   prefs: []
   type: TYPE_NORMAL
+  zh: 在我们自己的测试中，我们发现Inductor CPU后端可以将模型的速度提高约2.355倍。
 - en: 'Next, let’s dive deep into the performance at the operation level to understand
     where the speed-up comes from. [Pytorch Profiler](https://pytorch.org/tutorials/recipes/recipes/profiler_recipe.html)
     is a good tool to help us. Inductor CPU backend has the support to report the
     time of the fusion kernels to the profiler with the `enable_kernel_profile` configuration
     option:'
+  id: totrans-84
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，让我们深入了解操作级别的性能，以了解速度提升来自哪里。[Pytorch Profiler](https://pytorch.org/tutorials/recipes/recipes/profiler_recipe.html)是一个帮助我们的好工具。Inductor
+    CPU后端支持使用`enable_kernel_profile`配置选项将融合内核的时间报告给性能分析器：
 - en: '[PRE21]'
+  id: totrans-85
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE21]'
 - en: Following the steps in [Pytorch Profiler](https://pytorch.org/tutorials/recipes/recipes/profiler_recipe.html)
     We are able to get the profiling table and trace files.
+  id: totrans-86
   prefs: []
   type: TYPE_NORMAL
+  zh: 按照[Pytorch Profiler](https://pytorch.org/tutorials/recipes/recipes/profiler_recipe.html)中的步骤，我们能够获得性能分析表和跟踪文件。
 - en: '[PRE22]'
+  id: totrans-87
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE22]'
 - en: 'We get the following performance profiling table for the eager-mode model (omitting
     some columns):'
+  id: totrans-88
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们得到了急切模式模型的以下性能分析表（省略了一些列）：
 - en: '[PRE23]'
+  id: totrans-89
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE23]'
 - en: 'Similarly, we also get the table for the compiled model with Inductor (omitting
     some columns):'
+  id: totrans-90
   prefs: []
   type: TYPE_NORMAL
+  zh: 同样，我们还得到了使用Inductor编译模型的表格（省略了一些列）：
 - en: '[PRE24]'
+  id: totrans-91
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE24]'
 - en: From the profiling table of the eager model, we can see the most time consumption
     ops are [`aten::addmm`, `aten::add`, `aten::copy_`, `aten::mul`, `aten::clamp_min`,
     `aten::bmm`]. Comparing with the inductor model profiling table, we notice an
     `mkl::_mkl_linear` entry and multiple fused kernels in the form `graph_0_cpp_fused_*`.
     They are the major optimizations that the inductor model is doing. Let us discuss
     them separately.
+  id: totrans-92
   prefs: []
   type: TYPE_NORMAL
+  zh: 从急切模型的分析表中，我们可以看到最耗时的操作是[`aten::addmm`, `aten::add`, `aten::copy_`, `aten::mul`,
+    `aten::clamp_min`, `aten::bmm`]。与感应器模型的分析表相比，我们注意到一个`mkl::_mkl_linear`条目和多个形式为`graph_0_cpp_fused_*`的融合内核。它们是感应器模型正在进行的主要优化。让我们分别讨论它们。
 - en: '(1) Regarding `mkl::_mkl_linear`: You may notice the number of calls to this
     kernel is 362, which is exactly the same as `aten::linear` in the eager model
     profiling table. The CPU total of `aten::linear` is 376.888ms, while it is 231.573ms
@@ -357,72 +550,108 @@
     mainly comes from [packing the weight tensor to block memory format](https://www.intel.com/content/www/us/en/docs/onemkl/developer-reference-c/2023-1/cblas-gemm-pack-002.html)
     and invoking [cblas_sgemm_compute](https://www.intel.com/content/www/us/en/docs/onemkl/developer-reference-c/2023-1/cblas-gemm-compute-002.html)
     within the Inductor CPU backend to have a better cache behavior during GEMM computation.'
+  id: totrans-93
   prefs: []
   type: TYPE_NORMAL
+  zh: 关于`mkl::_mkl_linear`：您可能会注意到对该内核的调用次数为362，这恰好与急切模型分析表中的`aten::linear`相同。`aten::linear`的CPU总时间为376.888毫秒，而`mkl::_mkl_linear`为231.573毫秒。这表明“linear”部分的速度提升约为1.63倍。速度提升主要来自[将权重张量打包到块内存格式](https://www.intel.com/content/www/us/en/docs/onemkl/developer-reference-c/2023-1/cblas-gemm-pack-002.html)，并在Inductor
+    CPU后端中调用[cblas_sgemm_compute](https://www.intel.com/content/www/us/en/docs/onemkl/developer-reference-c/2023-1/cblas-gemm-compute-002.html)，以在GEMM计算过程中获得更好的缓存行为。
 - en: '(2) Regarding other memory-intensive ops: The end-to-end latency for the eager/inductor
     model is 802/339ms in our testing. So we can roughly infer that the speed up for
     the other memory-intensive ops is around 3.94x. Let’s read the generated code
     to understand how the inductor achieves this impressive optimization. You can
     find the generated code by searching `cpp_fused__mkl_linear_add_mul_relu_151`
     in `output_code.py`'
+  id: totrans-94
   prefs: []
   type: TYPE_NORMAL
+  zh: (2) 关于其他内存密集型操作：在我们的测试中，急切/电感器模型的端到端延迟为802/339毫秒。因此，我们可以粗略推断，其他内存密集型操作的加速大约是3.94倍。让我们阅读生成的代码，以了解电感器是如何实现这一令人印象深刻的优化的。您可以通过在output_code.py中搜索`cpp_fused__mkl_linear_add_mul_relu_151`来找到生成的代码。
 - en: '[PRE25]'
+  id: totrans-95
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE25]'
 - en: From the generated code above, we can see this kernel has done a typical [Loop
     Fusion](https://en.wikipedia.org/wiki/Loop_fission_and_fusion) on `[add, add,
     mul, add]`. This is a memory-bound bottle neck preventing good performance. To
     get a more intuitive feeling about this optimization, we can infer the sizes and
     stride of the inputs and further benchmark this `[add, add, mul, add]` pattern.
+  id: totrans-96
   prefs: []
   type: TYPE_NORMAL
+  zh: 从上面生成的代码中，我们可以看到这个内核在`[add, add, mul, add]`上进行了典型的[循环融合](https://en.wikipedia.org/wiki/Loop_fission_and_fusion)。这是一个限制性能的内存瓶颈。为了更直观地了解这种优化，我们可以推断输入的大小和步幅，并进一步对这种`[add,
+    add, mul, add]`模式进行基准测试。
 - en: '[PRE26]'
+  id: totrans-97
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE26]'
 - en: 'Output:'
+  id: totrans-98
   prefs: []
   type: TYPE_NORMAL
+  zh: 输出：
 - en: '[PRE27]'
+  id: totrans-99
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE27]'
 - en: This is just an example. The profiling table shows all element-wise op are fused
     within the inductor automatically in this model. You can read more kernels in
     output_code.py
+  id: totrans-100
   prefs: []
   type: TYPE_NORMAL
+  zh: 这只是一个例子。在这个模型中，分析表显示所有的逐元素操作都会自动在电感器内部融合。您可以在output_code.py中阅读更多内核。
 - en: Conclusion
+  id: totrans-101
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 结论
 - en: The document gives an in-depth tutorial for the Inductor CPU backend.
+  id: totrans-102
   prefs: []
   type: TYPE_NORMAL
+  zh: 本文档为电感器CPU后端提供了深入的教程。
 - en: With motivating examples, we walk through the process of debugging and profiling.
     The main idea is to narrow down the problem.
+  id: totrans-103
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过激励性示例，我们演示了调试和性能分析的过程。主要思想是缩小问题范围。
 - en: We demonstrate step by step the way to delve deeper the issue and find the root
     cause of failures, with the help of debugging logging and the tool Minifier. Firstly
     determine which component the failure occurs in and then try to generate the smallest
     snippet of code that can reproduce the failure.
+  id: totrans-104
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们逐步演示了深入研究问题并找到失败根本原因的方法，借助调试日志和Minifier工具的帮助。首先确定故障发生在哪个组件，然后尝试生成能够重现故障的最小代码片段。
 - en: When the performance with Inductor is better than that of eager mode, we provide
     a solid analytical method for performance profiling. We show how to find the time-consuming
     hotspot with PyTorch Profiler and figure out the operator-level or kernel-level
     reason to explain the phenomenon.
+  id: totrans-105
   prefs: []
   type: TYPE_NORMAL
+  zh: 当电感器的性能优于急切模式时，我们为性能分析提供了一种可靠的分析方法。我们展示了如何使用PyTorch Profiler找到耗时的热点，并找出解释现象的操作级或内核级原因。
 - en: '**Total running time of the script:** ( 9 minutes 21.695 seconds)'
+  id: totrans-106
   prefs: []
   type: TYPE_NORMAL
+  zh: 脚本的总运行时间：（9分钟21.695秒）
 - en: '[`Download Python source code: inductor_debug_cpu.py`](../_downloads/864b90f09a798ba06b420b737cd463b1/inductor_debug_cpu.py)'
+  id: totrans-107
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Python源代码：inductor_debug_cpu.py`](../_downloads/864b90f09a798ba06b420b737cd463b1/inductor_debug_cpu.py)'
 - en: '[`Download Jupyter notebook: inductor_debug_cpu.ipynb`](../_downloads/57fbbe6265e9c97da47580b6e60037ac/inductor_debug_cpu.ipynb)'
+  id: totrans-108
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Jupyter笔记本：inductor_debug_cpu.ipynb`](../_downloads/57fbbe6265e9c97da47580b6e60037ac/inductor_debug_cpu.ipynb)'
 - en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  id: totrans-109
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Sphinx-Gallery生成的画廊](https://sphinx-gallery.github.io)'

@@ -1,453 +1,697 @@
 - en: Introduction to torch.compile
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 介绍torch.compile
 - en: 原文：[https://pytorch.org/tutorials/intermediate/torch_compile_tutorial.html](https://pytorch.org/tutorials/intermediate/torch_compile_tutorial.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/intermediate/torch_compile_tutorial.html](https://pytorch.org/tutorials/intermediate/torch_compile_tutorial.html)
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-intermediate-torch-compile-tutorial-py) to download
     the full example code
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[这里](#sphx-glr-download-intermediate-torch-compile-tutorial-py)下载完整的示例代码
 - en: '**Author:** William Wen'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '**作者:** William Wen'
 - en: '`torch.compile` is the latest method to speed up your PyTorch code! `torch.compile`
     makes PyTorch code run faster by JIT-compiling PyTorch code into optimized kernels,
     all while requiring minimal code changes.'
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: '`torch.compile`是加速PyTorch代码的最新方法！`torch.compile`通过将PyTorch代码JIT编译成优化的内核来使PyTorch代码运行更快，同时需要最少的代码更改。'
 - en: In this tutorial, we cover basic `torch.compile` usage, and demonstrate the
     advantages of `torch.compile` over previous PyTorch compiler solutions, such as
     [TorchScript](https://pytorch.org/docs/stable/jit.html) and [FX Tracing](https://pytorch.org/docs/stable/fx.html#torch.fx.symbolic_trace).
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，我们涵盖了基本的`torch.compile`用法，并展示了`torch.compile`相对于之前的PyTorch编译器解决方案（如[TorchScript](https://pytorch.org/docs/stable/jit.html)和[FX
+    Tracing](https://pytorch.org/docs/stable/fx.html#torch.fx.symbolic_trace)）的优势。
 - en: '**Contents**'
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: '**目录**'
 - en: '[Basic Usage](#basic-usage)'
+  id: totrans-8
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[基本用法](#basic-usage)'
 - en: '[Demonstrating Speedups](#demonstrating-speedups)'
+  id: totrans-9
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[演示加速效果](#demonstrating-speedups)'
 - en: '[Comparison to TorchScript and FX Tracing](#comparison-to-torchscript-and-fx-tracing)'
+  id: totrans-10
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[与TorchScript和FX Tracing的比较](#comparison-to-torchscript-and-fx-tracing)'
 - en: '[TorchDynamo and FX Graphs](#torchdynamo-and-fx-graphs)'
+  id: totrans-11
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[TorchDynamo和FX图](#torchdynamo-and-fx-graphs)'
 - en: '[Conclusion](#conclusion)'
+  id: totrans-12
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[结论](#conclusion)'
 - en: '**Required pip Dependencies**'
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: '**所需的pip依赖项**'
 - en: '`torch >= 2.0`'
+  id: totrans-14
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`torch >= 2.0`'
 - en: '`torchvision`'
+  id: totrans-15
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`torchvision`'
 - en: '`numpy`'
+  id: totrans-16
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`numpy`'
 - en: '`scipy`'
+  id: totrans-17
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`scipy`'
 - en: '`tabulate`'
+  id: totrans-18
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`tabulate`'
 - en: 'NOTE: a modern NVIDIA GPU (H100, A100, or V100) is recommended for this tutorial
     in order to reproduce the speedup numbers shown below and documented elsewhere.'
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意：为了重现下面显示的速度提升数字以及其他地方记录的数字，建议使用现代的NVIDIA GPU（H100、A100或V100）进行本教程。
 - en: '[PRE0]'
+  id: totrans-20
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: '[PRE1]'
+  id: totrans-21
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: '[Basic Usage](#id1)'
+  id: totrans-22
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: '[基本用法](#id1)'
 - en: '`torch.compile` is included in the latest PyTorch. Running TorchInductor on
     GPU requires Triton, which is included with the PyTorch 2.0 nightly binary. If
     Triton is still missing, try installing `torchtriton` via pip (`pip install torchtriton
     --extra-index-url "https://download.pytorch.org/whl/nightly/cu117"` for CUDA 11.7).'
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: '`torch.compile`已包含在最新的PyTorch中。在GPU上运行TorchInductor需要Triton，Triton已包含在PyTorch
+    2.0 nightly二进制文件中。如果Triton仍然缺失，请尝试通过pip安装`torchtriton`（`pip install torchtriton
+    --extra-index-url "https://download.pytorch.org/whl/nightly/cu117"`用于CUDA 11.7）。'
 - en: Arbitrary Python functions can be optimized by passing the callable to `torch.compile`.
     We can then call the returned optimized function in place of the original function.
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过将可调用对象传递给`torch.compile`，可以优化任意的Python函数。然后我们可以调用返回的优化函数来替代原始函数。
 - en: '[PRE2]'
+  id: totrans-25
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: '[PRE3]'
+  id: totrans-26
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: Alternatively, we can decorate the function.
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 或者，我们可以装饰这个函数。
 - en: '[PRE4]'
+  id: totrans-28
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: '[PRE5]'
+  id: totrans-29
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: We can also optimize `torch.nn.Module` instances.
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们也可以优化`torch.nn.Module`实例。
 - en: '[PRE6]'
+  id: totrans-31
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: '[PRE7]'
+  id: totrans-32
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: '[Demonstrating Speedups](#id2)'
+  id: totrans-33
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: '[演示加速](#id2)'
 - en: Let’s now demonstrate that using `torch.compile` can speed up real models. We
     will compare standard eager mode and `torch.compile` by evaluating and training
     a `torchvision` model on random data.
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们现在演示一下，使用`torch.compile`可以加速真实模型。我们将通过在随机数据上评估和训练一个`torchvision`模型来比较标准的急切模式和`torch.compile`。
 - en: Before we start, we need to define some utility functions.
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 在开始之前，我们需要定义一些实用函数。
 - en: '[PRE8]'
+  id: totrans-36
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: First, let’s compare inference.
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 首先，让我们比较推理。
 - en: Note that in the call to `torch.compile`, we have have the additional `mode`
     argument, which we will discuss below.
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，在调用`torch.compile`时，我们有额外的`mode`参数，我们将在下面讨论。
 - en: '[PRE9]'
+  id: totrans-39
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: '[PRE10]'
+  id: totrans-40
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: Notice that `torch.compile` takes a lot longer to complete compared to eager.
     This is because `torch.compile` compiles the model into optimized kernels as it
     executes. In our example, the structure of the model doesn’t change, and so recompilation
     is not needed. So if we run our optimized model several more times, we should
     see a significant improvement compared to eager.
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，与急切模式相比，`torch.compile`需要更长的时间才能完成。这是因为`torch.compile`在执行时将模型编译为优化的内核。在我们的示例中，模型的结构没有改变，因此不需要重新编译。因此，如果我们运行我们优化过的模型多次，我们应该会看到与急切模式相比的显著改进。
 - en: '[PRE11]'
+  id: totrans-42
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: '[PRE12]'
+  id: totrans-43
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: And indeed, we can see that running our model with `torch.compile` results in
     a significant speedup. Speedup mainly comes from reducing Python overhead and
     GPU read/writes, and so the observed speedup may vary on factors such as model
     architecture and batch size. For example, if a model’s architecture is simple
     and the amount of data is large, then the bottleneck would be GPU compute and
     the observed speedup may be less significant.
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 事实上，我们可以看到使用 `torch.compile` 运行我们的模型会显著加速。加速主要来自减少 Python 开销和 GPU 读写，因此观察到的加速可能会受到模型架构和批量大小等因素的影响。例如，如果模型的架构简单且数据量大，则瓶颈将是
+    GPU 计算，观察到的加速可能不那么显著。
 - en: You may also see different speedup results depending on the chosen `mode` argument.
     The `"reduce-overhead"` mode uses CUDA graphs to further reduce the overhead of
     Python. For your own models, you may need to experiment with different modes to
     maximize speedup. You can read more about modes [here](https://pytorch.org/get-started/pytorch-2.0/#user-experience).
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可能会看到不同的加速结果，这取决于所选择的 `mode` 参数。`"reduce-overhead"` 模式使用 CUDA 图来进一步减少 Python
+    的开销。对于您自己的模型，您可能需要尝试不同的模式以最大化加速。您可以在[这里](https://pytorch.org/get-started/pytorch-2.0/#user-experience)阅读更多关于模式的信息。
 - en: You may might also notice that the second time we run our model with `torch.compile`
     is significantly slower than the other runs, although it is much faster than the
     first run. This is because the `"reduce-overhead"` mode runs a few warm-up iterations
     for CUDA graphs.
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可能还注意到，我们使用`torch.compile`运行模型的第二次比其他运行要慢得多，尽管它比第一次运行要快得多。这是因为“reduce-overhead”模式会为CUDA图运行几次预热迭代。
 - en: For general PyTorch benchmarking, you can try using `torch.utils.benchmark`
     instead of the `timed` function we defined above. We wrote our own timing function
     in this tutorial to show `torch.compile`’s compilation latency.
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于一般的PyTorch基准测试，您可以尝试使用`torch.utils.benchmark`而不是我们上面定义的`timed`函数。我们在本教程中编写了自己的计时函数，以展示`torch.compile`的编译延迟。
 - en: Now, let’s consider comparing training.
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，让我们考虑比较训练。
 - en: '[PRE13]'
+  id: totrans-49
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: '[PRE14]'
+  id: totrans-50
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: Again, we can see that `torch.compile` takes longer in the first iteration,
     as it must compile the model, but in subsequent iterations, we see significant
     speedups compared to eager.
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
+  zh: 同样，我们可以看到`torch.compile`在第一次迭代中需要更长的时间，因为它必须编译模型，但在后续迭代中，与急切执行相比，我们看到了显著的加速。
 - en: We remark that the speedup numbers presented in this tutorial are for demonstration
     purposes only. Official speedup values can be seen at the [TorchInductor performance
     dashboard](https://hud.pytorch.org/benchmark/compilers).
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们注意到，本教程中呈现的加速比仅用于演示目的。官方加速数值可以在[TorchInductor性能仪表板](https://hud.pytorch.org/benchmark/compilers)上查看。
 - en: '[Comparison to TorchScript and FX Tracing](#id3)'
+  id: totrans-53
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 与TorchScript和FX跟踪的比较
 - en: We have seen that `torch.compile` can speed up PyTorch code. Why else should
     we use `torch.compile` over existing PyTorch compiler solutions, such as TorchScript
     or FX Tracing? Primarily, the advantage of `torch.compile` lies in its ability
     to handle arbitrary Python code with minimal changes to existing code.
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们已经看到 `torch.compile` 可以加速 PyTorch 代码。除此之外，为什么我们应该使用 `torch.compile` 而不是现有的
+    PyTorch 编译器解决方案，比如 TorchScript 或 FX 追踪呢？主要优势在于 `torch.compile` 能够处理任意 Python 代码，而对现有代码的更改很小。
 - en: One case that `torch.compile` can handle that other compiler solutions struggle
     with is data-dependent control flow (the `if x.sum() < 0:` line below).
+  id: totrans-55
   prefs: []
   type: TYPE_NORMAL
+  zh: '`torch.compile` 可以处理其他编译器解决方案难以处理的一个案例，即数据相关的控制流（下面的 `if x.sum() < 0:` 行）。'
 - en: '[PRE15]'
+  id: totrans-56
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: TorchScript tracing `f1` results in silently incorrect results, since only the
     actual control flow path is traced.
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: TorchScript 追踪 `f1` 会导致结果错误，因为只有实际的控制流路径被追踪。
 - en: '[PRE16]'
+  id: totrans-58
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: '[PRE17]'
+  id: totrans-59
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: FX tracing `f1` results in an error due to the presence of data-dependent control
     flow.
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: FX 追踪 `f1` 会因为存在数据相关的控制流而导致错误。
 - en: '[PRE18]'
+  id: totrans-61
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: '[PRE19]'
+  id: totrans-62
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE19]'
 - en: If we provide a value for `x` as we try to FX trace `f1`, then we run into the
     same problem as TorchScript tracing, as the data-dependent control flow is removed
     in the traced function.
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果我们为 `x` 提供一个值，然后尝试 FX 追踪 `f1`，那么我们会遇到与 TorchScript 追踪相同的问题，因为追踪函数中的数据相关控制流被移除了。
 - en: '[PRE20]'
+  id: totrans-64
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE20]'
 - en: '[PRE21]'
+  id: totrans-65
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE21]'
 - en: Now we can see that `torch.compile` correctly handles data-dependent control
     flow.
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们可以看到 `torch.compile` 正确处理了数据相关的控制流。
 - en: '[PRE22]'
+  id: totrans-67
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE22]'
 - en: '[PRE23]'
+  id: totrans-68
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE23]'
 - en: TorchScript scripting can handle data-dependent control flow, but this solution
     comes with its own set of problems. Namely, TorchScript scripting can require
     major code changes and will raise errors when unsupported Python is used.
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: TorchScript脚本化可以处理数据相关的控制流，但这种解决方案也带来了一系列问题。换句话说，TorchScript脚本化可能需要进行重大代码更改，并且在使用不受支持的Python时会引发错误。
 - en: In the example below, we forget TorchScript type annotations and we receive
     a TorchScript error because the input type for argument `y`, an `int`, does not
     match with the default argument type, `torch.Tensor`.
+  id: totrans-70
   prefs: []
   type: TYPE_NORMAL
+  zh: 在下面的示例中，我们忘记了TorchScript类型注释，因此收到了一个TorchScript错误，因为参数 `y` 的输入类型为 `int`，与默认参数类型
+    `torch.Tensor` 不匹配。
 - en: '[PRE24]'
+  id: totrans-71
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE24]'
 - en: '[PRE25]'
+  id: totrans-72
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE25]'
 - en: However, `torch.compile` is easily able to handle `f2`.
+  id: totrans-73
   prefs: []
   type: TYPE_NORMAL
+  zh: 然而，`torch.compile` 能够轻松处理 `f2`。
 - en: '[PRE26]'
+  id: totrans-74
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE26]'
 - en: '[PRE27]'
+  id: totrans-75
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE27]'
 - en: Another case that `torch.compile` handles well compared to previous compilers
     solutions is the usage of non-PyTorch functions.
+  id: totrans-76
   prefs: []
   type: TYPE_NORMAL
+  zh: 与以往编译器解决方案相比，`torch.compile` 在处理非PyTorch函数的使用方面表现良好。
 - en: '[PRE28]'
+  id: totrans-77
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE28]'
 - en: TorchScript tracing treats results from non-PyTorch function calls as constants,
     and so our results can be silently wrong.
+  id: totrans-78
   prefs: []
   type: TYPE_NORMAL
+  zh: TorchScript跟踪将来自非PyTorch函数调用的结果视为常量，因此我们的结果可能会悄无声息地出错。
 - en: '[PRE29]'
+  id: totrans-79
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE29]'
 - en: '[PRE30]'
+  id: totrans-80
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE30]'
 - en: TorchScript scripting and FX tracing disallow non-PyTorch function calls.
+  id: totrans-81
   prefs: []
   type: TYPE_NORMAL
+  zh: TorchScript脚本化和FX跟踪不允许非PyTorch函数调用。
 - en: '[PRE31]'
+  id: totrans-82
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE31]'
 - en: '[PRE32]'
+  id: totrans-83
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE32]'
 - en: In comparison, `torch.compile` is easily able to handle the non-PyTorch function
     call.
+  id: totrans-84
   prefs: []
   type: TYPE_NORMAL
+  zh: 相比之下，`torch.compile` 能够轻松处理非PyTorch函数调用。
 - en: '[PRE33]'
+  id: totrans-85
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE33]'
 - en: '[PRE34]'
+  id: totrans-86
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE34]'
 - en: '[TorchDynamo and FX Graphs](#id4)'
+  id: totrans-87
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: '[TorchDynamo 和 FX 图](#id4)'
 - en: One important component of `torch.compile` is TorchDynamo. TorchDynamo is responsible
     for JIT compiling arbitrary Python code into [FX graphs](https://pytorch.org/docs/stable/fx.html#torch.fx.Graph),
     which can then be further optimized. TorchDynamo extracts FX graphs by analyzing
     Python bytecode during runtime and detecting calls to PyTorch operations.
+  id: totrans-88
   prefs: []
   type: TYPE_NORMAL
+  zh: '`torch.compile`的一个重要组件是TorchDynamo。TorchDynamo负责将任意Python代码即时编译成[FX图](https://pytorch.org/docs/stable/fx.html#torch.fx.Graph)，然后可以进一步优化。TorchDynamo通过分析Python字节码并检测对PyTorch操作的调用来提取FX图。'
 - en: Normally, TorchInductor, another component of `torch.compile`, further compiles
     the FX graphs into optimized kernels, but TorchDynamo allows for different backends
     to be used. In order to inspect the FX graphs that TorchDynamo outputs, let us
     create a custom backend that outputs the FX graph and simply returns the graph’s
     unoptimized forward method.
+  id: totrans-89
   prefs: []
   type: TYPE_NORMAL
+  zh: 通常，`torch.compile`的另一个组件TorchInductor会进一步将FX图编译成优化的内核，但TorchDynamo允许使用不同的后端。为了检查TorchDynamo输出的FX图，让我们创建一个自定义后端，输出FX图并简单地返回图的未优化前向方法。
 - en: '[PRE35]'
+  id: totrans-90
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE35]'
 - en: '[PRE36]'
+  id: totrans-91
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE36]'
 - en: Using our custom backend, we can now see how TorchDynamo is able to handle data-dependent
     control flow. Consider the function below, where the line `if b.sum() < 0` is
     the source of data-dependent control flow.
+  id: totrans-92
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用我们的自定义后端，我们现在可以看到TorchDynamo如何处理数据相关的控制流。考虑下面的函数，其中`if b.sum() < 0`这一行是数据相关控制流的源头。
 - en: '[PRE37]'
+  id: totrans-93
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE37]'
 - en: '[PRE38]'
+  id: totrans-94
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE38]'
 - en: 'The output reveals that TorchDynamo extracted 3 different FX graphs corresponding
     the following code (order may differ from the output above):'
+  id: totrans-95
   prefs: []
   type: TYPE_NORMAL
+  zh: 输出显示TorchDynamo提取了3个不同的FX图，对应以下代码（顺序可能与上面的输出不同）：
 - en: '`x = a / (torch.abs(a) + 1)`'
+  id: totrans-96
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: '`x = a / (torch.abs(a) + 1)`'
 - en: '`b = b * -1; return x * b`'
+  id: totrans-97
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: '`b = b * -1; return x * b`'
 - en: '`return x * b`'
+  id: totrans-98
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: '`return x * b`'
 - en: When TorchDynamo encounters unsupported Python features, such as data-dependent
     control flow, it breaks the computation graph, lets the default Python interpreter
     handle the unsupported code, then resumes capturing the graph.
+  id: totrans-99
   prefs: []
   type: TYPE_NORMAL
+  zh: 当TorchDynamo遇到不支持的Python特性，比如数据相关的控制流，它会中断计算图，让默认的Python解释器处理不支持的代码，然后继续捕获图。
 - en: Let’s investigate by example how TorchDynamo would step through `bar`. If `b.sum()
     < 0`, then TorchDynamo would run graph 1, let Python determine the result of the
     conditional, then run graph 2\. On the other hand, if `not b.sum() < 0`, then
     TorchDynamo would run graph 1, let Python determine the result of the conditional,
     then run graph 3.
+  id: totrans-100
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们通过示例来探究TorchDynamo如何逐步执行`bar`。如果`b.sum() < 0`，那么TorchDynamo将运行图1，让Python确定条件的结果，然后运行图2。另一方面，如果`not
+    b.sum() < 0`，那么TorchDynamo将运行图1，让Python确定条件的结果，然后运行图3。
 - en: This highlights a major difference between TorchDynamo and previous PyTorch
     compiler solutions. When encountering unsupported Python features, previous solutions
     either raise an error or silently fail. TorchDynamo, on the other hand, will break
     the computation graph.
+  id: totrans-101
   prefs: []
   type: TYPE_NORMAL
+  zh: 这突显了TorchDynamo与以前的PyTorch编译器解决方案之间的主要区别。当遇到不支持的Python特性时，以前的解决方案要么引发错误，要么悄悄失败。另一方面，TorchDynamo会中断计算图。
 - en: 'We can see where TorchDynamo breaks the graph by using `torch._dynamo.explain`:'
+  id: totrans-102
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们可以通过使用`torch._dynamo.explain`来查看TorchDynamo中断图的位置：
 - en: '[PRE39]'
+  id: totrans-103
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE39]'
 - en: '[PRE40]'
+  id: totrans-104
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE40]'
 - en: 'In order to maximize speedup, graph breaks should be limited. We can force
     TorchDynamo to raise an error upon the first graph break encountered by using
     `fullgraph=True`:'
+  id: totrans-105
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了最大化加速，图中断应该受到限制。我们可以通过使用`fullgraph=True`来强制TorchDynamo在遇到第一个图中断时引发错误：
 - en: '[PRE41]'
+  id: totrans-106
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE41]'
 - en: '[PRE42]'
+  id: totrans-107
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE42]'
 - en: And below, we demonstrate that TorchDynamo does not break the graph on the model
     we used above for demonstrating speedups.
+  id: totrans-108
   prefs: []
   type: TYPE_NORMAL
+  zh: 在下面，我们演示了TorchDynamo在我们用于演示加速的模型上不会中断图。
 - en: '[PRE43]'
+  id: totrans-109
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE43]'
 - en: '[PRE44]'
+  id: totrans-110
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE44]'
 - en: We can use `torch.export` (from PyTorch 2.1+) to extract a single, exportable
     FX graph from the input PyTorch program. The exported graph is intended to be
     run on different (i.e. Python-less) environments. One important restriction is
     that the `torch.export` does not support graph breaks. Please check [this tutorial](https://pytorch.org/tutorials/intermediate/torch_export_tutorial.html)
     for more details on `torch.export`.
+  id: totrans-111
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们可以使用`torch.export`（从PyTorch 2.1+开始）从输入的PyTorch程序中提取一个可导出的FX图。导出的图旨在在不同（即无Python）环境上运行。一个重要的限制是`torch.export`不支持图断点。请查看[此教程](https://pytorch.org/tutorials/intermediate/torch_export_tutorial.html)了解更多关于`torch.export`的详细信息。
 - en: '[Conclusion](#id5)'
+  id: totrans-112
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: '[结论](#id5)'
 - en: In this tutorial, we introduced `torch.compile` by covering basic usage, demonstrating
     speedups over eager mode, comparing to previous PyTorch compiler solutions, and
     briefly investigating TorchDynamo and its interactions with FX graphs. We hope
     that you will give `torch.compile` a try!
+  id: totrans-113
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，我们介绍了`torch.compile`，涵盖了基本用法，演示了相对于急切模式的加速效果，与之前的PyTorch编译器解决方案进行了比较，并简要调查了TorchDynamo及其与FX图的交互。我们希望您会尝试使用`torch.compile`！
 - en: '**Total running time of the script:** ( 6 minutes 7.888 seconds)'
+  id: totrans-114
   prefs: []
   type: TYPE_NORMAL
+  zh: '**脚本的总运行时间：**（6分钟7.888秒）'
 - en: '[`Download Python source code: torch_compile_tutorial.py`](../_downloads/6b019e0b5f84b568fcca1120bd28e230/torch_compile_tutorial.py)'
+  id: totrans-115
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Python源代码：torch_compile_tutorial.py`](../_downloads/6b019e0b5f84b568fcca1120bd28e230/torch_compile_tutorial.py)'
 - en: '[`Download Jupyter notebook: torch_compile_tutorial.ipynb`](../_downloads/96ad88eb476f41a5403dcdade086afb8/torch_compile_tutorial.ipynb)'
+  id: totrans-116
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载 Jupyter 笔记本：torch_compile_tutorial.ipynb`](../_downloads/96ad88eb476f41a5403dcdade086afb8/torch_compile_tutorial.ipynb)'
 - en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  id: totrans-117
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Sphinx-Gallery 生成的画廊](https://sphinx-gallery.github.io)'

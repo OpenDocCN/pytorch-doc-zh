@@ -1,167 +1,250 @@
 - en: (Beta) Implementing High-Performance Transformers with Scaled Dot Product Attention
     (SDPA)
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: （Beta）使用缩放点积注意力（SDPA）实现高性能Transformer
 - en: 原文：[https://pytorch.org/tutorials/intermediate/scaled_dot_product_attention_tutorial.html](https://pytorch.org/tutorials/intermediate/scaled_dot_product_attention_tutorial.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/intermediate/scaled_dot_product_attention_tutorial.html](https://pytorch.org/tutorials/intermediate/scaled_dot_product_attention_tutorial.html)
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-intermediate-scaled-dot-product-attention-tutorial-py)
     to download the full example code
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[这里](#sphx-glr-download-intermediate-scaled-dot-product-attention-tutorial-py)下载完整示例代码
 - en: '**Author:** [Driss Guessous](https://github.com/drisspg)'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '**作者：** [Driss Guessous](https://github.com/drisspg)'
 - en: Summary
+  id: totrans-5
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 摘要
 - en: In this tutorial, we want to highlight a new `torch.nn.functional` function
     that can be helpful for implementing transformer architectures. The function is
     named `torch.nn.functional.scaled_dot_product_attention`. For detailed description
     of the function, see the [PyTorch documentation](https://pytorch.org/docs/master/generated/torch.nn.functional.scaled_dot_product_attention.html#torch.nn.functional.scaled_dot_product_attention).
     This function has already been incorporated into `torch.nn.MultiheadAttention`
     and `torch.nn.TransformerEncoderLayer`.
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，我们想要强调一个新的`torch.nn.functional`函数，可以帮助实现Transformer架构。该函数被命名为`torch.nn.functional.scaled_dot_product_attention`。有关该函数的详细描述，请参阅[PyTorch文档](https://pytorch.org/docs/master/generated/torch.nn.functional.scaled_dot_product_attention.html#torch.nn.functional.scaled_dot_product_attention)。该函数已经被整合到`torch.nn.MultiheadAttention`和`torch.nn.TransformerEncoderLayer`中。
 - en: Overview
+  id: totrans-7
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 概述
 - en: At a high level, this PyTorch function calculates the scaled dot product attention
     (SDPA) between query, key, and value according to the definition found in the
     paper [Attention is all you need](https://arxiv.org/abs/1706.03762). While this
     function can be written in PyTorch using existing functions, a fused implementation
     can provide large performance benefits over a naive implementation.
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 在高层次上，这个PyTorch函数根据论文[Attention is all you need](https://arxiv.org/abs/1706.03762)中的定义，计算查询、键和值之间的缩放点积注意力（SDPA）。虽然这个函数可以使用现有函数在PyTorch中编写，但融合实现可以比朴素实现提供更大的性能优势。
 - en: Fused implementations
+  id: totrans-9
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 融合实现
 - en: 'For CUDA tensor inputs, the function will dispatch into one of the following
     implementations:'
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于CUDA张量输入，该函数将分派到以下实现之一：
 - en: '[FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness](https://arxiv.org/abs/2205.14135)'
+  id: totrans-11
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[FlashAttention：具有IO感知的快速和内存高效的精确注意力](https://arxiv.org/abs/2205.14135)'
 - en: '[Memory-Efficient Attention](https://github.com/facebookresearch/xformers)'
+  id: totrans-12
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[内存高效注意力](https://github.com/facebookresearch/xformers)'
 - en: A PyTorch implementation defined in C++
+  id: totrans-13
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 一个在C++中定义的PyTorch实现
 - en: Note
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: This tutorial requires PyTorch 2.0.0 or later.
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程需要PyTorch 2.0.0或更高版本。
 - en: '[PRE0]'
+  id: totrans-16
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: '[PRE1]'
+  id: totrans-17
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Explicit Dispatcher Control
+  id: totrans-18
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 显式调度控制
 - en: While the function will implicitly dispatch to one of the three implementations,
     the user can also explicitly control the dispatch via the use of a context manager.
     This context manager allows users to explicitly disable certain implementations.
     If a user wants to ensure the function is indeed using the fastest implementation
     for their specific inputs, the context manager can be used to sweep through measuring
     performance.
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 虽然函数将隐式分派到三种实现之一，但用户也可以通过使用上下文管理器来显式控制分派。这个上下文管理器允许用户显式禁用某些实现。如果用户想确保函数确实使用了最快的实现来处理他们特定的输入，上下文管理器可以用来测量性能。
 - en: '[PRE2]'
+  id: totrans-20
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: '[PRE3]'
+  id: totrans-21
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: Hardware dependence
+  id: totrans-22
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 硬件依赖
 - en: Depending on what machine you ran the above cell on and what hardware is available,
     your results might be different. - If you don’t have a GPU and are running on
     CPU then the context manager will have no effect and all three runs should return
     similar timings. - Depending on what compute capability your graphics card supports
     flash attention or memory efficient might have failed.
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 取决于您在哪台机器上运行上述单元格以及可用的硬件，您的结果可能会有所不同。- 如果您没有GPU并且在CPU上运行，则上下文管理器将不起作用，所有三次运行应该返回类似的时间。-
+    取决于您的显卡支持的计算能力，闪光注意力或内存效率可能会失败。
 - en: Causal Self Attention
+  id: totrans-24
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 因果自注意力
 - en: Below is an example implementation of a multi-headed causal self attention block
     inspired by [Andrej Karpathy NanoGPT](https://github.com/karpathy/nanoGPT) repository.
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下是受[Andrej Karpathy NanoGPT](https://github.com/karpathy/nanoGPT)仓库启发的多头因果自注意力块的示例实现。
 - en: '[PRE4]'
+  id: totrans-26
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: '[PRE5]'
+  id: totrans-27
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: '`NestedTensor` and Dense tensor support'
+  id: totrans-28
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: '`NestedTensor`和密集张量支持'
 - en: SDPA supports both `NestedTensor` and Dense tensor inputs. `NestedTensors` handle
     the case where the input is a batch of variable length sequences without needing
     to pad each sequence to the maximum length in the batch. For more information
     about `NestedTensors` see [torch.nested](https://pytorch.org/docs/stable/nested.html)
     and [NestedTensors Tutorial](https://pytorch.org/tutorials/prototype/nestedtensor.html).
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: SDPA 支持 `NestedTensor` 和 Dense 张量输入。`NestedTensors` 处理输入为批量可变长度序列的情况，无需将每个序列填充到批量中的最大长度。有关
+    `NestedTensors` 的更多信息，请参阅 [torch.nested](https://pytorch.org/docs/stable/nested.html)
+    和 [NestedTensors 教程](https://pytorch.org/tutorials/prototype/nestedtensor.html)。
 - en: '[PRE6]'
+  id: totrans-30
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: '[PRE7]'
+  id: totrans-31
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: Using SDPA with `torch.compile`
+  id: totrans-32
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 使用 `torch.compile` 进行 SDPA
 - en: With the release of PyTorch 2.0, a new feature called `torch.compile()` has
     been introduced, which can provide significant performance improvements over eager
     mode. Scaled dot product attention is fully composable with `torch.compile()`.
     To demonstrate this, let’s compile the `CausalSelfAttention` module using `torch.compile()`
     and observe the resulting performance improvements.
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: 随着 PyTorch 2.0 的发布，引入了一个名为 `torch.compile()` 的新功能，可以在 eager 模式下提供显著的性能改进。缩放点积注意力与
+    `torch.compile()` 完全兼容。为了演示这一点，让我们使用 `torch.compile()` 编译 `CausalSelfAttention`
+    模块，并观察结果性能的提升。
 - en: '[PRE8]'
+  id: totrans-34
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: '[PRE9]'
+  id: totrans-35
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: 'The exact execution time is dependent on machine, however the results for mine:
     The non compiled module runs in 166.616 microseconds The compiled module runs
     in 166.726 microseconds That is not what we were expecting. Let’s dig a little
     deeper. PyTorch comes with an amazing built-in profiler that you can use to inspect
     the performance characteristics of your code.'
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 确切的执行时间取决于机器，但对于我的结果是：非编译模块运行时间为166.616微秒，编译模块运行时间为166.726微秒。这不是我们预期的结果。让我们深入一点。PyTorch带有一个令人惊叹的内置分析器，您可以使用它来检查代码的性能特征。
 - en: '[PRE10]'
+  id: totrans-37
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: '[PRE11]'
+  id: totrans-38
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: The previous code snippet generates a report of the top 10 PyTorch functions
     that consumed the most GPU execution time, for both the compiled and non-compiled
     module. The analysis reveals that the majority of time spent on the GPU is concentrated
@@ -169,36 +252,52 @@
     `torch.compile` is very good at removing the framework overhead associated with
     PyTorch. If your model is launching large, efficient CUDA kernels, which in this
     case `CausalSelfAttention` is, then the overhead of PyTorch can be hidden.
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 前面的代码片段生成了一个报告，列出了消耗最多GPU执行时间的前10个PyTorch函数，分别针对编译和非编译模块。分析显示，GPU上花费的大部分时间集中在两个模块的相同一组函数上。这里的原因是`torch.compile`非常擅长消除与PyTorch相关的框架开销。如果您的模型启动了大型、高效的CUDA内核，比如这里的`CausalSelfAttention`，那么PyTorch的开销就可以被隐藏起来。
 - en: 'In reality, your module does not normally consist of a singular `CausalSelfAttention`
     block. When experimenting with [Andrej Karpathy NanoGPT](https://github.com/karpathy/nanoGPT)
     repository, compiling the module took the time per train step from: `6090.49ms`
     to `3273.17ms`! This was done on commit: `ae3a8d5` of NanoGPT training on the
     Shakespeare dataset.'
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: 实际上，您的模块通常不是由单个`CausalSelfAttention`块组成的。在与[Andrej Karpathy NanoGPT](https://github.com/karpathy/nanoGPT)存储库进行实验时，编译模块的时间从每个训练步骤的`6090.49ms`降至`3273.17ms`！这是在NanoGPT训练莎士比亚数据集的提交`ae3a8d5`上完成的。
 - en: Conclusion
+  id: totrans-41
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 结论
 - en: In this tutorial, we have demonstrated the basic usage of `torch.nn.functional.scaled_dot_product_attention`.
     We have shown how the `sdp_kernel` context manager can be used to assert a certain
     implementation is used on GPU. As well, we built a simple `CausalSelfAttention`
     module that works with `NestedTensor` and is torch compilable. In the process
     we have shown how to the profiling tools can be used to explore the performance
     characteristics of a user defined module.
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，我们演示了`torch.nn.functional.scaled_dot_product_attention`的基本用法。我们展示了如何使用`sdp_kernel`上下文管理器来确保在GPU上使用特定的实现。此外，我们构建了一个简单的`CausalSelfAttention`模块，可以与`NestedTensor`一起使用，并且可以在torch中编译。在这个过程中，我们展示了如何使用性能分析工具来探索用户定义模块的性能特征。
 - en: '**Total running time of the script:** ( 0 minutes 7.800 seconds)'
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: 脚本的总运行时间：（0分钟7.800秒）
 - en: '[`Download Python source code: scaled_dot_product_attention_tutorial.py`](../_downloads/e40ced94a143a49f0f8745e10c981139/scaled_dot_product_attention_tutorial.py)'
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Python源代码：scaled_dot_product_attention_tutorial.py`](../_downloads/e40ced94a143a49f0f8745e10c981139/scaled_dot_product_attention_tutorial.py)'
 - en: '[`Download Jupyter notebook: scaled_dot_product_attention_tutorial.ipynb`](../_downloads/fc133e4ffc6275f9d1c3a74ddd10e0a2/scaled_dot_product_attention_tutorial.ipynb)'
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Jupyter笔记本：scaled_dot_product_attention_tutorial.ipynb`](../_downloads/fc133e4ffc6275f9d1c3a74ddd10e0a2/scaled_dot_product_attention_tutorial.ipynb)'
 - en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Sphinx-Gallery生成的图库](https://sphinx-gallery.github.io)'

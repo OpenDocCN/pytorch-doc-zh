@@ -1,29 +1,42 @@
 - en: Multi-Objective NAS with Ax
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 使用Ax进行多目标NAS
 - en: 原文：[https://pytorch.org/tutorials/intermediate/ax_multiobjective_nas_tutorial.html](https://pytorch.org/tutorials/intermediate/ax_multiobjective_nas_tutorial.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/intermediate/ax_multiobjective_nas_tutorial.html](https://pytorch.org/tutorials/intermediate/ax_multiobjective_nas_tutorial.html)
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-intermediate-ax-multiobjective-nas-tutorial-py)
     to download the full example code
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[这里](#sphx-glr-download-intermediate-ax-multiobjective-nas-tutorial-py)下载完整示例代码
 - en: '**Authors:** [David Eriksson](https://github.com/dme65), [Max Balandat](https://github.com/Balandat),
     and the Adaptive Experimentation team at Meta.'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '**作者：** [David Eriksson](https://github.com/dme65), [Max Balandat](https://github.com/Balandat)，以及
+    Meta 的自适应实验团队。'
 - en: In this tutorial, we show how to use [Ax](https://ax.dev/) to run multi-objective
     neural architecture search (NAS) for a simple neural network model on the popular
     MNIST dataset. While the underlying methodology would typically be used for more
     complicated models and larger datasets, we opt for a tutorial that is easily runnable
     end-to-end on a laptop in less than 20 minutes.
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，我们展示如何使用[Ax](https://ax.dev/)在流行的MNIST数据集上运行简单神经网络模型的多目标神经架构搜索（NAS）。虽然潜在的方法通常用于更复杂的模型和更大的数据集，但我们选择了一个在笔记本电脑上可以轻松运行的教程，不到20分钟即可完成。
 - en: In many NAS applications, there is a natural tradeoff between multiple objectives
     of interest. For instance, when deploying models on-device we may want to maximize
     model performance (for example, accuracy), while simultaneously minimizing competing
@@ -34,307 +47,463 @@
     scalable and sustainable AI, and have many successful applications at Meta - see
     for instance our [case study](https://research.facebook.com/blog/2021/07/optimizing-model-accuracy-and-latency-using-bayesian-multi-objective-neural-architecture-search/)
     on a Natural Language Understanding model.
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 在许多NAS应用中，存在着多个感兴趣目标之间的自然权衡。例如，在部署模型到设备上时，我们可能希望最大化模型性能（例如准确性），同时最小化竞争指标，如功耗、推理延迟或模型大小，以满足部署约束。通常情况下，通过接受略低的模型性能，我们可以大大减少预测的计算需求或延迟。探索这种权衡的原则方法是可扩展和可持续人工智能的关键推动因素，并在Meta上有许多成功的应用案例
+    - 例如，查看我们关于自然语言理解模型的案例研究。
 - en: In our example here, we will tune the widths of two hidden layers, the learning
     rate, the dropout probability, the batch size, and the number of training epochs.
     The goal is to trade off performance (accuracy on the validation set) and model
     size (the number of model parameters).
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 在我们的示例中，我们将调整两个隐藏层的宽度、学习率、dropout概率、批量大小和训练周期数。目标是在性能（验证集上的准确率）和模型大小（模型参数数量）之间进行权衡。
 - en: 'This tutorial makes use of the following PyTorch libraries:'
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程使用以下PyTorch库：
 - en: '[PyTorch Lightning](https://github.com/PyTorchLightning/pytorch-lightning)
     (specifying the model and training loop)'
+  id: totrans-9
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[PyTorch Lightning](https://github.com/PyTorchLightning/pytorch-lightning)（指定模型和训练循环）'
 - en: '[TorchX](https://github.com/pytorch/torchx) (for running training jobs remotely
     / asynchronously)'
+  id: totrans-10
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[TorchX](https://github.com/pytorch/torchx)（用于远程/异步运行训练作业）'
 - en: '[BoTorch](https://github.com/pytorch/botorch) (the Bayesian Optimization library
     powering Ax’s algorithms)'
+  id: totrans-11
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[BoTorch](https://github.com/pytorch/botorch)（为Ax的算法提供动力的贝叶斯优化库）'
 - en: Defining the TorchX App
+  id: totrans-12
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 定义TorchX应用
 - en: Our goal is to optimize the PyTorch Lightning training job defined in [mnist_train_nas.py](https://github.com/pytorch/tutorials/tree/main/intermediate_source/mnist_train_nas.py).
     To do this using TorchX, we write a helper function that takes in the values of
     the architecture and hyperparameters of the training job and creates a [TorchX
     AppDef](https://pytorch.org/torchx/latest/basics.html) with the appropriate settings.
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们的目标是优化在[mnist_train_nas.py](https://github.com/pytorch/tutorials/tree/main/intermediate_source/mnist_train_nas.py)中定义的PyTorch
+    Lightning训练作业。为了使用TorchX实现这一目标，我们编写了一个辅助函数，该函数接受训练作业的架构和超参数的值，并创建一个具有适当设置的[TorchX
+    AppDef](https://pytorch.org/torchx/latest/basics.html)。
 - en: '[PRE0]'
+  id: totrans-14
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: Setting up the Runner
+  id: totrans-15
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 设置Runner
 - en: Ax’s [Runner](https://ax.dev/api/core.html#ax.core.runner.Runner) abstraction
     allows writing interfaces to various backends. Ax already comes with Runner for
     TorchX, and so we just need to configure it. For the purpose of this tutorial
     we run jobs locally in a fully asynchronous fashion.
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: Ax的[Runner](https://ax.dev/api/core.html#ax.core.runner.Runner)抽象允许编写与各种后端的接口。Ax已经为TorchX提供了Runner，因此我们只需要配置它。在本教程中，我们以完全异步的方式在本地运行作业。
 - en: In order to launch them on a cluster, you can instead specify a different TorchX
     scheduler and adjust the configuration appropriately. For example, if you have
     a Kubernetes cluster, you just need to change the scheduler from `local_cwd` to
     `kubernetes`).
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了在集群上启动它们，您可以指定一个不同的TorchX调度程序，并相应地调整配置。例如，如果您有一个Kubernetes集群，您只需要将调度程序从`local_cwd`更改为`kubernetes`。
 - en: '[PRE1]'
+  id: totrans-18
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Setting up the `SearchSpace`
+  id: totrans-19
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 设置`SearchSpace`
 - en: First, we define our search space. Ax supports both range parameters of type
     integer and float as well as choice parameters which can have non-numerical types
     such as strings. We will tune the hidden sizes, learning rate, dropout, and number
     of epochs as range parameters and tune the batch size as an ordered choice parameter
     to enforce it to be a power of 2.
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 首先，我们定义我们的搜索空间。Ax支持整数和浮点类型的范围参数，也支持选择参数，可以具有非数字类型，如字符串。我们将调整隐藏层大小、学习率、丢失率和时代数作为范围参数，并将批量大小调整为有序选择参数，以强制其为2的幂。
 - en: '[PRE2]'
+  id: totrans-21
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Setting up Metrics
+  id: totrans-22
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 设置度量
 - en: Ax has the concept of a [Metric](https://ax.dev/api/core.html#metric) that defines
     properties of outcomes and how observations are obtained for these outcomes. This
     allows e.g. encoding how data is fetched from some distributed execution backend
     and post-processed before being passed as input to Ax.
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: Ax有一个[度量](https://ax.dev/api/core.html#metric)的概念，它定义了结果的属性以及如何获取这些结果的观察。这允许例如编码数据如何从某个分布式执行后端获取并在传递给Ax之前进行后处理。
 - en: In this tutorial we will use [multi-objective optimization](https://ax.dev/tutorials/multiobjective_optimization.html)
     with the goal of maximizing the validation accuracy and minimizing the number
     of model parameters. The latter represents a simple proxy of model latency, which
     is hard to estimate accurately for small ML models (in an actual application we
     would benchmark the latency while running the model on-device).
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，我们将使用[多目标优化](https://ax.dev/tutorials/multiobjective_optimization.html)来最大化验证准确性并最小化模型参数数量。后者代表了模型延迟的简单代理，对于小型机器学习模型来说很难准确估计（在实际应用中，我们会在设备上运行模型时对延迟进行基准测试）。
 - en: In our example TorchX will run the training jobs in a fully asynchronous fashion
     locally and write the results to the `log_dir` based on the trial index (see the
     `trainer()` function above). We will define a metric class that is aware of that
     logging directory. By subclassing [TensorboardCurveMetric](https://ax.dev/api/metrics.html?highlight=tensorboardcurvemetric#ax.metrics.tensorboard.TensorboardCurveMetric)
     we get the logic to read and parse the TensorBoard logs for free.
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: 在我们的示例中，TorchX将以完全异步的方式在本地运行训练作业，并根据试验索引（参见上面的`trainer()`函数）将结果写入`log_dir`。我们将定义一个度量类，该类知道该日志目录。通过子类化[TensorboardCurveMetric](https://ax.dev/api/metrics.html?highlight=tensorboardcurvemetric#ax.metrics.tensorboard.TensorboardCurveMetric)，我们可以免费获得读取和解析TensorBoard日志的逻辑。
 - en: '[PRE3]'
+  id: totrans-26
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: Now we can instantiate the metrics for accuracy and the number of model parameters.
     Here curve_name is the name of the metric in the TensorBoard logs, while name
     is the metric name used internally by Ax. We also specify lower_is_better to indicate
     the favorable direction of the two metrics.
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们可以实例化准确率和模型参数数量的指标。这里curve_name是TensorBoard日志中指标的名称，而name是Ax内部使用的指标名称。我们还指定lower_is_better来指示这两个指标的有利方向。
 - en: '[PRE4]'
+  id: totrans-28
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: Setting up the `OptimizationConfig`
+  id: totrans-29
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 设置`OptimizationConfig`
 - en: The way to tell Ax what it should optimize is by means of an [OptimizationConfig](https://ax.dev/api/core.html#module-ax.core.optimization_config).
     Here we use a `MultiObjectiveOptimizationConfig` as we will be performing multi-objective
     optimization.
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 告诉Ax应该优化的方式是通过[OptimizationConfig](https://ax.dev/api/core.html#module-ax.core.optimization_config)。在这里，我们使用`MultiObjectiveOptimizationConfig`，因为我们将执行多目标优化。
 - en: Additionally, Ax supports placing constraints on the different metrics by specifying
     objective thresholds, which bound the region of interest in the outcome space
     that we want to explore. For this example, we will constrain the validation accuracy
     to be at least 0.94 (94%) and the number of model parameters to be at most 80,000.
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: 此外，Ax支持通过指定目标阈值对不同指标设置约束，这些约束限制了我们想要探索的结果空间的区域。在本例中，我们将约束验证准确率至少为0.94（94%），模型参数数量最多为80,000。
 - en: '[PRE5]'
+  id: totrans-32
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: Creating the Ax Experiment
+  id: totrans-33
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 创建Ax实验
 - en: In Ax, the [Experiment](https://ax.dev/api/core.html#ax.core.experiment.Experiment)
     object is the object that stores all the information about the problem setup.
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 在 Ax 中，[Experiment](https://ax.dev/api/core.html#ax.core.experiment.Experiment)
+    对象是存储有关问题设置的所有信息的对象。
 - en: '[PRE6]'
+  id: totrans-35
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: Choosing the Generation Strategy
+  id: totrans-36
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 选择生成策略
 - en: A [GenerationStrategy](https://ax.dev/api/modelbridge.html#ax.modelbridge.generation_strategy.GenerationStrategy)
     is the abstract representation of how we would like to perform the optimization.
     While this can be customized (if you’d like to do so, see [this tutorial](https://ax.dev/tutorials/generation_strategy.html)),
     in most cases Ax can automatically determine an appropriate strategy based on
     the search space, optimization config, and the total number of trials we want
     to run.
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: '[GenerationStrategy](https://ax.dev/api/modelbridge.html#ax.modelbridge.generation_strategy.GenerationStrategy)
+    是我们希望执行优化的抽象表示。虽然这可以定制（如果您愿意这样做，请参阅[此教程](https://ax.dev/tutorials/generation_strategy.html)），但在大多数情况下，Ax
+    可以根据搜索空间、优化配置和我们想要运行的总试验次数自动确定适当的策略。'
 - en: Typically, Ax chooses to evaluate a number of random configurations before starting
     a model-based Bayesian Optimization strategy.
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 通常，Ax 选择在开始基于模型的贝叶斯优化策略之前评估一些随机配置。
 - en: '[PRE7]'
+  id: totrans-39
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: '[PRE8]'
+  id: totrans-40
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: Configuring the Scheduler
+  id: totrans-41
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 配置调度程序
 - en: 'The `Scheduler` acts as the loop control for the optimization. It communicates
     with the backend to launch trials, check their status, and retrieve results. In
     the case of this tutorial, it is simply reading and parsing the locally saved
     logs. In a remote execution setting, it would call APIs. The following illustration
     from the Ax [Scheduler tutorial](https://ax.dev/tutorials/scheduler.html) summarizes
     how the Scheduler interacts with external systems used to run trial evaluations:'
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: '`Scheduler` 充当优化的循环控制器。它与后端通信，启动试验，检查它们的状态，并检索结果。在本教程中，它只是读取和解析本地保存的日志。在远程执行设置中，它将调用
+    API。来自 Ax [Scheduler 教程](https://ax.dev/tutorials/scheduler.html) 的以下插图总结了 Scheduler
+    与用于运行试验评估的外部系统的交互方式：'
 - en: '![../_static/img/ax_scheduler_illustration.png](../Images/8d3fa5bf58eefbc5625a9c472a88a569.png)'
+  id: totrans-43
   prefs: []
   type: TYPE_IMG
+  zh: '![../_static/img/ax_scheduler_illustration.png](../Images/8d3fa5bf58eefbc5625a9c472a88a569.png)'
 - en: The `Scheduler` requires the `Experiment` and the `GenerationStrategy`. A set
     of options can be passed in via `SchedulerOptions`. Here, we configure the number
     of total evaluations as well as `max_pending_trials`, the maximum number of trials
     that should run concurrently. In our local setting, this is the number of training
     jobs running as individual processes, while in a remote execution setting, this
     would be the number of machines you want to use in parallel.
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: '`调度程序` 需要 `实验` 和 `生成策略`。一组选项可以通过 `调度程序选项` 传递进来。在这里，我们配置了总评估次数以及 `max_pending_trials`，即应同时运行的最大试验数。在我们的本地设置中，这是作为单独进程运行的训练作业的数量，而在远程执行设置中，这将是您想要并行使用的机器数量。'
 - en: '[PRE9]'
+  id: totrans-45
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: '[PRE10]'
+  id: totrans-46
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: Running the optimization
+  id: totrans-47
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 运行优化
 - en: Now that everything is configured, we can let Ax run the optimization in a fully
     automated fashion. The Scheduler will periodically check the logs for the status
     of all currently running trials, and if a trial completes the scheduler will update
     its status on the experiment and fetch the observations needed for the Bayesian
     optimization algorithm.
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在一切都配置好了，我们可以让 Ax 以完全自动化的方式运行优化。调度程序将定期检查日志，以获取所有当前运行试验的状态，如果一个试验完成，调度程序将更新其在实验中的状态，并获取贝叶斯优化算法所需的观察结果。
 - en: '[PRE11]'
+  id: totrans-49
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: '[PRE12]'
+  id: totrans-50
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: Evaluating the results
+  id: totrans-51
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 评估结果
 - en: We can now inspect the result of the optimization using helper functions and
     visualizations included with Ax.
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们可以使用 Ax 提供的辅助函数和可视化工具来检查优化结果。
 - en: First, we generate a dataframe with a summary of the results of the experiment.
     Each row in this dataframe corresponds to a trial (that is, a training job that
     was run), and contains information on the status of the trial, the parameter configuration
     that was evaluated, and the metric values that were observed. This provides an
     easy way to sanity check the optimization.
+  id: totrans-53
   prefs: []
   type: TYPE_NORMAL
+  zh: 首先，我们生成一个包含实验结果摘要的数据框。该数据框中的每一行对应一个试验（即运行的训练作业），包含试验的状态、评估的参数配置以及观察到的度量值信息。这提供了一个简单的方法来检查优化的情况。
 - en: '[PRE13]'
+  id: totrans-54
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: '[PRE14]'
+  id: totrans-55
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: '|  | trial_index | arm_name | trial_status | generation_method | is_feasible
     | num_params | val_acc | hidden_size_1 | hidden_size_2 | learning_rate | epochs
     | dropout | batch_size |'
+  id: totrans-56
   prefs: []
   type: TYPE_TB
+  zh: '|  | 试验索引 | arm名称 | 试验状态 | 生成方法 | 是否可行 | 参数数量 | 准确率 | 隐藏层大小1 | 隐藏层大小2 | 学习率
+    | 迭代次数 | 丢失率 | 批量大小 |'
 - en: '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | ---
     | --- |'
+  id: totrans-57
   prefs: []
   type: TYPE_TB
+  zh: '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | ---
+    | --- |'
 - en: '| 0 | 0 | 0_0 | COMPLETED | Sobol | False | 16810.0 | 0.908757 | 19 | 66 |
     0.003182 | 4 | 0.190970 | 32 |'
+  id: totrans-58
   prefs: []
   type: TYPE_TB
+  zh: '| 0 | 0 | 0_0 | 完成 | Sobol | False | 16810.0 | 0.908757 | 19 | 66 | 0.003182
+    | 4 | 0.190970 | 32 |'
 - en: '| 1 | 1 | 1_0 | COMPLETED | Sobol | False | 21926.0 | 0.887460 | 23 | 118 |
     0.000145 | 3 | 0.465754 | 256 |'
+  id: totrans-59
   prefs: []
   type: TYPE_TB
+  zh: '| 1 | 1 | 1_0 | 完成 | Sobol | False | 21926.0 | 0.887460 | 23 | 118 | 0.000145
+    | 3 | 0.465754 | 256 |'
 - en: '| 2 | 2 | 2_0 | COMPLETED | Sobol | True | 37560.0 | 0.947588 | 40 | 124 |
     0.002745 | 4 | 0.196600 | 64 |'
+  id: totrans-60
   prefs: []
   type: TYPE_TB
+  zh: '| 2 | 2 | 2_0 | 完成 | Sobol | True | 37560.0 | 0.947588 | 40 | 124 | 0.002745
+    | 4 | 0.196600 | 64 |'
 - en: '| 3 | 3 | 3_0 | COMPLETED | Sobol | False | 14756.0 | 0.893096 | 18 | 23 |
     0.000166 | 4 | 0.169496 | 256 |'
+  id: totrans-61
   prefs: []
   type: TYPE_TB
+  zh: '| 3 | 3 | 3_0 | 完成 | Sobol | 假 | 14756.0 | 0.893096 | 18 | 23 | 0.000166 |
+    4 | 0.169496 | 256 |'
 - en: '| 4 | 4 | 4_0 | COMPLETED | Sobol | True | 71630.0 | 0.948927 | 80 | 99 | 0.000642
     | 2 | 0.291277 | 128 |'
+  id: totrans-62
   prefs: []
   type: TYPE_TB
+  zh: '| 4 | 4 | 4_0 | 完成 | Sobol | 真 | 71630.0 | 0.948927 | 80 | 99 | 0.000642 |
+    2 | 0.291277 | 128 |'
 - en: '| 5 | 5 | 5_0 | COMPLETED | Sobol | False | 13948.0 | 0.922692 | 16 | 54 |
     0.000444 | 2 | 0.057552 | 64 |'
+  id: totrans-63
   prefs: []
   type: TYPE_TB
+  zh: '| 5 | 5 | 5_0 | 完成 | Sobol | 假 | 13948.0 | 0.922692 | 16 | 54 | 0.000444 |
+    2 | 0.057552 | 64 |'
 - en: '| 6 | 6 | 6_0 | COMPLETED | Sobol | False | 24686.0 | 0.863779 | 29 | 50 |
     0.000177 | 2 | 0.435030 | 256 |'
+  id: totrans-64
   prefs: []
   type: TYPE_TB
+  zh: '| 6 | 6 | 6_0 | 完成 | Sobol | 假 | 24686.0 | 0.863779 | 29 | 50 | 0.000177 |
+    2 | 0.435030 | 256 |'
 - en: '| 7 | 7 | 7_0 | COMPLETED | Sobol | False | 18290.0 | 0.877033 | 20 | 87 |
     0.000119 | 4 | 0.462744 | 256 |'
+  id: totrans-65
   prefs: []
   type: TYPE_TB
+  zh: '| 7 | 7 | 7_0 | 完成 | Sobol | 假 | 18290.0 | 0.877033 | 20 | 87 | 0.000119 |
+    4 | 0.462744 | 256 |'
 - en: '| 8 | 8 | 8_0 | COMPLETED | Sobol | False | 20996.0 | 0.859434 | 26 | 17 |
     0.005245 | 1 | 0.455813 | 32 |'
+  id: totrans-66
   prefs: []
   type: TYPE_TB
+  zh: '| 8 | 8 | 8_0 | 完成 | Sobol | 假 | 20996.0 | 0.859434 | 26 | 17 | 0.005245 |
+    1 | 0.455813 | 32 |'
 - en: '| 9 | 9 | 9_0 | COMPLETED | BoTorch | True | 53063.0 | 0.962563 | 57 | 125
     | 0.001972 | 3 | 0.177780 | 64 |'
+  id: totrans-67
   prefs: []
   type: TYPE_TB
+  zh: '| 9 | 9 | 9_0 | 完成 | BoTorch | 真 | 53063.0 | 0.962563 | 57 | 125 | 0.001972
+    | 3 | 0.177780 | 64 |'
 - en: We can also visualize the Pareto frontier of tradeoffs between the validation
     accuracy and the number of model parameters.
+  id: totrans-68
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们还可以可视化验证准确性和模型参数数量之间的权衡的帕累托前沿。
 - en: Tip
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: 提示
 - en: Ax uses Plotly to produce interactive plots, which allow you to do things like
     zoom, crop, or hover in order to view details of components of the plot. Try it
     out, and take a look at the [visualization tutorial](https://ax.dev/tutorials/visualizations.html)
     if you’d like to learn more).
+  id: totrans-70
   prefs: []
   type: TYPE_NORMAL
+  zh: Ax使用Plotly生成交互式图表，允许您进行缩放、裁剪或悬停以查看图表组件的详细信息。试试看，并查看[可视化教程](https://ax.dev/tutorials/visualizations.html)以了解更多信息。
 - en: The final optimization results are shown in the figure below where the color
     corresponds to the iteration number for each trial. We see that our method was
     able to successfully explore the trade-offs and found both large models with high
     validation accuracy as well as small models with comparatively lower validation
     accuracy.
+  id: totrans-71
   prefs: []
   type: TYPE_NORMAL
+  zh: 最终优化结果显示在下面的图中，其中颜色对应于每次试验的迭代次数。我们看到我们的方法能够成功地探索权衡，并找到具有高验证准确性的大型模型，以及具有相对较低验证准确性的小型模型。
 - en: '[PRE15]'
+  id: totrans-72
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: '[PRE16]'
+  id: totrans-73
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: To better understand what our surrogate models have learned about the black
     box objectives, we can take a look at the leave-one-out cross validation results.
     Since our models are Gaussian Processes, they not only provide point predictions
@@ -343,49 +512,75 @@
     and that the confidence intervals cover the 45 degree line with the expected frequency
     (here we use 95% confidence intervals, so we would expect them to contain the
     true observation 95% of the time).
+  id: totrans-74
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了更好地了解我们的代理模型对黑匣子目标学到了什么，我们可以看一下留一出交叉验证的结果。由于我们的模型是高斯过程，它们不仅提供点预测，还提供关于这些预测的不确定性估计。一个好的模型意味着预测的均值（图中的点）接近45度线，置信区间覆盖45度线并且以期望的频率（这里我们使用95%的置信区间，所以我们期望它们在真实观察中包含95%的时间）。
 - en: As the figures below show, the model size (`num_params`) metric is much easier
     to model than the validation accuracy (`val_acc`) metric.
+  id: totrans-75
   prefs: []
   type: TYPE_NORMAL
+  zh: 如下图所示，模型大小（`num_params`）指标比验证准确度（`val_acc`）指标更容易建模。
 - en: '[PRE17]'
+  id: totrans-76
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: We can also make contour plots to better understand how the different objectives
     depend on two of the input parameters. In the figure below, we show the validation
     accuracy predicted by the model as a function of the two hidden sizes. The validation
     accuracy clearly increases as the hidden sizes increase.
+  id: totrans-77
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们还可以制作等高线图，以更好地了解不同目标如何依赖于两个输入参数。在下图中，我们显示模型预测的验证准确度与两个隐藏大小的关系。验证准确度明显随着隐藏大小的增加而增加。
 - en: '[PRE18]'
+  id: totrans-78
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: Similarly, we show the number of model parameters as a function of the hidden
     sizes in the figure below and see that it also increases as a function of the
     hidden sizes (the dependency on `hidden_size_1` is much larger).
+  id: totrans-79
   prefs: []
   type: TYPE_NORMAL
+  zh: 同样，我们在下图中显示模型参数数量与隐藏大小的关系，并看到它也随着隐藏大小的增加而增加（对`hidden_size_1`的依赖性更大）。
 - en: '[PRE19]'
+  id: totrans-80
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE19]'
 - en: Acknowledgments
+  id: totrans-81
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 致谢
 - en: We thank the TorchX team (in particular Kiuk Chung and Tristan Rice) for their
     help with integrating TorchX with Ax.
+  id: totrans-82
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们感谢TorchX团队（特别是Kiuk Chung和Tristan Rice）在将TorchX与Ax集成方面的帮助。
 - en: '**Total running time of the script:** ( 14 minutes 44.258 seconds)'
+  id: totrans-83
   prefs: []
   type: TYPE_NORMAL
+  zh: '**脚本的总运行时间：**（14分钟44.258秒）'
 - en: '[`Download Python source code: ax_multiobjective_nas_tutorial.py`](../_downloads/c0785c0d27d3df6cda96113d46c18927/ax_multiobjective_nas_tutorial.py)'
+  id: totrans-84
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Python源代码：ax_multiobjective_nas_tutorial.py`](../_downloads/c0785c0d27d3df6cda96113d46c18927/ax_multiobjective_nas_tutorial.py)'
 - en: '[`Download Jupyter notebook: ax_multiobjective_nas_tutorial.ipynb`](../_downloads/ad03db8275f44695d56f05ca66e808fa/ax_multiobjective_nas_tutorial.ipynb)'
+  id: totrans-85
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载 Jupyter 笔记本: ax_multiobjective_nas_tutorial.ipynb`](../_downloads/ad03db8275f44695d56f05ca66e808fa/ax_multiobjective_nas_tutorial.ipynb)'
 - en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  id: totrans-86
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Sphinx-Gallery 生成的画廊](https://sphinx-gallery.github.io)'
