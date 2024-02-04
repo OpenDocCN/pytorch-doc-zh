@@ -3,91 +3,110 @@
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 从第一原则理解PyTorch Intel CPU性能
 - en: 原文：[https://pytorch.org/tutorials/intermediate/torchserve_with_ipex.html](https://pytorch.org/tutorials/intermediate/torchserve_with_ipex.html)
   id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: '[原文链接](https://pytorch.org/tutorials/intermediate/torchserve_with_ipex.html)'
 - en: A case study on the TorchServe inference framework optimized with [Intel® Extension
     for PyTorch*](https://github.com/intel/intel-extension-for-pytorch).
   id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个关于使用[Intel® PyTorch扩展*](https://github.com/intel/intel-extension-for-pytorch)优化的TorchServe推理框架的案例研究。
 - en: 'Authors: Min Jean Cho, Mark Saroufim'
   id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 作者：Min Jean Cho, Mark Saroufim
 - en: 'Reviewers: Ashok Emani, Jiong Gong'
   id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 审阅者：Ashok Emani, Jiong Gong
 - en: Getting a strong out-of-box performance for deep learning on CPUs can be tricky
     but it’s much easier if you’re aware of the main problems that affect performance,
     how to measure them and how to solve them.
   id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 在CPU上获得强大的深度学习开箱即用性能可能有些棘手，但如果您了解影响性能的主要问题，如何衡量它们以及如何解决它们，那么就会更容易。
 - en: TL;DR
   id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 简而言之
 - en: '| Problem | How to measure it | Solution |'
   id: totrans-7
   prefs: []
   type: TYPE_TB
+  zh: '| 问题 | 如何衡量 | 解决方案 |'
 - en: '| Bottlenecked GEMM execution units |'
   id: totrans-8
   prefs: []
   type: TYPE_TB
+  zh: '| 瓶颈的GEMM执行单元 |'
 - en: '[Imbalance or Serial Spinning](https://www.intel.com/content/www/us/en/develop/documentation/vtune-help/top/reference/cpu-metrics-reference/spin-time/imbalance-or-serial-spinning-1.html)'
   id: totrans-9
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[不平衡或串行旋转](https://www.intel.com/content/www/us/en/develop/documentation/vtune-help/top/reference/cpu-metrics-reference/spin-time/imbalance-or-serial-spinning-1.html)'
 - en: '[Front-End Bound](https://www.intel.com/content/www/us/en/develop/documentation/vtune-help/top/reference/cpu-metrics-reference/front-end-bound.html)'
   id: totrans-10
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[前端受限](https://www.intel.com/content/www/us/en/develop/documentation/vtune-help/top/reference/cpu-metrics-reference/front-end-bound.html)'
 - en: '[Core Bound](https://www.intel.com/content/www/us/en/develop/documentation/vtune-help/top/reference/cpu-metrics-reference/back-end-bound.html)'
   id: totrans-11
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[核心受限](https://www.intel.com/content/www/us/en/develop/documentation/vtune-help/top/reference/cpu-metrics-reference/back-end-bound.html)'
 - en: '| Avoid using logical cores by setting thread affinity to physical cores via
     core pinning |'
   id: totrans-12
   prefs: []
   type: TYPE_TB
+  zh: '| 通过核心固定将线程亲和性设置为物理核心以避免使用逻辑核心 |'
 - en: '| Non Uniform Memory Access (NUMA) |'
   id: totrans-13
   prefs: []
   type: TYPE_TB
+  zh: '| 非均匀内存访问（NUMA） |'
 - en: Local vs. remote memory access
   id: totrans-14
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 本地与远程内存访问
 - en: '[UPI Utilization](https://www.intel.com/content/www/us/en/develop/documentation/vtune-help/top/reference/cpu-metrics-reference/memory-bound/dram-bound/upi-utilization-bound.html)'
   id: totrans-15
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[UPI利用率](https://www.intel.com/content/www/us/en/develop/documentation/vtune-help/top/reference/cpu-metrics-reference/memory-bound/dram-bound/upi-utilization-bound.html)'
 - en: Latency in memory accesses
   id: totrans-16
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 内存访问延迟
 - en: Thread migration
   id: totrans-17
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 线程迁移
 - en: '| Avoid cross-socket computation by setting thread affinity to a specific socket
     via core pinning |'
   id: totrans-18
   prefs: []
   type: TYPE_TB
+  zh: '| 通过核心固定将线程亲和性设置为特定插槽以避免跨插槽计算 |'
 - en: '*GEMM (General Matrix Multiply)* run on fused-multiply-add (FMA) or dot-product
     (DP) execution units which will be bottlenecked and cause delays in thread waiting/*spinning
     at synchronization* barrier when *hyperthreading* is enabled - because using logical
@@ -98,6 +117,9 @@
   id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: '*GEMM（通用矩阵乘法）*在融合乘加（FMA）或点积（DP）执行单元上运行，这将成为瓶颈，并在启用*超线程*时导致线程等待/*旋转在同步*屏障时出现延迟
+    - 因为使用逻辑核心会导致所有工作线程的并发性不足，因为每个逻辑线程*争夺相同的核心资源*。相反，如果我们每个物理核心使用1个线程，我们就可以避免这种争夺。因此，我们通常建议通过*核心固定*将CPU
+    *线程亲和性*设置为物理核心，从而*避免逻辑核心*。'
 - en: Multi-socket systems have *Non-Uniform Memory Access (NUMA)* which is a shared
     memory architecture that describes the placement of main memory modules with respect
     to processors. But if a process is not NUMA-aware, slow *remote memory* is frequently
@@ -107,11 +129,14 @@
   id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 多插槽系统具有*非均匀内存访问（NUMA）*，这是一种共享内存架构，描述了主存储模块相对于处理器的放置方式。但是，如果一个进程不是NUMA感知的，那么在运行时，当*线程通过*Intel
+    Ultra Path Interconnect (UPI)*跨插槽迁移*时，会频繁访问慢*远程内存*。我们通过将CPU *线程亲和性*设置为特定插槽以通过*核心固定*解决这个问题。
 - en: Knowing these principles in mind, proper CPU runtime configuration can significantly
     boost out-of-box performance.
   id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 牢记这些原则，适当的CPU运行时配置可以显著提升开箱即用的性能。
 - en: In this blog, we’ll walk you through the important runtime configurations you
     should be aware of from [CPU Performance Tuning Guide](https://pytorch.org/tutorials/recipes/recipes/tuning_guide.html#cpu-specific-optimizations),
     explain how they work, how to profile them and how to integrate them within a
@@ -121,32 +146,38 @@
   id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这篇博客中，我们将带您了解[CPU性能调优指南](https://pytorch.org/tutorials/recipes/recipes/tuning_guide.html#cpu-specific-optimizations)中应该注意的重要运行时配置，解释它们的工作原理，如何对其进行分析以及如何将其集成到像[TorchServe](https://github.com/pytorch/serve)这样的模型服务框架中，通过一个易于使用的[启动脚本](https://github.com/intel/intel-extension-for-pytorch/blob/master/docs/tutorials/performance_tuning/launch_script.md)，我们已经[原生地集成](https://github.com/pytorch/serve/pull/1354)了。
 - en: We’ll explain all of these ideas **visually** from **first principles** with
     lots of **profiles** and show you how we applied our learnings to make out of
     the box CPU performance on TorchServe better.
   id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们将从**第一原则**以及大量**概要**中**直观**地解释所有这些想法，并向您展示我们如何应用我们的学习，以改善TorchServe的开箱即用CPU性能。
 - en: The feature has to be explicitly enabled by setting *cpu_launcher_enable=true*
     in *config.properties*.
   id: totrans-24
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 必须通过在*config.properties*中设置*cpu_launcher_enable=true*来显式启用该功能。
 - en: Avoid logical cores for deep learning
   id: totrans-25
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 避免逻辑核心进行深度学习
 - en: Avoiding logical cores for deep learning workloads generally improves performance.
     To understand this, let us take a step back to GEMM.
   id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 通常，避免逻辑核心进行深度学习工作负载会提高性能。为了理解这一点，让我们回到GEMM。
 - en: '**Optimizing GEMM optimizes deep learning**'
   id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: '**优化GEMM优化深度学习**'
 - en: The majority of time in deep learning training or inference is spent on millions
     of repeated operations of GEMM which is at the core of fully connected layers.
     Fully connected layers have been used for decades since multi-layer perceptrons
