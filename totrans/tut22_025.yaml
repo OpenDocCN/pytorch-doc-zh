@@ -1,187 +1,271 @@
 - en: Learning PyTorch with Examples
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 通过示例学习PyTorch
 - en: 原文：[https://pytorch.org/tutorials/beginner/pytorch_with_examples.html](https://pytorch.org/tutorials/beginner/pytorch_with_examples.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/beginner/pytorch_with_examples.html](https://pytorch.org/tutorials/beginner/pytorch_with_examples.html)
 - en: '**Author**: [Justin Johnson](https://github.com/jcjohnson/pytorch-examples)'
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: '**作者**：[Justin Johnson](https://github.com/jcjohnson/pytorch-examples)'
 - en: Note
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: This is one of our older PyTorch tutorials. You can view our latest beginner
     content in [Learn the Basics](https://pytorch.org/tutorials/beginner/basics/intro.html).
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 这是我们较旧的PyTorch教程之一。您可以在[学习基础知识](https://pytorch.org/tutorials/beginner/basics/intro.html)中查看我们最新的入门内容。
 - en: This tutorial introduces the fundamental concepts of [PyTorch](https://github.com/pytorch/pytorch)
     through self-contained examples.
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程通过自包含示例介绍了[PyTorch](https://github.com/pytorch/pytorch)的基本概念。
 - en: 'At its core, PyTorch provides two main features:'
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 在核心，PyTorch提供了两个主要功能：
 - en: An n-dimensional Tensor, similar to numpy but can run on GPUs
+  id: totrans-7
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 一个n维张量，类似于numpy但可以在GPU上运行
 - en: Automatic differentiation for building and training neural networks
+  id: totrans-8
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 用于构建和训练神经网络的自动微分
 - en: We will use a problem of fitting \(y=\sin(x)\) with a third order polynomial
     as our running example. The network will have four parameters, and will be trained
     with gradient descent to fit random data by minimizing the Euclidean distance
     between the network output and the true output.
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们将使用拟合\(y=\sin(x)\)的问题作为运行示例，使用三阶多项式。网络将有四个参数，并将通过梯度下降进行训练，通过最小化网络输出与真实输出之间的欧几里德距离来拟合随机数据。
 - en: Note
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: You can browse the individual examples at the [end of this page](#examples-download).
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可以在[本页末尾](#examples-download)浏览各个示例。
 - en: Table of Contents
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: 目录
 - en: '[Tensors](#tensors)'
+  id: totrans-13
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[张量](#tensors)'
 - en: '[Warm-up: numpy](#warm-up-numpy)'
+  id: totrans-14
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 【热身：numpy】
 - en: '[PyTorch: Tensors](#pytorch-tensors)'
+  id: totrans-15
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[PyTorch：张量](#pytorch-tensors)'
 - en: '[Autograd](#autograd)'
+  id: totrans-16
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[自动求导](#autograd)'
 - en: '[PyTorch: Tensors and autograd](#pytorch-tensors-and-autograd)'
+  id: totrans-17
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[PyTorch：张量和自动求导](#pytorch-tensors-and-autograd)'
 - en: '[PyTorch: Defining new autograd functions](#pytorch-defining-new-autograd-functions)'
+  id: totrans-18
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[PyTorch：定义新的自动求导函数](#pytorch-defining-new-autograd-functions)'
 - en: '[`nn` module](#nn-module)'
+  id: totrans-19
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[`nn`模块](#nn-module)'
 - en: '[PyTorch: `nn`](#pytorch-nn)'
+  id: totrans-20
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[PyTorch：`nn`](#pytorch-nn)'
 - en: '[PyTorch: optim](#pytorch-optim)'
+  id: totrans-21
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[PyTorch：优化](#pytorch-optim)'
 - en: '[PyTorch: Custom `nn` Modules](#pytorch-custom-nn-modules)'
+  id: totrans-22
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[PyTorch：自定义`nn`模块](#pytorch-custom-nn-modules)'
 - en: '[PyTorch: Control Flow + Weight Sharing](#pytorch-control-flow-weight-sharing)'
+  id: totrans-23
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[PyTorch：控制流+权重共享](#pytorch-control-flow-weight-sharing)'
 - en: '[Examples](#examples)'
+  id: totrans-24
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[示例](#examples)'
 - en: '[Tensors](#id1)'
+  id: totrans-25
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[张量](#id1)'
 - en: '[Autograd](#id2)'
+  id: totrans-26
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[自动求导](#id2)'
 - en: '[`nn` module](#id3)'
+  id: totrans-27
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[`nn`模块](#id3)'
 - en: '[Tensors](#id4)'
+  id: totrans-28
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: '[张量](#id4)'
 - en: '[Warm-up: numpy](#id5)'
+  id: totrans-29
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 【热身：numpy】
 - en: Before introducing PyTorch, we will first implement the network using numpy.
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 在介绍PyTorch之前，我们将首先使用numpy实现网络。
 - en: 'Numpy provides an n-dimensional array object, and many functions for manipulating
     these arrays. Numpy is a generic framework for scientific computing; it does not
     know anything about computation graphs, or deep learning, or gradients. However
     we can easily use numpy to fit a third order polynomial to sine function by manually
     implementing the forward and backward passes through the network using numpy operations:'
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: Numpy提供了一个n维数组对象，以及许多用于操作这些数组的函数。Numpy是一个用于科学计算的通用框架；它不知道计算图、深度学习或梯度。然而，我们可以通过手动实现前向和后向传递来使用numpy轻松拟合正弦函数的三阶多项式，使用numpy操作：
 - en: '[PRE0]'
+  id: totrans-32
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: '[PyTorch: Tensors](#id6)'
+  id: totrans-33
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: '[PyTorch：张量](#id6)'
 - en: Numpy is a great framework, but it cannot utilize GPUs to accelerate its numerical
     computations. For modern deep neural networks, GPUs often provide speedups of
     [50x or greater](https://github.com/jcjohnson/cnn-benchmarks), so unfortunately
     numpy won’t be enough for modern deep learning.
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: Numpy是一个很棒的框架，但它无法利用GPU加速其数值计算。对于现代深度神经网络，GPU通常可以提供[50倍或更高的加速](https://github.com/jcjohnson/cnn-benchmarks)，所以遗憾的是numpy对于现代深度学习来说不够。
 - en: 'Here we introduce the most fundamental PyTorch concept: the **Tensor**. A PyTorch
     Tensor is conceptually identical to a numpy array: a Tensor is an n-dimensional
     array, and PyTorch provides many functions for operating on these Tensors. Behind
     the scenes, Tensors can keep track of a computational graph and gradients, but
     they’re also useful as a generic tool for scientific computing.'
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这里，我们介绍了最基本的PyTorch概念：**张量**。PyTorch张量在概念上与numpy数组相同：张量是一个n维数组，PyTorch提供了许多操作这些张量的函数。在幕后，张量可以跟踪计算图和梯度，但它们也作为科学计算的通用工具非常有用。
 - en: Also unlike numpy, PyTorch Tensors can utilize GPUs to accelerate their numeric
     computations. To run a PyTorch Tensor on GPU, you simply need to specify the correct
     device.
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 与numpy不同，PyTorch张量可以利用GPU加速其数值计算。要在GPU上运行PyTorch张量，只需指定正确的设备。
 - en: 'Here we use PyTorch Tensors to fit a third order polynomial to sine function.
     Like the numpy example above we need to manually implement the forward and backward
     passes through the network:'
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这里，我们使用PyTorch张量来拟合正弦函数的三阶多项式。与上面的numpy示例一样，我们需要手动实现网络的前向和后向传递：
 - en: '[PRE1]'
+  id: totrans-38
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: '[Autograd](#id7)'
+  id: totrans-39
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: '[自动求导](#id7)'
 - en: '[PyTorch: Tensors and autograd](#id8)'
+  id: totrans-40
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: '[PyTorch：张量和自动求导](#id8)'
 - en: In the above examples, we had to manually implement both the forward and backward
     passes of our neural network. Manually implementing the backward pass is not a
     big deal for a small two-layer network, but can quickly get very hairy for large
     complex networks.
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 在上面的示例中，我们不得不手动实现神经网络的前向和后向传递。对于一个小型的两层网络，手动实现反向传递并不困难，但对于大型复杂网络来说可能会变得非常复杂。
 - en: Thankfully, we can use [automatic differentiation](https://en.wikipedia.org/wiki/Automatic_differentiation)
     to automate the computation of backward passes in neural networks. The **autograd**
     package in PyTorch provides exactly this functionality. When using autograd, the
@@ -189,160 +273,232 @@
     graph will be Tensors, and edges will be functions that produce output Tensors
     from input Tensors. Backpropagating through this graph then allows you to easily
     compute gradients.
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 幸运的是，我们可以使用[自动微分](https://en.wikipedia.org/wiki/Automatic_differentiation)来自动计算神经网络中的反向传播。PyTorch中的**autograd**包提供了这种功能。使用autograd时，网络的前向传播将定义一个**计算图**；图中的节点将是张量，边将是从输入张量产生输出张量的函数。通过这个图进行反向传播，您可以轻松计算梯度。
 - en: This sounds complicated, it’s pretty simple to use in practice. Each Tensor
     represents a node in a computational graph. If `x` is a Tensor that has `x.requires_grad=True`
     then `x.grad` is another Tensor holding the gradient of `x` with respect to some
     scalar value.
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: 听起来很复杂，但在实践中使用起来非常简单。每个张量代表计算图中的一个节点。如果`x`是一个具有`x.requires_grad=True`的张量，那么`x.grad`是另一个张量，保存了`x`相对于某个标量值的梯度。
 - en: 'Here we use PyTorch Tensors and autograd to implement our fitting sine wave
     with third order polynomial example; now we no longer need to manually implement
     the backward pass through the network:'
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这里，我们使用PyTorch张量和自动求导来实现我们拟合正弦波的三次多项式示例；现在我们不再需要手动实现网络的反向传播：
 - en: '[PRE2]'
+  id: totrans-45
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: '[PyTorch: Defining new autograd functions](#id9)'
+  id: totrans-46
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: '[PyTorch: 定义新的自动求导函数](#id9)'
 - en: Under the hood, each primitive autograd operator is really two functions that
     operate on Tensors. The **forward** function computes output Tensors from input
     Tensors. The **backward** function receives the gradient of the output Tensors
     with respect to some scalar value, and computes the gradient of the input Tensors
     with respect to that same scalar value.
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: 在底层，每个原始的自动求导运算符实际上是作用于张量的两个函数。**前向**函数从输入张量计算输出张量。**反向**函数接收输出张量相对于某个标量值的梯度，并计算输入张量相对于相同标量值的梯度。
 - en: In PyTorch we can easily define our own autograd operator by defining a subclass
     of `torch.autograd.Function` and implementing the `forward` and `backward` functions.
     We can then use our new autograd operator by constructing an instance and calling
     it like a function, passing Tensors containing input data.
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: 在PyTorch中，我们可以通过定义`torch.autograd.Function`的子类并实现`forward`和`backward`函数来轻松定义自己的自动求导运算符。然后，我们可以通过构建一个实例并像调用函数一样调用它来使用我们的新自动求导运算符，传递包含输入数据的张量。
 - en: 'In this example we define our model as \(y=a+b P_3(c+dx)\) instead of \(y=a+bx+cx^2+dx^3\),
     where \(P_3(x)=\frac{1}{2}\left(5x^3-3x\right)\) is the [Legendre polynomial](https://en.wikipedia.org/wiki/Legendre_polynomials)
     of degree three. We write our own custom autograd function for computing forward
     and backward of \(P_3\), and use it to implement our model:'
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这个例子中，我们将我们的模型定义为\(y=a+b P_3(c+dx)\)而不是\(y=a+bx+cx^2+dx^3\)，其中\(P_3(x)=\frac{1}{2}\left(5x^3-3x\right)\)是三次[勒让德多项式](https://en.wikipedia.org/wiki/Legendre_polynomials)。我们编写自定义的自动求导函数来计算\(P_3\)的前向和反向，并使用它来实现我们的模型：
 - en: '[PRE3]'
+  id: totrans-50
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: '[`nn` module](#id10)'
+  id: totrans-51
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: '[`nn` 模块](#id10)'
 - en: '[PyTorch: `nn`](#id11)'
+  id: totrans-52
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: '[PyTorch: `nn`](#id11)'
 - en: Computational graphs and autograd are a very powerful paradigm for defining
     complex operators and automatically taking derivatives; however for large neural
     networks raw autograd can be a bit too low-level.
+  id: totrans-53
   prefs: []
   type: TYPE_NORMAL
+  zh: 计算图和自动求导是定义复杂运算符和自动计算导数的非常强大的范式；然而，对于大型神经网络，原始的自动求导可能有点太低级。
 - en: When building neural networks we frequently think of arranging the computation
     into **layers**, some of which have **learnable parameters** which will be optimized
     during learning.
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: 在构建神经网络时，我们经常将计算安排成**层**，其中一些层具有**可学习参数**，这些参数在学习过程中将被优化。
 - en: In TensorFlow, packages like [Keras](https://github.com/fchollet/keras), [TensorFlow-Slim](https://github.com/tensorflow/tensorflow/tree/master/tensorflow/contrib/slim),
     and [TFLearn](http://tflearn.org/) provide higher-level abstractions over raw
     computational graphs that are useful for building neural networks.
+  id: totrans-55
   prefs: []
   type: TYPE_NORMAL
+  zh: 在TensorFlow中，像[Keras](https://github.com/fchollet/keras)、[TensorFlow-Slim](https://github.com/tensorflow/tensorflow/tree/master/tensorflow/contrib/slim)和[TFLearn](http://tflearn.org/)这样的包提供了对原始计算图的高级抽象，这对构建神经网络很有用。
 - en: In PyTorch, the `nn` package serves this same purpose. The `nn` package defines
     a set of **Modules**, which are roughly equivalent to neural network layers. A
     Module receives input Tensors and computes output Tensors, but may also hold internal
     state such as Tensors containing learnable parameters. The `nn` package also defines
     a set of useful loss functions that are commonly used when training neural networks.
+  id: totrans-56
   prefs: []
   type: TYPE_NORMAL
+  zh: 在PyTorch中，`nn`包提供了相同的功能。`nn`包定义了一组**模块**，这些模块大致相当于神经网络层。一个模块接收输入张量并计算输出张量，但也可能包含内部状态，如包含可学习参数的张量。`nn`包还定义了一组常用的损失函数，这些函数在训练神经网络时经常使用。
 - en: 'In this example we use the `nn` package to implement our polynomial model network:'
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这个例子中，我们使用`nn`包来实现我们的多项式模型网络：
 - en: '[PRE4]'
+  id: totrans-58
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: '[PyTorch: optim](#id12)'
+  id: totrans-59
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: '[PyTorch: 优化](#id12)'
 - en: Up to this point we have updated the weights of our models by manually mutating
     the Tensors holding learnable parameters with `torch.no_grad()`. This is not a
     huge burden for simple optimization algorithms like stochastic gradient descent,
     but in practice we often train neural networks using more sophisticated optimizers
     like `AdaGrad`, `RMSProp`, `Adam`, and other.
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: 到目前为止，我们通过手动改变包含可学习参数的张量来更新模型的权重，使用`torch.no_grad()`。对于简单的优化算法如随机梯度下降，这并不是一个巨大的负担，但在实践中，我们经常使用更复杂的优化器如`AdaGrad`、`RMSProp`、`Adam`等来训练神经网络。
 - en: The `optim` package in PyTorch abstracts the idea of an optimization algorithm
     and provides implementations of commonly used optimization algorithms.
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch中的`optim`包抽象了优化算法的概念，并提供了常用优化算法的实现。
 - en: 'In this example we will use the `nn` package to define our model as before,
     but we will optimize the model using the `RMSprop` algorithm provided by the `optim`
     package:'
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这个例子中，我们将使用`nn`包来定义我们的模型，但我们将使用`optim`包提供的`RMSprop`算法来优化模型：
 - en: '[PRE5]'
+  id: totrans-63
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: '[PyTorch: Custom `nn` Modules](#id13)'
+  id: totrans-64
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: '[PyTorch：自定义`nn`模块](#id13)'
 - en: Sometimes you will want to specify models that are more complex than a sequence
     of existing Modules; for these cases you can define your own Modules by subclassing
     `nn.Module` and defining a `forward` which receives input Tensors and produces
     output Tensors using other modules or other autograd operations on Tensors.
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: 有时候，您可能希望指定比现有模块序列更复杂的模型；对于这些情况，您可以通过子类化`nn.Module`并定义一个`forward`来定义自己的模块，该`forward`接收输入张量并使用其他模块或张量上的其他自动求导操作生成输出张量。
 - en: 'In this example we implement our third order polynomial as a custom Module
     subclass:'
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这个例子中，我们将我们的三次多项式实现为一个自定义的Module子类：
 - en: '[PRE6]'
+  id: totrans-67
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: '[PyTorch: Control Flow + Weight Sharing](#id14)'
+  id: totrans-68
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: '[PyTorch：控制流+权重共享](#id14)'
 - en: 'As an example of dynamic graphs and weight sharing, we implement a very strange
     model: a third-fifth order polynomial that on each forward pass chooses a random
     number between 3 and 5 and uses that many orders, reusing the same weights multiple
     times to compute the fourth and fifth order.'
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: 作为动态图和权重共享的示例，我们实现了一个非常奇怪的模型：一个三到五次多项式，在每次前向传递时选择一个在3到5之间的随机数，并使用这么多次数，多次重复使用相同的权重来计算第四和第五次。
 - en: For this model we can use normal Python flow control to implement the loop,
     and we can implement weight sharing by simply reusing the same parameter multiple
     times when defining the forward pass.
+  id: totrans-70
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于这个模型，我们可以使用普通的Python流程控制来实现循环，并且可以通过在定义前向传递时多次重复使用相同的参数来实现权重共享。
 - en: 'We can easily implement this model as a Module subclass:'
+  id: totrans-71
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们可以很容易地将这个模型实现为一个Module子类：
 - en: '[PRE7]'
+  id: totrans-72
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: '## [Examples](#id15)'
+  id: totrans-73
   prefs: []
   type: TYPE_NORMAL
+  zh: '## [示例](#id15)'
 - en: You can browse the above examples here.
+  id: totrans-74
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可以在这里浏览上述示例。
 - en: '[Tensors](#id16)'
+  id: totrans-75
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: '[张量](#id16)'
 - en: '[Autograd](#id17)'
+  id: totrans-76
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: '[自动求导](#id17)'
 - en: '[`nn` module](#id18)'
+  id: totrans-77
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: '[`nn`模块](#id18)'

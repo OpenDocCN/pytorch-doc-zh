@@ -1,158 +1,234 @@
 - en: TorchVision Object Detection Finetuning Tutorial
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: TorchVision目标检测微调教程
 - en: 原文：[https://pytorch.org/tutorials/intermediate/torchvision_tutorial.html](https://pytorch.org/tutorials/intermediate/torchvision_tutorial.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/intermediate/torchvision_tutorial.html](https://pytorch.org/tutorials/intermediate/torchvision_tutorial.html)
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-intermediate-torchvision-tutorial-py) to download
     the full example code
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[这里](#sphx-glr-download-intermediate-torchvision-tutorial-py)下载完整示例代码
 - en: For this tutorial, we will be finetuning a pre-trained [Mask R-CNN](https://arxiv.org/abs/1703.06870)
     model on the [Penn-Fudan Database for Pedestrian Detection and Segmentation](https://www.cis.upenn.edu/~jshi/ped_html/).
     It contains 170 images with 345 instances of pedestrians, and we will use it to
     illustrate how to use the new features in torchvision in order to train an object
     detection and instance segmentation model on a custom dataset.
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，我们将对[宾夕法尼亚大学行人检测和分割数据库](https://www.cis.upenn.edu/~jshi/ped_html/)上的预训练[Mask
+    R-CNN](https://arxiv.org/abs/1703.06870)模型进行微调。它包含170张图像，有345个行人实例，我们将用它来演示如何使用torchvision中的新功能来训练自定义数据集上的目标检测和实例分割模型。
 - en: Note
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: This tutorial works only with torchvision version >=0.16 or nightly. If you’re
     using torchvision<=0.15, please follow [this tutorial instead](https://github.com/pytorch/tutorials/blob/d686b662932a380a58b7683425faa00c06bcf502/intermediate_source/torchvision_tutorial.rst).
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程仅适用于torchvision版本>=0.16或夜间版本。如果您使用的是torchvision<=0.15，请按照[此教程](https://github.com/pytorch/tutorials/blob/d686b662932a380a58b7683425faa00c06bcf502/intermediate_source/torchvision_tutorial.rst)操作。
 - en: Defining the Dataset
+  id: totrans-7
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 定义数据集
 - en: The reference scripts for training object detection, instance segmentation and
     person keypoint detection allows for easily supporting adding new custom datasets.
     The dataset should inherit from the standard [`torch.utils.data.Dataset`](https://pytorch.org/docs/stable/data.html#torch.utils.data.Dataset
     "(in PyTorch v2.2)") class, and implement `__len__` and `__getitem__`.
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 用于训练目标检测、实例分割和人体关键点检测的参考脚本允许轻松支持添加新的自定义数据集。数据集应该继承自标准[`torch.utils.data.Dataset`](https://pytorch.org/docs/stable/data.html#torch.utils.data.Dataset
+    "(在PyTorch v2.2中)")类，并实现`__len__`和`__getitem__`。
 - en: 'The only specificity that we require is that the dataset `__getitem__` should
     return a tuple:'
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们唯一要求的特定性是数据集`__getitem__`应返回一个元组：
 - en: 'image: [`torchvision.tv_tensors.Image`](https://pytorch.org/vision/stable/generated/torchvision.tv_tensors.Image.html#torchvision.tv_tensors.Image
     "(in Torchvision v0.17)") of shape `[3, H, W]`, a pure tensor, or a PIL Image
     of size `(H, W)`'
+  id: totrans-10
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: image：形状为`[3, H, W]`的[`torchvision.tv_tensors.Image`](https://pytorch.org/vision/stable/generated/torchvision.tv_tensors.Image.html#torchvision.tv_tensors.Image
+    "(在Torchvision v0.17中")，一个纯张量，或大小为`(H, W)`的PIL图像
 - en: 'target: a dict containing the following fields'
+  id: totrans-11
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 目标：包含以下字段的字典
 - en: '`boxes`, [`torchvision.tv_tensors.BoundingBoxes`](https://pytorch.org/vision/stable/generated/torchvision.tv_tensors.BoundingBoxes.html#torchvision.tv_tensors.BoundingBoxes
     "(in Torchvision v0.17)") of shape `[N, 4]`: the coordinates of the `N` bounding
     boxes in `[x0, y0, x1, y1]` format, ranging from `0` to `W` and `0` to `H`'
+  id: totrans-12
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`boxes`，形状为`[N, 4]`的[`torchvision.tv_tensors.BoundingBoxes`](https://pytorch.org/vision/stable/generated/torchvision.tv_tensors.BoundingBoxes.html#torchvision.tv_tensors.BoundingBoxes
+    "(在Torchvision v0.17中)")：`N`个边界框的坐标，格式为`[x0, y0, x1, y1]`，范围从`0`到`W`和`0`到`H`'
 - en: '`labels`, integer [`torch.Tensor`](https://pytorch.org/docs/stable/tensors.html#torch.Tensor
     "(in PyTorch v2.2)") of shape `[N]`: the label for each bounding box. `0` represents
     always the background class.'
+  id: totrans-13
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`labels`，形状为`[N]`的整数[`torch.Tensor`](https://pytorch.org/docs/stable/tensors.html#torch.Tensor
+    "(在PyTorch v2.2中)")：每个边界框的标签。`0`始终表示背景类。'
 - en: '`image_id`, int: an image identifier. It should be unique between all the images
     in the dataset, and is used during evaluation'
+  id: totrans-14
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`image_id`，整数：图像标识符。它应该在数据集中的所有图像之间是唯一的，并在评估过程中使用'
 - en: '`area`, float [`torch.Tensor`](https://pytorch.org/docs/stable/tensors.html#torch.Tensor
     "(in PyTorch v2.2)") of shape `[N]`: the area of the bounding box. This is used
     during evaluation with the COCO metric, to separate the metric scores between
     small, medium and large boxes.'
+  id: totrans-15
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`area`，形状为`[N]`的浮点数[`torch.Tensor`](https://pytorch.org/docs/stable/tensors.html#torch.Tensor
+    "(在PyTorch v2.2中)")：边界框的面积。在使用COCO指标进行评估时使用，以区分小、中和大框之间的指标分数。'
 - en: '`iscrowd`, uint8 [`torch.Tensor`](https://pytorch.org/docs/stable/tensors.html#torch.Tensor
     "(in PyTorch v2.2)") of shape `[N]`: instances with `iscrowd=True` will be ignored
     during evaluation.'
+  id: totrans-16
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`iscrowd`，形状为`[N]`的uint8 [`torch.Tensor`](https://pytorch.org/docs/stable/tensors.html#torch.Tensor
+    "(在PyTorch v2.2中)")：具有`iscrowd=True`的实例在评估过程中将被忽略。'
 - en: '(optionally) `masks`, [`torchvision.tv_tensors.Mask`](https://pytorch.org/vision/stable/generated/torchvision.tv_tensors.Mask.html#torchvision.tv_tensors.Mask
     "(in Torchvision v0.17)") of shape `[N, H, W]`: the segmentation masks for each
     one of the objects'
+  id: totrans-17
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: （可选）`masks`，形状为`[N, H, W]`的[`torchvision.tv_tensors.Mask`](https://pytorch.org/vision/stable/generated/torchvision.tv_tensors.Mask.html#torchvision.tv_tensors.Mask
+    "(在Torchvision v0.17中)")：每个对象的分割掩码
 - en: If your dataset is compliant with above requirements then it will work for both
     training and evaluation codes from the reference script. Evaluation code will
     use scripts from `pycocotools` which can be installed with `pip install pycocotools`.
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您的数据集符合上述要求，则可以在参考脚本中的训练和评估代码中使用。评估代码将使用`pycocotools`中的脚本，可以通过`pip install
+    pycocotools`安装。
 - en: Note
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: For Windows, please install `pycocotools` from [gautamchitnis](https://github.com/gautamchitnis/cocoapi)
     with command
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于Windows，请使用以下命令从[gautamchitnis](https://github.com/gautamchitnis/cocoapi)安装`pycocotools`
 - en: '`pip install git+https://github.com/gautamchitnis/cocoapi.git@cocodataset-master#subdirectory=PythonAPI`'
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: '`pip install git+https://github.com/gautamchitnis/cocoapi.git@cocodataset-master#subdirectory=PythonAPI`'
 - en: One note on the `labels`. The model considers class `0` as background. If your
     dataset does not contain the background class, you should not have `0` in your
     `labels`. For example, assuming you have just two classes, *cat* and *dog*, you
     can define `1` (not `0`) to represent *cats* and `2` to represent *dogs*. So,
     for instance, if one of the images has both classes, your `labels` tensor should
     look like `[1, 2]`.
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 关于`labels`的一点说明。模型将类`0`视为背景。如果您的数据集不包含背景类，则在`labels`中不应该有`0`。例如，假设您只有两类，*猫*和*狗*，您可以定义`1`（而不是`0`）表示*猫*，`2`表示*狗*。因此，例如，如果一张图像同时包含两类，则您的`labels`张量应该如下所示`[1,
+    2]`。
 - en: Additionally, if you want to use aspect ratio grouping during training (so that
     each batch only contains images with similar aspect ratios), then it is recommended
     to also implement a `get_height_and_width` method, which returns the height and
     the width of the image. If this method is not provided, we query all elements
     of the dataset via `__getitem__` , which loads the image in memory and is slower
     than if a custom method is provided.
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 此外，如果您想在训练期间使用纵横比分组（以便每个批次只包含具有相似纵横比的图像），则建议还实现一个`get_height_and_width`方法，该方法返回图像的高度和宽度。如果未提供此方法，我们将通过`__getitem__`查询数据集的所有元素，这会将图像加载到内存中，比提供自定义方法慢。
 - en: Writing a custom dataset for PennFudan
+  id: totrans-24
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 为PennFudan编写自定义数据集
 - en: 'Let’s write a dataset for the PennFudan dataset. First, let’s download the
     dataset and extract the [zip file](https://www.cis.upenn.edu/~jshi/ped_html/PennFudanPed.zip):'
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们为PennFudan数据集编写一个数据集。首先，让我们下载数据集并提取[zip文件](https://www.cis.upenn.edu/~jshi/ped_html/PennFudanPed.zip)：
 - en: '[PRE0]'
+  id: totrans-26
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: 'We have the following folder structure:'
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们有以下文件夹结构：
 - en: '[PRE1]'
+  id: totrans-28
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Here is one example of a pair of images and segmentation masks
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 这是一对图像和分割蒙版的示例
 - en: '[PRE2]'
+  id: totrans-30
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: '![Image, Mask](../Images/af4053119e5bd4687c7021a5d001f282.png)'
+  id: totrans-31
   prefs: []
   type: TYPE_IMG
+  zh: '![Image, Mask](../Images/af4053119e5bd4687c7021a5d001f282.png)'
 - en: '[PRE3]'
+  id: totrans-32
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: So each image has a corresponding segmentation mask, where each color correspond
     to a different instance. Let’s write a [`torch.utils.data.Dataset`](https://pytorch.org/docs/stable/data.html#torch.utils.data.Dataset
     "(in PyTorch v2.2)") class for this dataset. In the code below, we are wrapping
@@ -169,182 +245,293 @@
     the plain [`torch.Tensor`](https://pytorch.org/docs/stable/tensors.html#torch.Tensor
     "(in PyTorch v2.2)") API. For more information about torchvision `tv_tensors`
     see [this documentation](https://pytorch.org/vision/main/auto_examples/transforms/plot_transforms_getting_started.html#what-are-tvtensors).
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: 因此，每个图像都有一个相应的分割蒙版，其中每种颜色对应不同的实例。让我们为这个数据集编写一个[`torch.utils.data.Dataset`](https://pytorch.org/docs/stable/data.html#torch.utils.data.Dataset
+    "(在PyTorch v2.2)")类。在下面的代码中，我们将图像、边界框和蒙版封装到[`torchvision.tv_tensors.TVTensor`](https://pytorch.org/vision/stable/generated/torchvision.tv_tensors.TVTensor.html#torchvision.tv_tensors.TVTensor
+    "(在Torchvision v0.17)")类中，以便我们能够应用torchvision内置的转换（[新的转换API](https://pytorch.org/vision/stable/transforms.html)）来完成给定的目标检测和分割任务。换句话说，图像张量将被[`torchvision.tv_tensors.Image`](https://pytorch.org/vision/stable/generated/torchvision.tv_tensors.Image.html#torchvision.tv_tensors.Image
+    "(在Torchvision v0.17)")封装，边界框将被封装为[`torchvision.tv_tensors.BoundingBoxes`](https://pytorch.org/vision/stable/generated/torchvision.tv_tensors.BoundingBoxes.html#torchvision.tv_tensors.BoundingBoxes
+    "(在Torchvision v0.17)")，蒙版将被封装为[`torchvision.tv_tensors.Mask`](https://pytorch.org/vision/stable/generated/torchvision.tv_tensors.Mask.html#torchvision.tv_tensors.Mask
+    "(在Torchvision v0.17)")。由于[`torchvision.tv_tensors.TVTensor`](https://pytorch.org/vision/stable/generated/torchvision.tv_tensors.TVTensor.html#torchvision.tv_tensors.TVTensor
+    "(在Torchvision v0.17)")是[`torch.Tensor`](https://pytorch.org/docs/stable/tensors.html#torch.Tensor
+    "(在PyTorch v2.2)")的子类，封装的对象也是张量，并继承了普通的[`torch.Tensor`](https://pytorch.org/docs/stable/tensors.html#torch.Tensor
+    "(在PyTorch v2.2)") API。有关torchvision `tv_tensors`的更多信息，请参阅[此文档](https://pytorch.org/vision/main/auto_examples/transforms/plot_transforms_getting_started.html#what-are-tvtensors)。
 - en: '[PRE4]'
+  id: totrans-34
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: That’s all for the dataset. Now let’s define a model that can perform predictions
     on this dataset.
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 这就是数据集的全部内容。现在让我们定义一个可以在此数据集上执行预测的模型。
 - en: Defining your model
+  id: totrans-36
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 定义您的模型
 - en: In this tutorial, we will be using [Mask R-CNN](https://arxiv.org/abs/1703.06870),
     which is based on top of [Faster R-CNN](https://arxiv.org/abs/1506.01497). Faster
     R-CNN is a model that predicts both bounding boxes and class scores for potential
     objects in the image.
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，我们将使用基于[Faster R-CNN](https://arxiv.org/abs/1506.01497)的[Mask R-CNN](https://arxiv.org/abs/1703.06870)。Faster
+    R-CNN是一个模型，用于预测图像中潜在对象的边界框和类别分数。
 - en: '![../_static/img/tv_tutorial/tv_image03.png](../Images/611c2725bdfb89e258da9a99fca53433.png)'
+  id: totrans-38
   prefs: []
   type: TYPE_IMG
+  zh: '![../_static/img/tv_tutorial/tv_image03.png](../Images/611c2725bdfb89e258da9a99fca53433.png)'
 - en: Mask R-CNN adds an extra branch into Faster R-CNN, which also predicts segmentation
     masks for each instance.
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: Mask R-CNN在Faster R-CNN中添加了一个额外的分支，还为每个实例预测分割蒙版。
 - en: '![../_static/img/tv_tutorial/tv_image04.png](../Images/afd408b97567c661cc8cb8a80c7c777c.png)'
+  id: totrans-40
   prefs: []
   type: TYPE_IMG
+  zh: '![../_static/img/tv_tutorial/tv_image04.png](../Images/afd408b97567c661cc8cb8a80c7c777c.png)'
 - en: There are two common situations where one might want to modify one of the available
     models in TorchVision Model Zoo. The first is when we want to start from a pre-trained
     model, and just finetune the last layer. The other is when we want to replace
     the backbone of the model with a different one (for faster predictions, for example).
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 有两种常见情况可能需要修改 TorchVision Model Zoo 中的可用模型之一。第一种情况是当我们想要从预训练模型开始，只微调最后一层时。另一种情况是当我们想要用不同的主干替换模型的主干时（例如为了更快的预测）。
 - en: Let’s go see how we would do one or another in the following sections.
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们看看在以下部分中我们将如何执行其中一个或另一个。
 - en: 1 - Finetuning from a pretrained model
+  id: totrans-43
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 1 - 从预训练模型微调
 - en: 'Let’s suppose that you want to start from a model pre-trained on COCO and want
     to finetune it for your particular classes. Here is a possible way of doing it:'
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 假设您想从在 COCO 上预训练的模型开始，并希望对其进行微调以适应您的特定类别。以下是可能的操作方式：
 - en: '[PRE5]'
+  id: totrans-45
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: '[PRE6]'
+  id: totrans-46
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: 2 - Modifying the model to add a different backbone
+  id: totrans-47
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 2 - 修改模型以添加不同的主干
 - en: '[PRE7]'
+  id: totrans-48
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: '[PRE8]'
+  id: totrans-49
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: Object detection and instance segmentation model for PennFudan Dataset
+  id: totrans-50
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: PennFudan 数据集的目标检测和实例分割模型
 - en: In our case, we want to finetune from a pre-trained model, given that our dataset
     is very small, so we will be following approach number 1.
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
+  zh: 在我们的情况下，我们希望从预训练模型进行微调，鉴于我们的数据集非常小，因此我们将遵循第一种方法。
 - en: 'Here we want to also compute the instance segmentation masks, so we will be
     using Mask R-CNN:'
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这里，我们还想计算实例分割掩模，因此我们将使用 Mask R-CNN：
 - en: '[PRE9]'
+  id: totrans-53
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: That’s it, this will make `model` be ready to be trained and evaluated on your
     custom dataset.
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: 这样，`model` 就准备好在您的自定义数据集上进行训练和评估了。
 - en: Putting everything together
+  id: totrans-55
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 将所有内容放在一起
 - en: 'In `references/detection/`, we have a number of helper functions to simplify
     training and evaluating detection models. Here, we will use `references/detection/engine.py`
     and `references/detection/utils.py`. Just download everything under `references/detection`
     to your folder and use them here. On Linux if you have `wget`, you can download
     them using below commands:'
+  id: totrans-56
   prefs: []
   type: TYPE_NORMAL
+  zh: 在 `references/detection/` 中，我们有许多辅助函数来简化训练和评估检测模型。在这里，我们将使用 `references/detection/engine.py`
+    和 `references/detection/utils.py`。只需将 `references/detection` 下的所有内容下载到您的文件夹中并在此处使用它们。在
+    Linux 上，如果您有 `wget`，您可以使用以下命令下载它们：
 - en: '[PRE10]'
+  id: totrans-57
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: '[PRE11]'
+  id: totrans-58
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: Since v0.15.0 torchvision provides [new Transforms API](https://pytorch.org/vision/stable/transforms.html)
     to easily write data augmentation pipelines for Object Detection and Segmentation
     tasks.
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: 自 v0.15.0 起，torchvision 提供了[新的 Transforms API](https://pytorch.org/vision/stable/transforms.html)，以便为目标检测和分割任务轻松编写数据增强流水线。
 - en: 'Let’s write some helper functions for data augmentation / transformation:'
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们编写一些辅助函数用于数据增强/转换：
 - en: '[PRE12]'
+  id: totrans-61
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: Testing `forward()` method (Optional)
+  id: totrans-62
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 测试 `forward()` 方法（可选）
 - en: Before iterating over the dataset, it’s good to see what the model expects during
     training and inference time on sample data.
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: 在迭代数据集之前，查看模型在训练和推断时对样本数据的期望是很好的。
 - en: '[PRE13]'
+  id: totrans-64
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: '[PRE14]'
+  id: totrans-65
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: 'Let’s now write the main function which performs the training and the validation:'
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在让我们编写执行训练和验证的主要函数：
 - en: '[PRE15]'
+  id: totrans-67
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: '[PRE16]'
+  id: totrans-68
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: So after one epoch of training, we obtain a COCO-style mAP > 50, and a mask
     mAP of 65.
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: 因此，在训练一个周期后，我们获得了 COCO 风格的 mAP > 50，以及 65 的 mask mAP。
 - en: But what do the predictions look like? Let’s take one image in the dataset and
     verify
+  id: totrans-70
   prefs: []
   type: TYPE_NORMAL
+  zh: 但是预测结果是什么样的呢？让我们看看数据集中的一张图片并验证
 - en: '[PRE17]'
+  id: totrans-71
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: '![torchvision tutorial](../Images/ece431a9b916de8c06f03c6efa4b7cc4.png)'
+  id: totrans-72
   prefs: []
   type: TYPE_IMG
+  zh: '![torchvision 教程](../Images/ece431a9b916de8c06f03c6efa4b7cc4.png)'
 - en: '[PRE18]'
+  id: totrans-73
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: The results look good!
+  id: totrans-74
   prefs: []
   type: TYPE_NORMAL
+  zh: 结果看起来不错！
 - en: Wrapping up
+  id: totrans-75
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 总结
 - en: In this tutorial, you have learned how to create your own training pipeline
     for object detection models on a custom dataset. For that, you wrote a [`torch.utils.data.Dataset`](https://pytorch.org/docs/stable/data.html#torch.utils.data.Dataset
     "(in PyTorch v2.2)") class that returns the images and the ground truth boxes
     and segmentation masks. You also leveraged a Mask R-CNN model pre-trained on COCO
     train2017 in order to perform transfer learning on this new dataset.
+  id: totrans-76
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，您已经学会了如何为自定义数据集创建自己的目标检测模型训练流程。为此，您编写了一个[`torch.utils.data.Dataset`](https://pytorch.org/docs/stable/data.html#torch.utils.data.Dataset)类，该类返回图像和真实边界框以及分割掩模。您还利用了一个在
+    COCO train2017 上预训练的 Mask R-CNN 模型，以便在这个新数据集上进行迁移学习。
 - en: For a more complete example, which includes multi-machine / multi-GPU training,
     check `references/detection/train.py`, which is present in the torchvision repository.
+  id: totrans-77
   prefs: []
   type: TYPE_NORMAL
+  zh: 要查看包括多机器/多GPU训练在内的更完整示例，请查看 `references/detection/train.py`，该文件位于 torchvision
+    仓库中。
 - en: '**Total running time of the script:** ( 2 minutes 27.747 seconds)'
+  id: totrans-78
   prefs: []
   type: TYPE_NORMAL
+  zh: '**脚本的总运行时间：**（2 分钟 27.747 秒）'
 - en: '[`Download Python source code: torchvision_tutorial.py`](../_downloads/7590258df9f28b5ae0994c3b5b035edf/torchvision_tutorial.py)'
+  id: totrans-79
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载 Python 源代码：torchvision_tutorial.py`](../_downloads/7590258df9f28b5ae0994c3b5b035edf/torchvision_tutorial.py)'
 - en: '[`Download Jupyter notebook: torchvision_tutorial.ipynb`](../_downloads/4a542c9f39bedbfe7de5061767181d36/torchvision_tutorial.ipynb)'
+  id: totrans-80
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载 Jupyter 笔记本：torchvision_tutorial.ipynb`](../_downloads/4a542c9f39bedbfe7de5061767181d36/torchvision_tutorial.ipynb)'
 - en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  id: totrans-81
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Sphinx-Gallery 生成的画廊](https://sphinx-gallery.github.io)'

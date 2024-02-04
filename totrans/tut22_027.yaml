@@ -1,11 +1,15 @@
 - en: Visualizing Models, Data, and Training with TensorBoard
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 使用TensorBoard可视化模型、数据和训练
 - en: 原文：[https://pytorch.org/tutorials/intermediate/tensorboard_tutorial.html](https://pytorch.org/tutorials/intermediate/tensorboard_tutorial.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 链接：[https://pytorch.org/tutorials/intermediate/tensorboard_tutorial.html](https://pytorch.org/tutorials/intermediate/tensorboard_tutorial.html)
 - en: 'In the [60 Minute Blitz](https://pytorch.org/tutorials/beginner/deep_learning_60min_blitz.html),
     we show you how to load in data, feed it through a model we define as a subclass
     of `nn.Module`, train this model on training data, and test it on test data. To
@@ -15,299 +19,427 @@
     the results of neural network training runs. This tutorial illustrates some of
     its functionality, using the [Fashion-MNIST dataset](https://github.com/zalandoresearch/fashion-mnist)
     which can be read into PyTorch using torchvision.datasets.'
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 在[60分钟入门](https://pytorch.org/tutorials/beginner/deep_learning_60min_blitz.html)中，我们向您展示如何加载数据，将其通过我们定义的`nn.Module`子类模型，对训练数据进行训练，并在测试数据上进行测试。为了了解发生了什么，我们在模型训练时打印出一些统计数据，以了解训练是否在进行中。然而，我们可以做得更好：PyTorch集成了TensorBoard，这是一个用于可视化神经网络训练结果的工具。本教程演示了一些其功能，使用[Fashion-MNIST数据集](https://github.com/zalandoresearch/fashion-mnist)，可以使用torchvision.datasets将其读入PyTorch。
 - en: 'In this tutorial, we’ll learn how to:'
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，我们将学习如何：
 - en: Read in data and with appropriate transforms (nearly identical to the prior
     tutorial).
+  id: totrans-4
   prefs:
   - PREF_BQ
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 读取数据并进行适当的转换（与之前的教程几乎相同）。
 - en: ''
+  id: totrans-5
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-6
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: Set up TensorBoard.
+  id: totrans-7
   prefs:
   - PREF_BQ
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 设置TensorBoard。
 - en: ''
+  id: totrans-8
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-9
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: Write to TensorBoard.
+  id: totrans-10
   prefs:
   - PREF_BQ
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 写入TensorBoard。
 - en: ''
+  id: totrans-11
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-12
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: Inspect a model architecture using TensorBoard.
+  id: totrans-13
   prefs:
   - PREF_BQ
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 使用TensorBoard检查模型架构。
 - en: ''
+  id: totrans-14
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-15
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: Use TensorBoard to create interactive versions of the visualizations we created
     in last tutorial, with less code
+  id: totrans-16
   prefs:
   - PREF_BQ
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 使用TensorBoard创建上一个教程中创建的可视化的交互版本，代码更少
 - en: 'Specifically, on point #5, we’ll see:'
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 具体来说，在第5点上，我们将看到：
 - en: A couple of ways to inspect our training data
+  id: totrans-18
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 检查我们的训练数据的几种方法
 - en: ''
+  id: totrans-19
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-20
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: How to track our model’s performance as it trains
+  id: totrans-21
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 如何在模型训练过程中跟踪我们模型的性能
 - en: ''
+  id: totrans-22
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-23
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: How to assess our model’s performance once it is trained.
+  id: totrans-24
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 如何评估我们模型训练后的性能。
 - en: 'We’ll begin with similar boilerplate code as in the [CIFAR-10 tutorial](https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html):'
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们将从[CIFAR-10教程](https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html)中类似的样板代码开始：
 - en: '[PRE0]'
+  id: totrans-26
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: 'We’ll define a similar model architecture from that tutorial, making only minor
     modifications to account for the fact that the images are now one channel instead
     of three and 28x28 instead of 32x32:'
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们将定义一个类似于该教程的模型架构，只需进行轻微修改以适应图像现在是单通道而不是三通道，28x28而不是32x32的事实：
 - en: '[PRE1]'
+  id: totrans-28
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: 'We’ll define the same `optimizer` and `criterion` from before:'
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们将从之前定义的相同的`optimizer`和`criterion`开始：
 - en: '[PRE2]'
+  id: totrans-30
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: 1\. TensorBoard setup
+  id: totrans-31
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 1. TensorBoard设置
 - en: Now we’ll set up TensorBoard, importing `tensorboard` from `torch.utils` and
     defining a `SummaryWriter`, our key object for writing information to TensorBoard.
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们将设置TensorBoard，从`torch.utils`导入`tensorboard`并定义一个`SummaryWriter`，这是我们向TensorBoard写入信息的关键对象。
 - en: '[PRE3]'
+  id: totrans-33
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: Note that this line alone creates a `runs/fashion_mnist_experiment_1` folder.
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，这一行代码会创建一个`runs/fashion_mnist_experiment_1`文件夹。
 - en: 2\. Writing to TensorBoard
+  id: totrans-35
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 2. 写入TensorBoard
 - en: Now let’s write an image to our TensorBoard - specifically, a grid - using [make_grid](https://pytorch.org/vision/stable/utils.html#torchvision.utils.make_grid).
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在让我们向TensorBoard写入一张图片 - 具体来说，使用[make_grid](https://pytorch.org/vision/stable/utils.html#torchvision.utils.make_grid)创建一个网格。
 - en: '[PRE4]'
+  id: totrans-37
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: Now running
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在正在运行
 - en: '[PRE5]'
+  id: totrans-39
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: from the command line and then navigating to [http://localhost:6006](http://localhost:6006)
     should show the following.
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: 从命令行中导航到[http://localhost:6006](http://localhost:6006)应该显示以下内容。
 - en: '![../_static/img/tensorboard_first_view.png](../Images/8b09d6361316e495383ceedf9b8407ea.png)'
+  id: totrans-41
   prefs: []
   type: TYPE_IMG
+  zh: '![../_static/img/tensorboard_first_view.png](../Images/8b09d6361316e495383ceedf9b8407ea.png)'
 - en: Now you know how to use TensorBoard! This example, however, could be done in
     a Jupyter Notebook - where TensorBoard really excels is in creating interactive
     visualizations. We’ll cover one of those next, and several more by the end of
     the tutorial.
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在你知道如何使用TensorBoard了！然而，这个例子也可以在Jupyter Notebook中完成 - TensorBoard真正擅长的是创建交互式可视化。我们将在教程结束时介绍其中的一个，以及更多其他功能。
 - en: 3\. Inspect the model using TensorBoard
+  id: totrans-43
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 3. 使用TensorBoard检查模型
 - en: One of TensorBoard’s strengths is its ability to visualize complex model structures.
     Let’s visualize the model we built.
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: TensorBoard的一个优势是它能够可视化复杂的模型结构。让我们可视化我们构建的模型。
 - en: '[PRE6]'
+  id: totrans-45
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: 'Now upon refreshing TensorBoard you should see a “Graphs” tab that looks like
     this:'
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在刷新TensorBoard后，您应该看到一个类似于这样的“Graphs”选项卡：
 - en: '![../_static/img/tensorboard_model_viz.png](../Images/8f596b99dbb3c262b61db267d5db2d63.png)'
+  id: totrans-47
   prefs: []
   type: TYPE_IMG
+  zh: '![../_static/img/tensorboard_model_viz.png](../Images/8f596b99dbb3c262b61db267d5db2d63.png)'
 - en: Go ahead and double click on “Net” to see it expand, seeing a detailed view
     of the individual operations that make up the model.
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: 继续双击“Net”以展开，查看组成模型的各个操作的详细视图。
 - en: TensorBoard has a very handy feature for visualizing high dimensional data such
     as image data in a lower dimensional space; we’ll cover this next.
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: TensorBoard有一个非常方便的功能，可以将高维数据（如图像数据）可视化为一个较低维度的空间；我们将在下面介绍这个功能。
 - en: 4\. Adding a “Projector” to TensorBoard
+  id: totrans-50
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 4. 向TensorBoard添加“Projector”
 - en: We can visualize the lower dimensional representation of higher dimensional
     data via the [add_embedding](https://pytorch.org/docs/stable/tensorboard.html#torch.utils.tensorboard.writer.SummaryWriter.add_embedding)
     method
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们可以通过[add_embedding](https://pytorch.org/docs/stable/tensorboard.html#torch.utils.tensorboard.writer.SummaryWriter.add_embedding)方法可视化高维数据的低维表示
 - en: '[PRE7]'
+  id: totrans-52
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: 'Now in the “Projector” tab of TensorBoard, you can see these 100 images - each
     of which is 784 dimensional - projected down into three dimensional space. Furthermore,
     this is interactive: you can click and drag to rotate the three dimensional projection.
     Finally, a couple of tips to make the visualization easier to see: select “color:
     label” on the top left, as well as enabling “night mode”, which will make the
     images easier to see since their background is white:'
+  id: totrans-53
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在在TensorBoard的“Projector”标签中，您可以看到这100张图片 - 每张图片都是784维的 - 投影到三维空间中。此外，这是交互式的：您可以单击并拖动以旋转三维投影。最后，为了使可视化更容易看到，有几个提示：在左上角选择“颜色：标签”，并启用“夜间模式”，这将使图像更容易看到，因为它们的背景是白色的：
 - en: '![../_static/img/tensorboard_projector.png](../Images/f4990a0920dff7e4647a23cfc1639a8a.png)'
+  id: totrans-54
   prefs: []
   type: TYPE_IMG
+  zh: '![../_static/img/tensorboard_projector.png](../Images/f4990a0920dff7e4647a23cfc1639a8a.png)'
 - en: Now we’ve thoroughly inspected our data, let’s show how TensorBoard can make
     tracking model training and evaluation clearer, starting with training.
+  id: totrans-55
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们已经彻底检查了我们的数据，让我们展示一下TensorBoard如何使跟踪模型训练和评估更清晰，从训练开始。
 - en: 5\. Tracking model training with TensorBoard
+  id: totrans-56
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 5\. 使用TensorBoard跟踪模型训练
 - en: In the previous example, we simply *printed* the model’s running loss every
     2000 iterations. Now, we’ll instead log the running loss to TensorBoard, along
     with a view into the predictions the model is making via the `plot_classes_preds`
     function.
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: 在先前的示例中，我们只是*打印*了模型的运行损失，每2000次迭代一次。现在，我们将把运行损失记录到TensorBoard中，以及通过`plot_classes_preds`函数查看模型的预测。
 - en: '[PRE8]'
+  id: totrans-58
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: Finally, let’s train the model using the same model training code from the prior
     tutorial, but writing results to TensorBoard every 1000 batches instead of printing
     to console; this is done using the [add_scalar](https://pytorch.org/docs/stable/tensorboard.html#torch.utils.tensorboard.writer.SummaryWriter.add_scalar)
     function.
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: 最后，让我们使用之前教程中相同的模型训练代码来训练模型，但是每1000批次将结果写入TensorBoard，而不是打印到控制台；这可以使用[add_scalar](https://pytorch.org/docs/stable/tensorboard.html#torch.utils.tensorboard.writer.SummaryWriter.add_scalar)函数来实现。
 - en: In addition, as we train, we’ll generate an image showing the model’s predictions
     vs. the actual results on the four images included in that batch.
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: 此外，当我们训练时，我们将生成一幅图像，显示模型对该批次中包含的四幅图像的预测与实际结果。
 - en: '[PRE9]'
+  id: totrans-61
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: 'You can now look at the scalars tab to see the running loss plotted over the
     15,000 iterations of training:'
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
+  zh: 您现在可以查看标量标签，看看在训练的15000次迭代中绘制的运行损失：
 - en: '![../_static/img/tensorboard_scalar_runs.png](../Images/afda8238ecd1f547d61be4d155844f68.png)'
+  id: totrans-63
   prefs: []
   type: TYPE_IMG
+  zh: '![../_static/img/tensorboard_scalar_runs.png](../Images/afda8238ecd1f547d61be4d155844f68.png)'
 - en: 'In addition, we can look at the predictions the model made on arbitrary batches
     throughout learning. See the “Images” tab and scroll down under the “predictions
     vs. actuals” visualization to see this; this shows us that, for example, after
     just 3000 training iterations, the model was already able to distinguish between
     visually distinct classes such as shirts, sneakers, and coats, though it isn’t
     as confident as it becomes later on in training:'
+  id: totrans-64
   prefs: []
   type: TYPE_NORMAL
+  zh: 此外，我们可以查看模型在学习过程中对任意批次的预测。查看“Images”标签，并在“预测与实际”可视化下滚动，以查看这一点；这向我们展示，例如，在仅3000次训练迭代后，模型已经能够区分视觉上不同的类别，如衬衫、运动鞋和外套，尽管它在训练后期变得更加自信：
 - en: '![../_static/img/tensorboard_images.png](../Images/d5ab1f07cb4a9d9200c2a2d3b238340d.png)'
+  id: totrans-65
   prefs: []
   type: TYPE_IMG
+  zh: '![../_static/img/tensorboard_images.png](../Images/d5ab1f07cb4a9d9200c2a2d3b238340d.png)'
 - en: In the prior tutorial, we looked at per-class accuracy once the model had been
     trained; here, we’ll use TensorBoard to plot precision-recall curves (good explanation
     [here](https://www.scikit-yb.org/en/latest/api/classifier/prcurve.html)) for each
     class.
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: 在之前的教程中，我们在模型训练后查看了每个类别的准确率；在这里，我们将使用TensorBoard来为每个类别绘制精确度-召回率曲线（好的解释[在这里](https://www.scikit-yb.org/en/latest/api/classifier/prcurve.html)）。
 - en: 6\. Assessing trained models with TensorBoard
+  id: totrans-67
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 6\. 使用TensorBoard评估训练好的模型
 - en: '[PRE10]'
+  id: totrans-68
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: 'You will now see a “PR Curves” tab that contains the precision-recall curves
     for each class. Go ahead and poke around; you’ll see that on some classes the
     model has nearly 100% “area under the curve”, whereas on others this area is lower:'
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在您将看到一个包含每个类别精确度-召回率曲线的“PR曲线”标签。继续浏览；您会看到在某些类别上，模型几乎有100%的“曲线下面积”，而在其他类别上，这个面积较低：
 - en: '![../_static/img/tensorboard_pr_curves.png](../Images/d15de2be2b754f9a4f46418764232b5e.png)'
+  id: totrans-70
   prefs: []
   type: TYPE_IMG
+  zh: '![../_static/img/tensorboard_pr_curves.png](../Images/d15de2be2b754f9a4f46418764232b5e.png)'
 - en: And that’s an intro to TensorBoard and PyTorch’s integration with it. Of course,
     you could do everything TensorBoard does in your Jupyter Notebook, but with TensorBoard,
     you gets visuals that are interactive by default.
+  id: totrans-71
   prefs: []
   type: TYPE_NORMAL
+  zh: 这就是TensorBoard和PyTorch与其集成的简介。当然，您可以在Jupyter Notebook中做TensorBoard所做的一切，但是使用TensorBoard，您会得到默认情况下是交互式的可视化。

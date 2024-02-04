@@ -1,274 +1,401 @@
 - en: Model Understanding with Captum
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 使用Captum进行模型理解
 - en: 原文：[https://pytorch.org/tutorials/beginner/introyt/captumyt.html](https://pytorch.org/tutorials/beginner/introyt/captumyt.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/beginner/introyt/captumyt.html](https://pytorch.org/tutorials/beginner/introyt/captumyt.html)
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-beginner-introyt-captumyt-py) to download the
     full example code
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[这里](#sphx-glr-download-beginner-introyt-captumyt-py)下载完整示例代码
 - en: '[Introduction](introyt1_tutorial.html) || [Tensors](tensors_deeper_tutorial.html)
     || [Autograd](autogradyt_tutorial.html) || [Building Models](modelsyt_tutorial.html)
     || [TensorBoard Support](tensorboardyt_tutorial.html) || [Training Models](trainingyt.html)
     || **Model Understanding**'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '[介绍](introyt1_tutorial.html) || [张量](tensors_deeper_tutorial.html) || [自动微分](autogradyt_tutorial.html)
+    || [构建模型](modelsyt_tutorial.html) || [TensorBoard支持](tensorboardyt_tutorial.html)
+    || [训练模型](trainingyt.html) || **模型理解**'
 - en: Follow along with the video below or on [youtube](https://www.youtube.com/watch?v=Am2EF9CLu-g).
     Download the notebook and corresponding files [here](https://pytorch-tutorial-assets.s3.amazonaws.com/youtube-series/video7.zip).
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 请跟随下面的视频或[YouTube](https://www.youtube.com/watch?v=Am2EF9CLu-g)进行操作。在这里下载笔记本和相应的文件[这里](https://pytorch-tutorial-assets.s3.amazonaws.com/youtube-series/video7.zip)。
 - en: '[https://www.youtube.com/embed/Am2EF9CLu-g](https://www.youtube.com/embed/Am2EF9CLu-g)'
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: '[https://www.youtube.com/embed/Am2EF9CLu-g](https://www.youtube.com/embed/Am2EF9CLu-g)'
 - en: '[Captum](https://captum.ai/) (“comprehension” in Latin) is an open source,
     extensible library for model interpretability built on PyTorch.'
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Captum](https://captum.ai/)（拉丁语中的“理解”）是一个建立在PyTorch上的开源、可扩展的模型可解释性库。'
 - en: With the increase in model complexity and the resulting lack of transparency,
     model interpretability methods have become increasingly important. Model understanding
     is both an active area of research as well as an area of focus for practical applications
     across industries using machine learning. Captum provides state-of-the-art algorithms,
     including Integrated Gradients, to provide researchers and developers with an
     easy way to understand which features are contributing to a model’s output.
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 随着模型复杂性的增加和由此产生的不透明性，模型可解释性方法变得越来越重要。模型理解既是一个活跃的研究领域，也是一个在使用机器学习的各行业中实际应用的重点领域。Captum提供了最先进的算法，包括集成梯度，为研究人员和开发人员提供了一种简单的方法来理解哪些特征对模型的输出有贡献。
 - en: Full documentation, an API reference, and a suite of tutorials on specific topics
     are available at the [captum.ai](https://captum.ai/) website.
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 在[Captum.ai](https://captum.ai/)网站上提供了完整的文档、API参考和一系列关于特定主题的教程。
 - en: Introduction
+  id: totrans-10
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 介绍
 - en: 'Captum’s approach to model interpretability is in terms of *attributions.*
     There are three kinds of attributions available in Captum:'
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: Captum对模型可解释性的方法是以*归因*为基础的。Captum提供了三种类型的归因：
 - en: '**Feature Attribution** seeks to explain a particular output in terms of features
     of the input that generated it. Explaining whether a movie review was positive
     or negative in terms of certain words in the review is an example of feature attribution.'
+  id: totrans-12
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**特征归因**试图解释特定输出，以输入的特征生成它。例如，解释电影评论是积极的还是消极的，以评论中的某些词语为例。'
 - en: '**Layer Attribution** examines the activity of a model’s hidden layer subsequent
     to a particular input. Examining the spatially-mapped output of a convolutional
     layer in response to an input image in an example of layer attribution.'
+  id: totrans-13
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**层归因**研究了模型隐藏层在特定输入后的活动。检查卷积层对输入图像的空间映射输出是层归因的一个例子。'
 - en: '**Neuron Attribution** is analagous to layer attribution, but focuses on the
     activity of a single neuron.'
+  id: totrans-14
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**神经元归因**类似于层归因，但专注于单个神经元的活动。'
 - en: In this interactive notebook, we’ll look at Feature Attribution and Layer Attribution.
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这个互动笔记本中，我们将查看特征归因和层归因。
 - en: 'Each of the three attribution types has multiple **attribution algorithms**
     associated with it. Many attribution algorithms fall into two broad categories:'
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 每种归因类型都有多个**归因算法**与之相关。许多归因算法可分为两大类：
 - en: '**Gradient-based algorithms** calculate the backward gradients of a model output,
     layer output, or neuron activation with respect to the input. **Integrated Gradients**
     (for features), **Layer Gradient * Activation**, and **Neuron Conductance** are
     all gradient-based algorithms.'
+  id: totrans-17
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**基于梯度的算法**计算模型输出、层输出或神经元激活相对于输入的反向梯度。**集成梯度**（用于特征）、**层梯度*激活**和**神经元电导**都是基于梯度的算法。'
 - en: '**Perturbation-based algorithms** examine the changes in the output of a model,
     layer, or neuron in response to changes in the input. The input perturbations
     may be directed or random. **Occlusion,** **Feature Ablation,** and **Feature
     Permutation** are all perturbation-based algorithms.'
+  id: totrans-18
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**基于扰动的算法**检查模型、层或神经元对输入变化的响应。输入扰动可能是有方向的或随机的。**遮挡**、**特征消融**和**特征置换**都是基于扰动的算法。'
 - en: We’ll be examining algorithms of both types below.
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们将在下面检查这两种类型的算法。
 - en: 'Especially where large models are involved, it can be valuable to visualize
     attribution data in ways that relate it easily to the input features being examined.
     While it is certainly possible to create your own visualizations with Matplotlib,
     Plotly, or similar tools, Captum offers enhanced tools specific to its attributions:'
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 特别是涉及大型模型时，以一种易于将其与正在检查的输入特征相关联的方式可视化归因数据可能是有价值的。虽然可以使用Matplotlib、Plotly或类似工具创建自己的可视化，但Captum提供了专门针对其归因的增强工具：
 - en: The `captum.attr.visualization` module (imported below as `viz`) provides helpful
     functions for visualizing attributions related to images.
+  id: totrans-21
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`captum.attr.visualization`模块（如下导入为`viz`）提供了有用的函数，用于可视化与图像相关的归因。'
 - en: '**Captum Insights** is an easy-to-use API on top of Captum that provides a
     visualization widget with ready-made visualizations for image, text, and arbitrary
     model types.'
+  id: totrans-22
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**Captum Insights**是一个易于使用的API，位于Captum之上，提供了一个可视化小部件，其中包含了针对图像、文本和任意模型类型的现成可视化。'
 - en: Both of these visualization toolsets will be demonstrated in this notebook.
     The first few examples will focus on computer vision use cases, but the Captum
     Insights section at the end will demonstrate visualization of attributions in
     a multi-model, visual question-and-answer model.
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: '这两种可视化工具集将在本笔记本中进行演示。前几个示例将重点放在计算机视觉用例上，但最后的Captum Insights部分将演示在多模型、视觉问答模型中的归因可视化。 '
 - en: Installation
+  id: totrans-24
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 安装
 - en: 'Before you get started, you need to have a Python environment with:'
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: 在开始之前，您需要具有Python环境：
 - en: Python version 3.6 or higher
+  id: totrans-26
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: Python版本3.6或更高
 - en: For the Captum Insights example, Flask 1.1 or higher and Flask-Compress (the
     latest version is recommended)
+  id: totrans-27
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 对于Captum Insights示例，需要Flask 1.1或更高版本以及Flask-Compress（建议使用最新版本）
 - en: PyTorch version 1.2 or higher (the latest version is recommended)
+  id: totrans-28
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: PyTorch版本1.2或更高（建议使用最新版本）
 - en: TorchVision version 0.6 or higher (the latest version is recommended)
+  id: totrans-29
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: TorchVision版本0.6或更高（建议使用最新版本）
 - en: Captum (the latest version is recommended)
+  id: totrans-30
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: Captum（建议使用最新版本）
 - en: Matplotlib version 3.3.4, since Captum currently uses a Matplotlib function
     whose arguments have been renamed in later versions
+  id: totrans-31
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: Matplotlib版本3.3.4，因为Captum目前使用的Matplotlib函数在后续版本中已更名其参数
 - en: 'To install Captum in an Anaconda or pip virtual environment, use the appropriate
     command for your environment below:'
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 要在Anaconda或pip虚拟环境中安装Captum，请使用下面适合您环境的命令：
 - en: 'With `conda`:'
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用`conda`：
 - en: '[PRE0]'
+  id: totrans-34
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: 'With `pip`:'
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用`pip`：
 - en: '[PRE1]'
+  id: totrans-36
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Restart this notebook in the environment you set up, and you’re ready to go!
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 在您设置的环境中重新启动此笔记本，然后您就可以开始了！
 - en: A First Example
+  id: totrans-38
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 第一个示例
 - en: To start, let’s take a simple, visual example. We’ll start with a ResNet model
     pretrained on the ImageNet dataset. We’ll get a test input, and use different
     **Feature Attribution** algorithms to examine how the input images affect the
     output, and see a helpful visualization of this input attribution map for some
     test images.
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 首先，让我们以一个简单的视觉示例开始。我们将使用在ImageNet数据集上预训练的ResNet模型。我们将获得一个测试输入，并使用不同的**特征归因**算法来检查输入图像对输出的影响，并查看一些测试图像的输入归因映射的有用可视化。
 - en: 'First, some imports:'
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: 首先，一些导入：
 - en: '[PRE2]'
+  id: totrans-41
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Now we’ll use the TorchVision model library to download a pretrained ResNet.
     Since we’re not training, we’ll place it in evaluation mode for now.
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们将使用TorchVision模型库下载一个预训练的ResNet。由于我们不是在训练，所以暂时将其置于评估模式。
 - en: '[PRE3]'
+  id: totrans-43
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: The place where you got this interactive notebook should also have an `img`
     folder with a file `cat.jpg` in it.
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 您获取这个交互式笔记本的地方也应该有一个带有`img`文件夹的文件`cat.jpg`。
 - en: '[PRE4]'
+  id: totrans-45
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: Our ResNet model was trained on the ImageNet dataset, and expects images to
     be of a certain size, with the channel data normalized to a specific range of
     values. We’ll also pull in the list of human-readable labels for the categories
     our model recognizes - that should be in the `img` folder as well.
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们的ResNet模型是在ImageNet数据集上训练的，并且期望图像具有特定大小，并且通道数据被归一化到特定范围的值。我们还将导入我们的模型识别的类别的可读标签列表
+    - 这也应该在`img`文件夹中。
 - en: '[PRE5]'
+  id: totrans-47
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: 'Now, we can ask the question: What does our model think this image represents?'
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，我们可以问一个问题：我们的模型认为这张图像代表什么？
 - en: '[PRE6]'
+  id: totrans-49
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: We’ve confirmed that ResNet thinks our image of a cat is, in fact, a cat. But
     *why* does the model think this is an image of a cat?
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们已经确认ResNet认为我们的猫图像实际上是一只猫。但是*为什么*模型认为这是一张猫的图像呢？
 - en: For the answer to that, we turn to Captum.
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
+  zh: 要找到答案，我们转向Captum。
 - en: Feature Attribution with Integrated Gradients
+  id: totrans-52
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 使用集成梯度进行特征归因
 - en: '**Feature attribution** attributes a particular output to features of the input.
     It uses a specific input - here, our test image - to generate a map of the relative
     importance of each input feature to a particular output feature.'
+  id: totrans-53
   prefs: []
   type: TYPE_NORMAL
+  zh: '**特征归因**将特定输出归因于输入的特征。它使用特定的输入 - 在这里，我们的测试图像 - 生成每个输入特征对特定输出特征的相对重要性的映射。'
 - en: '[Integrated Gradients](https://captum.ai/api/integrated_gradients.html) is
     one of the feature attribution algorithms available in Captum. Integrated Gradients
     assigns an importance score to each input feature by approximating the integral
     of the gradients of the model’s output with respect to the inputs.'
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Integrated Gradients](https://captum.ai/api/integrated_gradients.html)是Captum中可用的特征归因算法之一。集成梯度通过近似模型输出相对于输入的梯度的积分来为每个输入特征分配重要性分数。'
 - en: In our case, we’re going to be taking a specific element of the output vector
     - that is, the one indicating the model’s confidence in its chosen category -
     and use Integrated Gradients to understand what parts of the input image contributed
     to this output.
+  id: totrans-55
   prefs: []
   type: TYPE_NORMAL
+  zh: 在我们的情况下，我们将获取输出向量的特定元素 - 即指示模型对其选择的类别的信心的元素 - 并使用集成梯度来了解输入图像的哪些部分有助于此输出。
 - en: Once we have the importance map from Integrated Gradients, we’ll use the visualization
     tools in Captum to give a helpful representation of the importance map. Captum’s
     `visualize_image_attr()` function provides a variety of options for customizing
     display of your attribution data. Here, we pass in a custom Matplotlib color map.
+  id: totrans-56
   prefs: []
   type: TYPE_NORMAL
+  zh: 一旦我们从集成梯度获得了重要性映射，我们将使用Captum中的可视化工具来提供重要性映射的有用表示。Captum的`visualize_image_attr()`函数提供了各种选项，用于自定义您的归因数据的显示。在这里，我们传入一个自定义的Matplotlib颜色映射。
 - en: Running the cell with the `integrated_gradients.attribute()` call will usually
     take a minute or two.
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: 运行带有`integrated_gradients.attribute()`调用的单元格通常需要一两分钟。
 - en: '[PRE7]'
+  id: totrans-58
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: In the image above, you should see that Integrated Gradients gives us the strongest
     signal around the cat’s location in the image.
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: 在上面的图像中，您应该看到集成梯度在图像中猫的位置周围给出了最强的信号。
 - en: Feature Attribution with Occlusion
+  id: totrans-60
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 使用遮挡进行特征归因
 - en: Gradient-based attribution methods help to understand the model in terms of
     directly computing out the output changes with respect to the input. *Perturbation-based
     attribution* methods approach this more directly, by introducing changes to the
     input to measure the effect on the output. [Occlusion](https://captum.ai/api/occlusion.html)
     is one such method. It involves replacing sections of the input image, and examining
     the effect on the output signal.
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: 基于梯度的归因方法有助于理解模型，直接计算输出相对于输入的变化。*基于扰动的归因*方法更直接地处理这个问题，通过对输入引入变化来衡量对输出的影响。[遮挡](https://captum.ai/api/occlusion.html)就是这样一种方法。它涉及替换输入图像的部分，并检查对输出信号的影响。
 - en: Below, we set up Occlusion attribution. Similarly to configuring a convolutional
     neural network, you can specify the size of the target region, and a stride length
     to determine the spacing of individual measurements. We’ll visualize the output
@@ -276,135 +403,197 @@
     maps of both positive and negative attribution by region, and by masking the original
     image with the positive attribution regions. The masking gives a very instructive
     view of what regions of our cat photo the model found to be most “cat-like”.
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
+  zh: 在下面，我们设置了遮挡归因。类似于配置卷积神经网络，您可以指定目标区域的大小，以及步长来确定单个测量的间距。我们将使用`visualize_image_attr_multiple()`来可视化我们的遮挡归因的输出，显示正面和负面归因的热图，以及通过用正面归因区域遮罩原始图像。遮罩提供了一个非常有教育意义的视图，显示了模型认为最“像猫”的猫照片的哪些区域。
 - en: '[PRE8]'
+  id: totrans-63
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: Again, we see greater significance placed on the region of the image that contains
     the cat.
+  id: totrans-64
   prefs: []
   type: TYPE_NORMAL
+  zh: 同样，我们看到模型更加重视包含猫的图像区域。
 - en: Layer Attribution with Layer GradCAM
+  id: totrans-65
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 使用Layer GradCAM的层归因
 - en: '**Layer Attribution** allows you to attribute the activity of hidden layers
     within your model to features of your input. Below, we’ll use a layer attribution
     algorithm to examine the activity of one of the convolutional layers within our
     model.'
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: '**层归因**允许您将模型中隐藏层的活动归因于输入的特征。在下面，我们将使用一个层归因算法来检查模型中一个卷积层的活动。'
 - en: GradCAM computes the gradients of the target output with respect to the given
     layer, averages for each output channel (dimension 2 of output), and multiplies
     the average gradient for each channel by the layer activations. The results are
     summed over all channels. GradCAM is designed for convnets; since the activity
     of convolutional layers often maps spatially to the input, GradCAM attributions
     are often upsampled and used to mask the input.
+  id: totrans-67
   prefs: []
   type: TYPE_NORMAL
+  zh: GradCAM计算目标输出相对于给定层的梯度，对每个输出通道（输出的第2维）进行平均，并将每个通道的平均梯度乘以层激活。结果在所有通道上求和。GradCAM设计用于卷积网络；由于卷积层的活动通常在空间上映射到输入，GradCAM归因通常会被上采样并用于遮罩输入。
 - en: Layer attribution is set up similarly to input attribution, except that in addition
     to the model, you must specify a hidden layer within the model that you wish to
     examine. As above, when we call `attribute()`, we specify the target class of
     interest.
+  id: totrans-68
   prefs: []
   type: TYPE_NORMAL
+  zh: 层归因的设置与输入归因类似，只是除了模型之外，您还必须指定要检查的模型内的隐藏层。与上面一样，当我们调用`attribute()`时，我们指定感兴趣的目标类。
 - en: '[PRE9]'
+  id: totrans-69
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: We’ll use the convenience method `interpolate()` in the [LayerAttribution](https://captum.ai/api/base_classes.html?highlight=layerattribution#captum.attr.LayerAttribution)
     base class to upsample this attribution data for comparison to the input image.
+  id: totrans-70
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们将使用方便的方法`interpolate()`在[LayerAttribution](https://captum.ai/api/base_classes.html?highlight=layerattribution#captum.attr.LayerAttribution)基类中，将这些归因数据上采样，以便与输入图像进行比较。
 - en: '[PRE10]'
+  id: totrans-71
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: Visualizations such as this can give you novel insights into how your hidden
     layers respond to your input.
+  id: totrans-72
   prefs: []
   type: TYPE_NORMAL
+  zh: 这样的可视化可以让您深入了解隐藏层如何响应输入。
 - en: Visualization with Captum Insights
+  id: totrans-73
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 使用Captum Insights进行可视化
 - en: Captum Insights is an interpretability visualization widget built on top of
     Captum to facilitate model understanding. Captum Insights works across images,
     text, and other features to help users understand feature attribution. It allows
     you to visualize attribution for multiple input/output pairs, and provides visualization
     tools for image, text, and arbitrary data.
+  id: totrans-74
   prefs: []
   type: TYPE_NORMAL
+  zh: Captum Insights是建立在Captum之上的可解释性可视化小部件，旨在促进模型理解。Captum Insights适用于图像、文本和其他特征，帮助用户理解特征归因。它允许您可视化多个输入/输出对的归因，并为图像、文本和任意数据提供可视化工具。
 - en: In this section of the notebook, we’ll visualize multiple image classification
     inferences with Captum Insights.
+  id: totrans-75
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本节笔记本的这部分中，我们将使用Captum Insights可视化多个图像分类推断。
 - en: 'First, let’s gather some image and see what the model thinks of them. For variety,
     we’ll take our cat, a teapot, and a trilobite fossil:'
+  id: totrans-76
   prefs: []
   type: TYPE_NORMAL
+  zh: 首先，让我们收集一些图像，看看模型对它们的看法。为了多样化，我们将使用我们的猫、一个茶壶和一个三叶虫化石：
 - en: '[PRE11]'
+  id: totrans-77
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: …and it looks like our model is identifying them all correctly - but of course,
     we want to dig deeper. For that we’ll use the Captum Insights widget, which we
     configure with an `AttributionVisualizer` object, imported below. The `AttributionVisualizer`
     expects batches of data, so we’ll bring in Captum’s `Batch` helper class. And
     we’ll be looking at images specifically, so well also import `ImageFeature`.
+  id: totrans-78
   prefs: []
   type: TYPE_NORMAL
+  zh: '...看起来我们的模型正确识别了它们所有 - 但当然，我们想深入了解。为此，我们将使用Captum Insights小部件，配置一个`AttributionVisualizer`对象，如下所示导入。`AttributionVisualizer`期望数据批次，因此我们将引入Captum的`Batch`辅助类。我们将专门查看图像，因此还将导入`ImageFeature`。'
 - en: 'We configure the `AttributionVisualizer` with the following arguments:'
+  id: totrans-79
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们使用以下参数配置`AttributionVisualizer`：
 - en: An array of models to be examined (in our case, just the one)
+  id: totrans-80
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 要检查的模型数组（在我们的情况下，只有一个）
 - en: A scoring function, which allows Captum Insights to pull out the top-k predictions
     from a model
+  id: totrans-81
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 一个评分函数，允许Captum Insights从模型中提取前k个预测
 - en: An ordered, human-readable list of classes our model is trained on
+  id: totrans-82
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 一个有序的、可读性强的类别列表，我们的模型是在这些类别上进行训练的
 - en: A list of features to look for - in our case, an `ImageFeature`
+  id: totrans-83
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 要查找的特征列表 - 在我们的情况下，是一个`ImageFeature`
 - en: A dataset, which is an iterable object returning batches of inputs and labels
     - just like you’d use for training
+  id: totrans-84
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 一个数据集，它是一个可迭代对象，返回输入和标签的批次 - 就像您用于训练的那样
 - en: '[PRE12]'
+  id: totrans-85
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: Note that running the cell above didn’t take much time at all, unlike our attributions
     above. That’s because Captum Insights lets you configure different attribution
     algorithms in a visual widget, after which it will compute and display the attributions.
     *That* process will take a few minutes.
+  id: totrans-86
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，与上面的归因相比，运行上面的单元格并没有花费太多时间。这是因为Captum Insights允许您在可视化小部件中配置不同的归因算法，之后它将计算并显示归因。*那个*过程将需要几分钟。
 - en: Running the cell below will render the Captum Insights widget. You can then
     choose attributions methods and their arguments, filter model responses based
     on predicted class or prediction correctness, see the model’s predictions with
     associated probabilities, and view heatmaps of the attribution compared with the
     original image.
+  id: totrans-87
   prefs: []
   type: TYPE_NORMAL
+  zh: 在下面的单元格中运行将呈现Captum Insights小部件。然后，您可以选择属性方法及其参数，根据预测类别或预测正确性过滤模型响应，查看带有相关概率的模型预测，并查看归因热图与原始图像的比较。
 - en: '[PRE13]'
+  id: totrans-88
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: '**Total running time of the script:** ( 0 minutes 0.000 seconds)'
+  id: totrans-89
   prefs: []
   type: TYPE_NORMAL
+  zh: 脚本的总运行时间：（0分钟0.000秒）
 - en: '[`Download Python source code: captumyt.py`](../../_downloads/d2274535fcc404633095941d2fbbe536/captumyt.py)'
+  id: totrans-90
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Python源代码：captumyt.py`](../../_downloads/d2274535fcc404633095941d2fbbe536/captumyt.py)'
 - en: '[`Download Jupyter notebook: captumyt.ipynb`](../../_downloads/c28f42852d456daf9af72da6c6909556/captumyt.ipynb)'
+  id: totrans-91
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Jupyter笔记本：captumyt.ipynb`](../../_downloads/c28f42852d456daf9af72da6c6909556/captumyt.ipynb)'
 - en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  id: totrans-92
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Sphinx-Gallery生成的图库](https://sphinx-gallery.github.io)'
