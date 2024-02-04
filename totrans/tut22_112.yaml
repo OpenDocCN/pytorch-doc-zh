@@ -1,19 +1,24 @@
 - en: PyTorch Distributed Overview
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
 - en: 原文：[https://pytorch.org/tutorials/beginner/dist_overview.html](https://pytorch.org/tutorials/beginner/dist_overview.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
 - en: '**Author**: [Shen Li](https://mrshenli.github.io/)'
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
 - en: Note
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
-- en: '[![edit](../Images/a8aa37bcc5edbf2ba5fcf18dba1e55f9.png)](../_images/pencil-16.png)
-    View and edit this tutorial in [github](https://github.com/pytorch/tutorials/blob/main/beginner_source/dist_overview.rst).'
+- en: '![edit](../Images/a8aa37bcc5edbf2ba5fcf18dba1e55f9.png) View and edit this
+    tutorial in [github](https://github.com/pytorch/tutorials/blob/main/beginner_source/dist_overview.rst).'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
 - en: This is the overview page for the `torch.distributed` package. The goal of this
@@ -21,14 +26,17 @@
     of them. If this is your first time building distributed training applications
     using PyTorch, it is recommended to use this document to navigate to the technology
     that can best serve your use case.
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
 - en: Introduction
+  id: totrans-6
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
 - en: 'As of PyTorch v1.6.0, features in `torch.distributed` can be categorized into
     three main components:'
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
 - en: '[Distributed Data-Parallel Training](https://pytorch.org/docs/stable/generated/torch.nn.parallel.DistributedDataParallel.html)
@@ -37,6 +45,7 @@
     fed with a different set of input data samples. DDP takes care of gradient communication
     to keep model replicas synchronized and overlaps it with the gradient computations
     to speed up training.'
+  id: totrans-8
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
@@ -46,6 +55,7 @@
     and combinations of DDP with other training paradigms. It helps manage remote
     object lifetime and extends the [autograd engine](https://pytorch.org/docs/stable/autograd.html)
     beyond machine boundaries.'
+  id: totrans-9
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
@@ -67,60 +77,78 @@
     it also gives up the performance optimizations offered by DDP. [Writing Distributed
     Applications with PyTorch](../intermediate/dist_tuto.html) shows examples of using
     c10d communication APIs.'
+  id: totrans-10
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: Data Parallel Training
+  id: totrans-11
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 数据并行训练
 - en: 'PyTorch provides several options for data-parallel training. For applications
     that gradually grow from simple to complex and from prototype to production, the
     common development trajectory would be:'
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch提供了几种数据并行训练的选项。对于从简单到复杂、从原型到生产逐渐增长的应用程序，常见的开发轨迹是：
 - en: Use single-device training if the data and model can fit in one GPU, and training
     speed is not a concern.
+  id: totrans-13
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 如果数据和模型可以适应一个GPU，并且训练速度不是问题，可以使用单设备训练。
 - en: Use single-machine multi-GPU [DataParallel](https://pytorch.org/docs/stable/generated/torch.nn.DataParallel.html)
     to make use of multiple GPUs on a single machine to speed up training with minimal
     code changes.
+  id: totrans-14
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 使用单机多GPU [DataParallel](https://pytorch.org/docs/stable/generated/torch.nn.DataParallel.html)
+    来利用单台机器上的多个GPU加速训练，只需进行最少的代码更改。
 - en: Use single-machine multi-GPU [DistributedDataParallel](https://pytorch.org/docs/stable/generated/torch.nn.parallel.DistributedDataParallel.html),
     if you would like to further speed up training and are willing to write a little
     more code to set it up.
+  id: totrans-15
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 如果您希望进一步加快训练速度并愿意写更多代码来设置，可以使用单机多GPU [DistributedDataParallel](https://pytorch.org/docs/stable/generated/torch.nn.parallel.DistributedDataParallel.html)。
 - en: Use multi-machine [DistributedDataParallel](https://pytorch.org/docs/stable/generated/torch.nn.parallel.DistributedDataParallel.html)
     and the [launching script](https://github.com/pytorch/examples/blob/master/distributed/ddp/README.md),
     if the application needs to scale across machine boundaries.
+  id: totrans-16
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
 - en: Use multi-GPU [FullyShardedDataParallel](https://pytorch.org/docs/stable/fsdp.html)
     training on a single-machine or multi-machine when the data and model cannot fit
     on one GPU.
+  id: totrans-17
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
 - en: Use [torch.distributed.elastic](https://pytorch.org/docs/stable/distributed.elastic.html)
     to launch distributed training if errors (e.g., out-of-memory) are expected or
     if resources can join and leave dynamically during training.
+  id: totrans-18
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
 - en: Note
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
 - en: Data-parallel training also works with [Automatic Mixed Precision (AMP)](https://pytorch.org/docs/stable/notes/amp_examples.html#working-with-multiple-gpus).
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
 - en: '`torch.nn.DataParallel`'
+  id: totrans-21
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
@@ -132,9 +160,11 @@
     performance because it replicates the model in every forward pass, and its single-process
     multi-thread parallelism naturally suffers from [GIL](https://wiki.python.org/moin/GlobalInterpreterLock)
     contention. To get better performance, consider using [DistributedDataParallel](https://pytorch.org/docs/stable/generated/torch.nn.parallel.DistributedDataParallel.html).'
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
 - en: '`torch.nn.parallel.DistributedDataParallel`'
+  id: totrans-23
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
@@ -146,43 +176,58 @@
     of in every forward pass, which also helps to speed up training. DDP is shipped
     with several performance optimization technologies. For a more in-depth explanation,
     refer to this [paper](http://www.vldb.org/pvldb/vol13/p3005-li.pdf) (VLDB’20).
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 与[DataParallel](https://pytorch.org/docs/stable/generated/torch.nn.DataParallel.html)相比，[DistributedDataParallel](https://pytorch.org/docs/stable/generated/torch.nn.parallel.DistributedDataParallel.html)需要多一步设置，即调用[init_process_group](https://pytorch.org/docs/stable/distributed.html#torch.distributed.init_process_group)。
+    DDP使用多进程并行，因此模型副本之间没有GIL争用。此外，模型在DDP构建时进行广播，而不是在每次前向传递中进行广播，这也有助于加快训练速度。 DDP配备了几种性能优化技术。有关更深入的解释，请参考这篇[论文](http://www.vldb.org/pvldb/vol13/p3005-li.pdf)（VLDB’20）。
 - en: 'DDP materials are listed below:'
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: DDP材料如下：
 - en: '[DDP notes](https://pytorch.org/docs/stable/notes/ddp.html) offer a starter
     example and some brief descriptions of its design and implementation. If this
     is your first time using DDP, start from this document.'
+  id: totrans-26
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: '[DDP笔记](https://pytorch.org/docs/stable/notes/ddp.html) 提供了一个入门示例以及对其设计和实现的简要描述。如果这是您第一次使用DDP，请从这个文档开始。'
 - en: '[Getting Started with Distributed Data Parallel](../intermediate/ddp_tutorial.html)
     explains some common problems with DDP training, including unbalanced workload,
     checkpointing, and multi-device models. Note that, DDP can be easily combined
     with single-machine multi-device model parallelism which is described in the [Single-Machine
     Model Parallel Best Practices](../intermediate/model_parallel_tutorial.html) tutorial.'
+  id: totrans-27
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: '[使用分布式数据并行开始](../intermediate/ddp_tutorial.html) 解释了DDP训练中的一些常见问题，包括负载不平衡、检查点和多设备模型。请注意，DDP可以很容易地与单机多设备模型并行结合，该模型并行在[单机模型并行最佳实践](../intermediate/model_parallel_tutorial.html)教程中有描述。'
 - en: The [Launching and configuring distributed data parallel applications](https://github.com/pytorch/examples/blob/main/distributed/ddp/README.md)
     document shows how to use the DDP launching script.
+  id: totrans-28
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: '[启动和配置分布式数据并行应用程序](https://github.com/pytorch/examples/blob/main/distributed/ddp/README.md)
+    文档展示了如何使用DDP启动脚本。'
 - en: The [Shard Optimizer States With ZeroRedundancyOptimizer](../recipes/zero_redundancy_optimizer.html)
     recipe demonstrates how [ZeroRedundancyOptimizer](https://pytorch.org/docs/stable/distributed.optim.html)
     helps to reduce optimizer memory footprint.
+  id: totrans-29
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
 - en: The [Distributed Training with Uneven Inputs Using the Join Context Manager](../advanced/generic_join.html)
     tutorial walks through using the generic join context for distributed training
     with uneven inputs.
+  id: totrans-30
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
 - en: '`torch.distributed.FullyShardedDataParallel`'
+  id: totrans-31
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
@@ -192,9 +237,11 @@
     data-parallel workers. The support for FSDP was added starting PyTorch v1.11\.
     The tutorial [Getting Started with FSDP](https://pytorch.org/tutorials/intermediate/FSDP_tutorial.html)
     provides in depth explanation and example of how FSDP works.
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
 - en: torch.distributed.elastic
+  id: totrans-33
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
@@ -208,9 +255,11 @@
     (mismatched `AllReduce` operations) which would then cause a crash or hang. [torch.distributed.elastic](https://pytorch.org/docs/stable/distributed.elastic.html)
     adds fault tolerance and the ability to make use of a dynamic pool of machines
     (elasticity).
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
 - en: RPC-Based Distributed Training
+  id: totrans-35
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
@@ -218,20 +267,24 @@
     paradigm, distributed pipeline parallelism, reinforcement learning applications
     with multiple observers or agents, etc. [torch.distributed.rpc](https://pytorch.org/docs/stable/rpc.html)
     aims at supporting general distributed training scenarios.
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
 - en: '[torch.distributed.rpc](https://pytorch.org/docs/stable/rpc.html) has four
     main pillars:'
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
 - en: '[RPC](https://pytorch.org/docs/stable/rpc.html#rpc) supports running a given
     function on a remote worker.'
+  id: totrans-38
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '[RRef](https://pytorch.org/docs/stable/rpc.html#rref) helps to manage the lifetime
     of a remote object. The reference counting protocol is presented in the [RRef
     notes](https://pytorch.org/docs/stable/rpc/rref.html#remote-reference-protocol).'
+  id: totrans-39
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
@@ -239,28 +292,33 @@
     extends the autograd engine beyond machine boundaries. Please refer to [Distributed
     Autograd Design](https://pytorch.org/docs/stable/rpc/distributed_autograd.html#distributed-autograd-design)
     for more details.'
+  id: totrans-40
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '[Distributed Optimizer](https://pytorch.org/docs/stable/rpc.html#module-torch.distributed.optim)
     automatically reaches out to all participating workers to update parameters using
     gradients computed by the distributed autograd engine.'
+  id: totrans-41
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: 'RPC Tutorials are listed below:'
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
 - en: The [Getting Started with Distributed RPC Framework](../intermediate/rpc_tutorial.html)
     tutorial first uses a simple Reinforcement Learning (RL) example to demonstrate
     RPC and RRef. Then, it applies a basic distributed model parallelism to an RNN
     example to show how to use distributed autograd and distributed optimizer.
+  id: totrans-43
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
 - en: The [Implementing a Parameter Server Using Distributed RPC Framework](../intermediate/rpc_param_server_tutorial.html)
     tutorial borrows the spirit of [HogWild! training](https://people.eecs.berkeley.edu/~brecht/papers/hogwildTR.pdf)
     and applies it to an asynchronous parameter server (PS) training application.
+  id: totrans-44
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
@@ -268,6 +326,7 @@
     tutorial extends the single-machine pipeline parallel example (presented in [Single-Machine
     Model Parallel Best Practices](../intermediate/model_parallel_tutorial.html))
     to a distributed environment and shows how to implement it using RPC.
+  id: totrans-45
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
@@ -275,20 +334,24 @@
     tutorial demonstrates how to implement RPC batch processing using the [@rpc.functions.async_execution](https://pytorch.org/docs/stable/rpc.html#torch.distributed.rpc.functions.async_execution)
     decorator, which can help speed up inference and training. It uses RL and PS examples
     similar to those in the above tutorials 1 and 2.
+  id: totrans-46
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
 - en: The [Combining Distributed DataParallel with Distributed RPC Framework](../advanced/rpc_ddp_tutorial.html)
     tutorial demonstrates how to combine DDP with RPC to train a model using distributed
     data parallelism combined with distributed model parallelism.
+  id: totrans-47
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
 - en: PyTorch Distributed Developers
+  id: totrans-48
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
 - en: If you’d like to contribute to PyTorch Distributed, please refer to our [Developer
     Guide](https://github.com/pytorch/pytorch/blob/master/torch/distributed/CONTRIBUTING.md).
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL

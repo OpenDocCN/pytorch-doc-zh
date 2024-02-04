@@ -477,14 +477,16 @@
   prefs: []
   type: TYPE_NORMAL
   zh: 随意调整控制softmax函数软度和损失系数的温度参数。在神经网络中，很容易包含额外的损失函数到主要目标中，以实现更好的泛化。让我们尝试为学生包含一个目标，但现在让我们专注于他们的隐藏状态而不是输出层。我们的目标是通过包含一个天真的损失函数，使得随着损失的减少，传递给分类器的后续展平向量变得更加“相似”，从而将信息从教师的表示传达给学生。当然，教师不会更新其权重，因此最小化仅取决于学生的权重。这种方法背后的理念是，我们假设教师模型具有更好的内部表示，学生不太可能在没有外部干预的情况下实现，因此我们人为地推动学生模仿教师的内部表示。这是否最终会帮助学生并不明显，因为推动轻量级网络达到这一点可能是一件好事，假设我们已经找到了导致更好测试准确性的内部表示，但也可能是有害的，因为网络具有不同的架构，学生没有与教师相同的学习能力。换句话说，没有理由要求这两个向量，学生的和教师的，每个分量都匹配。学生可能达到教师的一个排列的内部表示，这样同样有效。尽管如此，我们仍然可以运行一个快速实验来了解这种方法的影响。我们将使用`CosineEmbeddingLoss`，其公式如下：
-- en: '[![../_static/img/knowledge_distillation/cosine_embedding_loss.png](../Images/cdd423a58df099c1510863f187b76089.png)](../_static/img/knowledge_distillation/cosine_embedding_loss.png)'
+- en: '![../_static/img/knowledge_distillation/cosine_embedding_loss.png](../Images/cdd423a58df099c1510863f187b76089.png)'
   id: totrans-71
   prefs: []
   type: TYPE_NORMAL
+  zh: '![../_static/img/knowledge_distillation/cosine_embedding_loss.png](../Images/cdd423a58df099c1510863f187b76089.png)'
 - en: Formula for CosineEmbeddingLoss
   id: totrans-72
   prefs: []
   type: TYPE_NORMAL
+  zh: CosineEmbeddingLoss的公式
 - en: Obviously, there is one thing that we need to resolve first. When we applied
     distillation to the output layer we mentioned that both networks have the same
     number of neurons, equal to the number of classes. However, this is not the case
@@ -497,6 +499,7 @@
   id: totrans-73
   prefs: []
   type: TYPE_NORMAL
+  zh: 显然，我们首先需要解决一件事情。当我们将蒸馏应用于输出层时，我们提到两个网络具有相同数量的神经元，等于类的数量。然而，在跟随我们的卷积层之后的层中并非如此。在这里，老师在最终卷积层展平后拥有比学生更多的神经元。我们的损失函数接受两个相同维度的向量作为输入，因此我们需要以某种方式将它们匹配。我们将通过在老师的卷积层后包含一个平均池化层来解决这个问题，以减少其维度以匹配学生的维度。
 - en: To proceed, we will modify our model classes, or create new ones. Now, the forward
     function returns not only the logits of the network but also the flattened hidden
     representation after the convolutional layer. We include the aforementioned pooling
