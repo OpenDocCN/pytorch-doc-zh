@@ -1,44 +1,65 @@
 - en: (beta) Quantized Transfer Learning for Computer Vision Tutorial
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: （beta）计算机视觉的量化迁移学习教程
 - en: 原文：[https://pytorch.org/tutorials/intermediate/quantized_transfer_learning_tutorial.html](https://pytorch.org/tutorials/intermediate/quantized_transfer_learning_tutorial.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/intermediate/quantized_transfer_learning_tutorial.html](https://pytorch.org/tutorials/intermediate/quantized_transfer_learning_tutorial.html)
 - en: Tip
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 提示
 - en: To get the most of this tutorial, we suggest using this [Colab Version](https://colab.research.google.com/github/pytorch/tutorials/blob/gh-pages/_downloads/quantized_transfer_learning_tutorial.ipynb).
     This will allow you to experiment with the information presented below.
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了充分利用本教程，我们建议使用这个[Colab版本](https://colab.research.google.com/github/pytorch/tutorials/blob/gh-pages/_downloads/quantized_transfer_learning_tutorial.ipynb)。这将允许您尝试下面提供的信息。
 - en: '**Author**: [Zafar Takhirov](https://github.com/z-a-f)'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '**作者**：[Zafar Takhirov](https://github.com/z-a-f)'
 - en: '**Reviewed by**: [Raghuraman Krishnamoorthi](https://github.com/raghuramank100)'
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: '**审阅者**：[Raghuraman Krishnamoorthi](https://github.com/raghuramank100)'
 - en: '**Edited by**: [Jessica Lin](https://github.com/jlin27)'
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: '**编辑**：[Jessica Lin](https://github.com/jlin27)'
 - en: This tutorial builds on the original [PyTorch Transfer Learning](https://pytorch.org/tutorials/beginner/transfer_learning_tutorial.html)
     tutorial, written by [Sasank Chilamkurthy](https://chsasank.github.io/).
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程是基于原始的[PyTorch迁移学习](https://pytorch.org/tutorials/beginner/transfer_learning_tutorial.html)教程构建的，由[Sasank
+    Chilamkurthy](https://chsasank.github.io/)编写。
 - en: 'Transfer learning refers to techniques that make use of a pretrained model
     for application on a different data-set. There are two main ways the transfer
     learning is used:'
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 迁移学习是指利用预训练模型应用于不同数据集的技术。迁移学习的主要使用方式有两种：
 - en: '**ConvNet as a fixed feature extractor**: Here, you [“freeze”](https://arxiv.org/abs/1706.04983)
     the weights of all the parameters in the network except that of the final several
     layers (aka “the head”, usually fully connected layers). These last layers are
     replaced with new ones initialized with random weights and only these layers are
     trained.'
+  id: totrans-9
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: '**将ConvNet作为固定特征提取器**：在这里，您会[“冻结”](https://arxiv.org/abs/1706.04983)网络中除最后几层（通常是完全连接的层，也称为“头部”）之外的所有参数的权重。这些最后的层将被新的层替换，并用随机权重初始化，只有这些层会被训练。'
 - en: '**Finetuning the ConvNet**: Instead of random initializaion, the model is initialized
     using a pretrained network, after which the training proceeds as usual but with
     a different dataset. Usually the head (or part of it) is also replaced in the
@@ -46,182 +67,274 @@
     to set the learning rate to a smaller number. This is done because the network
     is already trained, and only minor changes are required to “finetune” it to a
     new dataset.'
+  id: totrans-10
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: '**微调ConvNet**：不是随机初始化，而是使用预训练网络初始化模型，然后训练过程与通常情况下不同数据集的训练相同。通常还会替换网络中的头部（或其中的一部分），以适应不同数量的输出。在这种方法中，通常将学习率设置为较小的值。这是因为网络已经训练过，只需要对其进行“微调”以适应新数据集。'
 - en: 'You can also combine the above two methods: First you can freeze the feature
     extractor, and train the head. After that, you can unfreeze the feature extractor
     (or part of it), set the learning rate to something smaller, and continue training.'
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 您也可以结合上述两种方法：首先可以冻结特征提取器，并训练头部。之后，您可以解冻特征提取器（或其中的一部分），将学习率设置为较小的值，并继续训练。
 - en: In this part you will use the first method – extracting the features using a
     quantized model.
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本部分中，您将使用第一种方法——使用量化模型提取特征。
 - en: Part 0\. Prerequisites
+  id: totrans-13
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 第0部分。先决条件
 - en: Before diving into the transfer learning, let us review the “prerequisites”,
     such as installations and data loading/visualizations.
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 在深入研究迁移学习之前，让我们回顾一下“先决条件”，如安装和数据加载/可视化。
 - en: '[PRE0]'
+  id: totrans-15
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: Installing the Nightly Build
+  id: totrans-16
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 安装夜间版本
 - en: 'Because you will be using the beta parts of the PyTorch, it is recommended
     to install the latest version of `torch` and `torchvision`. You can find the most
     recent instructions on local installation [here](https://pytorch.org/get-started/locally/).
     For example, to install without GPU support:'
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于您将使用PyTorch的beta部分，建议安装最新版本的`torch`和`torchvision`。您可以在本地安装的最新说明[这里](https://pytorch.org/get-started/locally/)。例如，要安装不带GPU支持的版本：
 - en: '[PRE1]'
+  id: totrans-18
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Load Data
+  id: totrans-19
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 加载数据
 - en: Note
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: This section is identical to the original transfer learning tutorial.
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 本节与原始迁移学习教程相同。
 - en: We will use `torchvision` and `torch.utils.data` packages to load the data.
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们将使用`torchvision`和`torch.utils.data`包来加载数据。
 - en: The problem you are going to solve today is classifying **ants** and **bees**
     from images. The dataset contains about 120 training images each for ants and
     bees. There are 75 validation images for each class. This is considered a very
     small dataset to generalize on. However, since we are using transfer learning,
     we should be able to generalize reasonably well.
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 今天您要解决的问题是从图像中对**蚂蚁**和**蜜蜂**进行分类。数据集包含大约120张蚂蚁和蜜蜂的训练图像。每个类别有75张验证图像。这被认为是一个非常小的数据集来进行泛化。但是，由于我们使用迁移学习，我们应该能够进行合理的泛化。
 - en: '*This dataset is a very small subset of imagenet.*'
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: '*此数据集是imagenet的一个非常小的子集。*'
 - en: Note
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Download the data from [here](https://download.pytorch.org/tutorial/hymenoptera_data.zip)
     and extract it to the `data` directory.
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 从[这里](https://download.pytorch.org/tutorial/hymenoptera_data.zip)下载数据并将其解压缩到`data`目录中。
 - en: '[PRE2]'
+  id: totrans-27
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Visualize a few images
+  id: totrans-28
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 可视化几张图片
 - en: Let’s visualize a few training images so as to understand the data augmentations.
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们可视化一些训练图像，以便了解数据增强。
 - en: '[PRE3]'
+  id: totrans-30
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: Support Function for Model Training
+  id: totrans-31
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 用于模型训练的支持函数
 - en: Below is a generic function for model training. This function also
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下是用于模型训练的通用函数。此函数还
 - en: Schedules the learning rate
+  id: totrans-33
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 调整学习率
 - en: Saves the best model
+  id: totrans-34
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 保存最佳模型
 - en: '[PRE4]'
+  id: totrans-35
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: Support Function for Visualizing the Model Predictions
+  id: totrans-36
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 用于可视化模型预测的支持函数
 - en: Generic function to display predictions for a few images
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 用于显示几张图片预测的通用函数
 - en: '[PRE5]'
+  id: totrans-38
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: Part 1\. Training a Custom Classifier based on a Quantized Feature Extractor
+  id: totrans-39
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 第1部分。基于量化特征提取器训练自定义分类器
 - en: In this section you will use a “frozen” quantized feature extractor, and train
     a custom classifier head on top of it. Unlike floating point models, you don’t
     need to set requires_grad=False for the quantized model, as it has no trainable
     parameters. Please, refer to the [documentation](https://pytorch.org/docs/stable/quantization.html)
     for more details.
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本节中，您将使用一个“冻结”的可量化特征提取器，并在其顶部训练一个自定义分类器头。与浮点模型不同，您不需要为可量化模型设置requires_grad=False，因为它没有可训练的参数。请参考[文档](https://pytorch.org/docs/stable/quantization.html)以获取更多详细信息。
 - en: 'Load a pretrained model: for this exercise you will be using [ResNet-18](https://pytorch.org/hub/pytorch_vision_resnet/).'
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 加载预训练模型：在本练习中，您将使用[ResNet-18](https://pytorch.org/hub/pytorch_vision_resnet/)。
 - en: '[PRE6]'
+  id: totrans-42
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: At this point you need to modify the pretrained model. The model has the quantize/dequantize
     blocks in the beginning and the end. However, because you will only use the feature
     extractor, the dequantization layer has to move right before the linear layer
     (the head). The easiest way to do that is to wrap the model in the `nn.Sequential`
     module.
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: 此时，您需要修改预训练模型。该模型在开头和结尾有量化/去量化块。但是，因为您只会使用特征提取器，所以去量化层必须移动到线性层（头部）的右侧。最简单的方法是将模型包装在`nn.Sequential`模块中。
 - en: The first step is to isolate the feature extractor in the ResNet model. Although
     in this example you are tasked to use all layers except `fc` as the feature extractor,
     in reality, you can take as many parts as you need. This would be useful in case
     you would like to replace some of the convolutional layers as well.
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 第一步是在ResNet模型中隔离特征提取器。尽管在这个例子中，您被要求使用除`fc`之外的所有层作为特征提取器，但实际上，您可以取需要的部分。这在您想要替换一些卷积层时会很有用。
 - en: Note
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: When separating the feature extractor from the rest of a quantized model, you
     have to manually place the quantizer/dequantized in the beginning and the end
     of the parts you want to keep quantized.
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 当将特征提取器与量化模型的其余部分分离时，您必须手动将量化器/去量化器放置在您想要保持量化的部分的开头和结尾。
 - en: The function below creates a model with a custom head.
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: 下面的函数创建了一个带有自定义头的模型。
 - en: '[PRE7]'
+  id: totrans-48
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: Warning
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: Currently the quantized models can only be run on CPU. However, it is possible
     to send the non-quantized parts of the model to a GPU.
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: 目前，量化模型只能在CPU上运行。但是，可以将模型的非量化部分发送到GPU上。
 - en: '[PRE8]'
+  id: totrans-51
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: Train and evaluate
+  id: totrans-52
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 训练和评估
 - en: This step takes around 15-25 min on CPU. Because the quantized model can only
     run on the CPU, you cannot run the training on GPU.
+  id: totrans-53
   prefs: []
   type: TYPE_NORMAL
+  zh: 这一步在CPU上大约需要15-25分钟。由于量化模型只能在CPU上运行，因此无法在GPU上运行训练。
 - en: '[PRE9]'
+  id: totrans-54
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: Part 2\. Finetuning the Quantizable Model
+  id: totrans-55
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 第2部分。微调可量化模型
 - en: In this part, we fine tune the feature extractor used for transfer learning,
     and quantize the feature extractor. Note that in both part 1 and 2, the feature
     extractor is quantized. The difference is that in part 1, we use a pretrained
@@ -231,105 +344,153 @@
     specific example, the training set is really small (120 images) so the benefits
     of fine tuning the entire model is not apparent. However, the procedure shown
     here will improve accuracy for transfer learning with larger datasets.
+  id: totrans-56
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这部分中，我们微调用于迁移学习的特征提取器，并对特征提取器进行量化。请注意，在第1部分和第2部分中，特征提取器都被量化。不同之处在于，在第1部分中，我们使用了一个预训练的量化模型。而在这部分中，我们在感兴趣的数据集上微调后创建了一个量化的特征提取器，因此这是一种在迁移学习中获得更好准确性并具有量化优势的方法。请注意，在我们的具体示例中，训练集非常小（120张图像），因此整个模型微调的好处并不明显。然而，这里展示的过程将提高在具有更大数据集的迁移学习中的准确性。
 - en: 'The pretrained feature extractor must be quantizable. To make sure it is quantizable,
     perform the following steps:'
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: 预训练的特征提取器必须是可量化的。为确保它是可量化的，请执行以下步骤：
 - en: Fuse `(Conv, BN, ReLU)`, `(Conv, BN)`, and `(Conv, ReLU)` using `torch.quantization.fuse_modules`.
+  id: totrans-58
   prefs:
   - PREF_BQ
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 使用`torch.quantization.fuse_modules`融合`(Conv, BN, ReLU)`、`(Conv, BN)`和`(Conv,
+    ReLU)`。
 - en: ''
+  id: totrans-59
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-60
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: Connect the feature extractor with a custom head. This requires dequantizing
     the output of the feature extractor.
+  id: totrans-61
   prefs:
   - PREF_BQ
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 将特征提取器与自定义头连接。这需要对特征提取器的输出进行去量化。
 - en: ''
+  id: totrans-62
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-63
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: Insert fake-quantization modules at appropriate locations in the feature extractor
     to mimic quantization during training.
+  id: totrans-64
   prefs:
   - PREF_BQ
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 在特征提取器的适当位置插入伪量化模块，以在训练过程中模拟量化。
 - en: For step (1), we use models from `torchvision/models/quantization`, which have
     a member method `fuse_model`. This function fuses all the `conv`, `bn`, and `relu`
     modules. For custom models, this would require calling the `torch.quantization.fuse_modules`
     API with the list of modules to fuse manually.
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于第（1）步，我们使用`torchvision/models/quantization`中的模型，这些模型具有成员方法`fuse_model`。此函数将所有`conv`、`bn`和`relu`模块融合在一起。对于自定义模型，这将需要手动调用`torch.quantization.fuse_modules`
+    API，并提供要手动融合的模块列表。
 - en: Step (2) is performed by the `create_combined_model` function used in the previous
     section.
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: 第（2）步由前一节中使用的`create_combined_model`函数执行。
 - en: Step (3) is achieved by using `torch.quantization.prepare_qat`, which inserts
     fake-quantization modules.
+  id: totrans-67
   prefs: []
   type: TYPE_NORMAL
+  zh: 第（3）步通过使用`torch.quantization.prepare_qat`来实现，该函数插入了伪量化模块。
 - en: As step (4), you can start “finetuning” the model, and after that convert it
     to a fully quantized version (Step 5).
+  id: totrans-68
   prefs: []
   type: TYPE_NORMAL
+  zh: 作为第（4）步，您可以开始“微调”模型，然后将其转换为完全量化的版本（第5步）。
 - en: To convert the fine tuned model into a quantized model you can call the `torch.quantization.convert`
     function (in our case only the feature extractor is quantized).
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: 要将微调后的模型转换为量化模型，您可以调用`torch.quantization.convert`函数（在我们的情况下，只有特征提取器被量化）。
 - en: Note
+  id: totrans-70
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Because of the random initialization your results might differ from the results
     shown in this tutorial.
+  id: totrans-71
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于随机初始化，您的结果可能与本教程中显示的结果不同。
 - en: '[PRE10]'
+  id: totrans-72
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: Finetuning the model
+  id: totrans-73
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 微调模型
 - en: In the current tutorial the whole model is fine tuned. In general, this will
     lead to higher accuracy. However, due to the small training set used here, we
     end up overfitting to the training set.
+  id: totrans-74
   prefs: []
   type: TYPE_NORMAL
+  zh: 在当前教程中，整个模型都被微调。一般来说，这会导致更高的准确性。然而，由于这里使用的训练集很小，我们最终会过拟合训练集。
 - en: Step 4\. Fine tune the model
+  id: totrans-75
   prefs: []
   type: TYPE_NORMAL
+  zh: 步骤4. 微调模型
 - en: '[PRE11]'
+  id: totrans-76
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: Step 5\. Convert to quantized model
+  id: totrans-77
   prefs: []
   type: TYPE_NORMAL
+  zh: 步骤5. 转换为量化模型
 - en: '[PRE12]'
+  id: totrans-78
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: Lets see how the quantized model performs on a few images
+  id: totrans-79
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们看看量化模型在几张图片上的表现
 - en: '[PRE13]'
+  id: totrans-80
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'

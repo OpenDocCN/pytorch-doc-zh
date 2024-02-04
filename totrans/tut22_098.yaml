@@ -1,173 +1,268 @@
 - en: (beta) Dynamic Quantization on an LSTM Word Language Model
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: （beta）LSTM单词语言模型上的动态量化
 - en: 原文：[https://pytorch.org/tutorials/advanced/dynamic_quantization_tutorial.html](https://pytorch.org/tutorials/advanced/dynamic_quantization_tutorial.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/advanced/dynamic_quantization_tutorial.html](https://pytorch.org/tutorials/advanced/dynamic_quantization_tutorial.html)
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-advanced-dynamic-quantization-tutorial-py) to
     download the full example code
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[这里](#sphx-glr-download-advanced-dynamic-quantization-tutorial-py)下载完整示例代码
 - en: '**Author**: [James Reed](https://github.com/jamesr66a)'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '**作者**：[James Reed](https://github.com/jamesr66a)'
 - en: '**Edited by**: [Seth Weidman](https://github.com/SethHWeidman/)'
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: '**编辑者**：[Seth Weidman](https://github.com/SethHWeidman/)'
 - en: Introduction
+  id: totrans-6
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 介绍
 - en: Quantization involves converting the weights and activations of your model from
     float to int, which can result in smaller model size and faster inference with
     only a small hit to accuracy.
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 量化涉及将模型的权重和激活从浮点转换为整数，这可以使模型大小更小，推理速度更快，只会对准确性产生轻微影响。
 - en: In this tutorial, we will apply the easiest form of quantization - [dynamic
     quantization](https://pytorch.org/docs/stable/quantization.html#torch.quantization.quantize_dynamic)
     - to an LSTM-based next word-prediction model, closely following the [word language
     model](https://github.com/pytorch/examples/tree/master/word_language_model) from
     the PyTorch examples.
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，我们将应用最简单形式的量化 - [动态量化](https://pytorch.org/docs/stable/quantization.html#torch.quantization.quantize_dynamic)
+    - 到基于LSTM的下一个单词预测模型，紧随PyTorch示例中的[word language model](https://github.com/pytorch/examples/tree/master/word_language_model)。
 - en: '[PRE0]'
+  id: totrans-9
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: 1\. Define the model
+  id: totrans-10
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 1\. 定义模型
 - en: Here we define the LSTM model architecture, following the [model](https://github.com/pytorch/examples/blob/master/word_language_model/model.py)
     from the word language model example.
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这里，我们定义LSTM模型架构，遵循单词语言模型示例中的[model](https://github.com/pytorch/examples/blob/master/word_language_model/model.py)。
 - en: '[PRE1]'
+  id: totrans-12
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: 2\. Load in the text data
+  id: totrans-13
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 2\. 加载文本数据
 - en: Next, we load the [Wikitext-2 dataset](https://www.google.com/search?q=wikitext+2+data)
     into a Corpus, again following the [preprocessing](https://github.com/pytorch/examples/blob/master/word_language_model/data.py)
     from the word language model example.
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，我们将[Wikitext-2数据集](https://www.google.com/search?q=wikitext+2+data)加载到一个Corpus中，再次遵循单词语言模型示例中的[预处理](https://github.com/pytorch/examples/blob/master/word_language_model/data.py)。
 - en: '[PRE2]'
+  id: totrans-15
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: 3\. Load the pretrained model
+  id: totrans-16
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 3\. 加载预训练模型
 - en: This is a tutorial on dynamic quantization, a quantization technique that is
     applied after a model has been trained. Therefore, we’ll simply load some pretrained
     weights into this model architecture; these weights were obtained by training
     for five epochs using the default settings in the word language model example.
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 这是关于动态量化的教程，这是一种在模型训练后应用的量化技术。因此，我们将简单地将一些预训练权重加载到这个模型架构中；这些权重是通过在单词语言模型示例中使用默认设置进行五个时期的训练获得的。
 - en: '[PRE3]'
+  id: totrans-18
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: '[PRE4]'
+  id: totrans-19
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: Now let’s generate some text to ensure that the pretrained model is working
     properly - similarly to before, we follow [here](https://github.com/pytorch/examples/blob/master/word_language_model/generate.py)
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在让我们生成一些文本，以确保预训练模型正常工作 - 类似于之前，我们遵循[这里](https://github.com/pytorch/examples/blob/master/word_language_model/generate.py)。
 - en: '[PRE5]'
+  id: totrans-21
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: '[PRE6]'
+  id: totrans-22
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: It’s no GPT-2, but it looks like the model has started to learn the structure
     of language!
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 虽然不是GPT-2，但看起来模型已经开始学习语言结构！
 - en: 'We’re almost ready to demonstrate dynamic quantization. We just need to define
     a few more helper functions:'
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们几乎准备好演示动态量化了。我们只需要定义几个更多的辅助函数：
 - en: '[PRE7]'
+  id: totrans-25
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: 4\. Test dynamic quantization
+  id: totrans-26
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 4\. 测试动态量化
 - en: Finally, we can call `torch.quantization.quantize_dynamic` on the model! Specifically,
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 最后，我们可以在模型上调用`torch.quantization.quantize_dynamic`！具体来说，
 - en: We specify that we want the `nn.LSTM` and `nn.Linear` modules in our model to
     be quantized
+  id: totrans-28
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 我们指定我们希望模型中的`nn.LSTM`和`nn.Linear`模块被量化。
 - en: We specify that we want weights to be converted to `int8` values
+  id: totrans-29
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 我们指定希望将权重转换为`int8`值
 - en: '[PRE8]'
+  id: totrans-30
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: '[PRE9]'
+  id: totrans-31
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: 'The model looks the same; how has this benefited us? First, we see a significant
     reduction in model size:'
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 模型看起来一样；这对我们有什么好处？首先，我们看到模型大小显著减小：
 - en: '[PRE10]'
+  id: totrans-33
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: '[PRE11]'
+  id: totrans-34
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: 'Second, we see faster inference time, with no difference in evaluation loss:'
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 其次，我们看到推理时间更快，评估损失没有差异：
 - en: 'Note: we set the number of threads to one for single threaded comparison, since
     quantized models run single threaded.'
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意：我们将线程数设置为一个，以进行单线程比较，因为量化模型是单线程运行的。
 - en: '[PRE12]'
+  id: totrans-37
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: '[PRE13]'
+  id: totrans-38
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: Running this locally on a MacBook Pro, without quantization, inference takes
     about 200 seconds, and with quantization it takes just about 100 seconds.
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 在MacBook Pro上本地运行，不进行量化推理大约需要200秒，进行量化后只需要大约100秒。
 - en: Conclusion
+  id: totrans-40
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 结论
 - en: Dynamic quantization can be an easy way to reduce model size while only having
     a limited effect on accuracy.
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 动态量化可以是一种简单的方法，可以减小模型大小，同时对准确性的影响有限。
 - en: Thanks for reading! As always, we welcome any feedback, so please create an
     issue [here](https://github.com/pytorch/pytorch/issues) if you have any.
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 感谢阅读！我们随时欢迎任何反馈意见，如果您有任何问题，请在[这里](https://github.com/pytorch/pytorch/issues)创建一个问题。
 - en: '**Total running time of the script:** ( 5 minutes 30.807 seconds)'
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: '**脚本的总运行时间：**（5分钟30.807秒）'
 - en: '[`Download Python source code: dynamic_quantization_tutorial.py`](../_downloads/256861ec2cab5f0dc50c523f520dfefd/dynamic_quantization_tutorial.py)'
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: '[下载Python源代码：dynamic_quantization_tutorial.py](../_downloads/256861ec2cab5f0dc50c523f520dfefd/dynamic_quantization_tutorial.py)'
 - en: '[`Download Jupyter notebook: dynamic_quantization_tutorial.ipynb`](../_downloads/9a0e851f5cb70c78bfde07b9bd268569/dynamic_quantization_tutorial.ipynb)'
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: '[下载Jupyter笔记本：dynamic_quantization_tutorial.ipynb](../_downloads/9a0e851f5cb70c78bfde07b9bd268569/dynamic_quantization_tutorial.ipynb)'
 - en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Sphinx-Gallery生成的画廊](https://sphinx-gallery.github.io)'

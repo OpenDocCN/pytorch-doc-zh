@@ -1,45 +1,65 @@
 - en: (beta) Dynamic Quantization on BERT
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: （beta）BERT上的动态量化
 - en: 原文：[https://pytorch.org/tutorials/intermediate/dynamic_quantization_bert_tutorial.html](https://pytorch.org/tutorials/intermediate/dynamic_quantization_bert_tutorial.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/intermediate/dynamic_quantization_bert_tutorial.html](https://pytorch.org/tutorials/intermediate/dynamic_quantization_bert_tutorial.html)
 - en: Tip
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 提示
 - en: To get the most of this tutorial, we suggest using this [Colab Version](https://colab.research.google.com/github/pytorch/tutorials/blob/gh-pages/_downloads/dynamic_quantization_bert_tutorial.ipynb).
     This will allow you to experiment with the information presented below.
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了充分利用本教程，我们建议使用这个[Colab版本](https://colab.research.google.com/github/pytorch/tutorials/blob/gh-pages/_downloads/dynamic_quantization_bert_tutorial.ipynb)。这将允许您尝试下面介绍的信息。
 - en: '**Author**: [Jianyu Huang](https://github.com/jianyuh)'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '**作者**：[Jianyu Huang](https://github.com/jianyuh)'
 - en: '**Reviewed by**: [Raghuraman Krishnamoorthi](https://github.com/raghuramank100)'
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: '**审阅者**：[Raghuraman Krishnamoorthi](https://github.com/raghuramank100)'
 - en: '**Edited by**: [Jessica Lin](https://github.com/jlin27)'
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: '**编辑者**：[Jessica Lin](https://github.com/jlin27)'
 - en: Introduction
+  id: totrans-7
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 介绍
 - en: In this tutorial, we will apply the dynamic quantization on a BERT model, closely
     following the BERT model from [the HuggingFace Transformers examples](https://github.com/huggingface/transformers).
     With this step-by-step journey, we would like to demonstrate how to convert a
     well-known state-of-the-art model like BERT into dynamic quantized model.
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，我们将在BERT模型上应用动态量化，紧随[HuggingFace Transformers示例](https://github.com/huggingface/transformers)中的BERT模型。通过这一逐步旅程，我们想演示如何将像BERT这样的知名最先进模型转换为动态量化模型。
 - en: BERT, or Bidirectional Embedding Representations from Transformers, is a new
     method of pre-training language representations which achieves the state-of-the-art
     accuracy results on many popular Natural Language Processing (NLP) tasks, such
     as question answering, text classification, and others. The original paper can
     be found [here](https://arxiv.org/pdf/1810.04805.pdf).
+  id: totrans-9
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: BERT，即来自Transformers的双向嵌入表示，是一种新的预训练语言表示方法，在许多流行的自然语言处理（NLP）任务上取得了最先进的准确性结果，例如问答、文本分类等。原始论文可以在[这里](https://arxiv.org/pdf/1810.04805.pdf)找到。
 - en: Dynamic quantization support in PyTorch converts a float model to a quantized
     model with static int8 or float16 data types for the weights and dynamic quantization
     for the activations. The activations are quantized dynamically (per batch) to
@@ -47,9 +67,12 @@
     API](https://pytorch.org/docs/stable/quantization.html#torch.quantization.quantize_dynamic),
     which replaces specified modules with dynamic weight-only quantized versions and
     output the quantized model.
+  id: totrans-10
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: PyTorch中的动态量化支持将浮点模型转换为具有静态int8或float16数据类型的量化模型，用于权重和动态量化用于激活。当权重量化为int8时，激活会动态量化（每批次）为int8。在PyTorch中，我们有[torch.quantization.quantize_dynamic
+    API](https://pytorch.org/docs/stable/quantization.html#torch.quantization.quantize_dynamic)，它将指定的模块替换为动态仅权重量化版本，并输出量化模型。
 - en: We demonstrate the accuracy and inference performance results on the [Microsoft
     Research Paraphrase Corpus (MRPC) task](https://www.microsoft.com/en-us/download/details.aspx?id=52398)
     in the General Language Understanding Evaluation benchmark [(GLUE)](https://gluebenchmark.com/).
@@ -58,235 +81,349 @@
     in the pair are semantically equivalent. As the classes are imbalanced (68% positive,
     32% negative), we follow the common practice and report [F1 score](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html).
     MRPC is a common NLP task for language pair classification, as shown below.
+  id: totrans-11
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 我们在[Microsoft Research Paraphrase Corpus (MRPC)任务](https://www.microsoft.com/en-us/download/details.aspx?id=52398)上展示了准确性和推理性能结果，该任务属于通用语言理解评估基准[(GLUE)](https://gluebenchmark.com/)。MRPC（Dolan和Brockett，2005）是从在线新闻来源自动提取的句子对语料库，其中包含对句子是否语义等价的人工注释。由于类别不平衡（68%积极，32%消极），我们遵循常见做法并报告[F1分数](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html)。如下所示，MRPC是一个常见的NLP任务，用于语言对分类。
 - en: '![../_images/bert.png](../Images/b43b70d8a6eef9ea4f75867b5e83b483.png)'
+  id: totrans-12
   prefs: []
   type: TYPE_IMG
+  zh: '![../_images/bert.png](../Images/b43b70d8a6eef9ea4f75867b5e83b483.png)'
 - en: 1\. Setup
+  id: totrans-13
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 1\. 设置
 - en: 1.1 Install PyTorch and HuggingFace Transformers
+  id: totrans-14
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 1.1 安装PyTorch和HuggingFace Transformers
 - en: To start this tutorial, let’s first follow the installation instructions in
     PyTorch [here](https://github.com/pytorch/pytorch/#installation) and HuggingFace
     Github Repo [here](https://github.com/huggingface/transformers#installation).
     In addition, we also install [scikit-learn](https://github.com/scikit-learn/scikit-learn)
     package, as we will reuse its built-in F1 score calculation helper function.
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 要开始本教程，让我们首先按照PyTorch的安装说明[这里](https://github.com/pytorch/pytorch/#installation)和HuggingFace
+    Github Repo [这里](https://github.com/huggingface/transformers#installation)进行安装。此外，我们还安装[scikit-learn](https://github.com/scikit-learn/scikit-learn)包，因为我们将重用其内置的F1分数计算辅助函数。
 - en: '[PRE0]'
+  id: totrans-16
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: 'Because we will be using the beta parts of the PyTorch, it is recommended to
     install the latest version of torch and torchvision. You can find the most recent
     instructions on local installation [here](https://pytorch.org/get-started/locally/).
     For example, to install on Mac:'
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于我们将使用PyTorch的beta部分，建议安装最新版本的torch和torchvision。您可以在本地安装的最新说明[这里](https://pytorch.org/get-started/locally/)。例如，在Mac上安装：
 - en: '[PRE1]'
+  id: totrans-18
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: 1.2 Import the necessary modules
+  id: totrans-19
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 1.2 导入必要的模块
 - en: In this step we import the necessary Python modules for the tutorial.
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这一步中，我们导入本教程所需的Python模块。
 - en: '[PRE2]'
+  id: totrans-21
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: We set the number of threads to compare the single thread performance between
     FP32 and INT8 performance. In the end of the tutorial, the user can set other
     number of threads by building PyTorch with right parallel backend.
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们设置线程数，以比较FP32和INT8性能之间的单线程性能。在教程结束时，用户可以通过使用正确的并行后端构建PyTorch来设置其他线程数。
 - en: '[PRE3]'
+  id: totrans-23
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: 1.3 Learn about helper functions
+  id: totrans-24
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 1.3 了解辅助函数
 - en: 'The helper functions are built-in in transformers library. We mainly use the
     following helper functions: one for converting the text examples into the feature
     vectors; The other one for measuring the F1 score of the predicted result.'
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: 助手函数内置在transformers库中。我们主要使用以下助手函数：一个用于将文本示例转换为特征向量；另一个用于测量预测结果的F1分数。
 - en: 'The [glue_convert_examples_to_features](https://github.com/huggingface/transformers/blob/master/transformers/data/processors/glue.py)
     function converts the texts into input features:'
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: '[glue_convert_examples_to_features](https://github.com/huggingface/transformers/blob/master/transformers/data/processors/glue.py)函数将文本转换为输入特征：'
 - en: Tokenize the input sequences;
+  id: totrans-27
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 对输入序列进行标记化；
 - en: Insert [CLS] in the beginning;
+  id: totrans-28
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在开头插入[CLS]；
 - en: Insert [SEP] between the first sentence and the second sentence, and in the
     end;
+  id: totrans-29
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在第一个句子和第二个句子之间以及结尾处插入[SEP]；
 - en: Generate token type ids to indicate whether a token belongs to the first sequence
     or the second sequence.
+  id: totrans-30
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 生成标记类型ID，以指示标记属于第一个序列还是第二个序列。
 - en: The [glue_compute_metrics](https://github.com/huggingface/transformers/blob/master/transformers/data/processors/glue.py)
     function has the compute metrics with the [F1 score](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html),
     which can be interpreted as a weighted average of the precision and recall, where
     an F1 score reaches its best value at 1 and worst score at 0\. The relative contribution
     of precision and recall to the F1 score are equal.
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: '[glue_compute_metrics](https://github.com/huggingface/transformers/blob/master/transformers/data/processors/glue.py)函数具有计算[F1分数](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html)的计算指标，可以解释为精确度和召回率的加权平均值，其中F1分数在1时达到最佳值，在0时达到最差值。精确度和召回率对F1分数的相对贡献相等。'
 - en: 'The equation for the F1 score is:'
+  id: totrans-32
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: F1分数的方程式是：
 - en: \[F1 = 2 * (\text{precision} * \text{recall}) / (\text{precision} + \text{recall})
     \]
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: \[F1 = 2 * (\text{精确度} * \text{召回率}) / (\text{精确度} + \text{召回率}) \]
 - en: 1.4 Download the dataset
+  id: totrans-34
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 1.4 下载数据集
 - en: Before running MRPC tasks we download the [GLUE data](https://gluebenchmark.com/tasks)
     by running [this script](https://gist.github.com/W4ngatang/60c2bdb54d156a41194446737ce03e2e)
     and unpack it to a directory `glue_data`.
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 在运行MRPC任务之前，我们通过运行[此脚本](https://gist.github.com/W4ngatang/60c2bdb54d156a41194446737ce03e2e)下载[GLUE数据](https://gluebenchmark.com/tasks)，并将其解压到目录`glue_data`中。
 - en: '[PRE4]'
+  id: totrans-36
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: 2\. Fine-tune the BERT model
+  id: totrans-37
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 2. 微调BERT模型
 - en: The spirit of BERT is to pre-train the language representations and then to
     fine-tune the deep bi-directional representations on a wide range of tasks with
     minimal task-dependent parameters, and achieves state-of-the-art results. In this
     tutorial, we will focus on fine-tuning with the pre-trained BERT model to classify
     semantically equivalent sentence pairs on MRPC task.
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: BERT的精神是预先训练语言表示，然后在广泛的任务上微调深度双向表示，具有最少的任务相关参数，并取得了最先进的结果。在本教程中，我们将重点放在使用预训练的BERT模型进行微调，以对MRPC任务中的语义等效句子对进行分类。
 - en: 'To fine-tune the pre-trained BERT model (`bert-base-uncased` model in HuggingFace
     transformers) for the MRPC task, you can follow the command in [examples](https://github.com/huggingface/transformers/tree/master/examples#mrpc):'
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 要为MRPC任务微调预训练的BERT模型（HuggingFace transformers中的`bert-base-uncased`模型），可以按照[示例](https://github.com/huggingface/transformers/tree/master/examples#mrpc)中的命令进行操作：
 - en: '[PRE5]'
+  id: totrans-40
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: We provide the fined-tuned BERT model for MRPC task [here](https://download.pytorch.org/tutorial/MRPC.zip).
     To save time, you can download the model file (~400 MB) directly into your local
     folder `$OUT_DIR`.
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们为MRPC任务提供了微调后的BERT模型[这里](https://download.pytorch.org/tutorial/MRPC.zip)。为节省时间，您可以直接将模型文件（~400
+    MB）下载到本地文件夹`$OUT_DIR`中。
 - en: 2.1 Set global configurations
+  id: totrans-42
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 2.1 设置全局配置
 - en: Here we set the global configurations for evaluating the fine-tuned BERT model
     before and after the dynamic quantization.
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这里，我们设置了全局配置，用于在动态量化之前和之后评估微调后的BERT模型。
 - en: '[PRE6]'
+  id: totrans-44
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: 2.2 Load the fine-tuned BERT model
+  id: totrans-45
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 2.2 加载微调后的BERT模型
 - en: We load the tokenizer and fine-tuned BERT sequence classifier model (FP32) from
     the `configs.output_dir`.
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们从`configs.output_dir`加载标记化器和微调后的BERT序列分类器模型（FP32）。
 - en: '[PRE7]'
+  id: totrans-47
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: 2.3 Define the tokenize and evaluation function
+  id: totrans-48
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 2.3 定义标记化和评估函数
 - en: We reuse the tokenize and evaluation function from [Huggingface](https://github.com/huggingface/transformers/blob/master/examples/run_glue.py).
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们重用了[Huggingface](https://github.com/huggingface/transformers/blob/master/examples/run_glue.py)中的标记化和评估函数。
 - en: '[PRE8]'
+  id: totrans-50
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: 3\. Apply the dynamic quantization
+  id: totrans-51
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 3. 应用动态量化
 - en: We call `torch.quantization.quantize_dynamic` on the model to apply the dynamic
     quantization on the HuggingFace BERT model. Specifically,
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们在模型上调用`torch.quantization.quantize_dynamic`，对HuggingFace BERT模型应用动态量化。具体来说，
 - en: We specify that we want the torch.nn.Linear modules in our model to be quantized;
+  id: totrans-53
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 我们指定希望模型中的torch.nn.Linear模块被量化；
 - en: We specify that we want weights to be converted to quantized int8 values.
+  id: totrans-54
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 我们指定希望权重转换为量化的int8值。
 - en: '[PRE9]'
+  id: totrans-55
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: 3.1 Check the model size
+  id: totrans-56
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 3.1 检查模型大小
 - en: 'Let’s first check the model size. We can observe a significant reduction in
     model size (FP32 total size: 438 MB; INT8 total size: 181 MB):'
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们首先检查模型大小。我们可以观察到模型大小显著减小（FP32总大小：438 MB；INT8总大小：181 MB）：
 - en: '[PRE10]'
+  id: totrans-58
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: The BERT model used in this tutorial (`bert-base-uncased`) has a vocabulary
     size V of 30522\. With the embedding size of 768, the total size of the word embedding
     table is ~ 4 (Bytes/FP32) * 30522 * 768 = 90 MB. So with the help of quantization,
     the model size of the non-embedding table part is reduced from 350 MB (FP32 model)
     to 90 MB (INT8 model).
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程中使用的BERT模型（`bert-base-uncased`）具有30522个词汇大小V。具有768的嵌入大小，单词嵌入表的总大小为~4（字节/FP32）*
+    30522 * 768 = 90 MB。因此，在量化的帮助下，非嵌入表部分的模型大小从350 MB（FP32模型）减少到90 MB（INT8模型）。
 - en: 3.2 Evaluate the inference accuracy and time
+  id: totrans-60
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 3.2 评估推理准确性和时间
 - en: Next, let’s compare the inference time as well as the evaluation accuracy between
     the original FP32 model and the INT8 model after the dynamic quantization.
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，让我们比较原始FP32模型和动态量化后的INT8模型之间的推理时间和评估准确性。
 - en: '[PRE11]'
+  id: totrans-62
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: 'Running this locally on a MacBook Pro, without quantization, inference (for
     all 408 examples in MRPC dataset) takes about 160 seconds, and with quantization
     it takes just about 90 seconds. We summarize the results for running the quantized
     BERT model inference on a Macbook Pro as the follows:'
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: 在MacBook Pro上本地运行，不进行量化时，推理（对MRPC数据集中的所有408个示例）大约需要160秒，而进行量化后，只需要大约90秒。我们总结了在MacBook
+    Pro上运行量化BERT模型推理的结果如下：
 - en: '[PRE12]'
+  id: totrans-64
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: We have 0.6% lower F1 score accuracy after applying the post-training dynamic
     quantization on the fine-tuned BERT model on the MRPC task. As a comparison, in
     a [recent paper](https://arxiv.org/pdf/1910.06188.pdf) (Table 1), it achieved
     0.8788 by applying the post-training dynamic quantization and 0.8956 by applying
     the quantization-aware training. The main difference is that we support the asymmetric
     quantization in PyTorch while that paper supports the symmetric quantization only.
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: 在对MRPC任务上对微调后的BERT模型应用后训练动态量化后，我们的F1分数准确率降低了0.6%。作为对比，在一篇[最近的论文](https://arxiv.org/pdf/1910.06188.pdf)（表1）中，通过应用后训练动态量化获得了0.8788，通过应用量化感知训练获得了0.8956。主要区别在于我们支持PyTorch中的不对称量化，而该论文仅支持对称量化。
 - en: Note that we set the number of threads to 1 for the single-thread comparison
     in this tutorial. We also support the intra-op parallelization for these quantized
     INT8 operators. The users can now set multi-thread by `torch.set_num_threads(N)`
@@ -297,50 +434,79 @@
     to check the parallelization settings. On the same MacBook Pro using PyTorch with
     Native backend for parallelization, we can get about 46 seconds for processing
     the evaluation of MRPC dataset.
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，在本教程中，我们将线程数设置为1以进行单线程比较。我们还支持这些量化INT8运算符的intra-op并行化。用户现在可以通过`torch.set_num_threads(N)`（`N`是intra-op并行化线程数）来设置多线程。启用intra-op并行化支持的一个初步要求是使用正确的[后端](https://pytorch.org/docs/stable/notes/cpu_threading_torchscript_inference.html#build-options)构建PyTorch，如OpenMP、Native或TBB。您可以使用`torch.__config__.parallel_info()`来检查并行设置。在同一台MacBook
+    Pro上使用具有Native后端的PyTorch进行并行化，我们可以在大约46秒内处理MRPC数据集的评估。
 - en: 3.3 Serialize the quantized model
+  id: totrans-67
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 3.3 序列化量化模型
 - en: We can serialize and save the quantized model for the future use using torch.jit.save
     after tracing the model.
+  id: totrans-68
   prefs: []
   type: TYPE_NORMAL
+  zh: 在跟踪模型后，我们可以序列化和保存量化模型以备将来使用，使用torch.jit.save。
 - en: '[PRE13]'
+  id: totrans-69
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: To load the quantized model, we can use torch.jit.load
+  id: totrans-70
   prefs: []
   type: TYPE_NORMAL
+  zh: 要加载量化模型，我们可以使用torch.jit.load
 - en: '[PRE14]'
+  id: totrans-71
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: Conclusion
+  id: totrans-72
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 结论
 - en: In this tutorial, we demonstrated how to convert a well-known state-of-the-art
     NLP model like BERT into dynamic quantized model. Dynamic quantization can reduce
     the size of the model while only having a limited implication on accuracy.
+  id: totrans-73
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，我们演示了如何将像BERT这样的知名最先进的NLP模型转换为动态量化模型。动态量化可以减小模型的大小，同时对准确性的影响有限。
 - en: Thanks for reading! As always, we welcome any feedback, so please create an
     issue [here](https://github.com/pytorch/pytorch/issues) if you have any.
+  id: totrans-74
   prefs: []
   type: TYPE_NORMAL
+  zh: 感谢阅读！我们一如既往地欢迎任何反馈，如果您有任何问题，请在[此处](https://github.com/pytorch/pytorch/issues)提出。
 - en: References
+  id: totrans-75
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 参考文献
 - en: '[1] J.Devlin, M. Chang, K. Lee and K. Toutanova, [BERT: Pre-training of Deep
     Bidirectional Transformers for Language Understanding (2018)](https://arxiv.org/pdf/1810.04805.pdf).'
+  id: totrans-76
   prefs: []
   type: TYPE_NORMAL
+  zh: '[1] J.Devlin, M. Chang, K. Lee and K. Toutanova, [BERT: Pre-training of Deep
+    Bidirectional Transformers for Language Understanding (2018)](https://arxiv.org/pdf/1810.04805.pdf).'
 - en: '[2] [HuggingFace Transformers](https://github.com/huggingface/transformers).'
+  id: totrans-77
   prefs: []
   type: TYPE_NORMAL
+  zh: '[2] [HuggingFace Transformers](https://github.com/huggingface/transformers).'
 - en: '[3] O. Zafrir, G. Boudoukh, P. Izsak, and M. Wasserblat (2019). [Q8BERT: Quantized
     8bit BERT](https://arxiv.org/pdf/1910.06188.pdf).'
+  id: totrans-78
   prefs: []
   type: TYPE_NORMAL
+  zh: '[3] O. Zafrir, G. Boudoukh, P. Izsak, and M. Wasserblat (2019). [Q8BERT: Quantized
+    8bit BERT](https://arxiv.org/pdf/1910.06188.pdf).'
