@@ -1,0 +1,193 @@
+- en: Language Modeling with nn.Transformer and torchtext
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/tutorials/beginner/transformer_tutorial.html](https://pytorch.org/tutorials/beginner/transformer_tutorial.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Click [here](#sphx-glr-download-beginner-transformer-tutorial-py) to download
+    the full example code
+  prefs: []
+  type: TYPE_NORMAL
+- en: This is a tutorial on training a model to predict the next word in a sequence
+    using the [nn.Transformer](https://pytorch.org/docs/stable/generated/torch.nn.Transformer.html)
+    module.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The PyTorch 1.2 release includes a standard transformer module based on the
+    paper [Attention is All You Need](https://arxiv.org/pdf/1706.03762.pdf). Compared
+    to Recurrent Neural Networks (RNNs), the transformer model has proven to be superior
+    in quality for many sequence-to-sequence tasks while being more parallelizable.
+    The `nn.Transformer` module relies entirely on an attention mechanism (implemented
+    as [nn.MultiheadAttention](https://pytorch.org/docs/stable/generated/torch.nn.MultiheadAttention.html))
+    to draw global dependencies between input and output. The `nn.Transformer` module
+    is highly modularized such that a single component (e.g., [nn.TransformerEncoder](https://pytorch.org/docs/stable/generated/torch.nn.TransformerEncoder.html))
+    can be easily adapted/composed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../_images/transformer_architecture.jpg](../Images/4b79dddf1ff54b9384754144d8246d9b.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Define the model
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In this tutorial, we train a `nn.TransformerEncoder` model on a causal language
+    modeling task. Please note that this tutorial does not cover the training of [nn.TransformerDecoder](https://pytorch.org/docs/stable/generated/torch.nn.TransformerDecoder.html#torch.nn.TransformerDecoder),
+    as depicted in the right half of the diagram above. The language modeling task
+    is to assign a probability for the likelihood of a given word (or a sequence of
+    words) to follow a sequence of words. A sequence of tokens are passed to the embedding
+    layer first, followed by a positional encoding layer to account for the order
+    of the word (see the next paragraph for more details). The `nn.TransformerEncoder`
+    consists of multiple layers of [nn.TransformerEncoderLayer](https://pytorch.org/docs/stable/generated/torch.nn.TransformerEncoderLayer.html).
+    Along with the input sequence, a square attention mask is required because the
+    self-attention layers in `nn.TransformerDecoder` are only allowed to attend the
+    earlier positions in the sequence. For the language modeling task, any tokens
+    on the future positions should be masked. This masking, combined with fact that
+    the output embeddings are offset with later positions ensures that the predictions
+    for position i can depend only on the known outputs at positions less than i.
+    To produce a probability distribution over output words, the output of the `nn.TransformerEncoder`
+    model is passed through a linear layer to output unnormalized logits. The log-softmax
+    function isn’t applied here due to the later use of [CrossEntropyLoss](https://pytorch.org/docs/stable/generated/torch.nn.CrossEntropyLoss.html),
+    which requires the inputs to be unnormalized logits.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: '`PositionalEncoding` module injects some information about the relative or
+    absolute position of the tokens in the sequence. The positional encodings have
+    the same dimension as the embeddings so that the two can be summed. Here, we use
+    `sine` and `cosine` functions of different frequencies.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Load and batch data
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: This tutorial uses `torchtext` to generate Wikitext-2 dataset. To access torchtext
+    datasets, please install torchdata following instructions at [https://github.com/pytorch/data](https://github.com/pytorch/data).
+    %%
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs:
+  - PREF_BQ
+  type: TYPE_PRE
+- en: The vocab object is built based on the train dataset and is used to numericalize
+    tokens into tensors. Wikitext-2 represents rare tokens as <unk>.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Given a 1-D vector of sequential data, `batchify()` arranges the data into `batch_size`
+    columns. If the data does not divide evenly into `batch_size` columns, then the
+    data is trimmed to fit. For instance, with the alphabet as the data (total length
+    of 26) and `batch_size=4`, we would divide the alphabet into sequences of length
+    6, resulting in 4 of such sequences.
+  prefs: []
+  type: TYPE_NORMAL
+- en: \[\begin{bmatrix} \text{A} & \text{B} & \text{C} & \ldots & \text{X} & \text{Y}
+    & \text{Z} \end{bmatrix} \Rightarrow \begin{bmatrix} \begin{bmatrix}\text{A} \\
+    \text{B} \\ \text{C} \\ \text{D} \\ \text{E} \\ \text{F}\end{bmatrix} & \begin{bmatrix}\text{G}
+    \\ \text{H} \\ \text{I} \\ \text{J} \\ \text{K} \\ \text{L}\end{bmatrix} & \begin{bmatrix}\text{M}
+    \\ \text{N} \\ \text{O} \\ \text{P} \\ \text{Q} \\ \text{R}\end{bmatrix} & \begin{bmatrix}\text{S}
+    \\ \text{T} \\ \text{U} \\ \text{V} \\ \text{W} \\ \text{X}\end{bmatrix} \end{bmatrix}
+    \]
+  prefs: []
+  type: TYPE_NORMAL
+- en: Batching enables more parallelizable processing. However, batching means that
+    the model treats each column independently; for example, the dependence of `G`
+    and `F` can not be learned in the example above.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Functions to generate input and target sequence
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '`get_batch()` generates a pair of input-target sequences for the transformer
+    model. It subdivides the source data into chunks of length `bptt`. For the language
+    modeling task, the model needs the following words as `Target`. For example, with
+    a `bptt` value of 2, we’d get the following two Variables for `i` = 0:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../_images/transformer_input_target.png](../Images/20ef8681366b44461cf49d1ab98ab8f2.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: It should be noted that the chunks are along dimension 0, consistent with the
+    `S` dimension in the Transformer model. The batch dimension `N` is along dimension
+    1.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Initiate an instance
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The model hyperparameters are defined below. The `vocab` size is equal to the
+    length of the vocab object.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: Run the model
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: We use [CrossEntropyLoss](https://pytorch.org/docs/stable/generated/torch.nn.CrossEntropyLoss.html)
+    with the [SGD](https://pytorch.org/docs/stable/generated/torch.optim.SGD.html)
+    (stochastic gradient descent) optimizer. The learning rate is initially set to
+    5.0 and follows a [StepLR](https://pytorch.org/docs/stable/generated/torch.optim.lr_scheduler.StepLR.html)
+    schedule. During training, we use [nn.utils.clip_grad_norm_](https://pytorch.org/docs/stable/generated/torch.nn.utils.clip_grad_norm_.html)
+    to prevent gradients from exploding.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Loop over epochs. Save the model if the validation loss is the best we’ve seen
+    so far. Adjust the learning rate after each epoch.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: Evaluate the best model on the test dataset
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: '**Total running time of the script:** ( 4 minutes 31.006 seconds)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Python source code: transformer_tutorial.py`](../_downloads/aa3898eb04d468790e00cb42405b1c23/transformer_tutorial.py)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Jupyter notebook: transformer_tutorial.ipynb`](../_downloads/9cf2d4ead514e661e20d2070c9bf7324/transformer_tutorial.ipynb)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  prefs: []
+  type: TYPE_NORMAL

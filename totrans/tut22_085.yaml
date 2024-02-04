@@ -1,0 +1,172 @@
+- en: Double Backward with Custom Functions
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/tutorials/intermediate/custom_function_double_backward_tutorial.html](https://pytorch.org/tutorials/intermediate/custom_function_double_backward_tutorial.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: It is sometimes useful to run backwards twice through backward graph, for example
+    to compute higher-order gradients. It takes an understanding of autograd and some
+    care to support double backwards, however. Functions that support performing backward
+    a single time are not necessarily equipped to support double backward. In this
+    tutorial we show how to write a custom autograd function that supports double
+    backward, and point out some things to look out for.
+  prefs: []
+  type: TYPE_NORMAL
+- en: When writing a custom autograd function to backward through twice, it is important
+    to know when operations performed in a custom function are recorded by autograd,
+    when they aren’t, and most importantly, how save_for_backward works with all of
+    this.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Custom functions implicitly affects grad mode in two ways:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: During forward, autograd does not record any the graph for any operations performed
+    within the forward function. When forward completes, the backward function of
+    the custom function becomes the grad_fn of each of the forward’s outputs
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: During backward, autograd records the computation graph used to compute the
+    backward pass if create_graph is specified
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Next, to understand how save_for_backward interacts with the above, we can
+    explore a couple examples:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Saving the Inputs
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Consider this simple squaring function. It saves an input tensor for backward.
+    Double backward works automatically when autograd is able to record operations
+    in the backward pass, so there is usually nothing to worry about when we save
+    an input for backward as the input should have grad_fn if it is a function of
+    any tensor that requires grad. This allows the gradients to be properly propagated.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: We can use torchviz to visualize the graph to see why this works
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: We can see that the gradient wrt to x, is itself a function of x (dout/dx =
+    2x) And the graph of this function has been properly constructed
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[![https://user-images.githubusercontent.com/13428986/126559699-e04f3cb1-aaf2-4a9a-a83d-b8767d04fbd9.png](../Images/664c9393ebdb32f044c3ab5f5780b3f7.png)](https://user-images.githubusercontent.com/13428986/126559699-e04f3cb1-aaf2-4a9a-a83d-b8767d04fbd9.png)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Saving the Outputs
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: A slight variation on the previous example is to save an output instead of input.
+    The mechanics are similar because outputs are also associated with a grad_fn.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Use torchviz to visualize the graph:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[![https://user-images.githubusercontent.com/13428986/126559780-d141f2ba-1ee8-4c33-b4eb-c9877b27a954.png](../Images/7ab379f6d65d456373fdf6a3cdb35b1a.png)](https://user-images.githubusercontent.com/13428986/126559780-d141f2ba-1ee8-4c33-b4eb-c9877b27a954.png)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Saving Intermediate Results
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'A more tricky case is when we need to save an intermediate result. We demonstrate
+    this case by implementing:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: \[sinh(x) := \frac{e^x - e^{-x}}{2} \]
+  prefs: []
+  type: TYPE_NORMAL
+- en: Since the derivative of sinh is cosh, it might be useful to reuse exp(x) and
+    exp(-x), the two intermediate results in forward in the backward computation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Intermediate results should not be directly saved and used in backward though.
+    Because forward is performed in no-grad mode, if an intermediate result of the
+    forward pass is used to compute gradients in the backward pass the backward graph
+    of the gradients would not include the operations that computed the intermediate
+    result. This leads to incorrect gradients.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Use torchviz to visualize the graph:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[![https://user-images.githubusercontent.com/13428986/126560494-e48eba62-be84-4b29-8c90-a7f6f40b1438.png](../Images/66f87d1f09778a82307fefa72409569c.png)](https://user-images.githubusercontent.com/13428986/126560494-e48eba62-be84-4b29-8c90-a7f6f40b1438.png)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Saving Intermediate Results: What not to do'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Now we show what happens when we don’t also return our intermediate results
+    as outputs: grad_x would not even have a backward graph because it is purely a
+    function exp and expnegx, which don’t require grad.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: Use torchviz to visualize the graph. Notice that grad_x is not part of the graph!
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[![https://user-images.githubusercontent.com/13428986/126565889-13992f01-55bc-411a-8aee-05b721fe064a.png](../Images/c57a22a13ed99e177d45732c5bcc36ff.png)](https://user-images.githubusercontent.com/13428986/126565889-13992f01-55bc-411a-8aee-05b721fe064a.png)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: When Backward is not Tracked
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Finally, let’s consider an example when it may not be possible for autograd
+    to track gradients for a functions backward at all. We can imagine cube_backward
+    to be a function that may require a non-PyTorch library like SciPy or NumPy, or
+    written as a C++ extension. The workaround demonstrated here is to create another
+    custom function CubeBackward where you also manually specify the backward of cube_backward!
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Use torchviz to visualize the graph:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[![https://user-images.githubusercontent.com/13428986/126559935-74526b4d-d419-4983-b1f0-a6ee99428531.png](../Images/44368555f30978a287e8a47e0cfff9ee.png)](https://user-images.githubusercontent.com/13428986/126559935-74526b4d-d419-4983-b1f0-a6ee99428531.png)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: To conclude, whether double backward works for your custom function simply depends
+    on whether the backward pass can be tracked by autograd. With the first two examples
+    we show situations where double backward works out of the box. With the third
+    and fourth examples, we demonstrate techniques that enable a backward function
+    to be tracked, when they otherwise would not be.
+  prefs: []
+  type: TYPE_NORMAL

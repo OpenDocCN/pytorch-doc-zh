@@ -1,0 +1,216 @@
+- en: Datasets & DataLoaders
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/tutorials/beginner/basics/data_tutorial.html](https://pytorch.org/tutorials/beginner/basics/data_tutorial.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Click [here](#sphx-glr-download-beginner-basics-data-tutorial-py) to download
+    the full example code
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Learn the Basics](intro.html) || [Quickstart](quickstart_tutorial.html) ||
+    [Tensors](tensorqs_tutorial.html) || **Datasets & DataLoaders** || [Transforms](transforms_tutorial.html)
+    || [Build Model](buildmodel_tutorial.html) || [Autograd](autogradqs_tutorial.html)
+    || [Optimization](optimization_tutorial.html) || [Save & Load Model](saveloadrun_tutorial.html)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Code for processing data samples can get messy and hard to maintain; we ideally
+    want our dataset code to be decoupled from our model training code for better
+    readability and modularity. PyTorch provides two data primitives: `torch.utils.data.DataLoader`
+    and `torch.utils.data.Dataset` that allow you to use pre-loaded datasets as well
+    as your own data. `Dataset` stores the samples and their corresponding labels,
+    and `DataLoader` wraps an iterable around the `Dataset` to enable easy access
+    to the samples.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'PyTorch domain libraries provide a number of pre-loaded datasets (such as FashionMNIST)
+    that subclass `torch.utils.data.Dataset` and implement functions specific to the
+    particular data. They can be used to prototype and benchmark your model. You can
+    find them here: [Image Datasets](https://pytorch.org/vision/stable/datasets.html),
+    [Text Datasets](https://pytorch.org/text/stable/datasets.html), and [Audio Datasets](https://pytorch.org/audio/stable/datasets.html)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Loading a Dataset
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Here is an example of how to load the [Fashion-MNIST](https://research.zalando.com/project/fashion_mnist/fashion_mnist/)
+    dataset from TorchVision. Fashion-MNIST is a dataset of Zalando’s article images
+    consisting of 60,000 training examples and 10,000 test examples. Each example
+    comprises a 28×28 grayscale image and an associated label from one of 10 classes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We load the [FashionMNIST Dataset](https://pytorch.org/vision/stable/datasets.html#fashion-mnist)
+    with the following parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`root` is the path where the train/test data is stored,'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`train` specifies training or test dataset,'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`download=True` downloads the data from the internet if it’s not available
+    at `root`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`transform` and `target_transform` specify the feature and label transformations'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Iterating and Visualizing the Dataset
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'We can index `Datasets` manually like a list: `training_data[index]`. We use
+    `matplotlib` to visualize some samples in our training data.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: '![Ankle Boot, Shirt, Bag, Ankle Boot, Trouser, Sandal, Coat, Sandal, Pullover](../Images/414b2c11be252247fbe8746751fe1cad.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '* * *'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Creating a Custom Dataset for your files
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'A custom Dataset class must implement three functions: __init__, __len__, and
+    __getitem__. Take a look at this implementation; the FashionMNIST images are stored
+    in a directory `img_dir`, and their labels are stored separately in a CSV file
+    `annotations_file`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the next sections, we’ll break down what’s happening in each of these functions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: '`__init__`'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The __init__ function is run once when instantiating the Dataset object. We
+    initialize the directory containing the images, the annotations file, and both
+    transforms (covered in more detail in the next section).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The labels.csv file looks like:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: '`__len__`'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The __len__ function returns the number of samples in our dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: '`__getitem__`'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The __getitem__ function loads and returns a sample from the dataset at the
+    given index `idx`. Based on the index, it identifies the image’s location on disk,
+    converts that to a tensor using `read_image`, retrieves the corresponding label
+    from the csv data in `self.img_labels`, calls the transform functions on them
+    (if applicable), and returns the tensor image and corresponding label in a tuple.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: '* * *'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Preparing your data for training with DataLoaders
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The `Dataset` retrieves our dataset’s features and labels one sample at a time.
+    While training a model, we typically want to pass samples in “minibatches”, reshuffle
+    the data at every epoch to reduce model overfitting, and use Python’s `multiprocessing`
+    to speed up data retrieval.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`DataLoader` is an iterable that abstracts this complexity for us in an easy
+    API.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: Iterate through the DataLoader
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: We have loaded that dataset into the `DataLoader` and can iterate through the
+    dataset as needed. Each iteration below returns a batch of `train_features` and
+    `train_labels` (containing `batch_size=64` features and labels respectively).
+    Because we specified `shuffle=True`, after we iterate over all batches the data
+    is shuffled (for finer-grained control over the data loading order, take a look
+    at [Samplers](https://pytorch.org/docs/stable/data.html#data-loading-order-and-sampler)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: '![data tutorial](../Images/984f7e1474d00727ca26fcbc11a91b69.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: '* * *'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Further Reading
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[torch.utils.data API](https://pytorch.org/docs/stable/data.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Total running time of the script:** ( 0 minutes 5.632 seconds)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Python source code: data_tutorial.py`](../../_downloads/56e3f440fc204e02856f8889c226d2d1/data_tutorial.py)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Jupyter notebook: data_tutorial.ipynb`](../../_downloads/36608d2d57f623ba3a623e0c947a8c3e/data_tutorial.ipynb)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  prefs: []
+  type: TYPE_NORMAL

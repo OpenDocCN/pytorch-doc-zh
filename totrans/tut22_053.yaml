@@ -1,0 +1,143 @@
+- en: Language Translation with nn.Transformer and torchtext
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/tutorials/beginner/translation_transformer.html](https://pytorch.org/tutorials/beginner/translation_transformer.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Click [here](#sphx-glr-download-beginner-translation-transformer-py) to download
+    the full example code
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'This tutorial shows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: How to train a translation model from scratch using Transformer.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Use torchtext library to access [Multi30k](http://www.statmt.org/wmt16/multimodal-task.html#task1)
+    dataset to train a German to English translation model.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Data Sourcing and Processing
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[torchtext library](https://pytorch.org/text/stable/) has utilities for creating
+    datasets that can be easily iterated through for the purposes of creating a language
+    translation model. In this example, we show how to use torchtext’s inbuilt datasets,
+    tokenize a raw text sentence, build vocabulary, and numericalize tokens into tensor.
+    We will use [Multi30k dataset from torchtext library](https://pytorch.org/text/stable/datasets.html#multi30k)
+    that yields a pair of source-target raw sentences.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: To access torchtext datasets, please install torchdata following instructions
+    at [https://github.com/pytorch/data](https://github.com/pytorch/data).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Create source and target language tokenizer. Make sure to install the dependencies.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Seq2Seq Network using Transformer
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Transformer is a Seq2Seq model introduced in [“Attention is all you need”](https://papers.nips.cc/paper/2017/file/3f5ee243547dee91fbd053c1c4a845aa-Paper.pdf)
+    paper for solving machine translation tasks. Below, we will create a Seq2Seq network
+    that uses Transformer. The network consists of three parts. First part is the
+    embedding layer. This layer converts tensor of input indices into corresponding
+    tensor of input embeddings. These embedding are further augmented with positional
+    encodings to provide position information of input tokens to the model. The second
+    part is the actual [Transformer](https://pytorch.org/docs/stable/generated/torch.nn.Transformer.html)
+    model. Finally, the output of the Transformer model is passed through linear layer
+    that gives unnormalized probabilities for each token in the target language.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: During training, we need a subsequent word mask that will prevent the model
+    from looking into the future words when making predictions. We will also need
+    masks to hide source and target padding tokens. Below, let’s define a function
+    that will take care of both.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Let’s now define the parameters of our model and instantiate the same. Below,
+    we also define our loss function which is the cross-entropy loss and the optimizer
+    used for training.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: Collation
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: As seen in the `Data Sourcing and Processing` section, our data iterator yields
+    a pair of raw strings. We need to convert these string pairs into the batched
+    tensors that can be processed by our `Seq2Seq` network defined previously. Below
+    we define our collate function that converts a batch of raw strings into batch
+    tensors that can be fed directly into our model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: Let’s define training and evaluation loop that will be called for each epoch.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now we have all the ingredients to train our model. Let’s do it!
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: References
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Attention is all you need paper. [https://papers.nips.cc/paper/2017/file/3f5ee243547dee91fbd053c1c4a845aa-Paper.pdf](https://papers.nips.cc/paper/2017/file/3f5ee243547dee91fbd053c1c4a845aa-Paper.pdf)
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: The annotated transformer. [https://nlp.seas.harvard.edu/2018/04/03/attention.html#positional-encoding](https://nlp.seas.harvard.edu/2018/04/03/attention.html#positional-encoding)
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '**Total running time of the script:** ( 0 minutes 0.000 seconds)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Python source code: translation_transformer.py`](../_downloads/65562063b0d7441578a041b5a568eaf2/translation_transformer.py)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Jupyter notebook: translation_transformer.ipynb`](../_downloads/c64c91cf87c13c0e83586b8e66e4d74e/translation_transformer.ipynb)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  prefs: []
+  type: TYPE_NORMAL

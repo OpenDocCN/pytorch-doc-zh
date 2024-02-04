@@ -1,0 +1,698 @@
+- en: Extending TorchScript with Custom C++ Operators
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/tutorials/advanced/torch_script_custom_ops.html](https://pytorch.org/tutorials/advanced/torch_script_custom_ops.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: The PyTorch 1.0 release introduced a new programming model to PyTorch called
+    [TorchScript](https://pytorch.org/docs/master/jit.html). TorchScript is a subset
+    of the Python programming language which can be parsed, compiled and optimized
+    by the TorchScript compiler. Further, compiled TorchScript models have the option
+    of being serialized into an on-disk file format, which you can subsequently load
+    and run from pure C++ (as well as Python) for inference.
+  prefs: []
+  type: TYPE_NORMAL
+- en: TorchScript supports a large subset of operations provided by the `torch` package,
+    allowing you to express many kinds of complex models purely as a series of tensor
+    operations from PyTorch’s “standard library”. Nevertheless, there may be times
+    where you find yourself in need of extending TorchScript with a custom C++ or
+    CUDA function. While we recommend that you only resort to this option if your
+    idea cannot be expressed (efficiently enough) as a simple Python function, we
+    do provide a very friendly and simple interface for defining custom C++ and CUDA
+    kernels using [ATen](https://pytorch.org/cppdocs/#aten), PyTorch’s high performance
+    C++ tensor library. Once bound into TorchScript, you can embed these custom kernels
+    (or “ops”) into your TorchScript model and execute them both in Python and in
+    their serialized form directly in C++.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The following paragraphs give an example of writing a TorchScript custom op
+    to call into [OpenCV](https://www.opencv.org), a computer vision library written
+    in C++. We will discuss how to work with tensors in C++, how to efficiently convert
+    them to third party tensor formats (in this case, OpenCV `Mat`), how to register
+    your operator with the TorchScript runtime and finally how to compile the operator
+    and use it in Python and C++.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Implementing the Custom Operator in C++
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'For this tutorial, we’ll be exposing the [warpPerspective](https://docs.opencv.org/2.4/modules/imgproc/doc/geometric_transformations.html#warpperspective)
+    function, which applies a perspective transformation to an image, from OpenCV
+    to TorchScript as a custom operator. The first step is to write the implementation
+    of our custom operator in C++. Let’s call the file for this implementation `op.cpp`
+    and make it look like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The code for this operator is quite short. At the top of the file, we include
+    the OpenCV header file, `opencv2/opencv.hpp`, alongside the `torch/script.h` header
+    which exposes all the necessary goodies from PyTorch’s C++ API that we need to
+    write custom TorchScript operators. Our function `warp_perspective` takes two
+    arguments: an input `image` and the `warp` transformation matrix we wish to apply
+    to the image. The type of these inputs is `torch::Tensor`, PyTorch’s tensor type
+    in C++ (which is also the underlying type of all tensors in Python). The return
+    type of our `warp_perspective` function will also be a `torch::Tensor`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tip
+  prefs: []
+  type: TYPE_NORMAL
+- en: See [this note](https://pytorch.org/cppdocs/notes/tensor_basics.html) for more
+    information about ATen, the library that provides the `Tensor` class to PyTorch.
+    Further, [this tutorial](https://pytorch.org/cppdocs/notes/tensor_creation.html)
+    describes how to allocate and initialize new tensor objects in C++ (not required
+    for this operator).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Attention
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The TorchScript compiler understands a fixed number of types. Only these types
+    can be used as arguments to your custom operator. Currently these types are: `torch::Tensor`,
+    `torch::Scalar`, `double`, `int64_t` and `std::vector` s of these types. Note
+    that *only* `double` and *not* `float`, and *only* `int64_t` and *not* other integral
+    types such as `int`, `short` or `long` are supported.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Inside of our function, the first thing we need to do is convert our PyTorch
+    tensors to OpenCV matrices, as OpenCV’s `warpPerspective` expects `cv::Mat` objects
+    as inputs. Fortunately, there is a way to do this **without copying any** data.
+    In the first few lines,
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'we are calling [this constructor](https://docs.opencv.org/trunk/d3/d63/classcv_1_1Mat.html#a922de793eabcec705b3579c5f95a643e)
+    of the OpenCV `Mat` class to convert our tensor to a `Mat` object. We pass it
+    the number of rows and columns of the original `image` tensor, the datatype (which
+    we’ll fix as `float32` for this example), and finally a raw pointer to the underlying
+    data – a `float*`. What is special about this constructor of the `Mat` class is
+    that it does not copy the input data. Instead, it will simply reference this memory
+    for all operations performed on the `Mat`. If an in-place operation is performed
+    on the `image_mat`, this will be reflected in the original `image` tensor (and
+    vice-versa). This allows us to call subsequent OpenCV routines with the library’s
+    native matrix type, even though we’re actually storing the data in a PyTorch tensor.
+    We repeat this procedure to convert the `warp` PyTorch tensor to the `warp_mat`
+    OpenCV matrix:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Next, we are ready to call the OpenCV function we were so eager to use in TorchScript:
+    `warpPerspective`. For this, we pass the OpenCV function the `image_mat` and `warp_mat`
+    matrices, as well as an empty output matrix called `output_mat`. We also specify
+    the size `dsize` we want the output matrix (image) to be. It is hardcoded to `8
+    x 8` for this example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The final step in our custom operator implementation is to convert the `output_mat`
+    back into a PyTorch tensor, so that we can further use it in PyTorch. This is
+    strikingly similar to what we did earlier to convert in the other direction. In
+    this case, PyTorch provides a `torch::from_blob` method. A *blob* in this case
+    is intended to mean some opaque, flat pointer to memory that we want to interpret
+    as a PyTorch tensor. The call to `torch::from_blob` looks like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: We use the `.ptr<float>()` method on the OpenCV `Mat` class to get a raw pointer
+    to the underlying data (just like `.data_ptr<float>()` for the PyTorch tensor
+    earlier). We also specify the output shape of the tensor, which we hardcoded as
+    `8 x 8`. The output of `torch::from_blob` is then a `torch::Tensor`, pointing
+    to the memory owned by the OpenCV matrix.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Before returning this tensor from our operator implementation, we must call
+    `.clone()` on the tensor to perform a memory copy of the underlying data. The
+    reason for this is that `torch::from_blob` returns a tensor that does not own
+    its data. At that point, the data is still owned by the OpenCV matrix. However,
+    this OpenCV matrix will go out of scope and be deallocated at the end of the function.
+    If we returned the `output` tensor as-is, it would point to invalid memory by
+    the time we use it outside the function. Calling `.clone()` returns a new tensor
+    with a copy of the original data that the new tensor owns itself. It is thus safe
+    to return to the outside world.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Registering the Custom Operator with TorchScript
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Now that have implemented our custom operator in C++, we need to *register*
+    it with the TorchScript runtime and compiler. This will allow the TorchScript
+    compiler to resolve references to our custom operator in TorchScript code. If
+    you have ever used the pybind11 library, our syntax for registration resembles
+    the pybind11 syntax very closely. To register a single function, we write:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: somewhere at the top level of our `op.cpp` file. The `TORCH_LIBRARY` macro creates
+    a function that will be called when your program starts. The name of your library
+    (`my_ops`) is given as the first argument (it should not be in quotes). The second
+    argument (`m`) defines a variable of type `torch::Library` which is the main interface
+    to register your operators. The method `Library::def` actually creates an operator
+    named `warp_perspective`, exposing it to both Python and TorchScript. You can
+    define as many operators as you like by making multiple calls to `def`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Behinds the scenes, the `def` function is actually doing quite a bit of work:
+    it is using template metaprogramming to inspect the type signature of your function
+    and translate it into an operator schema which specifies the operators type within
+    TorchScript’s type system.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Building the Custom Operator
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Now that we have implemented our custom operator in C++ and written its registration
+    code, it is time to build the operator into a (shared) library that we can load
+    into Python for research and experimentation, or into C++ for inference in a no-Python
+    environment. There exist multiple ways to build our operator, using either pure
+    CMake, or Python alternatives like `setuptools`. For brevity, the paragraphs below
+    only discuss the CMake approach. The appendix of this tutorial dives into other
+    alternatives.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Environment setup
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'We need an installation of PyTorch and OpenCV. The easiest and most platform
+    independent way to get both is to via Conda:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: Building with CMake
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'To build our custom operator into a shared library using the [CMake](https://cmake.org)
+    build system, we need to write a short `CMakeLists.txt` file and place it with
+    our previous `op.cpp` file. For this, let’s agree on a a directory structure that
+    looks like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The contents of our `CMakeLists.txt` file should then be the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'To now build our operator, we can run the following commands from our `warp_perspective`
+    folder:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: which will place a `libwarp_perspective.so` shared library file in the `build`
+    folder. In the `cmake` command above, we use the helper variable `torch.utils.cmake_prefix_path`
+    to conveniently tell us where the cmake files for our PyTorch install are.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We will explore how to use and call our operator in detail further below, but
+    to get an early sensation of success, we can try running the following code in
+    Python:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'If all goes well, this should print something like:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: which is the Python function we will later use to invoke our custom operator.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Using the TorchScript Custom Operator in Python
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Once our custom operator is built into a shared library we are ready to use
+    this operator in our TorchScript models in Python. There are two parts to this:
+    first loading the operator into Python, and second using the operator in TorchScript
+    code.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'You already saw how to import your operator into Python: `torch.ops.load_library()`.
+    This function takes the path to a shared library containing custom operators,
+    and loads it into the current process. Loading the shared library will also execute
+    the `TORCH_LIBRARY` block. This will register our custom operator with the TorchScript
+    compiler and allow us to use that operator in TorchScript code.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'You can refer to your loaded operator as `torch.ops.<namespace>.<function>`,
+    where `<namespace>` is the namespace part of your operator name, and `<function>`
+    the function name of your operator. For the operator we wrote above, the namespace
+    was `my_ops` and the function name `warp_perspective`, which means our operator
+    is available as `torch.ops.my_ops.warp_perspective`. While this function can be
+    used in scripted or traced TorchScript modules, we can also just use it in vanilla
+    eager PyTorch and pass it regular PyTorch tensors:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'producing:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'What happens behind the scenes is that the first time you access `torch.ops.namespace.function`
+    in Python, the TorchScript compiler (in C++ land) will see if a function `namespace::function`
+    has been registered, and if so, return a Python handle to this function that we
+    can subsequently use to call into our C++ operator implementation from Python.
+    This is one noteworthy difference between TorchScript custom operators and C++
+    extensions: C++ extensions are bound manually using pybind11, while TorchScript
+    custom ops are bound on the fly by PyTorch itself. Pybind11 gives you more flexibility
+    with regards to what types and classes you can bind into Python and is thus recommended
+    for purely eager code, but it is not supported for TorchScript ops.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: From here on, you can use your custom operator in scripted or traced code just
+    as you would other functions from the `torch` package. In fact, “standard library”
+    functions like `torch.matmul` go through largely the same registration path as
+    custom operators, which makes custom operators really first-class citizens when
+    it comes to how and where they can be used in TorchScript. (One difference, however,
+    is that standard library functions have custom written Python argument parsing
+    logic that differs from `torch.ops` argument parsing.)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Using the Custom Operator with Tracing
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Let’s start by embedding our operator in a traced function. Recall that for
+    tracing, we start with some vanilla Pytorch code:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'and then call `torch.jit.trace` on it. We further pass `torch.jit.trace` some
+    example inputs, which it will forward to our implementation to record the sequence
+    of operations that occur as the inputs flow through it. The result of this is
+    effectively a “frozen” version of the eager PyTorch program, which the TorchScript
+    compiler can further analyze, optimize and serialize:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Producing:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Now, the exciting revelation is that we can simply drop our custom operator
+    into our PyTorch trace as if it were `torch.relu` or any other `torch` function:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'and then trace it as before:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Producing:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: Integrating TorchScript custom ops into traced PyTorch code is as easy as this!
+  prefs: []
+  type: TYPE_NORMAL
+- en: Using the Custom Operator with Script
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Besides tracing, another way to arrive at a TorchScript representation of a
+    PyTorch program is to directly write your code *in* TorchScript. TorchScript is
+    largely a subset of the Python language, with some restrictions that make it easier
+    for the TorchScript compiler to reason about programs. You turn your regular PyTorch
+    code into TorchScript by annotating it with `@torch.jit.script` for free functions
+    and `@torch.jit.script_method` for methods in a class (which must also derive
+    from `torch.jit.ScriptModule`). See [here](https://pytorch.org/docs/master/jit.html)
+    for more details on TorchScript annotations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'One particular reason to use TorchScript instead of tracing is that tracing
+    is unable to capture control flow in PyTorch code. As such, let us consider this
+    function which does use control flow:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'To convert this function from vanilla PyTorch to TorchScript, we annotate it
+    with `@torch.jit.script`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'This will just-in-time compile the `compute` function into a graph representation,
+    which we can inspect in the `compute.graph` property:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'And now, just like before, we can use our custom operator like any other function
+    inside of our script code:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'When the TorchScript compiler sees the reference to `torch.ops.my_ops.warp_perspective`,
+    it will find the implementation we registered via the `TORCH_LIBRARY` function
+    in C++, and compile it into its graph representation:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: Notice in particular the reference to `my_ops::warp_perspective` at the end
+    of the graph.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Attention
+  prefs: []
+  type: TYPE_NORMAL
+- en: The TorchScript graph representation is still subject to change. Do not rely
+    on it looking like this.
+  prefs: []
+  type: TYPE_NORMAL
+- en: And that’s really it when it comes to using our custom operator in Python. In
+    short, you import the library containing your operator(s) using `torch.ops.load_library`,
+    and call your custom op like any other `torch` operator from your traced or scripted
+    TorchScript code.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Using the TorchScript Custom Operator in C++
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: One useful feature of TorchScript is the ability to serialize a model into an
+    on-disk file. This file can be sent over the wire, stored in a file system or,
+    more importantly, be dynamically deserialized and executed without needing to
+    keep the original source code around. This is possible in Python, but also in
+    C++. For this, PyTorch provides [a pure C++ API](https://pytorch.org/cppdocs/)
+    for deserializing as well as executing TorchScript models. If you haven’t yet,
+    please read [the tutorial on loading and running serialized TorchScript models
+    in C++](https://pytorch.org/tutorials/advanced/cpp_export.html), on which the
+    next few paragraphs will build.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In short, custom operators can be executed just like regular `torch` operators
+    even when deserialized from a file and run in C++. The only requirement for this
+    is to link the custom operator shared library we built earlier with the C++ application
+    in which we execute the model. In Python, this worked simply calling `torch.ops.load_library`.
+    In C++, you need to link the shared library with your main application in whatever
+    build system you are using. The following example will showcase this using CMake.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Technically, you can also dynamically load the shared library into your C++
+    application at runtime in much the same way we did it in Python. On Linux, [you
+    can do this with dlopen](https://tldp.org/HOWTO/Program-Library-HOWTO/dl-libraries.html).
+    There exist equivalents on other platforms.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Building on the C++ execution tutorial linked above, let’s start with a minimal
+    C++ application in one file, `main.cpp` in a different folder from our custom
+    operator, that loads and executes a serialized TorchScript model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Along with a small `CMakeLists.txt` file:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE26]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'At this point, we should be able to build the application:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE27]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'And run it without passing a model just yet:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE28]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Next, let’s serialize the script function we wrote earlier that uses our custom
+    operator:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE29]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The last line will serialize the script function into a file called “example.pt”.
+    If we then pass this serialized model to our C++ application, we can run it straight
+    away:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE30]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Or maybe not. Maybe not just yet. Of course! We haven’t linked the custom operator
+    library with our application yet. Let’s do this right now, and to do it properly
+    let’s update our file organization slightly, to look like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE31]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'This will allow us to add the `warp_perspective` library CMake target as a
+    subdirectory of our application target. The top level `CMakeLists.txt` in the
+    `example_app` folder should look like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE32]'
+  prefs: []
+  type: TYPE_PRE
+- en: This basic CMake configuration looks much like before, except that we add the
+    `warp_perspective` CMake build as a subdirectory. Once its CMake code runs, we
+    link our `example_app` application with the `warp_perspective` shared library.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Attention
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'There is one crucial detail embedded in the above example: The `-Wl,--no-as-needed`
+    prefix to the `warp_perspective` link line. This is required because we will not
+    actually be calling any function from the `warp_perspective` shared library in
+    our application code. We only need the `TORCH_LIBRARY` function to run. Inconveniently,
+    this confuses the linker and makes it think it can just skip linking against the
+    library altogether. On Linux, the `-Wl,--no-as-needed` flag forces the link to
+    happen (NB: this flag is specific to Linux!). There are other workarounds for
+    this. The simplest is to define *some function* in the operator library that you
+    need to call from the main application. This could be as simple as a function
+    `void init();` declared in some header, which is then defined as `void init()
+    { }` in the operator library. Calling this `init()` function in the main application
+    will give the linker the impression that this is a library worth linking against.
+    Unfortunately, this is outside of our control, and we would rather let you know
+    the reason and the simple workaround for this than handing you some opaque macro
+    to plop in your code.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Now, since we find the `Torch` package at the top level now, the `CMakeLists.txt`
+    file in the `warp_perspective` subdirectory can be shortened a bit. It should
+    look like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE33]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Let’s re-build our example app, which will also link with the custom operator
+    library. In the top level `example_app` directory:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE34]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'If we now run the `example_app` binary and hand it our serialized model, we
+    should arrive at a happy ending:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE35]'
+  prefs: []
+  type: TYPE_PRE
+- en: Success! You are now ready to inference away.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Conclusion
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: This tutorial walked you throw how to implement a custom TorchScript operator
+    in C++, how to build it into a shared library, how to use it in Python to define
+    TorchScript models and lastly how to load it into a C++ application for inference
+    workloads. You are now ready to extend your TorchScript models with C++ operators
+    that interface with third party C++ libraries, write custom high performance CUDA
+    kernels, or implement any other use case that requires the lines between Python,
+    TorchScript and C++ to blend smoothly.
+  prefs: []
+  type: TYPE_NORMAL
+- en: As always, if you run into any problems or have questions, you can use our [forum](https://discuss.pytorch.org/)
+    or [GitHub issues](https://github.com/pytorch/pytorch/issues) to get in touch.
+    Also, our [frequently asked questions (FAQ) page](https://pytorch.org/cppdocs/notes/faq.html)
+    may have helpful information.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Appendix A: More Ways of Building Custom Operators'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The section “Building the Custom Operator” explained how to build a custom operator
+    into a shared library using CMake. This appendix outlines two further approaches
+    for compilation. Both of them use Python as the “driver” or “interface” to the
+    compilation process. Also, both re-use the [existing infrastructure](https://pytorch.org/docs/stable/cpp_extension.html)
+    PyTorch provides for [*C++ extensions*](https://pytorch.org/tutorials/advanced/cpp_extension.html),
+    which are the vanilla (eager) PyTorch equivalent of TorchScript custom operators
+    that rely on [pybind11](https://github.com/pybind/pybind11) for “explicit” binding
+    of functions from C++ into Python.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The first approach uses C++ extensions’ [convenient just-in-time (JIT) compilation
+    interface](https://pytorch.org/docs/stable/cpp_extension.html#torch.utils.cpp_extension.load)
+    to compile your code in the background of your PyTorch script the first time you
+    run it. The second approach relies on the venerable `setuptools` package and involves
+    writing a separate `setup.py` file. This allows more advanced configuration as
+    well as integration with other `setuptools`-based projects. We will explore both
+    approaches in detail below.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Building with JIT compilation
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The JIT compilation feature provided by the PyTorch C++ extension toolkit allows
+    embedding the compilation of your custom operator directly into your Python code,
+    e.g. at the top of your training script.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: “JIT compilation” here has nothing to do with the JIT compilation taking place
+    in the TorchScript compiler to optimize your program. It simply means that your
+    custom operator C++ code will be compiled in a folder under your system’s /tmp
+    directory the first time you import it, as if you had compiled it yourself beforehand.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'This JIT compilation feature comes in two flavors. In the first, you still
+    keep your operator implementation in a separate file (`op.cpp`), and then use
+    `torch.utils.cpp_extension.load()` to compile your extension. Usually, this function
+    will return the Python module exposing your C++ extension. However, since we are
+    not compiling our custom operator into its own Python module, we only want to
+    compile a plain shared library . Fortunately, `torch.utils.cpp_extension.load()`
+    has an argument `is_python_module` which we can set to `False` to indicate that
+    we are only interested in building a shared library and not a Python module. `torch.utils.cpp_extension.load()`
+    will then compile and also load the shared library into the current process, just
+    like `torch.ops.load_library` did before:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE36]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'This should approximately print:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE37]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The second flavor of JIT compilation allows you to pass the source code for
+    your custom TorchScript operator as a string. For this, use `torch.utils.cpp_extension.load_inline`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE38]'
+  prefs: []
+  type: TYPE_PRE
+- en: Naturally, it is best practice to only use `torch.utils.cpp_extension.load_inline`
+    if your source code is reasonably short.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that if you’re using this in a Jupyter Notebook, you should not execute
+    the cell with the registration multiple times because each execution registers
+    a new library and re-registers the custom operator. If you need to re-execute
+    it, please restart the Python kernel of your notebook beforehand.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Building with Setuptools
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'The second approach to building our custom operator exclusively from Python
+    is to use `setuptools`. This has the advantage that `setuptools` has a quite powerful
+    and extensive interface for building Python modules written in C++. However, since
+    `setuptools` is really intended for building Python modules and not plain shared
+    libraries (which do not have the necessary entry points Python expects from a
+    module), this route can be slightly quirky. That said, all you need is a `setup.py`
+    file in place of the `CMakeLists.txt` which looks like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE39]'
+  prefs: []
+  type: TYPE_PRE
+- en: Notice that we enabled the `no_python_abi_suffix` option in the `BuildExtension`
+    at the bottom. This instructs `setuptools` to omit any Python-3 specific ABI suffixes
+    in the name of the produced shared library. Otherwise, on Python 3.7 for example,
+    the library may be called `warp_perspective.cpython-37m-x86_64-linux-gnu.so` where
+    `cpython-37m-x86_64-linux-gnu` is the ABI tag, but we really just want it to be
+    called `warp_perspective.so`
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'If we now run `python setup.py build develop` in a terminal from within the
+    folder in which `setup.py` is situated, we should see something like:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE40]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'This will produce a shared library called `warp_perspective.so`, which we can
+    pass to `torch.ops.load_library` as we did earlier to make our operator visible
+    to TorchScript:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE41]'
+  prefs: []
+  type: TYPE_PRE

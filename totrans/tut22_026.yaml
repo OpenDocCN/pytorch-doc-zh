@@ -1,0 +1,874 @@
+- en: What is torch.nn really?
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/tutorials/beginner/nn_tutorial.html](https://pytorch.org/tutorials/beginner/nn_tutorial.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Click [here](#sphx-glr-download-beginner-nn-tutorial-py) to download the full
+    example code
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Authors:** Jeremy Howard, [fast.ai](https://www.fast.ai). Thanks to Rachel
+    Thomas and Francisco Ingham.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: We recommend running this tutorial as a notebook, not a script. To download
+    the notebook (`.ipynb`) file, click the link at the top of the page.
+  prefs: []
+  type: TYPE_NORMAL
+- en: PyTorch provides the elegantly designed modules and classes [torch.nn](https://pytorch.org/docs/stable/nn.html)
+    , [torch.optim](https://pytorch.org/docs/stable/optim.html) , [Dataset](https://pytorch.org/docs/stable/data.html?highlight=dataset#torch.utils.data.Dataset)
+    , and [DataLoader](https://pytorch.org/docs/stable/data.html?highlight=dataloader#torch.utils.data.DataLoader)
+    to help you create and train neural networks. In order to fully utilize their
+    power and customize them for your problem, you need to really understand exactly
+    what they’re doing. To develop this understanding, we will first train basic neural
+    net on the MNIST data set without using any features from these models; we will
+    initially only use the most basic PyTorch tensor functionality. Then, we will
+    incrementally add one feature from `torch.nn`, `torch.optim`, `Dataset`, or `DataLoader`
+    at a time, showing exactly what each piece does, and how it works to make the
+    code either more concise, or more flexible.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**This tutorial assumes you already have PyTorch installed, and are familiar
+    with the basics of tensor operations.** (If you’re familiar with Numpy array operations,
+    you’ll find the PyTorch tensor operations used here nearly identical).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: MNIST data setup
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: We will use the classic [MNIST](http://deeplearning.net/data/mnist/) dataset,
+    which consists of black-and-white images of hand-drawn digits (between 0 and 9).
+  prefs: []
+  type: TYPE_NORMAL
+- en: We will use [pathlib](https://docs.python.org/3/library/pathlib.html) for dealing
+    with paths (part of the Python 3 standard library), and will download the dataset
+    using [requests](http://docs.python-requests.org/en/master/). We will only import
+    modules when we use them, so you can see exactly what’s being used at each point.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: This dataset is in numpy array format, and has been stored using pickle, a python-specific
+    format for serializing data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Each image is 28 x 28, and is being stored as a flattened row of length 784
+    (=28x28). Let’s take a look at one; we need to reshape it to 2d first.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: '![nn tutorial](../Images/7c783def0bbe536f41ed172041b7e89e.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: PyTorch uses `torch.tensor`, rather than numpy arrays, so we need to convert
+    our data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: Neural net from scratch (without `torch.nn`)
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Let’s first create a model using nothing but PyTorch tensor operations. We’re
+    assuming you’re already familiar with the basics of neural networks. (If you’re
+    not, you can learn them at [course.fast.ai](https://course.fast.ai)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'PyTorch provides methods to create random or zero-filled tensors, which we
+    will use to create our weights and bias for a simple linear model. These are just
+    regular tensors, with one very special addition: we tell PyTorch that they require
+    a gradient. This causes PyTorch to record all of the operations done on the tensor,
+    so that it can calculate the gradient during back-propagation *automatically*!'
+  prefs: []
+  type: TYPE_NORMAL
+- en: For the weights, we set `requires_grad` **after** the initialization, since
+    we don’t want that step included in the gradient. (Note that a trailing `_` in
+    PyTorch signifies that the operation is performed in-place.)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: We are initializing the weights here with [Xavier initialisation](http://proceedings.mlr.press/v9/glorot10a/glorot10a.pdf)
+    (by multiplying with `1/sqrt(n)`).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Thanks to PyTorch’s ability to calculate gradients automatically, we can use
+    any standard Python function (or callable object) as a model! So let’s just write
+    a plain matrix multiplication and broadcasted addition to create a simple linear
+    model. We also need an activation function, so we’ll write log_softmax and use
+    it. Remember: although PyTorch provides lots of prewritten loss functions, activation
+    functions, and so forth, you can easily write your own using plain python. PyTorch
+    will even create fast GPU or vectorized CPU code for your function automatically.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: In the above, the `@` stands for the matrix multiplication operation. We will
+    call our function on one batch of data (in this case, 64 images). This is one
+    *forward pass*. Note that our predictions won’t be any better than random at this
+    stage, since we start with random weights.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: As you see, the `preds` tensor contains not only the tensor values, but also
+    a gradient function. We’ll use this later to do backprop.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Let’s implement negative log-likelihood to use as the loss function (again,
+    we can just use standard Python):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: Let’s check our loss with our random model, so we can see if we improve after
+    a backprop pass later.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: Let’s also implement a function to calculate the accuracy of our model. For
+    each prediction, if the index with the largest value matches the target value,
+    then the prediction was correct.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: Let’s check the accuracy of our random model, so we can see if our accuracy
+    improves as our loss improves.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'We can now run a training loop. For each iteration, we will:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: select a mini-batch of data (of size `bs`)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: use the model to make predictions
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: calculate the loss
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`loss.backward()` updates the gradients of the model, in this case, `weights`
+    and `bias`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: We now use these gradients to update the weights and bias. We do this within
+    the `torch.no_grad()` context manager, because we do not want these actions to
+    be recorded for our next calculation of the gradient. You can read more about
+    how PyTorch’s Autograd records operations [here](https://pytorch.org/docs/stable/notes/autograd.html).
+  prefs: []
+  type: TYPE_NORMAL
+- en: We then set the gradients to zero, so that we are ready for the next loop. Otherwise,
+    our gradients would record a running tally of all the operations that had happened
+    (i.e. `loss.backward()` *adds* the gradients to whatever is already stored, rather
+    than replacing them).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tip
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can use the standard python debugger to step through PyTorch code, allowing
+    you to check the various variable values at each step. Uncomment `set_trace()`
+    below to try it out.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'That’s it: we’ve created and trained a minimal neural network (in this case,
+    a logistic regression, since we have no hidden layers) entirely from scratch!'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s check the loss and accuracy and compare those to what we got earlier.
+    We expect that the loss will have decreased and accuracy to have increased, and
+    they have.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: Using `torch.nn.functional`
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'We will now refactor our code, so that it does the same thing as before, only
+    we’ll start taking advantage of PyTorch’s `nn` classes to make it more concise
+    and flexible. At each step from here, we should be making our code one or more
+    of: shorter, more understandable, and/or more flexible.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The first and easiest step is to make our code shorter by replacing our hand-written
+    activation and loss functions with those from `torch.nn.functional` (which is
+    generally imported into the namespace `F` by convention). This module contains
+    all the functions in the `torch.nn` library (whereas other parts of the library
+    contain classes). As well as a wide range of loss and activation functions, you’ll
+    also find here some convenient functions for creating neural nets, such as pooling
+    functions. (There are also functions for doing convolutions, linear layers, etc,
+    but as we’ll see, these are usually better handled using other parts of the library.)
+  prefs: []
+  type: TYPE_NORMAL
+- en: If you’re using negative log likelihood loss and log softmax activation, then
+    Pytorch provides a single function `F.cross_entropy` that combines the two. So
+    we can even remove the activation function from our model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Note that we no longer call `log_softmax` in the `model` function. Let’s confirm
+    that our loss and accuracy are the same as before:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: Refactor using `nn.Module`
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Next up, we’ll use `nn.Module` and `nn.Parameter`, for a clearer and more concise
+    training loop. We subclass `nn.Module` (which itself is a class and able to keep
+    track of state). In this case, we want to create a class that holds our weights,
+    bias, and method for the forward step. `nn.Module` has a number of attributes
+    and methods (such as `.parameters()` and `.zero_grad()`) which we will be using.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`nn.Module` (uppercase M) is a PyTorch specific concept, and is a class we’ll
+    be using a lot. `nn.Module` is not to be confused with the Python concept of a
+    (lowercase `m`) [module](https://docs.python.org/3/tutorial/modules.html), which
+    is a file of Python code that can be imported.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Since we’re now using an object instead of just using a function, we first
+    have to instantiate our model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now we can calculate the loss in the same way as before. Note that `nn.Module`
+    objects are used as if they are functions (i.e they are *callable*), but behind
+    the scenes Pytorch will call our `forward` method automatically.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Previously for our training loop we had to update the values for each parameter
+    by name, and manually zero out the grads for each parameter separately, like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE26]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Now we can take advantage of model.parameters() and model.zero_grad() (which
+    are both defined by PyTorch for `nn.Module`) to make those steps more concise
+    and less prone to the error of forgetting some of our parameters, particularly
+    if we had a more complicated model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE27]'
+  prefs: []
+  type: TYPE_PRE
+- en: We’ll wrap our little training loop in a `fit` function so we can run it again
+    later.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE28]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Let’s double-check that our loss has gone down:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE29]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE30]'
+  prefs: []
+  type: TYPE_PRE
+- en: Refactor using `nn.Linear`
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: We continue to refactor our code. Instead of manually defining and initializing
+    `self.weights` and `self.bias`, and calculating `xb  @ self.weights + self.bias`,
+    we will instead use the Pytorch class [nn.Linear](https://pytorch.org/docs/stable/nn.html#linear-layers)
+    for a linear layer, which does all that for us. Pytorch has many types of predefined
+    layers that can greatly simplify our code, and often makes it faster too.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE31]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'We instantiate our model and calculate the loss in the same way as before:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE32]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE33]'
+  prefs: []
+  type: TYPE_PRE
+- en: We are still able to use our same `fit` method as before.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE34]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE35]'
+  prefs: []
+  type: TYPE_PRE
+- en: Refactor using `torch.optim`
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Pytorch also has a package with various optimization algorithms, `torch.optim`.
+    We can use the `step` method from our optimizer to take a forward step, instead
+    of manually updating each parameter.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'This will let us replace our previous manually coded optimization step:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE36]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'and instead use just:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE37]'
+  prefs: []
+  type: TYPE_PRE
+- en: (`optim.zero_grad()` resets the gradient to 0 and we need to call it before
+    computing the gradient for the next minibatch.)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE38]'
+  prefs: []
+  type: TYPE_PRE
+- en: We’ll define a little function to create our model and optimizer so we can reuse
+    it in the future.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE39]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE40]'
+  prefs: []
+  type: TYPE_PRE
+- en: Refactor using Dataset
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: PyTorch has an abstract Dataset class. A Dataset can be anything that has a
+    `__len__` function (called by Python’s standard `len` function) and a `__getitem__`
+    function as a way of indexing into it. [This tutorial](https://pytorch.org/tutorials/beginner/data_loading_tutorial.html)
+    walks through a nice example of creating a custom `FacialLandmarkDataset` class
+    as a subclass of `Dataset`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: PyTorch’s [TensorDataset](https://pytorch.org/docs/stable/_modules/torch/utils/data/dataset.html#TensorDataset)
+    is a Dataset wrapping tensors. By defining a length and way of indexing, this
+    also gives us a way to iterate, index, and slice along the first dimension of
+    a tensor. This will make it easier to access both the independent and dependent
+    variables in the same line as we train.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE41]'
+  prefs: []
+  type: TYPE_PRE
+- en: Both `x_train` and `y_train` can be combined in a single `TensorDataset`, which
+    will be easier to iterate over and slice.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE42]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Previously, we had to iterate through minibatches of `x` and `y` values separately:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE43]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Now, we can do these two steps together:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE44]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE45]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE46]'
+  prefs: []
+  type: TYPE_PRE
+- en: Refactor using `DataLoader`
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'PyTorch’s `DataLoader` is responsible for managing batches. You can create
+    a `DataLoader` from any `Dataset`. `DataLoader` makes it easier to iterate over
+    batches. Rather than having to use `train_ds[i*bs : i*bs+bs]`, the `DataLoader`
+    gives us each minibatch automatically.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE47]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Previously, our loop iterated over batches `(xb, yb)` like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE48]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Now, our loop is much cleaner, as `(xb, yb)` are loaded automatically from
+    the data loader:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE49]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE50]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE51]'
+  prefs: []
+  type: TYPE_PRE
+- en: Thanks to PyTorch’s `nn.Module`, `nn.Parameter`, `Dataset`, and `DataLoader`,
+    our training loop is now dramatically smaller and easier to understand. Let’s
+    now try to add the basic features necessary to create effective models in practice.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Add validation
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In section 1, we were just trying to get a reasonable training loop set up for
+    use on our training data. In reality, you **always** should also have a [validation
+    set](https://www.fast.ai/2017/11/13/validation-sets/), in order to identify if
+    you are overfitting.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Shuffling the training data is [important](https://www.quora.com/Does-the-order-of-training-data-matter-when-training-neural-networks)
+    to prevent correlation between batches and overfitting. On the other hand, the
+    validation loss will be identical whether we shuffle the validation set or not.
+    Since shuffling takes extra time, it makes no sense to shuffle the validation
+    data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We’ll use a batch size for the validation set that is twice as large as that
+    for the training set. This is because the validation set does not need backpropagation
+    and thus takes less memory (it doesn’t need to store the gradients). We take advantage
+    of this to use a larger batch size and compute the loss more quickly.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE52]'
+  prefs: []
+  type: TYPE_PRE
+- en: We will calculate and print the validation loss at the end of each epoch.
+  prefs: []
+  type: TYPE_NORMAL
+- en: (Note that we always call `model.train()` before training, and `model.eval()`
+    before inference, because these are used by layers such as `nn.BatchNorm2d` and
+    `nn.Dropout` to ensure appropriate behavior for these different phases.)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE53]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE54]'
+  prefs: []
+  type: TYPE_PRE
+- en: Create fit() and get_data()
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: We’ll now do a little refactoring of our own. Since we go through a similar
+    process twice of calculating the loss for both the training set and the validation
+    set, let’s make that into its own function, `loss_batch`, which computes the loss
+    for one batch.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We pass an optimizer in for the training set, and use it to perform backprop.
+    For the validation set, we don’t pass an optimizer, so the method doesn’t perform
+    backprop.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE55]'
+  prefs: []
+  type: TYPE_PRE
+- en: '`fit` runs the necessary operations to train our model and compute the training
+    and validation losses for each epoch.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE56]'
+  prefs: []
+  type: TYPE_PRE
+- en: '`get_data` returns dataloaders for the training and validation sets.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE57]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Now, our whole process of obtaining the data loaders and fitting the model
+    can be run in 3 lines of code:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE58]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE59]'
+  prefs: []
+  type: TYPE_PRE
+- en: You can use these basic 3 lines of code to train a wide variety of models. Let’s
+    see if we can use them to train a convolutional neural network (CNN)!
+  prefs: []
+  type: TYPE_NORMAL
+- en: Switch to CNN
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: We are now going to build our neural network with three convolutional layers.
+    Because none of the functions in the previous section assume anything about the
+    model form, we’ll be able to use them to train a CNN without any modification.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We will use PyTorch’s predefined [Conv2d](https://pytorch.org/docs/stable/nn.html#torch.nn.Conv2d)
+    class as our convolutional layer. We define a CNN with 3 convolutional layers.
+    Each convolution is followed by a ReLU. At the end, we perform an average pooling.
+    (Note that `view` is PyTorch’s version of Numpy’s `reshape`)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE60]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[Momentum](https://cs231n.github.io/neural-networks-3/#sgd) is a variation
+    on stochastic gradient descent that takes previous updates into account as well
+    and generally leads to faster training.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE61]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE62]'
+  prefs: []
+  type: TYPE_PRE
+- en: Using `nn.Sequential`
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '`torch.nn` has another handy class we can use to simplify our code: [Sequential](https://pytorch.org/docs/stable/nn.html#torch.nn.Sequential)
+    . A `Sequential` object runs each of the modules contained within it, in a sequential
+    manner. This is a simpler way of writing our neural network.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: To take advantage of this, we need to be able to easily define a **custom layer**
+    from a given function. For instance, PyTorch doesn’t have a view layer, and we
+    need to create one for our network. `Lambda` will create a layer that we can then
+    use when defining a network with `Sequential`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE63]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The model created with `Sequential` is simple:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE64]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE65]'
+  prefs: []
+  type: TYPE_PRE
+- en: Wrapping `DataLoader`
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Our CNN is fairly concise, but it only works with MNIST, because:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: It assumes the input is a 28*28 long vector
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: It assumes that the final CNN grid size is 4*4 (since that’s the average pooling
+    kernel size we used)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Let’s get rid of these two assumptions, so our model works with any 2d single
+    channel image. First, we can remove the initial Lambda layer by moving the data
+    preprocessing into a generator:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE66]'
+  prefs: []
+  type: TYPE_PRE
+- en: Next, we can replace `nn.AvgPool2d` with `nn.AdaptiveAvgPool2d`, which allows
+    us to define the size of the *output* tensor we want, rather than the *input*
+    tensor we have. As a result, our model will work with any size input.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE67]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Let’s try it out:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE68]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE69]'
+  prefs: []
+  type: TYPE_PRE
+- en: Using your GPU
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'If you’re lucky enough to have access to a CUDA-capable GPU (you can rent one
+    for about $0.50/hour from most cloud providers) you can use it to speed up your
+    code. First check that your GPU is working in Pytorch:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE70]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE71]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'And then create a device object for it:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE72]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Let’s update `preprocess` to move batches to the GPU:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE73]'
+  prefs: []
+  type: TYPE_PRE
+- en: Finally, we can move our model to the GPU.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE74]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'You should find it runs faster now:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE75]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE76]'
+  prefs: []
+  type: TYPE_PRE
+- en: Closing thoughts
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: We now have a general data pipeline and training loop which you can use for
+    training many types of models using Pytorch. To see how simple training a model
+    can now be, take a look at the [mnist_sample notebook](https://github.com/fastai/fastai_dev/blob/master/dev_nb/mnist_sample.ipynb).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Of course, there are many things you’ll want to add, such as data augmentation,
+    hyperparameter tuning, monitoring training, transfer learning, and so forth. These
+    features are available in the fastai library, which has been developed using the
+    same design approach shown in this tutorial, providing a natural next step for
+    practitioners looking to take their models further.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We promised at the start of this tutorial we’d explain through example each
+    of `torch.nn`, `torch.optim`, `Dataset`, and `DataLoader`. So let’s summarize
+    what we’ve seen:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`torch.nn`:'
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: '`Module`: creates a callable which behaves like a function, but can also contain
+    state(such as neural net layer weights). It knows what `Parameter` (s) it contains
+    and can zero all their gradients, loop through them for weight updates, etc.'
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: '`Parameter`: a wrapper for a tensor that tells a `Module` that it has weights
+    that need updating during backprop. Only tensors with the requires_grad attribute
+    set are updated'
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: '`functional`: a module(usually imported into the `F` namespace by convention)
+    which contains activation functions, loss functions, etc, as well as non-stateful
+    versions of layers such as convolutional and linear layers.'
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: '`torch.optim`: Contains optimizers such as `SGD`, which update the weights
+    of `Parameter` during the backward step'
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: '`Dataset`: An abstract interface of objects with a `__len__` and a `__getitem__`,
+    including classes provided with Pytorch such as `TensorDataset`'
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: '`DataLoader`: Takes any `Dataset` and creates an iterator which returns batches
+    of data.'
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Total running time of the script:** ( 0 minutes 36.765 seconds)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Python source code: nn_tutorial.py`](../_downloads/f16255c783f9e487235b8eff6c8792b9/nn_tutorial.py)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Jupyter notebook: nn_tutorial.ipynb`](../_downloads/d9398fce39ca80dc4bb8b8ea55b575a8/nn_tutorial.ipynb)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  prefs: []
+  type: TYPE_NORMAL

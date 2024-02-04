@@ -1,0 +1,410 @@
+- en: Model Understanding with Captum
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/tutorials/beginner/introyt/captumyt.html](https://pytorch.org/tutorials/beginner/introyt/captumyt.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Click [here](#sphx-glr-download-beginner-introyt-captumyt-py) to download the
+    full example code
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Introduction](introyt1_tutorial.html) || [Tensors](tensors_deeper_tutorial.html)
+    || [Autograd](autogradyt_tutorial.html) || [Building Models](modelsyt_tutorial.html)
+    || [TensorBoard Support](tensorboardyt_tutorial.html) || [Training Models](trainingyt.html)
+    || **Model Understanding**'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Follow along with the video below or on [youtube](https://www.youtube.com/watch?v=Am2EF9CLu-g).
+    Download the notebook and corresponding files [here](https://pytorch-tutorial-assets.s3.amazonaws.com/youtube-series/video7.zip).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[https://www.youtube.com/embed/Am2EF9CLu-g](https://www.youtube.com/embed/Am2EF9CLu-g)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Captum](https://captum.ai/) (“comprehension” in Latin) is an open source,
+    extensible library for model interpretability built on PyTorch.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: With the increase in model complexity and the resulting lack of transparency,
+    model interpretability methods have become increasingly important. Model understanding
+    is both an active area of research as well as an area of focus for practical applications
+    across industries using machine learning. Captum provides state-of-the-art algorithms,
+    including Integrated Gradients, to provide researchers and developers with an
+    easy way to understand which features are contributing to a model’s output.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Full documentation, an API reference, and a suite of tutorials on specific topics
+    are available at the [captum.ai](https://captum.ai/) website.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Introduction
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Captum’s approach to model interpretability is in terms of *attributions.*
+    There are three kinds of attributions available in Captum:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Feature Attribution** seeks to explain a particular output in terms of features
+    of the input that generated it. Explaining whether a movie review was positive
+    or negative in terms of certain words in the review is an example of feature attribution.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Layer Attribution** examines the activity of a model’s hidden layer subsequent
+    to a particular input. Examining the spatially-mapped output of a convolutional
+    layer in response to an input image in an example of layer attribution.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Neuron Attribution** is analagous to layer attribution, but focuses on the
+    activity of a single neuron.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: In this interactive notebook, we’ll look at Feature Attribution and Layer Attribution.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Each of the three attribution types has multiple **attribution algorithms**
+    associated with it. Many attribution algorithms fall into two broad categories:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Gradient-based algorithms** calculate the backward gradients of a model output,
+    layer output, or neuron activation with respect to the input. **Integrated Gradients**
+    (for features), **Layer Gradient * Activation**, and **Neuron Conductance** are
+    all gradient-based algorithms.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Perturbation-based algorithms** examine the changes in the output of a model,
+    layer, or neuron in response to changes in the input. The input perturbations
+    may be directed or random. **Occlusion,** **Feature Ablation,** and **Feature
+    Permutation** are all perturbation-based algorithms.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: We’ll be examining algorithms of both types below.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Especially where large models are involved, it can be valuable to visualize
+    attribution data in ways that relate it easily to the input features being examined.
+    While it is certainly possible to create your own visualizations with Matplotlib,
+    Plotly, or similar tools, Captum offers enhanced tools specific to its attributions:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The `captum.attr.visualization` module (imported below as `viz`) provides helpful
+    functions for visualizing attributions related to images.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Captum Insights** is an easy-to-use API on top of Captum that provides a
+    visualization widget with ready-made visualizations for image, text, and arbitrary
+    model types.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Both of these visualization toolsets will be demonstrated in this notebook.
+    The first few examples will focus on computer vision use cases, but the Captum
+    Insights section at the end will demonstrate visualization of attributions in
+    a multi-model, visual question-and-answer model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Installation
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Before you get started, you need to have a Python environment with:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Python version 3.6 or higher
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: For the Captum Insights example, Flask 1.1 or higher and Flask-Compress (the
+    latest version is recommended)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: PyTorch version 1.2 or higher (the latest version is recommended)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: TorchVision version 0.6 or higher (the latest version is recommended)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Captum (the latest version is recommended)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Matplotlib version 3.3.4, since Captum currently uses a Matplotlib function
+    whose arguments have been renamed in later versions
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'To install Captum in an Anaconda or pip virtual environment, use the appropriate
+    command for your environment below:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'With `conda`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'With `pip`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Restart this notebook in the environment you set up, and you’re ready to go!
+  prefs: []
+  type: TYPE_NORMAL
+- en: A First Example
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: To start, let’s take a simple, visual example. We’ll start with a ResNet model
+    pretrained on the ImageNet dataset. We’ll get a test input, and use different
+    **Feature Attribution** algorithms to examine how the input images affect the
+    output, and see a helpful visualization of this input attribution map for some
+    test images.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'First, some imports:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now we’ll use the TorchVision model library to download a pretrained ResNet.
+    Since we’re not training, we’ll place it in evaluation mode for now.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: The place where you got this interactive notebook should also have an `img`
+    folder with a file `cat.jpg` in it.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Our ResNet model was trained on the ImageNet dataset, and expects images to
+    be of a certain size, with the channel data normalized to a specific range of
+    values. We’ll also pull in the list of human-readable labels for the categories
+    our model recognizes - that should be in the `img` folder as well.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Now, we can ask the question: What does our model think this image represents?'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: We’ve confirmed that ResNet thinks our image of a cat is, in fact, a cat. But
+    *why* does the model think this is an image of a cat?
+  prefs: []
+  type: TYPE_NORMAL
+- en: For the answer to that, we turn to Captum.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Feature Attribution with Integrated Gradients
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '**Feature attribution** attributes a particular output to features of the input.
+    It uses a specific input - here, our test image - to generate a map of the relative
+    importance of each input feature to a particular output feature.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Integrated Gradients](https://captum.ai/api/integrated_gradients.html) is
+    one of the feature attribution algorithms available in Captum. Integrated Gradients
+    assigns an importance score to each input feature by approximating the integral
+    of the gradients of the model’s output with respect to the inputs.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: In our case, we’re going to be taking a specific element of the output vector
+    - that is, the one indicating the model’s confidence in its chosen category -
+    and use Integrated Gradients to understand what parts of the input image contributed
+    to this output.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Once we have the importance map from Integrated Gradients, we’ll use the visualization
+    tools in Captum to give a helpful representation of the importance map. Captum’s
+    `visualize_image_attr()` function provides a variety of options for customizing
+    display of your attribution data. Here, we pass in a custom Matplotlib color map.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Running the cell with the `integrated_gradients.attribute()` call will usually
+    take a minute or two.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: In the image above, you should see that Integrated Gradients gives us the strongest
+    signal around the cat’s location in the image.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Feature Attribution with Occlusion
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Gradient-based attribution methods help to understand the model in terms of
+    directly computing out the output changes with respect to the input. *Perturbation-based
+    attribution* methods approach this more directly, by introducing changes to the
+    input to measure the effect on the output. [Occlusion](https://captum.ai/api/occlusion.html)
+    is one such method. It involves replacing sections of the input image, and examining
+    the effect on the output signal.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Below, we set up Occlusion attribution. Similarly to configuring a convolutional
+    neural network, you can specify the size of the target region, and a stride length
+    to determine the spacing of individual measurements. We’ll visualize the output
+    of our Occlusion attribution with `visualize_image_attr_multiple()`, showing heat
+    maps of both positive and negative attribution by region, and by masking the original
+    image with the positive attribution regions. The masking gives a very instructive
+    view of what regions of our cat photo the model found to be most “cat-like”.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: Again, we see greater significance placed on the region of the image that contains
+    the cat.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Layer Attribution with Layer GradCAM
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '**Layer Attribution** allows you to attribute the activity of hidden layers
+    within your model to features of your input. Below, we’ll use a layer attribution
+    algorithm to examine the activity of one of the convolutional layers within our
+    model.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: GradCAM computes the gradients of the target output with respect to the given
+    layer, averages for each output channel (dimension 2 of output), and multiplies
+    the average gradient for each channel by the layer activations. The results are
+    summed over all channels. GradCAM is designed for convnets; since the activity
+    of convolutional layers often maps spatially to the input, GradCAM attributions
+    are often upsampled and used to mask the input.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Layer attribution is set up similarly to input attribution, except that in addition
+    to the model, you must specify a hidden layer within the model that you wish to
+    examine. As above, when we call `attribute()`, we specify the target class of
+    interest.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: We’ll use the convenience method `interpolate()` in the [LayerAttribution](https://captum.ai/api/base_classes.html?highlight=layerattribution#captum.attr.LayerAttribution)
+    base class to upsample this attribution data for comparison to the input image.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: Visualizations such as this can give you novel insights into how your hidden
+    layers respond to your input.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Visualization with Captum Insights
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Captum Insights is an interpretability visualization widget built on top of
+    Captum to facilitate model understanding. Captum Insights works across images,
+    text, and other features to help users understand feature attribution. It allows
+    you to visualize attribution for multiple input/output pairs, and provides visualization
+    tools for image, text, and arbitrary data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In this section of the notebook, we’ll visualize multiple image classification
+    inferences with Captum Insights.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'First, let’s gather some image and see what the model thinks of them. For variety,
+    we’ll take our cat, a teapot, and a trilobite fossil:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: …and it looks like our model is identifying them all correctly - but of course,
+    we want to dig deeper. For that we’ll use the Captum Insights widget, which we
+    configure with an `AttributionVisualizer` object, imported below. The `AttributionVisualizer`
+    expects batches of data, so we’ll bring in Captum’s `Batch` helper class. And
+    we’ll be looking at images specifically, so well also import `ImageFeature`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We configure the `AttributionVisualizer` with the following arguments:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: An array of models to be examined (in our case, just the one)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: A scoring function, which allows Captum Insights to pull out the top-k predictions
+    from a model
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: An ordered, human-readable list of classes our model is trained on
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: A list of features to look for - in our case, an `ImageFeature`
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: A dataset, which is an iterable object returning batches of inputs and labels
+    - just like you’d use for training
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note that running the cell above didn’t take much time at all, unlike our attributions
+    above. That’s because Captum Insights lets you configure different attribution
+    algorithms in a visual widget, after which it will compute and display the attributions.
+    *That* process will take a few minutes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Running the cell below will render the Captum Insights widget. You can then
+    choose attributions methods and their arguments, filter model responses based
+    on predicted class or prediction correctness, see the model’s predictions with
+    associated probabilities, and view heatmaps of the attribution compared with the
+    original image.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: '**Total running time of the script:** ( 0 minutes 0.000 seconds)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Python source code: captumyt.py`](../../_downloads/d2274535fcc404633095941d2fbbe536/captumyt.py)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Jupyter notebook: captumyt.ipynb`](../../_downloads/c28f42852d456daf9af72da6c6909556/captumyt.ipynb)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  prefs: []
+  type: TYPE_NORMAL

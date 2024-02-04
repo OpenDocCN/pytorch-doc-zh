@@ -1,0 +1,348 @@
+- en: Learning PyTorch with Examples
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/tutorials/beginner/pytorch_with_examples.html](https://pytorch.org/tutorials/beginner/pytorch_with_examples.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: '**Author**: [Justin Johnson](https://github.com/jcjohnson/pytorch-examples)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: This is one of our older PyTorch tutorials. You can view our latest beginner
+    content in [Learn the Basics](https://pytorch.org/tutorials/beginner/basics/intro.html).
+  prefs: []
+  type: TYPE_NORMAL
+- en: This tutorial introduces the fundamental concepts of [PyTorch](https://github.com/pytorch/pytorch)
+    through self-contained examples.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'At its core, PyTorch provides two main features:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: An n-dimensional Tensor, similar to numpy but can run on GPUs
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Automatic differentiation for building and training neural networks
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: We will use a problem of fitting \(y=\sin(x)\) with a third order polynomial
+    as our running example. The network will have four parameters, and will be trained
+    with gradient descent to fit random data by minimizing the Euclidean distance
+    between the network output and the true output.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can browse the individual examples at the [end of this page](#examples-download).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Table of Contents
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Tensors](#tensors)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Warm-up: numpy](#warm-up-numpy)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PyTorch: Tensors](#pytorch-tensors)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Autograd](#autograd)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PyTorch: Tensors and autograd](#pytorch-tensors-and-autograd)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PyTorch: Defining new autograd functions](#pytorch-defining-new-autograd-functions)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[`nn` module](#nn-module)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PyTorch: `nn`](#pytorch-nn)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PyTorch: optim](#pytorch-optim)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PyTorch: Custom `nn` Modules](#pytorch-custom-nn-modules)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PyTorch: Control Flow + Weight Sharing](#pytorch-control-flow-weight-sharing)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Examples](#examples)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Tensors](#id1)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Autograd](#id2)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[`nn` module](#id3)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Tensors](#id4)'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[Warm-up: numpy](#id5)'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Before introducing PyTorch, we will first implement the network using numpy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Numpy provides an n-dimensional array object, and many functions for manipulating
+    these arrays. Numpy is a generic framework for scientific computing; it does not
+    know anything about computation graphs, or deep learning, or gradients. However
+    we can easily use numpy to fit a third order polynomial to sine function by manually
+    implementing the forward and backward passes through the network using numpy operations:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PyTorch: Tensors](#id6)'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Numpy is a great framework, but it cannot utilize GPUs to accelerate its numerical
+    computations. For modern deep neural networks, GPUs often provide speedups of
+    [50x or greater](https://github.com/jcjohnson/cnn-benchmarks), so unfortunately
+    numpy won’t be enough for modern deep learning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Here we introduce the most fundamental PyTorch concept: the **Tensor**. A PyTorch
+    Tensor is conceptually identical to a numpy array: a Tensor is an n-dimensional
+    array, and PyTorch provides many functions for operating on these Tensors. Behind
+    the scenes, Tensors can keep track of a computational graph and gradients, but
+    they’re also useful as a generic tool for scientific computing.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Also unlike numpy, PyTorch Tensors can utilize GPUs to accelerate their numeric
+    computations. To run a PyTorch Tensor on GPU, you simply need to specify the correct
+    device.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Here we use PyTorch Tensors to fit a third order polynomial to sine function.
+    Like the numpy example above we need to manually implement the forward and backward
+    passes through the network:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[Autograd](#id7)'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PyTorch: Tensors and autograd](#id8)'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: In the above examples, we had to manually implement both the forward and backward
+    passes of our neural network. Manually implementing the backward pass is not a
+    big deal for a small two-layer network, but can quickly get very hairy for large
+    complex networks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Thankfully, we can use [automatic differentiation](https://en.wikipedia.org/wiki/Automatic_differentiation)
+    to automate the computation of backward passes in neural networks. The **autograd**
+    package in PyTorch provides exactly this functionality. When using autograd, the
+    forward pass of your network will define a **computational graph**; nodes in the
+    graph will be Tensors, and edges will be functions that produce output Tensors
+    from input Tensors. Backpropagating through this graph then allows you to easily
+    compute gradients.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This sounds complicated, it’s pretty simple to use in practice. Each Tensor
+    represents a node in a computational graph. If `x` is a Tensor that has `x.requires_grad=True`
+    then `x.grad` is another Tensor holding the gradient of `x` with respect to some
+    scalar value.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Here we use PyTorch Tensors and autograd to implement our fitting sine wave
+    with third order polynomial example; now we no longer need to manually implement
+    the backward pass through the network:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PyTorch: Defining new autograd functions](#id9)'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Under the hood, each primitive autograd operator is really two functions that
+    operate on Tensors. The **forward** function computes output Tensors from input
+    Tensors. The **backward** function receives the gradient of the output Tensors
+    with respect to some scalar value, and computes the gradient of the input Tensors
+    with respect to that same scalar value.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In PyTorch we can easily define our own autograd operator by defining a subclass
+    of `torch.autograd.Function` and implementing the `forward` and `backward` functions.
+    We can then use our new autograd operator by constructing an instance and calling
+    it like a function, passing Tensors containing input data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In this example we define our model as \(y=a+b P_3(c+dx)\) instead of \(y=a+bx+cx^2+dx^3\),
+    where \(P_3(x)=\frac{1}{2}\left(5x^3-3x\right)\) is the [Legendre polynomial](https://en.wikipedia.org/wiki/Legendre_polynomials)
+    of degree three. We write our own custom autograd function for computing forward
+    and backward of \(P_3\), and use it to implement our model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[`nn` module](#id10)'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PyTorch: `nn`](#id11)'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Computational graphs and autograd are a very powerful paradigm for defining
+    complex operators and automatically taking derivatives; however for large neural
+    networks raw autograd can be a bit too low-level.
+  prefs: []
+  type: TYPE_NORMAL
+- en: When building neural networks we frequently think of arranging the computation
+    into **layers**, some of which have **learnable parameters** which will be optimized
+    during learning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In TensorFlow, packages like [Keras](https://github.com/fchollet/keras), [TensorFlow-Slim](https://github.com/tensorflow/tensorflow/tree/master/tensorflow/contrib/slim),
+    and [TFLearn](http://tflearn.org/) provide higher-level abstractions over raw
+    computational graphs that are useful for building neural networks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In PyTorch, the `nn` package serves this same purpose. The `nn` package defines
+    a set of **Modules**, which are roughly equivalent to neural network layers. A
+    Module receives input Tensors and computes output Tensors, but may also hold internal
+    state such as Tensors containing learnable parameters. The `nn` package also defines
+    a set of useful loss functions that are commonly used when training neural networks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In this example we use the `nn` package to implement our polynomial model network:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PyTorch: optim](#id12)'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Up to this point we have updated the weights of our models by manually mutating
+    the Tensors holding learnable parameters with `torch.no_grad()`. This is not a
+    huge burden for simple optimization algorithms like stochastic gradient descent,
+    but in practice we often train neural networks using more sophisticated optimizers
+    like `AdaGrad`, `RMSProp`, `Adam`, and other.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The `optim` package in PyTorch abstracts the idea of an optimization algorithm
+    and provides implementations of commonly used optimization algorithms.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In this example we will use the `nn` package to define our model as before,
+    but we will optimize the model using the `RMSprop` algorithm provided by the `optim`
+    package:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PyTorch: Custom `nn` Modules](#id13)'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Sometimes you will want to specify models that are more complex than a sequence
+    of existing Modules; for these cases you can define your own Modules by subclassing
+    `nn.Module` and defining a `forward` which receives input Tensors and produces
+    output Tensors using other modules or other autograd operations on Tensors.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In this example we implement our third order polynomial as a custom Module
+    subclass:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PyTorch: Control Flow + Weight Sharing](#id14)'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'As an example of dynamic graphs and weight sharing, we implement a very strange
+    model: a third-fifth order polynomial that on each forward pass chooses a random
+    number between 3 and 5 and uses that many orders, reusing the same weights multiple
+    times to compute the fourth and fifth order.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: For this model we can use normal Python flow control to implement the loop,
+    and we can implement weight sharing by simply reusing the same parameter multiple
+    times when defining the forward pass.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We can easily implement this model as a Module subclass:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: '## [Examples](#id15)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can browse the above examples here.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Tensors](#id16)'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[Autograd](#id17)'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[`nn` module](#id18)'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL

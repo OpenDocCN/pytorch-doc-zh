@@ -1,0 +1,294 @@
+- en: Hyperparameter tuning with Ray Tune
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/tutorials/beginner/hyperparameter_tuning_tutorial.html](https://pytorch.org/tutorials/beginner/hyperparameter_tuning_tutorial.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Click [here](#sphx-glr-download-beginner-hyperparameter-tuning-tutorial-py)
+    to download the full example code
+  prefs: []
+  type: TYPE_NORMAL
+- en: Hyperparameter tuning can make the difference between an average model and a
+    highly accurate one. Often simple things like choosing a different learning rate
+    or changing a network layer size can have a dramatic impact on your model performance.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Fortunately, there are tools that help with finding the best combination of
+    parameters. [Ray Tune](https://docs.ray.io/en/latest/tune.html) is an industry
+    standard tool for distributed hyperparameter tuning. Ray Tune includes the latest
+    hyperparameter search algorithms, integrates with TensorBoard and other analysis
+    libraries, and natively supports distributed training through [Ray’s distributed
+    machine learning engine](https://ray.io/).
+  prefs: []
+  type: TYPE_NORMAL
+- en: In this tutorial, we will show you how to integrate Ray Tune into your PyTorch
+    training workflow. We will extend [this tutorial from the PyTorch documentation](https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html)
+    for training a CIFAR10 image classifier.
+  prefs: []
+  type: TYPE_NORMAL
+- en: As you will see, we only need to add some slight modifications. In particular,
+    we need to
+  prefs: []
+  type: TYPE_NORMAL
+- en: wrap data loading and training in functions,
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: make some network parameters configurable,
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: add checkpointing (optional),
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: and define the search space for the model tuning
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'To run this tutorial, please make sure the following packages are installed:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`ray[tune]`: Distributed hyperparameter tuning library'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`torchvision`: For the data transformers'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Setup / Imports
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Let’s start with the imports:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Most of the imports are needed for building the PyTorch model. Only the last
+    three imports are for Ray Tune.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Data loaders
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: We wrap the data loaders in their own function and pass a global data directory.
+    This way we can share a data directory between different trials.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Configurable neural network
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'We can only tune those parameters that are configurable. In this example, we
+    can specify the layer sizes of the fully connected layers:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: The train function
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Now it gets interesting, because we introduce some changes to the example [from
+    the PyTorch documentation](https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html).
+  prefs: []
+  type: TYPE_NORMAL
+- en: We wrap the training script in a function `train_cifar(config, data_dir=None)`.
+    The `config` parameter will receive the hyperparameters we would like to train
+    with. The `data_dir` specifies the directory where we load and store the data,
+    so that multiple runs can share the same data source. We also load the model and
+    optimizer state at the start of the run, if a checkpoint is provided. Further
+    down in this tutorial you will find information on how to save the checkpoint
+    and what it is used for.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The learning rate of the optimizer is made configurable, too:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: We also split the training data into a training and validation subset. We thus
+    train on 80% of the data and calculate the validation loss on the remaining 20%.
+    The batch sizes with which we iterate through the training and test sets are configurable
+    as well.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Adding (multi) GPU support with DataParallel
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Image classification benefits largely from GPUs. Luckily, we can continue to
+    use PyTorch’s abstractions in Ray Tune. Thus, we can wrap our model in `nn.DataParallel`
+    to support data parallel training on multiple GPUs:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'By using a `device` variable we make sure that training also works when we
+    have no GPUs available. PyTorch requires us to send our data to the GPU memory
+    explicitly, like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: The code now supports training on CPUs, on a single GPU, and on multiple GPUs.
+    Notably, Ray also supports [fractional GPUs](https://docs.ray.io/en/master/using-ray-with-gpus.html#fractional-gpus)
+    so we can share GPUs among trials, as long as the model still fits on the GPU
+    memory. We’ll come back to that later.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Communicating with Ray Tune
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'The most interesting part is the communication with Ray Tune:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Here we first save a checkpoint and then report some metrics back to Ray Tune.
+    Specifically, we send the validation loss and accuracy back to Ray Tune. Ray Tune
+    can then use these metrics to decide which hyperparameter configuration lead to
+    the best results. These metrics can also be used to stop bad performing trials
+    early in order to avoid wasting resources on those trials.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The checkpoint saving is optional, however, it is necessary if we wanted to
+    use advanced schedulers like [Population Based Training](https://docs.ray.io/en/latest/tune/examples/pbt_guide.html).
+    Also, by saving the checkpoint we can later load the trained models and validate
+    them on a test set. Lastly, saving checkpoints is useful for fault tolerance,
+    and it allows us to interrupt training and continue training later.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Full training function
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'The full code example looks like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: As you can see, most of the code is adapted directly from the original example.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Test set accuracy
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Commonly the performance of a machine learning model is tested on a hold-out
+    test set with data that has not been used for training the model. We also wrap
+    this in a function:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: The function also expects a `device` parameter, so we can do the test set validation
+    on a GPU.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Configuring the search space
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Lastly, we need to define Ray Tune’s search space. Here is an example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: The `tune.choice()` accepts a list of values that are uniformly sampled from.
+    In this example, the `l1` and `l2` parameters should be powers of 2 between 4
+    and 256, so either 4, 8, 16, 32, 64, 128, or 256. The `lr` (learning rate) should
+    be uniformly sampled between 0.0001 and 0.1\. Lastly, the batch size is a choice
+    between 2, 4, 8, and 16.
+  prefs: []
+  type: TYPE_NORMAL
+- en: At each trial, Ray Tune will now randomly sample a combination of parameters
+    from these search spaces. It will then train a number of models in parallel and
+    find the best performing one among these. We also use the `ASHAScheduler` which
+    will terminate bad performing trials early.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We wrap the `train_cifar` function with `functools.partial` to set the constant
+    `data_dir` parameter. We can also tell Ray Tune what resources should be available
+    for each trial:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: You can specify the number of CPUs, which are then available e.g. to increase
+    the `num_workers` of the PyTorch `DataLoader` instances. The selected number of
+    GPUs are made visible to PyTorch in each trial. Trials do not have access to GPUs
+    that haven’t been requested for them - so you don’t have to care about two trials
+    using the same set of resources.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Here we can also specify fractional GPUs, so something like `gpus_per_trial=0.5`
+    is completely valid. The trials will then share GPUs among each other. You just
+    have to make sure that the models still fit in the GPU memory.
+  prefs: []
+  type: TYPE_NORMAL
+- en: After training the models, we will find the best performing one and load the
+    trained network from the checkpoint file. We then obtain the test set accuracy
+    and report everything by printing.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The full main function looks like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'If you run the code, an example output could look like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: Most trials have been stopped early in order to avoid wasting resources. The
+    best performing trial achieved a validation accuracy of about 47%, which could
+    be confirmed on the test set.
+  prefs: []
+  type: TYPE_NORMAL
+- en: So that’s it! You can now tune the parameters of your PyTorch models.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Total running time of the script:** ( 9 minutes 49.698 seconds)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Python source code: hyperparameter_tuning_tutorial.py`](../_downloads/b2e3bdbf14ea1e9b3a80770f0a498037/hyperparameter_tuning_tutorial.py)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Jupyter notebook: hyperparameter_tuning_tutorial.ipynb`](../_downloads/30bcc2970bf630097b13789b5cdcea48/hyperparameter_tuning_tutorial.ipynb)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  prefs: []
+  type: TYPE_NORMAL

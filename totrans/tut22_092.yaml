@@ -1,0 +1,398 @@
+- en: Facilitating New Backend Integration by PrivateUse1
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/tutorials/advanced/privateuseone.html](https://pytorch.org/tutorials/advanced/privateuseone.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: In this tutorial we will walk through some necessary steps to integrate a new
+    backend living outside `pytorch/pytorch` repo by `PrivateUse1`. Note that this
+    tutorial assumes that you already have a basic understanding of PyTorch. you are
+    an advanced user of PyTorch.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: This tutorial only involves the parts related to the PrivateUse1 mechanism that
+    facilitates the integration of new devices, and other parts will not be covered.
+    At the same time, not all the modules involved in this tutorial are required,
+    and you can choose the modules that are helpful to you according to your actual
+    needs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: What is PrivateUse1?
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Prior to Pytorch 2.0, PyTorch provided three reserved dispatch keys (and their
+    corresponding Autograd keys) for prototyping out-of-tree backend extensions, the
+    three dispatch keys are as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`PrivateUse1/AutogradPrivateUse1`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`PrivateUse2/AutogradPrivateUse2`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`PrivateUse3/AutogradPrivateUse3`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: After the prototype verification is passed, you can apply for a private key
+    for the new backend, such as CUDA, XLA, MPS, and so on.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'However, with the rapid development of PyTorch, more and more hardware manufacturers
+    are trying to integrate their backends into PyTorch, which might cause the following
+    problems:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Every new backend integration involves a lot of file modification
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: There is currently a hard limit on the number of Dispatch Keys (`DispatchKeySet`
+    64-bit limit)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: There is also a problem with integrating the new backend into PyTorch through
+    the PrivateUse1 Key, as it is impossible to integrate many backends at the same
+    time. Fortunately, these out-of-tree backends are rarely used simultaneously.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In view of the above reasons, the community began to recommend new backend to
+    be integrated into the PyTorch via `PrivateUse1`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: However, the previous `PrivateUse1` mechanism is not fully capable of integrating
+    with the new backend, because it lacks some related support in certain modules,
+    such as Storage, AMP, Distributed, and so on.
+  prefs: []
+  type: TYPE_NORMAL
+- en: With the arrival of Pytorch 2.1.0, a series of optimizations and enhancements
+    have been made for `PrivateUse1` in terms of new backend integration, and it is
+    now possible to support the integration of new devices rapidly and efficiently.
+  prefs: []
+  type: TYPE_NORMAL
+- en: How to integrate new backend via PrivateUse1
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'In this section, we will discuss the details of integrating the new backend
+    into Pytorch via `PrivateUse1`, which mainly consists of the following parts:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Register kernels for the new backend.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Register generator for the new backend.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Register device guard for the new backend.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Register serialization and deserialization functions for new backend metadata.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Other Modules.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Register kernels for the new backend
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'The new backend may have some high-performance implementations of operator,
+    which can be registered to the dispatcher by `TORCH_LIBRARY_IMPL` API described
+    in [Registering a Dispatched Operator in C++](dispatcher). This involves several
+    situations:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Register all the forward operators supported by the new backend to the dispatcher,
+    and register the fallback at the same time, so that when the new backend does
+    not support some operators, these operators can fall back to the CPU for execution
+    to ensure the availability of functions.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Register kernels from `torch::autograd::Function` to the dispatcher by `AutogradPrivateUse1`,
+    if it is necessary for new backend to override `PyTorch Autograd layer`, the dispatcher
+    and autograd system will automatically call the forward and backward implementations
+    of these operators.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Register kernels which want to support [automatic mixed precision (AMP)](https://pytorch.org/docs/stable/amp.html)
+    and fallback mechanism to the dispatcher by `AutocastPrivateUse1`, the autocast
+    system will automatically call these kernels when needed.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'What needs to be added is that if you want to support AMP in a new backend,
+    you need to register a new `BackendModule` by `torch._register_device_module("backend_name",
+    BackendModule)`, and the `BackendModule` needs to have the following APIs:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`get_amp_supported_dtype() -> List[torch.dtype]`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: get the supported dtypes on the new backend in AMP, which might support one
+    more `dtype`.
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: '`is_autocast_enabled() -> bool`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: check the AMP is enabled or not on the new backend.
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: '`get_autocast_dtype() -> torch.dtype`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: get the supported `dtype` on the new backend in AMP, which is set by `set_autocast_dtype`
+    or the default `dtype`, and the default `dtype` is `torch.float16`.
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: '`set_autocast_enabled(bool) -> None`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: enable or disable AMP on the new backend.
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: '`set_autocast_dtype(dtype) -> None`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: set the supported `dtype` on the new backend in AMP, and the `dtype` be contained
+    in the `dtypes` got from `get_amp_supported_dtype`.
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: Register generator for the new backend
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: It is necessary to support generators corresponding to new devices. Currently,
+    `PrivateUse1` can dynamically register custom generators, which are mainly divided
+    into the following steps.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Inherit the `GeneratorImpl` class to implement the generator class corresponding
+    to the new backend, and implement various general methods.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'Define a new backend `builder` with a single parameter: `device index`.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Call `REGISTER_GENERATOR_PRIVATEUSE1` macro to complete dynamic registration.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Register device guard for the new backend
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: PyTorch provides functionalities related to device, stream, and event switching
+    via `DeviceGuard`. This function is also applicable to `PrivateUse1` Key.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Inherit the `DeviceGuardImplInterface` class to implement the various general
+    methods corresponding to the new backend.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Call `C10_REGISTER_GUARD_IMPL` macro to complete dynamic registration.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Register serialization and deserialization functions for new backend metadata
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'PyTorch is currently able to dynamically register serialization/deserialization
+    functions to support the serialization and deserialization of new backend additional
+    metadata named `backend_meta_` in class `TensorImpl.ExtraMeta`. You can refer
+    to the following steps:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Inherit the `BackendMeta` class to implement `CustomBackendMetadata` corresponding
+    to the new backend and various fields of the new backend can be customized in
+    the class.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Implement the serialization and deserialization functions of the new backend,
+    the function signatures are `void(const at::Tensor&, std::unordered_map<std::string,
+    bool>&)`.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Call the `TensorBackendMetaRegistry` macro to complete dynamic registration.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: Other Modules
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: In addition to the above-mentioned parts, there are some other modules that
+    can be expanded through `PrivateUse1`, such as `distributed collective communication`,
+    `benchmark timer`, and others, which will be added in the future. One example
+    about `PrivateUse1` integration is [Ascend NPU](https://github.com/ascend/pytorch).
+  prefs: []
+  type: TYPE_NORMAL
+- en: How to Improve User Experience with Privateuse1
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The primary goal of integrating new devices through `PrivateUse1` is to meet
+    the basic functional requirements, and the next thing to do is to improve usability,
+    which mainly involves the following aspects.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Register new backend module to Pytorch.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Generate methods and properties related to the new backend.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Generate methods and properties related to the new backend.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Register new backend module to Pytorch
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Some CUDA-related interfaces in PyTorch can be called through the following
+    form: `torch.cuda.xxx`. Therefore, in order to comply with user habits, the new
+    backend implemented through the `PrivateUse1` mechanism should also provide similar
+    interfaces.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'For example, using `Ascend NPU`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: After doing the above operations, users can call some exclusive APIs of `Ascend
+    NPU` through `torch.npu.xxx`
+  prefs: []
+  type: TYPE_NORMAL
+- en: Rename PrivateUse1 to a custom name for the new backend
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '`PrivateUse1` Key is the internal mechanism of the new backend integrated into
+    PyTorch. For users, compared with `PrivateUse1`, the custom name strongly related
+    to the new backend should be more friendly.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Taking the `Ascend NPU` as an example, the first usage will be more user-friendly.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now, PyTorch provides a new C++/Python API for the self-named `PrivateUse1`
+    backend, which is very simple to use.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: Generate methods and properties related to the new backend
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: After renaming `PrivateUse1` to a custome name, automatically generate properties
+    and methods related to the new backend name in the `Tensor, nn, Storage` modules
+    for the new backend.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Here is an example for `Ascend NPU`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Then, you can use the following methods and properties:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: Future Work
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'The improvement of the `PrivateUse1` mechanism is still in progress, so the
+    integration method of `PrivateUse1` of the new module will be added in turn. Here
+    are a few items that we are actively working on:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Add the integration method of `distributed collective communication`.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Add the integration method of `benchmark timer`.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Conclusion
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: This tutorial walked you through the process of integrating new backends into
+    PyTorch via `PrivateUse1`, including but not limited to operator registration,
+    generator registration, device guard registration, and so on. At the same time,
+    some methods are introduced to improve the user experience.
+  prefs: []
+  type: TYPE_NORMAL

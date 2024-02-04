@@ -1,0 +1,394 @@
+- en: Introduction to TorchScript
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/tutorials/beginner/Intro_to_TorchScript_tutorial.html](https://pytorch.org/tutorials/beginner/Intro_to_TorchScript_tutorial.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Click [here](#sphx-glr-download-beginner-intro-to-torchscript-tutorial-py) to
+    download the full example code
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Authors:** James Reed ([jamesreed@fb.com](mailto:jamesreed%40fb.com)), Michael
+    Suo ([suo@fb.com](mailto:suo%40fb.com)), rev2'
+  prefs: []
+  type: TYPE_NORMAL
+- en: This tutorial is an introduction to TorchScript, an intermediate representation
+    of a PyTorch model (subclass of `nn.Module`) that can then be run in a high-performance
+    environment such as C++.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In this tutorial we will cover:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The basics of model authoring in PyTorch, including:'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Modules
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Defining `forward` functions
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Composing modules into a hierarchy of modules
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Specific methods for converting PyTorch modules to TorchScript, our high-performance
+    deployment runtime
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Tracing an existing module
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Using scripting to directly compile a module
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: How to compose both approaches
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Saving and loading TorchScript modules
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: We hope that after you complete this tutorial, you will proceed to go through
+    [the follow-on tutorial](https://pytorch.org/tutorials/advanced/cpp_export.html)
+    which will walk you through an example of actually calling a TorchScript model
+    from C++.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Basics of PyTorch Model Authoring
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Let’s start out by defining a simple `Module`. A `Module` is the basic unit
+    of composition in PyTorch. It contains:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: A constructor, which prepares the module for invocation
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: A set of `Parameters` and sub-`Modules`. These are initialized by the constructor
+    and can be used by the module during invocation.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: A `forward` function. This is the code that is run when the module is invoked.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'Let’s examine a small example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'So we’ve:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Created a class that subclasses `torch.nn.Module`.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Defined a constructor. The constructor doesn’t do much, just calls the constructor
+    for `super`.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Defined a `forward` function, which takes two inputs and returns two outputs.
+    The actual contents of the `forward` function are not really important, but it’s
+    sort of a fake [RNN cell](https://colah.github.io/posts/2015-08-Understanding-LSTMs/)–that
+    is–it’s a function that is applied on a loop.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: We instantiated the module, and made `x` and `h`, which are just 3x4 matrices
+    of random values. Then we invoked the cell with `my_cell(x, h)`. This in turn
+    calls our `forward` function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Let’s do something a little more interesting:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: We’ve redefined our module `MyCell`, but this time we’ve added a `self.linear`
+    attribute, and we invoke `self.linear` in the forward function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: What exactly is happening here? `torch.nn.Linear` is a `Module` from the PyTorch
+    standard library. Just like `MyCell`, it can be invoked using the call syntax.
+    We are building a hierarchy of `Module`s.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`print` on a `Module` will give a visual representation of the `Module`’s subclass
+    hierarchy. In our example, we can see our `Linear` subclass and its parameters.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: By composing `Module`s in this way, we can succinctly and readably author models
+    with reusable components.
+  prefs: []
+  type: TYPE_NORMAL
+- en: You may have noticed `grad_fn` on the outputs. This is a detail of PyTorch’s
+    method of automatic differentiation, called [autograd](https://pytorch.org/tutorials/beginner/blitz/autograd_tutorial.html).
+    In short, this system allows us to compute derivatives through potentially complex
+    programs. The design allows for a massive amount of flexibility in model authoring.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Now let’s examine said flexibility:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: We’ve once again redefined our `MyCell` class, but here we’ve defined `MyDecisionGate`.
+    This module utilizes **control flow**. Control flow consists of things like loops
+    and `if`-statements.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Many frameworks take the approach of computing symbolic derivatives given a
+    full program representation. However, in PyTorch, we use a gradient tape. We record
+    operations as they occur, and replay them backwards in computing derivatives.
+    In this way, the framework does not have to explicitly define derivatives for
+    all constructs in the language.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![How autograd works](../Images/cfe229076c556327e1fd74c9b59490ad.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: How autograd works
+  prefs: []
+  type: TYPE_NORMAL
+- en: Basics of TorchScript
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Now let’s take our running example and see how we can apply TorchScript.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In short, TorchScript provides tools to capture the definition of your model,
+    even in light of the flexible and dynamic nature of PyTorch. Let’s begin by examining
+    what we call **tracing**.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tracing `Modules`
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: We’ve rewinded a bit and taken the second version of our `MyCell` class. As
+    before, we’ve instantiated it, but this time, we’ve called `torch.jit.trace`,
+    passed in the `Module`, and passed in *example inputs* the network might see.
+  prefs: []
+  type: TYPE_NORMAL
+- en: What exactly has this done? It has invoked the `Module`, recorded the operations
+    that occurred when the `Module` was run, and created an instance of `torch.jit.ScriptModule`
+    (of which `TracedModule` is an instance)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'TorchScript records its definitions in an Intermediate Representation (or IR),
+    commonly referred to in Deep learning as a *graph*. We can examine the graph with
+    the `.graph` property:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'However, this is a very low-level representation and most of the information
+    contained in the graph is not useful for end users. Instead, we can use the `.code`
+    property to give a Python-syntax interpretation of the code:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'So **why** did we do all this? There are several reasons:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: TorchScript code can be invoked in its own interpreter, which is basically a
+    restricted Python interpreter. This interpreter does not acquire the Global Interpreter
+    Lock, and so many requests can be processed on the same instance simultaneously.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: This format allows us to save the whole model to disk and load it into another
+    environment, such as in a server written in a language other than Python
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: TorchScript gives us a representation in which we can do compiler optimizations
+    on the code to provide more efficient execution
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: TorchScript allows us to interface with many backend/device runtimes that require
+    a broader view of the program than individual operators.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'We can see that invoking `traced_cell` produces the same results as the Python
+    module:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: Using Scripting to Convert Modules
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'There’s a reason we used version two of our module, and not the one with the
+    control-flow-laden submodule. Let’s examine that now:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Looking at the `.code` output, we can see that the `if-else` branch is nowhere
+    to be found! Why? Tracing does exactly what we said it would: run the code, record
+    the operations *that happen* and construct a `ScriptModule` that does exactly
+    that. Unfortunately, things like control flow are erased.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'How can we faithfully represent this module in TorchScript? We provide a **script
+    compiler**, which does direct analysis of your Python source code to transform
+    it into TorchScript. Let’s convert `MyDecisionGate` using the script compiler:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Hooray! We’ve now faithfully captured the behavior of our program in TorchScript.
+    Let’s now try running the program:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: Mixing Scripting and Tracing
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Some situations call for using tracing rather than scripting (e.g. a module
+    has many architectural decisions that are made based on constant Python values
+    that we would like to not appear in TorchScript). In this case, scripting can
+    be composed with tracing: `torch.jit.script` will inline the code for a traced
+    module, and tracing will inline the code for a scripted module.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'An example of the first case:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'And an example of the second case:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: This way, scripting and tracing can be used when the situation calls for each
+    of them and used together.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Saving and Loading models
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'We provide APIs to save and load TorchScript modules to/from disk in an archive
+    format. This format includes code, parameters, attributes, and debug information,
+    meaning that the archive is a freestanding representation of the model that can
+    be loaded in an entirely separate process. Let’s save and load our wrapped RNN
+    module:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE26]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE27]'
+  prefs: []
+  type: TYPE_PRE
+- en: As you can see, serialization preserves the module hierarchy and the code we’ve
+    been examining throughout. The model can also be loaded, for example, [into C++](https://pytorch.org/tutorials/advanced/cpp_export.html)
+    for python-free execution.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Further Reading
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'We’ve completed our tutorial! For a more involved demonstration, check out
+    the NeurIPS demo for converting machine translation models using TorchScript:
+    [https://colab.research.google.com/drive/1HiICg6jRkBnr5hvK2-VnMi88Vi9pUzEJ](https://colab.research.google.com/drive/1HiICg6jRkBnr5hvK2-VnMi88Vi9pUzEJ)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Total running time of the script:** ( 0 minutes 0.244 seconds)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Python source code: Intro_to_TorchScript_tutorial.py`](../_downloads/07d05907b3ff859aeed5f76f1acc5df4/Intro_to_TorchScript_tutorial.py)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Jupyter notebook: Intro_to_TorchScript_tutorial.ipynb`](../_downloads/61a76849444a0a65d843361c26d1de16/Intro_to_TorchScript_tutorial.ipynb)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  prefs: []
+  type: TYPE_NORMAL

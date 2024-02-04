@@ -1,0 +1,426 @@
+- en: 'NLP From Scratch: Classifying Names with a Character-Level RNN'
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/tutorials/intermediate/char_rnn_classification_tutorial.html](https://pytorch.org/tutorials/intermediate/char_rnn_classification_tutorial.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Click [here](#sphx-glr-download-intermediate-char-rnn-classification-tutorial-py)
+    to download the full example code
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Author**: [Sean Robertson](https://github.com/spro)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We will be building and training a basic character-level Recurrent Neural Network
+    (RNN) to classify words. This tutorial, along with two other Natural Language
+    Processing (NLP) “from scratch” tutorials [NLP From Scratch: Generating Names
+    with a Character-Level RNN](char_rnn_generation_tutorial.html) and [NLP From Scratch:
+    Translation with a Sequence to Sequence Network and Attention](seq2seq_translation_tutorial.html),
+    show how to preprocess data to model NLP. In particular these tutorials do not
+    use many of the convenience functions of torchtext, so you can see how preprocessing
+    to model NLP works at a low level.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: A character-level RNN reads words as a series of characters - outputting a prediction
+    and “hidden state” at each step, feeding its previous hidden state into each next
+    step. We take the final prediction to be the output, i.e. which class the word
+    belongs to.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Specifically, we’ll train on a few thousand surnames from 18 languages of origin,
+    and predict which language a name is from based on the spelling:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Recommended Preparation
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Before starting this tutorial it is recommended that you have installed PyTorch,
+    and have a basic understanding of Python programming language and Tensors:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[https://pytorch.org/](https://pytorch.org/) For installation instructions'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Deep Learning with PyTorch: A 60 Minute Blitz](../beginner/deep_learning_60min_blitz.html)
+    to get started with PyTorch in general and learn the basics of Tensors'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Learning PyTorch with Examples](../beginner/pytorch_with_examples.html) for
+    a wide and deep overview'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PyTorch for Former Torch Users](../beginner/former_torchies_tutorial.html)
+    if you are former Lua Torch user'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'It would also be useful to know about RNNs and how they work:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[The Unreasonable Effectiveness of Recurrent Neural Networks](https://karpathy.github.io/2015/05/21/rnn-effectiveness/)
+    shows a bunch of real life examples'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Understanding LSTM Networks](https://colah.github.io/posts/2015-08-Understanding-LSTMs/)
+    is about LSTMs specifically but also informative about RNNs in general'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Preparing the Data
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Download the data from [here](https://download.pytorch.org/tutorial/data.zip)
+    and extract it to the current directory.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Included in the `data/names` directory are 18 text files named as `[Language].txt`.
+    Each file contains a bunch of names, one name per line, mostly romanized (but
+    we still need to convert from Unicode to ASCII).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We’ll end up with a dictionary of lists of names per language, `{language:
+    [names ...]}`. The generic variables “category” and “line” (for language and name
+    in our case) are used for later extensibility.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now we have `category_lines`, a dictionary mapping each category (language)
+    to a list of lines (names). We also kept track of `all_categories` (just a list
+    of languages) and `n_categories` for later reference.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Turning Names into Tensors
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Now that we have all the names organized, we need to turn them into Tensors
+    to make any use of them.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To represent a single letter, we use a “one-hot vector” of size `<1 x n_letters>`.
+    A one-hot vector is filled with 0s except for a 1 at index of the current letter,
+    e.g. `"b" = <0 1 0 0 0 ...>`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To make a word we join a bunch of those into a 2D matrix `<line_length x 1 x
+    n_letters>`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: That extra 1 dimension is because PyTorch assumes everything is in batches -
+    we’re just using a batch size of 1 here.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: Creating the Network
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Before autograd, creating a recurrent neural network in Torch involved cloning
+    the parameters of a layer over several timesteps. The layers held hidden state
+    and gradients which are now entirely handled by the graph itself. This means you
+    can implement a RNN in a very “pure” way, as regular feed-forward layers.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This RNN module (mostly copied from [the PyTorch for Torch users tutorial](https://pytorch.org/tutorials/beginner/former_torchies/nn_tutorial.html#example-2-recurrent-net))
+    is just 2 linear layers which operate on an input and hidden state, with a `LogSoftmax`
+    layer after the output.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: To run a step of this network we need to pass an input (in our case, the Tensor
+    for the current letter) and a previous hidden state (which we initialize as zeros
+    at first). We’ll get back the output (probability of each language) and a next
+    hidden state (which we keep for the next step).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: For the sake of efficiency we don’t want to be creating a new Tensor for every
+    step, so we will use `lineToTensor` instead of `letterToTensor` and use slices.
+    This could be further optimized by precomputing batches of Tensors.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: As you can see the output is a `<1 x n_categories>` Tensor, where every item
+    is the likelihood of that category (higher is more likely).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Training
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Preparing for Training
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Before going into training we should make a few helper functions. The first
+    is to interpret the output of the network, which we know to be a likelihood of
+    each category. We can use `Tensor.topk` to get the index of the greatest value:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'We will also want a quick way to get a training example (a name and its language):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: Training the Network
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Now all it takes to train this network is show it a bunch of examples, have
+    it make guesses, and tell it if it’s wrong.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For the loss function `nn.NLLLoss` is appropriate, since the last layer of the
+    RNN is `nn.LogSoftmax`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Each loop of training will:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Create input and target tensors
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Create a zeroed initial hidden state
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Read each letter in and
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Keep hidden state for next letter
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Compare final output to target
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Back-propagate
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Return the output and loss
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now we just have to run that with a bunch of examples. Since the `train` function
+    returns both the output and loss we can print its guesses and also keep track
+    of loss for plotting. Since there are 1000s of examples we print only every `print_every`
+    examples, and take an average of the loss.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: Plotting the Results
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Plotting the historical loss from `all_losses` shows the network learning:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: '![char rnn classification tutorial](../Images/cc57a36a43d450df4bfc1d1d1b1ce274.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: Evaluating the Results
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: To see how well the network performs on different categories, we will create
+    a confusion matrix, indicating for every actual language (rows) which language
+    the network guesses (columns). To calculate the confusion matrix a bunch of samples
+    are run through the network with `evaluate()`, which is the same as `train()`
+    minus the backprop.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: '![char rnn classification tutorial](../Images/029a9d26725997aae97e9e3f6f10067f.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: You can pick out bright spots off the main axis that show which languages it
+    guesses incorrectly, e.g. Chinese for Korean, and Spanish for Italian. It seems
+    to do very well with Greek, and very poorly with English (perhaps because of overlap
+    with other languages).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Running on User Input
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The final versions of the scripts [in the Practical PyTorch repo](https://github.com/spro/practical-pytorch/tree/master/char-rnn-classification)
+    split the above code into a few files:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`data.py` (loads files)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`model.py` (defines the RNN)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`train.py` (runs training)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`predict.py` (runs `predict()` with command line arguments)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`server.py` (serve prediction as a JSON API with `bottle.py`)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Run `train.py` to train and save the network.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Run `predict.py` with a name to view predictions:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: Run `server.py` and visit [http://localhost:5533/Yourname](http://localhost:5533/Yourname)
+    to get JSON output of predictions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Exercises
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Try with a different dataset of line -> category, for example:'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Any word -> language
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: First name -> gender
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Character name -> writer
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Page title -> blog or subreddit
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Get better results with a bigger and/or better shaped network
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Add more linear layers
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Try the `nn.LSTM` and `nn.GRU` layers
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Combine multiple of these RNNs as a higher level network
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Total running time of the script:** ( 10 minutes 4.936 seconds)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Python source code: char_rnn_classification_tutorial.py`](../_downloads/37c8905519d3fd3f437b783a48d06eac/char_rnn_classification_tutorial.py)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Jupyter notebook: char_rnn_classification_tutorial.ipynb`](../_downloads/13b143c2380f4768d9432d808ad50799/char_rnn_classification_tutorial.ipynb)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  prefs: []
+  type: TYPE_NORMAL

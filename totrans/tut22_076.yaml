@@ -1,0 +1,330 @@
+- en: (beta) Channels Last Memory Format in PyTorch
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/tutorials/intermediate/memory_format_tutorial.html](https://pytorch.org/tutorials/intermediate/memory_format_tutorial.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Click [here](#sphx-glr-download-intermediate-memory-format-tutorial-py) to download
+    the full example code
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Author**: [Vitaly Fedyunin](https://github.com/VitalyFedyunin)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: What is Channels Last
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Channels last memory format is an alternative way of ordering NCHW tensors in
+    memory preserving dimensions ordering. Channels last tensors ordered in such a
+    way that channels become the densest dimension (aka storing images pixel-per-pixel).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'For example, classic (contiguous) storage of NCHW tensor (in our case it is
+    two 4x4 images with 3 color channels) look like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![classic_memory_format](../Images/77e0660b596f377125122a2409288181.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Channels last memory format orders data differently:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![channels_last_memory_format](../Images/462373919a0dfe17cd816fa0d8af140c.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Pytorch supports memory formats (and provides back compatibility with existing
+    models including eager, JIT, and TorchScript) by utilizing existing strides structure.
+    For example, 10x3x16x16 batch in Channels last format will have strides equal
+    to (768, 1, 48, 3).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Channels last memory format is implemented for 4D NCHW Tensors only.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Memory Format API
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Here is how to convert tensors between contiguous and channels last memory formats.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Classic PyTorch contiguous tensor
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Conversion operator
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Back to contiguous
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: Alternative option
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Format checks
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: There are minor difference between the two APIs `to` and `contiguous`. We suggest
+    to stick with `to` when explicitly converting memory format of tensor.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'For general cases the two APIs behave the same. However in special cases for
+    a 4D tensor with size `NCHW` when either: `C==1` or `H==1 && W==1`, only `to`
+    would generate a proper stride to represent channels last memory format.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: This is because in either of the two cases above, the memory format of a tensor
+    is ambiguous, i.e. a contiguous tensor with size `N1HW` is both `contiguous` and
+    channels last in memory storage. Therefore, they are already considered as `is_contiguous`
+    for the given memory format and hence `contiguous` call becomes a no-op and would
+    not update the stride. On the contrary, `to` would restride tensor with a meaningful
+    stride on dimensions whose sizes are 1 in order to properly represent the intended
+    memory format
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: Same thing applies to explicit permutation API `permute`. In special case where
+    ambiguity could occur, `permute` does not guarantee to produce a stride that properly
+    carry the intended memory format. We suggest to use `to` with explicit memory
+    format to avoid unintended behavior.
+  prefs: []
+  type: TYPE_NORMAL
+- en: And a side note that in the extreme case, where three non-batch dimensions are
+    all equal to `1` (`C==1 && H==1 && W==1`), current implementation cannot mark
+    a tensor as channels last memory format.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Create as channels last
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: '`clone` preserves memory format'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: '`to`, `cuda`, `float` … preserves memory format'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: '`empty_like`, `*_like` operators preserves memory format'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: Pointwise operators preserves memory format
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: '`Conv`, `Batchnorm` modules using `cudnn` backends support channels last (only
+    works for cuDNN >= 7.6). Convolution modules, unlike binary p-wise operator, have
+    channels last as the dominating memory format. If all inputs are in contiguous
+    memory format, the operator produces output in contiguous memory format. Otherwise,
+    output will be in channels last memory format.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: When input tensor reaches a operator without channels last support, a permutation
+    should automatically apply in the kernel to restore contiguous on input tensor.
+    This introduces overhead and stops the channels last memory format propagation.
+    Nevertheless, it guarantees correct output.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Performance Gains
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Channels last memory format optimizations are available on both GPU and CPU.
+    On GPU, the most significant performance gains are observed on NVIDIA’s hardware
+    with Tensor Cores support running on reduced precision (`torch.float16`). We were
+    able to archive over 22% performance gains with channels last comparing to contiguous
+    format, both while utilizing ‘AMP (Automated Mixed Precision)’ training scripts.
+    Our scripts uses AMP supplied by NVIDIA [https://github.com/NVIDIA/apex](https://github.com/NVIDIA/apex).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`python main_amp.py -a resnet50 --b 200 --workers 16 --opt-level O2  ./data`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: Passing `--channels-last true` allows running a model in Channels last format
+    with observed 22% performance gain.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`python main_amp.py -a resnet50 --b 200 --workers 16 --opt-level O2 --channels-last
+    true ./data`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The following list of models has the full support of Channels last and showing
+    8%-35% performance gains on Volta devices: `alexnet`, `mnasnet0_5`, `mnasnet0_75`,
+    `mnasnet1_0`, `mnasnet1_3`, `mobilenet_v2`, `resnet101`, `resnet152`, `resnet18`,
+    `resnet34`, `resnet50`, `resnext50_32x4d`, `shufflenet_v2_x0_5`, `shufflenet_v2_x1_0`,
+    `shufflenet_v2_x1_5`, `shufflenet_v2_x2_0`, `squeezenet1_0`, `squeezenet1_1`,
+    `vgg11`, `vgg11_bn`, `vgg13`, `vgg13_bn`, `vgg16`, `vgg16_bn`, `vgg19`, `vgg19_bn`,
+    `wide_resnet101_2`, `wide_resnet50_2`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The following list of models has the full support of Channels last and showing
+    26%-76% performance gains on Intel(R) Xeon(R) Ice Lake (or newer) CPUs: `alexnet`,
+    `densenet121`, `densenet161`, `densenet169`, `googlenet`, `inception_v3`, `mnasnet0_5`,
+    `mnasnet1_0`, `resnet101`, `resnet152`, `resnet18`, `resnet34`, `resnet50`, `resnext101_32x8d`,
+    `resnext50_32x4d`, `shufflenet_v2_x0_5`, `shufflenet_v2_x1_0`, `squeezenet1_0`,
+    `squeezenet1_1`, `vgg11`, `vgg11_bn`, `vgg13`, `vgg13_bn`, `vgg16`, `vgg16_bn`,
+    `vgg19`, `vgg19_bn`, `wide_resnet101_2`, `wide_resnet50_2`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Converting existing models
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Channels last support is not limited by existing models, as any model can be
+    converted to channels last and propagate format through the graph as soon as input
+    (or certain weight) is formatted correctly.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE26]'
+  prefs: []
+  type: TYPE_PRE
+- en: However, not all operators fully converted to support channels last (usually
+    returning contiguous output instead). In the example posted above, layers that
+    does not support channels last will stop the memory format propagation. In spite
+    of that, as we have converted the model to channels last format, that means each
+    convolution layer, which has its 4 dimensional weight in channels last memory
+    format, will restore channels last memory format and benefit from faster kernels.
+  prefs: []
+  type: TYPE_NORMAL
+- en: But operators that does not support channels last does introduce overhead by
+    permutation. Optionally, you can investigate and identify operators in your model
+    that does not support channels last, if you want to improve the performance of
+    converted model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: That means you need to verify the list of used operators against supported operators
+    list [https://github.com/pytorch/pytorch/wiki/Operators-with-Channels-Last-support](https://github.com/pytorch/pytorch/wiki/Operators-with-Channels-Last-support),
+    or introduce memory format checks into eager execution mode and run your model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: After running the code below, operators will raise an exception if the output
+    of the operator doesn’t match the memory format of the input.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE27]'
+  prefs: []
+  type: TYPE_PRE
+- en: If you found an operator that doesn’t support channels last tensors and you
+    want to contribute, feel free to use following developers guide [https://github.com/pytorch/pytorch/wiki/Writing-memory-format-aware-operators](https://github.com/pytorch/pytorch/wiki/Writing-memory-format-aware-operators).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Code below is to recover the attributes of torch.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE28]'
+  prefs: []
+  type: TYPE_PRE
+- en: Work to do
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'There are still many things to do, such as:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Resolving ambiguity of `N1HW` and `NC11` Tensors;
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Testing of Distributed Training support;
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Improving operators coverage.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: If you have feedback and/or suggestions for improvement, please let us know
+    by creating [an issue](https://github.com/pytorch/pytorch/issues).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Total running time of the script:** ( 0 minutes 0.038 seconds)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Python source code: memory_format_tutorial.py`](../_downloads/591028d309d0401740cd71eb6b14bf93/memory_format_tutorial.py)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Jupyter notebook: memory_format_tutorial.ipynb`](../_downloads/f11c58c36c9b8a5daf09d3f9a792ef84/memory_format_tutorial.ipynb)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  prefs: []
+  type: TYPE_NORMAL

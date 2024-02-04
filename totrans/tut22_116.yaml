@@ -1,0 +1,533 @@
+- en: Writing Distributed Applications with PyTorch
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/tutorials/intermediate/dist_tuto.html](https://pytorch.org/tutorials/intermediate/dist_tuto.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: '**Author**: [Séb Arnold](https://seba1511.com)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[![edit](../Images/a8aa37bcc5edbf2ba5fcf18dba1e55f9.png)](../_images/pencil-16.png)
+    View and edit this tutorial in [github](https://github.com/pytorch/tutorials/blob/main/intermediate_source/dist_tuto.rst).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Prerequisites:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PyTorch Distributed Overview](../beginner/dist_overview.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: In this short tutorial, we will be going over the distributed package of PyTorch.
+    We’ll see how to set up the distributed setting, use the different communication
+    strategies, and go over some of the internals of the package.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Setup
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The distributed package included in PyTorch (i.e., `torch.distributed`) enables
+    researchers and practitioners to easily parallelize their computations across
+    processes and clusters of machines. To do so, it leverages message passing semantics
+    allowing each process to communicate data to any of the other processes. As opposed
+    to the multiprocessing (`torch.multiprocessing`) package, processes can use different
+    communication backends and are not restricted to being executed on the same machine.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In order to get started we need the ability to run multiple processes simultaneously.
+    If you have access to compute cluster you should check with your local sysadmin
+    or use your favorite coordination tool (e.g., [pdsh](https://linux.die.net/man/1/pdsh),
+    [clustershell](https://cea-hpc.github.io/clustershell/), or [others](https://slurm.schedmd.com/)).
+    For the purpose of this tutorial, we will use a single machine and spawn multiple
+    processes using the following template.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: The above script spawns two processes who will each setup the distributed environment,
+    initialize the process group (`dist.init_process_group`), and finally execute
+    the given `run` function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s have a look at the `init_process` function. It ensures that every process
+    will be able to coordinate through a master, using the same ip address and port.
+    Note that we used the `gloo` backend but other backends are available. (c.f. [Section
+    5.1](#communication-backends)) We will go over the magic happening in `dist.init_process_group`
+    at the end of this tutorial, but it essentially allows processes to communicate
+    with each other by sharing their locations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Point-to-Point Communication
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[![Send and Recv](../Images/f29264b289639882a61fb5c3447b1ecc.png)](../_images/send_recv.png)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Send and Recv
+  prefs: []
+  type: TYPE_NORMAL
+- en: A transfer of data from one process to another is called a point-to-point communication.
+    These are achieved through the `send` and `recv` functions or their *immediate*
+    counter-parts, `isend` and `irecv`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: In the above example, both processes start with a zero tensor, then process
+    0 increments the tensor and sends it to process 1 so that they both end up with
+    1.0\. Notice that process 1 needs to allocate memory in order to store the data
+    it will receive.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Also notice that `send`/`recv` are **blocking**: both processes stop until
+    the communication is completed. On the other hand immediates are **non-blocking**;
+    the script continues its execution and the methods return a `Work` object upon
+    which we can choose to `wait()`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: When using immediates we have to be careful about how we use the sent and received
+    tensors. Since we do not know when the data will be communicated to the other
+    process, we should not modify the sent tensor nor access the received tensor before
+    `req.wait()` has completed. In other words,
+  prefs: []
+  type: TYPE_NORMAL
+- en: writing to `tensor` after `dist.isend()` will result in undefined behaviour.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: reading from `tensor` after `dist.irecv()` will result in undefined behaviour.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: However, after `req.wait()` has been executed we are guaranteed that the communication
+    took place, and that the value stored in `tensor[0]` is 1.0.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Point-to-point communication is useful when we want more fine-grained control
+    over the communication of our processes. They can be used to implement fancy algorithms,
+    such as the one used in [Baidu’s DeepSpeech](https://github.com/baidu-research/baidu-allreduce)
+    or [Facebook’s large-scale experiments](https://research.fb.com/publications/imagenet1kin1h/).(c.f.
+    [Section 4.1](#our-own-ring-allreduce))
+  prefs: []
+  type: TYPE_NORMAL
+- en: Collective Communication
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '| [![Scatter](../Images/3aa3584628cb0526c8b0e9d02b15d876.png)](../_images/scatter.png)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Scatter
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| [![Gather](../Images/7e8670a3b7cdc7848394514ef1da090a.png)](../_images/gather.png)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Gather
+  prefs: []
+  type: TYPE_NORMAL
+- en: '|'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| [![Reduce](../Images/1c451df4406aea85e640d1ae7df6df31.png)](../_images/reduce.png)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Reduce
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| [![All-Reduce](../Images/0ef9693f0008d5a75aa5ac2b542b83ac.png)](../_images/all_reduce.png)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: All-Reduce
+  prefs: []
+  type: TYPE_NORMAL
+- en: '|'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| [![Broadcast](../Images/525847c9d4b48933cb231204a2d13e0e.png)](../_images/broadcast.png)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Broadcast
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| [![All-Gather](../Images/4a48977cd9545f897942a4a4ef1175ac.png)](../_images/all_gather.png)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: All-Gather
+  prefs: []
+  type: TYPE_NORMAL
+- en: '|'
+  prefs: []
+  type: TYPE_NORMAL
+- en: As opposed to point-to-point communcation, collectives allow for communication
+    patterns across all processes in a **group**. A group is a subset of all our processes.
+    To create a group, we can pass a list of ranks to `dist.new_group(group)`. By
+    default, collectives are executed on all processes, also known as the **world**.
+    For example, in order to obtain the sum of all tensors on all processes, we can
+    use the `dist.all_reduce(tensor, op, group)` collective.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Since we want the sum of all tensors in the group, we use `dist.ReduceOp.SUM`
+    as the reduce operator. Generally speaking, any commutative mathematical operation
+    can be used as an operator. Out-of-the-box, PyTorch comes with 4 such operators,
+    all working at the element-wise level:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`dist.ReduceOp.SUM`,'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`dist.ReduceOp.PRODUCT`,'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`dist.ReduceOp.MAX`,'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`dist.ReduceOp.MIN`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: In addition to `dist.all_reduce(tensor, op, group)`, there are a total of 6
+    collectives currently implemented in PyTorch.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`dist.broadcast(tensor, src, group)`: Copies `tensor` from `src` to all other
+    processes.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`dist.reduce(tensor, dst, op, group)`: Applies `op` to every `tensor` and stores
+    the result in `dst`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`dist.all_reduce(tensor, op, group)`: Same as reduce, but the result is stored
+    in all processes.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`dist.scatter(tensor, scatter_list, src, group)`: Copies the \(i^{\text{th}}\)
+    tensor `scatter_list[i]` to the \(i^{\text{th}}\) process.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`dist.gather(tensor, gather_list, dst, group)`: Copies `tensor` from all processes
+    in `dst`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`dist.all_gather(tensor_list, tensor, group)`: Copies `tensor` from all processes
+    to `tensor_list`, on all processes.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`dist.barrier(group)`: Blocks all processes in group until each one has entered
+    this function.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Distributed Training
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '**Note:** You can find the example script of this section in [this GitHub repository](https://github.com/seba-1511/dist_tuto.pth/).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now that we understand how the distributed module works, let us write something
+    useful with it. Our goal will be to replicate the functionality of [DistributedDataParallel](https://pytorch.org/docs/stable/nn.html#torch.nn.parallel.DistributedDataParallel).
+    Of course, this will be a didactic example and in a real-world situation you should
+    use the official, well-tested and well-optimized version linked above.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Quite simply we want to implement a distributed version of stochastic gradient
+    descent. Our script will let all processes compute the gradients of their model
+    on their batch of data and then average their gradients. In order to ensure similar
+    convergence results when changing the number of processes, we will first have
+    to partition our dataset. (You could also use [tnt.dataset.SplitDataset](https://github.com/pytorch/tnt/blob/master/torchnet/dataset/splitdataset.py#L4),
+    instead of the snippet below.)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'With the above snippet, we can now simply partition any dataset using the following
+    few lines:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: Assuming we have 2 replicas, then each process will have a `train_set` of 60000
+    / 2 = 30000 samples. We also divide the batch size by the number of replicas in
+    order to maintain the *overall* batch size of 128.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We can now write our usual forward-backward-optimize training code, and add
+    a function call to average the gradients of our models. (The following is largely
+    inspired by the official [PyTorch MNIST example](https://github.com/pytorch/examples/blob/master/mnist/main.py).)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: It remains to implement the `average_gradients(model)` function, which simply
+    takes in a model and averages its gradients across the whole world.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: '*Et voilà*! We successfully implemented distributed synchronous SGD and could
+    train any model on a large computer cluster.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Note:** While the last sentence is *technically* true, there are [a lot more
+    tricks](https://seba-1511.github.io/dist_blog) required to implement a production-level
+    implementation of synchronous SGD. Again, use what [has been tested and optimized](https://pytorch.org/docs/stable/nn.html#torch.nn.parallel.DistributedDataParallel).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Our Own Ring-Allreduce
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: As an additional challenge, imagine that we wanted to implement DeepSpeech’s
+    efficient ring allreduce. This is fairly easy to implement using point-to-point
+    collectives.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'In the above script, the `allreduce(send, recv)` function has a slightly different
+    signature than the ones in PyTorch. It takes a `recv` tensor and will store the
+    sum of all `send` tensors in it. As an exercise left to the reader, there is still
+    one difference between our version and the one in DeepSpeech: their implementation
+    divides the gradient tensor into *chunks*, so as to optimally utilize the communication
+    bandwidth. (Hint: [torch.chunk](https://pytorch.org/docs/stable/torch.html#torch.chunk))'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Advanced Topics
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'We are now ready to discover some of the more advanced functionalities of `torch.distributed`.
+    Since there is a lot to cover, this section is divided into two subsections:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Communication Backends: where we learn how to use MPI and Gloo for GPU-GPU
+    communication.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'Initialization Methods: where we understand how to best set up the initial
+    coordination phase in `dist.init_process_group()`.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Communication Backends
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'One of the most elegant aspects of `torch.distributed` is its ability to abstract
+    and build on top of different backends. As mentioned before, there are currently
+    three backends implemented in PyTorch: Gloo, NCCL, and MPI. They each have different
+    specifications and tradeoffs, depending on the desired use case. A comparative
+    table of supported functions can be found [here](https://pytorch.org/docs/stable/distributed.html#module-torch.distributed).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Gloo Backend**'
+  prefs: []
+  type: TYPE_NORMAL
+- en: So far we have made extensive usage of the [Gloo backend](https://github.com/facebookincubator/gloo).
+    It is quite handy as a development platform, as it is included in the pre-compiled
+    PyTorch binaries and works on both Linux (since 0.2) and macOS (since 1.3). It
+    supports all point-to-point and collective operations on CPU, and all collective
+    operations on GPU. The implementation of the collective operations for CUDA tensors
+    is not as optimized as the ones provided by the NCCL backend.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'As you have surely noticed, our distributed SGD example does not work if you
+    put `model` on the GPU. In order to use multiple GPUs, let us also make the following
+    modifications:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Use `device = torch.device("cuda:{}".format(rank))`
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '`model = Net()` \(\rightarrow\) `model = Net().to(device)`'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Use `data, target = data.to(device), target.to(device)`
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: With the above modifications, our model is now training on two GPUs and you
+    can monitor their utilization with `watch nvidia-smi`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**MPI Backend**'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The Message Passing Interface (MPI) is a standardized tool from the field of
+    high-performance computing. It allows to do point-to-point and collective communications
+    and was the main inspiration for the API of `torch.distributed`. Several implementations
+    of MPI exist (e.g. [Open-MPI](https://www.open-mpi.org/), [MVAPICH2](http://mvapich.cse.ohio-state.edu/),
+    [Intel MPI](https://software.intel.com/en-us/intel-mpi-library)) each optimized
+    for different purposes. The advantage of using the MPI backend lies in MPI’s wide
+    availability - and high-level of optimization - on large computer clusters. [Some](https://developer.nvidia.com/mvapich)
+    [recent](https://developer.nvidia.com/ibm-spectrum-mpi) [implementations](https://www.open-mpi.org/)
+    are also able to take advantage of CUDA IPC and GPU Direct technologies in order
+    to avoid memory copies through the CPU.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Unfortunately, PyTorch’s binaries cannot include an MPI implementation and we’ll
+    have to recompile it by hand. Fortunately, this process is fairly simple given
+    that upon compilation, PyTorch will look *by itself* for an available MPI implementation.
+    The following steps install the MPI backend, by installing PyTorch [from source](https://github.com/pytorch/pytorch#from-source).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Create and activate your Anaconda environment, install all the pre-requisites
+    following [the guide](https://github.com/pytorch/pytorch#from-source), but do
+    **not** run `python setup.py install` yet.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'Choose and install your favorite MPI implementation. Note that enabling CUDA-aware
+    MPI might require some additional steps. In our case, we’ll stick to Open-MPI
+    *without* GPU support: `conda install -c conda-forge openmpi`'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Now, go to your cloned PyTorch repo and execute `python setup.py install`.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: In order to test our newly installed backend, a few modifications are required.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Replace the content under `if __name__ == '__main__':` with `init_process(0,
+    0, run, backend='mpi')`.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Run `mpirun -n 4 python myscript.py`.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: The reason for these changes is that MPI needs to create its own environment
+    before spawning the processes. MPI will also spawn its own processes and perform
+    the handshake described in [Initialization Methods](#initialization-methods),
+    making the `rank`and `size` arguments of `init_process_group` superfluous. This
+    is actually quite powerful as you can pass additional arguments to `mpirun` in
+    order to tailor computational resources for each process. (Things like number
+    of cores per process, hand-assigning machines to specific ranks, and [some more](https://www.open-mpi.org/faq/?category=running#mpirun-hostfile))
+    Doing so, you should obtain the same familiar output as with the other communication
+    backends.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**NCCL Backend**'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The [NCCL backend](https://github.com/nvidia/nccl) provides an optimized implementation
+    of collective operations against CUDA tensors. If you only use CUDA tensors for
+    your collective operations, consider using this backend for the best in class
+    performance. The NCCL backend is included in the pre-built binaries with CUDA
+    support.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Initialization Methods
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'To finish this tutorial, let’s talk about the very first function we called:
+    `dist.init_process_group(backend, init_method)`. In particular, we will go over
+    the different initialization methods which are responsible for the initial coordination
+    step between each process. Those methods allow you to define how this coordination
+    is done. Depending on your hardware setup, one of these methods should be naturally
+    more suitable than the others. In addition to the following sections, you should
+    also have a look at the [official documentation](https://pytorch.org/docs/stable/distributed.html#initialization).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Environment Variable**'
+  prefs: []
+  type: TYPE_NORMAL
+- en: We have been using the environment variable initialization method throughout
+    this tutorial. By setting the following four environment variables on all machines,
+    all processes will be able to properly connect to the master, obtain information
+    about the other processes, and finally handshake with them.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`MASTER_PORT`: A free port on the machine that will host the process with rank
+    0.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`MASTER_ADDR`: IP address of the machine that will host the process with rank
+    0.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`WORLD_SIZE`: The total number of processes, so that the master knows how many
+    workers to wait for.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`RANK`: Rank of each process, so they will know whether it is the master of
+    a worker.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Shared File System**'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The shared filesystem requires all processes to have access to a shared file
+    system, and will coordinate them through a shared file. This means that each process
+    will open the file, write its information, and wait until everybody did so. After
+    that all required information will be readily available to all processes. In order
+    to avoid race conditions, the file system must support locking through [fcntl](http://man7.org/linux/man-pages/man2/fcntl.2.html).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: '**TCP**'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Initializing via TCP can be achieved by providing the IP address of the process
+    with rank 0 and a reachable port number. Here, all workers will be able to connect
+    to the process with rank 0 and exchange information on how to reach each other.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: '**Acknowledgements**'
+  prefs: []
+  type: TYPE_NORMAL
+- en: I’d like to thank the PyTorch developers for doing such a good job on their
+    implementation, documentation, and tests. When the code was unclear, I could always
+    count on the [docs](https://pytorch.org/docs/stable/distributed.html) or the [tests](https://github.com/pytorch/pytorch/tree/master/test/distributed)
+    to find an answer. In particular, I’d like to thank Soumith Chintala, Adam Paszke,
+    and Natalia Gimelshein for providing insightful comments and answering questions
+    on early drafts.
+  prefs: []
+  type: TYPE_NORMAL

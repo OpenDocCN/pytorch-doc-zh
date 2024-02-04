@@ -1,0 +1,188 @@
+- en: Introduction to TorchRec
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/tutorials/intermediate/torchrec_tutorial.html](https://pytorch.org/tutorials/intermediate/torchrec_tutorial.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Tip
+  prefs: []
+  type: TYPE_NORMAL
+- en: To get the most of this tutorial, we suggest using this [Colab Version](https://colab.research.google.com/github/pytorch/torchrec/blob/main/Torchrec_Introduction.ipynb).
+    This will allow you to experiment with the information presented below.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Follow along with the video below or on [youtube](https://www.youtube.com/watch?v=cjgj41dvSeQ).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[https://www.youtube.com/embed/cjgj41dvSeQ](https://www.youtube.com/embed/cjgj41dvSeQ)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: When building recommendation systems, we frequently want to represent entities
+    like products or pages with embeddings. For example, see Meta AI’s [Deep learning
+    recommendation model](https://arxiv.org/abs/1906.00091), or DLRM. As the number
+    of entities grow, the size of the embedding tables can exceed a single GPU’s memory.
+    A common practice is to shard the embedding table across devices, a type of model
+    parallelism. To that end, TorchRec introduces its primary API called [`DistributedModelParallel`](https://pytorch.org/torchrec/torchrec.distributed.html#torchrec.distributed.model_parallel.DistributedModelParallel),
+    or DMP. Like PyTorch’s DistributedDataParallel, DMP wraps a model to enable distributed
+    training.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Installation
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Requirements: python >= 3.7'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We highly recommend CUDA when using TorchRec (If using CUDA: cuda >= 11.0).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Overview
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'This tutorial will cover three pieces of TorchRec: the `nn.module` [`EmbeddingBagCollection`](https://pytorch.org/torchrec/torchrec.modules.html#torchrec.modules.embedding_modules.EmbeddingBagCollection),
+    the [`DistributedModelParallel`](https://pytorch.org/torchrec/torchrec.distributed.html#torchrec.distributed.model_parallel.DistributedModelParallel)
+    API, and the datastructure [`KeyedJaggedTensor`](https://pytorch.org/torchrec/torchrec.sparse.html#torchrec.sparse.jagged_tensor.JaggedTensor).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Distributed Setup
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: We setup our environment with torch.distributed. For more info on distributed,
+    see this [tutorial](https://pytorch.org/tutorials/beginner/dist_overview.html).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Here, we use one rank (the colab process) corresponding to our 1 colab GPU.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: From EmbeddingBag to EmbeddingBagCollection
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: PyTorch represents embeddings through [`torch.nn.Embedding`](https://pytorch.org/docs/stable/generated/torch.nn.Embedding.html)
+    and [`torch.nn.EmbeddingBag`](https://pytorch.org/docs/stable/generated/torch.nn.EmbeddingBag.html).
+    EmbeddingBag is a pooled version of Embedding.
+  prefs: []
+  type: TYPE_NORMAL
+- en: TorchRec extends these modules by creating collections of embeddings. We will
+    use [`EmbeddingBagCollection`](https://pytorch.org/torchrec/torchrec.modules.html#torchrec.modules.embedding_modules.EmbeddingBagCollection)
+    to represent a group of EmbeddingBags.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Here, we create an EmbeddingBagCollection (EBC) with two embedding bags. Each
+    table, `product_table` and `user_table`, is represented by a 64 dimension embedding
+    of size 4096\. Note how we initially allocate the EBC on device “meta”. This will
+    tell EBC to not allocate memory yet.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: DistributedModelParallel
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Now, we’re ready to wrap our model with [`DistributedModelParallel`](https://pytorch.org/torchrec/torchrec.distributed.html#torchrec.distributed.model_parallel.DistributedModelParallel)
+    (DMP). Instantiating DMP will:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Decide how to shard the model. DMP will collect the available ‘sharders’ and
+    come up with a ‘plan’ of the optimal way to shard the embedding table(s) (i.e.,
+    the EmbeddingBagCollection).
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Actually shard the model. This includes allocating memory for each embedding
+    table on the appropriate device(s).
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: In this toy example, since we have two EmbeddingTables and one GPU, TorchRec
+    will place both on the single GPU.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Query vanilla nn.EmbeddingBag with input and offsets
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: We query [`nn.Embedding`](https://pytorch.org/docs/stable/generated/torch.nn.Embedding.html)
+    and [`nn.EmbeddingBag`](https://pytorch.org/docs/stable/generated/torch.nn.EmbeddingBag.html)
+    with `input` and `offsets`. Input is a 1-D tensor containing the lookup values.
+    Offsets is a 1-D tensor where the sequence is a cumulative sum of the number of
+    values to pool per example.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Let’s look at an example, recreating the product EmbeddingBag above:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: Representing minibatches with KeyedJaggedTensor
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: We need an efficient representation of multiple examples of an arbitrary number
+    of entity IDs per feature per example. In order to enable this “jagged” representation,
+    we use the TorchRec datastructure [`KeyedJaggedTensor`](https://pytorch.org/torchrec/torchrec.sparse.html#torchrec.sparse.jagged_tensor.JaggedTensor)
+    (KJT).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s take a look at how to lookup a collection of two embedding bags, “product”
+    and “user”. Assume the minibatch is made up of three examples for three users.
+    The first of which has two product IDs, the second with none, and the third with
+    one product ID.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The query should be:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note that the KJT batch size is `batch_size = len(lengths)//len(keys)`. In the
+    above example, batch_size is 3.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Putting it all together, querying our distributed model with a KJT minibatch
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Finally, we can query our model using our minibatch of products and users.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The resulting lookup will contain a KeyedTensor, where each key (or feature)
+    contains a 2D tensor of size 3x64 (batch_size x embedding_dim).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: More resources
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: For more information, please see our [dlrm](https://github.com/pytorch/torchrec/tree/main/examples/dlrm)
+    example, which includes multinode training on the criteo terabyte dataset, using
+    Meta’s [DLRM](https://arxiv.org/abs/1906.00091).
+  prefs: []
+  type: TYPE_NORMAL

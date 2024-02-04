@@ -1,0 +1,204 @@
+- en: (Beta) Implementing High-Performance Transformers with Scaled Dot Product Attention
+    (SDPA)
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/tutorials/intermediate/scaled_dot_product_attention_tutorial.html](https://pytorch.org/tutorials/intermediate/scaled_dot_product_attention_tutorial.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Click [here](#sphx-glr-download-intermediate-scaled-dot-product-attention-tutorial-py)
+    to download the full example code
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Author:** [Driss Guessous](https://github.com/drisspg)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Summary
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In this tutorial, we want to highlight a new `torch.nn.functional` function
+    that can be helpful for implementing transformer architectures. The function is
+    named `torch.nn.functional.scaled_dot_product_attention`. For detailed description
+    of the function, see the [PyTorch documentation](https://pytorch.org/docs/master/generated/torch.nn.functional.scaled_dot_product_attention.html#torch.nn.functional.scaled_dot_product_attention).
+    This function has already been incorporated into `torch.nn.MultiheadAttention`
+    and `torch.nn.TransformerEncoderLayer`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Overview
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: At a high level, this PyTorch function calculates the scaled dot product attention
+    (SDPA) between query, key, and value according to the definition found in the
+    paper [Attention is all you need](https://arxiv.org/abs/1706.03762). While this
+    function can be written in PyTorch using existing functions, a fused implementation
+    can provide large performance benefits over a naive implementation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Fused implementations
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'For CUDA tensor inputs, the function will dispatch into one of the following
+    implementations:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness](https://arxiv.org/abs/2205.14135)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Memory-Efficient Attention](https://github.com/facebookresearch/xformers)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: A PyTorch implementation defined in C++
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: This tutorial requires PyTorch 2.0.0 or later.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Explicit Dispatcher Control
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: While the function will implicitly dispatch to one of the three implementations,
+    the user can also explicitly control the dispatch via the use of a context manager.
+    This context manager allows users to explicitly disable certain implementations.
+    If a user wants to ensure the function is indeed using the fastest implementation
+    for their specific inputs, the context manager can be used to sweep through measuring
+    performance.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Hardware dependence
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Depending on what machine you ran the above cell on and what hardware is available,
+    your results might be different. - If you don’t have a GPU and are running on
+    CPU then the context manager will have no effect and all three runs should return
+    similar timings. - Depending on what compute capability your graphics card supports
+    flash attention or memory efficient might have failed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Causal Self Attention
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Below is an example implementation of a multi-headed causal self attention block
+    inspired by [Andrej Karpathy NanoGPT](https://github.com/karpathy/nanoGPT) repository.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: '`NestedTensor` and Dense tensor support'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: SDPA supports both `NestedTensor` and Dense tensor inputs. `NestedTensors` handle
+    the case where the input is a batch of variable length sequences without needing
+    to pad each sequence to the maximum length in the batch. For more information
+    about `NestedTensors` see [torch.nested](https://pytorch.org/docs/stable/nested.html)
+    and [NestedTensors Tutorial](https://pytorch.org/tutorials/prototype/nestedtensor.html).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Using SDPA with `torch.compile`
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: With the release of PyTorch 2.0, a new feature called `torch.compile()` has
+    been introduced, which can provide significant performance improvements over eager
+    mode. Scaled dot product attention is fully composable with `torch.compile()`.
+    To demonstrate this, let’s compile the `CausalSelfAttention` module using `torch.compile()`
+    and observe the resulting performance improvements.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The exact execution time is dependent on machine, however the results for mine:
+    The non compiled module runs in 166.616 microseconds The compiled module runs
+    in 166.726 microseconds That is not what we were expecting. Let’s dig a little
+    deeper. PyTorch comes with an amazing built-in profiler that you can use to inspect
+    the performance characteristics of your code.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: The previous code snippet generates a report of the top 10 PyTorch functions
+    that consumed the most GPU execution time, for both the compiled and non-compiled
+    module. The analysis reveals that the majority of time spent on the GPU is concentrated
+    on the same set of functions for both modules. The reason for this here is that
+    `torch.compile` is very good at removing the framework overhead associated with
+    PyTorch. If your model is launching large, efficient CUDA kernels, which in this
+    case `CausalSelfAttention` is, then the overhead of PyTorch can be hidden.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In reality, your module does not normally consist of a singular `CausalSelfAttention`
+    block. When experimenting with [Andrej Karpathy NanoGPT](https://github.com/karpathy/nanoGPT)
+    repository, compiling the module took the time per train step from: `6090.49ms`
+    to `3273.17ms`! This was done on commit: `ae3a8d5` of NanoGPT training on the
+    Shakespeare dataset.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Conclusion
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: In this tutorial, we have demonstrated the basic usage of `torch.nn.functional.scaled_dot_product_attention`.
+    We have shown how the `sdp_kernel` context manager can be used to assert a certain
+    implementation is used on GPU. As well, we built a simple `CausalSelfAttention`
+    module that works with `NestedTensor` and is torch compilable. In the process
+    we have shown how to the profiling tools can be used to explore the performance
+    characteristics of a user defined module.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Total running time of the script:** ( 0 minutes 7.800 seconds)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Python source code: scaled_dot_product_attention_tutorial.py`](../_downloads/e40ced94a143a49f0f8745e10c981139/scaled_dot_product_attention_tutorial.py)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Jupyter notebook: scaled_dot_product_attention_tutorial.ipynb`](../_downloads/fc133e4ffc6275f9d1c3a74ddd10e0a2/scaled_dot_product_attention_tutorial.ipynb)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  prefs: []
+  type: TYPE_NORMAL

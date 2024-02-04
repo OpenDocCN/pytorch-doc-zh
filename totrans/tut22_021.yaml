@@ -1,0 +1,305 @@
+- en: Training with PyTorch
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/tutorials/beginner/introyt/trainingyt.html](https://pytorch.org/tutorials/beginner/introyt/trainingyt.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Click [here](#sphx-glr-download-beginner-introyt-trainingyt-py) to download
+    the full example code
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Introduction](introyt1_tutorial.html) || [Tensors](tensors_deeper_tutorial.html)
+    || [Autograd](autogradyt_tutorial.html) || [Building Models](modelsyt_tutorial.html)
+    || [TensorBoard Support](tensorboardyt_tutorial.html) || **Training Models** ||
+    [Model Understanding](captumyt.html)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Follow along with the video below or on [youtube](https://www.youtube.com/watch?v=jF43_wj_DCQ).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[https://www.youtube.com/embed/jF43_wj_DCQ](https://www.youtube.com/embed/jF43_wj_DCQ)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Introduction
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'In past videos, we’ve discussed and demonstrated:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Building models with the neural network layers and functions of the torch.nn
+    module
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The mechanics of automated gradient computation, which is central to gradient-based
+    model training
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Using TensorBoard to visualize training progress and other activities
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'In this video, we’ll be adding some new tools to your inventory:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: We’ll get familiar with the dataset and dataloader abstractions, and how they
+    ease the process of feeding data to your model during a training loop
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: We’ll discuss specific loss functions and when to use them
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: We’ll look at PyTorch optimizers, which implement algorithms to adjust model
+    weights based on the outcome of a loss function
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Finally, we’ll pull all of these together and see a full PyTorch training loop
+    in action.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Dataset and DataLoader
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The `Dataset` and `DataLoader` classes encapsulate the process of pulling your
+    data from storage and exposing it to your training loop in batches.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The `Dataset` is responsible for accessing and processing single instances of
+    data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The `DataLoader` pulls instances of data from the `Dataset` (either automatically
+    or with a sampler that you define), collects them in batches, and returns them
+    for consumption by your training loop. The `DataLoader` works with all kinds of
+    datasets, regardless of the type of data they contain.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For this tutorial, we’ll be using the Fashion-MNIST dataset provided by TorchVision.
+    We use `torchvision.transforms.Normalize()` to zero-center and normalize the distribution
+    of the image tile content, and download both training and validation data splits.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'As always, let’s visualize the data as a sanity check:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: '![trainingyt](../Images/c62745d33703f5977e18e6e3956d7fe6.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: The Model
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The model we’ll use in this example is a variant of LeNet-5 - it should be familiar
+    if you’ve watched the previous videos in this series.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Loss Function
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: For this example, we’ll be using a cross-entropy loss. For demonstration purposes,
+    we’ll create batches of dummy output and label values, run them through the loss
+    function, and examine the result.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: Optimizer
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: For this example, we’ll be using simple [stochastic gradient descent](https://pytorch.org/docs/stable/optim.html)
+    with momentum.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'It can be instructive to try some variations on this optimization scheme:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Learning rate determines the size of the steps the optimizer takes. What does
+    a different learning rate do to the your training results, in terms of accuracy
+    and convergence time?
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Momentum nudges the optimizer in the direction of strongest gradient over multiple
+    steps. What does changing this value do to your results?
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Try some different optimization algorithms, such as averaged SGD, Adagrad, or
+    Adam. How do your results differ?
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: The Training Loop
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Below, we have a function that performs one training epoch. It enumerates data
+    from the DataLoader, and on each pass of the loop does the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Gets a batch of training data from the DataLoader
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Zeros the optimizer’s gradients
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Performs an inference - that is, gets predictions from the model for an input
+    batch
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Calculates the loss for that set of predictions vs. the labels on the dataset
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Calculates the backward gradients over the learning weights
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Tells the optimizer to perform one learning step - that is, adjust the model’s
+    learning weights based on the observed gradients for this batch, according to
+    the optimization algorithm we chose
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: It reports on the loss for every 1000 batches.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Finally, it reports the average per-batch loss for the last 1000 batches, for
+    comparison with a validation run
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: Per-Epoch Activity
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'There are a couple of things we’ll want to do once per epoch:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Perform validation by checking our relative loss on a set of data that was not
+    used for training, and report this
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Save a copy of the model
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Here, we’ll do our reporting in TensorBoard. This will require going to the
+    command line to start TensorBoard, and opening it in another browser tab.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'To load a saved version of the model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: Once you’ve loaded the model, it’s ready for whatever you need it for - more
+    training, inference, or analysis.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that if your model has constructor parameters that affect model structure,
+    you’ll need to provide them and configure the model identically to the state in
+    which it was saved.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Other Resources
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Docs on the [data utilities](https://pytorch.org/docs/stable/data.html), including
+    Dataset and DataLoader, at pytorch.org
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: A [note on the use of pinned memory](https://pytorch.org/docs/stable/notes/cuda.html#cuda-memory-pinning)
+    for GPU training
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Documentation on the datasets available in [TorchVision](https://pytorch.org/vision/stable/datasets.html),
+    [TorchText](https://pytorch.org/text/stable/datasets.html), and [TorchAudio](https://pytorch.org/audio/stable/datasets.html)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Documentation on the [loss functions](https://pytorch.org/docs/stable/nn.html#loss-functions)
+    available in PyTorch
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Documentation on the [torch.optim package](https://pytorch.org/docs/stable/optim.html),
+    which includes optimizers and related tools, such as learning rate scheduling
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: A detailed [tutorial on saving and loading models](https://pytorch.org/tutorials/beginner/saving_loading_models.html)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The [Tutorials section of pytorch.org](https://pytorch.org/tutorials/) contains
+    tutorials on a broad variety of training tasks, including classification in different
+    domains, generative adversarial networks, reinforcement learning, and more
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Total running time of the script:** ( 5 minutes 4.557 seconds)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Python source code: trainingyt.py`](../../_downloads/9f7a57e14d8a2ebf975344f34d6ef247/trainingyt.py)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Jupyter notebook: trainingyt.ipynb`](../../_downloads/770632dd3941d2a51b831c52ded57aa2/trainingyt.ipynb)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  prefs: []
+  type: TYPE_NORMAL

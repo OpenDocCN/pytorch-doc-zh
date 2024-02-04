@@ -1,0 +1,391 @@
+- en: Advanced Model Training with Fully Sharded Data Parallel (FSDP)
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/tutorials/intermediate/FSDP_adavnced_tutorial.html](https://pytorch.org/tutorials/intermediate/FSDP_adavnced_tutorial.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: '**Author**: [Hamid Shojanazeri](https://github.com/HamidShojanazeri), [Less
+    Wright](https://github.com/lessw2020), [Rohan Varma](https://github.com/rohan-varma/),
+    [Yanli Zhao](https://github.com/zhaojuanmao)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: This tutorial introduces more advanced features of Fully Sharded Data Parallel
+    (FSDP) as part of the PyTorch 1.12 release. To get familiar with FSDP, please
+    refer to the [FSDP getting started tutorial](https://pytorch.org/tutorials/intermediate/FSDP_tutorial.html).
+  prefs: []
+  type: TYPE_NORMAL
+- en: In this tutorial, we fine-tune a HuggingFace (HF) T5 model with FSDP for text
+    summarization as a working example.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The example uses Wikihow and for simplicity, we will showcase the training on
+    a single node, P4dn instance with 8 A100 GPUs. We will soon have a blog post on
+    large scale FSDP training on a multi-node cluster, please stay tuned for that
+    on the PyTorch medium channel.
+  prefs: []
+  type: TYPE_NORMAL
+- en: FSDP is a production ready package with focus on ease of use, performance, and
+    long-term support. One of the main benefits of FSDP is reducing the memory footprint
+    on each GPU. This enables training of larger models with lower total memory vs
+    DDP, and leverages the overlap of computation and communication to train models
+    efficiently. This reduced memory pressure can be leveraged to either train larger
+    models or increase batch size, potentially helping overall training throughput.
+    You can read more about PyTorch FSDP [here](https://pytorch.org/blog/introducing-pytorch-fully-sharded-data-parallel-api/).
+  prefs: []
+  type: TYPE_NORMAL
+- en: FSDP Features in This Tutorial
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Transformer Auto Wrap Policy
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Mixed Precision
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Initializing FSDP Model on Device
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Sharding Strategy
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Backward Prefetch
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Model Checkpoint Saving via Streaming to CPU
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Recap on How FSDP Works
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'At a high level FDSP works as follow:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*In constructor*'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Shard model parameters and each rank only keeps its own shard
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*In forward pass*'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Run all_gather to collect all shards from all ranks to recover the full parameter
+    for this FSDP unit Run forward computation
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Discard non-owned parameter shards it has just collected to free memory
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*In backward pass*'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Run all_gather to collect all shards from all ranks to recover the full parameter
+    in this FSDP unit Run backward computation
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Discard non-owned parameters to free memory.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Run reduce_scatter to sync gradients
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Fine-tuning HF T5
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: HF T5 pre-trained models are available in four different sizes, ranging from
+    small with 60 Million parameters to XXL with 11 Billion parameters. In this tutorial,
+    we demonstrate the fine-tuning of a T5 3B with FSDP for text summarization using
+    WikiHow dataset. The main focus of this tutorial is to highlight different available
+    features in FSDP that are helpful for training large scale model above 3B parameters.
+    Also, we cover specific features for Transformer based models. The code for this
+    tutorial is available in [Pytorch examples](https://github.com/pytorch/examples/tree/main/distributed/FSDP/).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Setup*'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 1.1 Install PyTorch Nightlies
+  prefs: []
+  type: TYPE_NORMAL
+- en: We will install PyTorch nightlies, as some of the features such as activation
+    checkpointing is available in nightlies and will be added in next PyTorch release
+    after 1.12.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: 1.2 Dataset Setup
+  prefs: []
+  type: TYPE_NORMAL
+- en: Please create a data folder, download the WikiHow dataset from [wikihowAll.csv](https://ucsb.app.box.com/s/ap23l8gafpezf4tq3wapr6u8241zz358)
+    and [wikihowSep.cs](https://ucsb.app.box.com/s/7yq601ijl1lzvlfu4rjdbbxforzd2oag),
+    and place them in the data folder. We will use the wikihow dataset from [summarization_dataset](https://github.com/pytorch/examples/blob/main/distributed/FSDP/summarization_dataset.py).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Next, we add the following code snippets to a Python script “T5_training.py”.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: The full source code for this tutorial is available in [PyTorch examples](https://github.com/pytorch/examples/tree/main/distributed/FSDP/).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '1.3 Import necessary packages:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: 1.4 Distributed training setup. Here we use two helper functions to initialize
+    the processes for distributed training, and then to clean up after training completion.
+    In this tutorial, we are going to use torch elastic, using [torchrun](https://pytorch.org/docs/stable/elastic/run.html)
+    , which will set the worker RANK and WORLD_SIZE automatically.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: '2.1 Set up the HuggingFace T5 model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: We also, add couple of helper functions here for date and formatting memory
+    metrics.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: '2.2 Define a train function:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: '2.3 Define a validation function:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: '2.4 Define a distributed train function that wraps the model in FSDP:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: '2.5 Parse the arguments and set the main function:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'To run the the training using torchrun:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: '## Transformer Wrapping Policy'
+  prefs: []
+  type: TYPE_NORMAL
+- en: As discussed in the [previous tutorial](https://pytorch.org/tutorials/intermediate/FSDP_tutorial.html),
+    auto_wrap_policy is one of the FSDP features that make it easy to automatically
+    shard a given model and put the model, optimizer and gradient shards into distinct
+    FSDP units.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For some architectures such as Transformer encoder-decoders, some parts of the
+    model such as embedding table is being shared with both encoder and decoder. In
+    this case, we need to place the embedding table in the outer FSDP unit so that
+    it could be accessed from both encoder and decoder. In addition, by registering
+    the layer class for a transformer, the sharding plan can be made much more communication
+    efficient. In PyTorch 1.12, FSDP added this support and now we have a wrapping
+    policy for transfomers.
+  prefs: []
+  type: TYPE_NORMAL
+- en: It can be created as follows, where the T5Block represents the T5 transformer
+    layer class (holding MHSA and FFN).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: To see the wrapped model, you can easily print the model and visually inspect
+    the sharding and FSDP units as well.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Mixed Precision
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: FSDP supports flexible mixed precision training allowing for arbitrary reduced
+    precision types (such as fp16 or bfloat16). Currently BFloat16 is only available
+    on Ampere GPUs, so you need to confirm native support before you use it. On V100s
+    for example, BFloat16 can still be run but due to it running non-natively, it
+    can result in significant slowdowns.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'To check if BFloat16 is natively supported, you can use the following :'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'One of the advantages of mixed percision in FSDP is providing granular control
+    over different precision levels for parameters, gradients, and buffers as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note that if a certain type (parameter, reduce, buffer) is not specified, they
+    will not be casted at all.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'This flexibility allows users fine grained control, such as only setting gradient
+    communication to happen in reduced precision, and all parameters / buffer computation
+    to be done in full precision. This is potentially useful in cases where intra-node
+    communication is the main bottleneck and parameters / buffers must be in full
+    precision to avoid accuracy issues. This can be done with the following policy:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'In 2.4 we just add the relevant mixed precision policy to the FSDP wrapper:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: In our experiments, we have observed up to 4x speed up by using BFloat16 for
+    training and memory reduction of approximately 30% in some experiments that can
+    be used for batch size increases.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Intializing FSDP Model on Device
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'In 1.12, FSDP supports a device_id argument meant to initialize input CPU module
+    on the device given by device_id. This is useful when the entire model does not
+    fit on a single GPU, but fits in a host’s CPU memory. When device_id is specified,
+    FSDP will move the model to the specified device on a per-FSDP unit basis, avoiding
+    GPU OOM issues while initializing several times faster than CPU-based initialization:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: Sharding Strategy
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'FSDP sharding strategy by default is set to fully shard the model parameters,
+    gradients and optimizer states get sharded across all ranks. (also termed Zero3
+    sharding). In case you are interested to have the Zero2 sharding strategy, where
+    only optimizer states and gradients are sharded, FSDP support this feature by
+    passing the Sharding strategy by using “ShardingStrategy.SHARD_GRAD_OP”, instead
+    of “ShardingStrategy.FULL_SHARD” to the FSDP initialization as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: This will reduce the communication overhead in FSDP, in this case, it holds
+    full parameters after forward and through the backwards pass.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This saves an all_gather during backwards so there is less communication at
+    the cost of a higher memory footprint. Note that full model params are freed at
+    the end of backwards and all_gather will happen on the next forward pass.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Backward Prefetch
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'The backward prefetch setting controls the timing of when the next FSDP unit’s
+    parameters should be requested. By setting it to BACKWARD_PRE, the next FSDP’s
+    unit params can begin to be requested and arrive sooner before the computation
+    of the current unit starts. This overlaps the all_gather communication and gradient
+    computation which can increase the training speed in exchange for slightly higher
+    memory consumption. It can be utilized in the FSDP wrapper in 2.4 as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: backward_prefetch has two modes, BACKWARD_PRE and BACKWARD_POST. BACKWARD_POST
+    means that the next FSDP unit’s params will not be requested until the current
+    FSDP unit processing is complete, thus minimizing memory overhead. In some cases,
+    using BACKWARD_PRE can increase model training speed up to 2-10%, with even higher
+    speed improvements noted for larger models.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Model Checkpoint Saving, by streaming to the Rank0 CPU
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: To save model checkpoints using FULL_STATE_DICT saving which saves model in
+    the same fashion as a local model, PyTorch 1.12 offers a few utilities to support
+    the saving of larger models.
+  prefs: []
+  type: TYPE_NORMAL
+- en: First, a FullStateDictConfig can be specified, allowing the state_dict to be
+    populated on rank 0 only and offloaded to the CPU.
+  prefs: []
+  type: TYPE_NORMAL
+- en: When using this configuration, FSDP will allgather model parameters, offloading
+    them to the CPU one by one, only on rank 0\. When the state_dict is finally saved,
+    it will only be populated on rank 0 and contain CPU tensors. This avoids potential
+    OOM for models that are larger than a single GPU memory and allows users to checkpoint
+    models whose size is roughly the available CPU RAM on the user’s machine.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'This feature can be run as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: Summary
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In this tutorial, we have introduced many new features for FSDP available in
+    Pytorch 1.12 and used HF T5 as the running example. Using the proper wrapping
+    policy especially for transformer models, along with mixed precision and backward
+    prefetch should speed up your training runs. Also, features such as initializing
+    the model on device, and checkpoint saving via streaming to CPU should help to
+    avoid OOM error in dealing with large models.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We are actively working to add new features to FSDP for the next release. If
+    you have feedback, feature requests, questions or are encountering issues using
+    FSDP, please feel free to contact us by opening an issue in the [PyTorch Github
+    repository](https://github.com/pytorch/pytorch).
+  prefs: []
+  type: TYPE_NORMAL

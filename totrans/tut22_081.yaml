@@ -1,0 +1,952 @@
+- en: Using the PyTorch C++ Frontend
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/tutorials/advanced/cpp_frontend.html](https://pytorch.org/tutorials/advanced/cpp_frontend.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: The PyTorch C++ frontend is a pure C++ interface to the PyTorch machine learning
+    framework. While the primary interface to PyTorch naturally is Python, this Python
+    API sits atop a substantial C++ codebase providing foundational data structures
+    and functionality such as tensors and automatic differentiation. The C++ frontend
+    exposes a pure C++11 API that extends this underlying C++ codebase with tools
+    required for machine learning training and inference. This includes a built-in
+    collection of common components for neural network modeling; an API to extend
+    this collection with custom modules; a library of popular optimization algorithms
+    such as stochastic gradient descent; a parallel data loader with an API to define
+    and load datasets; serialization routines and more.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This tutorial will walk you through an end-to-end example of training a model
+    with the C++ frontend. Concretely, we will be training a [DCGAN](https://arxiv.org/abs/1511.06434)
+    – a kind of generative model – to generate images of MNIST digits. While conceptually
+    a simple example, it should be enough to give you a whirlwind overview of the
+    PyTorch C++ frontend and wet your appetite for training more complex models. We
+    will begin with some motivating words for why you would want to use the C++ frontend
+    to begin with, and then dive straight into defining and training our model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tip
+  prefs: []
+  type: TYPE_NORMAL
+- en: Watch [this lightning talk from CppCon 2018](https://www.youtube.com/watch?v=auRPXMMHJzc)
+    for a quick (and humorous) presentation on the C++ frontend.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tip
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[This note](https://pytorch.org/cppdocs/frontend.html) provides a sweeping
+    overview of the C++ frontend’s components and design philosophy.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tip
+  prefs: []
+  type: TYPE_NORMAL
+- en: Documentation for the PyTorch C++ ecosystem is available at [https://pytorch.org/cppdocs](https://pytorch.org/cppdocs).
+    There you can find high level descriptions as well as API-level documentation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Motivation
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Before we embark on our exciting journey of GANs and MNIST digits, let’s take
+    a step back and discuss why you would want to use the C++ frontend instead of
+    the Python one to begin with. We (the PyTorch team) created the C++ frontend to
+    enable research in environments in which Python cannot be used, or is simply not
+    the right tool for the job. Examples for such environments include:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Low Latency Systems**: You may want to do reinforcement learning research
+    in a pure C++ game engine with high frames-per-second and low latency requirements.
+    Using a pure C++ library is a much better fit to such an environment than a Python
+    library. Python may not be tractable at all because of the slowness of the Python
+    interpreter.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Highly Multithreaded Environments**: Due to the Global Interpreter Lock (GIL),
+    Python cannot run more than one system thread at a time. Multiprocessing is an
+    alternative, but not as scalable and has significant shortcomings. C++ has no
+    such constraints and threads are easy to use and create. Models requiring heavy
+    parallelization, like those used in [Deep Neuroevolution](https://eng.uber.com/deep-neuroevolution/),
+    can benefit from this.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Existing C++ Codebases**: You may be the owner of an existing C++ application
+    doing anything from serving web pages in a backend server to rendering 3D graphics
+    in photo editing software, and wish to integrate machine learning methods into
+    your system. The C++ frontend allows you to remain in C++ and spare yourself the
+    hassle of binding back and forth between Python and C++, while retaining much
+    of the flexibility and intuitiveness of the traditional PyTorch (Python) experience.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The C++ frontend is not intended to compete with the Python frontend. It is
+    meant to complement it. We know researchers and engineers alike love PyTorch for
+    its simplicity, flexibility and intuitive API. Our goal is to make sure you can
+    take advantage of these core design principles in every possible environment,
+    including the ones described above. If one of these scenarios describes your use
+    case well, or if you are simply interested or curious, follow along as we explore
+    the C++ frontend in detail in the following paragraphs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tip
+  prefs: []
+  type: TYPE_NORMAL
+- en: The C++ frontend tries to provide an API as close as possible to that of the
+    Python frontend. If you are experienced with the Python frontend and ever ask
+    yourself “how do I do X with the C++ frontend?”, write your code the way you would
+    in Python, and more often than not the same functions and methods will be available
+    in C++ as in Python (just remember to replace dots with double colons).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Writing a Basic Application
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Let’s begin by writing a minimal C++ application to verify that we’re on the
+    same page regarding our setup and build environment. First, you will need to grab
+    a copy of the *LibTorch* distribution – our ready-built zip archive that packages
+    all relevant headers, libraries and CMake build files required to use the C++
+    frontend. The LibTorch distribution is available for download on the [PyTorch
+    website](https://pytorch.org/get-started/locally/) for Linux, MacOS and Windows.
+    The rest of this tutorial will assume a basic Ubuntu Linux environment, however
+    you are free to follow along on MacOS or Windows too.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tip
+  prefs: []
+  type: TYPE_NORMAL
+- en: The note on [Installing C++ Distributions of PyTorch](https://pytorch.org/cppdocs/installing.html)
+    describes the following steps in more detail.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tip
+  prefs: []
+  type: TYPE_NORMAL
+- en: On Windows, debug and release builds are not ABI-compatible. If you plan to
+    build your project in debug mode, please try the debug version of LibTorch. Also,
+    make sure you specify the correct configuration in the `cmake --build .` line
+    below.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The first step is to download the LibTorch distribution locally, via the link
+    retrieved from the PyTorch website. For a vanilla Ubuntu Linux environment, this
+    means running:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Next, let’s write a tiny C++ file called `dcgan.cpp` that includes `torch/torch.h`
+    and for now simply prints out a three by three identity matrix:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'To build this tiny application as well as our full-fledged training script
+    later on we’ll use this `CMakeLists.txt` file:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: While CMake is the recommended build system for LibTorch, it is not a hard requirement.
+    You can also use Visual Studio project files, QMake, plain Makefiles or any other
+    build environment you feel comfortable with. However, we do not provide out-of-the-box
+    support for this.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Make note of line 4 in the above CMake file: `find_package(Torch REQUIRED)`.
+    This instructs CMake to find the build configuration for the LibTorch library.
+    In order for CMake to know *where* to find these files, we must set the `CMAKE_PREFIX_PATH`
+    when invoking `cmake`. Before we do this, let’s agree on the following directory
+    structure for our `dcgan` application:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Further, I will refer to the path to the unzipped LibTorch distribution as
+    `/path/to/libtorch`. Note that this **must be an absolute path**. In particular,
+    setting `CMAKE_PREFIX_PATH` to something like `../../libtorch` will break in unexpected
+    ways. Instead, write `$PWD/../../libtorch` to get the corresponding absolute path.
+    Now, we are ready to build our application:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Above, we first created a `build` folder inside of our `dcgan` directory, entered
+    this folder, ran the `cmake` command to generate the necessary build (Make) files
+    and finally compiled the project successfully by running `cmake --build . --config
+    Release`. We are now all set to execute our minimal binary and complete this section
+    on basic project configuration:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: Looks like an identity matrix to me!
+  prefs: []
+  type: TYPE_NORMAL
+- en: Defining the Neural Network Models
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Now that we have our basic environment configured, we can dive into the much
+    more interesting parts of this tutorial. First, we will discuss how to define
+    and interact with modules in the C++ frontend. We’ll begin with basic, small-scale
+    example modules and then implement a full-fledged GAN using the extensive library
+    of built-in modules provided by the C++ frontend.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Module API Basics
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'In line with the Python interface, neural networks based on the C++ frontend
+    are composed of reusable building blocks called *modules*. There is a base module
+    class from which all other modules are derived. In Python, this class is `torch.nn.Module`
+    and in C++ it is `torch::nn::Module`. Besides a `forward()` method that implements
+    the algorithm the module encapsulates, a module usually contains any of three
+    kinds of sub-objects: parameters, buffers and submodules.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters and buffers store state in form of tensors. Parameters record gradients,
+    while buffers do not. Parameters are usually the trainable weights of your neural
+    network. Examples of buffers include means and variances for batch normalization.
+    In order to re-use particular blocks of logic and state, the PyTorch API allows
+    modules to be nested. A nested module is termed a *submodule*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters, buffers and submodules must be explicitly registered. Once registered,
+    methods like `parameters()` or `buffers()` can be used to retrieve a container
+    of all parameters in the entire (nested) module hierarchy. Similarly, methods
+    like `to(...)`, where e.g. `to(torch::kCUDA)` moves all parameters and buffers
+    from CPU to CUDA memory, work on the entire module hierarchy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Defining a Module and Registering Parameters
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'To put these words into code, let’s consider this simple module written in
+    the Python interface:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'In C++, it would look like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Just like in Python, we define a class called `Net` (for simplicity here a `struct`
+    instead of a `class`) and derive it from the module base class. Inside the constructor,
+    we create tensors using `torch::randn` just like we use `torch.randn` in Python.
+    One interesting difference is how we register the parameters. In Python, we wrap
+    the tensors with the `torch.nn.Parameter` class, while in C++ we have to pass
+    the tensor through the `register_parameter` method instead. The reason for this
+    is that the Python API can detect that an attribute is of type `torch.nn.Parameter`
+    and automatically registers such tensors. In C++, reflection is very limited,
+    so a more traditional (and less magical) approach is provided.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Registering Submodules and Traversing the Module Hierarchy
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'In the same way we can register parameters, we can also register submodules.
+    In Python, submodules are automatically detected and registered when they are
+    assigned as an attribute of a module:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'This allows, for example, to use the `parameters()` method to recursively access
+    all parameters in our module hierarchy:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'To register submodules in C++, use the aptly named `register_module()` method
+    to register a module like `torch::nn::Linear`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: Tip
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can find the full list of available built-in modules like `torch::nn::Linear`,
+    `torch::nn::Dropout` or `torch::nn::Conv2d` in the documentation of the `torch::nn`
+    namespace [here](https://pytorch.org/cppdocs/api/namespace_torch__nn.html).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'One subtlety about the above code is why the submodule was created in the constructor’s
+    initializer list, while the parameter was created inside the constructor body.
+    There is a good reason for this, which we’ll touch upon this in the section on
+    the C++ frontend’s *ownership model* further below. The end result, however, is
+    that we can recursively access our module tree’s parameters just like in Python.
+    Calling `parameters()` returns a `std::vector<torch::Tensor>`, which we can iterate
+    over:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'which prints:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'with three parameters just like in Python. To also see the names of these parameters,
+    the C++ API provides a `named_parameters()` method which returns an `OrderedDict`
+    just like in Python:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'which we can execute again to see the output:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[The documentation](https://pytorch.org/cppdocs/api/classtorch_1_1nn_1_1_module.html#exhale-class-classtorch-1-1nn-1-1-module)
+    for `torch::nn::Module` contains the full list of methods that operate on the
+    module hierarchy.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Running the Network in Forward Mode
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'To execute the network in C++, we simply call the `forward()` method we defined
+    ourselves:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'which prints something like:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: Module Ownership
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: At this point, we know how to define a module in C++, register parameters, register
+    submodules, traverse the module hierarchy via methods like `parameters()` and
+    finally run the module’s `forward()` method. While there are many more methods,
+    classes and topics to devour in the C++ API, I will refer you to [docs](https://pytorch.org/cppdocs/api/namespace_torch__nn.html)
+    for the full menu. We’ll also touch upon some more concepts as we implement the
+    DCGAN model and end-to-end training pipeline in just a second. Before we do so,
+    let me briefly touch upon the *ownership model* the C++ frontend provides for
+    subclasses of `torch::nn::Module`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For this discussion, the ownership model refers to the way modules are stored
+    and passed around – which determines who or what *owns* a particular module instance.
+    In Python, objects are always allocated dynamically (on the heap) and have reference
+    semantics. This is very easy to work with and straightforward to understand. In
+    fact, in Python, you can largely forget about where objects live and how they
+    get referenced, and focus on getting things done.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'C++, being a lower level language, provides more options in this realm. This
+    increases complexity and heavily influences the design and ergonomics of the C++
+    frontend. In particular, for modules in the C++ frontend, we have the option of
+    using *either* value semantics *or* reference semantics. The first case is the
+    simplest and was shown in the examples thus far: module objects are allocated
+    on the stack and when passed to a function, can be either copied, moved (with
+    `std::move`) or taken by reference or by pointer:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: For the second case – reference semantics – we can use `std::shared_ptr`. The
+    advantage of reference semantics is that, like in Python, it reduces the cognitive
+    overhead of thinking about how modules must be passed to functions and how arguments
+    must be declared (assuming you use `shared_ptr` everywhere).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'In our experience, researchers coming from dynamic languages greatly prefer
+    reference semantics over value semantics, even though the latter is more “native”
+    to C++. It is also important to note that `torch::nn::Module`’s design, in order
+    to stay close to the ergonomics of the Python API, relies on shared ownership.
+    For example, take our earlier (here shortened) definition of `Net`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: In order to use the `linear` submodule, we want to store it directly in our
+    class. However, we also want the module base class to know about and have access
+    to this submodule. For this, it must store a reference to this submodule. At this
+    point, we have already arrived at the need for shared ownership. Both the `torch::nn::Module`
+    class and concrete `Net` class require a reference to the submodule. For this
+    reason, the base class stores modules as `shared_ptr`s, and therefore the concrete
+    class must too.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'But wait! I don’t see any mention of `shared_ptr` in the above code! Why is
+    that? Well, because `std::shared_ptr<MyModule>` is a hell of a lot to type. To
+    keep our researchers productive, we came up with an elaborate scheme to hide the
+    mention of `shared_ptr` – a benefit usually reserved for value semantics – while
+    retaining reference semantics. To understand how this works, we can take a look
+    at a simplified definition of the `torch::nn::Linear` module in the core library
+    (the full definition is [here](https://github.com/pytorch/pytorch/blob/master/torch/csrc/api/include/torch/nn/modules/linear.h)):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'In brief: the module is not called `Linear`, but `LinearImpl`. A macro, `TORCH_MODULE`
+    then defines the actual `Linear` class. This “generated” class is effectively
+    a wrapper over a `std::shared_ptr<LinearImpl>`. It is a wrapper instead of a simple
+    typedef so that, among other things, constructors still work as expected, i.e.
+    you can still write `torch::nn::Linear(3, 4)` instead of `std::make_shared<LinearImpl>(3,
+    4)`. We call the class created by the macro the module *holder*. Like with (shared)
+    pointers, you access the underlying object using the arrow operator (like `model->forward(...)`).
+    The end result is an ownership model that resembles that of the Python API quite
+    closely. Reference semantics become the default, but without the extra typing
+    of `std::shared_ptr` or `std::make_shared`. For our `Net`, using the module holder
+    API looks like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: There is one subtle issue that deserves mention here. A default constructed
+    `std::shared_ptr` is “empty”, i.e. contains a null pointer. What is a default
+    constructed `Linear` or `Net`? Well, it’s a tricky choice. We could say it should
+    be an empty (null) `std::shared_ptr<LinearImpl>`. However, recall that `Linear(3,
+    4)` is the same as `std::make_shared<LinearImpl>(3, 4)`. This means that if we
+    had decided that `Linear linear;` should be a null pointer, then there would be
+    no way to construct a module that does not take any constructor arguments, or
+    defaults all of them. For this reason, in the current API, a default constructed
+    module holder (like `Linear()`) invokes the default constructor of the underlying
+    module (`LinearImpl()`). If the underlying module does not have a default constructor,
+    you get a compiler error. To instead construct the empty holder, you can pass
+    `nullptr` to the constructor of the holder.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In practice, this means you can use submodules either like shown earlier, where
+    the module is registered and constructed in the *initializer list*:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'or you can first construct the holder with a null pointer and then assign to
+    it in the constructor (more familiar for Pythonistas):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'In conclusion: Which ownership model – which semantics – should you use? The
+    C++ frontend’s API best supports the ownership model provided by module holders.
+    The only disadvantage of this mechanism is one extra line of boilerplate below
+    the module declaration. That said, the simplest model is still the value semantics
+    model shown in the introduction to C++ modules. For small, simple scripts, you
+    may get away with it too. But you’ll find sooner or later that, for technical
+    reasons, it is not always supported. For example, the serialization API (`torch::save`
+    and `torch::load`) only supports module holders (or plain `shared_ptr`). As such,
+    the module holder API is the recommended way of defining modules with the C++
+    frontend, and we will use this API in this tutorial henceforth.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Defining the DCGAN Modules
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'We now have the necessary background and introduction to define the modules
+    for the machine learning task we want to solve in this post. To recap: our task
+    is to generate images of digits from the [MNIST dataset](http://yann.lecun.com/exdb/mnist/).
+    We want to use a [generative adversarial network (GAN)](https://papers.nips.cc/paper/5423-generative-adversarial-nets.pdf)
+    to solve this task. In particular, we’ll use a [DCGAN architecture](https://arxiv.org/abs/1511.06434)
+    – one of the first and simplest of its kind, but entirely sufficient for this
+    task.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tip
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can find the full source code presented in this tutorial [in this repository](https://github.com/pytorch/examples/tree/master/cpp/dcgan).
+  prefs: []
+  type: TYPE_NORMAL
+- en: What was a GAN aGAN?
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'A GAN consists of two distinct neural network models: a *generator* and a *discriminator*.
+    The generator receives samples from a noise distribution, and its aim is to transform
+    each noise sample into an image that resembles those of a target distribution
+    – in our case the MNIST dataset. The discriminator in turn receives either *real*
+    images from the MNIST dataset, or *fake* images from the generator. It is asked
+    to emit a probability judging how real (closer to `1`) or fake (closer to `0`)
+    a particular image is. Feedback from the discriminator on how real the images
+    produced by the generator are is used to train the generator. Feedback on how
+    good of an eye for authenticity the discriminator has is used to optimize the
+    discriminator. In theory, a delicate balance between the generator and discriminator
+    makes them improve in tandem, leading to the generator producing images indistinguishable
+    from the target distribution, fooling the discriminator’s (by then) excellent
+    eye into emitting a probability of `0.5` for both real and fake images. For us,
+    the end result is a machine that receives noise as input and generates realistic
+    images of digits as its output.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The Generator Module
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'We begin by defining the generator module, which consists of a series of transposed
+    2D convolutions, batch normalizations and ReLU activation units. We explicitly
+    pass inputs (in a functional way) between modules in the `forward()` method of
+    a module we define ourselves:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: We can now invoke `forward()` on the `DCGANGenerator` to map a noise sample
+    to an image.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The particular modules chosen, like `nn::ConvTranspose2d` and `nn::BatchNorm2d`,
+    follows the structure outlined earlier. The `kNoiseSize` constant determines the
+    size of the input noise vector and is set to `100`. Hyperparameters were, of course,
+    found via grad student descent.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Attention
+  prefs: []
+  type: TYPE_NORMAL
+- en: No grad students were harmed in the discovery of hyperparameters. They were
+    fed Soylent regularly.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'A brief word on the way options are passed to built-in modules like `Conv2d`
+    in the C++ frontend: Every module has some required options, like the number of
+    features for `BatchNorm2d`. If you only need to configure the required options,
+    you can pass them directly to the module’s constructor, like `BatchNorm2d(128)`
+    or `Dropout(0.5)` or `Conv2d(8, 4, 2)` (for input channel count, output channel
+    count, and kernel size). If, however, you need to modify other options, which
+    are normally defaulted, such as `bias` for `Conv2d`, you need to construct and
+    pass an *options* object. Every module in the C++ frontend has an associated options
+    struct, called `ModuleOptions` where `Module` is the name of the module, like
+    `LinearOptions` for `Linear`. This is what we do for the `Conv2d` modules above.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The Discriminator Module
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: The discriminator is similarly a sequence of convolutions, batch normalizations
+    and activations. However, the convolutions are now regular ones instead of transposed,
+    and we use a leaky ReLU with an alpha value of 0.2 instead of a vanilla ReLU.
+    Also, the final activation becomes a Sigmoid, which squashes values into a range
+    between 0 and 1\. We can then interpret these squashed values as the probabilities
+    the discriminator assigns to images being real.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'To build the discriminator, we will try something different: a Sequential module.
+    Like in Python, PyTorch here provides two APIs for model definition: a functional
+    one where inputs are passed through successive functions (e.g. the generator module
+    example), and a more object-oriented one where we build a Sequential module containing
+    the entire model as submodules. Using Sequential, the discriminator would look
+    like:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: Tip
+  prefs: []
+  type: TYPE_NORMAL
+- en: A `Sequential` module simply performs function composition. The output of the
+    first submodule becomes the input of the second, the output of the third becomes
+    the input of the fourth and so on.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Loading Data
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Now that we have defined the generator and discriminator model, we need some
+    data we can train these models with. The C++ frontend, like the Python one, comes
+    with a powerful parallel data loader. This data loader can read batches of data
+    from a dataset (which you can define yourself) and provides many configuration
+    knobs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: While the Python data loader uses multi-processing, the C++ data loader is truly
+    multi-threaded and does not launch any new processes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The data loader is part of the C++ frontend’s `data` api, contained in the
+    `torch::data::` namespace. This API consists of a few different components:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The data loader class,
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: An API for defining datasets,
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: An API for defining *transforms*, which can be applied to datasets,
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: An API for defining *samplers*, which produce the indices with which datasets
+    are indexed,
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: A library of existing datasets, transforms and samplers.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'For this tutorial, we can use the `MNIST` dataset that comes with the C++ frontend.
+    Let’s instantiate a `torch::data::datasets::MNIST` for this, and apply two transformations:
+    First, we normalize the images so that they are in the range of `-1` to `+1` (from
+    an original range of `0` to `1`). Second, we apply the `Stack` *collation*, which
+    takes a batch of tensors and stacks them into a single tensor along the first
+    dimension:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE26]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note that the MNIST dataset should be located in the `./mnist` directory relative
+    to wherever you execute the training binary from. You can use [this script](https://gist.github.com/goldsborough/6dd52a5e01ed73a642c1e772084bcd03)
+    to download the MNIST dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Next, we create a data loader and pass it this dataset. To make a new data
+    loader, we use `torch::data::make_data_loader`, which returns a `std::unique_ptr`
+    of the correct type (which depends on the type of the dataset, the type of the
+    sampler and some other implementation details):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE27]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The data loader does come with a lot of options. You can inspect the full set
+    [here](https://github.com/pytorch/pytorch/blob/master/torch/csrc/api/include/torch/data/dataloader_options.h).
+    For example, to speed up the data loading, we can increase the number of workers.
+    The default number is zero, which means the main thread will be used. If we set
+    `workers` to `2`, two threads will be spawned that load data concurrently. We
+    should also increase the batch size from its default of `1` to something more
+    reasonable, like `64` (the value of `kBatchSize`). So let’s create a `DataLoaderOptions`
+    object and set the appropriate properties:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE28]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'We can now write a loop to load batches of data, which we’ll only print to
+    the console for now:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE29]'
+  prefs: []
+  type: TYPE_PRE
+- en: The type returned by the data loader in this case is a `torch::data::Example`.
+    This type is a simple struct with a `data` field for the data and a `target` field
+    for the label. Because we applied the `Stack` collation earlier, the data loader
+    returns only a single such example. If we had not applied the collation, the data
+    loader would yield `std::vector<torch::data::Example<>>` instead, with one element
+    per example in the batch.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'If you rebuild and run this code, you should see something like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE30]'
+  prefs: []
+  type: TYPE_PRE
+- en: Which means we are successfully able to load data from the MNIST dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Writing the Training Loop
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Let’s now finish the algorithmic part of our example and implement the delicate
+    dance between the generator and discriminator. First, we’ll create two optimizers,
+    one for the generator and one for the discriminator. The optimizers we use implement
+    the [Adam](https://arxiv.org/pdf/1412.6980.pdf) algorithm:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE31]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: As of this writing, the C++ frontend provides optimizers implementing Adagrad,
+    Adam, LBFGS, RMSprop and SGD. The [docs](https://pytorch.org/cppdocs/api/namespace_torch__optim.html)
+    have the up-to-date list.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Next, we need to update our training loop. We’ll add an outer loop to exhaust
+    the data loader every epoch and then write the GAN training code:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE32]'
+  prefs: []
+  type: TYPE_PRE
+- en: Above, we first evaluate the discriminator on real images, for which it should
+    assign a high probability. For this, we use `torch::empty(batch.data.size(0)).uniform_(0.8,
+    1.0)` as the target probabilities.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: We pick random values uniformly distributed between 0.8 and 1.0 instead of 1.0
+    everywhere in order to make the discriminator training more robust. This trick
+    is called *label smoothing*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Before evaluating the discriminator, we zero out the gradients of its parameters.
+    After computing the loss, we back-propagate it through the network by calling
+    `d_loss.backward()` to compute new gradients. We repeat this spiel for the fake
+    images. Instead of using images from the dataset, we let the generator create
+    fake images for this by feeding it a batch of random noise. We then forward those
+    fake images to the discriminator. This time, we want the discriminator to emit
+    low probabilities, ideally all zeros. Once we have computed the discriminator
+    loss for both the batch of real and the batch of fake images, we can progress
+    the discriminator’s optimizer by one step in order to update its parameters.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To train the generator, we again first zero its gradients, and then re-evaluate
+    the discriminator on the fake images. However, this time we want the discriminator
+    to assign probabilities very close to one, which would indicate that the generator
+    can produce images that fool the discriminator into thinking they are actually
+    real (from the dataset). For this, we fill the `fake_labels` tensor with all ones.
+    We finally step the generator’s optimizer to also update its parameters.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We should now be ready to train our model on the CPU. We don’t have any code
+    yet to capture state or sample outputs, but we’ll add this in just a moment. For
+    now, let’s just observe that our model is doing *something* – we’ll later verify
+    based on the generated images whether this something is meaningful. Re-building
+    and running should print something like:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE33]'
+  prefs: []
+  type: TYPE_PRE
+- en: Moving to the GPU
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'While our current script can run just fine on the CPU, we all know convolutions
+    are a lot faster on GPU. Let’s quickly discuss how we can move our training onto
+    the GPU. We’ll need to do two things for this: pass a GPU device specification
+    to tensors we allocate ourselves, and explicitly copy any other tensors onto the
+    GPU via the `to()` method all tensors and modules in the C++ frontend have. The
+    simplest way to achieve both is to create an instance of `torch::Device` at the
+    top level of our training script, and then pass that device to tensor factory
+    functions like `torch::zeros` as well as the `to()` method. We can start by doing
+    this with a CPU device:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE34]'
+  prefs: []
+  type: TYPE_PRE
+- en: New tensor allocations like
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE35]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'should be updated to take the `device` as the last argument:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE36]'
+  prefs: []
+  type: TYPE_PRE
+- en: For tensors whose creation is not in our hands, like those coming from the MNIST
+    dataset, we must insert explicit `to()` calls. This means
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE37]'
+  prefs: []
+  type: TYPE_PRE
+- en: becomes
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE38]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'and also our model parameters should be moved to the correct device:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE39]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: If a tensor already lives on the device supplied to `to()`, the call is a no-op.
+    No extra copy is made.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'At this point, we’ve just made our previous CPU-residing code more explicit.
+    However, it is now also very easy to change the device to a CUDA device:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE40]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'And now all tensors will live on the GPU, calling into fast CUDA kernels for
+    all operations, without us having to change any downstream code. If we wanted
+    to specify a particular device index, it could be passed as the second argument
+    to the `Device` constructor. If we wanted different tensors to live on different
+    devices, we could pass separate device instances (for example one on CUDA device
+    0 and the other on CUDA device 1). We can even do this configuration dynamically,
+    which is often useful to make our training scripts more portable:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE41]'
+  prefs: []
+  type: TYPE_PRE
+- en: or even
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE42]'
+  prefs: []
+  type: TYPE_PRE
+- en: Checkpointing and Recovering the Training State
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The last augmentation we should make to our training script is to periodically
+    save the state of our model parameters, the state of our optimizers as well as
+    a few generated image samples. If our computer were to crash in the middle of
+    the training procedure, the first two will allow us to restore the training state.
+    For long-lasting training sessions, this is absolutely essential. Fortunately,
+    the C++ frontend provides an API to serialize and deserialize both model and optimizer
+    state, as well as individual tensors.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The core API for this is `torch::save(thing,filename)` and `torch::load(thing,filename)`,
+    where `thing` could be a `torch::nn::Module` subclass or an optimizer instance
+    like the `Adam` object we have in our training script. Let’s update our training
+    loop to checkpoint the model and optimizer state at a certain interval:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE43]'
+  prefs: []
+  type: TYPE_PRE
+- en: where `kCheckpointEvery` is an integer set to something like `100` to checkpoint
+    every `100` batches, and `checkpoint_counter` is a counter bumped every time we
+    make a checkpoint.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'To restore the training state, you can add lines like these after all models
+    and optimizers are created, but before the training loop:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE44]'
+  prefs: []
+  type: TYPE_PRE
+- en: Inspecting Generated Images
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Our training script is now complete. We are ready to train our GAN, whether
+    on CPU or GPU. To inspect the intermediary output of our training procedure, for
+    which we added code to periodically save image samples to the `"dcgan-sample-xxx.pt"`
+    file, we can write a tiny Python script to load the tensors and display them with
+    matplotlib:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE45]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Let’s now train our model for around 30 epochs:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE46]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'And display the images in a plot:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE47]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Which should look something like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![digits](../Images/931dea1655c975ec616a9e22c80c242f.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Digits! Hooray! Now the ball is in your court: can you improve the model to
+    make the digits look even better?'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Conclusion
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: This tutorial has hopefully given you a digestible digest of the PyTorch C++
+    frontend. A machine learning library like PyTorch by necessity has a very broad
+    and extensive API. As such, there are many concepts we did not have time or space
+    to discuss here. However, I encourage you to try out the API, and consult [our
+    documentation](https://pytorch.org/cppdocs/) and in particular the [Library API](https://pytorch.org/cppdocs/api/library_root.html)
+    section when you get stuck. Also, remember that you can expect the C++ frontend
+    to follow the design and semantics of the Python frontend whenever we could make
+    this possible, so you can leverage this fact to increase your learning rate.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tip
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can find the full source code presented in this tutorial [in this repository](https://github.com/pytorch/examples/tree/master/cpp/dcgan).
+  prefs: []
+  type: TYPE_NORMAL
+- en: As always, if you run into any problems or have questions, you can use our [forum](https://discuss.pytorch.org/)
+    or [GitHub issues](https://github.com/pytorch/pytorch/issues) to get in touch.
+  prefs: []
+  type: TYPE_NORMAL

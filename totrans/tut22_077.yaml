@@ -1,0 +1,142 @@
+- en: Forward-mode Automatic Differentiation (Beta)
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/tutorials/intermediate/forward_ad_usage.html](https://pytorch.org/tutorials/intermediate/forward_ad_usage.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Click [here](#sphx-glr-download-intermediate-forward-ad-usage-py) to download
+    the full example code
+  prefs: []
+  type: TYPE_NORMAL
+- en: This tutorial demonstrates how to use forward-mode AD to compute directional
+    derivatives (or equivalently, Jacobian-vector products).
+  prefs: []
+  type: TYPE_NORMAL
+- en: The tutorial below uses some APIs only available in versions >= 1.11 (or nightly
+    builds).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Also note that forward-mode AD is currently in beta. The API is subject to change
+    and operator coverage is still incomplete.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Basic Usage
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Unlike reverse-mode AD, forward-mode AD computes gradients eagerly alongside
+    the forward pass. We can use forward-mode AD to compute a directional derivative
+    by performing the forward pass as before, except we first associate our input
+    with another tensor representing the direction of the directional derivative (or
+    equivalently, the `v` in a Jacobian-vector product). When an input, which we call
+    “primal”, is associated with a “direction” tensor, which we call “tangent”, the
+    resultant new tensor object is called a “dual tensor” for its connection to dual
+    numbers[0].
+  prefs: []
+  type: TYPE_NORMAL
+- en: As the forward pass is performed, if any input tensors are dual tensors, extra
+    computation is performed to propagate this “sensitivity” of the function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Usage with Modules
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: To use `nn.Module` with forward AD, replace the parameters of your model with
+    dual tensors before performing the forward pass. At the time of writing, it is
+    not possible to create dual tensor [`](#id1)nn.Parameter`s. As a workaround, one
+    must register the dual tensor as a non-parameter attribute of the module.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Using the functional Module API (beta)
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Another way to use `nn.Module` with forward AD is to utilize the functional
+    Module API (also known as the stateless Module API).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Custom autograd Function
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Custom Functions also support forward-mode AD. To create custom Function supporting
+    forward-mode AD, register the `jvp()` static method. It is possible, but not mandatory
+    for custom Functions to support both forward and backward AD. See the [documentation](https://pytorch.org/docs/master/notes/extending.html#forward-mode-ad)
+    for more information.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Functional API (beta)
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: We also offer a higher-level functional API in functorch for computing Jacobian-vector
+    products that you may find simpler to use depending on your use case.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The benefit of the functional API is that there isn’t a need to understand or
+    use the lower-level dual tensor API and that you can compose it with other [functorch
+    transforms (like vmap)](https://pytorch.org/functorch/stable/notebooks/jacobians_hessians.html);
+    the downside is that it offers you less control.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that the remainder of this tutorial will require functorch ([https://github.com/pytorch/functorch](https://github.com/pytorch/functorch))
+    to run. Please find installation instructions at the specified link.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: Using the functional API with Modules
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: To use `nn.Module` with `functorch.jvp` to compute Jacobian-vector products
+    with respect to the model parameters, we need to reformulate the `nn.Module` as
+    a function that accepts both the model parameters and inputs to the module.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[0] [https://en.wikipedia.org/wiki/Dual_number](https://en.wikipedia.org/wiki/Dual_number)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Total running time of the script:** ( 0 minutes 0.149 seconds)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Python source code: forward_ad_usage.py`](../_downloads/3a285734c191abde60d7db0362f294b1/forward_ad_usage.py)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Jupyter notebook: forward_ad_usage.ipynb`](../_downloads/31e117c487018c27130cd7b1fd3e3cad/forward_ad_usage.ipynb)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  prefs: []
+  type: TYPE_NORMAL

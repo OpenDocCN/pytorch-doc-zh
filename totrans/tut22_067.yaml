@@ -1,0 +1,344 @@
+- en: Real Time Inference on Raspberry Pi 4 (30 fps!)
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/tutorials/intermediate/realtime_rpi.html](https://pytorch.org/tutorials/intermediate/realtime_rpi.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: '**Author**: [Tristan Rice](https://github.com/d4l3k)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: PyTorch has out of the box support for Raspberry Pi 4\. This tutorial will guide
+    you on how to setup a Raspberry Pi 4 for running PyTorch and run a MobileNet v2
+    classification model in real time (30 fps+) on the CPU.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This was all tested with Raspberry Pi 4 Model B 4GB but should work with the
+    2GB variant as well as on the 3B with reduced performance.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![https://user-images.githubusercontent.com/909104/153093710-bc736b6f-69d9-4a50-a3e8-9f2b2c9e04fd.gif](../Images/e1b6e9e801c40dcecd46ba020ff59fce.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Prerequisites
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: To follow this tutorial you’ll need a Raspberry Pi 4, a camera for it and all
+    the other standard accessories.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Raspberry Pi 4 Model B 2GB+](https://www.raspberrypi.com/products/raspberry-pi-4-model-b/)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Raspberry Pi Camera Module](https://www.raspberrypi.com/products/camera-module-v2/)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Heat sinks and Fan (optional but recommended)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 5V 3A USB-C Power Supply
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: SD card (at least 8gb)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: SD card read/writer
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Raspberry Pi 4 Setup
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: PyTorch only provides pip packages for Arm 64bit (aarch64) so you’ll need to
+    install a 64 bit version of the OS on your Raspberry Pi
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can download the latest arm64 Raspberry Pi OS from [https://downloads.raspberrypi.org/raspios_arm64/images/](https://downloads.raspberrypi.org/raspios_arm64/images/)
+    and install it via rpi-imager.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**32-bit Raspberry Pi OS will not work.**'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![https://user-images.githubusercontent.com/909104/152866212-36ce29b1-aba6-4924-8ae6-0a283f1fca14.gif](../Images/a74749f46e1b7b1c4cca5b95d030994f.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Installation will take at least a few minutes depending on your internet speed
+    and sdcard speed. Once it’s done it should look like:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![https://user-images.githubusercontent.com/909104/152867425-c005cff0-5f3f-47f1-922d-e0bbb541cd25.png](../Images/16e60b917befb99c2f0717800d2d5fbd.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Time to put your sdcard in your Raspberry Pi, connect the camera and boot it
+    up.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![https://user-images.githubusercontent.com/909104/152869862-c239c980-b089-4bd5-84eb-0a1e5cf22df2.png](../Images/a7acb9a95909dde5e3117930780632d9.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Once that boots and you complete the initial setup you’ll need to edit the `/boot/config.txt`
+    file to enable the camera.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: And then reboot. After you reboot the video4linux2 device `/dev/video0` should
+    exist.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Installing PyTorch and OpenCV
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: PyTorch and all the other libraries we need have ARM 64-bit/aarch64 variants
+    so you can just install them via pip and have it work like any other Linux system.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: '![https://user-images.githubusercontent.com/909104/152874260-95a7a8bd-0f9b-438a-9c0b-5b67729e233f.png](../Images/6905c748f74b28be8422c72e188095a7.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'We can now check that everything installed correctly:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: '![https://user-images.githubusercontent.com/909104/152874271-d7057c2d-80fd-4761-aed4-df6c8b7aa99f.png](../Images/5d0e59134b5e88fc00e83deb3a3ccab2.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Video Capture
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: For video capture we’re going to be using OpenCV to stream the video frames
+    instead of the more common `picamera`. picamera isn’t available on 64-bit Raspberry
+    Pi OS and it’s much slower than OpenCV. OpenCV directly accesses the `/dev/video0`
+    device to grab frames.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The model we’re using (MobileNetV2) takes in image sizes of `224x224` so we
+    can request that directly from OpenCV at 36fps. We’re targeting 30fps for the
+    model but we request a slightly higher framerate than that so there’s always enough
+    frames.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: OpenCV returns a `numpy` array in BGR so we need to read and do a bit of shuffling
+    to get it into the expected RGB format.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: This data reading and processing takes about `3.5 ms`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Image Preprocessing
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: We need to take the frames and transform them into the format the model expects.
+    This is the same processing as you would do on any machine with the standard torchvision
+    transforms.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: Model Choices
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: There’s a number of models you can choose from to use with different performance
+    characteristics. Not all models provide a `qnnpack` pretrained variant so for
+    testing purposes you should chose one that does but if you train and quantize
+    your own model you can use any of them.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We’re using `mobilenet_v2` for this tutorial since it has good performance and
+    accuracy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Raspberry Pi 4 Benchmark Results:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Model | FPS | Total Time (ms/frame) | Model Time (ms/frame) | qnnpack Pretrained
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| mobilenet_v2 | 33.7 | 29.7 | 26.4 | True |'
+  prefs: []
+  type: TYPE_TB
+- en: '| mobilenet_v3_large | 29.3 | 34.1 | 30.7 | True |'
+  prefs: []
+  type: TYPE_TB
+- en: '| resnet18 | 9.2 | 109.0 | 100.3 | False |'
+  prefs: []
+  type: TYPE_TB
+- en: '| resnet50 | 4.3 | 233.9 | 225.2 | False |'
+  prefs: []
+  type: TYPE_TB
+- en: '| resnext101_32x8d | 1.1 | 892.5 | 885.3 | False |'
+  prefs: []
+  type: TYPE_TB
+- en: '| inception_v3 | 4.9 | 204.1 | 195.5 | False |'
+  prefs: []
+  type: TYPE_TB
+- en: '| googlenet | 7.4 | 135.3 | 132.0 | False |'
+  prefs: []
+  type: TYPE_TB
+- en: '| shufflenet_v2_x0_5 | 46.7 | 21.4 | 18.2 | False |'
+  prefs: []
+  type: TYPE_TB
+- en: '| shufflenet_v2_x1_0 | 24.4 | 41.0 | 37.7 | False |'
+  prefs: []
+  type: TYPE_TB
+- en: '| shufflenet_v2_x1_5 | 16.8 | 59.6 | 56.3 | False |'
+  prefs: []
+  type: TYPE_TB
+- en: '| shufflenet_v2_x2_0 | 11.6 | 86.3 | 82.7 | False |'
+  prefs: []
+  type: TYPE_TB
+- en: 'MobileNetV2: Quantization and JIT'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: For optimal performance we want a model that’s quantized and fused. Quantized
+    means that it does the computation using int8 which is much more performant than
+    the standard float32 math. Fused means that consecutive operations have been fused
+    together into a more performant version where possible. Commonly things like activations
+    (`ReLU`) can be merged into the layer before (`Conv2d`) during inference.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The aarch64 version of pytorch requires using the `qnnpack` engine.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: For this example we’ll use a prequantized and fused version of MobileNetV2 that’s
+    provided out of the box by torchvision.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: We then want to jit the model to reduce Python overhead and fuse any ops. Jit
+    gives us ~30fps instead of ~20fps without it.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: Putting It Together
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'We can now put all the pieces together and run it:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: Running it shows that we’re hovering at ~30 fps.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![https://user-images.githubusercontent.com/909104/152892609-7d115705-3ec9-4f8d-beed-a51711503a32.png](../Images/85471d8bad6acb9e759049d828861c14.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: This is with all the default settings in Raspberry Pi OS. If you disabled the
+    UI and all the other background services that are enabled by default it’s more
+    performant and stable.
+  prefs: []
+  type: TYPE_NORMAL
+- en: If we check `htop` we see that we have almost 100% utilization.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![https://user-images.githubusercontent.com/909104/152892630-f094b84b-19ba-48f6-8632-1b954abc59c7.png](../Images/a869ca455dfc3672a29fa30bda2b03a0.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: To verify that it’s working end to end we can compute the probabilities of the
+    classes and [use the ImageNet class labels](https://gist.github.com/yrevar/942d3a0ac09ec9e5eb3a)
+    to print the detections.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: '`mobilenet_v3_large` running in real time:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![https://user-images.githubusercontent.com/909104/153093710-bc736b6f-69d9-4a50-a3e8-9f2b2c9e04fd.gif](../Images/e1b6e9e801c40dcecd46ba020ff59fce.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Detecting an orange:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![https://user-images.githubusercontent.com/909104/153092153-d9c08dfe-105b-408a-8e1e-295da8a78c19.jpg](../Images/bc46e0b298d88972360b661b4bbe5b49.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Detecting a mug:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![https://user-images.githubusercontent.com/909104/153092155-4b90002f-a0f3-4267-8d70-e713e7b4d5a0.jpg](../Images/9d6ef3cc6c8976013a2cc76e7328778a.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Troubleshooting: Performance'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: PyTorch by default will use all of the cores available. If you have anything
+    running in the background on the Raspberry Pi it may cause contention with the
+    model inference causing latency spikes. To alleviate this you can reduce the number
+    of threads which will reduce the peak latency at a small performance penalty.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: For `shufflenet_v2_x1_5` using `2 threads` instead of `4 threads` increases
+    best case latency to `72 ms` from `60 ms` but eliminates the latency spikes of
+    `128 ms`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Next Steps
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: You can create your own model or fine tune an existing one. If you fine tune
+    on one of the models from [torchvision.models.quantized](https://pytorch.org/vision/stable/models.html#quantized-models)
+    most of the work to fuse and quantize has already been done for you so you can
+    directly deploy with good performance on a Raspberry Pi.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'See more:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Quantization](https://pytorch.org/docs/stable/quantization.html) for more
+    information on how to quantize and fuse your model.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Transfer Learning Tutorial](https://pytorch.org/tutorials/beginner/transfer_learning_tutorial.html)
+    for how to use transfer learning to fine tune a pre-existing model to your dataset.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL

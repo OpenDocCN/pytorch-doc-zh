@@ -1,0 +1,346 @@
+- en: (beta) Dynamic Quantization on BERT
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/tutorials/intermediate/dynamic_quantization_bert_tutorial.html](https://pytorch.org/tutorials/intermediate/dynamic_quantization_bert_tutorial.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Tip
+  prefs: []
+  type: TYPE_NORMAL
+- en: To get the most of this tutorial, we suggest using this [Colab Version](https://colab.research.google.com/github/pytorch/tutorials/blob/gh-pages/_downloads/dynamic_quantization_bert_tutorial.ipynb).
+    This will allow you to experiment with the information presented below.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Author**: [Jianyu Huang](https://github.com/jianyuh)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Reviewed by**: [Raghuraman Krishnamoorthi](https://github.com/raghuramank100)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Edited by**: [Jessica Lin](https://github.com/jlin27)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Introduction
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In this tutorial, we will apply the dynamic quantization on a BERT model, closely
+    following the BERT model from [the HuggingFace Transformers examples](https://github.com/huggingface/transformers).
+    With this step-by-step journey, we would like to demonstrate how to convert a
+    well-known state-of-the-art model like BERT into dynamic quantized model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: BERT, or Bidirectional Embedding Representations from Transformers, is a new
+    method of pre-training language representations which achieves the state-of-the-art
+    accuracy results on many popular Natural Language Processing (NLP) tasks, such
+    as question answering, text classification, and others. The original paper can
+    be found [here](https://arxiv.org/pdf/1810.04805.pdf).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Dynamic quantization support in PyTorch converts a float model to a quantized
+    model with static int8 or float16 data types for the weights and dynamic quantization
+    for the activations. The activations are quantized dynamically (per batch) to
+    int8 when the weights are quantized to int8\. In PyTorch, we have [torch.quantization.quantize_dynamic
+    API](https://pytorch.org/docs/stable/quantization.html#torch.quantization.quantize_dynamic),
+    which replaces specified modules with dynamic weight-only quantized versions and
+    output the quantized model.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: We demonstrate the accuracy and inference performance results on the [Microsoft
+    Research Paraphrase Corpus (MRPC) task](https://www.microsoft.com/en-us/download/details.aspx?id=52398)
+    in the General Language Understanding Evaluation benchmark [(GLUE)](https://gluebenchmark.com/).
+    The MRPC (Dolan and Brockett, 2005) is a corpus of sentence pairs automatically
+    extracted from online news sources, with human annotations of whether the sentences
+    in the pair are semantically equivalent. As the classes are imbalanced (68% positive,
+    32% negative), we follow the common practice and report [F1 score](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html).
+    MRPC is a common NLP task for language pair classification, as shown below.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '![../_images/bert.png](../Images/b43b70d8a6eef9ea4f75867b5e83b483.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 1\. Setup
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 1.1 Install PyTorch and HuggingFace Transformers
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: To start this tutorial, let’s first follow the installation instructions in
+    PyTorch [here](https://github.com/pytorch/pytorch/#installation) and HuggingFace
+    Github Repo [here](https://github.com/huggingface/transformers#installation).
+    In addition, we also install [scikit-learn](https://github.com/scikit-learn/scikit-learn)
+    package, as we will reuse its built-in F1 score calculation helper function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Because we will be using the beta parts of the PyTorch, it is recommended to
+    install the latest version of torch and torchvision. You can find the most recent
+    instructions on local installation [here](https://pytorch.org/get-started/locally/).
+    For example, to install on Mac:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: 1.2 Import the necessary modules
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: In this step we import the necessary Python modules for the tutorial.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: We set the number of threads to compare the single thread performance between
+    FP32 and INT8 performance. In the end of the tutorial, the user can set other
+    number of threads by building PyTorch with right parallel backend.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: 1.3 Learn about helper functions
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'The helper functions are built-in in transformers library. We mainly use the
+    following helper functions: one for converting the text examples into the feature
+    vectors; The other one for measuring the F1 score of the predicted result.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The [glue_convert_examples_to_features](https://github.com/huggingface/transformers/blob/master/transformers/data/processors/glue.py)
+    function converts the texts into input features:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tokenize the input sequences;
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Insert [CLS] in the beginning;
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Insert [SEP] between the first sentence and the second sentence, and in the
+    end;
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Generate token type ids to indicate whether a token belongs to the first sequence
+    or the second sequence.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The [glue_compute_metrics](https://github.com/huggingface/transformers/blob/master/transformers/data/processors/glue.py)
+    function has the compute metrics with the [F1 score](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html),
+    which can be interpreted as a weighted average of the precision and recall, where
+    an F1 score reaches its best value at 1 and worst score at 0\. The relative contribution
+    of precision and recall to the F1 score are equal.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The equation for the F1 score is:'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: \[F1 = 2 * (\text{precision} * \text{recall}) / (\text{precision} + \text{recall})
+    \]
+  prefs: []
+  type: TYPE_NORMAL
+- en: 1.4 Download the dataset
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Before running MRPC tasks we download the [GLUE data](https://gluebenchmark.com/tasks)
+    by running [this script](https://gist.github.com/W4ngatang/60c2bdb54d156a41194446737ce03e2e)
+    and unpack it to a directory `glue_data`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: 2\. Fine-tune the BERT model
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The spirit of BERT is to pre-train the language representations and then to
+    fine-tune the deep bi-directional representations on a wide range of tasks with
+    minimal task-dependent parameters, and achieves state-of-the-art results. In this
+    tutorial, we will focus on fine-tuning with the pre-trained BERT model to classify
+    semantically equivalent sentence pairs on MRPC task.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'To fine-tune the pre-trained BERT model (`bert-base-uncased` model in HuggingFace
+    transformers) for the MRPC task, you can follow the command in [examples](https://github.com/huggingface/transformers/tree/master/examples#mrpc):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: We provide the fined-tuned BERT model for MRPC task [here](https://download.pytorch.org/tutorial/MRPC.zip).
+    To save time, you can download the model file (~400 MB) directly into your local
+    folder `$OUT_DIR`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 2.1 Set global configurations
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Here we set the global configurations for evaluating the fine-tuned BERT model
+    before and after the dynamic quantization.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: 2.2 Load the fine-tuned BERT model
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: We load the tokenizer and fine-tuned BERT sequence classifier model (FP32) from
+    the `configs.output_dir`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: 2.3 Define the tokenize and evaluation function
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: We reuse the tokenize and evaluation function from [Huggingface](https://github.com/huggingface/transformers/blob/master/examples/run_glue.py).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: 3\. Apply the dynamic quantization
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: We call `torch.quantization.quantize_dynamic` on the model to apply the dynamic
+    quantization on the HuggingFace BERT model. Specifically,
+  prefs: []
+  type: TYPE_NORMAL
+- en: We specify that we want the torch.nn.Linear modules in our model to be quantized;
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: We specify that we want weights to be converted to quantized int8 values.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: 3.1 Check the model size
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Let’s first check the model size. We can observe a significant reduction in
+    model size (FP32 total size: 438 MB; INT8 total size: 181 MB):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: The BERT model used in this tutorial (`bert-base-uncased`) has a vocabulary
+    size V of 30522\. With the embedding size of 768, the total size of the word embedding
+    table is ~ 4 (Bytes/FP32) * 30522 * 768 = 90 MB. So with the help of quantization,
+    the model size of the non-embedding table part is reduced from 350 MB (FP32 model)
+    to 90 MB (INT8 model).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 3.2 Evaluate the inference accuracy and time
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Next, let’s compare the inference time as well as the evaluation accuracy between
+    the original FP32 model and the INT8 model after the dynamic quantization.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Running this locally on a MacBook Pro, without quantization, inference (for
+    all 408 examples in MRPC dataset) takes about 160 seconds, and with quantization
+    it takes just about 90 seconds. We summarize the results for running the quantized
+    BERT model inference on a Macbook Pro as the follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: We have 0.6% lower F1 score accuracy after applying the post-training dynamic
+    quantization on the fine-tuned BERT model on the MRPC task. As a comparison, in
+    a [recent paper](https://arxiv.org/pdf/1910.06188.pdf) (Table 1), it achieved
+    0.8788 by applying the post-training dynamic quantization and 0.8956 by applying
+    the quantization-aware training. The main difference is that we support the asymmetric
+    quantization in PyTorch while that paper supports the symmetric quantization only.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that we set the number of threads to 1 for the single-thread comparison
+    in this tutorial. We also support the intra-op parallelization for these quantized
+    INT8 operators. The users can now set multi-thread by `torch.set_num_threads(N)`
+    (`N` is the number of intra-op parallelization threads). One preliminary requirement
+    to enable the intra-op parallelization support is to build PyTorch with the right
+    [backend](https://pytorch.org/docs/stable/notes/cpu_threading_torchscript_inference.html#build-options)
+    such as OpenMP, Native or TBB. You can use `torch.__config__.parallel_info()`
+    to check the parallelization settings. On the same MacBook Pro using PyTorch with
+    Native backend for parallelization, we can get about 46 seconds for processing
+    the evaluation of MRPC dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 3.3 Serialize the quantized model
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: We can serialize and save the quantized model for the future use using torch.jit.save
+    after tracing the model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: To load the quantized model, we can use torch.jit.load
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: Conclusion
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In this tutorial, we demonstrated how to convert a well-known state-of-the-art
+    NLP model like BERT into dynamic quantized model. Dynamic quantization can reduce
+    the size of the model while only having a limited implication on accuracy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Thanks for reading! As always, we welcome any feedback, so please create an
+    issue [here](https://github.com/pytorch/pytorch/issues) if you have any.
+  prefs: []
+  type: TYPE_NORMAL
+- en: References
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[1] J.Devlin, M. Chang, K. Lee and K. Toutanova, [BERT: Pre-training of Deep
+    Bidirectional Transformers for Language Understanding (2018)](https://arxiv.org/pdf/1810.04805.pdf).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[2] [HuggingFace Transformers](https://github.com/huggingface/transformers).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[3] O. Zafrir, G. Boudoukh, P. Izsak, and M. Wasserblat (2019). [Q8BERT: Quantized
+    8bit BERT](https://arxiv.org/pdf/1910.06188.pdf).'
+  prefs: []
+  type: TYPE_NORMAL

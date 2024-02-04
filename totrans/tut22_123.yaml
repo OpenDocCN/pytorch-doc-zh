@@ -1,0 +1,284 @@
+- en: Implementing Batch RPC Processing Using Asynchronous Executions
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/tutorials/intermediate/rpc_async_execution.html](https://pytorch.org/tutorials/intermediate/rpc_async_execution.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: '**Author**: [Shen Li](https://mrshenli.github.io/)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[![edit](../Images/a8aa37bcc5edbf2ba5fcf18dba1e55f9.png)](../_images/pencil-16.png)
+    View and edit this tutorial in [github](https://github.com/pytorch/tutorials/blob/main/intermediate_source/rpc_async_execution.rst).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Prerequisites:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PyTorch Distributed Overview](../beginner/dist_overview.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Getting started with Distributed RPC Framework](rpc_tutorial.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Implementing a Parameter Server using Distributed RPC Framework](rpc_param_server_tutorial.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[RPC Asynchronous Execution Decorator](https://pytorch.org/docs/master/rpc.html#torch.distributed.rpc.functions.async_execution)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: This tutorial demonstrates how to build batch-processing RPC applications with
+    the [@rpc.functions.async_execution](https://pytorch.org/docs/master/rpc.html#torch.distributed.rpc.functions.async_execution)
+    decorator, which helps to speed up training by reducing the number of blocked
+    RPC threads and consolidating CUDA operations on the callee. This shares the same
+    idea as [Batch Inference with TorchServe](https://pytorch.org/serve/batch_inference_with_ts.html).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: This tutorial requires PyTorch v1.6.0 or above.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Basics
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Previous tutorials have shown the steps to build distributed training applications
+    using [torch.distributed.rpc](https://pytorch.org/docs/stable/rpc.html), but they
+    didn’t elaborate on what happens on the callee side when processing an RPC request.
+    As of PyTorch v1.5, each RPC request will block one thread on the callee to execute
+    the function in that request until that function returns. This works for many
+    use cases, but there is one caveat. If the user function blocks on IO, e.g., with
+    nested RPC invocation, or signaling, e.g., waiting for a different RPC request
+    to unblock, the RPC thread on the callee will have to idle waiting until the IO
+    finishes or the signaling event occurs. As a result, RPC callees are likely to
+    use more threads than necessary. The cause of this problem is that RPC treats
+    user functions as black boxes, and knows very little about what happens in the
+    function. To allow user functions to yield and free RPC threads, more hints need
+    to be provided to the RPC system.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Since v1.6.0, PyTorch addresses this problem by introducing two new concepts:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: A [torch.futures.Future](https://pytorch.org/docs/master/futures.html) type
+    that encapsulates an asynchronous execution, which also supports installing callback
+    functions.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: An [@rpc.functions.async_execution](https://pytorch.org/docs/master/rpc.html#torch.distributed.rpc.functions.async_execution)
+    decorator that allows applications to tell the callee that the target function
+    will return a future and can pause and yield multiple times during execution.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: With these two tools, the application code can break a user function into multiple
+    smaller functions, chain them together as callbacks on `Future` objects, and return
+    the `Future` that contains the final result. On the callee side, when getting
+    the `Future` object, it installs subsequent RPC response preparation and communication
+    as callbacks as well, which will be triggered when the final result is ready.
+    In this way, the callee no longer needs to block one thread and wait until the
+    final return value is ready. Please refer to the API doc of [@rpc.functions.async_execution](https://pytorch.org/docs/master/rpc.html#torch.distributed.rpc.functions.async_execution)
+    for simple examples.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Besides reducing the number of idle threads on the callee, these tools also
+    help to make batch RPC processing easier and faster. The following two sections
+    of this tutorial demonstrate how to build distributed batch-updating parameter
+    server and batch-processing reinforcement learning applications using the [@rpc.functions.async_execution](https://pytorch.org/docs/master/rpc.html#torch.distributed.rpc.functions.async_execution)
+    decorator.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Batch-Updating Parameter Server
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Consider a synchronized parameter server training application with one parameter
+    server (PS) and multiple trainers. In this application, the PS holds the parameters
+    and waits for all trainers to report gradients. In every iteration, it waits until
+    receiving gradients from all trainers and then updates all parameters in one shot.
+    The code below shows the implementation of the PS class. The `update_and_fetch_model`
+    method is decorated using `@rpc.functions.async_execution` and will be called
+    by trainers. Each invocation returns a `Future` object that will be populated
+    with the updated model. Invocations launched by most trainers just accumulate
+    gradients to the `.grad` field, return immediately, and yield the RPC thread on
+    the PS. The last arriving trainer will trigger the optimizer step and consume
+    all previously reported gradients. Then it sets the `future_model` with the updated
+    model, which in turn notifies all previous requests from other trainers through
+    the `Future` object and sends out the updated model to all trainers.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: For the trainers, they are all initialized using the same set of parameters
+    from the PS. In every iteration, each trainer first runs the forward and the backward
+    passes to generate gradients locally. Then, each trainer reports its gradients
+    to the PS using RPC, and fetches back the updated parameters through the return
+    value of the same RPC request. In the trainer’s implementation, whether the target
+    function is marked with `@rpc.functions.async_execution` or not makes no difference.
+    The trainer simply calls `update_and_fetch_model` using `rpc_sync` which will
+    block on the trainer until the updated model is returned.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: We skip the code that launches multiple processes in this tutorial and please
+    refer to the [examples](https://github.com/pytorch/examples/tree/master/distributed/rpc)
+    repo for the full implementation. Note that, it is possible to implement batch
+    processing without the [@rpc.functions.async_execution](https://pytorch.org/docs/master/rpc.html#torch.distributed.rpc.functions.async_execution)
+    decorator. However, that would require either blocking more RPC threads on the
+    PS or use another round of RPC to fetch updated models, where the latter would
+    add both more code complexity and more communication overhead.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This section uses a simple parameter sever training example to show how to implement
+    batch RPC applications using the [@rpc.functions.async_execution](https://pytorch.org/docs/master/rpc.html#torch.distributed.rpc.functions.async_execution)
+    decorator. In the next section, we re-implement the reinforcement learning example
+    in the previous [Getting started with Distributed RPC Framework](https://pytorch.org/tutorials/intermediate/rpc_tutorial.html)
+    tutorial using batch processing, and demonstrate its impact on the training speed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Batch-Processing CartPole Solver
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: This section uses CartPole-v1 from [OpenAI Gym](https://gym.openai.com/) as
+    an example to show the performance impact of batch processing RPC. Please note
+    that since the goal is to demonstrate the usage of [@rpc.functions.async_execution](https://pytorch.org/docs/master/rpc.html#torch.distributed.rpc.functions.async_execution)
+    instead of building the best CartPole solver or solving most different RL problems,
+    we use very simple policies and reward calculation strategies and focus on the
+    multi-observer single-agent batch RPC implementation. We use a similar `Policy`
+    model as the previous tutorial which is shown below. Compared to the previous
+    tutorial, the difference is that its constructor takes an additional `batch` argument
+    which controls the `dim` parameter for `F.softmax` because with batching, the
+    `x` argument in the `forward` function contains states from multiple observers
+    and hence the dimension needs to change properly. Everything else stays intact.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: The constructor of the `Observer` adjusts accordingly as well. It also takes
+    a `batch` argument, which governs which `Agent` function it uses to select actions.
+    In batch mode, it calls `select_action_batch` function on `Agent` which will be
+    presented shortly, and this function will be decorated with [@rpc.functions.async_execution](https://pytorch.org/docs/master/rpc.html#torch.distributed.rpc.functions.async_execution).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Compared to the previous tutorial [Getting started with Distributed RPC Framework](https://pytorch.org/tutorials/intermediate/rpc_tutorial.html),
+    observers behave a little differently. Instead of exiting when the environment
+    is stopped, it always runs `n_steps` iterations in every episode. When the environment
+    returns, the observer simply resets the environment and start over again. With
+    this design, the agent will receive a fixed number of states from every observer
+    and hence can pack them into a fixed-size tensor. In every step, the `Observer`
+    uses RPC to send its state to the `Agent` and fetches the action through the return
+    value. At the end of every episode, it returns the rewards of all steps to `Agent`.
+    Note that this `run_episode` function will be called by the `Agent` using RPC.
+    So the `rpc_sync` call in this function will be a nested RPC invocation. We could
+    mark this function as `@rpc.functions.async_execution` too to avoid blocking one
+    thread on the `Observer`. However, as the bottleneck is the `Agent` instead of
+    the `Observer`, it should be OK to block one thread on the `Observer` process.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: The constructor of the `Agent` also takes a `batch` argument, which controls
+    how action probs are batched. In batch mode, the `saved_log_probs` contains a
+    list of tensors, where each tensor contains action robs from all observers in
+    one step. Without batching, the `saved_log_probs` is a dictionary where the key
+    is the observer id and the value is a list of action probs for that observer.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: The non-batching `select_acion` simply runs the state throw the policy, saves
+    the action prob, and returns the action to the observer right away.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: With batching, the state is stored in a 2D tensor `self.states`, using the observer
+    id as the row id. Then, it chains a `Future` by installing a callback function
+    to the batch-generated `self.future_actions` `Future` object, which will be populated
+    with the specific row indexed using the id of that observer. The last arriving
+    observer runs all batched states through the policy in one shot and set `self.future_actions`
+    accordingly. When this occurs, all the callback functions installed on `self.future_actions`
+    will be triggered and their return values will be used to populate the chained
+    `Future` object, which in turn notifies the `Agent` to prepare and communicate
+    responses for all previous RPC requests from other observers.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now let’s define how different RPC functions are stitched together. The `Agent`
+    controls the execution of every episode. It first uses `rpc_async` to kick off
+    the episode on all observers and block on the returned futures which will be populated
+    with observer rewards. Note that the code below uses the RRef helper `ob_rref.rpc_async()`
+    to launch the `run_episode` function on the owner of the `ob_rref` RRef with the
+    provided arguments. It then converts the saved action probs and returned observer
+    rewards into expected data format, and launch the training step. Finally, it resets
+    all states and returns the reward of the current episode. This function is the
+    entry point to run one episode.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: The rest of the code is normal processes launching and logging which are similar
+    to other RPC tutorials. In this tutorial, all observers passively waiting for
+    commands from the agent. Please refer to the [examples](https://github.com/pytorch/examples/tree/master/distributed/rpc)
+    repo for the full implementation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: Batch RPC helps to consolidate the action inference into less CUDA operations,
+    and hence reduces the amortized overhead. The above `main` function runs the same
+    code on both batch and no-batch modes using different numbers of observers, ranging
+    from 1 to 10\. The figure below plots the execution time of different world sizes
+    using default argument values. The results confirmed our expectation that batch
+    processing helped to speed up training.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![](../Images/f5504c7ed93640f2bed4d2a606c015ba.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Learn More
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[Batch-Updating Parameter Server Source Code](https://github.com/pytorch/examples/blob/master/distributed/rpc/batch/parameter_server.py)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Batch-Processing CartPole Solver](https://github.com/pytorch/examples/blob/master/distributed/rpc/batch/reinforce.py)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Distributed Autograd](https://pytorch.org/docs/master/rpc.html#distributed-autograd-framework)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Distributed Pipeline Parallelism](dist_pipeline_parallel_tutorial.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL

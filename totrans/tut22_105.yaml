@@ -1,0 +1,391 @@
+- en: Multi-Objective NAS with Ax
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/tutorials/intermediate/ax_multiobjective_nas_tutorial.html](https://pytorch.org/tutorials/intermediate/ax_multiobjective_nas_tutorial.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Click [here](#sphx-glr-download-intermediate-ax-multiobjective-nas-tutorial-py)
+    to download the full example code
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Authors:** [David Eriksson](https://github.com/dme65), [Max Balandat](https://github.com/Balandat),
+    and the Adaptive Experimentation team at Meta.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: In this tutorial, we show how to use [Ax](https://ax.dev/) to run multi-objective
+    neural architecture search (NAS) for a simple neural network model on the popular
+    MNIST dataset. While the underlying methodology would typically be used for more
+    complicated models and larger datasets, we opt for a tutorial that is easily runnable
+    end-to-end on a laptop in less than 20 minutes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In many NAS applications, there is a natural tradeoff between multiple objectives
+    of interest. For instance, when deploying models on-device we may want to maximize
+    model performance (for example, accuracy), while simultaneously minimizing competing
+    metrics like power consumption, inference latency, or model size in order to satisfy
+    deployment constraints. Often, we may be able to reduce computational requirements
+    or latency of predictions substantially by accepting minimally lower model performance.
+    Principled methods for exploring such tradeoffs efficiently are key enablers of
+    scalable and sustainable AI, and have many successful applications at Meta - see
+    for instance our [case study](https://research.facebook.com/blog/2021/07/optimizing-model-accuracy-and-latency-using-bayesian-multi-objective-neural-architecture-search/)
+    on a Natural Language Understanding model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In our example here, we will tune the widths of two hidden layers, the learning
+    rate, the dropout probability, the batch size, and the number of training epochs.
+    The goal is to trade off performance (accuracy on the validation set) and model
+    size (the number of model parameters).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'This tutorial makes use of the following PyTorch libraries:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PyTorch Lightning](https://github.com/PyTorchLightning/pytorch-lightning)
+    (specifying the model and training loop)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[TorchX](https://github.com/pytorch/torchx) (for running training jobs remotely
+    / asynchronously)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[BoTorch](https://github.com/pytorch/botorch) (the Bayesian Optimization library
+    powering Ax’s algorithms)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Defining the TorchX App
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Our goal is to optimize the PyTorch Lightning training job defined in [mnist_train_nas.py](https://github.com/pytorch/tutorials/tree/main/intermediate_source/mnist_train_nas.py).
+    To do this using TorchX, we write a helper function that takes in the values of
+    the architecture and hyperparameters of the training job and creates a [TorchX
+    AppDef](https://pytorch.org/torchx/latest/basics.html) with the appropriate settings.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Setting up the Runner
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Ax’s [Runner](https://ax.dev/api/core.html#ax.core.runner.Runner) abstraction
+    allows writing interfaces to various backends. Ax already comes with Runner for
+    TorchX, and so we just need to configure it. For the purpose of this tutorial
+    we run jobs locally in a fully asynchronous fashion.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In order to launch them on a cluster, you can instead specify a different TorchX
+    scheduler and adjust the configuration appropriately. For example, if you have
+    a Kubernetes cluster, you just need to change the scheduler from `local_cwd` to
+    `kubernetes`).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Setting up the `SearchSpace`
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: First, we define our search space. Ax supports both range parameters of type
+    integer and float as well as choice parameters which can have non-numerical types
+    such as strings. We will tune the hidden sizes, learning rate, dropout, and number
+    of epochs as range parameters and tune the batch size as an ordered choice parameter
+    to enforce it to be a power of 2.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Setting up Metrics
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Ax has the concept of a [Metric](https://ax.dev/api/core.html#metric) that defines
+    properties of outcomes and how observations are obtained for these outcomes. This
+    allows e.g. encoding how data is fetched from some distributed execution backend
+    and post-processed before being passed as input to Ax.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In this tutorial we will use [multi-objective optimization](https://ax.dev/tutorials/multiobjective_optimization.html)
+    with the goal of maximizing the validation accuracy and minimizing the number
+    of model parameters. The latter represents a simple proxy of model latency, which
+    is hard to estimate accurately for small ML models (in an actual application we
+    would benchmark the latency while running the model on-device).
+  prefs: []
+  type: TYPE_NORMAL
+- en: In our example TorchX will run the training jobs in a fully asynchronous fashion
+    locally and write the results to the `log_dir` based on the trial index (see the
+    `trainer()` function above). We will define a metric class that is aware of that
+    logging directory. By subclassing [TensorboardCurveMetric](https://ax.dev/api/metrics.html?highlight=tensorboardcurvemetric#ax.metrics.tensorboard.TensorboardCurveMetric)
+    we get the logic to read and parse the TensorBoard logs for free.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now we can instantiate the metrics for accuracy and the number of model parameters.
+    Here curve_name is the name of the metric in the TensorBoard logs, while name
+    is the metric name used internally by Ax. We also specify lower_is_better to indicate
+    the favorable direction of the two metrics.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Setting up the `OptimizationConfig`
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The way to tell Ax what it should optimize is by means of an [OptimizationConfig](https://ax.dev/api/core.html#module-ax.core.optimization_config).
+    Here we use a `MultiObjectiveOptimizationConfig` as we will be performing multi-objective
+    optimization.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Additionally, Ax supports placing constraints on the different metrics by specifying
+    objective thresholds, which bound the region of interest in the outcome space
+    that we want to explore. For this example, we will constrain the validation accuracy
+    to be at least 0.94 (94%) and the number of model parameters to be at most 80,000.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: Creating the Ax Experiment
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In Ax, the [Experiment](https://ax.dev/api/core.html#ax.core.experiment.Experiment)
+    object is the object that stores all the information about the problem setup.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: Choosing the Generation Strategy
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: A [GenerationStrategy](https://ax.dev/api/modelbridge.html#ax.modelbridge.generation_strategy.GenerationStrategy)
+    is the abstract representation of how we would like to perform the optimization.
+    While this can be customized (if you’d like to do so, see [this tutorial](https://ax.dev/tutorials/generation_strategy.html)),
+    in most cases Ax can automatically determine an appropriate strategy based on
+    the search space, optimization config, and the total number of trials we want
+    to run.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Typically, Ax chooses to evaluate a number of random configurations before starting
+    a model-based Bayesian Optimization strategy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: Configuring the Scheduler
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'The `Scheduler` acts as the loop control for the optimization. It communicates
+    with the backend to launch trials, check their status, and retrieve results. In
+    the case of this tutorial, it is simply reading and parsing the locally saved
+    logs. In a remote execution setting, it would call APIs. The following illustration
+    from the Ax [Scheduler tutorial](https://ax.dev/tutorials/scheduler.html) summarizes
+    how the Scheduler interacts with external systems used to run trial evaluations:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../_static/img/ax_scheduler_illustration.png](../Images/8d3fa5bf58eefbc5625a9c472a88a569.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The `Scheduler` requires the `Experiment` and the `GenerationStrategy`. A set
+    of options can be passed in via `SchedulerOptions`. Here, we configure the number
+    of total evaluations as well as `max_pending_trials`, the maximum number of trials
+    that should run concurrently. In our local setting, this is the number of training
+    jobs running as individual processes, while in a remote execution setting, this
+    would be the number of machines you want to use in parallel.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: Running the optimization
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Now that everything is configured, we can let Ax run the optimization in a fully
+    automated fashion. The Scheduler will periodically check the logs for the status
+    of all currently running trials, and if a trial completes the scheduler will update
+    its status on the experiment and fetch the observations needed for the Bayesian
+    optimization algorithm.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: Evaluating the results
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: We can now inspect the result of the optimization using helper functions and
+    visualizations included with Ax.
+  prefs: []
+  type: TYPE_NORMAL
+- en: First, we generate a dataframe with a summary of the results of the experiment.
+    Each row in this dataframe corresponds to a trial (that is, a training job that
+    was run), and contains information on the status of the trial, the parameter configuration
+    that was evaluated, and the metric values that were observed. This provides an
+    easy way to sanity check the optimization.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: '|  | trial_index | arm_name | trial_status | generation_method | is_feasible
+    | num_params | val_acc | hidden_size_1 | hidden_size_2 | learning_rate | epochs
+    | dropout | batch_size |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | ---
+    | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 0 | 0 | 0_0 | COMPLETED | Sobol | False | 16810.0 | 0.908757 | 19 | 66 |
+    0.003182 | 4 | 0.190970 | 32 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 1 | 1 | 1_0 | COMPLETED | Sobol | False | 21926.0 | 0.887460 | 23 | 118 |
+    0.000145 | 3 | 0.465754 | 256 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 2 | 2 | 2_0 | COMPLETED | Sobol | True | 37560.0 | 0.947588 | 40 | 124 |
+    0.002745 | 4 | 0.196600 | 64 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 3 | 3 | 3_0 | COMPLETED | Sobol | False | 14756.0 | 0.893096 | 18 | 23 |
+    0.000166 | 4 | 0.169496 | 256 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 4 | 4 | 4_0 | COMPLETED | Sobol | True | 71630.0 | 0.948927 | 80 | 99 | 0.000642
+    | 2 | 0.291277 | 128 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 5 | 5 | 5_0 | COMPLETED | Sobol | False | 13948.0 | 0.922692 | 16 | 54 |
+    0.000444 | 2 | 0.057552 | 64 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 6 | 6 | 6_0 | COMPLETED | Sobol | False | 24686.0 | 0.863779 | 29 | 50 |
+    0.000177 | 2 | 0.435030 | 256 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 7 | 7 | 7_0 | COMPLETED | Sobol | False | 18290.0 | 0.877033 | 20 | 87 |
+    0.000119 | 4 | 0.462744 | 256 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 8 | 8 | 8_0 | COMPLETED | Sobol | False | 20996.0 | 0.859434 | 26 | 17 |
+    0.005245 | 1 | 0.455813 | 32 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 9 | 9 | 9_0 | COMPLETED | BoTorch | True | 53063.0 | 0.962563 | 57 | 125
+    | 0.001972 | 3 | 0.177780 | 64 |'
+  prefs: []
+  type: TYPE_TB
+- en: We can also visualize the Pareto frontier of tradeoffs between the validation
+    accuracy and the number of model parameters.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tip
+  prefs: []
+  type: TYPE_NORMAL
+- en: Ax uses Plotly to produce interactive plots, which allow you to do things like
+    zoom, crop, or hover in order to view details of components of the plot. Try it
+    out, and take a look at the [visualization tutorial](https://ax.dev/tutorials/visualizations.html)
+    if you’d like to learn more).
+  prefs: []
+  type: TYPE_NORMAL
+- en: The final optimization results are shown in the figure below where the color
+    corresponds to the iteration number for each trial. We see that our method was
+    able to successfully explore the trade-offs and found both large models with high
+    validation accuracy as well as small models with comparatively lower validation
+    accuracy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: To better understand what our surrogate models have learned about the black
+    box objectives, we can take a look at the leave-one-out cross validation results.
+    Since our models are Gaussian Processes, they not only provide point predictions
+    but also uncertainty estimates about these predictions. A good model means that
+    the predicted means (the points in the figure) are close to the 45 degree line
+    and that the confidence intervals cover the 45 degree line with the expected frequency
+    (here we use 95% confidence intervals, so we would expect them to contain the
+    true observation 95% of the time).
+  prefs: []
+  type: TYPE_NORMAL
+- en: As the figures below show, the model size (`num_params`) metric is much easier
+    to model than the validation accuracy (`val_acc`) metric.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: We can also make contour plots to better understand how the different objectives
+    depend on two of the input parameters. In the figure below, we show the validation
+    accuracy predicted by the model as a function of the two hidden sizes. The validation
+    accuracy clearly increases as the hidden sizes increase.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: Similarly, we show the number of model parameters as a function of the hidden
+    sizes in the figure below and see that it also increases as a function of the
+    hidden sizes (the dependency on `hidden_size_1` is much larger).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: Acknowledgments
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: We thank the TorchX team (in particular Kiuk Chung and Tristan Rice) for their
+    help with integrating TorchX with Ax.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Total running time of the script:** ( 14 minutes 44.258 seconds)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Python source code: ax_multiobjective_nas_tutorial.py`](../_downloads/c0785c0d27d3df6cda96113d46c18927/ax_multiobjective_nas_tutorial.py)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Jupyter notebook: ax_multiobjective_nas_tutorial.ipynb`](../_downloads/ad03db8275f44695d56f05ca66e808fa/ax_multiobjective_nas_tutorial.ipynb)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  prefs: []
+  type: TYPE_NORMAL

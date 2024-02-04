@@ -1,0 +1,524 @@
+- en: Whole Slide Image Classification Using PyTorch and TIAToolbox
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/tutorials/intermediate/tiatoolbox_tutorial.html](https://pytorch.org/tutorials/intermediate/tiatoolbox_tutorial.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Tip
+  prefs: []
+  type: TYPE_NORMAL
+- en: To get the most of this tutorial, we suggest using this [Colab Version](https://colab.research.google.com/github/pytorch/tutorials/blob/main/_static/tiatoolbox_tutorial.ipynb).
+    This will allow you to experiment with the information presented below.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Introduction
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In this tutorial, we will show how to classify Whole Slide Images (WSIs) using
+    PyTorch deep learning models with help from TIAToolbox. A WSI is an image of a
+    sample of human tissue taken through a surgery or biopsy and scanned using specialized
+    scanners. They are used by pathologists and computational pathology researchers
+    to [study diseases such as cancer at the microscopic level](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7522141/)
+    in order to understand for example tumor growth and help improve treatment for
+    patients.
+  prefs: []
+  type: TYPE_NORMAL
+- en: What makes WSIs challenging to process is their enormous size. For example,
+    a typical slide image has in the order of [100,000x100,000 pixels](https://doi.org/10.1117%2F12.912388)
+    where each pixel can correspond to about 0.25x0.25 microns on the slide. This
+    introduces challenges in loading and processing such images, not to mention hundreds
+    or even thousands of WSIs in a single study (larger studies produce better results)!
+  prefs: []
+  type: TYPE_NORMAL
+- en: Conventional image processing pipelines are not suitable for WSI processing
+    so we need better tools. This is where [TIAToolbox](https://github.com/TissueImageAnalytics/tiatoolbox)
+    can help as it brings a set of useful tools to import and process tissue slides
+    in a fast and computationally efficient manner. Typically, WSIs are saved in a
+    pyramid structure with multiple copies of the same image at various magnification
+    levels optimized for visualization. The level 0 (or the bottom level) of the pyramid
+    contains the image at the highest magnification or zoom level, whereas the higher
+    levels in the pyramid have a lower resolution copy of the base image. The pyramid
+    structure is sketched below.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![WSI pyramid stack](../Images/952e5eeb116db4fab98e5ff8dca0069e.png) *WSI pyramid
+    stack (*[source](https://tia-toolbox.readthedocs.io/en/latest/_autosummary/tiatoolbox.wsicore.wsireader.WSIReader.html#)*)*'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'TIAToolbox allows us to automate common downstream analysis tasks such as [tissue
+    classification](https://doi.org/10.1016/j.media.2022.102685). In this tutorial
+    we show how you can: 1\. Load WSI images using TIAToolbox; and 2\. Use different
+    PyTorch models to classify slides at the patch-level. In this tutorial, we will
+    provide an example of using TorchVision `ResNet18` model and custom HistoEncoder
+    <[https://github.com/jopo666/HistoEncoder](https://github.com/jopo666/HistoEncoder)>`__
+    model.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s get started!
+  prefs: []
+  type: TYPE_NORMAL
+- en: Setting up the environment
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: To run the examples provided in this tutorial, the following packages are required
+    as prerequisites.
+  prefs: []
+  type: TYPE_NORMAL
+- en: OpenJpeg
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: OpenSlide
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Pixman
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: TIAToolbox
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: HistoEncoder (for a custom model example)
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'Please run the following command in your terminal to install these packages:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: apt-get -y -qq install libopenjp2-7-dev libopenjp2-tools openslide-tools libpixman-1-dev
+    pip install -q ‘tiatoolbox<1.5’ histoencoder && echo “Installation is done.”
+  prefs: []
+  type: TYPE_NORMAL
+- en: Alternatively, you can run `brew install openjpeg openslide` to install the
+    prerequisite packages on MacOS instead of `apt-get`. Further information on installation
+    can be [found here](https://tia-toolbox.readthedocs.io/en/latest/installation.html).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Importing related libraries
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Clean-up before a run
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: To ensure proper clean-up (for example in abnormal termination), all files downloaded
+    or created in this run are saved in a single directory `global_save_dir`, which
+    we set equal to “./tmp/”. To simplify maintenance, the name of the directory occurs
+    only at this one place, so that it can easily be changed, if desired.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Downloading the data
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: For our sample data, we will use one whole-slide image, and patches from the
+    validation subset of [Kather 100k](https://zenodo.org/record/1214456#.YJ-tn3mSkuU)
+    dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Reading the data
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: We create a list of patches and a list of corresponding labels. For example,
+    the first label in `label_list` will indicate the class of the first image patch
+    in `patch_list`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: '![tiatoolbox tutorial](../Images/b7d43588d22380ce1ab4b5fd0aa7a3d7.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'As you can see for this patch dataset, we have 9 classes/labels with IDs 0-8
+    and associated class names. describing the dominant tissue type in the patch:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: BACK ⟶ Background (empty glass region)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: LYM ⟶ Lymphocytes
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: NORM ⟶ Normal colon mucosa
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: DEB ⟶ Debris
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: MUS ⟶ Smooth muscle
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: STR ⟶ Cancer-associated stroma
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ADI ⟶ Adipose
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: MUC ⟶ Mucus
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: TUM ⟶ Colorectal adenocarcinoma epithelium
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Classify image patches
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: We demonstrate how to obtain a prediction for each patch within a digital slide
+    first with the `patch` mode and then with a large slide using `wsi` mode.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Define `PatchPredictor` model
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The PatchPredictor class runs a CNN-based classifier written in PyTorch.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`model` can be any trained PyTorch model with the constraint that it should
+    follow the `tiatoolbox.models.abc.ModelABC` (docs) <[https://tia-toolbox.readthedocs.io/en/latest/_autosummary/tiatoolbox.models.models_abc.ModelABC.html](https://tia-toolbox.readthedocs.io/en/latest/_autosummary/tiatoolbox.models.models_abc.ModelABC.html)>`__
+    class structure. For more information on this matter, please refer to [our example
+    notebook on advanced model techniques](https://github.com/TissueImageAnalytics/tiatoolbox/blob/develop/examples/07-advanced-modeling.ipynb).
+    In order to load a custom model, you need to write a small preprocessing function,
+    as in `preproc_func(img)`, which makes sure the input tensors are in the right
+    format for the loaded network.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Alternatively, you can pass `pretrained_model` as a string argument. This specifies
+    the CNN model that performs the prediction, and it must be one of the models listed
+    [here](https://tia-toolbox.readthedocs.io/en/latest/usage.html?highlight=pretrained%20models#tiatoolbox.models.architecture.get_pretrained_model).
+    The command will look like this: `predictor = PatchPredictor(pretrained_model=''resnet18-kather100k'',
+    pretrained_weights=weights_path, batch_size=32)`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`pretrained_weights`: When using a `pretrained_model`, the corresponding pretrained
+    weights will also be downloaded by default. You can override the default with
+    your own set of weights via the `pretrained_weight` argument.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`batch_size`: Number of images fed into the model each time. Higher values
+    for this parameter require a larger (GPU) memory capacity.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: Predict patch labels
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: We create a predictor object and then call the `predict` method using the `patch`
+    mode. We then compute the classification accuracy and confusion matrix.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: '|  | BACK | NORM | DEB | TUM | ADI | MUC | MUS | STR | LYM |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| BACK | 1.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000 |
+    0.000000 | 0.000000 | 0.00000 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| NORM | 0.000000 | 0.988636 | 0.000000 | 0.011364 | 0.000000 | 0.000000 |
+    0.000000 | 0.000000 | 0.00000 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| DEB | 0.000000 | 0.000000 | 0.991304 | 0.000000 | 0.000000 | 0.000000 | 0.000000
+    | 0.008696 | 0.00000 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| TUM | 0.000000 | 0.000000 | 0.000000 | 0.996503 | 0.000000 | 0.003497 | 0.000000
+    | 0.000000 | 0.00000 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| ADI | 0.004808 | 0.000000 | 0.000000 | 0.000000 | 0.990385 | 0.000000 | 0.004808
+    | 0.000000 | 0.00000 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| MUC | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.988764 | 0.000000
+    | 0.011236 | 0.00000 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| MUS | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.996296
+    | 0.003704 | 0.00000 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| STR | 0.000000 | 0.000000 | 0.004785 | 0.000000 | 0.000000 | 0.004785 | 0.004785
+    | 0.985646 | 0.00000 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| LYM | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000
+    | 0.004310 | 0.99569 |'
+  prefs: []
+  type: TYPE_TB
+- en: Predict patch labels for a whole slide
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: We now introduce `IOPatchPredictorConfig`, a class that specifies the configuration
+    of image reading and prediction writing for the model prediction engine. This
+    is required to inform the classifier which level of the WSI pyramid the classifier
+    should read, process data and generate output.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters of `IOPatchPredictorConfig` are defined as:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`input_resolutions`: A list, in the form of a dictionary, specifying the resolution
+    of each input. List elements must be in the same order as in the target `model.forward()`.
+    If your model accepts only one input, you just need to put one dictionary specifying
+    `''units''` and `''resolution''`. Note that TIAToolbox supports a model with more
+    than one input. For more information on units and resolution, please see [TIAToolbox
+    documentation](https://tia-toolbox.readthedocs.io/en/latest/_autosummary/tiatoolbox.wsicore.wsireader.WSIReader.html#tiatoolbox.wsicore.wsireader.WSIReader.read_rect).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`patch_input_shape`: Shape of the largest input in (height, width) format.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`stride_shape`: The size of a stride (steps) between two consecutive patches,
+    used in the patch extraction process. If the user sets `stride_shape` equal to
+    `patch_input_shape`, patches will be extracted and processed without any overlap.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The `predict` method applies the CNN on the input patches and get the results.
+    Here are the arguments and their descriptions:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`mode`: Type of input to be processed. Choose from `patch`, `tile` or `wsi`
+    according to your application.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`imgs`: List of inputs, which should be a list of paths to the input tiles
+    or WSIs.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`return_probabilities`: Set to **True** to get per class probabilities alongside
+    predicted labels of input patches. If you wish to merge the predictions to generate
+    prediction maps for `tile` or `wsi` modes, you can set `return_probabilities=True`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`ioconfig`: set the IO configuration information using the `IOPatchPredictorConfig`
+    class.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`resolution` and `unit` (not shown below): These arguments specify the level
+    or micron-per-pixel resolution of the WSI levels from which we plan to extract
+    patches and can be used instead of `ioconfig`. Here we specify the WSI level as
+    `''baseline''`, which is equivalent to level 0\. In general, this is the level
+    of greatest resolution. In this particular case, the image has only one level.
+    More information can be found in the [documentation](https://tia-toolbox.readthedocs.io/en/latest/usage.html?highlight=WSIReader.read_rect#tiatoolbox.wsicore.wsireader.WSIReader.read_rect).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`masks`: A list of paths corresponding to the masks of WSIs in the `imgs` list.
+    These masks specify the regions in the original WSIs from which we want to extract
+    patches. If the mask of a particular WSI is specified as `None`, then the labels
+    for all patches of that WSI (even background regions) would be predicted. This
+    could cause unnecessary computation.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`merge_predictions`: You can set this parameter to `True` if it’s required
+    to generate a 2D map of patch classification results. However, for large WSIs
+    this will require large available memory. An alternative (default) solution is
+    to set `merge_predictions=False`, and then generate the 2D prediction maps using
+    the `merge_predictions` function as you will see later on.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Since we are using a large WSI the patch extraction and prediction processes
+    may take some time (make sure to set the `ON_GPU=True` if you have access to Cuda
+    enabled GPU and PyTorch+Cuda).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: We see how the prediction model works on our whole-slide images by visualizing
+    the `wsi_output`. We first need to merge patch prediction outputs and then visualize
+    them as an overlay on the original image. As before, the `merge_predictions` method
+    is used to merge the patch predictions. Here we set the parameters `resolution=1.25,
+    units='power'` to generate the prediction map at 1.25x magnification. If you would
+    like to have higher/lower resolution (bigger/smaller) prediction maps, you need
+    to change these parameters accordingly. When the predictions are merged, use the
+    `overlay_patch_prediction` function to overlay the prediction map on the WSI thumbnail,
+    which should be extracted at the resolution used for prediction merging.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: '![tiatoolbox tutorial](../Images/865d9230ac1bfcbd3aac13636beac597.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Overlaying the prediction map on this image as below gives:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: '![tiatoolbox tutorial](../Images/7c24cb0988ddf895e05e78dafb6192b7.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Feature extraction with a pathology-specific model
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'In this section, we will show how to extract features from a pretrained PyTorch
+    model that exists outside TIAToolbox, using the WSI inference engines provided
+    by TIAToolbox. To illustrate this we will use HistoEncoder, a computational-pathology
+    specific model that has been trained in a self-supervised fashion to extract features
+    from histology images. The model has been made available here:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '‘HistoEncoder: Foundation models for digital pathology’ ([https://github.com/jopo666/HistoEncoder](https://github.com/jopo666/HistoEncoder))
+    by Pohjonen, Joona and team at the University of Helsinki.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: We will plot a umap reduction into 3D (RGB) of the feature map to visualize
+    how the features capture the differences between some of the above mentioned tissue
+    types.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: TIAToolbox defines a ModelABC which is a class inheriting PyTorch [nn.Module](https://pytorch.org/docs/stable/generated/torch.nn.Module.html)
+    and specifies how a model should look in order to be used in the TIAToolbox inference
+    engines. The histoencoder model doesn’t follow this structure, so we need to wrap
+    it in a class whose output and methods are those that the TIAToolbox engine expects.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now that we have our wrapper, we will create our feature extraction model and
+    instantiate a [DeepFeatureExtractor](https://tia-toolbox.readthedocs.io/en/v1.4.1/_autosummary/tiatoolbox.models.engine.semantic_segmentor.DeepFeatureExtractor.html)
+    to allow us to use this model over a WSI. We will use the same WSI as above, but
+    this time we will extract features from the patches of the WSI using the HistoEncoder
+    model, rather than predicting some label for each patch.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: When we create the `DeepFeatureExtractor`, we will pass the `auto_generate_mask=True`
+    argument. This will automatically create a mask of the tissue region using otsu
+    thresholding, so that the extractor processes only those patches containing tissue.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: These features could be used to train a downstream model, but here in order
+    to get some intuition for what the features represent, we will use a UMAP reduction
+    to visualize the features in RGB space. The points labeled in a similar color
+    should have similar features, so we can check if the features naturally separate
+    out into the different tissue regions when we overlay the UMAP reduction on the
+    WSI thumbnail. We will plot it along with the patch-level prediction map from
+    above to see how the features compare to the patch-level predictions in the following
+    cells.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: '![tiatoolbox tutorial](../Images/e3d81525e31f1599360cd4117379bc8c.png)'
+  prefs:
+  - PREF_UL
+  type: TYPE_IMG
+- en: '![UMAP reduction of HistoEnc features](../Images/3b1dcd170e5bbc4b2a46dacd27686bec.png)'
+  prefs:
+  - PREF_UL
+  type: TYPE_IMG
+- en: We see that the prediction map from our patch-level predictor, and the feature
+    map from our self-supervised feature encoder, capture similar information about
+    the tissue types in the WSI. This is a good sanity check that our models are working
+    as expected. It also shows that the features extracted by the HistoEncoder model
+    are capturing the differences between the tissue types, and so that they are encoding
+    histologically relevant information.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Where to Go From Here
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In this notebook, we show how we can use the `PatchPredictor` and `DeepFeatureExtractor`
+    classes and their `predict` method to predict the label, or extract features,
+    for patches of big tiles and WSIs. We introduce `merge_predictions` and `overlay_prediction_mask`
+    helper functions that merge the patch prediction outputs and visualize the resulting
+    prediction map as an overlay on the input image/WSI.
+  prefs: []
+  type: TYPE_NORMAL
+- en: All the processes take place within TIAToolbox and we can easily put the pieces
+    together, following our example code. Please make sure to set inputs and options
+    correctly. We encourage you to further investigate the effect on the prediction
+    output of changing `predict` function parameters. We have demonstrated how to
+    use your own pretrained model or one provided by the research community for a
+    specific task in the TIAToolbox framework to do inference on large WSIs even if
+    the model structure is not defined in the TIAToolbox model class.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'You can learn more through the following resources:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Advanced model handling with PyTorch and TIAToolbox](https://tia-toolbox.readthedocs.io/en/latest/_notebooks/jnb/07-advanced-modeling.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Creating slide graphs for WSI with a custom PyTorch graph neural network](https://tia-toolbox.readthedocs.io/en/latest/_notebooks/jnb/full-pipelines/slide-graph.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL

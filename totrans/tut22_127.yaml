@@ -1,0 +1,368 @@
+- en: Distributed Training with Uneven Inputs Using the Join Context Manager
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/tutorials/advanced/generic_join.html](https://pytorch.org/tutorials/advanced/generic_join.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: '**Author**: [Andrew Gu](https://github.com/andwgu)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[![edit](../Images/a8aa37bcc5edbf2ba5fcf18dba1e55f9.png)](../_images/pencil-16.png)
+    View and edit this tutorial in [github](https://github.com/pytorch/tutorials/blob/main/advanced_source/generic_join.rst).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`Join` is introduced in PyTorch 1.10 as a prototype feature. This API is subject
+    to change.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In this tutorial, you will see:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: An overview of the [Join](https://pytorch.org/docs/master/distributed.algorithms.join.html)
+    context manager.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: An example of how to use the context manager with `DistributedDataParallel`.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: An example of how to use the context manager with both `DistributedDataParallel`
+    and `ZeroRedundancyOptimizer`.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: An example of passing in keyword arguments to the context manager.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: A dive into how the [Join](https://pytorch.org/docs/master/distributed.algorithms.join.html)
+    context manager works.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: An example showing how to make a toy class compatible with the context manager.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Requirements
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: PyTorch 1.10+
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Getting Started with Distributed Data Parallel](https://pytorch.org/tutorials/intermediate/ddp_tutorial.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Shard Optimizer States with ZeroRedundancyOptimizer](https://pytorch.org/tutorials/recipes/zero_redundancy_optimizer.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: What is `Join`?
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In [Getting Started with Distributed Data Parallel - Basic Use Case](https://pytorch.org/tutorials/intermediate/ddp_tutorial.html#basic-use-case),
+    you saw the general skeleton for using [DistributedDataParallel](https://pytorch.org/docs/stable/generated/torch.nn.parallel.DistributedDataParallel.html)
+    to perform data parallel training. This implicitly schedules all-reduces in each
+    backward pass to synchronize gradients across ranks. Such [collective communications](https://pytorch.org/docs/stable/distributed.html)
+    require participation from all ranks in the process group, so if a rank has fewer
+    inputs, then the other ranks will hang or error (depending on the backend). More
+    generally, this problem persists for any class that performs per-iteration synchronous
+    collective communications.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`Join` is a context manager to be used around your per-rank training loop to
+    facilitate training with uneven inputs. The context manager allows the ranks that
+    exhaust their inputs early (i.e. *join* early) to shadow the collective communications
+    performed by those that have not yet joined. The ways in which the communications
+    are shadowed are specified by hooks.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Using `Join` with `DistributedDataParallel`
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'PyTorch’s [DistributedDataParallel](https://pytorch.org/docs/stable/generated/torch.nn.parallel.DistributedDataParallel.html)
+    works out-of-the-box with the `Join` context manager. Here is an example usage:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'This produces the following output (where the `print()` s from rank 0 and rank
+    1 may be arbitrarily ordered):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[DistributedDataParallel](https://pytorch.org/docs/stable/generated/torch.nn.parallel.DistributedDataParallel.html)
+    provided its own [join()](https://pytorch.org/docs/stable/_modules/torch/nn/parallel/distributed.html#DistributedDataParallel.join)
+    context manager prior to the introduction of this generic `Join` context manager.
+    In the above example, using `with Join([model]):` is equivalent to using `with
+    model.join():`. One limitation of the existing `DistributedDataParallel.join()`
+    is that it does not allow multiple participating classes, e.g. `DistributedDataParallel`
+    and [ZeroRedundancyOptimizer](https://pytorch.org/docs/stable/distributed.optim.html)
+    together.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Using `Join` with `DistributedDataParallel` and `ZeroRedundancyOptimizer`
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'The `Join` context manager works not only with a single class but also with
+    multiple classes together. PyTorch’s `ZeroRedundancyOptimizer` is also compatible
+    with the context manager, so here, we examine how to modify the previous example
+    to use both `DistributedDataParallel` and `ZeroRedundancyOptimizer`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: This will yield the same output as before. The notable change was additionally
+    passing in the `ZeroRedundancyOptimizer` instance into `Join()`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Passing Keyword Arguments
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Classes may provide keyword arguments that modify their behavior in the context
+    manager at run time. For example, `DistributedDataParallel` provides an argument
+    `divide_by_initial_world_size`, which determines if gradients are divided by the
+    initial world size or by the effective world size (i.e. number of non-joined ranks).
+    Such keyword arguments can be passed directly into the context manager.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: The keyword arguments passed into the context manager are shared across all
+    participating classes. This should not be a limitation since we do not expect
+    cases where multiple `Joinable` s need differing settings of the same argument.
+    Nonetheless, this is something to keep in mind.
+  prefs: []
+  type: TYPE_NORMAL
+- en: How Does `Join` Work?
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Now that we have seen some preliminary examples of how to use the `Join` context
+    manager, let us delve deeper into how it works. This will provide a greater insight
+    into the full capability that it offers and prepare you to make your own custom
+    classes compatible. Here, we will go over the `Join` class as well as the supporting
+    classes `Joinable` and `JoinHook`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`Joinable`'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'To begin, classes compatible with the `Join` context manager must inherit from
+    the abstract base class `Joinable`. In particular, a `Joinable` must implement:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`join_hook(self, **kwargs) -> JoinHook`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: This returns the `JoinHook` instance for the `Joinable`, determining how joined
+    processes should shadow the per-iteration collective communications performed
+    by the `Joinable`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`join_device(self) -> torch.device`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: This returns a device to be used by the `Join` context manager to perform collective
+    communications, e.g. `torch.device("cuda:0")` or `torch.device("cpu")`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`join_process_group(self) -> ProcessGroup`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: This returns the process group to be used by the `Join` context manager to perform
+    collective communications.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In particular, the `join_device` and `join_process_group` are required attributes
+    to ensure that the context manager can schedule collective communications between
+    joined and non-joined processes. One usage is to count the number of non-joined
+    processes on each iteration using an all-reduce. Another usage is for implementing
+    the mechanism required for `throw_on_early_termination=True`, which we will explain
+    later below.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`DistributedDataParallel` and `ZeroRedundancyOptimizer` already inherit from
+    `Joinable` and implement the above methods, which is why we could directly use
+    them in the previous examples.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`Joinable` classes should make sure to call the `Joinable` constructor since
+    it initializes a `JoinConfig` instance, which is used internally by the context
+    manager to ensure correctness. This will be saved in each `Joinable` as a field
+    `_join_config`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`JoinHook`'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Next, let us break down the `JoinHook` class. A `JoinHook` provides two entry
+    points into a context manager:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`main_hook(self) -> None`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: This hook is called repeatedly by each joined rank while there exists a rank
+    that has not yet joined. It is meant to shadow the collective communications performed
+    by the `Joinable` in each training iteration (e.g. in one forward pass, backward
+    pass, and optimizer step).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`post_hook(self, is_last_joiner: bool) -> None`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: This hook is called once all ranks have joined. It is passed an additional `bool`
+    argument `is_last_joiner`, which indicates if the rank was one of the last to
+    join. The argument may be useful for synchronization.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To give concrete examples of what these hooks may look like, the provided `ZeroRedundancyOptimizer`
+    main hook performs an optimizer step per normal since the joined rank is still
+    responsible for updating and synchronizing its shard of the parameters, and the
+    provided `DistributedDataParallel` post-hook broadcasts the final updated model
+    from one of the last joining ranks to ensure that it is the same across all ranks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`Join`'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Finally, let us examine how these fit into the `Join` class itself.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`__init__(self, joinables: List[Joinable], enable: bool = True, throw_on_early_termination:
+    bool = False)`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: As we saw in the previous examples, the constructor takes in a list of the `Joinable`
+    s that participate in the training loop. These should be the classes that perform
+    collective communications in each iteration.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`enable` is a `bool` that can be set to `False` if you know that there will
+    not be uneven inputs, in which case the context manager becomes vacuous similar
+    to `contextlib.nullcontext()`. This also may disable join-related computation
+    in the participating `Joinable` s.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`throw_on_early_termination` is a `bool` that can be set to `True` to have
+    each rank raise an exception the moment that uneven inputs are detected. This
+    is useful for cases that do not conform to the context manager’s requirements,
+    which is most typically when there are collective communications from different
+    classes that may be arbitrarily interleaved, such as when using `DistributedDataParallel`
+    with a model that has `SyncBatchNorm` layers. In such cases, this argument should
+    be set to `True` so that the application logic can catch the exception and determine
+    how to proceed.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The core logic occurs in the `__exit__()` method, which loops while there exists
+    a non-joined rank, calling each `Joinable` ‘s main hook, and then once all ranks
+    have joined, calls their post hooks. Both the main hooks and post-hooks are iterated
+    over in the order that the `Joinable` s are passed in.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The context manager requires a heartbeat from non-joined processes. As such,
+    each `Joinable` class should make a call to `Join.notify_join_context()` before
+    its per-iteration collective communications. The context manager will ensure that
+    only the first `Joinable` passed in actually sends the heartbeat.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: As mentioned above regarding `throw_on_early_termination`, the `Join` context
+    manager is not compatible with certain compositions of classes. The `Joinable`
+    ‘s `JoinHook` s must be serializable since each hook is fully executed before
+    proceeding to the next. In other words, two hooks cannot overlap. Moreover, currently,
+    both the main hooks and post- hooks are iterated over in the same deterministic
+    order. If this appears to be a major limitation, we may modify the API to permit
+    a customizable ordering.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Making a Toy Class Work with `Join`
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Since the previous section introduced several concepts, let us see them in practice
+    with a toy example. Here, we will implement a class that counts the number of
+    inputs that are seen across all ranks before its rank joins. This should provide
+    a basic idea of how you may make your own class compatible with the `Join` context
+    manager.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Specifically, the following code has each rank print out (1) the number of inputs
+    across all ranks that seen before it joins and (2) the total number of inputs
+    across all ranks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Since rank 0 sees 5 inputs and rank 1 sees 6, this yields the output:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Some key points to highlight:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: A `Counter` instance performs a single all-reduce per iteration, so the main
+    hook performs a single all-reduce as well to shadow it.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The `Counter` class makes a call to `Join.notify_join_context()` at the beginning
+    of its `__call__()` method since that is a place before its per- iteration collective
+    communications (i.e. its all-reduce).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The `is_last_joiner` argument is used to determine the broadcast source in the
+    post-hooks.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: We pass in the `sync_max_count` keyword argument to the context manager, which
+    is then forwarded to `Counter` ‘s join hook.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL

@@ -1,0 +1,451 @@
+- en: Preprocess custom text dataset using Torchtext
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/tutorials/beginner/torchtext_custom_dataset_tutorial.html](https://pytorch.org/tutorials/beginner/torchtext_custom_dataset_tutorial.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Click [here](#sphx-glr-download-beginner-torchtext-custom-dataset-tutorial-py)
+    to download the full example code
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Author**: [Anupam Sharma](https://anp-scp.github.io/)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'This tutorial illustrates the usage of torchtext on a dataset that is not built-in.
+    In the tutorial, we will preprocess a dataset that can be further utilized to
+    train a sequence-to-sequence model for machine translation (something like, in
+    this tutorial: [Sequence to Sequence Learning with Neural Networks](https://github.com/bentrevett/pytorch-seq2seq/blob/master/1%20-%20Sequence%20to%20Sequence%20Learning%20with%20Neural%20Networks.ipynb))
+    but without using legacy version of torchtext.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In this tutorial, we will learn how to:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Read a dataset
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Tokenize sentence
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Apply transforms to sentence
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Perform bucket batching
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Let us assume that we need to prepare a dataset to train a model that can perform
+    English to German translation. We will use a tab-delimited German - English sentence
+    pairs provided by the [Tatoeba Project](https://tatoeba.org/en) which can be downloaded
+    from [this link](https://www.manythings.org/anki/deu-eng.zip).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Sentence pairs for other languages can be found in [this link](https://www.manythings.org/anki/).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Setup
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: First, download the dataset, extract the zip, and note the path to the file
+    deu.txt.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Ensure that following packages are installed:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Torchdata 0.6.0](https://pytorch.org/data/beta/index.html) ([Installation
+    instructions](https://github.com/pytorch/data) )'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Torchtext 0.15.0](https://pytorch.org/text/stable/index.html) ([Installation
+    instructions](https://github.com/pytorch/text) )'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Spacy](https://spacy.io/usage)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Here, we are using Spacy to tokenize text. In simple words tokenization means
+    to convert a sentence to list of words. Spacy is a python package used for various
+    Natural Language Processing (NLP) tasks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Download the English and German models from Spacy as shown below:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Let us start by importing required modules:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now we will load the dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'In the above code block, we are doing following things:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: At line 2, we are creating an iterable of filenames
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: At line 3, we pass the iterable to FileOpener which then opens the file in read
+    mode
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: At line 4, we call a function to parse the file, which again returns an iterable
+    of tuples representing each rows of the tab-delimited file
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: DataPipes can be thought of something like a dataset object, on which we can
+    perform various operations. Check [this tutorial](https://pytorch.org/data/beta/dp_tutorial.html)
+    for more details on DataPipes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We can verify if the iterable has the pair of sentences as shown below:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Note that we also have attribution details along with pair of sentences. We
+    will write a small function to remove the attribution details:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: The map function at line 6 in above code block can be used to apply some function
+    on each elements of data_pipe. Now, we can verify that the data_pipe only contains
+    pair of sentences.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Now, let us define few functions to perform tokenization:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Above function accepts a text and returns a list of words as shown below:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: Building the vocabulary
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Let us consider an English sentence as the source and a German sentence as the
+    target.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Vocabulary can be considered as the set of unique words we have in the dataset.
+    We will build vocabulary for both our source and target now.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let us define a function to get tokens from elements of tuples in the iterator.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Now, we will build vocabulary for source:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The code above, builds the vocabulary from the iterator. In the above code
+    block:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: At line 2, we call the getTokens() function with place=0 as we need vocabulary
+    for source sentences.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: At line 3, we set min_freq=2. This means, the function will skip those words
+    that occurs less than 2 times.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'At line 4, we specify some special tokens:'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: <sos> for start of sentence
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: <eos> for end of sentence
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: <unk> for unknown words. An example of unknown word is the one skipped because
+    of min_freq=2.
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: <pad> is the padding token. While training, a model we mostly train in batches.
+    In a batch, there can be sentences of different length. So, we pad the shorter
+    sentences with <pad> token to make length of all sequences in the batch equal.
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: At line 5, we set special_first=True. Which means <pad> will get index 0, <sos>
+    index 1, <eos> index 2, and <unk> will get index 3 in the vocabulary.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: At line 7, we set default index as index of <unk>. That means if some word is
+    not in vocabulary, we will use <unk> instead of that unknown word.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Similarly, we will build vocabulary for target sentences:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note that the example above shows how can we add special tokens to our vocabulary.
+    The special tokens may change based on the requirements.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now, we can verify that special tokens are placed at the beginning and then
+    other words. In the below code, source_vocab.get_itos() returns a list with tokens
+    at index based on vocabulary.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: Numericalize sentences using vocabulary
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'After building the vocabulary, we need to convert our sentences to corresponding
+    indices. Let us define some functions for this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now, let us see how to use the above function. The function returns an object
+    of Transforms which we will use on our sentence. Let us take a random sentence
+    and check how the transform works.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'In the above code,:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: At line 2, we take a source sentence from list that we created from data_pipe
+    at line 1
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: At line 5, we get a transform based on a source vocabulary and apply it to a
+    tokenized sentence. Note that transforms take list of words and not a sentence.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: At line 8, we get the mapping of index to string and then use it get the transformed
+    sentence
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Now we will use DataPipe functions to apply transform to all our sentences.
+    Let us define some more functions for this.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: Make batches (with bucket batch)
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Generally, we train models in batches. While working for sequence to sequence
+    models, it is recommended to keep the length of sequences in a batch similar.
+    For that we will use bucketbatch function of data_pipe.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let us define some functions that will be used by the bucketbatch function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Now, we will apply the bucketbatch function:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'In the above code block:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: We keep batch size = 4.
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: batch_num is the number of batches to keep in a bucket
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: bucket_num is the number of buckets to keep in a pool for shuffling
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: sort_key specifies the function that takes a bucket and sorts it
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Now, let us consider a batch of source sentences as X and a batch of target
+    sentences as y. Generally, while training a model, we predict on a batch of X
+    and compare the result with y. But, a batch in our data_pipe is of the form [(X_1,y_1),
+    (X_2,y_2), (X_3,y_3), (X_4,y_4)]:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'So, we will now convert them into the form: ((X_1,X_2,X_3,X_4), (y_1,y_2,y_3,y_4)).
+    For this we will write a small function:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE26]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now, we have the data as desired.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Padding
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'As discussed earlier while building vocabulary, we need to pad shorter sentences
+    in a batch to make all the sequences in a batch of equal length. We can perform
+    padding as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE27]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Now, we can use the index to string mapping to see how the sequence would look
+    with tokens instead of indices:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE28]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE29]'
+  prefs: []
+  type: TYPE_PRE
+- en: In the above output we can observe that the shorter sentences are padded with
+    <pad>. Now, we can use data_pipe while writing our training function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Some parts of this tutorial was inspired from [this article](https://medium.com/@bitdribble/migrate-torchtext-to-the-new-0-9-0-api-1ff1472b5d71).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Total running time of the script:** ( 4 minutes 41.756 seconds)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Python source code: torchtext_custom_dataset_tutorial.py`](../_downloads/e80c8c5b8a71514d0905366c448448c0/torchtext_custom_dataset_tutorial.py)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Jupyter notebook: torchtext_custom_dataset_tutorial.ipynb`](../_downloads/627c3342e113b9762abb19cc5568a16a/torchtext_custom_dataset_tutorial.ipynb)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  prefs: []
+  type: TYPE_NORMAL

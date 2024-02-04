@@ -1,0 +1,267 @@
+- en: Text classification with the torchtext library
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/tutorials/beginner/text_sentiment_ngrams_tutorial.html](https://pytorch.org/tutorials/beginner/text_sentiment_ngrams_tutorial.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Click [here](#sphx-glr-download-beginner-text-sentiment-ngrams-tutorial-py)
+    to download the full example code
+  prefs: []
+  type: TYPE_NORMAL
+- en: In this tutorial, we will show how to use the torchtext library to build the
+    dataset for the text classification analysis. Users will have the flexibility
+    to
+  prefs: []
+  type: TYPE_NORMAL
+- en: Access to the raw data as an iterator
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: Build data processing pipeline to convert the raw text strings into `torch.Tensor`
+    that can be used to train the model
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: Shuffle and iterate the data with [torch.utils.data.DataLoader](https://pytorch.org/docs/stable/data.html?highlight=dataloader#torch.utils.data.DataLoader)
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Prerequisites
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'A recent 2.x version of the `portalocker` package needs to be installed prior
+    to running the tutorial. For example, in the Colab environment, this can be done
+    by adding the following line at the top of the script:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Access to the raw dataset iterators
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The torchtext library provides a few raw dataset iterators, which yield the
+    raw text strings. For example, the `AG_NEWS` dataset iterators yield the raw data
+    as a tuple of label and text.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To access torchtext datasets, please install torchdata following instructions
+    at [https://github.com/pytorch/data](https://github.com/pytorch/data).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Prepare data processing pipelines
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: We have revisited the very basic components of the torchtext library, including
+    vocab, word vectors, tokenizer. Those are the basic data processing building blocks
+    for raw text string.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Here is an example for typical NLP data processing with tokenizer and vocabulary.
+    The first step is to build a vocabulary with the raw training dataset. Here we
+    use built in factory function build_vocab_from_iterator which accepts iterator
+    that yield list or iterator of tokens. Users can also pass any special symbols
+    to be added to the vocabulary.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: The vocabulary block converts a list of tokens into integers.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Prepare the text processing pipeline with the tokenizer and vocabulary. The
+    text and label pipelines will be used to process the raw data strings from the
+    dataset iterators.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: The text pipeline converts a text string into a list of integers based on the
+    lookup table defined in the vocabulary. The label pipeline converts the label
+    into integers. For example,
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: Generate data batch and iterator
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[torch.utils.data.DataLoader](https://pytorch.org/docs/stable/data.html?highlight=dataloader#torch.utils.data.DataLoader)
+    is recommended for PyTorch users (a tutorial is [here](https://pytorch.org/tutorials/beginner/data_loading_tutorial.html)).
+    It works with a map-style dataset that implements the `getitem()` and `len()`
+    protocols, and represents a map from indices/keys to data samples. It also works
+    with an iterable dataset with the shuffle argument of `False`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Before sending to the model, `collate_fn` function works on a batch of samples
+    generated from `DataLoader`. The input to `collate_fn` is a batch of data with
+    the batch size in `DataLoader`, and `collate_fn` processes them according to the
+    data processing pipelines declared previously. Pay attention here and make sure
+    that `collate_fn` is declared as a top level def. This ensures that the function
+    is available in each worker.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In this example, the text entries in the original data batch input are packed
+    into a list and concatenated as a single tensor for the input of `nn.EmbeddingBag`.
+    The offset is a tensor of delimiters to represent the beginning index of the individual
+    sequence in the text tensor. Label is a tensor saving the labels of individual
+    text entries.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Define the model
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The model is composed of the [nn.EmbeddingBag](https://pytorch.org/docs/stable/nn.html?highlight=embeddingbag#torch.nn.EmbeddingBag)
+    layer plus a linear layer for the classification purpose. `nn.EmbeddingBag` with
+    the default mode of “mean” computes the mean value of a “bag” of embeddings. Although
+    the text entries here have different lengths, `nn.EmbeddingBag` module requires
+    no padding here since the text lengths are saved in offsets.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Additionally, since `nn.EmbeddingBag` accumulates the average across the embeddings
+    on the fly, `nn.EmbeddingBag` can enhance the performance and memory efficiency
+    to process a sequence of tensors.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../_images/text_sentiment_ngrams_model.png](../Images/30f766e7717c0e45a583a4f58ebc322a.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: Initiate an instance
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The `AG_NEWS` dataset has four labels and therefore the number of classes is
+    four.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: We build a model with the embedding dimension of 64\. The vocab size is equal
+    to the length of the vocabulary instance. The number of classes is equal to the
+    number of labels,
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: Define functions to train the model and evaluate results.
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: Split the dataset and run the model
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Since the original `AG_NEWS` has no valid dataset, we split the training dataset
+    into train/valid sets with a split ratio of 0.95 (train) and 0.05 (valid). Here
+    we use [torch.utils.data.dataset.random_split](https://pytorch.org/docs/stable/data.html?highlight=random_split#torch.utils.data.random_split)
+    function in PyTorch core library.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[CrossEntropyLoss](https://pytorch.org/docs/stable/nn.html?highlight=crossentropyloss#torch.nn.CrossEntropyLoss)
+    criterion combines `nn.LogSoftmax()` and `nn.NLLLoss()` in a single class. It
+    is useful when training a classification problem with C classes. [SGD](https://pytorch.org/docs/stable/_modules/torch/optim/sgd.html)
+    implements stochastic gradient descent method as the optimizer. The initial learning
+    rate is set to 5.0. [StepLR](https://pytorch.org/docs/master/_modules/torch/optim/lr_scheduler.html#StepLR)
+    is used here to adjust the learning rate through epochs.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: Evaluate the model with test dataset
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Checking the results of the test dataset…
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: Test on a random news
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Use the best model so far and test a golf news.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: '**Total running time of the script:** ( 2 minutes 4.692 seconds)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Python source code: text_sentiment_ngrams_tutorial.py`](../_downloads/f003f262713c341f497ab4d8dd9be880/text_sentiment_ngrams_tutorial.py)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Jupyter notebook: text_sentiment_ngrams_tutorial.ipynb`](../_downloads/b5fa995b1432ebc93ea7bfe7ec9daed1/text_sentiment_ngrams_tutorial.ipynb)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  prefs: []
+  type: TYPE_NORMAL

@@ -1,0 +1,241 @@
+- en: Training Transformer models using Distributed Data Parallel and Pipeline Parallelism
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/tutorials/advanced/ddp_pipeline.html](https://pytorch.org/tutorials/advanced/ddp_pipeline.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Click [here](#sphx-glr-download-advanced-ddp-pipeline-py) to download the full
+    example code
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Author**: [Pritam Damania](https://github.com/pritamdamania87)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: This tutorial demonstrates how to train a large Transformer model across multiple
+    GPUs using [Distributed Data Parallel](https://pytorch.org/docs/stable/generated/torch.nn.parallel.DistributedDataParallel.html)
+    and [Pipeline Parallelism](https://pytorch.org/docs/stable/pipeline.html). This
+    tutorial is an extension of the [Sequence-to-Sequence Modeling with nn.Transformer
+    and TorchText](https://pytorch.org/tutorials/beginner/transformer_tutorial.html)
+    tutorial and scales up the same model to demonstrate how Distributed Data Parallel
+    and Pipeline Parallelism can be used to train Transformer models.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Prerequisites:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Pipeline Parallelism](https://pytorch.org/docs/stable/pipeline.html)'
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: '[Sequence-to-Sequence Modeling with nn.Transformer and TorchText](https://pytorch.org/tutorials/beginner/transformer_tutorial.html)'
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: '[Getting Started with Distributed Data Parallel](https://pytorch.org/tutorials/intermediate/ddp_tutorial.html)'
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Define the model
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '`PositionalEncoding` module injects some information about the relative or
+    absolute position of the tokens in the sequence. The positional encodings have
+    the same dimension as the embeddings so that the two can be summed. Here, we use
+    `sine` and `cosine` functions of different frequencies.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: In this tutorial, we will split a Transformer model across two GPUs and use
+    pipeline parallelism to train the model. In addition to this, we use [Distributed
+    Data Parallel](https://pytorch.org/docs/stable/generated/torch.nn.parallel.DistributedDataParallel.html)
+    to train two replicas of this pipeline. We have one process driving a pipe across
+    GPUs 0 and 1 and another process driving a pipe across GPUs 2 and 3\. Both these
+    processes then use Distributed Data Parallel to train the two replicas. The model
+    is exactly the same model used in the [Sequence-to-Sequence Modeling with nn.Transformer
+    and TorchText](https://pytorch.org/tutorials/beginner/transformer_tutorial.html)
+    tutorial, but is split into two stages. The largest number of parameters belong
+    to the [nn.TransformerEncoder](https://pytorch.org/docs/stable/generated/torch.nn.TransformerEncoder.html)
+    layer. The [nn.TransformerEncoder](https://pytorch.org/docs/stable/generated/torch.nn.TransformerEncoder.html)
+    itself consists of `nlayers` of [nn.TransformerEncoderLayer](https://pytorch.org/docs/stable/generated/torch.nn.TransformerEncoderLayer.html).
+    As a result, our focus is on `nn.TransformerEncoder` and we split the model such
+    that half of the `nn.TransformerEncoderLayer` are on one GPU and the other half
+    are on another. To do this, we pull out the `Encoder` and `Decoder` sections into
+    separate modules and then build an `nn.Sequential` representing the original Transformer
+    module.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Start multiple processes for training
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: We start two processes where each process drives its own pipeline across two
+    GPUs. `run_worker` is executed for each process.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Load and batch data
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The training process uses Wikitext-2 dataset from `torchtext`. To access torchtext
+    datasets, please install torchdata following instructions at [https://github.com/pytorch/data](https://github.com/pytorch/data).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The vocab object is built based on the train dataset and is used to numericalize
+    tokens into tensors. Starting from sequential data, the `batchify()` function
+    arranges the dataset into columns, trimming off any tokens remaining after the
+    data has been divided into batches of size `batch_size`. For instance, with the
+    alphabet as the sequence (total length of 26) and a batch size of 4, we would
+    divide the alphabet into 4 sequences of length 6:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: \[ \begin{bmatrix} \text{A} & \text{B} & \text{C} & \ldots & \text{X} & \text{Y}
+    & \text{Z} \end{bmatrix} \Rightarrow \begin{bmatrix} \begin{bmatrix}\text{A} \\
+    \text{B} \\ \text{C} \\ \text{D} \\ \text{E} \\ \text{F}\end{bmatrix} & \begin{bmatrix}\text{G}
+    \\ \text{H} \\ \text{I} \\ \text{J} \\ \text{K} \\ \text{L}\end{bmatrix} & \begin{bmatrix}\text{M}
+    \\ \text{N} \\ \text{O} \\ \text{P} \\ \text{Q} \\ \text{R}\end{bmatrix} & \begin{bmatrix}\text{S}
+    \\ \text{T} \\ \text{U} \\ \text{V} \\ \text{W} \\ \text{X}\end{bmatrix} \end{bmatrix}\]
+  prefs: []
+  type: TYPE_NORMAL
+- en: These columns are treated as independent by the model, which means that the
+    dependence of `G` and `F` can not be learned, but allows more efficient batch
+    processing.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Functions to generate input and target sequence
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '`get_batch()` function generates the input and target sequence for the transformer
+    model. It subdivides the source data into chunks of length `bptt`. For the language
+    modeling task, the model needs the following words as `Target`. For example, with
+    a `bptt` value of 2, we’d get the following two Variables for `i` = 0:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![../_images/transformer_input_target.png](../Images/20ef8681366b44461cf49d1ab98ab8f2.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: It should be noted that the chunks are along dimension 0, consistent with the
+    `S` dimension in the Transformer model. The batch dimension `N` is along dimension
+    1.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Model scale and Pipe initialization
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: To demonstrate training large Transformer models using pipeline parallelism,
+    we scale up the Transformer layers appropriately. We use an embedding dimension
+    of 4096, hidden size of 4096, 16 attention heads and 8 total transformer layers
+    (`nn.TransformerEncoderLayer`). This creates a model with **~1 billion** parameters.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We need to initialize the [RPC Framework](https://pytorch.org/docs/stable/rpc.html)
+    since Pipe depends on the RPC framework via [RRef](https://pytorch.org/docs/stable/rpc.html#rref)
+    which allows for future expansion to cross host pipelining. We need to initialize
+    the RPC framework with only a single worker since we’re using a single process
+    to drive multiple GPUs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The pipeline is then initialized with 8 transformer layers on one GPU and 8
+    transformer layers on the other GPU. One pipe is setup across GPUs 0 and 1 and
+    another across GPUs 2 and 3\. Both pipes are then replicated using `DistributedDataParallel`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: Run the model
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[CrossEntropyLoss](https://pytorch.org/docs/master/nn.html?highlight=crossentropyloss#torch.nn.CrossEntropyLoss)
+    is applied to track the loss and [SGD](https://pytorch.org/docs/master/optim.html?highlight=sgd#torch.optim.SGD)
+    implements stochastic gradient descent method as the optimizer. The initial learning
+    rate is set to 5.0\. [StepLR](https://pytorch.org/docs/master/optim.html?highlight=steplr#torch.optim.lr_scheduler.StepLR)
+    is applied to adjust the learn rate through epochs. During the training, we use
+    [nn.utils.clip_grad_norm_](https://pytorch.org/docs/master/nn.html?highlight=nn%20utils%20clip_grad_norm#torch.nn.utils.clip_grad_norm_)
+    function to scale all the gradient together to prevent exploding.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: Loop over epochs. Save the model if the validation loss is the best we’ve seen
+    so far. Adjust the learning rate after each epoch.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Evaluate the model with the test dataset
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Apply the best model to check the result with the test dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: Output
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: '**Total running time of the script:** ( 0 minutes 0.000 seconds)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Python source code: ddp_pipeline.py`](../_downloads/a4d9c51b5b801ca67ec48cde53047460/ddp_pipeline.py)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Jupyter notebook: ddp_pipeline.ipynb`](../_downloads/9c42ef95b5e306580f45ed7f652191bf/ddp_pipeline.ipynb)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  prefs: []
+  type: TYPE_NORMAL

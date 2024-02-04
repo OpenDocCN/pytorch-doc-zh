@@ -1,0 +1,868 @@
+- en: Introduction to PyTorch Tensors
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/tutorials/beginner/introyt/tensors_deeper_tutorial.html](https://pytorch.org/tutorials/beginner/introyt/tensors_deeper_tutorial.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Click [here](#sphx-glr-download-beginner-introyt-tensors-deeper-tutorial-py)
+    to download the full example code
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Introduction](introyt1_tutorial.html) || **Tensors** || [Autograd](autogradyt_tutorial.html)
+    || [Building Models](modelsyt_tutorial.html) || [TensorBoard Support](tensorboardyt_tutorial.html)
+    || [Training Models](trainingyt.html) || [Model Understanding](captumyt.html)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Follow along with the video below or on [youtube](https://www.youtube.com/watch?v=r7QDUPb2dCM).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[https://www.youtube.com/embed/r7QDUPb2dCM](https://www.youtube.com/embed/r7QDUPb2dCM)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tensors are the central data abstraction in PyTorch. This interactive notebook
+    provides an in-depth introduction to the `torch.Tensor` class.
+  prefs: []
+  type: TYPE_NORMAL
+- en: First things first, let’s import the PyTorch module. We’ll also add Python’s
+    math module to facilitate some of the examples.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Creating Tensors
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'The simplest way to create a tensor is with the `torch.empty()` call:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Let’s unpack what we just did:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: We created a tensor using one of the numerous factory methods attached to the
+    `torch` module.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The tensor itself is 2-dimensional, having 3 rows and 4 columns.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The type of the object returned is `torch.Tensor`, which is an alias for `torch.FloatTensor`;
+    by default, PyTorch tensors are populated with 32-bit floating point numbers.
+    (More on data types below.)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: You will probably see some random-looking values when printing your tensor.
+    The `torch.empty()` call allocates memory for the tensor, but does not initialize
+    it with any values - so what you’re seeing is whatever was in memory at the time
+    of allocation.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'A brief note about tensors and their number of dimensions, and terminology:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: You will sometimes see a 1-dimensional tensor called a *vector.*
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Likewise, a 2-dimensional tensor is often referred to as a *matrix.*
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Anything with more than two dimensions is generally just called a tensor.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'More often than not, you’ll want to initialize your tensor with some value.
+    Common cases are all zeros, all ones, or random values, and the `torch` module
+    provides factory methods for all of these:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: The factory methods all do just what you’d expect - we have a tensor full of
+    zeros, another full of ones, and another with random values between 0 and 1.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Random Tensors and Seeding
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Speaking of the random tensor, did you notice the call to `torch.manual_seed()`
+    immediately preceding it? Initializing tensors, such as a model’s learning weights,
+    with random values is common but there are times - especially in research settings
+    - where you’ll want some assurance of the reproducibility of your results. Manually
+    setting your random number generator’s seed is the way to do this. Let’s look
+    more closely:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: What you should see above is that `random1` and `random3` carry identical values,
+    as do `random2` and `random4`. Manually setting the RNG’s seed resets it, so that
+    identical computations depending on random number should, in most settings, provide
+    identical results.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For more information, see the [PyTorch documentation on reproducibility](https://pytorch.org/docs/stable/notes/randomness.html).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tensor Shapes
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Often, when you’re performing operations on two or more tensors, they will
+    need to be of the same *shape* - that is, having the same number of dimensions
+    and the same number of cells in each dimension. For that, we have the `torch.*_like()`
+    methods:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: The first new thing in the code cell above is the use of the `.shape` property
+    on a tensor. This property contains a list of the extent of each dimension of
+    a tensor - in our case, `x` is a three-dimensional tensor with shape 2 x 2 x 3.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Below that, we call the `.empty_like()`, `.zeros_like()`, `.ones_like()`, and
+    `.rand_like()` methods. Using the `.shape` property, we can verify that each of
+    these methods returns a tensor of identical dimensionality and extent.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The last way to create a tensor that will cover is to specify its data directly
+    from a PyTorch collection:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: Using `torch.tensor()` is the most straightforward way to create a tensor if
+    you already have data in a Python tuple or list. As shown above, nesting the collections
+    will result in a multi-dimensional tensor.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`torch.tensor()` creates a copy of the data.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tensor Data Types
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Setting the datatype of a tensor is possible a couple of ways:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: The simplest way to set the underlying data type of a tensor is with an optional
+    argument at creation time. In the first line of the cell above, we set `dtype=torch.int16`
+    for the tensor `a`. When we print `a`, we can see that it’s full of `1` rather
+    than `1.` - Python’s subtle cue that this is an integer type rather than floating
+    point.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Another thing to notice about printing `a` is that, unlike when we left `dtype`
+    as the default (32-bit floating point), printing the tensor also specifies its
+    `dtype`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: You may have also spotted that we went from specifying the tensor’s shape as
+    a series of integer arguments, to grouping those arguments in a tuple. This is
+    not strictly necessary - PyTorch will take a series of initial, unlabeled integer
+    arguments as a tensor shape - but when adding the optional arguments, it can make
+    your intent more readable.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The other way to set the datatype is with the `.to()` method. In the cell above,
+    we create a random floating point tensor `b` in the usual way. Following that,
+    we create `c` by converting `b` to a 32-bit integer with the `.to()` method. Note
+    that `c` contains all the same values as `b`, but truncated to integers.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Available data types include:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`torch.bool`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`torch.int8`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`torch.uint8`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`torch.int16`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`torch.int32`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`torch.int64`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`torch.half`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`torch.float`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`torch.double`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`torch.bfloat`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Math & Logic with PyTorch Tensors
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Now that you know some of the ways to create a tensor… what can you do with
+    them?
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Let’s look at basic arithmetic first, and how tensors interact with simple
+    scalars:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: As you can see above, arithmetic operations between tensors and scalars, such
+    as addition, subtraction, multiplication, division, and exponentiation are distributed
+    over every element of the tensor. Because the output of such an operation will
+    be a tensor, you can chain them together with the usual operator precedence rules,
+    as in the line where we create `threes`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Similar operations between two tensors also behave like you’d intuitively expect:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: It’s important to note here that all of the tensors in the previous code cell
+    were of identical shape. What happens when we try to perform a binary operation
+    on tensors if dissimilar shape?
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: The following cell throws a run-time error. This is intentional.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: In the general case, you cannot operate on tensors of different shape this way,
+    even in a case like the cell above, where the tensors have an identical number
+    of elements.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In Brief: Tensor Broadcasting'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: If you are familiar with broadcasting semantics in NumPy ndarrays, you’ll find
+    the same rules apply here.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The exception to the same-shapes rule is *tensor broadcasting.* Here’s an example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: What’s the trick here? How is it we got to multiply a 2x4 tensor by a 1x4 tensor?
+  prefs: []
+  type: TYPE_NORMAL
+- en: Broadcasting is a way to perform an operation between tensors that have similarities
+    in their shapes. In the example above, the one-row, four-column tensor is multiplied
+    by *both rows* of the two-row, four-column tensor.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This is an important operation in Deep Learning. The common example is multiplying
+    a tensor of learning weights by a *batch* of input tensors, applying the operation
+    to each instance in the batch separately, and returning a tensor of identical
+    shape - just like our (2, 4) * (1, 4) example above returned a tensor of shape
+    (2, 4).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The rules for broadcasting are:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Each tensor must have at least one dimension - no empty tensors.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Comparing the dimension sizes of the two tensors, *going from last to first:*
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Each dimension must be equal, *or*
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: One of the dimensions must be of size 1, *or*
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The dimension does not exist in one of the tensors
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Tensors of identical shape, of course, are trivially “broadcastable”, as you
+    saw earlier.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Here are some examples of situations that honor the above rules and allow broadcasting:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Look closely at the values of each tensor above:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The multiplication operation that created `b` was broadcast over every “layer”
+    of `a`.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: For `c`, the operation was broadcast over every layer and row of `a` - every
+    3-element column is identical.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: For `d`, we switched it around - now every *row* is identical, across layers
+    and columns.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: For more information on broadcasting, see the [PyTorch documentation](https://pytorch.org/docs/stable/notes/broadcasting.html)
+    on the topic.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Here are some examples of attempts at broadcasting that will fail:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: The following cell throws a run-time error. This is intentional.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: More Math with Tensors
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: PyTorch tensors have over three hundred operations that can be performed on
+    them.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Here is a small sample from some of the major categories of operations:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: This is a small sample of operations. For more details and the full inventory
+    of math functions, have a look at the [documentation](https://pytorch.org/docs/stable/torch.html#math-operations).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Altering Tensors in Place
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Most binary operations on tensors will return a third, new tensor. When we say
+    `c = a * b` (where `a` and `b` are tensors), the new tensor `c` will occupy a
+    region of memory distinct from the other tensors.
+  prefs: []
+  type: TYPE_NORMAL
+- en: There are times, though, that you may wish to alter a tensor in place - for
+    example, if you’re doing an element-wise computation where you can discard intermediate
+    values. For this, most of the math functions have a version with an appended underscore
+    (`_`) that will alter a tensor in place.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'For example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE26]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'For arithmetic operations, there are functions that behave similarly:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE27]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE28]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note that these in-place arithmetic functions are methods on the `torch.Tensor`
+    object, not attached to the `torch` module like many other functions (e.g., `torch.sin()`).
+    As you can see from `a.add_(b)`, *the calling tensor is the one that gets changed
+    in place.*
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'There is another option for placing the result of a computation in an existing,
+    allocated tensor. Many of the methods and functions we’ve seen so far - including
+    creation methods! - have an `out` argument that lets you specify a tensor to receive
+    the output. If the `out` tensor is the correct shape and `dtype`, this can happen
+    without a new memory allocation:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE29]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE30]'
+  prefs: []
+  type: TYPE_PRE
+- en: Copying Tensors
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'As with any object in Python, assigning a tensor to a variable makes the variable
+    a *label* of the tensor, and does not copy it. For example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE31]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE32]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'But what if you want a separate copy of the data to work on? The `clone()`
+    method is there for you:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE33]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE34]'
+  prefs: []
+  type: TYPE_PRE
+- en: '**There is an important thing to be aware of when using ``clone()``.** If your
+    source tensor has autograd, enabled then so will the clone. **This will be covered
+    more deeply in the video on autograd,** but if you want the light version of the
+    details, continue on.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*In many cases, this will be what you want.* For example, if your model has
+    multiple computation paths in its `forward()` method, and *both* the original
+    tensor and its clone contribute to the model’s output, then to enable model learning
+    you want autograd turned on for both tensors. If your source tensor has autograd
+    enabled (which it generally will if it’s a set of learning weights or derived
+    from a computation involving the weights), then you’ll get the result you want.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: On the other hand, if you’re doing a computation where *neither* the original
+    tensor nor its clone need to track gradients, then as long as the source tensor
+    has autograd turned off, you’re good to go.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*There is a third case,* though: Imagine you’re performing a computation in
+    your model’s `forward()` function, where gradients are turned on for everything
+    by default, but you want to pull out some values mid-stream to generate some metrics.
+    In this case, you *don’t* want the cloned copy of your source tensor to track
+    gradients - performance is improved with autograd’s history tracking turned off.
+    For this, you can use the `.detach()` method on the source tensor:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE35]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE36]'
+  prefs: []
+  type: TYPE_PRE
+- en: What’s happening here?
+  prefs: []
+  type: TYPE_NORMAL
+- en: We create `a` with `requires_grad=True` turned on. **We haven’t covered this
+    optional argument yet, but will during the unit on autograd.**
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: When we print `a`, it informs us that the property `requires_grad=True` - this
+    means that autograd and computation history tracking are turned on.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: We clone `a` and label it `b`. When we print `b`, we can see that it’s tracking
+    its computation history - it has inherited `a`’s autograd settings, and added
+    to the computation history.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: We clone `a` into `c`, but we call `detach()` first.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Printing `c`, we see no computation history, and no `requires_grad=True`.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The `detach()` method *detaches the tensor from its computation history.* It
+    says, “do whatever comes next as if autograd was off.” It does this *without*
+    changing `a` - you can see that when we print `a` again at the end, it retains
+    its `requires_grad=True` property.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Moving to GPU
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: One of the major advantages of PyTorch is its robust acceleration on CUDA-compatible
+    Nvidia GPUs. (“CUDA” stands for *Compute Unified Device Architecture*, which is
+    Nvidia’s platform for parallel computing.) So far, everything we’ve done has been
+    on CPU. How do we move to the faster hardware?
+  prefs: []
+  type: TYPE_NORMAL
+- en: First, we should check whether a GPU is available, with the `is_available()`
+    method.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: If you do not have a CUDA-compatible GPU and CUDA drivers installed, the executable
+    cells in this section will not execute any GPU-related code.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE37]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE38]'
+  prefs: []
+  type: TYPE_PRE
+- en: Once we’ve determined that one or more GPUs is available, we need to put our
+    data someplace where the GPU can see it. Your CPU does computation on data in
+    your computer’s RAM. Your GPU has dedicated memory attached to it. Whenever you
+    want to perform a computation on a device, you must move *all* the data needed
+    for that computation to memory accessible by that device. (Colloquially, “moving
+    the data to memory accessible by the GPU” is shorted to, “moving the data to the
+    GPU”.)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'There are multiple ways to get your data onto your target device. You may do
+    it at creation time:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE39]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE40]'
+  prefs: []
+  type: TYPE_PRE
+- en: By default, new tensors are created on the CPU, so we have to specify when we
+    want to create our tensor on the GPU with the optional `device` argument. You
+    can see when we print the new tensor, PyTorch informs us which device it’s on
+    (if it’s not on CPU).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'You can query the number of GPUs with `torch.cuda.device_count()`. If you have
+    more than one GPU, you can specify them by index: `device=''cuda:0''`, `device=''cuda:1''`,
+    etc.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'As a coding practice, specifying our devices everywhere with string constants
+    is pretty fragile. In an ideal world, your code would perform robustly whether
+    you’re on CPU or GPU hardware. You can do this by creating a device handle that
+    can be passed to your tensors instead of a string:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE41]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE42]'
+  prefs: []
+  type: TYPE_PRE
+- en: If you have an existing tensor living on one device, you can move it to another
+    with the `to()` method. The following line of code creates a tensor on CPU, and
+    moves it to whichever device handle you acquired in the previous cell.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE43]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'It is important to know that in order to do computation involving two or more
+    tensors, *all of the tensors must be on the same device*. The following code will
+    throw a runtime error, regardless of whether you have a GPU device available:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE44]'
+  prefs: []
+  type: TYPE_PRE
+- en: Manipulating Tensor Shapes
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Sometimes, you’ll need to change the shape of your tensor. Below, we’ll look
+    at a few common cases, and how to handle them.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Changing the Number of Dimensions
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: One case where you might need to change the number of dimensions is passing
+    a single instance of input to your model. PyTorch models generally expect *batches*
+    of input.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For example, imagine having a model that works on 3 x 226 x 226 images - a 226-pixel
+    square with 3 color channels. When you load and transform it, you’ll get a tensor
+    of shape `(3, 226, 226)`. Your model, though, is expecting input of shape `(N,
+    3, 226, 226)`, where `N` is the number of images in the batch. So how do you make
+    a batch of one?
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE45]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE46]'
+  prefs: []
+  type: TYPE_PRE
+- en: The `unsqueeze()` method adds a dimension of extent 1. `unsqueeze(0)` adds it
+    as a new zeroth dimension - now you have a batch of one!
+  prefs: []
+  type: TYPE_NORMAL
+- en: So if that’s *un*squeezing? What do we mean by squeezing? We’re taking advantage
+    of the fact that any dimension of extent 1 *does not* change the number of elements
+    in the tensor.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE47]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE48]'
+  prefs: []
+  type: TYPE_PRE
+- en: Continuing the example above, let’s say the model’s output is a 20-element vector
+    for each input. You would then expect the output to have shape `(N, 20)`, where
+    `N` is the number of instances in the input batch. That means that for our single-input
+    batch, we’ll get an output of shape `(1, 20)`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: What if you want to do some *non-batched* computation with that output - something
+    that’s just expecting a 20-element vector?
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE49]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE50]'
+  prefs: []
+  type: TYPE_PRE
+- en: You can see from the shapes that our 2-dimensional tensor is now 1-dimensional,
+    and if you look closely at the output of the cell above you’ll see that printing
+    `a` shows an “extra” set of square brackets `[]` due to having an extra dimension.
+  prefs: []
+  type: TYPE_NORMAL
+- en: You may only `squeeze()` dimensions of extent 1\. See above where we try to
+    squeeze a dimension of size 2 in `c`, and get back the same shape we started with.
+    Calls to `squeeze()` and `unsqueeze()` can only act on dimensions of extent 1
+    because to do otherwise would change the number of elements in the tensor.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Another place you might use `unsqueeze()` is to ease broadcasting. Recall the
+    example above where we had the following code:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE51]'
+  prefs: []
+  type: TYPE_PRE
+- en: The net effect of that was to broadcast the operation over dimensions 0 and
+    2, causing the random, 3 x 1 tensor to be multiplied element-wise by every 3-element
+    column in `a`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'What if the random vector had just been 3-element vector? We’d lose the ability
+    to do the broadcast, because the final dimensions would not match up according
+    to the broadcasting rules. `unsqueeze()` comes to the rescue:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE52]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE53]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The `squeeze()` and `unsqueeze()` methods also have in-place versions, `squeeze_()`
+    and `unsqueeze_()`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE54]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE55]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Sometimes you’ll want to change the shape of a tensor more radically, while
+    still preserving the number of elements and their contents. One case where this
+    happens is at the interface between a convolutional layer of a model and a linear
+    layer of the model - this is common in image classification models. A convolution
+    kernel will yield an output tensor of shape *features x width x height,* but the
+    following linear layer expects a 1-dimensional input. `reshape()` will do this
+    for you, provided that the dimensions you request yield the same number of elements
+    as the input tensor has:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE56]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE57]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: The `(6 * 20 * 20,)` argument in the final line of the cell above is because
+    PyTorch expects a **tuple** when specifying a tensor shape - but when the shape
+    is the first argument of a method, it lets us cheat and just use a series of integers.
+    Here, we had to add the parentheses and comma to convince the method that this
+    is really a one-element tuple.
+  prefs: []
+  type: TYPE_NORMAL
+- en: When it can, `reshape()` will return a *view* on the tensor to be changed -
+    that is, a separate tensor object looking at the same underlying region of memory.
+    *This is important:* That means any change made to the source tensor will be reflected
+    in the view on that tensor, unless you `clone()` it.
+  prefs: []
+  type: TYPE_NORMAL
+- en: There *are* conditions, beyond the scope of this introduction, where `reshape()`
+    has to return a tensor carrying a copy of the data. For more information, see
+    the [docs](https://pytorch.org/docs/stable/torch.html#torch.reshape).
+  prefs: []
+  type: TYPE_NORMAL
+- en: NumPy Bridge
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In the section above on broadcasting, it was mentioned that PyTorch’s broadcast
+    semantics are compatible with NumPy’s - but the kinship between PyTorch and NumPy
+    goes even deeper than that.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'If you have existing ML or scientific code with data stored in NumPy ndarrays,
+    you may wish to express that same data as PyTorch tensors, whether to take advantage
+    of PyTorch’s GPU acceleration, or its efficient abstractions for building ML models.
+    It’s easy to switch between ndarrays and PyTorch tensors:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE58]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE59]'
+  prefs: []
+  type: TYPE_PRE
+- en: PyTorch creates a tensor of the same shape and containing the same data as the
+    NumPy array, going so far as to keep NumPy’s default 64-bit float data type.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The conversion can just as easily go the other way:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE60]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE61]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'It is important to know that these converted objects are using *the same underlying
+    memory* as their source objects, meaning that changes to one are reflected in
+    the other:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE62]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE63]'
+  prefs: []
+  type: TYPE_PRE
+- en: '**Total running time of the script:** ( 0 minutes 0.294 seconds)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Python source code: tensors_deeper_tutorial.py`](../../_downloads/be017e7b39198fdf668c138fd8d57abe/tensors_deeper_tutorial.py)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Jupyter notebook: tensors_deeper_tutorial.ipynb`](../../_downloads/63a0f0fc7b3ffb15d3a5ac8db3d521ee/tensors_deeper_tutorial.ipynb)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  prefs: []
+  type: TYPE_NORMAL

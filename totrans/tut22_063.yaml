@@ -1,0 +1,344 @@
+- en: Deploying PyTorch in Python via a REST API with Flask
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/tutorials/intermediate/flask_rest_api_tutorial.html](https://pytorch.org/tutorials/intermediate/flask_rest_api_tutorial.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Click [here](#sphx-glr-download-intermediate-flask-rest-api-tutorial-py) to
+    download the full example code
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Author**: [Avinash Sajjanshetty](https://avi.im)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: In this tutorial, we will deploy a PyTorch model using Flask and expose a REST
+    API for model inference. In particular, we will deploy a pretrained DenseNet 121
+    model which detects the image.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tip
+  prefs: []
+  type: TYPE_NORMAL
+- en: All the code used here is released under MIT license and is available on [Github](https://github.com/avinassh/pytorch-flask-api).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'This represents the first in a series of tutorials on deploying PyTorch models
+    in production. Using Flask in this way is by far the easiest way to start serving
+    your PyTorch models, but it will not work for a use case with high performance
+    requirements. For that:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: If you’re already familiar with TorchScript, you can jump straight into our
+    [Loading a TorchScript Model in C++](https://pytorch.org/tutorials/advanced/cpp_export.html)
+    tutorial.
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: If you first need a refresher on TorchScript, check out our [Intro a TorchScript](https://pytorch.org/tutorials/beginner/Intro_to_TorchScript_tutorial.html)
+    tutorial.
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: API Definition
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'We will first define our API endpoints, the request and response types. Our
+    API endpoint will be at `/predict` which takes HTTP POST requests with a `file`
+    parameter which contains the image. The response will be of JSON response containing
+    the prediction:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Dependencies
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Install the required dependencies by running the following command:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Simple Web Server
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Following is a simple web server, taken from Flask’s documentation
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'We will also change the response type, so that it returns a JSON response containing
+    ImageNet class id and name. The updated `app.py` file will be now:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Inference
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In the next sections we will focus on writing the inference code. This will
+    involve two parts, one where we prepare the image so that it can be fed to DenseNet
+    and next, we will write the code to get the actual prediction from the model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Preparing the image
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: DenseNet model requires the image to be of 3 channel RGB image of size 224 x
+    224\. We will also normalize the image tensor with the required mean and standard
+    deviation values. You can read more about it [here](https://pytorch.org/vision/stable/models.html).
+  prefs: []
+  type: TYPE_NORMAL
+- en: We will use `transforms` from `torchvision` library and build a transform pipeline,
+    which transforms our images as required. You can read more about transforms [here](https://pytorch.org/vision/stable/transforms.html).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The above method takes image data in bytes, applies the series of transforms
+    and returns a tensor. To test the above method, read an image file in bytes mode
+    (first replacing ../_static/img/sample_file.jpeg with the actual path to the file
+    on your computer) and see if you get a tensor back:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: Prediction
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Now will use a pretrained DenseNet 121 model to predict the image class. We
+    will use one from `torchvision` library, load the model and get an inference.
+    While we’ll be using a pretrained model in this example, you can use this same
+    approach for your own models. See more about loading your models in this [tutorial](../beginner/saving_loading_models.html).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: The tensor `y_hat` will contain the index of the predicted class id. However,
+    we need a human readable class name. For that we need a class id to name mapping.
+    Download [this file](https://s3.amazonaws.com/deep-learning-models/image-models/imagenet_class_index.json)
+    as `imagenet_class_index.json` and remember where you saved it (or, if you are
+    following the exact steps in this tutorial, save it in tutorials/_static). This
+    file contains the mapping of ImageNet class id to ImageNet class name. We will
+    load this JSON file and get the class name of the predicted index.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Before using `imagenet_class_index` dictionary, first we will convert tensor
+    value to a string value, since the keys in the `imagenet_class_index` dictionary
+    are strings. We will test our above method:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'You should get a response like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: The first item in array is ImageNet class id and second item is the human readable
+    name.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Integrating the model in our API Server
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In this final part we will add our model to our Flask API server. Since our
+    API server is supposed to take an image file, we will update our `predict` method
+    to read files from the requests:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE11]'
+  prefs:
+  - PREF_BQ
+  type: TYPE_PRE
+- en: '[PRE12]'
+  prefs:
+  - PREF_BQ
+  type: TYPE_PRE
+- en: 'library to send a POST request to our app:'
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs:
+  - PREF_BQ
+  type: TYPE_PRE
+- en: 'Printing resp.json() will now show the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs:
+  - PREF_BQ
+  type: TYPE_PRE
+- en: 'The server we wrote is quite trivial and may not do everything you need for
+    your production application. So, here are some things you can do to make it better:'
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: The endpoint `/predict` assumes that always there will be a image file in the
+    request. This may not hold true for all requests. Our user may send image with
+    a different parameter or send no images at all.
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: The user may send non-image type files too. Since we are not handling errors,
+    this will break our server. Adding an explicit error handing path that will throw
+    an exception would allow us to better handle the bad inputs
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: Even though the model can recognize a large number of classes of images, it
+    may not be able to recognize all images. Enhance the implementation to handle
+    cases when the model does not recognize anything in the image.
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: We run the Flask server in the development mode, which is not suitable for deploying
+    in production. You can check out [this tutorial](https://flask.palletsprojects.com/en/1.1.x/tutorial/deploy/)
+    for deploying a Flask server in production.
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: You can also add a UI by creating a page with a form which takes the image and
+    displays the prediction. Check out the [demo](https://pytorch-imagenet.herokuapp.com/)
+    of a similar project and its [source code](https://github.com/avinassh/pytorch-flask-api-heroku).
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: In this tutorial, we only showed how to build a service that could return predictions
+    for a single image at a time. We could modify our service to be able to return
+    predictions for multiple images at once. In addition, the [service-streamer](https://github.com/ShannonAI/service-streamer)
+    library automatically queues requests to your service and samples them into mini-batches
+    that can be fed into your model. You can check out [this tutorial](https://github.com/ShannonAI/service-streamer/wiki/Vision-Recognition-Service-with-Flask-and-service-streamer).
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: Finally, we encourage you to check out our other tutorials on deploying PyTorch
+    models linked-to at the top of the page.
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Total running time of the script:** ( 0 minutes 0.000 seconds)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Python source code: flask_rest_api_tutorial.py`](../_downloads/b45d95b1d38fe556c77d1ee548809d28/flask_rest_api_tutorial.py)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Jupyter notebook: flask_rest_api_tutorial.ipynb`](../_downloads/786469bd4d28fe2528b92a6d12fb189e/flask_rest_api_tutorial.ipynb)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  prefs: []
+  type: TYPE_NORMAL

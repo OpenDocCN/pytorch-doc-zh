@@ -1,0 +1,335 @@
+- en: (beta) Quantized Transfer Learning for Computer Vision Tutorial
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/tutorials/intermediate/quantized_transfer_learning_tutorial.html](https://pytorch.org/tutorials/intermediate/quantized_transfer_learning_tutorial.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Tip
+  prefs: []
+  type: TYPE_NORMAL
+- en: To get the most of this tutorial, we suggest using this [Colab Version](https://colab.research.google.com/github/pytorch/tutorials/blob/gh-pages/_downloads/quantized_transfer_learning_tutorial.ipynb).
+    This will allow you to experiment with the information presented below.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Author**: [Zafar Takhirov](https://github.com/z-a-f)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Reviewed by**: [Raghuraman Krishnamoorthi](https://github.com/raghuramank100)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Edited by**: [Jessica Lin](https://github.com/jlin27)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: This tutorial builds on the original [PyTorch Transfer Learning](https://pytorch.org/tutorials/beginner/transfer_learning_tutorial.html)
+    tutorial, written by [Sasank Chilamkurthy](https://chsasank.github.io/).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Transfer learning refers to techniques that make use of a pretrained model
+    for application on a different data-set. There are two main ways the transfer
+    learning is used:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**ConvNet as a fixed feature extractor**: Here, you [“freeze”](https://arxiv.org/abs/1706.04983)
+    the weights of all the parameters in the network except that of the final several
+    layers (aka “the head”, usually fully connected layers). These last layers are
+    replaced with new ones initialized with random weights and only these layers are
+    trained.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '**Finetuning the ConvNet**: Instead of random initializaion, the model is initialized
+    using a pretrained network, after which the training proceeds as usual but with
+    a different dataset. Usually the head (or part of it) is also replaced in the
+    network in case there is a different number of outputs. It is common in this method
+    to set the learning rate to a smaller number. This is done because the network
+    is already trained, and only minor changes are required to “finetune” it to a
+    new dataset.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'You can also combine the above two methods: First you can freeze the feature
+    extractor, and train the head. After that, you can unfreeze the feature extractor
+    (or part of it), set the learning rate to something smaller, and continue training.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: In this part you will use the first method – extracting the features using a
+    quantized model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Part 0\. Prerequisites
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Before diving into the transfer learning, let us review the “prerequisites”,
+    such as installations and data loading/visualizations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Installing the Nightly Build
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Because you will be using the beta parts of the PyTorch, it is recommended
+    to install the latest version of `torch` and `torchvision`. You can find the most
+    recent instructions on local installation [here](https://pytorch.org/get-started/locally/).
+    For example, to install without GPU support:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Load Data
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: This section is identical to the original transfer learning tutorial.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We will use `torchvision` and `torch.utils.data` packages to load the data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The problem you are going to solve today is classifying **ants** and **bees**
+    from images. The dataset contains about 120 training images each for ants and
+    bees. There are 75 validation images for each class. This is considered a very
+    small dataset to generalize on. However, since we are using transfer learning,
+    we should be able to generalize reasonably well.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*This dataset is a very small subset of imagenet.*'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Download the data from [here](https://download.pytorch.org/tutorial/hymenoptera_data.zip)
+    and extract it to the `data` directory.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Visualize a few images
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Let’s visualize a few training images so as to understand the data augmentations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Support Function for Model Training
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Below is a generic function for model training. This function also
+  prefs: []
+  type: TYPE_NORMAL
+- en: Schedules the learning rate
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Saves the best model
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Support Function for Visualizing the Model Predictions
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Generic function to display predictions for a few images
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: Part 1\. Training a Custom Classifier based on a Quantized Feature Extractor
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In this section you will use a “frozen” quantized feature extractor, and train
+    a custom classifier head on top of it. Unlike floating point models, you don’t
+    need to set requires_grad=False for the quantized model, as it has no trainable
+    parameters. Please, refer to the [documentation](https://pytorch.org/docs/stable/quantization.html)
+    for more details.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Load a pretrained model: for this exercise you will be using [ResNet-18](https://pytorch.org/hub/pytorch_vision_resnet/).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: At this point you need to modify the pretrained model. The model has the quantize/dequantize
+    blocks in the beginning and the end. However, because you will only use the feature
+    extractor, the dequantization layer has to move right before the linear layer
+    (the head). The easiest way to do that is to wrap the model in the `nn.Sequential`
+    module.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The first step is to isolate the feature extractor in the ResNet model. Although
+    in this example you are tasked to use all layers except `fc` as the feature extractor,
+    in reality, you can take as many parts as you need. This would be useful in case
+    you would like to replace some of the convolutional layers as well.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: When separating the feature extractor from the rest of a quantized model, you
+    have to manually place the quantizer/dequantized in the beginning and the end
+    of the parts you want to keep quantized.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The function below creates a model with a custom head.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: Currently the quantized models can only be run on CPU. However, it is possible
+    to send the non-quantized parts of the model to a GPU.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: Train and evaluate
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: This step takes around 15-25 min on CPU. Because the quantized model can only
+    run on the CPU, you cannot run the training on GPU.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: Part 2\. Finetuning the Quantizable Model
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In this part, we fine tune the feature extractor used for transfer learning,
+    and quantize the feature extractor. Note that in both part 1 and 2, the feature
+    extractor is quantized. The difference is that in part 1, we use a pretrained
+    quantized model. In this part, we create a quantized feature extractor after fine
+    tuning on the data-set of interest, so this is a way to get better accuracy with
+    transfer learning while having the benefits of quantization. Note that in our
+    specific example, the training set is really small (120 images) so the benefits
+    of fine tuning the entire model is not apparent. However, the procedure shown
+    here will improve accuracy for transfer learning with larger datasets.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The pretrained feature extractor must be quantizable. To make sure it is quantizable,
+    perform the following steps:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Fuse `(Conv, BN, ReLU)`, `(Conv, BN)`, and `(Conv, ReLU)` using `torch.quantization.fuse_modules`.
+  prefs:
+  - PREF_BQ
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: Connect the feature extractor with a custom head. This requires dequantizing
+    the output of the feature extractor.
+  prefs:
+  - PREF_BQ
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: Insert fake-quantization modules at appropriate locations in the feature extractor
+    to mimic quantization during training.
+  prefs:
+  - PREF_BQ
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: For step (1), we use models from `torchvision/models/quantization`, which have
+    a member method `fuse_model`. This function fuses all the `conv`, `bn`, and `relu`
+    modules. For custom models, this would require calling the `torch.quantization.fuse_modules`
+    API with the list of modules to fuse manually.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Step (2) is performed by the `create_combined_model` function used in the previous
+    section.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Step (3) is achieved by using `torch.quantization.prepare_qat`, which inserts
+    fake-quantization modules.
+  prefs: []
+  type: TYPE_NORMAL
+- en: As step (4), you can start “finetuning” the model, and after that convert it
+    to a fully quantized version (Step 5).
+  prefs: []
+  type: TYPE_NORMAL
+- en: To convert the fine tuned model into a quantized model you can call the `torch.quantization.convert`
+    function (in our case only the feature extractor is quantized).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Because of the random initialization your results might differ from the results
+    shown in this tutorial.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: Finetuning the model
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: In the current tutorial the whole model is fine tuned. In general, this will
+    lead to higher accuracy. However, due to the small training set used here, we
+    end up overfitting to the training set.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Step 4\. Fine tune the model
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: Step 5\. Convert to quantized model
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: Lets see how the quantized model performs on a few images
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE

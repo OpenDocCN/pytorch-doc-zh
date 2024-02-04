@@ -1,0 +1,184 @@
+- en: (beta) Building a Simple CPU Performance Profiler with FX
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/tutorials/intermediate/fx_profiling_tutorial.html](https://pytorch.org/tutorials/intermediate/fx_profiling_tutorial.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Click [here](#sphx-glr-download-intermediate-fx-profiling-tutorial-py) to download
+    the full example code
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Author**: [James Reed](https://github.com/jamesr66a)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In this tutorial, we are going to use FX to do the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Capture PyTorch Python code in a way that we can inspect and gather statistics
+    about the structure and execution of the code
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Build out a small class that will serve as a simple performance “profiler”,
+    collecting runtime statistics about each part of the model from actual runs.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: For this tutorial, we are going to use the torchvision ResNet18 model for demonstration
+    purposes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now that we have our model, we want to inspect deeper into its performance.
+    That is, for the following invocation, which parts of the model are taking the
+    longest?
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: A common way of answering that question is to go through the program source,
+    add code that collects timestamps at various points in the program, and compare
+    the difference between those timestamps to see how long the regions between the
+    timestamps take.
+  prefs: []
+  type: TYPE_NORMAL
+- en: That technique is certainly applicable to PyTorch code, however it would be
+    nicer if we didn’t have to copy over model code and edit it, especially code we
+    haven’t written (like this torchvision model). Instead, we are going to use FX
+    to automate this “instrumentation” process without needing to modify any source.
+  prefs: []
+  type: TYPE_NORMAL
+- en: First, let’s get some imports out of the way (we will be using all of these
+    later in the code).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`tabulate` is an external library that is not a dependency of PyTorch. We will
+    be using it to more easily visualize performance data. Please make sure you’ve
+    installed it from your favorite Python package source.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Capturing the Model with Symbolic Tracing
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Next, we are going to use FX’s symbolic tracing mechanism to capture the definition
+    of our model in a data structure we can manipulate and examine.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: This gives us a Graph representation of the ResNet18 model. A Graph consists
+    of a series of Nodes connected to each other. Each Node represents a call-site
+    in the Python code (whether to a function, a module, or a method) and the edges
+    (represented as `args` and `kwargs` on each node) represent the values passed
+    between these call-sites. More information about the Graph representation and
+    the rest of FX’s APIs ca be found at the FX documentation [https://pytorch.org/docs/master/fx.html](https://pytorch.org/docs/master/fx.html).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Creating a Profiling Interpreter
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Next, we are going to create a class that inherits from `torch.fx.Interpreter`.
+    Though the `GraphModule` that `symbolic_trace` produces compiles Python code that
+    is run when you call a `GraphModule`, an alternative way to run a `GraphModule`
+    is by executing each `Node` in the `Graph` one by one. That is the functionality
+    that `Interpreter` provides: It interprets the graph node- by-node.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: By inheriting from `Interpreter`, we can override various functionality and
+    install the profiling behavior we want. The goal is to have an object to which
+    we can pass a model, invoke the model 1 or more times, then get statistics about
+    how long the model and each part of the model took during those runs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Let’s define our `ProfilingInterpreter` class:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: We use Python’s `time.time` function to pull wall clock timestamps and compare
+    them. This is not the most accurate way to measure performance, and will only
+    give us a first- order approximation. We use this simple technique only for the
+    purpose of demonstration in this tutorial.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Investigating the Performance of ResNet18
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: We can now use `ProfilingInterpreter` to inspect the performance characteristics
+    of our ResNet18 model;
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'There are two things we should call out here:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`MaxPool2d` takes up the most time. This is a known issue: [https://github.com/pytorch/pytorch/issues/51393](https://github.com/pytorch/pytorch/issues/51393)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: BatchNorm2d also takes up significant time. We can continue this line of thinking
+    and optimize this in the Conv-BN Fusion with FX [tutorial](https://pytorch.org/tutorials/intermediate/fx_conv_bn_fuser.html).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Conclusion
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: As we can see, using FX we can easily capture PyTorch programs (even ones we
+    don’t have the source code for!) in a machine-interpretable format and use that
+    for analysis, such as the performance analysis we’ve done here. FX opens up an
+    exciting world of possibilities for working with PyTorch programs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Finally, since FX is still in beta, we would be happy to hear any feedback you
+    have about using it. Please feel free to use the PyTorch Forums ([https://discuss.pytorch.org/](https://discuss.pytorch.org/))
+    and the issue tracker ([https://github.com/pytorch/pytorch/issues](https://github.com/pytorch/pytorch/issues))
+    to provide any feedback you might have.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Total running time of the script:** ( 0 minutes 0.374 seconds)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Python source code: fx_profiling_tutorial.py`](../_downloads/8c575aa36ad9a61584ec0ddf11cbe84d/fx_profiling_tutorial.py)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Jupyter notebook: fx_profiling_tutorial.ipynb`](../_downloads/945dab6b984b8789385e32187d4a8964/fx_profiling_tutorial.ipynb)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  prefs: []
+  type: TYPE_NORMAL

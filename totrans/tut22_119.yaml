@@ -1,0 +1,152 @@
+- en: Customize Process Group Backends Using Cpp Extensions
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/tutorials/intermediate/process_group_cpp_extension_tutorial.html](https://pytorch.org/tutorials/intermediate/process_group_cpp_extension_tutorial.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: '**Author**: Howard Huang <https://github.com/H-Huang>, [Feng Tian](https://github.com/ftian1),
+    [Shen Li](https://mrshenli.github.io/), [Min Si](https://minsii.github.io/)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[![edit](../Images/a8aa37bcc5edbf2ba5fcf18dba1e55f9.png)](../_images/pencil-16.png)
+    View and edit this tutorial in [github](https://github.com/pytorch/tutorials/blob/main/intermediate_source/process_group_cpp_extension_tutorial.rst).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Prerequisites:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PyTorch Distributed Overview](../beginner/dist_overview.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PyTorch Collective Communication Package](https://pytorch.org/docs/stable/distributed.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PyTorch Cpp Extension](https://pytorch.org/docs/stable/cpp_extension.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Writing Distributed Applications with PyTorch](https://pytorch.org/tutorials/intermediate/dist_tuto.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: This tutorial demonstrates how to implement a custom `Backend` and plug that
+    into [PyTorch distributed package](https://pytorch.org/docs/stable/distributed.html)
+    using [cpp extensions](https://pytorch.org/docs/stable/cpp_extension.html). This
+    is helpful when you need a specialized software stack for your hardware, or when
+    you would like to experiment with new collective communication algorithms.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Basics
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: PyTorch collective communications power several widely adopted distributed training
+    features, including [DistributedDataParallel](https://pytorch.org/docs/stable/generated/torch.nn.parallel.DistributedDataParallel.html),
+    [ZeroRedundancyOptimizer](https://pytorch.org/docs/stable/distributed.optim.html#torch.distributed.optim.ZeroRedundancyOptimizer),
+    [FullyShardedDataParallel](https://github.com/pytorch/pytorch/blob/master/torch/distributed/_fsdp/fully_sharded_data_parallel.py).
+    In order to make the same collective communication API work with different communication
+    backends, the distributed package abstracts collective communication operations
+    into a [Backend](https://github.com/pytorch/pytorch/blob/main/torch/csrc/distributed/c10d/Backend.hpp)
+    class. Different backends can then be implemented as subclasses of `Backend` using
+    preferred third-party libraries. PyTorch distributed comes with three default
+    backends, `ProcessGroupNCCL`, `ProcessGroupGloo`, and `ProcessGroupMPI`. However,
+    beyond these three backends, there are also other communication libraries (e.g.,
+    [UCC](https://github.com/openucx/ucc), [OneCCL](https://github.com/oneapi-src/oneCCL)),
+    different types of hardware (e.g., [TPU](https://cloud.google.com/tpu), [Trainum](https://aws.amazon.com/machine-learning/trainium/)),
+    and emerging communication algorithms (e.g., [Herring](https://www.amazon.science/publications/herring-rethinking-the-parameter-server-at-scale-for-the-cloud),
+    [Reduction Server](https://cloud.google.com/blog/topics/developers-practitioners/optimize-training-performance-reduction-server-vertex-ai)).
+    Therefore, the distributed package exposes extension APIs to allow customizing
+    collective communication backends.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The 4 steps below show how to implement a dummy `Backend` backend and use that
+    in Python application code. Please note that this tutorial focuses on demonstrating
+    the extension APIs, instead of developing a functioning communication backend.
+    Hence, the `dummy` backend just covers a subset of the APIs (`all_reduce` and
+    `all_gather`), and simply sets the values of tensors to 0.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Step 1: Implement a Subclass of `Backend`'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: This first step is to implement a `Backend` subclass that overrides target collective
+    communication APIs and runs the custom communication algorithm. The extension
+    also needs to implement a `Work` subclass, which serves as a future of communication
+    results and allows asynchronous execution in application code. If the extension
+    uses third-party libraries, it can include the headers and call into the library
+    APIs from the `BackendDummy` subclass. The two code snippets below present the
+    implementation of `dummy.h` and `dummy.cpp`. See the [dummy collectives](https://github.com/H-Huang/torch_collective_extension)
+    repository for the full implementation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Step 2: Expose The Extension Python APIs'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The backend constructors are called [from Python side](https://github.com/pytorch/pytorch/blob/v1.9.0/torch/distributed/distributed_c10d.py#L643-L650),
+    so the extension also needs to expose the constructor APIs to Python. This can
+    be done by adding the following methods. In this example, `store` and `timeout`
+    are ignored by the `BackendDummy` instantiation method, as those are not used
+    in this dummy implementation. However, real-world extensions should consider using
+    the `store` to perform rendezvous and supporting the `timeout` argument.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Step 3: Build The Custom Extension'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Now, the extension source code files are ready. We can then use [cpp extensions](https://pytorch.org/docs/stable/cpp_extension.html)
+    to build it. To do that, create a `setup.py` file that prepares the paths and
+    commands. Then call `python setup.py develop` to install the extension.
+  prefs: []
+  type: TYPE_NORMAL
+- en: If the extension depends on third-party libraries, you can also specify `libraries_dirs`
+    and `libraries` to the cpp extension APIs. See the [torch ucc](https://github.com/openucx/torch-ucc)
+    project as a real-world example.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Step 4: Use The Extension in Application'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: After installation, you can conveniently use the `dummy` backend when calling
+    [init_process_group](https://pytorch.org/docs/stable/distributed.html#torch.distributed.init_process_group)
+    as if it is an builtin backend.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We can specify dispatching based on backend by changing the `backend` argument
+    of `init_process_group`. We can dispatch collective with CPU tensor to `gloo`
+    backend and dispatch collective with CUDA tensor to `dummy` backend by specifying
+    `cpu:gloo,cuda:dummy` as the backend argument.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To send all tensors to `dummy` backend, we can simply specify `dummy` as the
+    backend argument.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE

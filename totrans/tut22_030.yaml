@@ -1,0 +1,236 @@
+- en: Transfer Learning for Computer Vision Tutorial
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/tutorials/beginner/transfer_learning_tutorial.html](https://pytorch.org/tutorials/beginner/transfer_learning_tutorial.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Click [here](#sphx-glr-download-beginner-transfer-learning-tutorial-py) to download
+    the full example code
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Author**: [Sasank Chilamkurthy](https://chsasank.github.io)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: In this tutorial, you will learn how to train a convolutional neural network
+    for image classification using transfer learning. You can read more about the
+    transfer learning at [cs231n notes](https://cs231n.github.io/transfer-learning/)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Quoting these notes,
+  prefs: []
+  type: TYPE_NORMAL
+- en: In practice, very few people train an entire Convolutional Network from scratch
+    (with random initialization), because it is relatively rare to have a dataset
+    of sufficient size. Instead, it is common to pretrain a ConvNet on a very large
+    dataset (e.g. ImageNet, which contains 1.2 million images with 1000 categories),
+    and then use the ConvNet either as an initialization or a fixed feature extractor
+    for the task of interest.
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: 'These two major transfer learning scenarios look as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Finetuning the ConvNet**: Instead of random initialization, we initialize
+    the network with a pretrained network, like the one that is trained on imagenet
+    1000 dataset. Rest of the training looks as usual.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**ConvNet as fixed feature extractor**: Here, we will freeze the weights for
+    all of the network except that of the final fully connected layer. This last fully
+    connected layer is replaced with a new one with random weights and only this layer
+    is trained.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Load Data
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: We will use torchvision and torch.utils.data packages for loading the data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The problem we’re going to solve today is to train a model to classify **ants**
+    and **bees**. We have about 120 training images each for ants and bees. There
+    are 75 validation images for each class. Usually, this is a very small dataset
+    to generalize upon, if trained from scratch. Since we are using transfer learning,
+    we should be able to generalize reasonably well.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This dataset is a very small subset of imagenet.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Download the data from [here](https://download.pytorch.org/tutorial/hymenoptera_data.zip)
+    and extract it to the current directory.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Visualize a few images
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Let’s visualize a few training images so as to understand the data augmentations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: '![[''ants'', ''ants'', ''ants'', ''ants'']](../Images/be538c850b645a41a7a77ff388954e14.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Training the model
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Now, let’s write a general function to train a model. Here, we will illustrate:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Scheduling the learning rate
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Saving the best model
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: In the following, parameter `scheduler` is an LR scheduler object from `torch.optim.lr_scheduler`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Visualizing the model predictions
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Generic function to display predictions for a few images
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: Finetuning the ConvNet
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Load a pretrained model and reset final fully connected layer.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Train and evaluate
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: It should take around 15-25 min on CPU. On GPU though, it takes less than a
+    minute.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: '![predicted: ants, predicted: bees, predicted: ants, predicted: bees, predicted:
+    bees, predicted: ants](../Images/ebec7787362bc53fe2289e5740da5756.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: ConvNet as fixed feature extractor
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Here, we need to freeze all the network except the final layer. We need to set
+    `requires_grad = False` to freeze the parameters so that the gradients are not
+    computed in `backward()`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can read more about this in the documentation [here](https://pytorch.org/docs/notes/autograd.html#excluding-subgraphs-from-backward).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: Train and evaluate
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: On CPU this will take about half the time compared to previous scenario. This
+    is expected as gradients don’t need to be computed for most of the network. However,
+    forward does need to be computed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: '![predicted: bees, predicted: ants, predicted: bees, predicted: bees, predicted:
+    ants, predicted: ants](../Images/54625e60404f9c98f34cf32ca56bb118.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Inference on custom images
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Use the trained model to make predictions on custom images and visualize the
+    predicted class labels along with the images.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: '![Predicted: bees](../Images/17f1055ace5b29777ddd62bd25d3df8f.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Further Learning
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: If you would like to learn more about the applications of transfer learning,
+    checkout our [Quantized Transfer Learning for Computer Vision Tutorial](https://pytorch.org/tutorials/intermediate/quantized_transfer_learning_tutorial.html).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Total running time of the script:** ( 1 minutes 36.689 seconds)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Python source code: transfer_learning_tutorial.py`](../_downloads/d923ca53b1bfbeb3c222ae46d65d485e/transfer_learning_tutorial.py)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Jupyter notebook: transfer_learning_tutorial.ipynb`](../_downloads/74249e7f9f1f398f57ccd094a4f3021b/transfer_learning_tutorial.ipynb)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  prefs: []
+  type: TYPE_NORMAL

@@ -1,0 +1,167 @@
+- en: 'TorchMultimodal Tutorial: Finetuning FLAVA'
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/tutorials/beginner/flava_finetuning_tutorial.html](https://pytorch.org/tutorials/beginner/flava_finetuning_tutorial.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Click [here](#sphx-glr-download-beginner-flava-finetuning-tutorial-py) to download
+    the full example code
+  prefs: []
+  type: TYPE_NORMAL
+- en: Multimodal AI has recently become very popular owing to its ubiquitous nature,
+    from use cases like image captioning and visual search to more recent applications
+    like image generation from text. **TorchMultimodal is a library powered by Pytorch
+    consisting of building blocks and end to end examples, aiming to enable and accelerate
+    research in multimodality**.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In this tutorial, we will demonstrate how to use a **pretrained SoTA model called**
+    [FLAVA](https://arxiv.org/pdf/2112.04482.pdf) **from TorchMultimodal library to
+    finetune on a multimodal task i.e. visual question answering** (VQA). The model
+    consists of two unimodal transformer based encoders for text and image and a multimodal
+    encoder to combine the two embeddings. It is pretrained using contrastive, image
+    text matching and text, image and multimodal masking losses.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Installation
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: We will use TextVQA dataset and `bert tokenizer` from Hugging Face for this
+    tutorial. So you need to install datasets and transformers in addition to TorchMultimodal.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'When running this tutorial in Google Colab, install the required packages by
+    creating a new cell and running the following commands:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Steps
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Download the Hugging Face dataset to a directory on your computer by running
+    the following command:'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs:
+  - PREF_IND
+  type: TYPE_PRE
+- en: Note
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: If you are running this tutorial in Google Colab, run these commands in a new
+    cell and prepend these commands with an exclamation mark (!)
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: For this tutorial, we treat VQA as a classification task where the inputs are
+    images and question (text) and the output is an answer class. So we need to download
+    the vocab file with answer classes and create the answer to label mapping.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: We also load the [textvqa dataset](https://arxiv.org/pdf/1904.08920.pdf) containing
+    34602 training samples (images,questions and answers) from Hugging Face
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: We see there are 3997 answer classes including a class representing unknown
+    answers.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Lets display a sample entry from the dataset:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: '![flava finetuning tutorial](../Images/76fa83b90558dee8d4886152e84c9896.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: '3\. Next, we write the transform function to convert the image and text into
+    Tensors consumable by our model - For images, we use the transforms from torchvision
+    to convert to Tensor and resize to uniform sizes - For text, we tokenize (and
+    pad) them using the `BertTokenizer` from Hugging Face - For answers (i.e. labels),
+    we take the most frequently occurring answer as the label to train with:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: 4\. Finally, we import the `flava_model_for_classification` from `torchmultimodal`.
+    It loads the pretrained FLAVA checkpoint by default and includes a classification
+    head.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The model forward function passes the image through the visual encoder and the
+    question through the text encoder. The image and question embeddings are then
+    passed through the multimodal encoder. The final embedding corresponding to the
+    CLS token is passed through a MLP head which finally gives the probability distribution
+    over each possible answers.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: '5\. We put together the dataset and model in a toy training loop to demonstrate
+    how to train the model for 3 iterations:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: Conclusion
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: This tutorial introduced the basics around how to finetune on a multimodal task
+    using FLAVA from TorchMultimodal. Please also check out other examples from the
+    library like [MDETR](https://github.com/facebookresearch/multimodal/tree/main/torchmultimodal/models/mdetr)
+    which is a multimodal model for object detection and [Omnivore](https://github.com/facebookresearch/multimodal/blob/main/torchmultimodal/models/omnivore.py)
+    which is multitask model spanning image, video and 3d classification.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Total running time of the script:** ( 2 minutes 31.510 seconds)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Python source code: flava_finetuning_tutorial.py`](../_downloads/03d2b0c71eeabf3687d88081641d7a1c/flava_finetuning_tutorial.py)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Jupyter notebook: flava_finetuning_tutorial.ipynb`](../_downloads/3f1a1757bef27416aec84c890db7b50d/flava_finetuning_tutorial.ipynb)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  prefs: []
+  type: TYPE_NORMAL

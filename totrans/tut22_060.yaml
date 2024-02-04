@@ -1,0 +1,335 @@
+- en: Train a Mario-playing RL Agent
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/tutorials/intermediate/mario_rl_tutorial.html](https://pytorch.org/tutorials/intermediate/mario_rl_tutorial.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Click [here](#sphx-glr-download-intermediate-mario-rl-tutorial-py) to download
+    the full example code
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Authors:** [Yuansong Feng](https://github.com/YuansongFeng), [Suraj Subramanian](https://github.com/suraj813),
+    [Howard Wang](https://github.com/hw26), [Steven Guo](https://github.com/GuoYuzhang).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: This tutorial walks you through the fundamentals of Deep Reinforcement Learning.
+    At the end, you will implement an AI-powered Mario (using [Double Deep Q-Networks](https://arxiv.org/pdf/1509.06461.pdf))
+    that can play the game by itself.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Although no prior knowledge of RL is necessary for this tutorial, you can familiarize
+    yourself with these RL [concepts](https://spinningup.openai.com/en/latest/spinningup/rl_intro.html),
+    and have this handy [cheatsheet](https://colab.research.google.com/drive/1eN33dPVtdPViiS1njTW_-r-IYCDTFU7N)
+    as your companion. The full code is available [here](https://github.com/yuansongFeng/MadMario/).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![mario](../Images/e46d7dbb0cc58ac0895589bf255444be.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: RL Definitions
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '**Environment** The world that an agent interacts with and learns from.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Action** \(a\) : How the Agent responds to the Environment. The set of all
+    possible Actions is called *action-space*.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**State** \(s\) : The current characteristic of the Environment. The set of
+    all possible States the Environment can be in is called *state-space*.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Reward** \(r\) : Reward is the key feedback from Environment to Agent. It
+    is what drives the Agent to learn and to change its future action. An aggregation
+    of rewards over multiple time steps is called **Return**.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Optimal Action-Value function** \(Q^*(s,a)\) : Gives the expected return
+    if you start in state \(s\), take an arbitrary action \(a\), and then for each
+    future time step take the action that maximizes returns. \(Q\) can be said to
+    stand for the “quality” of the action in a state. We try to approximate this function.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Environment
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Initialize Environment
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: In Mario, the environment consists of tubes, mushrooms and other components.
+  prefs: []
+  type: TYPE_NORMAL
+- en: When Mario makes an action, the environment responds with the changed (next)
+    state, reward and other info.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Preprocess Environment
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Environment data is returned to the agent in `next_state`. As you saw above,
+    each state is represented by a `[3, 240, 256]` size array. Often that is more
+    information than our agent needs; for instance, Mario’s actions do not depend
+    on the color of the pipes or the sky!
+  prefs: []
+  type: TYPE_NORMAL
+- en: We use **Wrappers** to preprocess environment data before sending it to the
+    agent.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`GrayScaleObservation` is a common wrapper to transform an RGB image to grayscale;
+    doing so reduces the size of the state representation without losing useful information.
+    Now the size of each state: `[1, 240, 256]`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`ResizeObservation` downsamples each observation into a square image. New size:
+    `[1, 84, 84]`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`SkipFrame` is a custom wrapper that inherits from `gym.Wrapper` and implements
+    the `step()` function. Because consecutive frames don’t vary much, we can skip
+    n-intermediate frames without losing much information. The n-th frame aggregates
+    rewards accumulated over each skipped frame.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`FrameStack` is a wrapper that allows us to squash consecutive frames of the
+    environment into a single observation point to feed to our learning model. This
+    way, we can identify if Mario was landing or jumping based on the direction of
+    his movement in the previous several frames.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: After applying the above wrappers to the environment, the final wrapped state
+    consists of 4 gray-scaled consecutive frames stacked together, as shown above
+    in the image on the left. Each time Mario makes an action, the environment responds
+    with a state of this structure. The structure is represented by a 3-D array of
+    size `[4, 84, 84]`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![picture](../Images/ad48ffbd1cfc0475d744b8b89a0d962a.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Agent
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'We create a class `Mario` to represent our agent in the game. Mario should
+    be able to:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Act** according to the optimal action policy based on the current state (of
+    the environment).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Remember** experiences. Experience = (current state, current action, reward,
+    next state). Mario *caches* and later *recalls* his experiences to update his
+    action policy.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Learn** a better action policy over time'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: In the following sections, we will populate Mario’s parameters and define his
+    functions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Act
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: For any given state, an agent can choose to do the most optimal action (**exploit**)
+    or a random action (**explore**).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Mario randomly explores with a chance of `self.exploration_rate`; when he chooses
+    to exploit, he relies on `MarioNet` (implemented in `Learn` section) to provide
+    the most optimal action.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: Cache and Recall
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: These two functions serve as Mario’s “memory” process.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`cache()`: Each time Mario performs an action, he stores the `experience` to
+    his memory. His experience includes the current *state*, *action* performed, *reward*
+    from the action, the *next state*, and whether the game is *done*.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`recall()`: Mario randomly samples a batch of experiences from his memory,
+    and uses that to learn the game.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Learn
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Mario uses the [DDQN algorithm](https://arxiv.org/pdf/1509.06461) under the
+    hood. DDQN uses two ConvNets - \(Q_{online}\) and \(Q_{target}\) - that independently
+    approximate the optimal action-value function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In our implementation, we share feature generator `features` across \(Q_{online}\)
+    and \(Q_{target}\), but maintain separate FC classifiers for each. \(\theta_{target}\)
+    (the parameters of \(Q_{target}\)) is frozen to prevent updating by backprop.
+    Instead, it is periodically synced with \(\theta_{online}\) (more on this later).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Neural Network
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: TD Estimate & TD Target
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'Two values are involved in learning:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**TD Estimate** - the predicted optimal \(Q^*\) for a given state \(s\)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: \[{TD}_e = Q_{online}^*(s,a)\]
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**TD Target** - aggregation of current reward and the estimated \(Q^*\) in
+    the next state \(s''\)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: \[a' = argmax_{a} Q_{online}(s', a)\]\[{TD}_t = r + \gamma Q_{target}^*(s',a')\]
+  prefs: []
+  type: TYPE_NORMAL
+- en: Because we don’t know what next action \(a'\) will be, we use the action \(a'\)
+    maximizes \(Q_{online}\) in the next state \(s'\).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Notice we use the [@torch.no_grad()](https://pytorch.org/docs/stable/generated/torch.no_grad.html#no-grad)
+    decorator on `td_target()` to disable gradient calculations here (because we don’t
+    need to backpropagate on \(\theta_{target}\)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: Updating the model
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: As Mario samples inputs from his replay buffer, we compute \(TD_t\) and \(TD_e\)
+    and backpropagate this loss down \(Q_{online}\) to update its parameters \(\theta_{online}\)
+    (\(\alpha\) is the learning rate `lr` passed to the `optimizer`)
+  prefs: []
+  type: TYPE_NORMAL
+- en: \[\theta_{online} \leftarrow \theta_{online} + \alpha \nabla(TD_e - TD_t)\]
+  prefs: []
+  type: TYPE_NORMAL
+- en: \(\theta_{target}\) does not update through backpropagation. Instead, we periodically
+    copy \(\theta_{online}\) to \(\theta_{target}\)
+  prefs: []
+  type: TYPE_NORMAL
+- en: \[\theta_{target} \leftarrow \theta_{online}\]
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: Save checkpoint
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: Putting it all together
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: Logging
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: Let’s play!
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In this example we run the training loop for 40 episodes, but for Mario to truly
+    learn the ways of his world, we suggest running the loop for at least 40,000 episodes!
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: '![mario rl tutorial](../Images/4d4a02b1af752dcb28b536a50d0f9ee4.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: Conclusion
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In this tutorial, we saw how we can use PyTorch to train a game-playing AI.
+    You can use the same methods to train an AI to play any of the games at the [OpenAI
+    gym](https://gym.openai.com/). Hope you enjoyed this tutorial, feel free to reach
+    us at [our github](https://github.com/yuansongFeng/MadMario/)!
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Total running time of the script:** ( 1 minutes 51.993 seconds)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Python source code: mario_rl_tutorial.py`](../_downloads/38360df5715ca8f0d232e62f3a303840/mario_rl_tutorial.py)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Jupyter notebook: mario_rl_tutorial.ipynb`](../_downloads/c195adbae0504b6504c93e0fd18235ce/mario_rl_tutorial.ipynb)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  prefs: []
+  type: TYPE_NORMAL

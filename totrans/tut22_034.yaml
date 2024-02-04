@@ -1,0 +1,242 @@
+- en: Optimizing Vision Transformer Model for Deployment
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/tutorials/beginner/vt_tutorial.html](https://pytorch.org/tutorials/beginner/vt_tutorial.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Click [here](#sphx-glr-download-beginner-vt-tutorial-py) to download the full
+    example code
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Jeff Tang](https://github.com/jeffxtang), [Geeta Chauhan](https://github.com/gchauhan/)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Vision Transformer models apply the cutting-edge attention-based transformer
+    models, introduced in Natural Language Processing to achieve all kinds of the
+    state of the art (SOTA) results, to Computer Vision tasks. Facebook Data-efficient
+    Image Transformers [DeiT](https://ai.facebook.com/blog/data-efficient-image-transformers-a-promising-new-technique-for-image-classification)
+    is a Vision Transformer model trained on ImageNet for image classification.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In this tutorial, we will first cover what DeiT is and how to use it, then go
+    through the complete steps of scripting, quantizing, optimizing, and using the
+    model in iOS and Android apps. We will also compare the performance of quantized,
+    optimized and non-quantized, non-optimized models, and show the benefits of applying
+    quantization and optimization to the model along the steps.
+  prefs: []
+  type: TYPE_NORMAL
+- en: What is DeiT
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Convolutional Neural Networks (CNNs) have been the main models for image classification
+    since deep learning took off in 2012, but CNNs typically require hundreds of millions
+    of images for training to achieve the SOTA results. DeiT is a vision transformer
+    model that requires a lot less data and computing resources for training to compete
+    with the leading CNNs in performing image classification, which is made possible
+    by two key components of of DeiT:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Data augmentation that simulates training on a much larger dataset;
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Native distillation that allows the transformer network to learn from a CNN’s
+    output.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: DeiT shows that Transformers can be successfully applied to computer vision
+    tasks, with limited access to data and resources. For more details on DeiT, see
+    the [repo](https://github.com/facebookresearch/deit) and [paper](https://arxiv.org/abs/2012.12877).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Classifying Images with DeiT
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Follow the `README.md` at the DeiT repository for detailed information on how
+    to classify images using DeiT, or for a quick test, first install the required
+    packages:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'To run in Google Colab, install dependencies by running the following command:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'then run the script below:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: The output should be 269, which, according to the ImageNet list of class index
+    to [labels file](https://gist.github.com/yrevar/942d3a0ac09ec9e5eb3a), maps to
+    `timber wolf, grey wolf, gray wolf, Canis lupus`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now that we have verified that we can use the DeiT model to classify images,
+    let’s see how to modify the model so it can run on iOS and Android apps.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Scripting DeiT
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: To use the model on mobile, we first need to script the model. See the [Script
+    and Optimize recipe](https://pytorch.org/tutorials/recipes/script_optimized.html)
+    for a quick overview. Run the code below to convert the DeiT model used in the
+    previous step to the TorchScript format that can run on mobile.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: The scripted model file `fbdeit_scripted.pt` of size about 346MB is generated.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Quantizing DeiT
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: To reduce the trained model size significantly while keeping the inference accuracy
+    about the same, quantization can be applied to the model. Thanks to the transformer
+    model used in DeiT, we can easily apply dynamic-quantization to the model, because
+    dynamic quantization works best for LSTM and transformer models (see [here](https://pytorch.org/docs/stable/quantization.html?highlight=quantization#dynamic-quantization)
+    for more details).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Now run the code below:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: This generates the scripted and quantized version of the model `fbdeit_quantized_scripted.pt`,
+    with size about 89MB, a 74% reduction of the non-quantized model size of 346MB!
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'You can use the `scripted_quantized_model` to generate the same inference result:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: Optimizing DeiT
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'The final step before using the quantized and scripted model on mobile is to
+    optimize it:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: The generated `fbdeit_optimized_scripted_quantized.pt` file has about the same
+    size as the quantized, scripted, but non-optimized model. The inference result
+    remains the same.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: Using Lite Interpreter
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: To see how much model size reduction and inference speed up the Lite Interpreter
+    can result in, let’s create the lite version of the model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: Although the lite model size is comparable to the non-lite version, when running
+    the lite version on mobile, the inference speed up is expected.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Comparing Inference Speed
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'To see how the inference speed differs for the four models - the original model,
+    the scripted model, the quantized-and-scripted model, the optimized-quantized-and-scripted
+    model - run the code below:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The results running on a Google Colab are:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: The following results summarize the inference time taken by each model and the
+    percentage reduction of each model relative to the original model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: Learn More
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[Facebook Data-efficient Image Transformers](https://ai.facebook.com/blog/data-efficient-image-transformers-a-promising-new-technique-for-image-classification)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Vision Transformer with ImageNet and MNIST on iOS](https://github.com/pytorch/ios-demo-app/tree/master/ViT4MNIST)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Vision Transformer with ImageNet and MNIST on Android](https://github.com/pytorch/android-demo-app/tree/master/ViT4MNIST)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Total running time of the script:** ( 0 minutes 20.779 seconds)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Python source code: vt_tutorial.py`](../_downloads/82714b1145e891e2eba191bec427b2dd/vt_tutorial.py)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Jupyter notebook: vt_tutorial.ipynb`](../_downloads/b4e406d3f9b5f0552ca1010014ca4164/vt_tutorial.ipynb)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  prefs: []
+  type: TYPE_NORMAL

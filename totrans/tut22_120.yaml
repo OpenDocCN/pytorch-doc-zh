@@ -1,0 +1,284 @@
+- en: Getting Started with Distributed RPC Framework
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/tutorials/intermediate/rpc_tutorial.html](https://pytorch.org/tutorials/intermediate/rpc_tutorial.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: '**Author**: [Shen Li](https://mrshenli.github.io/)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[![edit](../Images/a8aa37bcc5edbf2ba5fcf18dba1e55f9.png)](../_images/pencil-16.png)
+    View and edit this tutorial in [github](https://github.com/pytorch/tutorials/blob/main/intermediate_source/rpc_tutorial.rst).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Prerequisites:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PyTorch Distributed Overview](../beginner/dist_overview.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[RPC API documents](https://pytorch.org/docs/master/rpc.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: This tutorial uses two simple examples to demonstrate how to build distributed
+    training with the [torch.distributed.rpc](https://pytorch.org/docs/stable/rpc.html)
+    package which was first introduced as an experimental feature in PyTorch v1.4.
+    Source code of the two examples can be found in [PyTorch examples](https://github.com/pytorch/examples).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Previous tutorials, [Getting Started With Distributed Data Parallel](ddp_tutorial.html)
+    and [Writing Distributed Applications With PyTorch](dist_tuto.html), described
+    [DistributedDataParallel](https://pytorch.org/docs/stable/_modules/torch/nn/parallel/distributed.html)
+    which supports a specific training paradigm where the model is replicated across
+    multiple processes and each process handles a split of the input data. Sometimes,
+    you might run into scenarios that require different training paradigms. For example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: In reinforcement learning, it might be relatively expensive to acquire training
+    data from environments while the model itself can be quite small. In this case,
+    it might be useful to spawn multiple observers running in parallel and share a
+    single agent. In this case, the agent takes care of the training locally, but
+    the application would still need libraries to send and receive data between observers
+    and the trainer.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Your model might be too large to fit in GPUs on a single machine, and hence
+    would need a library to help split the model onto multiple machines. Or you might
+    be implementing a [parameter server](https://www.cs.cmu.edu/~muli/file/parameter_server_osdi14.pdf)
+    training framework, where model parameters and trainers live on different machines.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: The [torch.distributed.rpc](https://pytorch.org/docs/stable/rpc.html) package
+    can help with the above scenarios. In case 1, [RPC](https://pytorch.org/docs/stable/rpc.html#rpc)
+    and [RRef](https://pytorch.org/docs/stable/rpc.html#rref) allow sending data from
+    one worker to another while easily referencing remote data objects. In case 2,
+    [distributed autograd](https://pytorch.org/docs/stable/rpc.html#distributed-autograd-framework)
+    and [distributed optimizer](https://pytorch.org/docs/stable/rpc.html#module-torch.distributed.optim)
+    make executing backward pass and optimizer step as if it is local training. In
+    the next two sections, we will demonstrate APIs of [torch.distributed.rpc](https://pytorch.org/docs/stable/rpc.html)
+    using a reinforcement learning example and a language model example. Please note,
+    this tutorial does not aim at building the most accurate or efficient models to
+    solve given problems, instead, the main goal here is to show how to use the [torch.distributed.rpc](https://pytorch.org/docs/stable/rpc.html)
+    package to build distributed training applications.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Distributed Reinforcement Learning using RPC and RRef
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: This section describes steps to build a toy distributed reinforcement learning
+    model using RPC to solve CartPole-v1 from [OpenAI Gym](https://gym.openai.com).
+    The policy code is mostly borrowed from the existing single-thread [example](https://github.com/pytorch/examples/blob/master/reinforcement_learning)
+    as shown below. We will skip details of the `Policy` design, and focus on RPC
+    usages.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: We are ready to present the observer. In this example, each observer creates
+    its own environment, and waits for the agent’s command to run an episode. In each
+    episode, one observer loops at most `n_steps` iterations, and in each iteration,
+    it uses RPC to pass its environment state to the agent and gets an action back.
+    Then it applies that action to its environment, and gets the reward and the next
+    state from the environment. After that, the observer uses another RPC to report
+    the reward to the agent. Again, please note that, this is obviously not the most
+    efficient observer implementation. For example, one simple optimization could
+    be packing current state and last reward in one RPC to reduce the communication
+    overhead. However, the goal is to demonstrate RPC API instead of building the
+    best solver for CartPole. So, let’s keep the logic simple and the two steps explicit
+    in this example.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: The code for agent is a little more complex, and we will break it into multiple
+    pieces. In this example, the agent serves as both the trainer and the master,
+    such that it sends command to multiple distributed observers to run episodes,
+    and it also records all actions and rewards locally which will be used during
+    the training phase after each episode. The code below shows `Agent` constructor
+    where most lines are initializing various components. The loop at the end initializes
+    observers remotely on other workers, and holds `RRefs` to those observers locally.
+    The agent will use those observer `RRefs` later to send commands. Applications
+    don’t need to worry about the lifetime of `RRefs`. The owner of each `RRef` maintains
+    a reference counting map to track its lifetime, and guarantees the remote data
+    object will not be deleted as long as there is any live user of that `RRef`. Please
+    refer to the `RRef` [design doc](https://pytorch.org/docs/master/notes/rref.html)
+    for details.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Next, the agent exposes two APIs to observers for selecting actions and reporting
+    rewards. Those functions only run locally on the agent, but will be triggered
+    by observers through RPC.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Let’s add a `run_episode` function on agent which tells all observers to execute
+    an episode. In this function, it first creates a list to collect futures from
+    asynchronous RPCs, and then loop over all observer `RRefs` to make asynchronous
+    RPCs. In these RPCs, the agent also passes an `RRef` of itself to the observer,
+    so that the observer can call functions on the agent as well. As shown above,
+    each observer will make RPCs back to the agent, which are nested RPCs. After each
+    episode, the `saved_log_probs` and `rewards` will contain the recorded action
+    probs and rewards.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Finally, after one episode, the agent needs to train the model, which is implemented
+    in the `finish_episode` function below. There is no RPCs in this function and
+    it is mostly borrowed from the single-thread [example](https://github.com/pytorch/examples/blob/master/reinforcement_learning).
+    Hence, we skip describing its contents.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: With `Policy`, `Observer`, and `Agent` classes, we are ready to launch multiple
+    processes to perform the distributed training. In this example, all processes
+    run the same `run_worker` function, and they use the rank to distinguish their
+    role. Rank 0 is always the agent, and all other ranks are observers. The agent
+    serves as master by repeatedly calling `run_episode` and `finish_episode` until
+    the running reward surpasses the reward threshold specified by the environment.
+    All observers passively waiting for commands from the agent. The code is wrapped
+    by [rpc.init_rpc](https://pytorch.org/docs/stable/rpc.html#torch.distributed.rpc.init_rpc)
+    and [rpc.shutdown](https://pytorch.org/docs/stable/rpc.html#torch.distributed.rpc.shutdown),
+    which initializes and terminates RPC instances respectively. More details are
+    available in the [API page](https://pytorch.org/docs/stable/rpc.html).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: Below are some sample outputs when training with world_size=2.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: In this example, we show how to use RPC as the communication vehicle to pass
+    data across workers, and how to use RRef to reference remote objects. It is true
+    that you could build the entire structure directly on top of `ProcessGroup` `send`
+    and `recv` APIs or use other communication/RPC libraries. However, by using torch.distributed.rpc,
+    you can get the native support and continuously optimized performance under the
+    hood.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Next, we will show how to combine RPC and RRef with distributed autograd and
+    distributed optimizer to perform distributed model parallel training.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Distributed RNN using Distributed Autograd and Distributed Optimizer
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In this section, we use an RNN model to show how to build distributed model
+    parallel training with the RPC API. The example RNN model is very small and can
+    easily fit into a single GPU, but we still divide its layers onto two different
+    workers to demonstrate the idea. Developer can apply the similar techniques to
+    distribute much larger models across multiple devices and machines.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The RNN model design is borrowed from the word language model in PyTorch [example](https://github.com/pytorch/examples/tree/master/word_language_model)
+    repository, which contains three main components, an embedding table, an `LSTM`
+    layer, and a decoder. The code below wraps the embedding table and the decoder
+    into sub-modules, so that their constructors can be passed to the RPC API. In
+    the `EmbeddingTable` sub-module, we intentionally put the `Embedding` layer on
+    GPU to cover the use case. In v1.4, RPC always creates CPU tensor arguments or
+    return values on the destination worker. If the function takes a GPU tensor, you
+    need to move it to the proper device explicitly.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: With the above sub-modules, we can now piece them together using RPC to create
+    an RNN model. In the code below `ps` represents a parameter server, which hosts
+    parameters of the embedding table and the decoder. The constructor uses the [remote](https://pytorch.org/docs/stable/rpc.html#torch.distributed.rpc.remote)
+    API to create an `EmbeddingTable` object and a `Decoder` object on the parameter
+    server, and locally creates the `LSTM` sub-module. During the forward pass, the
+    trainer uses the `EmbeddingTable` `RRef` to find the remote sub-module and passes
+    the input data to the `EmbeddingTable` using RPC and fetches the lookup results.
+    Then, it runs the embedding through the local `LSTM` layer, and finally uses another
+    RPC to send the output to the `Decoder` sub-module. In general, to implement distributed
+    model parallel training, developers can divide the model into sub-modules, invoke
+    RPC to create sub-module instances remotely, and use on `RRef` to find them when
+    necessary. As you can see in the code below, it looks very similar to single-machine
+    model parallel training. The main difference is replacing `Tensor.to(device)`
+    with RPC functions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: Before introducing the distributed optimizer, let’s add a helper function to
+    generate a list of RRefs of model parameters, which will be consumed by the distributed
+    optimizer. In local training, applications could call `Module.parameters()` to
+    grab references to all parameter tensors, and pass it to the local optimizer for
+    subsequent updates. However, the same API does not work in distributed training
+    scenarios as some parameters live on remote machines. Therefore, instead of taking
+    a list of parameter `Tensors`, the distributed optimizer takes a list of `RRefs`,
+    one `RRef` per model parameter for both local and remote model parameters. The
+    helper function is pretty simple, just call `Module.parameters()` and creates
+    a local `RRef` on each of the parameters.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: Then, as the `RNNModel` contains three sub-modules, we need to call `_parameter_rrefs`
+    three times, and wrap that into another helper function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now, we are ready to implement the training loop. After initializing model arguments,
+    we create the `RNNModel` and the `DistributedOptimizer`. The distributed optimizer
+    will take a list of parameter `RRefs`, find all distinct owner workers, and create
+    the given local optimizer (i.e., `SGD` in this case, you can use other local optimizers
+    as well) on each of the owner worker using the given arguments (i.e., `lr=0.05`).
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the training loop, it first creates a distributed autograd context, which
+    will help the distributed autograd engine to find gradients and involved RPC send/recv
+    functions. The design details of the distributed autograd engine can be found
+    in its [design note](https://pytorch.org/docs/master/notes/distributed_autograd.html).
+    Then, it kicks off the forward pass as if it is a local model, and run the distributed
+    backward pass. For the distributed backward, you only need to specify a list of
+    roots, in this case, it is the loss `Tensor`. The distributed autograd engine
+    will traverse the distributed graph automatically and write gradients properly.
+    Next, it runs the `step` function on the distributed optimizer, which will reach
+    out to all involved local optimizers to update model parameters. Compared to local
+    training, one minor difference is that you don’t need to run `zero_grad()` because
+    each autograd context has dedicated space to store gradients, and as we create
+    a context per iteration, those gradients from different iterations will not accumulate
+    to the same set of `Tensors`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: Finally, let’s add some glue code to launch the parameter server and the trainer
+    processes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE

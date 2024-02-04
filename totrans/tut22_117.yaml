@@ -1,0 +1,332 @@
+- en: Getting Started with Fully Sharded Data Parallel(FSDP)
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/tutorials/intermediate/FSDP_tutorial.html](https://pytorch.org/tutorials/intermediate/FSDP_tutorial.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: '**Author**: [Hamid Shojanazeri](https://github.com/HamidShojanazeri), [Yanli
+    Zhao](https://github.com/zhaojuanmao), [Shen Li](https://mrshenli.github.io/)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[![edit](../Images/a8aa37bcc5edbf2ba5fcf18dba1e55f9.png)](../_images/pencil-16.png)
+    View and edit this tutorial in [github](https://github.com/pytorch/tutorials/blob/main/intermediate_source/FSDP_tutorial.rst).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Training AI models at a large scale is a challenging task that requires a lot
+    of compute power and resources. It also comes with considerable engineering complexity
+    to handle the training of these very large models. [PyTorch FSDP](https://pytorch.org/blog/introducing-pytorch-fully-sharded-data-parallel-api/),
+    released in PyTorch 1.11 makes this easier.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In this tutorial, we show how to use [FSDP APIs](https://pytorch.org/docs/1.11/fsdp.html),
+    for simple MNIST models that can be extended to other larger models such as [HuggingFace
+    BERT models](https://huggingface.co/blog/zero-deepspeed-fairscale), [GPT 3 models
+    up to 1T parameters](https://pytorch.medium.com/training-a-1-trillion-parameter-model-with-pytorch-fully-sharded-data-parallel-on-aws-3ac13aa96cff)
+    . The sample DDP MNIST code has been borrowed from [here](https://github.com/yqhu/mnist_examples).
+  prefs: []
+  type: TYPE_NORMAL
+- en: How FSDP works
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In [DistributedDataParallel](https://pytorch.org/docs/stable/generated/torch.nn.parallel.DistributedDataParallel.html),
+    (DDP) training, each process/ worker owns a replica of the model and processes
+    a batch of data, finally it uses all-reduce to sum up gradients over different
+    workers. In DDP the model weights and optimizer states are replicated across all
+    workers. FSDP is a type of data parallelism that shards model parameters, optimizer
+    states and gradients across DDP ranks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: When training with FSDP, the GPU memory footprint is smaller than when training
+    with DDP across all workers. This makes the training of some very large models
+    feasible by allowing larger models or batch sizes to fit on device. This comes
+    with the cost of increased communication volume. The communication overhead is
+    reduced by internal optimizations like overlapping communication and computation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[![FSDP workflow](../Images/4e33f1b27db65dbfcbcf54cce427e858.png)](../_images/fsdp_workflow.png)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: FSDP Workflow
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'At a high level FSDP works as follow:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*In constructor*'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Shard model parameters and each rank only keeps its own shard
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*In forward path*'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Run all_gather to collect all shards from all ranks to recover the full parameter
+    in this FSDP unit
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Run forward computation
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Discard parameter shards it has just collected
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '*In backward path*'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Run all_gather to collect all shards from all ranks to recover the full parameter
+    in this FSDP unit
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Run backward computation
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Run reduce_scatter to sync gradients
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Discard parameters.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: One way to view FSDP’s sharding is to decompose the DDP gradient all-reduce
+    into reduce-scatter and all-gather. Specifically, during the backward pass, FSDP
+    reduces and scatters gradients, ensuring that each rank possesses a shard of the
+    gradients. Then it updates the corresponding shard of the parameters in the optimizer
+    step. Finally, in the subsequent forward pass, it performs an all-gather operation
+    to collect and combine the updated parameter shards.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[![FSDP allreduce](../Images/0e1d2209fe5b011d7237cb607289d4f1.png)](../_images/fsdp_sharding.png)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: FSDP Allreduce
+  prefs: []
+  type: TYPE_NORMAL
+- en: How to use FSDP
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Here we use a toy model to run training on the MNIST dataset for demonstration
+    purposes. The APIs and logic can be applied to training larger models as well.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Setup*'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 1.1 Install PyTorch along with Torchvision
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: We add the following code snippets to a python script “FSDP_mnist.py”.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 1.2 Import necessary packages
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: This tutorial is intended for PyTorch versions 1.12 and later. If you are using
+    an earlier version, replace all instances of size_based_auto_wrap_policy with
+    default_auto_wrap_policy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: 1.3 Distributed training setup. As we mentioned FSDP is a type of data parallelism
+    which requires a distributed training environment, so here we use two helper functions
+    to initialize the processes for distributed training and clean up.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: 2.1 Define our toy model for handwritten digit classification.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: 2.2 Define a train function
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: 2.3 Define a validation function
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: 2.4 Define a distributed train function that wraps the model in FSDP
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Note: to save the FSDP model, we need to call the state_dict on each rank
+    then on Rank 0 save the overall states.**'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: 2.5 Finally, parse the arguments and set the main function
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: We have recorded cuda events to measure the time of FSDP model specifics. The
+    CUDA event time was 110.85 seconds.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: Wrapping the model with FSDP, the model will look as follows, we can see the
+    model has been wrapped in one FSDP unit. Alternatively, we will look at adding
+    the fsdp_auto_wrap_policy next and will discuss the differences.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: The following is the peak memory usage from FSDP MNIST training on g4dn.12.xlarge
+    AWS EC2 instance with 4 GPUs captured from PyTorch Profiler.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[![FSDP peak memory](../Images/c26c3d052bcb9f32ea5c7b3d9500d97a.png)](../_images/FSDP_memory.gif)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: FSDP Peak Memory Usage
+  prefs: []
+  type: TYPE_NORMAL
+- en: Applying *fsdp_auto_wrap_policy* in FSDP otherwise, FSDP will put the entire
+    model in one FSDP unit, which will reduce computation efficiency and memory efficiency.
+    The way it works is that, suppose your model contains 100 Linear layers. If you
+    do FSDP(model), there will only be one FSDP unit which wraps the entire model.
+    In that case, the allgather would collect the full parameters for all 100 linear
+    layers, and hence won’t save CUDA memory for parameter sharding. Also, there is
+    only one blocking allgather call for the all 100 linear layers, there will not
+    be communication and computation overlapping between layers.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To avoid that, you can pass in an fsdp_auto_wrap_policy, which will seal the
+    current FSDP unit and start a new one automatically when the specified condition
+    is met (e.g., size limit). In that way you will have multiple FSDP units, and
+    only one FSDP unit needs to collect full parameters at a time. E.g., suppose you
+    have 5 FSDP units, and each wraps 20 linear layers. Then, in the forward, the
+    1st FSDP unit will allgather parameters for the first 20 linear layers, do computation,
+    discard the parameters and then move on to the next 20 linear layers. So, at any
+    point in time, each rank only materializes parameters/grads for 20 linear layers
+    instead of 100.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To do so in 2.4 we define the auto_wrap_policy and pass it to FSDP wrapper,
+    in the following example, my_auto_wrap_policy defines that a layer could be wrapped
+    or sharded by FSDP if the number of parameters in this layer is larger than 100.
+    If the number of parameters in this layer is smaller than 100, it will be wrapped
+    with other small layers together by FSDP. Finding an optimal auto wrap policy
+    is challenging, PyTorch will add auto tuning for this config in the future. Without
+    an auto tuning tool, it is good to profile your workflow using different auto
+    wrap policies experimentally and find the optimal one.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Applying the fsdp_auto_wrap_policy, the model would be as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: The following is the peak memory usage from FSDP with auto_wrap policy of MNIST
+    training on a g4dn.12.xlarge AWS EC2 instance with 4 GPUs captured from PyTorch
+    Profiler. It can be observed that the peak memory usage on each device is smaller
+    compared to FSDP without auto wrap policy applied, from ~75 MB to 66 MB.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[![FSDP peak memory](../Images/62842d10a3954d2d247fca536a0d7bfe.png)](../_images/FSDP_autowrap.gif)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: FSDP Peak Memory Usage using Auto_wrap policy
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*CPU Off-loading*: In case the model is very large that even with FSDP wouldn’t
+    fit into GPUs, then CPU offload can be helpful here.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Currently, only parameter and gradient CPU offload is supported. It can be enabled
+    via passing in cpu_offload=CPUOffload(offload_params=True).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that this currently implicitly enables gradient offloading to CPU in order
+    for params and grads to be on the same device to work with the optimizer. This
+    API is subject to change. The default is None in which case there will be no offloading.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Using this feature may slow down the training considerably, due to frequent
+    copying of tensors from host to device, but it could help improve memory efficiency
+    and train larger scale models.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In 2.4 we just add it to the FSDP wrapper
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: Compare it with DDP, if in 2.4 we just normally wrap the model in DPP, saving
+    the changes in “DDP_mnist.py”.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: The following is the peak memory usage from DDP MNIST training on g4dn.12.xlarge
+    AWS EC2 instance with 4 GPUs captured from PyTorch profiler.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[![FSDP peak memory](../Images/b7af7a69ededd6326e3de004bb7b1e43.png)](../_images/DDP_memory.gif)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: DDP Peak Memory Usage using Auto_wrap policy
+  prefs: []
+  type: TYPE_NORMAL
+- en: Considering the toy example and tiny MNIST model we defined here, we can observe
+    the difference between peak memory usage of DDP and FSDP. In DDP each process
+    holds a replica of the model, so the memory footprint is higher compared to FSDP
+    which shards the model parameters, optimizer states and gradients over DDP ranks.
+    The peak memory usage using FSDP with auto_wrap policy is the lowest followed
+    by FSDP and DDP.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Also, looking at timings, considering the small model and running the training
+    on a single machine, FSDP with and without auto_wrap policy performed almost as
+    fast as DDP. This example does not represent most of the real applications, for
+    detailed analysis and comparison between DDP and FSDP please refer to this [blog
+    post](https://pytorch.medium.com/6c8da2be180d) .
+  prefs: []
+  type: TYPE_NORMAL

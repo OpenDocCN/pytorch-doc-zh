@@ -1,0 +1,173 @@
+- en: (beta) Dynamic Quantization on an LSTM Word Language Model
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/tutorials/advanced/dynamic_quantization_tutorial.html](https://pytorch.org/tutorials/advanced/dynamic_quantization_tutorial.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Click [here](#sphx-glr-download-advanced-dynamic-quantization-tutorial-py) to
+    download the full example code
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Author**: [James Reed](https://github.com/jamesr66a)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Edited by**: [Seth Weidman](https://github.com/SethHWeidman/)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Introduction
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Quantization involves converting the weights and activations of your model from
+    float to int, which can result in smaller model size and faster inference with
+    only a small hit to accuracy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In this tutorial, we will apply the easiest form of quantization - [dynamic
+    quantization](https://pytorch.org/docs/stable/quantization.html#torch.quantization.quantize_dynamic)
+    - to an LSTM-based next word-prediction model, closely following the [word language
+    model](https://github.com/pytorch/examples/tree/master/word_language_model) from
+    the PyTorch examples.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: 1\. Define the model
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Here we define the LSTM model architecture, following the [model](https://github.com/pytorch/examples/blob/master/word_language_model/model.py)
+    from the word language model example.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: 2\. Load in the text data
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Next, we load the [Wikitext-2 dataset](https://www.google.com/search?q=wikitext+2+data)
+    into a Corpus, again following the [preprocessing](https://github.com/pytorch/examples/blob/master/word_language_model/data.py)
+    from the word language model example.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: 3\. Load the pretrained model
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: This is a tutorial on dynamic quantization, a quantization technique that is
+    applied after a model has been trained. Therefore, we’ll simply load some pretrained
+    weights into this model architecture; these weights were obtained by training
+    for five epochs using the default settings in the word language model example.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now let’s generate some text to ensure that the pretrained model is working
+    properly - similarly to before, we follow [here](https://github.com/pytorch/examples/blob/master/word_language_model/generate.py)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: It’s no GPT-2, but it looks like the model has started to learn the structure
+    of language!
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We’re almost ready to demonstrate dynamic quantization. We just need to define
+    a few more helper functions:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: 4\. Test dynamic quantization
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Finally, we can call `torch.quantization.quantize_dynamic` on the model! Specifically,
+  prefs: []
+  type: TYPE_NORMAL
+- en: We specify that we want the `nn.LSTM` and `nn.Linear` modules in our model to
+    be quantized
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: We specify that we want weights to be converted to `int8` values
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The model looks the same; how has this benefited us? First, we see a significant
+    reduction in model size:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Second, we see faster inference time, with no difference in evaluation loss:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Note: we set the number of threads to one for single threaded comparison, since
+    quantized models run single threaded.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: Running this locally on a MacBook Pro, without quantization, inference takes
+    about 200 seconds, and with quantization it takes just about 100 seconds.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Conclusion
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Dynamic quantization can be an easy way to reduce model size while only having
+    a limited effect on accuracy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Thanks for reading! As always, we welcome any feedback, so please create an
+    issue [here](https://github.com/pytorch/pytorch/issues) if you have any.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Total running time of the script:** ( 5 minutes 30.807 seconds)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Python source code: dynamic_quantization_tutorial.py`](../_downloads/256861ec2cab5f0dc50c523f520dfefd/dynamic_quantization_tutorial.py)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Jupyter notebook: dynamic_quantization_tutorial.ipynb`](../_downloads/9a0e851f5cb70c78bfde07b9bd268569/dynamic_quantization_tutorial.ipynb)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  prefs: []
+  type: TYPE_NORMAL

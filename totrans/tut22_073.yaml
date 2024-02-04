@@ -1,0 +1,153 @@
+- en: (beta) Building a Convolution/Batch Norm fuser in FX
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/tutorials/intermediate/fx_conv_bn_fuser.html](https://pytorch.org/tutorials/intermediate/fx_conv_bn_fuser.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Click [here](#sphx-glr-download-intermediate-fx-conv-bn-fuser-py) to download
+    the full example code
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Author**: [Horace He](https://github.com/chillee)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In this tutorial, we are going to use FX, a toolkit for composable function
+    transformations of PyTorch, to do the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Find patterns of conv/batch norm in the data dependencies.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: For the patterns found in 1), fold the batch norm statistics into the convolution
+    weights.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Note that this optimization only works for models in inference mode (i.e. mode.eval())
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We will be building the fuser that exists here: [https://github.com/pytorch/pytorch/blob/orig/release/1.8/torch/fx/experimental/fuser.py](https://github.com/pytorch/pytorch/blob/orig/release/1.8/torch/fx/experimental/fuser.py)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: First, let’s get some imports out of the way (we will be using all of these
+    later in the code).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: For this tutorial, we are going to create a model consisting of convolutions
+    and batch norms. Note that this model has some tricky components - some of the
+    conv/batch norm patterns are hidden within Sequentials and one of the `BatchNorms`
+    is wrapped in another Module.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Fusing Convolution with Batch Norm
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: One of the primary challenges with trying to automatically fuse convolution
+    and batch norm in PyTorch is that PyTorch does not provide an easy way of accessing
+    the computational graph. FX resolves this problem by symbolically tracing the
+    actual operations called, so that we can track the computations through the forward
+    call, nested within Sequential modules, or wrapped in an user-defined module.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: This gives us a graph representation of our model. Note that both the modules
+    hidden within the sequential as well as the wrapped Module have been inlined into
+    the graph. This is the default level of abstraction, but it can be configured
+    by the pass writer. More information can be found at the FX overview [https://pytorch.org/docs/master/fx.html#module-torch.fx](https://pytorch.org/docs/master/fx.html#module-torch.fx)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Fusing Convolution with Batch Norm
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Unlike some other fusions, fusion of convolution with batch norm does not require
+    any new operators. Instead, as batch norm during inference consists of a pointwise
+    add and multiply, these operations can be “baked” into the preceding convolution’s
+    weights. This allows us to remove the batch norm entirely from our model! Read
+    [https://nenadmarkus.com/p/fusing-batchnorm-and-conv/](https://nenadmarkus.com/p/fusing-batchnorm-and-conv/)
+    for further details. The code here is copied from [https://github.com/pytorch/pytorch/blob/orig/release/1.8/torch/nn/utils/fusion.py](https://github.com/pytorch/pytorch/blob/orig/release/1.8/torch/nn/utils/fusion.py)
+    clarity purposes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: FX Fusion Pass
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Now that we have our computational graph as well as a method for fusing convolution
+    and batch norm, all that remains is to iterate over the FX graph and apply the
+    desired fusions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: We make some simplifications here for demonstration purposes, such as only matching
+    2D convolutions. View [https://github.com/pytorch/pytorch/blob/master/torch/fx/experimental/fuser.py](https://github.com/pytorch/pytorch/blob/master/torch/fx/experimental/fuser.py)
+    for a more usable pass.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Testing out our Fusion Pass
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: We can now run this fusion pass on our initial toy model and verify that our
+    results are identical. In addition, we can print out the code for our fused model
+    and verify that there are no more batch norms.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: Benchmarking our Fusion on ResNet18
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: We can test our fusion pass on a larger model like ResNet18 and see how much
+    this pass improves inference performance.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: As we previously saw, the output of our FX transformation is (“torchscriptable”)
+    PyTorch code, we can easily `jit.script` the output to try and increase our performance
+    even more. In this way, our FX model transformation composes with TorchScript
+    with no issues.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: '**Total running time of the script:** ( 0 minutes 0.000 seconds)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Python source code: fx_conv_bn_fuser.py`](../_downloads/a8a58591f09624693bd748be066141fd/fx_conv_bn_fuser.py)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Jupyter notebook: fx_conv_bn_fuser.ipynb`](../_downloads/a22e5922e71fe39ad848a64968a5570e/fx_conv_bn_fuser.ipynb)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  prefs: []
+  type: TYPE_NORMAL

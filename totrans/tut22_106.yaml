@@ -1,0 +1,453 @@
+- en: Introduction to torch.compile
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/tutorials/intermediate/torch_compile_tutorial.html](https://pytorch.org/tutorials/intermediate/torch_compile_tutorial.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Click [here](#sphx-glr-download-intermediate-torch-compile-tutorial-py) to download
+    the full example code
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Author:** William Wen'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`torch.compile` is the latest method to speed up your PyTorch code! `torch.compile`
+    makes PyTorch code run faster by JIT-compiling PyTorch code into optimized kernels,
+    all while requiring minimal code changes.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: In this tutorial, we cover basic `torch.compile` usage, and demonstrate the
+    advantages of `torch.compile` over previous PyTorch compiler solutions, such as
+    [TorchScript](https://pytorch.org/docs/stable/jit.html) and [FX Tracing](https://pytorch.org/docs/stable/fx.html#torch.fx.symbolic_trace).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Contents**'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Basic Usage](#basic-usage)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Demonstrating Speedups](#demonstrating-speedups)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Comparison to TorchScript and FX Tracing](#comparison-to-torchscript-and-fx-tracing)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[TorchDynamo and FX Graphs](#torchdynamo-and-fx-graphs)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Conclusion](#conclusion)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Required pip Dependencies**'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`torch >= 2.0`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`torchvision`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`numpy`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`scipy`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`tabulate`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'NOTE: a modern NVIDIA GPU (H100, A100, or V100) is recommended for this tutorial
+    in order to reproduce the speedup numbers shown below and documented elsewhere.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[Basic Usage](#id1)'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '`torch.compile` is included in the latest PyTorch. Running TorchInductor on
+    GPU requires Triton, which is included with the PyTorch 2.0 nightly binary. If
+    Triton is still missing, try installing `torchtriton` via pip (`pip install torchtriton
+    --extra-index-url "https://download.pytorch.org/whl/nightly/cu117"` for CUDA 11.7).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Arbitrary Python functions can be optimized by passing the callable to `torch.compile`.
+    We can then call the returned optimized function in place of the original function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Alternatively, we can decorate the function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: We can also optimize `torch.nn.Module` instances.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[Demonstrating Speedups](#id2)'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Let’s now demonstrate that using `torch.compile` can speed up real models. We
+    will compare standard eager mode and `torch.compile` by evaluating and training
+    a `torchvision` model on random data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Before we start, we need to define some utility functions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: First, let’s compare inference.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that in the call to `torch.compile`, we have have the additional `mode`
+    argument, which we will discuss below.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: Notice that `torch.compile` takes a lot longer to complete compared to eager.
+    This is because `torch.compile` compiles the model into optimized kernels as it
+    executes. In our example, the structure of the model doesn’t change, and so recompilation
+    is not needed. So if we run our optimized model several more times, we should
+    see a significant improvement compared to eager.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: And indeed, we can see that running our model with `torch.compile` results in
+    a significant speedup. Speedup mainly comes from reducing Python overhead and
+    GPU read/writes, and so the observed speedup may vary on factors such as model
+    architecture and batch size. For example, if a model’s architecture is simple
+    and the amount of data is large, then the bottleneck would be GPU compute and
+    the observed speedup may be less significant.
+  prefs: []
+  type: TYPE_NORMAL
+- en: You may also see different speedup results depending on the chosen `mode` argument.
+    The `"reduce-overhead"` mode uses CUDA graphs to further reduce the overhead of
+    Python. For your own models, you may need to experiment with different modes to
+    maximize speedup. You can read more about modes [here](https://pytorch.org/get-started/pytorch-2.0/#user-experience).
+  prefs: []
+  type: TYPE_NORMAL
+- en: You may might also notice that the second time we run our model with `torch.compile`
+    is significantly slower than the other runs, although it is much faster than the
+    first run. This is because the `"reduce-overhead"` mode runs a few warm-up iterations
+    for CUDA graphs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For general PyTorch benchmarking, you can try using `torch.utils.benchmark`
+    instead of the `timed` function we defined above. We wrote our own timing function
+    in this tutorial to show `torch.compile`’s compilation latency.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now, let’s consider comparing training.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: Again, we can see that `torch.compile` takes longer in the first iteration,
+    as it must compile the model, but in subsequent iterations, we see significant
+    speedups compared to eager.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We remark that the speedup numbers presented in this tutorial are for demonstration
+    purposes only. Official speedup values can be seen at the [TorchInductor performance
+    dashboard](https://hud.pytorch.org/benchmark/compilers).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Comparison to TorchScript and FX Tracing](#id3)'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: We have seen that `torch.compile` can speed up PyTorch code. Why else should
+    we use `torch.compile` over existing PyTorch compiler solutions, such as TorchScript
+    or FX Tracing? Primarily, the advantage of `torch.compile` lies in its ability
+    to handle arbitrary Python code with minimal changes to existing code.
+  prefs: []
+  type: TYPE_NORMAL
+- en: One case that `torch.compile` can handle that other compiler solutions struggle
+    with is data-dependent control flow (the `if x.sum() < 0:` line below).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: TorchScript tracing `f1` results in silently incorrect results, since only the
+    actual control flow path is traced.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: FX tracing `f1` results in an error due to the presence of data-dependent control
+    flow.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: If we provide a value for `x` as we try to FX trace `f1`, then we run into the
+    same problem as TorchScript tracing, as the data-dependent control flow is removed
+    in the traced function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now we can see that `torch.compile` correctly handles data-dependent control
+    flow.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: TorchScript scripting can handle data-dependent control flow, but this solution
+    comes with its own set of problems. Namely, TorchScript scripting can require
+    major code changes and will raise errors when unsupported Python is used.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the example below, we forget TorchScript type annotations and we receive
+    a TorchScript error because the input type for argument `y`, an `int`, does not
+    match with the default argument type, `torch.Tensor`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: However, `torch.compile` is easily able to handle `f2`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE26]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE27]'
+  prefs: []
+  type: TYPE_PRE
+- en: Another case that `torch.compile` handles well compared to previous compilers
+    solutions is the usage of non-PyTorch functions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE28]'
+  prefs: []
+  type: TYPE_PRE
+- en: TorchScript tracing treats results from non-PyTorch function calls as constants,
+    and so our results can be silently wrong.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE29]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE30]'
+  prefs: []
+  type: TYPE_PRE
+- en: TorchScript scripting and FX tracing disallow non-PyTorch function calls.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE31]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE32]'
+  prefs: []
+  type: TYPE_PRE
+- en: In comparison, `torch.compile` is easily able to handle the non-PyTorch function
+    call.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE33]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE34]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[TorchDynamo and FX Graphs](#id4)'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: One important component of `torch.compile` is TorchDynamo. TorchDynamo is responsible
+    for JIT compiling arbitrary Python code into [FX graphs](https://pytorch.org/docs/stable/fx.html#torch.fx.Graph),
+    which can then be further optimized. TorchDynamo extracts FX graphs by analyzing
+    Python bytecode during runtime and detecting calls to PyTorch operations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Normally, TorchInductor, another component of `torch.compile`, further compiles
+    the FX graphs into optimized kernels, but TorchDynamo allows for different backends
+    to be used. In order to inspect the FX graphs that TorchDynamo outputs, let us
+    create a custom backend that outputs the FX graph and simply returns the graph’s
+    unoptimized forward method.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE35]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE36]'
+  prefs: []
+  type: TYPE_PRE
+- en: Using our custom backend, we can now see how TorchDynamo is able to handle data-dependent
+    control flow. Consider the function below, where the line `if b.sum() < 0` is
+    the source of data-dependent control flow.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE37]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE38]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The output reveals that TorchDynamo extracted 3 different FX graphs corresponding
+    the following code (order may differ from the output above):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`x = a / (torch.abs(a) + 1)`'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '`b = b * -1; return x * b`'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '`return x * b`'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: When TorchDynamo encounters unsupported Python features, such as data-dependent
+    control flow, it breaks the computation graph, lets the default Python interpreter
+    handle the unsupported code, then resumes capturing the graph.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s investigate by example how TorchDynamo would step through `bar`. If `b.sum()
+    < 0`, then TorchDynamo would run graph 1, let Python determine the result of the
+    conditional, then run graph 2\. On the other hand, if `not b.sum() < 0`, then
+    TorchDynamo would run graph 1, let Python determine the result of the conditional,
+    then run graph 3.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This highlights a major difference between TorchDynamo and previous PyTorch
+    compiler solutions. When encountering unsupported Python features, previous solutions
+    either raise an error or silently fail. TorchDynamo, on the other hand, will break
+    the computation graph.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We can see where TorchDynamo breaks the graph by using `torch._dynamo.explain`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE39]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE40]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'In order to maximize speedup, graph breaks should be limited. We can force
+    TorchDynamo to raise an error upon the first graph break encountered by using
+    `fullgraph=True`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE41]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE42]'
+  prefs: []
+  type: TYPE_PRE
+- en: And below, we demonstrate that TorchDynamo does not break the graph on the model
+    we used above for demonstrating speedups.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE43]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE44]'
+  prefs: []
+  type: TYPE_PRE
+- en: We can use `torch.export` (from PyTorch 2.1+) to extract a single, exportable
+    FX graph from the input PyTorch program. The exported graph is intended to be
+    run on different (i.e. Python-less) environments. One important restriction is
+    that the `torch.export` does not support graph breaks. Please check [this tutorial](https://pytorch.org/tutorials/intermediate/torch_export_tutorial.html)
+    for more details on `torch.export`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Conclusion](#id5)'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In this tutorial, we introduced `torch.compile` by covering basic usage, demonstrating
+    speedups over eager mode, comparing to previous PyTorch compiler solutions, and
+    briefly investigating TorchDynamo and its interactions with FX graphs. We hope
+    that you will give `torch.compile` a try!
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Total running time of the script:** ( 6 minutes 7.888 seconds)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Python source code: torch_compile_tutorial.py`](../_downloads/6b019e0b5f84b568fcca1120bd28e230/torch_compile_tutorial.py)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Jupyter notebook: torch_compile_tutorial.ipynb`](../_downloads/96ad88eb476f41a5403dcdade086afb8/torch_compile_tutorial.ipynb)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  prefs: []
+  type: TYPE_NORMAL

@@ -1,0 +1,428 @@
+- en: Inductor CPU backend debugging and profiling
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/tutorials/intermediate/inductor_debug_cpu.html](https://pytorch.org/tutorials/intermediate/inductor_debug_cpu.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Click [here](#sphx-glr-download-intermediate-inductor-debug-cpu-py) to download
+    the full example code
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Authors**: [Xuan Liao](https://github.com/Valentine233), [Haozhe Zhu](https://github.com/zhuhaozhe),
+    [Jiong Gong](https://github.com/jgong5), [Weihan Wang](https://github.com/EikanWang)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Overview
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: PyTorch 2.0 introduced the compilation API called `torch.compile`. This new
+    feature offers a significant speedup over eager mode execution through graph-level
+    optimization powered by the default Inductor backend.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This tutorial is intended to provide an in-depth introduction on the debugging
+    and performance profiling on Inductor CPU backend by delving into the intricacies
+    of `torch.compile`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Meanwhile, you may also find related tutorials about `torch.compile` around
+    [basic usage](https://pytorch.org/tutorials/intermediate/torch_compile_tutorial.html),
+    comprehensive [troubleshooting](https://pytorch.org/docs/stable/dynamo/troubleshooting.html)
+    and GPU-specific knowledge like [GPU performance profiling](https://github.com/pytorch/pytorch/blob/main/docs/source/compile/profiling_torch_compile.rst).
+  prefs: []
+  type: TYPE_NORMAL
+- en: We will start debugging with a motivating example that triggers compilation
+    issues and accuracy problems by demonstrating the process of debugging to pinpoint
+    the problems.
+  prefs: []
+  type: TYPE_NORMAL
+- en: By enabling logging and exploring the underlying generated code, you can learn
+    how to narrow down the failure step by step and finally figure out the route cause.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Following that, we will proceed to discuss how to profile the compiled code
+    and, through a performance comparison with eager mode, elaborate on the reasons
+    why `torch.compile` can provide an additional performance boost compared to its
+    eager counterpart.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Debugging
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Here is a simple example to run the `torch.compile` using Inductor and compare
+    its result with eager mode:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The correct implementation of `neg` in the `cpp` codegen is as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: In order to demonstrate the debugging, we will modify the function to a wrong
+    one later.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Get more logging information
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'No debugging information would be provided if you run this simple example by
+    default. In order to get more useful debugging and logging information, we usually
+    add a `TORCH_COMPILE_DEBUG` environment variable like below:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'This would print more debug information in the output logs and also dump the
+    intermediate IRs generated during the codegen process. You can find the dumped
+    file paths in the log like below:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'In this directory, the following files are saved for debugging purposes:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| File | Description |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `fx_graph_runnable.py` | Executable FX graph, after decomposition, before
+    pattern match |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `fx_graph_transformed.py` | Transformed FX graph, after pattern match |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `ir_post_fusion.txt` | Inductor IR before fusion |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `ir_pre_fusion.txt` | Inductor IR after fusion |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `output_code.py` | Generated Python code for graph, with C++/Triton kernels
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: Note that `fx_graph_runnable.py` and `output_code.py` are both runnable and
+    editable in order to make debugging easier. Here are the main parts of code extracted
+    from the files and we correlate the C++ generated line with the FX code line.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`fx_graph_runnable`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'C++ kernel in `output_code`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: Determine component of error
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: When encountering errors or accuracy problems, a straightforward solution to
+    find the bug is to narrow down the problem. The first thing to do is to determine
+    the component where the error occurs. Luckily, it can be simply achieved by changing
+    the backend of `torch.compile`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Code | Description |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `torch.compile(fn, backend="eager")` | Enable Dynamo |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `torch.compile(fn, backend="aot_eager")` | Enable Dynamo + AOT Autograd |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `torch.compile(fn, backend="inductor")` | Enable Dynamo + AOT Autograd +
+    Inductor |'
+  prefs: []
+  type: TYPE_TB
+- en: If the model can successfully run when the backend is set to `eager` or `aot_eager`
+    while it fails with `inductor`, we can narrow down the failure to Inductor.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Compilation error
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'As we know, the evolved chain of graph-level optimization is like:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: If you encounter a compilation error, there is something wrong when compiling
+    C++ kernels in the output code. This type of error indicates that bugs are introduced
+    when lowering IR nodes to output code. The root cause of compilation error is
+    usually shown in the traceback log.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'For example, the `neg` function is modified like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: The logging gives the following compile error with a rather clear reason.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: Let us also see the corresponding C++ kernel in output code and IR node.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'C++ kernel:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'IR node:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: According to the traceback logging, the compilation error is caused by the data
+    type inconsistency of `max_propagate_nan`’s inputs. By checking the C++ kernel,
+    we know that `tmp2` is no longer `long` after doing `-` as `tmp0` is `long`. We
+    can easily match `-` and `max_propagate_nan` in C++ kernel with `ops.neg` and
+    `ops.maximum` in IR node respectively.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now we successfully find that the root cause is the implementation of `ops.neg`
+    in `cpp` codegen, which silently changes the data type when doing `neg`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Accuracy debugging
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Otherwise, if the model runs with other errors or accuracy problem, you can
+    use the PyTorch debugging tool called [Minifier](https://pytorch.org/functorch/stable/notebooks/minifier.html).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The core idea of `Minifier` is to keep removing the nodes and inputs of graph
+    until finding the minimal graph with problem. It helps to automatically generate
+    a minified problematic graph through 4 strategies: truncating suffix, delta debugging,
+    eliminating dead code and removing unused inputs.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: We will now show the debugging process for the accuracy problem with the help
+    of `Minifer`. The accuracy problem refers to the case where the outputs of backends
+    eager and inductor are different.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'For instance, we modify the example like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'And also modify the `neg` function:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'An accuracy problem would be raised as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'To debug an accuracy problem with Minifier, two environment variables are needed:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Which gives us logging information that demonstrates the steps of minifying:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'After running, we get the final minified graph with the target node `neg`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: For more usage details about Minifier, please refer to [Troubleshooting](https://pytorch.org/docs/stable/dynamo/troubleshooting.html).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Performance profiling
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Within this section, we will demonstrate the process of conducting performance
+    analysis for a model that has been compiled using the Inductor CPU backend. In
+    the example below, we benchmark a Hugging Face Transformer model `MobileBertForQuestionAnswering`
+    with both the eager mode and the Inductor graph mode. The execution time and the
+    speedup ratio of Inductor are printed after the benchmark. We use Intel(R) Xeon(R)
+    Platinum 8358 CPU @ 2.60GHz and run benchmark on the first socket to demonstrate
+    the optimization within this section. We set following environment variable as
+    a best practice to benchmark on Intel(R) CPU.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Output:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: In our own testing, we find the Inductor CPU backend speed up the model by around
+    2.355x.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Next, let’s dive deep into the performance at the operation level to understand
+    where the speed-up comes from. [Pytorch Profiler](https://pytorch.org/tutorials/recipes/recipes/profiler_recipe.html)
+    is a good tool to help us. Inductor CPU backend has the support to report the
+    time of the fusion kernels to the profiler with the `enable_kernel_profile` configuration
+    option:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: Following the steps in [Pytorch Profiler](https://pytorch.org/tutorials/recipes/recipes/profiler_recipe.html)
+    We are able to get the profiling table and trace files.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'We get the following performance profiling table for the eager-mode model (omitting
+    some columns):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Similarly, we also get the table for the compiled model with Inductor (omitting
+    some columns):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: From the profiling table of the eager model, we can see the most time consumption
+    ops are [`aten::addmm`, `aten::add`, `aten::copy_`, `aten::mul`, `aten::clamp_min`,
+    `aten::bmm`]. Comparing with the inductor model profiling table, we notice an
+    `mkl::_mkl_linear` entry and multiple fused kernels in the form `graph_0_cpp_fused_*`.
+    They are the major optimizations that the inductor model is doing. Let us discuss
+    them separately.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '(1) Regarding `mkl::_mkl_linear`: You may notice the number of calls to this
+    kernel is 362, which is exactly the same as `aten::linear` in the eager model
+    profiling table. The CPU total of `aten::linear` is 376.888ms, while it is 231.573ms
+    for `mkl::_mkl_linear`. This suggests a ~1.63x for the “linear” part. The speedup
+    mainly comes from [packing the weight tensor to block memory format](https://www.intel.com/content/www/us/en/docs/onemkl/developer-reference-c/2023-1/cblas-gemm-pack-002.html)
+    and invoking [cblas_sgemm_compute](https://www.intel.com/content/www/us/en/docs/onemkl/developer-reference-c/2023-1/cblas-gemm-compute-002.html)
+    within the Inductor CPU backend to have a better cache behavior during GEMM computation.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '(2) Regarding other memory-intensive ops: The end-to-end latency for the eager/inductor
+    model is 802/339ms in our testing. So we can roughly infer that the speed up for
+    the other memory-intensive ops is around 3.94x. Let’s read the generated code
+    to understand how the inductor achieves this impressive optimization. You can
+    find the generated code by searching `cpp_fused__mkl_linear_add_mul_relu_151`
+    in `output_code.py`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: From the generated code above, we can see this kernel has done a typical [Loop
+    Fusion](https://en.wikipedia.org/wiki/Loop_fission_and_fusion) on `[add, add,
+    mul, add]`. This is a memory-bound bottle neck preventing good performance. To
+    get a more intuitive feeling about this optimization, we can infer the sizes and
+    stride of the inputs and further benchmark this `[add, add, mul, add]` pattern.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE26]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Output:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE27]'
+  prefs: []
+  type: TYPE_PRE
+- en: This is just an example. The profiling table shows all element-wise op are fused
+    within the inductor automatically in this model. You can read more kernels in
+    output_code.py
+  prefs: []
+  type: TYPE_NORMAL
+- en: Conclusion
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The document gives an in-depth tutorial for the Inductor CPU backend.
+  prefs: []
+  type: TYPE_NORMAL
+- en: With motivating examples, we walk through the process of debugging and profiling.
+    The main idea is to narrow down the problem.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We demonstrate step by step the way to delve deeper the issue and find the root
+    cause of failures, with the help of debugging logging and the tool Minifier. Firstly
+    determine which component the failure occurs in and then try to generate the smallest
+    snippet of code that can reproduce the failure.
+  prefs: []
+  type: TYPE_NORMAL
+- en: When the performance with Inductor is better than that of eager mode, we provide
+    a solid analytical method for performance profiling. We show how to find the time-consuming
+    hotspot with PyTorch Profiler and figure out the operator-level or kernel-level
+    reason to explain the phenomenon.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Total running time of the script:** ( 9 minutes 21.695 seconds)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Python source code: inductor_debug_cpu.py`](../_downloads/864b90f09a798ba06b420b737cd463b1/inductor_debug_cpu.py)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Jupyter notebook: inductor_debug_cpu.ipynb`](../_downloads/57fbbe6265e9c97da47580b6e60037ac/inductor_debug_cpu.ipynb)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  prefs: []
+  type: TYPE_NORMAL

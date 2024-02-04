@@ -1,0 +1,315 @@
+- en: Loading a TorchScript Model in C++
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/tutorials/advanced/cpp_export.html](https://pytorch.org/tutorials/advanced/cpp_export.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: As its name suggests, the primary interface to PyTorch is the Python programming
+    language. While Python is a suitable and preferred language for many scenarios
+    requiring dynamism and ease of iteration, there are equally many situations where
+    precisely these properties of Python are unfavorable. One environment in which
+    the latter often applies is *production* – the land of low latencies and strict
+    deployment requirements. For production scenarios, C++ is very often the language
+    of choice, even if only to bind it into another language like Java, Rust or Go.
+    The following paragraphs will outline the path PyTorch provides to go from an
+    existing Python model to a serialized representation that can be *loaded* and
+    *executed* purely from C++, with no dependency on Python.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Step 1: Converting Your PyTorch Model to Torch Script'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: A PyTorch model’s journey from Python to C++ is enabled by [Torch Script](https://pytorch.org/docs/master/jit.html),
+    a representation of a PyTorch model that can be understood, compiled and serialized
+    by the Torch Script compiler. If you are starting out from an existing PyTorch
+    model written in the vanilla “eager” API, you must first convert your model to
+    Torch Script. In the most common cases, discussed below, this requires only little
+    effort. If you already have a Torch Script module, you can skip to the next section
+    of this tutorial.
+  prefs: []
+  type: TYPE_NORMAL
+- en: There exist two ways of converting a PyTorch model to Torch Script. The first
+    is known as *tracing*, a mechanism in which the structure of the model is captured
+    by evaluating it once using example inputs, and recording the flow of those inputs
+    through the model. This is suitable for models that make limited use of control
+    flow. The second approach is to add explicit annotations to your model that inform
+    the Torch Script compiler that it may directly parse and compile your model code,
+    subject to the constraints imposed by the Torch Script language.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tip
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can find the complete documentation for both of these methods, as well as
+    further guidance on which to use, in the official [Torch Script reference](https://pytorch.org/docs/master/jit.html).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Converting to Torch Script via Tracing
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'To convert a PyTorch model to Torch Script via tracing, you must pass an instance
+    of your model along with an example input to the `torch.jit.trace` function. This
+    will produce a `torch.jit.ScriptModule` object with the trace of your model evaluation
+    embedded in the module’s `forward` method:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The traced `ScriptModule` can now be evaluated identically to a regular PyTorch
+    module:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Converting to Torch Script via Annotation
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Under certain circumstances, such as if your model employs particular forms
+    of control flow, you may want to write your model in Torch Script directly and
+    annotate your model accordingly. For example, say you have the following vanilla
+    Pytorch model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Because the `forward` method of this module uses control flow that is dependent
+    on the input, it is not suitable for tracing. Instead, we can convert it to a
+    `ScriptModule`. In order to convert the module to the `ScriptModule`, one needs
+    to compile the module with `torch.jit.script` as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: If you need to exclude some methods in your `nn.Module` because they use Python
+    features that TorchScript doesn’t support yet, you could annotate those with `@torch.jit.ignore`
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`sm` is an instance of `ScriptModule` that is ready for serialization.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Step 2: Serializing Your Script Module to a File'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Once you have a `ScriptModule` in your hands, either from tracing or annotating
+    a PyTorch model, you are ready to serialize it to a file. Later on, you’ll be
+    able to load the module from this file in C++ and execute it without any dependency
+    on Python. Say we want to serialize the `ResNet18` model shown earlier in the
+    tracing example. To perform this serialization, simply call [save](https://pytorch.org/docs/master/jit.html#torch.jit.ScriptModule.save)
+    on the module and pass it a filename:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: This will produce a `traced_resnet_model.pt` file in your working directory.
+    If you also would like to serialize `sm`, call `sm.save("my_module_model.pt")`
+    We have now officially left the realm of Python and are ready to cross over to
+    the sphere of C++.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Step 3: Loading Your Script Module in C++'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: To load your serialized PyTorch model in C++, your application must depend on
+    the PyTorch C++ API – also known as *LibTorch*. The LibTorch distribution encompasses
+    a collection of shared libraries, header files and CMake build configuration files.
+    While CMake is not a requirement for depending on LibTorch, it is the recommended
+    approach and will be well supported into the future. For this tutorial, we will
+    be building a minimal C++ application using CMake and LibTorch that simply loads
+    and executes a serialized PyTorch model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: A Minimal C++ Application
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Let’s begin by discussing the code to load a module. The following will already
+    do:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: The `<torch/script.h>` header encompasses all relevant includes from the LibTorch
+    library necessary to run the example. Our application accepts the file path to
+    a serialized PyTorch `ScriptModule` as its only command line argument and then
+    proceeds to deserialize the module using the `torch::jit::load()` function, which
+    takes this file path as input. In return we receive a `torch::jit::script::Module`
+    object. We will examine how to execute it in a moment.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Depending on LibTorch and Building the Application
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Assume we stored the above code into a file called `example-app.cpp`. A minimal
+    `CMakeLists.txt` to build it could look as simple as:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The last thing we need to build the example application is the LibTorch distribution.
+    You can always grab the latest stable release from the [download page](https://pytorch.org/)
+    on the PyTorch website. If you download and unzip the latest archive, you should
+    receive a folder with the following directory structure:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: The `lib/` folder contains the shared libraries you must link against,
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The `include/` folder contains header files your program will need to include,
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The `share/` folder contains the necessary CMake configuration to enable the
+    simple `find_package(Torch)` command above.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Tip
+  prefs: []
+  type: TYPE_NORMAL
+- en: On Windows, debug and release builds are not ABI-compatible. If you plan to
+    build your project in debug mode, please try the debug version of LibTorch. Also,
+    make sure you specify the correct configuration in the `cmake --build .` line
+    below.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The last step is building the application. For this, assume our example directory
+    is laid out like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'We can now run the following commands to build the application from within
+    the `example-app/` folder:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'where `/path/to/libtorch` should be the full path to the unzipped LibTorch
+    distribution. If all goes well, it will look something like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: If we supply the path to the traced `ResNet18` model `traced_resnet_model.pt`
+    we created earlier to the resulting `example-app` binary, we should be rewarded
+    with a friendly “ok”. Please note, if try to run this example with `my_module_model.pt`
+    you will get an error saying that your input is of an incompatible shape. `my_module_model.pt`
+    expects 1D instead of 4D.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Step 4: Executing the Script Module in C++'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Having successfully loaded our serialized `ResNet18` in C++, we are now just
+    a couple lines of code away from executing it! Let’s add those lines to our C++
+    application’s `main()` function:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: The first two lines set up the inputs to our model. We create a vector of `torch::jit::IValue`
+    (a type-erased value type `script::Module` methods accept and return) and add
+    a single input. To create the input tensor, we use `torch::ones()`, the equivalent
+    to `torch.ones` in the C++ API. We then run the `script::Module`’s `forward` method,
+    passing it the input vector we created. In return we get a new `IValue`, which
+    we convert to a tensor by calling `toTensor()`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tip
+  prefs: []
+  type: TYPE_NORMAL
+- en: To learn more about functions like `torch::ones` and the PyTorch C++ API in
+    general, refer to its documentation at [https://pytorch.org/cppdocs](https://pytorch.org/cppdocs).
+    The PyTorch C++ API provides near feature parity with the Python API, allowing
+    you to further manipulate and process tensors just like in Python.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In the last line, we print the first five entries of the output. Since we supplied
+    the same input to our model in Python earlier in this tutorial, we should ideally
+    see the same output. Let’s try it out by re-compiling our application and running
+    it with the same serialized model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'For reference, the output in Python previously was:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: Looks like a good match!
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tip
+  prefs: []
+  type: TYPE_NORMAL
+- en: To move your model to GPU memory, you can write `model.to(at::kCUDA);`. Make
+    sure the inputs to a model are also living in CUDA memory by calling `tensor.to(at::kCUDA)`,
+    which will return a new tensor in CUDA memory.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Step 5: Getting Help and Exploring the API'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: This tutorial has hopefully equipped you with a general understanding of a PyTorch
+    model’s path from Python to C++. With the concepts described in this tutorial,
+    you should be able to go from a vanilla, “eager” PyTorch model, to a compiled
+    `ScriptModule` in Python, to a serialized file on disk and – to close the loop
+    – to an executable `script::Module` in C++.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Of course, there are many concepts we did not cover. For example, you may find
+    yourself wanting to extend your `ScriptModule` with a custom operator implemented
+    in C++ or CUDA, and executing this custom operator inside your `ScriptModule`
+    loaded in your pure C++ production environment. The good news is: this is possible,
+    and well supported! For now, you can explore [this](https://github.com/pytorch/pytorch/tree/master/test/custom_operator)
+    folder for examples, and we will follow up with a tutorial shortly. In the time
+    being, the following links may be generally helpful:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The Torch Script reference: [https://pytorch.org/docs/master/jit.html](https://pytorch.org/docs/master/jit.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'The PyTorch C++ API documentation: [https://pytorch.org/cppdocs/](https://pytorch.org/cppdocs/)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'The PyTorch Python API documentation: [https://pytorch.org/docs/](https://pytorch.org/docs/)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: As always, if you run into any problems or have questions, you can use our [forum](https://discuss.pytorch.org/)
+    or [GitHub issues](https://github.com/pytorch/pytorch/issues) to get in touch.
+  prefs: []
+  type: TYPE_NORMAL

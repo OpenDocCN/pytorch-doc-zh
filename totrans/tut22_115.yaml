@@ -1,0 +1,224 @@
+- en: Getting Started with Distributed Data Parallel
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/tutorials/intermediate/ddp_tutorial.html](https://pytorch.org/tutorials/intermediate/ddp_tutorial.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: '**Author**: [Shen Li](https://mrshenli.github.io/)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Edited by**: [Joe Zhu](https://github.com/gunandrose4u)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[![edit](../Images/a8aa37bcc5edbf2ba5fcf18dba1e55f9.png)](../_images/pencil-16.png)
+    View and edit this tutorial in [github](https://github.com/pytorch/tutorials/blob/main/intermediate_source/ddp_tutorial.rst).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Prerequisites:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PyTorch Distributed Overview](../beginner/dist_overview.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[DistributedDataParallel API documents](https://pytorch.org/docs/master/generated/torch.nn.parallel.DistributedDataParallel.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[DistributedDataParallel notes](https://pytorch.org/docs/master/notes/ddp.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[DistributedDataParallel](https://pytorch.org/docs/stable/nn.html#module-torch.nn.parallel)
+    (DDP) implements data parallelism at the module level which can run across multiple
+    machines. Applications using DDP should spawn multiple processes and create a
+    single DDP instance per process. DDP uses collective communications in the [torch.distributed](https://pytorch.org/tutorials/intermediate/dist_tuto.html)
+    package to synchronize gradients and buffers. More specifically, DDP registers
+    an autograd hook for each parameter given by `model.parameters()` and the hook
+    will fire when the corresponding gradient is computed in the backward pass. Then
+    DDP uses that signal to trigger gradient synchronization across processes. Please
+    refer to [DDP design note](https://pytorch.org/docs/master/notes/ddp.html) for
+    more details.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The recommended way to use DDP is to spawn one process for each model replica,
+    where a model replica can span multiple devices. DDP processes can be placed on
+    the same machine or across machines, but GPU devices cannot be shared across processes.
+    This tutorial starts from a basic DDP use case and then demonstrates more advanced
+    use cases including checkpointing models and combining DDP with model parallel.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: The code in this tutorial runs on an 8-GPU server, but it can be easily generalized
+    to other environments.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Comparison between `DataParallel` and `DistributedDataParallel`
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Before we dive in, let’s clarify why, despite the added complexity, you would
+    consider using `DistributedDataParallel` over `DataParallel`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: First, `DataParallel` is single-process, multi-thread, and only works on a single
+    machine, while `DistributedDataParallel` is multi-process and works for both single-
+    and multi- machine training. `DataParallel` is usually slower than `DistributedDataParallel`
+    even on a single machine due to GIL contention across threads, per-iteration replicated
+    model, and additional overhead introduced by scattering inputs and gathering outputs.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Recall from the [prior tutorial](https://pytorch.org/tutorials/intermediate/model_parallel_tutorial.html)
+    that if your model is too large to fit on a single GPU, you must use **model parallel**
+    to split it across multiple GPUs. `DistributedDataParallel` works with **model
+    parallel**; `DataParallel` does not at this time. When DDP is combined with model
+    parallel, each DDP process would use model parallel, and all processes collectively
+    would use data parallel.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: If your model needs to span multiple machines or if your use case does not fit
+    into data parallelism paradigm, please see [the RPC API](https://pytorch.org/docs/stable/rpc.html)
+    for more generic distributed training support.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Basic Use Case
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: To create a DDP module, you must first set up process groups properly. More
+    details can be found in [Writing Distributed Applications with PyTorch](https://pytorch.org/tutorials/intermediate/dist_tuto.html).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now, let’s create a toy module, wrap it with DDP, and feed it some dummy input
+    data. Please note, as DDP broadcasts model states from rank 0 process to all other
+    processes in the DDP constructor, you do not need to worry about different DDP
+    processes starting from different initial model parameter values.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: As you can see, DDP wraps lower-level distributed communication details and
+    provides a clean API as if it were a local model. Gradient synchronization communications
+    take place during the backward pass and overlap with the backward computation.
+    When the `backward()` returns, `param.grad` already contains the synchronized
+    gradient tensor. For basic use cases, DDP only requires a few more LoCs to set
+    up the process group. When applying DDP to more advanced use cases, some caveats
+    require caution.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Skewed Processing Speeds
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In DDP, the constructor, the forward pass, and the backward pass are distributed
+    synchronization points. Different processes are expected to launch the same number
+    of synchronizations and reach these synchronization points in the same order and
+    enter each synchronization point at roughly the same time. Otherwise, fast processes
+    might arrive early and timeout while waiting for stragglers. Hence, users are
+    responsible for balancing workload distributions across processes. Sometimes,
+    skewed processing speeds are inevitable due to, e.g., network delays, resource
+    contentions, or unpredictable workload spikes. To avoid timeouts in these situations,
+    make sure that you pass a sufficiently large `timeout` value when calling [init_process_group](https://pytorch.org/docs/stable/distributed.html#torch.distributed.init_process_group).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Save and Load Checkpoints
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: It’s common to use `torch.save` and `torch.load` to checkpoint modules during
+    training and recover from checkpoints. See [SAVING AND LOADING MODELS](https://pytorch.org/tutorials/beginner/saving_loading_models.html)
+    for more details. When using DDP, one optimization is to save the model in only
+    one process and then load it to all processes, reducing write overhead. This is
+    correct because all processes start from the same parameters and gradients are
+    synchronized in backward passes, and hence optimizers should keep setting parameters
+    to the same values. If you use this optimization, make sure no process starts
+    loading before the saving is finished. Additionally, when loading the module,
+    you need to provide an appropriate `map_location` argument to prevent a process
+    from stepping into others’ devices. If `map_location` is missing, `torch.load`
+    will first load the module to CPU and then copy each parameter to where it was
+    saved, which would result in all processes on the same machine using the same
+    set of devices. For more advanced failure recovery and elasticity support, please
+    refer to [TorchElastic](https://pytorch.org/elastic).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Combining DDP with Model Parallelism
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: DDP also works with multi-GPU models. DDP wrapping multi-GPU models is especially
+    helpful when training large models with a huge amount of data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: When passing a multi-GPU model to DDP, `device_ids` and `output_device` must
+    NOT be set. Input and output data will be placed in proper devices by either the
+    application or the model `forward()` method.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Initialize DDP with torch.distributed.run/torchrun
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: We can leverage PyTorch Elastic to simplify the DDP code and initialize the
+    job more easily. Let’s still use the Toymodel example and create a file named
+    `elastic_ddp.py`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'One can then run a [torch elastic/torchrun](https://pytorch.org/docs/stable/elastic/quickstart.html)
+    command on all nodes to initialize the DDP job created above:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: We are running the DDP script on two hosts, and each host we run with 8 processes,
+    aka, we are running it on 16 GPUs. Note that `$MASTER_ADDR` must be the same across
+    all nodes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Here torchrun will launch 8 process and invoke `elastic_ddp.py` on each process
+    on the node it is launched on, but user also needs to apply cluster management
+    tools like slurm to actually run this command on 2 nodes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'For example, on a SLURM enabled cluster, we can write a script to run the command
+    above and set `MASTER_ADDR` as:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Then we can just run this script using the SLURM command: `srun --nodes=2 ./torchrun_script.sh`.
+    Of course, this is just an example; you can choose your own cluster scheduling
+    tools to initiate the torchrun job.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: For more information about Elastic run, one can check this [quick start document](https://pytorch.org/docs/stable/elastic/quickstart.html)
+    to learn more.
+  prefs: []
+  type: TYPE_NORMAL
