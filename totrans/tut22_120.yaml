@@ -1,62 +1,87 @@
 - en: Getting Started with Distributed RPC Framework
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 使用分布式RPC框架入门
 - en: 原文：[https://pytorch.org/tutorials/intermediate/rpc_tutorial.html](https://pytorch.org/tutorials/intermediate/rpc_tutorial.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: '[https://pytorch.org/tutorials/intermediate/rpc_tutorial.html](https://pytorch.org/tutorials/intermediate/rpc_tutorial.html)'
 - en: '**Author**: [Shen Li](https://mrshenli.github.io/)'
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: '**作者**：[Shen Li](https://mrshenli.github.io/)'
 - en: Note
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
-- en: '![edit](../Images/a8aa37bcc5edbf2ba5fcf18dba1e55f9.png)
-    View and edit this tutorial in [github](https://github.com/pytorch/tutorials/blob/main/intermediate_source/rpc_tutorial.rst).'
+  zh: 注意
+- en: '![edit](../Images/a8aa37bcc5edbf2ba5fcf18dba1e55f9.png) View and edit this
+    tutorial in [github](https://github.com/pytorch/tutorials/blob/main/intermediate_source/rpc_tutorial.rst).'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '![edit](../Images/a8aa37bcc5edbf2ba5fcf18dba1e55f9.png) 在[github](https://github.com/pytorch/tutorials/blob/main/intermediate_source/rpc_tutorial.rst)中查看和编辑本教程。'
 - en: 'Prerequisites:'
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 先决条件：
 - en: '[PyTorch Distributed Overview](../beginner/dist_overview.html)'
+  id: totrans-6
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[PyTorch分布式概述](../beginner/dist_overview.html)'
 - en: '[RPC API documents](https://pytorch.org/docs/master/rpc.html)'
+  id: totrans-7
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[RPC API文档](https://pytorch.org/docs/master/rpc.html)'
 - en: This tutorial uses two simple examples to demonstrate how to build distributed
     training with the [torch.distributed.rpc](https://pytorch.org/docs/stable/rpc.html)
     package which was first introduced as an experimental feature in PyTorch v1.4.
     Source code of the two examples can be found in [PyTorch examples](https://github.com/pytorch/examples).
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程使用两个简单示例演示如何使用[torch.distributed.rpc](https://pytorch.org/docs/stable/rpc.html)包构建分布式训练，该包最初作为PyTorch
+    v1.4中的实验性功能引入。这两个示例的源代码可以在[PyTorch示例](https://github.com/pytorch/examples)中找到。
 - en: 'Previous tutorials, [Getting Started With Distributed Data Parallel](ddp_tutorial.html)
     and [Writing Distributed Applications With PyTorch](dist_tuto.html), described
     [DistributedDataParallel](https://pytorch.org/docs/stable/_modules/torch/nn/parallel/distributed.html)
     which supports a specific training paradigm where the model is replicated across
     multiple processes and each process handles a split of the input data. Sometimes,
     you might run into scenarios that require different training paradigms. For example:'
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 之前的教程，[使用分布式数据并行开始](ddp_tutorial.html)和[使用PyTorch编写分布式应用程序](dist_tuto.html)，描述了[分布式数据并行](https://pytorch.org/docs/stable/_modules/torch/nn/parallel/distributed.html)，支持一种特定的训练范式，其中模型在多个进程中复制，并且每个进程处理输入数据的一个部分。有时，您可能会遇到需要不同训练范式的情况。例如：
 - en: In reinforcement learning, it might be relatively expensive to acquire training
     data from environments while the model itself can be quite small. In this case,
     it might be useful to spawn multiple observers running in parallel and share a
     single agent. In this case, the agent takes care of the training locally, but
     the application would still need libraries to send and receive data between observers
     and the trainer.
+  id: totrans-10
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 在强化学习中，从环境中获取训练数据可能相对昂贵，而模型本身可能非常小。在这种情况下，可能有用的是并行运行多个观察者并共享单个代理。在这种情况下，代理在本地处理训练，但应用程序仍需要库来在观察者和训练者之间发送和接收数据。
 - en: Your model might be too large to fit in GPUs on a single machine, and hence
     would need a library to help split the model onto multiple machines. Or you might
     be implementing a [parameter server](https://www.cs.cmu.edu/~muli/file/parameter_server_osdi14.pdf)
     training framework, where model parameters and trainers live on different machines.
+  id: totrans-11
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 您的模型可能太大，无法适应单台机器上的GPU，因此需要一个库来将模型分割到多台机器上。或者您可能正在实现一个[参数服务器](https://www.cs.cmu.edu/~muli/file/parameter_server_osdi14.pdf)训练框架，其中模型参数和训练器位于不同的机器上。
 - en: The [torch.distributed.rpc](https://pytorch.org/docs/stable/rpc.html) package
     can help with the above scenarios. In case 1, [RPC](https://pytorch.org/docs/stable/rpc.html#rpc)
     and [RRef](https://pytorch.org/docs/stable/rpc.html#rref) allow sending data from
@@ -69,22 +94,30 @@
     this tutorial does not aim at building the most accurate or efficient models to
     solve given problems, instead, the main goal here is to show how to use the [torch.distributed.rpc](https://pytorch.org/docs/stable/rpc.html)
     package to build distributed training applications.
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: '[torch.distributed.rpc](https://pytorch.org/docs/stable/rpc.html)包可以帮助处理上述情况。在情况1中，[RPC](https://pytorch.org/docs/stable/rpc.html#rpc)和[RRef](https://pytorch.org/docs/stable/rpc.html#rref)允许从一个工作进程发送数据到另一个工作进程，同时轻松引用远程数据对象。在情况2中，[分布式自动求导](https://pytorch.org/docs/stable/rpc.html#distributed-autograd-framework)和[分布式优化器](https://pytorch.org/docs/stable/rpc.html#module-torch.distributed.optim)使得执行反向传播和优化器步骤就像是本地训练一样。在接下来的两个部分中，我们将使用一个强化学习示例和一个语言模型示例演示[torch.distributed.rpc](https://pytorch.org/docs/stable/rpc.html)的API。请注意，本教程的目标不是构建最准确或高效的模型来解决给定问题，而是展示如何使用[torch.distributed.rpc](https://pytorch.org/docs/stable/rpc.html)包构建分布式训练应用程序。'
 - en: Distributed Reinforcement Learning using RPC and RRef
+  id: totrans-13
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 使用RPC和RRef进行分布式强化学习
 - en: This section describes steps to build a toy distributed reinforcement learning
     model using RPC to solve CartPole-v1 from [OpenAI Gym](https://gym.openai.com).
     The policy code is mostly borrowed from the existing single-thread [example](https://github.com/pytorch/examples/blob/master/reinforcement_learning)
     as shown below. We will skip details of the `Policy` design, and focus on RPC
     usages.
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 本部分描述了使用RPC构建玩具分布式强化学习模型的步骤，以解决来自[OpenAI Gym](https://gym.openai.com)的CartPole-v1问题。策略代码大部分是从现有的单线程[示例](https://github.com/pytorch/examples/blob/master/reinforcement_learning)中借用的，如下所示。我们将跳过“策略”设计的细节，重点放在RPC的用法上。
 - en: '[PRE0]'
+  id: totrans-15
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: We are ready to present the observer. In this example, each observer creates
     its own environment, and waits for the agent’s command to run an episode. In each
     episode, one observer loops at most `n_steps` iterations, and in each iteration,
@@ -97,11 +130,16 @@
     overhead. However, the goal is to demonstrate RPC API instead of building the
     best solver for CartPole. So, let’s keep the logic simple and the two steps explicit
     in this example.
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们准备展示观察者。在这个例子中，每个观察者都创建自己的环境，并等待代理的命令来运行一个剧集。在每个剧集中，一个观察者最多循环`n_steps`次迭代，在每次迭代中，它使用RPC将其环境状态传递给代理，并获得一个动作。然后将该动作应用于其环境，并从环境中获得奖励和下一个状态。之后，观察者使用另一个RPC向代理报告奖励。再次请注意，这显然不是最有效的观察者实现。例如，一个简单的优化可以是将当前状态和上一个奖励打包在一个RPC中，以减少通信开销。然而，目标是演示RPC
+    API而不是构建CartPole的最佳求解器。因此，在这个例子中，让我们保持逻辑简单，将这两个步骤明确表示。
 - en: '[PRE1]'
+  id: totrans-17
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: The code for agent is a little more complex, and we will break it into multiple
     pieces. In this example, the agent serves as both the trainer and the master,
     such that it sends command to multiple distributed observers to run episodes,
@@ -115,19 +153,27 @@
     object will not be deleted as long as there is any live user of that `RRef`. Please
     refer to the `RRef` [design doc](https://pytorch.org/docs/master/notes/rref.html)
     for details.
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: 代理的代码稍微复杂一些，我们将其分解为多个部分。在这个例子中，代理既充当训练者又充当主控，它向多个分布式观察者发送命令来运行剧集，并在本地记录所有动作和奖励，这些将在每个剧集后的训练阶段中使用。下面的代码显示了`Agent`构造函数，其中大多数行都在初始化各种组件。最后的循环在其他工作进程上远程初始化观察者，并在本地保存这些观察者的`RRefs`。代理将在稍后使用这些观察者的`RRefs`来发送命令。应用程序不需要担心`RRefs`的生命周期。每个`RRef`的所有者维护一个引用计数映射来跟踪其生命周期，并保证只要有任何`RRef`的活动用户，远程数据对象就不会被删除。有关详细信息，请参阅`RRef`[设计文档](https://pytorch.org/docs/master/notes/rref.html)。
 - en: '[PRE2]'
+  id: totrans-19
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Next, the agent exposes two APIs to observers for selecting actions and reporting
     rewards. Those functions only run locally on the agent, but will be triggered
     by observers through RPC.
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，代理向观察者公开两个API，用于选择动作和报告奖励。这些函数仅在代理上本地运行，但将通过RPC由观察者触发。
 - en: '[PRE3]'
+  id: totrans-21
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: Let’s add a `run_episode` function on agent which tells all observers to execute
     an episode. In this function, it first creates a list to collect futures from
     asynchronous RPCs, and then loop over all observer `RRefs` to make asynchronous
@@ -136,20 +182,28 @@
     each observer will make RPCs back to the agent, which are nested RPCs. After each
     episode, the `saved_log_probs` and `rewards` will contain the recorded action
     probs and rewards.
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们在代理上添加一个`run_episode`函数，告诉所有观察者执行一个剧集。在这个函数中，首先创建一个列表来收集异步RPC的futures，然后循环遍历所有观察者的`RRefs`来进行异步RPC。在这些RPC中，代理还将自身的`RRef`传递给观察者，以便观察者也可以在代理上调用函数。如上所示，每个观察者将向代理发起RPC，这些是嵌套的RPC。每个剧集结束后，`saved_log_probs`和`rewards`将包含记录的动作概率和奖励。
 - en: '[PRE4]'
+  id: totrans-23
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: Finally, after one episode, the agent needs to train the model, which is implemented
     in the `finish_episode` function below. There is no RPCs in this function and
     it is mostly borrowed from the single-thread [example](https://github.com/pytorch/examples/blob/master/reinforcement_learning).
     Hence, we skip describing its contents.
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 最后，在一个剧集结束后，代理需要训练模型，这在下面的`finish_episode`函数中实现。这个函数中没有RPC，它主要是从单线程的[示例](https://github.com/pytorch/examples/blob/master/reinforcement_learning)中借用的。因此，我们跳过描述其内容。
 - en: '[PRE5]'
+  id: totrans-25
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: With `Policy`, `Observer`, and `Agent` classes, we are ready to launch multiple
     processes to perform the distributed training. In this example, all processes
     run the same `run_worker` function, and they use the rank to distinguish their
@@ -161,40 +215,58 @@
     and [rpc.shutdown](https://pytorch.org/docs/stable/rpc.html#torch.distributed.rpc.shutdown),
     which initializes and terminates RPC instances respectively. More details are
     available in the [API page](https://pytorch.org/docs/stable/rpc.html).
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 有了`Policy`、`Observer`和`Agent`类，我们准备启动多个进程执行分布式训练。在这个例子中，所有进程都运行相同的`run_worker`函数，并使用排名来区分它们的角色。排名0始终是代理，所有其他排名都是观察者。代理通过反复调用`run_episode`和`finish_episode`来充当主控，直到运行奖励超过环境指定的奖励阈值。所有观察者都
+    passively 等待代理的命令。代码由[rpc.init_rpc](https://pytorch.org/docs/stable/rpc.html#torch.distributed.rpc.init_rpc)和[rpc.shutdown](https://pytorch.org/docs/stable/rpc.html#torch.distributed.rpc.shutdown)包装，分别初始化和终止RPC实例。更多细节请参阅[API页面](https://pytorch.org/docs/stable/rpc.html)。
 - en: '[PRE6]'
+  id: totrans-27
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: Below are some sample outputs when training with world_size=2.
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下是在world_size=2时进行训练时的一些示例输出。
 - en: '[PRE7]'
+  id: totrans-29
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: In this example, we show how to use RPC as the communication vehicle to pass
     data across workers, and how to use RRef to reference remote objects. It is true
     that you could build the entire structure directly on top of `ProcessGroup` `send`
     and `recv` APIs or use other communication/RPC libraries. However, by using torch.distributed.rpc,
     you can get the native support and continuously optimized performance under the
     hood.
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这个例子中，我们展示了如何使用RPC作为通信工具在工作器之间传递数据，以及如何使用RRef引用远程对象。当然，您可以直接在`ProcessGroup`
+    `send`和`recv` API之上构建整个结构，或者使用其他通信/RPC库。然而，通过使用torch.distributed.rpc，您可以获得本地支持，并在幕后持续优化性能。
 - en: Next, we will show how to combine RPC and RRef with distributed autograd and
     distributed optimizer to perform distributed model parallel training.
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，我们将展示如何结合RPC和RRef与分布式自动求导和分布式优化器来执行分布式模型并行训练。
 - en: Distributed RNN using Distributed Autograd and Distributed Optimizer
+  id: totrans-32
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 使用分布式自动求导和分布式优化器的分布式RNN
 - en: In this section, we use an RNN model to show how to build distributed model
     parallel training with the RPC API. The example RNN model is very small and can
     easily fit into a single GPU, but we still divide its layers onto two different
     workers to demonstrate the idea. Developer can apply the similar techniques to
     distribute much larger models across multiple devices and machines.
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本节中，我们使用一个RNN模型来展示如何使用RPC API构建分布式模型并行训练。示例RNN模型非常小，可以轻松适应单个GPU，但我们仍将其层分布到两个不同的工作器上以演示这个想法。开发人员可以应用类似的技术将更大的模型分布到多个设备和机器上。
 - en: The RNN model design is borrowed from the word language model in PyTorch [example](https://github.com/pytorch/examples/tree/master/word_language_model)
     repository, which contains three main components, an embedding table, an `LSTM`
     layer, and a decoder. The code below wraps the embedding table and the decoder
@@ -203,11 +275,17 @@
     GPU to cover the use case. In v1.4, RPC always creates CPU tensor arguments or
     return values on the destination worker. If the function takes a GPU tensor, you
     need to move it to the proper device explicitly.
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: RNN模型设计借鉴了PyTorch [示例](https://github.com/pytorch/examples/tree/master/word_language_model)
+    仓库中的单词语言模型，其中包含三个主要组件，一个嵌入表，一个`LSTM`层和一个解码器。下面的代码将嵌入表和解码器包装成子模块，以便它们的构造函数可以传递给RPC
+    API。在`EmbeddingTable`子模块中，我们故意将`Embedding`层放在GPU上以涵盖使用情况。在v1.4中，RPC始终在目标工作器上创建CPU张量参数或返回值。如果函数接受GPU张量，则需要显式将其移动到适当的设备上。
 - en: '[PRE8]'
+  id: totrans-35
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: With the above sub-modules, we can now piece them together using RPC to create
     an RNN model. In the code below `ps` represents a parameter server, which hosts
     parameters of the embedding table and the decoder. The constructor uses the [remote](https://pytorch.org/docs/stable/rpc.html#torch.distributed.rpc.remote)
@@ -222,11 +300,16 @@
     necessary. As you can see in the code below, it looks very similar to single-machine
     model parallel training. The main difference is replacing `Tensor.to(device)`
     with RPC functions.
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过上述子模块，我们现在可以使用RPC将它们组合在一起创建一个RNN模型。在下面的代码中，`ps`代表参数服务器，它承载嵌入表和解码器的参数。构造函数使用[remote](https://pytorch.org/docs/stable/rpc.html#torch.distributed.rpc.remote)
+    API在参数服务器上创建一个`EmbeddingTable`对象和一个`Decoder`对象，并在本地创建`LSTM`子模块。在前向传播过程中，训练器使用`EmbeddingTable`的`RRef`来找到远程子模块，并通过RPC将输入数据传递给`EmbeddingTable`并获取查找结果。然后，它通过本地的`LSTM`层运行嵌入，最后使用另一个RPC将输出发送到`Decoder`子模块。通常，为了实现分布式模型并行训练，开发人员可以将模型划分为子模块，调用RPC远程创建子模块实例，并在必要时使用`RRef`来找到它们。正如您在下面的代码中所看到的，它看起来非常类似于单机模型并行训练。主要区别是用RPC函数替换`Tensor.to(device)`。
 - en: '[PRE9]'
+  id: totrans-37
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: Before introducing the distributed optimizer, let’s add a helper function to
     generate a list of RRefs of model parameters, which will be consumed by the distributed
     optimizer. In local training, applications could call `Module.parameters()` to
@@ -237,25 +320,35 @@
     one `RRef` per model parameter for both local and remote model parameters. The
     helper function is pretty simple, just call `Module.parameters()` and creates
     a local `RRef` on each of the parameters.
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 在介绍分布式优化器之前，让我们添加一个辅助函数来生成模型参数的RRef列表，这将被分布式优化器使用。在本地训练中，应用程序可以调用`Module.parameters()`来获取所有参数张量的引用，并将其传递给本地优化器进行后续更新。然而，在分布式训练场景中，相同的API不起作用，因为一些参数存在于远程机器上。因此，分布式优化器不是接受参数`Tensors`列表，而是接受`RRefs`列表，每个模型参数都有一个`RRef`，用于本地和远程模型参数。辅助函数非常简单，只需调用`Module.parameters()`并在每个参数上创建一个本地`RRef`。
 - en: '[PRE10]'
+  id: totrans-39
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: Then, as the `RNNModel` contains three sub-modules, we need to call `_parameter_rrefs`
     three times, and wrap that into another helper function.
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后，由于`RNNModel`包含三个子模块，我们需要三次调用`_parameter_rrefs`，并将其包装到另一个辅助函数中。
 - en: '[PRE11]'
+  id: totrans-41
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: Now, we are ready to implement the training loop. After initializing model arguments,
     we create the `RNNModel` and the `DistributedOptimizer`. The distributed optimizer
     will take a list of parameter `RRefs`, find all distinct owner workers, and create
     the given local optimizer (i.e., `SGD` in this case, you can use other local optimizers
     as well) on each of the owner worker using the given arguments (i.e., `lr=0.05`).
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，我们准备实现训练循环。在初始化模型参数后，我们创建`RNNModel`和`DistributedOptimizer`。分布式优化器将获取参数`RRefs`列表，找到所有不同的所有者工作节点，并使用给定参数（即，在本例中为`lr=0.05`）在每个所有者工作节点上创建给定的本地优化器（即`SGD`，您也可以使用其他本地优化器）。
 - en: In the training loop, it first creates a distributed autograd context, which
     will help the distributed autograd engine to find gradients and involved RPC send/recv
     functions. The design details of the distributed autograd engine can be found
@@ -270,15 +363,23 @@
     each autograd context has dedicated space to store gradients, and as we create
     a context per iteration, those gradients from different iterations will not accumulate
     to the same set of `Tensors`.
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: 在训练循环中，首先创建一个分布式自动求导上下文，这将帮助分布式自动求导引擎找到梯度和涉及的RPC发送/接收函数。分布式自动求导引擎的设计细节可以在其[设计说明](https://pytorch.org/docs/master/notes/distributed_autograd.html)中找到。然后，启动前向传播，就像是一个本地模型，然后运行分布式反向传播。对于分布式反向传播，您只需要指定一个根列表，在本例中，它是损失`Tensor`。分布式自动求导引擎将自动遍历分布式图并正确写入梯度。接下来，在分布式优化器上运行`step`函数，这将联系到所有涉及的本地优化器来更新模型参数。与本地训练相比，一个小的区别是您不需要运行`zero_grad()`，因为每个自动求导上下文都有专用空间来存储梯度，并且由于我们每次迭代创建一个上下文，来自不同迭代的梯度不会累积到相同的`Tensors`集合中。
 - en: '[PRE12]'
+  id: totrans-44
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: Finally, let’s add some glue code to launch the parameter server and the trainer
     processes.
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: 最后，让我们添加一些粘合代码来启动参数服务器和训练器进程。
 - en: '[PRE13]'
+  id: totrans-46
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'

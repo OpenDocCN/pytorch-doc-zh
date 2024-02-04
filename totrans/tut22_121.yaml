@@ -1,32 +1,48 @@
 - en: Implementing a Parameter Server Using Distributed RPC Framework
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 使用分布式RPC框架实现参数服务器
 - en: 原文：[https://pytorch.org/tutorials/intermediate/rpc_param_server_tutorial.html](https://pytorch.org/tutorials/intermediate/rpc_param_server_tutorial.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/intermediate/rpc_param_server_tutorial.html](https://pytorch.org/tutorials/intermediate/rpc_param_server_tutorial.html)
 - en: '**Author**: [Rohan Varma](https://github.com/rohan-varma)'
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 作者：Rohan Varma
 - en: Note
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
-- en: '![edit](../Images/a8aa37bcc5edbf2ba5fcf18dba1e55f9.png)
-    View and edit this tutorial in [github](https://github.com/pytorch/tutorials/blob/main/intermediate_source/rpc_param_server_tutorial.rst).'
+  zh: 注意
+- en: '![edit](../Images/a8aa37bcc5edbf2ba5fcf18dba1e55f9.png) View and edit this
+    tutorial in [github](https://github.com/pytorch/tutorials/blob/main/intermediate_source/rpc_param_server_tutorial.rst).'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '![edit](../Images/a8aa37bcc5edbf2ba5fcf18dba1e55f9.png) 在[github](https://github.com/pytorch/tutorials/blob/main/intermediate_source/rpc_param_server_tutorial.rst)中查看并编辑本教程。'
 - en: 'Prerequisites:'
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 先决条件：
 - en: '[PyTorch Distributed Overview](../beginner/dist_overview.html)'
+  id: totrans-6
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[PyTorch分布式概述](../beginner/dist_overview.html)'
 - en: '[RPC API documents](https://pytorch.org/docs/master/rpc.html)'
+  id: totrans-7
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[RPC API文档](https://pytorch.org/docs/master/rpc.html)'
 - en: This tutorial walks through a simple example of implementing a parameter server
     using PyTorch’s [Distributed RPC framework](https://pytorch.org/docs/stable/rpc.html).
     The parameter server framework is a paradigm in which a set of servers store parameters,
@@ -35,15 +51,19 @@
     training loop locally and occasionally synchronize with the parameter server to
     get the latest parameters. For more reading on the parameter server approach,
     check out [this paper](https://www.cs.cmu.edu/~muli/file/parameter_server_osdi14.pdf).
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程演示了使用PyTorch的[分布式RPC框架](https://pytorch.org/docs/stable/rpc.html)实现参数服务器的简单示例。参数服务器框架是一种范式，其中一组服务器存储参数，例如大型嵌入表，几个训练器查询参数服务器以检索最新的参数。这些训练器可以在本地运行训练循环，并偶尔与参数服务器同步以获取最新的参数。要了解更多关于参数服务器方法的信息，请查看[这篇论文](https://www.cs.cmu.edu/~muli/file/parameter_server_osdi14.pdf)。
 - en: Using the Distributed RPC Framework, we’ll build an example where multiple trainers
     use RPC to communicate with the same parameter server and use [RRef](https://pytorch.org/docs/stable/rpc.html#torch.distributed.rpc.RRef)
     to access states on the remote parameter server instance. Each trainer will launch
     its dedicated backward pass in a distributed fashion through stitching of the
     autograd graph across multiple nodes using distributed autograd.
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用分布式RPC框架，我们将构建一个示例，其中多个训练器使用RPC与同一参数服务器通信，并使用[RRef](https://pytorch.org/docs/stable/rpc.html#torch.distributed.rpc.RRef)来访问远程参数服务器实例上的状态。每个训练器将通过在多个节点之间的自动求导图上进行分布式反向传递的拼接来启动其专用的反向传递。
 - en: '**Note**: This tutorial covers the use of the Distributed RPC Framework, which
     is useful for splitting a model onto multiple machines, or for implementing a
     parameter-server training strategy where network trainers fetch parameters hosted
@@ -51,16 +71,23 @@
     across many GPUs, please see the [Distributed Data Parallel tutorial](https://pytorch.org/tutorials/intermediate/ddp_tutorial.html).
     There is also another [RPC tutorial](https://pytorch.org/tutorials/intermediate/rpc_tutorial.html)
     that covers reinforcement learning and RNN use cases.'
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: '**注意**：本教程涵盖了分布式RPC框架的使用，该框架对于将模型分割到多台机器上或实现参数服务器训练策略非常有用，其中网络训练器获取托管在不同机器上的参数。如果您想要在多个GPU上复制模型，请参阅[分布式数据并行教程](https://pytorch.org/tutorials/intermediate/ddp_tutorial.html)。还有另一个[RPC教程](https://pytorch.org/tutorials/intermediate/rpc_tutorial.html)，涵盖了强化学习和RNN用例。'
 - en: 'Let’s start with the familiar: importing our required modules and defining
     a simple ConvNet that will train on the MNIST dataset. The below network is largely
     adopted from the network defined in the [pytorch/examples repo](https://github.com/pytorch/examples/tree/master/mnist).'
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们从熟悉的开始：导入所需的模块并定义一个简单的ConvNet，该网络将在MNIST数据集上进行训练。下面的网络主要采用自[pytorch/examples
+    repo](https://github.com/pytorch/examples/tree/master/mnist)中定义的网络。
 - en: '[PRE0]'
+  id: totrans-12
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: 'Next, let’s define some helper functions that will be useful for the rest of
     our script. The following uses [rpc_sync](https://pytorch.org/docs/stable/rpc.html#torch.distributed.rpc.rpc_sync)
     and [RRef](https://pytorch.org/docs/stable/rpc.html#torch.distributed.rpc.RRef)
@@ -69,29 +96,41 @@
     argument, and we run it on its owning node: `rref.owner()`. On the caller node,
     we run this command synchronously through the use of `rpc_sync`, meaning that
     we will block until a response is received.'
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，让我们定义一些有用的辅助函数，这些函数将对我们脚本的其余部分很有用。以下使用[rpc_sync](https://pytorch.org/docs/stable/rpc.html#torch.distributed.rpc.rpc_sync)和[RRef](https://pytorch.org/docs/stable/rpc.html#torch.distributed.rpc.RRef)来定义一个函数，该函数在远程节点上调用给定对象的方法。在下面，我们对远程对象的句柄由`rref`参数给出，并在拥有节点上运行它：`rref.owner()`。在调用节点上，我们通过使用`rpc_sync`同步运行此命令，这意味着我们将阻塞直到收到响应。
 - en: '[PRE1]'
+  id: totrans-14
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Now, we’re ready to define our parameter server. We will subclass `nn.Module`
     and save a handle to our network defined above. We’ll also save an input device
     which will be the device our input is transferred to before invoking the model.
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，我们准备定义我们的参数服务器。我们将子类化`nn.Module`并保存一个句柄到我们上面定义的网络。我们还将保存一个输入设备，这将是在调用模型之前将输入传输到的设备。
 - en: '[PRE2]'
+  id: totrans-16
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Next, we’ll define our forward pass. Note that regardless of the device of the
     model output, we move the output to CPU, as the Distributed RPC Framework currently
     only supports sending CPU tensors over RPC. We have intentionally disabled sending
     CUDA tensors over RPC due to the potential for different devices (CPU/GPU) on
     on the caller/callee, but may support this in future releases.
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，我们将定义我们的前向传递。请注意，无论模型输出的设备如何，我们都将输出移动到CPU，因为分布式RPC框架目前仅支持通过RPC发送CPU张量。由于调用方/被调用方可能存在不同设备（CPU/GPU），我们故意禁用了通过RPC发送CUDA张量，但可能会在未来版本中支持。
 - en: '[PRE3]'
+  id: totrans-18
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: Next, we’ll define a few miscellaneous functions useful for training and verification
     purposes. The first, `get_dist_gradients`, will take in a Distributed Autograd
     context ID and call into the `dist_autograd.get_gradients` API in order to retrieve
@@ -105,40 +144,57 @@
     the parameters to be optimized. This is required as input to the [Distributed
     Optimizer](https://pytorch.org/docs/stable/rpc.html#module-torch.distributed.optim),
     which requires all parameters it must optimize as a list of `RRef`s.
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，我们将定义一些对训练和验证有用的杂项函数。首先，`get_dist_gradients`将接收一个分布式自动求导上下文ID，并调用`dist_autograd.get_gradients`
+    API来检索分布式自动求导计算的梯度。更多信息可以在[分布式自动求导文档](https://pytorch.org/docs/stable/rpc.html#distributed-autograd-framework)中找到。请注意，我们还会遍历结果字典，并将每个张量转换为CPU张量，因为目前框架只支持通过RPC发送张量。接下来，`get_param_rrefs`将遍历我们的模型参数，并将它们包装为一个（本地）[RRef](https://pytorch.org/docs/stable/rpc.html#torch.distributed.rpc.RRef)。这个方法将被训练节点通过RPC调用，并返回要优化的参数列表。这是[Distributed
+    Optimizer](https://pytorch.org/docs/stable/rpc.html#module-torch.distributed.optim)的输入要求，它要求所有必须优化的参数作为`RRef`列表。
 - en: '[PRE4]'
+  id: totrans-20
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: Finally, we’ll create methods to initialize our parameter server. Note that
     there will only be one instance of a parameter server across all processes, and
     all trainers will talk to the same parameter server and update the same stored
     model. As seen in `run_parameter_server`, the server itself does not take any
     independent actions; it waits for requests from trainers (which are yet to be
     defined) and responds to them by running the requested function.
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 最后，我们将创建方法来初始化我们的参数服务器。请注意，在所有进程中只会有一个参数服务器实例，并且所有训练器将与同一个参数服务器通信并更新相同的存储模型。如`run_parameter_server`中所示，服务器本身不会采取任何独立的行动；它会等待来自训练器（尚未定义）的请求，并通过运行请求的函数来响应它们。
 - en: '[PRE5]'
+  id: totrans-22
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: Note that above, `rpc.shutdown()` will not immediately shut down the Parameter
     Server. Instead, it will wait for all workers (trainers in this case) to also
     call into `rpc.shutdown()`. This gives us the guarantee that the parameter server
     will not go offline before all trainers (yet to be define) have completed their
     training process.
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，上面的`rpc.shutdown()`不会立即关闭参数服务器。相反，它将等待所有工作节点（在这种情况下是训练器）也调用`rpc.shutdown()`。这样我们就可以保证在所有训练器（尚未定义）完成训练过程之前，参数服务器不会下线。
 - en: Next, we’ll define our `TrainerNet` class. This will also be a subclass of `nn.Module`,
     and our `__init__` method will use the `rpc.remote` API to obtain an RRef, or
     Remote Reference, to our parameter server. Note that here we are not copying the
     parameter server to our local process, instead, we can think of `self.param_server_rref`
     as a distributed shared pointer to the parameter server that lives on a separate
     process.
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，我们将定义我们的`TrainerNet`类。这也将是`nn.Module`的子类，我们的`__init__`方法将使用`rpc.remote`
+    API来获取一个RRef，或者远程引用，到我们的参数服务器。请注意，这里我们不会将参数服务器复制到我们的本地进程，相反，我们可以将`self.param_server_rref`看作是指向在单独进程中运行的参数服务器的分布式共享指针。
 - en: '[PRE6]'
+  id: totrans-25
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: Next, we’ll define a method called `get_global_param_rrefs`. To motivate the
     need for this method, it is worth it to read through the documentation on [DistributedOptimizer](https://pytorch.org/docs/stable/rpc.html#module-torch.distributed.optim),
     specifically the API signature. The optimizer must be passed a list of `RRef`s
@@ -150,29 +206,39 @@
     be optimized. Note that in this case our `TrainerNet` does not define its own
     paramaters; if it did, we would need to wrap each parameter in an `RRef` as well
     and include it into our input to `DistributedOptimizer`.
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，我们将定义一个名为`get_global_param_rrefs`的方法。为了激发对这个方法的需求，值得阅读[DistributedOptimizer](https://pytorch.org/docs/stable/rpc.html#module-torch.distributed.optim)上的文档，特别是API签名。优化器必须传递一个要优化的远程参数的`RRef`列表，所以这里我们获取必要的`RRef`。由于给定的`TrainerNet`与唯一的远程工作节点`ParameterServer`进行交互，我们只需在`ParameterServer`上调用`remote_method`。我们使用在`ParameterServer`类中定义的`get_param_rrefs`方法。这个方法将返回一个需要被优化的参数的`RRef`列表。请注意，在这种情况下，我们的`TrainerNet`不定义自己的参数；如果定义了，我们还需要将每个参数包装成一个`RRef`，并将其包含在输入到`DistributedOptimizer`中。
 - en: '[PRE7]'
+  id: totrans-27
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: Now, we’re ready to define our `forward` method, which will invoke (synchronous)
     RPC to run the forward pass of the network defined on the `ParameterServer`. Note
     that we pass in `self.param_server_rref`, which is a remote handle to our `ParameterServer`,
     to our RPC call. This call will send an RPC to the node on which our `ParameterServer`
     is running, invoke the `forward` pass, and return the `Tensor` corresponding to
     the model’s output.
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，我们准备定义我们的`forward`方法，它将调用（同步）RPC来运行在`ParameterServer`上定义的网络的前向传播。请注意，我们传入`self.param_server_rref`，这是对我们的`ParameterServer`的远程句柄，到我们的RPC调用中。这个调用将发送一个RPC到我们的`ParameterServer`正在运行的节点上，调用`forward`传播，并返回对应于模型输出的`Tensor`。
 - en: '[PRE8]'
+  id: totrans-29
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: With our trainer fully defined, it’s now time to write our neural network training
     loop that will create our network and optimizer, run some inputs through the network
     and compute the loss. The training loop looks a lot like that of a local training
     program, with some modifications due to the nature of our network being distributed
     across machines.
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们的训练器已经完全定义好了，现在是时候编写我们的神经网络训练循环，该循环将创建我们的网络和优化器，运行一些输入通过网络并计算损失。训练循环看起来很像本地训练程序的循环，但由于我们的网络分布在多台机器上，所以有一些修改。
 - en: Below, we initialize our `TrainerNet` and build a `DistributedOptimizer`. Note
     that as mentioned above, we must pass in all of the global (across all nodes participating
     in distributed training) parameters that we want to be optimized. In addition,
@@ -181,11 +247,16 @@
     optimizer - all arguments for `optimizer.SGD` will be forwarded properly. As an
     example, we pass in a custom learning rate that will be used as the learning rate
     for all local optimizers.
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: 在下面，我们初始化我们的`TrainerNet`并构建一个`DistributedOptimizer`。请注意，如上所述，我们必须传入所有全局（参与分布式训练的所有节点）参数，我们希望进行优化。此外，我们传入要使用的本地优化器，本例中为SGD。请注意，我们可以像创建本地优化器一样配置底层优化算法
+    - 所有`optimizer.SGD`的参数都将被正确转发。例如，我们传入一个自定义学习率，该学习率将用作所有本地优化器的学习率。
 - en: '[PRE9]'
+  id: totrans-32
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: Next, we define our main training loop. We loop through iterables given by PyTorch’s
     [DataLoader](https://pytorch.org/docs/stable/data.html). Before writing our typical
     forward/backward/optimizer loop, we first wrap the logic within a [Distributed
@@ -195,43 +266,60 @@
     distributed workers in the backward pass. The distributed autograd context returns
     a `context_id` which serves as an identifier for accumulating and optimizing gradients
     corresponding to a particular iteration.
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，我们定义我们的主要训练循环。我们循环遍历PyTorch的[DataLoader](https://pytorch.org/docs/stable/data.html)提供的可迭代对象。在编写典型的前向/后向/优化器循环之前，我们首先将逻辑包装在[Distributed
+    Autograd context](https://pytorch.org/docs/stable/rpc.html#torch.distributed.autograd.context)中。请注意，这是为了记录模型前向传递中调用的RPC，以便构建一个适当的图，其中包括在后向传递中参与的所有分布式工作节点。分布式自动求导上下文返回一个`context_id`，用作累积和优化与特定迭代对应的梯度的标识符。
 - en: As opposed to calling the typical `loss.backward()` which would kick off the
     backward pass on this local worker, we call `dist_autograd.backward()` and pass
     in our context_id as well as `loss`, which is the root at which we want the backward
     pass to begin. In addition, we pass this `context_id` into our optimizer call,
     which is required to be able to look up the corresponding gradients computed by
     this particular backwards pass across all nodes.
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 与调用典型的`loss.backward()`不同，后者会在本地工作节点上启动后向传递，我们调用`dist_autograd.backward()`并传入我们的`context_id`以及`loss`，这是我们希望从根开始进行后向传递的位置。此外，我们将这个`context_id`传递给我们的优化器调用，这是必要的，以便能够查找由此特定后向传递计算的相应梯度跨所有节点。
 - en: '[PRE10]'
+  id: totrans-35
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: The following simply computes the accuracy of our model after we’re done training,
     much like a traditional local model. However, note that the `net` we pass into
     this function above is an instance of `TrainerNet` and therefore the forward pass
     invokes RPC in a transparent fashion.
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，我们简单地计算模型在训练完成后的准确率，就像传统的本地模型一样。但是，请注意，我们在上面传递给此函数的`net`是`TrainerNet`的一个实例，因此前向传递以透明方式调用RPC。
 - en: '[PRE11]'
+  id: totrans-37
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: 'Next, similar to how we defined `run_parameter_server` as the main loop for
     our `ParameterServer` that is responsible for initializing RPC, let’s define a
     similar loop for our trainers. The difference will be that our trainers must run
     the training loop we defined above:'
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，类似于我们为`ParameterServer`定义`run_parameter_server`作为主循环的方式，负责初始化RPC，让我们为训练器定义一个类似的循环。不同之处在于我们的训练器必须运行我们上面定义的训练循环：
 - en: '[PRE12]'
+  id: totrans-39
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: Note that similar to `run_parameter_server`, `rpc.shutdown()` will by default
     wait for all workers, both trainers and ParameterServers, to call into `rpc.shutdown()`
     before this node exits. This ensures that nodes are terminated gracefully and
     no node goes offline while another is expecting it to be online.
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，类似于`run_parameter_server`，`rpc.shutdown()`默认情况下会等待所有工作节点，包括训练器和参数服务器，调用`rpc.shutdown()`后，该节点才会退出。这确保节点被优雅地终止，而不会在另一个节点期望其在线时离线。
 - en: We’ve now completed our trainer and parameter server specific code, and all
     that’s left is to add code to launch trainers and parameter servers. First, we
     must take in various arguments that apply to our parameter server and trainers.
@@ -244,11 +332,16 @@
     out locally, simply pass in `localhost` and the same `master_port` to all instances
     spawned. Note that for demonstration purposes, this example supports only between
     0-2 GPUs, although the pattern can be extended to make use of additional GPUs.
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们现在已经完成了训练器和参数服务器特定的代码，剩下的就是添加代码来启动训练器和参数服务器。首先，我们必须接收适用于我们参数服务器和训练器的各种参数。`world_size`对应于将参与训练的节点的总数，是所有训练器和参数服务器的总和。我们还必须为每个单独的进程传入一个唯一的`rank`，从0（我们将在其中运行单个参数服务器）到`world_size
+    - 1`。`master_addr`和`master_port`是可以用来识别0级进程运行位置的参数，并将被各个节点用于发现彼此。为了在本地测试此示例，只需将`localhost`和相同的`master_port`传递给所有生成的实例。请注意，出于演示目的，此示例仅支持0-2个GPU，尽管该模式可以扩展以利用更多的GPU。
 - en: '[PRE13]'
+  id: totrans-42
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: Now, we’ll create a process corresponding to either a parameter server or trainer
     depending on our command line arguments. We’ll create a `ParameterServer` if our
     passed in rank is 0, and a `TrainerNet` otherwise. Note that we’re using `torch.multiprocessing`
@@ -256,11 +349,15 @@
     and waiting on this process’s completion from the main thread with `p.join()`.
     In the case of initializing our trainers, we also use PyTorch’s [dataloaders](https://pytorch.org/docs/stable/data.html)
     in order to specify train and test data loaders on the MNIST dataset.
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，我们将根据我们的命令行参数创建相应于参数服务器或训练器的进程。如果我们传入的等级为0，则将创建一个`ParameterServer`，否则将创建一个`TrainerNet`。请注意，我们使用`torch.multiprocessing`启动一个子进程，对应于我们要执行的函数，并在主线程中使用`p.join()`等待该进程的完成。在初始化我们的训练器时，我们还使用PyTorch的[dataloaders](https://pytorch.org/docs/stable/data.html)来指定MNIST数据集上的训练和测试数据加载器。
 - en: '[PRE14]'
+  id: totrans-44
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: 'To run the example locally, run the following command worker for the server
     and each worker you wish to spawn, in separate terminal windows: `python rpc_parameter_server.py
     --world_size=WORLD_SIZE --rank=RANK`. For example, for a master node with world
@@ -270,10 +367,16 @@
     one server and a single trainer. Note that this tutorial assumes that training
     occurs using between 0 and 2 GPUs, and this argument can be configured by passing
     `--num_gpus=N` into the training script.'
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: 要在本地运行示例，请在单独的终端窗口中为服务器和每个要生成的工作节点运行以下命令：`python rpc_parameter_server.py --world_size=WORLD_SIZE
+    --rank=RANK`。例如，对于世界大小为2的主节点，命令将是`python rpc_parameter_server.py --world_size=2
+    --rank=0`。然后可以在单独的窗口中使用命令`python rpc_parameter_server.py --world_size=2 --rank=1`启动训练器，这将开始使用一个服务器和一个训练器进行训练。请注意，本教程假定训练使用0到2个GPU进行，可以通过将`--num_gpus=N`传递到训练脚本中进行配置。
 - en: You can pass in the command line arguments `--master_addr=ADDRESS` and `--master_port=PORT`
     to indicate the address and port that the master worker is listening on, for example,
     to test functionality where trainers and master nodes run on different machines.
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可以通过命令行参数`--master_addr=ADDRESS`和`--master_port=PORT`传入地址和端口，以指示主工作节点正在侦听的地址和端口，例如，用于测试训练器和主节点在不同机器上运行的功能。

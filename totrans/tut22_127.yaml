@@ -1,78 +1,116 @@
 - en: Distributed Training with Uneven Inputs Using the Join Context Manager
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 使用Join上下文管理器进行不均匀输入的分布式训练
 - en: 原文：[https://pytorch.org/tutorials/advanced/generic_join.html](https://pytorch.org/tutorials/advanced/generic_join.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/advanced/generic_join.html](https://pytorch.org/tutorials/advanced/generic_join.html)
 - en: '**Author**: [Andrew Gu](https://github.com/andwgu)'
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: '**作者**：[Andrew Gu](https://github.com/andwgu)'
 - en: Note
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
-- en: '![edit](../Images/a8aa37bcc5edbf2ba5fcf18dba1e55f9.png)
-    View and edit this tutorial in [github](https://github.com/pytorch/tutorials/blob/main/advanced_source/generic_join.rst).'
+  zh: 注意
+- en: '![edit](../Images/a8aa37bcc5edbf2ba5fcf18dba1e55f9.png) View and edit this
+    tutorial in [github](https://github.com/pytorch/tutorials/blob/main/advanced_source/generic_join.rst).'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '![edit](../Images/a8aa37bcc5edbf2ba5fcf18dba1e55f9.png) 在[github](https://github.com/pytorch/tutorials/blob/main/advanced_source/generic_join.rst)中查看并编辑此教程。'
 - en: Note
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: '`Join` is introduced in PyTorch 1.10 as a prototype feature. This API is subject
     to change.'
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: '`Join`在PyTorch 1.10中作为原型功能引入。此API可能会更改。'
 - en: 'In this tutorial, you will see:'
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，您将看到：
 - en: An overview of the [Join](https://pytorch.org/docs/master/distributed.algorithms.join.html)
     context manager.
+  id: totrans-8
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[Join](https://pytorch.org/docs/master/distributed.algorithms.join.html)上下文管理器的概述。'
 - en: An example of how to use the context manager with `DistributedDataParallel`.
+  id: totrans-9
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 如何使用`DistributedDataParallel`与上下文管理器的示例。
 - en: An example of how to use the context manager with both `DistributedDataParallel`
     and `ZeroRedundancyOptimizer`.
+  id: totrans-10
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 如何使用上下文管理器与`DistributedDataParallel`和`ZeroRedundancyOptimizer`的示例。
 - en: An example of passing in keyword arguments to the context manager.
+  id: totrans-11
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 将关键字参数传递给上下文管理器的示例。
 - en: A dive into how the [Join](https://pytorch.org/docs/master/distributed.algorithms.join.html)
     context manager works.
+  id: totrans-12
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 深入了解[Join](https://pytorch.org/docs/master/distributed.algorithms.join.html)上下文管理器的工作原理。
 - en: An example showing how to make a toy class compatible with the context manager.
+  id: totrans-13
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 一个示例，展示如何使一个玩具类与上下文管理器兼容。
 - en: Requirements
+  id: totrans-14
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 要求
 - en: PyTorch 1.10+
+  id: totrans-15
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: PyTorch 1.10+
 - en: '[Getting Started with Distributed Data Parallel](https://pytorch.org/tutorials/intermediate/ddp_tutorial.html)'
+  id: totrans-16
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[使用分布式数据并行开始](https://pytorch.org/tutorials/intermediate/ddp_tutorial.html)'
 - en: '[Shard Optimizer States with ZeroRedundancyOptimizer](https://pytorch.org/tutorials/recipes/zero_redundancy_optimizer.html)'
+  id: totrans-17
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[使用ZeroRedundancyOptimizer对优化器状态进行分片](https://pytorch.org/tutorials/recipes/zero_redundancy_optimizer.html)'
 - en: What is `Join`?
+  id: totrans-18
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 什么是`Join`？
 - en: In [Getting Started with Distributed Data Parallel - Basic Use Case](https://pytorch.org/tutorials/intermediate/ddp_tutorial.html#basic-use-case),
     you saw the general skeleton for using [DistributedDataParallel](https://pytorch.org/docs/stable/generated/torch.nn.parallel.DistributedDataParallel.html)
     to perform data parallel training. This implicitly schedules all-reduces in each
@@ -81,36 +119,52 @@
     inputs, then the other ranks will hang or error (depending on the backend). More
     generally, this problem persists for any class that performs per-iteration synchronous
     collective communications.
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 在[使用分布式数据并行开始 - 基本用例](https://pytorch.org/tutorials/intermediate/ddp_tutorial.html#basic-use-case)中，您看到了使用[DistributedDataParallel](https://pytorch.org/docs/stable/generated/torch.nn.parallel.DistributedDataParallel.html)执行数据并行训练的一般框架。这隐式地在每次反向传播中安排所有规约，以在各个rank之间同步梯度。这种[集体通信](https://pytorch.org/docs/stable/distributed.html)需要来自进程组中所有rank的参与，因此，如果一个rank的输入较少，那么其他rank将挂起或出错（取决于后端）。更一般地说，对于执行每次迭代同步集体通信的任何类，这个问题都会持续存在。
 - en: '`Join` is a context manager to be used around your per-rank training loop to
     facilitate training with uneven inputs. The context manager allows the ranks that
     exhaust their inputs early (i.e. *join* early) to shadow the collective communications
     performed by those that have not yet joined. The ways in which the communications
     are shadowed are specified by hooks.'
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: '`Join`是一个上下文管理器，用于围绕您的每个rank训练循环，以便在不均匀输入下进行训练。上下文管理器允许提前耗尽输入的rank（即*join*提前）来模拟尚未加入的rank执行的集体通信。通信被模拟的方式由钩子指定。'
 - en: Using `Join` with `DistributedDataParallel`
+  id: totrans-21
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 使用`Join`与`DistributedDataParallel`
 - en: 'PyTorch’s [DistributedDataParallel](https://pytorch.org/docs/stable/generated/torch.nn.parallel.DistributedDataParallel.html)
     works out-of-the-box with the `Join` context manager. Here is an example usage:'
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch的[DistributedDataParallel](https://pytorch.org/docs/stable/generated/torch.nn.parallel.DistributedDataParallel.html)与`Join`上下文管理器完全兼容。以下是一个示例用法：
 - en: '[PRE0]'
+  id: totrans-23
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: 'This produces the following output (where the `print()` s from rank 0 and rank
     1 may be arbitrarily ordered):'
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 这将产生以下输出（其中来自rank 0和rank 1的`print()`可能是任意顺序）：
 - en: '[PRE1]'
+  id: totrans-25
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Note
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: '[DistributedDataParallel](https://pytorch.org/docs/stable/generated/torch.nn.parallel.DistributedDataParallel.html)
     provided its own [join()](https://pytorch.org/docs/stable/_modules/torch/nn/parallel/distributed.html#DistributedDataParallel.join)
     context manager prior to the introduction of this generic `Join` context manager.
@@ -119,168 +173,241 @@
     is that it does not allow multiple participating classes, e.g. `DistributedDataParallel`
     and [ZeroRedundancyOptimizer](https://pytorch.org/docs/stable/distributed.optim.html)
     together.'
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: '[DistributedDataParallel](https://pytorch.org/docs/stable/generated/torch.nn.parallel.DistributedDataParallel.html)在引入这个通用的`Join`上下文管理器之前提供了自己的[join()](https://pytorch.org/docs/stable/_modules/torch/nn/parallel/distributed.html#DistributedDataParallel.join)上下文管理器。在上面的示例中，使用`with
+    Join([model]):`等同于使用`with model.join():`。现有的`DistributedDataParallel.join()`的一个限制是它不允许多个参与类，例如`DistributedDataParallel`和[ZeroRedundancyOptimizer](https://pytorch.org/docs/stable/distributed.optim.html)一起。'
 - en: Using `Join` with `DistributedDataParallel` and `ZeroRedundancyOptimizer`
+  id: totrans-28
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 使用`Join`与`DistributedDataParallel`和`ZeroRedundancyOptimizer`
 - en: 'The `Join` context manager works not only with a single class but also with
     multiple classes together. PyTorch’s `ZeroRedundancyOptimizer` is also compatible
     with the context manager, so here, we examine how to modify the previous example
     to use both `DistributedDataParallel` and `ZeroRedundancyOptimizer`:'
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: '`Join`上下文管理器不仅适用于单个类，还适用于多个类一起。PyTorch的`ZeroRedundancyOptimizer`也与上下文管理器兼容，因此，在这里，我们将检查如何修改之前的示例以同时使用`DistributedDataParallel`和`ZeroRedundancyOptimizer`：'
 - en: '[PRE2]'
+  id: totrans-30
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: This will yield the same output as before. The notable change was additionally
     passing in the `ZeroRedundancyOptimizer` instance into `Join()`.
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: 这将产生与之前相同的输出。显著的变化是额外将“ZeroRedundancyOptimizer”实例传递给“Join()”。
 - en: Passing Keyword Arguments
+  id: totrans-32
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 传递关键字参数
 - en: Classes may provide keyword arguments that modify their behavior in the context
     manager at run time. For example, `DistributedDataParallel` provides an argument
     `divide_by_initial_world_size`, which determines if gradients are divided by the
     initial world size or by the effective world size (i.e. number of non-joined ranks).
     Such keyword arguments can be passed directly into the context manager.
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: 类可以提供关键字参数，在运行时修改它们在上下文管理器中的行为。例如，“DistributedDataParallel”提供了一个参数“divide_by_initial_world_size”，确定梯度是由初始世界大小还是有效世界大小（即非加入等级的数量）除以。这样的关键字参数可以直接传递到上下文管理器中。
 - en: '[PRE3]'
+  id: totrans-34
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: Warning
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: The keyword arguments passed into the context manager are shared across all
     participating classes. This should not be a limitation since we do not expect
     cases where multiple `Joinable` s need differing settings of the same argument.
     Nonetheless, this is something to keep in mind.
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 传递给上下文管理器的关键字参数在所有参与类之间共享。这不应该是一个限制，因为我们不希望出现多个“Joinable”需要相同参数的不同设置的情况。尽管如此，这是需要记住的一点。
 - en: How Does `Join` Work?
+  id: totrans-37
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: “Join”是如何工作的？
 - en: Now that we have seen some preliminary examples of how to use the `Join` context
     manager, let us delve deeper into how it works. This will provide a greater insight
     into the full capability that it offers and prepare you to make your own custom
     classes compatible. Here, we will go over the `Join` class as well as the supporting
     classes `Joinable` and `JoinHook`.
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们已经看到了如何使用“Join”上下文管理器的一些初步示例，让我们深入了解它的工作原理。这将为您提供对其提供的全部功能的更深入了解，并为您准备好制作自己的自定义类。在这里，我们将介绍“Join”类以及支持类“Joinable”和“JoinHook”。
 - en: '`Joinable`'
+  id: totrans-39
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: “Joinable”
 - en: 'To begin, classes compatible with the `Join` context manager must inherit from
     the abstract base class `Joinable`. In particular, a `Joinable` must implement:'
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: 首先，与“Join”上下文管理器兼容的类必须继承自抽象基类“Joinable”。特别是，“Joinable”必须实现：
 - en: '`join_hook(self, **kwargs) -> JoinHook`'
+  id: totrans-41
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`join_hook(self, **kwargs) -> JoinHook`'
 - en: This returns the `JoinHook` instance for the `Joinable`, determining how joined
     processes should shadow the per-iteration collective communications performed
     by the `Joinable`.
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 这将返回“Joinable”的“JoinHook”实例，确定加入的进程应如何模拟“Joinable”执行的每次迭代集体通信。
 - en: '`join_device(self) -> torch.device`'
+  id: totrans-43
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`join_device(self) -> torch.device`'
 - en: This returns a device to be used by the `Join` context manager to perform collective
     communications, e.g. `torch.device("cuda:0")` or `torch.device("cpu")`.
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 这将返回一个设备，该设备将由“Join”上下文管理器用于执行集体通信，例如`torch.device("cuda:0")`或`torch.device("cpu")`。
 - en: '`join_process_group(self) -> ProcessGroup`'
+  id: totrans-45
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`join_process_group(self) -> ProcessGroup`'
 - en: This returns the process group to be used by the `Join` context manager to perform
     collective communications.
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 这将返回要由“Join”上下文管理器用于执行集体通信的进程组。
 - en: In particular, the `join_device` and `join_process_group` are required attributes
     to ensure that the context manager can schedule collective communications between
     joined and non-joined processes. One usage is to count the number of non-joined
     processes on each iteration using an all-reduce. Another usage is for implementing
     the mechanism required for `throw_on_early_termination=True`, which we will explain
     later below.
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: 特别是，“join_device”和“join_process_group”是必需的属性，以确保上下文管理器可以安排加入和未加入进程之间的集体通信。一个用法是使用全局归约在每次迭代中计算非加入进程的数量。另一个用法是实现“throw_on_early_termination=True”所需的机制，我们将在下面稍后解释。
 - en: '`DistributedDataParallel` and `ZeroRedundancyOptimizer` already inherit from
     `Joinable` and implement the above methods, which is why we could directly use
     them in the previous examples.'
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: “DistributedDataParallel”和“ZeroRedundancyOptimizer”已经继承自“Joinable”并实现了上述方法，这就是为什么我们可以直接在之前的示例中使用它们。
 - en: '`Joinable` classes should make sure to call the `Joinable` constructor since
     it initializes a `JoinConfig` instance, which is used internally by the context
     manager to ensure correctness. This will be saved in each `Joinable` as a field
     `_join_config`.'
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: “Joinable”类应确保调用“Joinable”构造函数，因为它初始化了一个“JoinConfig”实例，该实例在上下文管理器内部用于确保正确性。这将保存在每个“Joinable”中作为一个字段“_join_config”。
 - en: '`JoinHook`'
+  id: totrans-50
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: “JoinHook”
 - en: 'Next, let us break down the `JoinHook` class. A `JoinHook` provides two entry
     points into a context manager:'
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，让我们来分解“JoinHook”类。一个“JoinHook”提供了两个进入上下文管理器的入口点：
 - en: '`main_hook(self) -> None`'
+  id: totrans-52
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`main_hook(self) -> None`'
 - en: This hook is called repeatedly by each joined rank while there exists a rank
     that has not yet joined. It is meant to shadow the collective communications performed
     by the `Joinable` in each training iteration (e.g. in one forward pass, backward
     pass, and optimizer step).
+  id: totrans-53
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个钩子在每个已加入的等级中被重复调用，同时存在一个尚未加入的等级。它旨在模拟每个训练迭代中由“Joinable”执行的集体通信（例如，在一个前向传递、反向传递和优化器步骤中）。
 - en: '`post_hook(self, is_last_joiner: bool) -> None`'
+  id: totrans-54
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`post_hook(self, is_last_joiner: bool) -> None`'
 - en: This hook is called once all ranks have joined. It is passed an additional `bool`
     argument `is_last_joiner`, which indicates if the rank was one of the last to
     join. The argument may be useful for synchronization.
+  id: totrans-55
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个钩子在所有等级都加入后被调用。它传递了一个额外的“bool”参数“is_last_joiner”，指示该等级是否是最后加入的等级之一。该参数可能对同步有用。
 - en: To give concrete examples of what these hooks may look like, the provided `ZeroRedundancyOptimizer`
     main hook performs an optimizer step per normal since the joined rank is still
     responsible for updating and synchronizing its shard of the parameters, and the
     provided `DistributedDataParallel` post-hook broadcasts the final updated model
     from one of the last joining ranks to ensure that it is the same across all ranks.
+  id: totrans-56
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了给出这些钩子可能看起来像什么的具体示例，“ZeroRedundancyOptimizer”提供的主要钩子每次执行一步优化器，因为加入的等级仍然负责更新和同步其参数的片段，“DistributedDataParallel”提供的后钩子将最终更新的模型从最后加入的等级之一广播到所有等级，以确保它在所有等级上都是相同的。
 - en: '`Join`'
+  id: totrans-57
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: '`Join`'
 - en: Finally, let us examine how these fit into the `Join` class itself.
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: 最后，让我们看看这些如何适应 `Join` 类本身。
 - en: '`__init__(self, joinables: List[Joinable], enable: bool = True, throw_on_early_termination:
     bool = False)`'
+  id: totrans-59
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`__init__(self, joinables: List[Joinable], enable: bool = True, throw_on_early_termination:
+    bool = False)`'
 - en: As we saw in the previous examples, the constructor takes in a list of the `Joinable`
     s that participate in the training loop. These should be the classes that perform
     collective communications in each iteration.
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: 正如我们在前面的示例中看到的，构造函数接受参与训练循环的 `Joinable` 类的列表。这些应该是在每次迭代中执行集体通信的类。
 - en: '`enable` is a `bool` that can be set to `False` if you know that there will
     not be uneven inputs, in which case the context manager becomes vacuous similar
     to `contextlib.nullcontext()`. This also may disable join-related computation
     in the participating `Joinable` s.'
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: '`enable` 是一个 `bool`，如果您知道不会有不均匀的输入，可以将其设置为 `False`，在这种情况下，上下文管理器类似于 `contextlib.nullcontext()`
+    变得无效。这也可能会禁用参与的 `Joinable` 中的与连接相关的计算。'
 - en: '`throw_on_early_termination` is a `bool` that can be set to `True` to have
     each rank raise an exception the moment that uneven inputs are detected. This
     is useful for cases that do not conform to the context manager’s requirements,
@@ -289,25 +416,36 @@
     with a model that has `SyncBatchNorm` layers. In such cases, this argument should
     be set to `True` so that the application logic can catch the exception and determine
     how to proceed.'
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
+  zh: '`throw_on_early_termination` 是一个 `bool`，如果检测到不均匀的输入，可以将其设置为 `True`，以便每个等级在那一刻引发异常。这对于不符合上下文管理器要求的情况非常有用，这种情况最典型的是当来自不同类的集体通信可能任意交错时，例如在使用具有
+    `SyncBatchNorm` 层的模型时使用 `DistributedDataParallel`。在这种情况下，应将此参数设置为 `True`，以便应用逻辑可以捕获异常并确定如何继续。'
 - en: The core logic occurs in the `__exit__()` method, which loops while there exists
     a non-joined rank, calling each `Joinable` ‘s main hook, and then once all ranks
     have joined, calls their post hooks. Both the main hooks and post-hooks are iterated
     over in the order that the `Joinable` s are passed in.
+  id: totrans-63
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 核心逻辑发生在 `__exit__()` 方法中，当存在未连接的等级时循环调用每个 `Joinable` 的主要钩子，然后一旦所有等级都加入，调用它们的后处理钩子。主要钩子和后处理钩子都按照传入的
+    `Joinable` 的顺序进行迭代。
 - en: The context manager requires a heartbeat from non-joined processes. As such,
     each `Joinable` class should make a call to `Join.notify_join_context()` before
     its per-iteration collective communications. The context manager will ensure that
     only the first `Joinable` passed in actually sends the heartbeat.
+  id: totrans-64
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 上下文管理器需要来自未连接进程的心跳。因此，每个 `Joinable` 类应在其每次迭代的集体通信之前调用 `Join.notify_join_context()`。上下文管理器将确保只有第一个传入的
+    `Joinable` 实际发送心跳。
 - en: Warning
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: As mentioned above regarding `throw_on_early_termination`, the `Join` context
     manager is not compatible with certain compositions of classes. The `Joinable`
     ‘s `JoinHook` s must be serializable since each hook is fully executed before
@@ -315,54 +453,81 @@
     both the main hooks and post- hooks are iterated over in the same deterministic
     order. If this appears to be a major limitation, we may modify the API to permit
     a customizable ordering.
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: 如上所述关于 `throw_on_early_termination`，`Join` 上下文管理器与某些类的组合不兼容。`Joinable` 的 `JoinHook`
+    必须是可序列化的，因为每个钩子在继续下一个之前完全执行。换句话说，两个钩子不能重叠。此外，目前主要钩子和后处理钩子都按照相同的确定性顺序进行迭代。如果这看起来是一个主要限制，我们可以修改
+    API 以允许自定义排序。
 - en: Making a Toy Class Work with `Join`
+  id: totrans-67
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 使玩具类与 `Join` 兼容
 - en: Since the previous section introduced several concepts, let us see them in practice
     with a toy example. Here, we will implement a class that counts the number of
     inputs that are seen across all ranks before its rank joins. This should provide
     a basic idea of how you may make your own class compatible with the `Join` context
     manager.
+  id: totrans-68
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于上一节介绍了几个概念，让我们通过一个玩具示例来实践。在这里，我们将实现一个类，该类在其等级加入之前计算所有等级看到的输入数量。这应该提供一个基本的想法，说明您如何使自己的类与
+    `Join` 上下文管理器兼容。
 - en: Specifically, the following code has each rank print out (1) the number of inputs
     across all ranks that seen before it joins and (2) the total number of inputs
     across all ranks.
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: 具体来说，以下代码使每个等级打印出（1）在其加入之前所有等级看到的输入数量和（2）所有等级看到的总输入数量。
 - en: '[PRE4]'
+  id: totrans-70
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: 'Since rank 0 sees 5 inputs and rank 1 sees 6, this yields the output:'
+  id: totrans-71
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于等级 0 看到 5 个输入，等级 1 看到 6 个输入，因此产生输出：
 - en: '[PRE5]'
+  id: totrans-72
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: 'Some key points to highlight:'
+  id: totrans-73
   prefs: []
   type: TYPE_NORMAL
+  zh: 一些要强调的关键点：
 - en: A `Counter` instance performs a single all-reduce per iteration, so the main
     hook performs a single all-reduce as well to shadow it.
+  id: totrans-74
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`Counter` 实例在每次迭代中执行一次全局归约，因此主要钩子也执行一次全局归约以进行遮蔽。'
 - en: The `Counter` class makes a call to `Join.notify_join_context()` at the beginning
     of its `__call__()` method since that is a place before its per- iteration collective
     communications (i.e. its all-reduce).
+  id: totrans-75
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`Counter` 类在其 `__call__()` 方法的开头调用 `Join.notify_join_context()`，因为这是在其每次迭代的集体通信之前的位置（即其全局归约）。'
 - en: The `is_last_joiner` argument is used to determine the broadcast source in the
     post-hooks.
+  id: totrans-76
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`is_last_joiner` 参数用于确定后处理中的广播源。'
 - en: We pass in the `sync_max_count` keyword argument to the context manager, which
     is then forwarded to `Counter` ‘s join hook.
+  id: totrans-77
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 我们传递 `sync_max_count` 关键字参数给上下文管理器，然后将其转发到 `Counter` 的连接钩子。

@@ -1,221 +1,340 @@
 - en: Getting Started with Fully Sharded Data Parallel(FSDP)
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 开始使用完全分片数据并行（FSDP）
 - en: 原文：[https://pytorch.org/tutorials/intermediate/FSDP_tutorial.html](https://pytorch.org/tutorials/intermediate/FSDP_tutorial.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: '[https://pytorch.org/tutorials/intermediate/FSDP_tutorial.html](https://pytorch.org/tutorials/intermediate/FSDP_tutorial.html)'
 - en: '**Author**: [Hamid Shojanazeri](https://github.com/HamidShojanazeri), [Yanli
     Zhao](https://github.com/zhaojuanmao), [Shen Li](https://mrshenli.github.io/)'
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: '**作者**：[Hamid Shojanazeri](https://github.com/HamidShojanazeri)，[Yanli Zhao](https://github.com/zhaojuanmao)，[Shen
+    Li](https://mrshenli.github.io/)'
 - en: Note
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
-- en: '![edit](../Images/a8aa37bcc5edbf2ba5fcf18dba1e55f9.png)
-    View and edit this tutorial in [github](https://github.com/pytorch/tutorials/blob/main/intermediate_source/FSDP_tutorial.rst).'
+  zh: 注意
+- en: '![edit](../Images/a8aa37bcc5edbf2ba5fcf18dba1e55f9.png) View and edit this
+    tutorial in [github](https://github.com/pytorch/tutorials/blob/main/intermediate_source/FSDP_tutorial.rst).'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '![edit](../Images/a8aa37bcc5edbf2ba5fcf18dba1e55f9.png) 在[github](https://github.com/pytorch/tutorials/blob/main/intermediate_source/FSDP_tutorial.rst)上查看并编辑本教程。'
 - en: Training AI models at a large scale is a challenging task that requires a lot
     of compute power and resources. It also comes with considerable engineering complexity
     to handle the training of these very large models. [PyTorch FSDP](https://pytorch.org/blog/introducing-pytorch-fully-sharded-data-parallel-api/),
     released in PyTorch 1.11 makes this easier.
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 在大规模训练AI模型是一项具有挑战性的任务，需要大量的计算能力和资源。同时，处理这些非常大模型的训练也伴随着相当大的工程复杂性。PyTorch FSDP，在PyTorch
+    1.11中发布，使这变得更容易。
 - en: In this tutorial, we show how to use [FSDP APIs](https://pytorch.org/docs/1.11/fsdp.html),
     for simple MNIST models that can be extended to other larger models such as [HuggingFace
     BERT models](https://huggingface.co/blog/zero-deepspeed-fairscale), [GPT 3 models
     up to 1T parameters](https://pytorch.medium.com/training-a-1-trillion-parameter-model-with-pytorch-fully-sharded-data-parallel-on-aws-3ac13aa96cff)
     . The sample DDP MNIST code has been borrowed from [here](https://github.com/yqhu/mnist_examples).
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，我们展示了如何使用[FSDP APIs](https://pytorch.org/docs/1.11/fsdp.html)，用于简单的MNIST模型，可以扩展到其他更大的模型，比如[HuggingFace
+    BERT模型](https://huggingface.co/blog/zero-deepspeed-fairscale)，[GPT 3模型高达1T参数](https://pytorch.medium.com/training-a-1-trillion-parameter-model-with-pytorch-fully-sharded-data-parallel-on-aws-3ac13aa96cff)。示例DDP
+    MNIST代码是从[这里](https://github.com/yqhu/mnist_examples)借鉴的。
 - en: How FSDP works
+  id: totrans-7
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: FSDP是如何工作的
 - en: In [DistributedDataParallel](https://pytorch.org/docs/stable/generated/torch.nn.parallel.DistributedDataParallel.html),
     (DDP) training, each process/ worker owns a replica of the model and processes
     a batch of data, finally it uses all-reduce to sum up gradients over different
     workers. In DDP the model weights and optimizer states are replicated across all
     workers. FSDP is a type of data parallelism that shards model parameters, optimizer
     states and gradients across DDP ranks.
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 在[DistributedDataParallel](https://pytorch.org/docs/stable/generated/torch.nn.parallel.DistributedDataParallel.html)（DDP）训练中，每个进程/工作器拥有模型的副本并处理一批数据，最后使用全局归约来汇总不同工作器上的梯度。在DDP中，模型权重和优化器状态在所有工作器之间复制。FSDP是一种数据并行ism，它在DDP等级之间分片模型参数、优化器状态和梯度。
 - en: When training with FSDP, the GPU memory footprint is smaller than when training
     with DDP across all workers. This makes the training of some very large models
     feasible by allowing larger models or batch sizes to fit on device. This comes
     with the cost of increased communication volume. The communication overhead is
     reduced by internal optimizations like overlapping communication and computation.
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用FSDP 进行训练时，GPU 内存占用比在所有工作节点上使用 DDP 进行训练时要小。这使得一些非常大的模型的训练变得可行，因为可以容纳更大的模型或批量大小在设备上。但这也会增加通信量。通过内部优化，如重叠通信和计算，可以减少通信开销。
 - en: '![FSDP workflow](../Images/4e33f1b27db65dbfcbcf54cce427e858.png)'
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: '![FSDP工作流程](../Images/4e33f1b27db65dbfcbcf54cce427e858.png)'
 - en: FSDP Workflow
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: FSDP工作流程
 - en: 'At a high level FSDP works as follow:'
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: 在高层次上，FSDP 的工作方式如下：
 - en: '*In constructor*'
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: '*在构造函数中*'
 - en: Shard model parameters and each rank only keeps its own shard
+  id: totrans-14
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 分片模型参数和每个等级只保留自己的分片
 - en: '*In forward path*'
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: '*在前向路径*'
 - en: Run all_gather to collect all shards from all ranks to recover the full parameter
     in this FSDP unit
+  id: totrans-16
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 运行all_gather来收集所有等级的所有碎片，以恢复此FSDP单元中的完整参数。
 - en: Run forward computation
+  id: totrans-17
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 进行前向计算
 - en: Discard parameter shards it has just collected
+  id: totrans-18
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 丢弃刚收集的参数分片
 - en: '*In backward path*'
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: '*在反向路径中*'
 - en: Run all_gather to collect all shards from all ranks to recover the full parameter
     in this FSDP unit
+  id: totrans-20
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 运行all_gather来收集所有等级的所有碎片，以恢复此FSDP单元中的完整参数。
 - en: Run backward computation
+  id: totrans-21
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 运行反向计算
 - en: Run reduce_scatter to sync gradients
+  id: totrans-22
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 运行reduce_scatter来同步梯度
 - en: Discard parameters.
+  id: totrans-23
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 丢弃参数。
 - en: One way to view FSDP’s sharding is to decompose the DDP gradient all-reduce
     into reduce-scatter and all-gather. Specifically, during the backward pass, FSDP
     reduces and scatters gradients, ensuring that each rank possesses a shard of the
     gradients. Then it updates the corresponding shard of the parameters in the optimizer
     step. Finally, in the subsequent forward pass, it performs an all-gather operation
     to collect and combine the updated parameter shards.
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 将FSDP的分片视为将DDP梯度全局归约分解为归约散射和全局聚集的一种方式。具体来说，在反向传播过程中，FSDP减少并散射梯度，确保每个秩具有梯度的一个片段。然后在优化器步骤中更新相应的参数片段。最后，在随后的前向传播过程中，它执行全局聚集操作来收集和组合更新的参数片段。
 - en: '![FSDP allreduce](../Images/0e1d2209fe5b011d7237cb607289d4f1.png)'
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: '![FSDP allreduce](../Images/0e1d2209fe5b011d7237cb607289d4f1.png)'
 - en: FSDP Allreduce
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: FSDP Allreduce
 - en: How to use FSDP
+  id: totrans-27
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 如何使用FSDP
 - en: Here we use a toy model to run training on the MNIST dataset for demonstration
     purposes. The APIs and logic can be applied to training larger models as well.
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这里，我们使用一个玩具模型来对MNIST数据集进行训练，以演示目的。这些API和逻辑也可以应用于训练更大的模型。
 - en: '*Setup*'
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: '*设置*'
 - en: 1.1 Install PyTorch along with Torchvision
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 1.1 安装 PyTorch 和 Torchvision
 - en: '[PRE0]'
+  id: totrans-31
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: We add the following code snippets to a python script “FSDP_mnist.py”.
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们将以下代码片段添加到一个名为“FSDP_mnist.py”的Python脚本中。
 - en: 1.2 Import necessary packages
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: 1.2 导入必要的包
 - en: Note
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: This tutorial is intended for PyTorch versions 1.12 and later. If you are using
     an earlier version, replace all instances of size_based_auto_wrap_policy with
     default_auto_wrap_policy.
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程适用于 PyTorch 版本 1.12 及更高版本。如果您使用的是早期版本，请将所有的 size_based_auto_wrap_policy 实例替换为
+    default_auto_wrap_policy。
 - en: '[PRE1]'
+  id: totrans-36
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: 1.3 Distributed training setup. As we mentioned FSDP is a type of data parallelism
     which requires a distributed training environment, so here we use two helper functions
     to initialize the processes for distributed training and clean up.
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 1.3 分布式训练设置。正如我们提到的，FSDP是一种数据并行ism，它需要一个分布式训练环境，因此我们在这里使用两个辅助函数来初始化分布式训练的进程并进行清理。
 - en: '[PRE2]'
+  id: totrans-38
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: 2.1 Define our toy model for handwritten digit classification.
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 2.1 定义我们的手写数字分类的玩具模型。
 - en: '[PRE3]'
+  id: totrans-40
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: 2.2 Define a train function
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 2.2 定义一个训练函数。
 - en: '[PRE4]'
+  id: totrans-42
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: 2.3 Define a validation function
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: 2.3 定义一个验证函数
 - en: '[PRE5]'
+  id: totrans-44
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: 2.4 Define a distributed train function that wraps the model in FSDP
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: 2.4 定义一个分布式训练函数，将模型包装在FSDP中
 - en: '**Note: to save the FSDP model, we need to call the state_dict on each rank
     then on Rank 0 save the overall states.**'
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意：为了保存FSDP模型，我们需要在每个排名上调用state_dict，然后在排名0上保存整体状态。
 - en: '[PRE6]'
+  id: totrans-47
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: 2.5 Finally, parse the arguments and set the main function
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: 2.5 最后，解析参数并设置主函数
 - en: '[PRE7]'
+  id: totrans-49
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: We have recorded cuda events to measure the time of FSDP model specifics. The
     CUDA event time was 110.85 seconds.
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们已记录了CUDA事件来测量FSDP模型特定部分的时间。CUDA事件时间为110.85秒。
 - en: '[PRE8]'
+  id: totrans-51
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: Wrapping the model with FSDP, the model will look as follows, we can see the
     model has been wrapped in one FSDP unit. Alternatively, we will look at adding
     the fsdp_auto_wrap_policy next and will discuss the differences.
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用FSDP包装模型后，模型将如下所示，我们可以看到模型已经被包装在一个FSDP单元中。或者，我们将考虑接下来添加fsdp_auto_wrap_policy，并讨论其中的区别。
 - en: '[PRE9]'
+  id: totrans-53
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: The following is the peak memory usage from FSDP MNIST training on g4dn.12.xlarge
     AWS EC2 instance with 4 GPUs captured from PyTorch Profiler.
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下是在g4dn.12.xlarge AWS EC2实例上使用4个GPU进行FSDP MNIST训练时从PyTorch Profiler捕获的峰值内存使用情况。
 - en: '![FSDP peak memory](../Images/c26c3d052bcb9f32ea5c7b3d9500d97a.png)'
+  id: totrans-55
   prefs: []
   type: TYPE_NORMAL
+  zh: '![FSDP峰值内存](../Images/c26c3d052bcb9f32ea5c7b3d9500d97a.png)'
 - en: FSDP Peak Memory Usage
+  id: totrans-56
   prefs: []
   type: TYPE_NORMAL
+  zh: FSDP峰值内存使用量
 - en: Applying *fsdp_auto_wrap_policy* in FSDP otherwise, FSDP will put the entire
     model in one FSDP unit, which will reduce computation efficiency and memory efficiency.
     The way it works is that, suppose your model contains 100 Linear layers. If you
@@ -224,8 +343,10 @@
     layers, and hence won’t save CUDA memory for parameter sharding. Also, there is
     only one blocking allgather call for the all 100 linear layers, there will not
     be communication and computation overlapping between layers.
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: 在FSDP中应用*fsdp_auto_wrap_policy*，否则，FSDP将把整个模型放在一个FSDP单元中，这将降低计算效率和内存效率。它的工作方式是，假设您的模型包含100个线性层。如果您对模型进行FSDP处理，那么只会有一个包含整个模型的FSDP单元。在这种情况下，allgather将收集所有100个线性层的完整参数，因此不会为参数分片节省CUDA内存。此外，对于所有100个线性层，只有一个阻塞的allgather调用，层之间不会有通信和计算重叠。
 - en: To avoid that, you can pass in an fsdp_auto_wrap_policy, which will seal the
     current FSDP unit and start a new one automatically when the specified condition
     is met (e.g., size limit). In that way you will have multiple FSDP units, and
@@ -235,8 +356,10 @@
     discard the parameters and then move on to the next 20 linear layers. So, at any
     point in time, each rank only materializes parameters/grads for 20 linear layers
     instead of 100.
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了避免这种情况，您可以传入一个fsdp_auto_wrap_policy，当满足指定条件（例如大小限制）时，将封装当前的FSDP单元并自动启动一个新的。这样，您将拥有多个FSDP单元，每次只需要一个FSDP单元收集完整参数。例如，假设您有5个FSDP单元，每个包含20个线性层。然后，在前向传播中，第一个FSDP单元将收集前20个线性层的参数，进行计算，丢弃参数，然后继续下一个20个线性层。因此，在任何时候，每个rank只会实现20个线性层的参数/梯度，而不是100个。
 - en: To do so in 2.4 we define the auto_wrap_policy and pass it to FSDP wrapper,
     in the following example, my_auto_wrap_policy defines that a layer could be wrapped
     or sharded by FSDP if the number of parameters in this layer is larger than 100.
@@ -245,88 +368,134 @@
     is challenging, PyTorch will add auto tuning for this config in the future. Without
     an auto tuning tool, it is good to profile your workflow using different auto
     wrap policies experimentally and find the optimal one.
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了在2.4中这样做，我们定义了auto_wrap_policy并将其传递给FSDP包装器，在以下示例中，my_auto_wrap_policy定义了如果该层中的参数数量大于100，则该层可以被FSDP包装或分片。如果该层中的参数数量小于100，则它将与其他小层一起被FSDP包装。找到一个最佳的自动包装策略是具有挑战性的，PyTorch将在将来为此配置添加自动调整功能。没有自动调整工具，最好通过实验使用不同的自动包装策略来分析您的工作流程，并找到最佳策略。
 - en: '[PRE10]'
+  id: totrans-60
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: 'Applying the fsdp_auto_wrap_policy, the model would be as follows:'
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: 应用fsdp_auto_wrap_policy，模型将如下：
 - en: '[PRE11]'
+  id: totrans-62
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: '[PRE12]'
+  id: totrans-63
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: The following is the peak memory usage from FSDP with auto_wrap policy of MNIST
     training on a g4dn.12.xlarge AWS EC2 instance with 4 GPUs captured from PyTorch
     Profiler. It can be observed that the peak memory usage on each device is smaller
     compared to FSDP without auto wrap policy applied, from ~75 MB to 66 MB.
+  id: totrans-64
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下是在g4dn.12.xlarge AWS EC2实例上使用4个GPU进行MNIST训练时，从PyTorch Profiler捕获的FSDP自动包装策略的峰值内存使用情况。可以观察到，与未应用自动包装策略的FSDP相比，每个设备上的峰值内存使用量较小，从约75
+    MB降至66 MB。
 - en: '![FSDP peak memory](../Images/62842d10a3954d2d247fca536a0d7bfe.png)'
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: '![FSDP峰值内存](../Images/62842d10a3954d2d247fca536a0d7bfe.png)'
 - en: FSDP Peak Memory Usage using Auto_wrap policy
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用Auto_wrap策略的FSDP峰值内存使用量
 - en: '*CPU Off-loading*: In case the model is very large that even with FSDP wouldn’t
     fit into GPUs, then CPU offload can be helpful here.'
+  id: totrans-67
   prefs: []
   type: TYPE_NORMAL
+  zh: '*CPU卸载*：如果模型非常庞大，即使使用FSDP也无法适应GPU，那么CPU卸载可能会有所帮助。'
 - en: Currently, only parameter and gradient CPU offload is supported. It can be enabled
     via passing in cpu_offload=CPUOffload(offload_params=True).
+  id: totrans-68
   prefs: []
   type: TYPE_NORMAL
+  zh: 目前，仅支持参数和梯度的CPU卸载。可以通过传入cpu_offload=CPUOffload(offload_params=True)来启用。
 - en: Note that this currently implicitly enables gradient offloading to CPU in order
     for params and grads to be on the same device to work with the optimizer. This
     API is subject to change. The default is None in which case there will be no offloading.
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，目前这将隐式地启用梯度卸载到 CPU，以便参数和梯度在同一设备上与优化器一起工作。此 API 可能会发生变化。默认值为 None，在这种情况下将不会进行卸载。
 - en: Using this feature may slow down the training considerably, due to frequent
     copying of tensors from host to device, but it could help improve memory efficiency
     and train larger scale models.
+  id: totrans-70
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用这个功能可能会显著减慢训练速度，因为频繁地从主机复制张量到设备，但它可以帮助提高内存效率并训练更大规模的模型。
 - en: In 2.4 we just add it to the FSDP wrapper
+  id: totrans-71
   prefs: []
   type: TYPE_NORMAL
+  zh: 在2.4版本中，我们只是将其添加到FSDP包装器中。
 - en: '[PRE13]'
+  id: totrans-72
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: Compare it with DDP, if in 2.4 we just normally wrap the model in DPP, saving
     the changes in “DDP_mnist.py”.
+  id: totrans-73
   prefs: []
   type: TYPE_NORMAL
+  zh: 将其与DDP进行比较，如果在2.4中我们只是正常地将模型包装在DPP中，并保存更改在“DDP_mnist.py”中。
 - en: '[PRE14]'
+  id: totrans-74
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: '[PRE15]'
+  id: totrans-75
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: The following is the peak memory usage from DDP MNIST training on g4dn.12.xlarge
     AWS EC2 instance with 4 GPUs captured from PyTorch profiler.
+  id: totrans-76
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下是在g4dn.12.xlarge AWS EC2实例上使用4个GPU进行DDP MNIST训练时从PyTorch分析器中捕获的峰值内存使用情况。
 - en: '![FSDP peak memory](../Images/b7af7a69ededd6326e3de004bb7b1e43.png)'
+  id: totrans-77
   prefs: []
   type: TYPE_NORMAL
+  zh: '![FSDP峰值内存](../Images/b7af7a69ededd6326e3de004bb7b1e43.png)'
 - en: DDP Peak Memory Usage using Auto_wrap policy
+  id: totrans-78
   prefs: []
   type: TYPE_NORMAL
+  zh: DDP 使用 Auto_wrap 策略的峰值内存使用量
 - en: Considering the toy example and tiny MNIST model we defined here, we can observe
     the difference between peak memory usage of DDP and FSDP. In DDP each process
     holds a replica of the model, so the memory footprint is higher compared to FSDP
     which shards the model parameters, optimizer states and gradients over DDP ranks.
     The peak memory usage using FSDP with auto_wrap policy is the lowest followed
     by FSDP and DDP.
+  id: totrans-79
   prefs: []
   type: TYPE_NORMAL
+  zh: 考虑到我们在这里定义的玩具示例和微小的MNIST模型，我们可以观察到DDP和FSDP的峰值内存使用之间的差异。在DDP中，每个进程持有模型的副本，因此内存占用量较高，而与DDP排名相比，FSDP将模型参数、优化器状态和梯度进行分片。使用auto_wrap策略的FSDP的峰值内存使用量最低，其次是FSDP和DDP。
 - en: Also, looking at timings, considering the small model and running the training
     on a single machine, FSDP with and without auto_wrap policy performed almost as
     fast as DDP. This example does not represent most of the real applications, for
     detailed analysis and comparison between DDP and FSDP please refer to this [blog
     post](https://pytorch.medium.com/6c8da2be180d) .
+  id: totrans-80
   prefs: []
   type: TYPE_NORMAL
+  zh: 此外，从时间上看，考虑到小模型并在单台机器上运行训练，FSDP 在有或没有自动包装策略的情况下几乎与 DDP 一样快。这个例子并不代表大多数真实应用程序，有关
+    DDP 和 FSDP 的详细分析和比较，请参考这篇[博客文章](https://pytorch.medium.com/6c8da2be180d)。

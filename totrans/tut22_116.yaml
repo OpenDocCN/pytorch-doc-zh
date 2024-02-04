@@ -1,392 +1,575 @@
 - en: Writing Distributed Applications with PyTorch
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 使用PyTorch编写分布式应用程序
 - en: 原文：[https://pytorch.org/tutorials/intermediate/dist_tuto.html](https://pytorch.org/tutorials/intermediate/dist_tuto.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: '[https://pytorch.org/tutorials/intermediate/dist_tuto.html](https://pytorch.org/tutorials/intermediate/dist_tuto.html)'
 - en: '**Author**: [Séb Arnold](https://seba1511.com)'
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: '**作者**：[Séb Arnold](https://seba1511.com)'
 - en: Note
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
-- en: '![edit](../Images/a8aa37bcc5edbf2ba5fcf18dba1e55f9.png)
-    View and edit this tutorial in [github](https://github.com/pytorch/tutorials/blob/main/intermediate_source/dist_tuto.rst).'
+  zh: 注：
+- en: '![edit](../Images/a8aa37bcc5edbf2ba5fcf18dba1e55f9.png) View and edit this
+    tutorial in [github](https://github.com/pytorch/tutorials/blob/main/intermediate_source/dist_tuto.rst).'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 查看并编辑此教程在[github](https://github.com/pytorch/tutorials/blob/main/intermediate_source/dist_tuto.rst)。
 - en: 'Prerequisites:'
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: '先决条件:'
 - en: '[PyTorch Distributed Overview](../beginner/dist_overview.html)'
+  id: totrans-6
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[PyTorch 分布式概述](../beginner/dist_overview.html)'
 - en: In this short tutorial, we will be going over the distributed package of PyTorch.
     We’ll see how to set up the distributed setting, use the different communication
     strategies, and go over some of the internals of the package.
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这个简短的教程中，我们将介绍PyTorch的分布式包。我们将看到如何设置分布式环境，使用不同的通信策略，并了解一些包的内部情况。
 - en: Setup
+  id: totrans-8
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 设置
 - en: The distributed package included in PyTorch (i.e., `torch.distributed`) enables
     researchers and practitioners to easily parallelize their computations across
     processes and clusters of machines. To do so, it leverages message passing semantics
     allowing each process to communicate data to any of the other processes. As opposed
     to the multiprocessing (`torch.multiprocessing`) package, processes can use different
     communication backends and are not restricted to being executed on the same machine.
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch中包含的分布式包（即`torch.distributed`）使研究人员和实践者能够轻松地在进程和机器集群之间并行化他们的计算。为此，它利用消息传递语义，允许每个进程将数据传递给任何其他进程。与多进程（`torch.multiprocessing`）包相反，进程可以使用不同的通信后端，并不限于在同一台机器上执行。
 - en: In order to get started we need the ability to run multiple processes simultaneously.
     If you have access to compute cluster you should check with your local sysadmin
     or use your favorite coordination tool (e.g., [pdsh](https://linux.die.net/man/1/pdsh),
     [clustershell](https://cea-hpc.github.io/clustershell/), or [others](https://slurm.schedmd.com/)).
     For the purpose of this tutorial, we will use a single machine and spawn multiple
     processes using the following template.
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了开始，我们需要能够同时运行多个进程的能力。如果您可以访问计算集群，您应该与您的本地系统管理员核实，或者使用您喜欢的协调工具（例如，[pdsh](https://linux.die.net/man/1/pdsh)，[clustershell](https://cea-hpc.github.io/clustershell/)，或[其他工具](https://slurm.schedmd.com/)）。在本教程中，我们将使用一台单机，并使用以下模板生成多个进程。
 - en: '[PRE0]'
+  id: totrans-11
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: The above script spawns two processes who will each setup the distributed environment,
     initialize the process group (`dist.init_process_group`), and finally execute
     the given `run` function.
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: 上面的脚本生成两个进程，每个进程都将设置分布式环境，初始化进程组（`dist.init_process_group`），最后执行给定的`run`函数。
 - en: Let’s have a look at the `init_process` function. It ensures that every process
     will be able to coordinate through a master, using the same ip address and port.
     Note that we used the `gloo` backend but other backends are available. (c.f. [Section
     5.1](#communication-backends)) We will go over the magic happening in `dist.init_process_group`
     at the end of this tutorial, but it essentially allows processes to communicate
     with each other by sharing their locations.
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们来看看`init_process`函数。它确保每个进程都能通过一个主进程协调，使用相同的IP地址和端口。请注意，我们使用了`gloo`后端，但也有其他后端可用。（参见[第5.1节](#communication-backends)）我们将在本教程的最后讨论`dist.init_process_group`中发生的魔法，但基本上它允许进程通过共享位置来相互通信。
 - en: Point-to-Point Communication
+  id: totrans-14
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 点对点通信
 - en: '![Send and Recv](../Images/f29264b289639882a61fb5c3447b1ecc.png)'
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: '![发送和接收](../Images/f29264b289639882a61fb5c3447b1ecc.png)'
 - en: Send and Recv
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 发送和接收
 - en: A transfer of data from one process to another is called a point-to-point communication.
     These are achieved through the `send` and `recv` functions or their *immediate*
     counter-parts, `isend` and `irecv`.
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 一种进程向另一个进程传输数据的过程称为点对点通信。这些通过`send`和`recv`函数或它们的*立即*对应函数`isend`和`irecv`来实现。
 - en: '[PRE1]'
+  id: totrans-18
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: In the above example, both processes start with a zero tensor, then process
     0 increments the tensor and sends it to process 1 so that they both end up with
     1.0\. Notice that process 1 needs to allocate memory in order to store the data
     it will receive.
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 在上面的例子中，两个进程都从零张量开始，然后进程0增加张量并将其发送给进程1，以便它们最终都变为1.0。请注意，进程1需要分配内存来存储将要接收的数据。
 - en: 'Also notice that `send`/`recv` are **blocking**: both processes stop until
     the communication is completed. On the other hand immediates are **non-blocking**;
     the script continues its execution and the methods return a `Work` object upon
     which we can choose to `wait()`.'
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 还要注意`send`/`recv`是**阻塞**的：两个进程都会停止，直到通信完成。另一方面，immediates是**非阻塞**的；脚本会继续执行，方法会返回一个`Work`对象，我们可以选择`wait()`。
 - en: '[PRE2]'
+  id: totrans-21
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: When using immediates we have to be careful about how we use the sent and received
     tensors. Since we do not know when the data will be communicated to the other
     process, we should not modify the sent tensor nor access the received tensor before
     `req.wait()` has completed. In other words,
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 在使用即时通信时，我们必须小心地处理发送和接收的张量。由于我们不知道数据何时会传输到其他进程，因此在`req.wait()`完成之前，我们不应修改发送的张量或访问接收的张量。换句话说，
 - en: writing to `tensor` after `dist.isend()` will result in undefined behaviour.
+  id: totrans-23
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在`dist.isend()`之后写入`tensor`会导致未定义的行为。
 - en: reading from `tensor` after `dist.irecv()` will result in undefined behaviour.
+  id: totrans-24
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在`dist.irecv()`之后从`tensor`中读取将导致未定义的行为。
 - en: However, after `req.wait()` has been executed we are guaranteed that the communication
     took place, and that the value stored in `tensor[0]` is 1.0.
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: 然而，在执行`req.wait()`之后，我们可以确保通信已经发生，并且存储在`tensor[0]`中的值为1.0。
 - en: Point-to-point communication is useful when we want more fine-grained control
     over the communication of our processes. They can be used to implement fancy algorithms,
     such as the one used in [Baidu’s DeepSpeech](https://github.com/baidu-research/baidu-allreduce)
     or [Facebook’s large-scale experiments](https://research.fb.com/publications/imagenet1kin1h/).(c.f.
     [Section 4.1](#our-own-ring-allreduce))
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 点对点通信在我们希望更精细地控制进程通信时非常有用。它们可以用来实现复杂的算法，比如在[百度的DeepSpeech](https://github.com/baidu-research/baidu-allreduce)或[Facebook的大规模实验](https://research.fb.com/publications/imagenet1kin1h/)中使用的算法。(参见[第4.1节](#our-own-ring-allreduce))
 - en: Collective Communication
+  id: totrans-27
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 集体通信
 - en: '| ![Scatter](../Images/3aa3584628cb0526c8b0e9d02b15d876.png)'
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: '| ![分散](../Images/3aa3584628cb0526c8b0e9d02b15d876.png)'
 - en: Scatter
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 分散
 - en: '| ![Gather](../Images/7e8670a3b7cdc7848394514ef1da090a.png)'
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: '| ![收集](../Images/7e8670a3b7cdc7848394514ef1da090a.png)'
 - en: Gather
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: 收集
 - en: '|'
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: '|'
 - en: '| ![Reduce](../Images/1c451df4406aea85e640d1ae7df6df31.png)'
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: '| ![减少](../Images/1c451df4406aea85e640d1ae7df6df31.png)'
 - en: Reduce
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 减少
 - en: '| ![All-Reduce](../Images/0ef9693f0008d5a75aa5ac2b542b83ac.png)'
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: '| ![All-Reduce](../Images/0ef9693f0008d5a75aa5ac2b542b83ac.png)'
 - en: All-Reduce
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 全局归约
 - en: '|'
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: '|'
 - en: '| ![Broadcast](../Images/525847c9d4b48933cb231204a2d13e0e.png)'
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: '| ![广播](../Images/525847c9d4b48933cb231204a2d13e0e.png)'
 - en: Broadcast
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 广播
 - en: '| ![All-Gather](../Images/4a48977cd9545f897942a4a4ef1175ac.png)'
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: '| ![全收集](../Images/4a48977cd9545f897942a4a4ef1175ac.png)'
 - en: All-Gather
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 全收集
 - en: '|'
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: '|'
 - en: As opposed to point-to-point communcation, collectives allow for communication
     patterns across all processes in a **group**. A group is a subset of all our processes.
     To create a group, we can pass a list of ranks to `dist.new_group(group)`. By
     default, collectives are executed on all processes, also known as the **world**.
     For example, in order to obtain the sum of all tensors on all processes, we can
     use the `dist.all_reduce(tensor, op, group)` collective.
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: 与点对点通信相反，集合允许在**组**中的所有进程之间进行通信模式。组是所有进程的子集。要创建一个组，我们可以将一组秩传递给`dist.new_group(group)`。默认情况下，集合在所有进程上执行，也称为**世界**。例如，为了获得所有进程上所有张量的总和，我们可以使用`dist.all_reduce(tensor,
+    op, group)`集合。
 - en: '[PRE3]'
+  id: totrans-44
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: 'Since we want the sum of all tensors in the group, we use `dist.ReduceOp.SUM`
     as the reduce operator. Generally speaking, any commutative mathematical operation
     can be used as an operator. Out-of-the-box, PyTorch comes with 4 such operators,
     all working at the element-wise level:'
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于我们想要对组中所有张量的总和，我们使用`dist.ReduceOp.SUM`作为减少运算符。一般来说，任何可交换的数学运算都可以用作运算符。PyTorch默认提供了4种这样的运算符，都在逐元素级别工作：
 - en: '`dist.ReduceOp.SUM`,'
+  id: totrans-46
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`dist.ReduceOp.SUM`，'
 - en: '`dist.ReduceOp.PRODUCT`,'
+  id: totrans-47
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`dist.ReduceOp.PRODUCT`，'
 - en: '`dist.ReduceOp.MAX`,'
+  id: totrans-48
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`dist.ReduceOp.MAX`，'
 - en: '`dist.ReduceOp.MIN`.'
+  id: totrans-49
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`dist.ReduceOp.MIN`。'
 - en: In addition to `dist.all_reduce(tensor, op, group)`, there are a total of 6
     collectives currently implemented in PyTorch.
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: 除了`dist.all_reduce(tensor, op, group)`之外，PyTorch目前实现了总共6种集合操作。
 - en: '`dist.broadcast(tensor, src, group)`: Copies `tensor` from `src` to all other
     processes.'
+  id: totrans-51
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`dist.broadcast(tensor, src, group)`: 将`tensor`从`src`复制到所有其他进程。'
 - en: '`dist.reduce(tensor, dst, op, group)`: Applies `op` to every `tensor` and stores
     the result in `dst`.'
+  id: totrans-52
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`dist.reduce(tensor, dst, op, group)`: 将`op`应用于每个`tensor`，并将结果存储在`dst`中。'
 - en: '`dist.all_reduce(tensor, op, group)`: Same as reduce, but the result is stored
     in all processes.'
+  id: totrans-53
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`dist.all_reduce(tensor, op, group)`: 与reduce相同，但结果存储在所有进程中。'
 - en: '`dist.scatter(tensor, scatter_list, src, group)`: Copies the \(i^{\text{th}}\)
     tensor `scatter_list[i]` to the \(i^{\text{th}}\) process.'
+  id: totrans-54
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`dist.scatter(tensor, scatter_list, src, group)`: 将第 \(i\) 个张量 `scatter_list[i]`
+    复制到第 \(i\) 个进程。'
 - en: '`dist.gather(tensor, gather_list, dst, group)`: Copies `tensor` from all processes
     in `dst`.'
+  id: totrans-55
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`dist.gather(tensor, gather_list, dst, group)`: 将`tensor`从所有进程复制到`dst`。'
 - en: '`dist.all_gather(tensor_list, tensor, group)`: Copies `tensor` from all processes
     to `tensor_list`, on all processes.'
+  id: totrans-56
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`dist.all_gather(tensor_list, tensor, group)`: 将`tensor`从所有进程复制到`tensor_list`，在所有进程上。'
 - en: '`dist.barrier(group)`: Blocks all processes in group until each one has entered
     this function.'
+  id: totrans-57
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`dist.barrier(group)`: 阻塞组中的所有进程，直到每个进程都进入此函数。'
 - en: Distributed Training
+  id: totrans-58
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 分布式训练
 - en: '**Note:** You can find the example script of this section in [this GitHub repository](https://github.com/seba-1511/dist_tuto.pth/).'
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: '**注意：** 您可以在[此GitHub存储库](https://github.com/seba-1511/dist_tuto.pth/)中找到本节的示例脚本。'
 - en: Now that we understand how the distributed module works, let us write something
     useful with it. Our goal will be to replicate the functionality of [DistributedDataParallel](https://pytorch.org/docs/stable/nn.html#torch.nn.parallel.DistributedDataParallel).
     Of course, this will be a didactic example and in a real-world situation you should
     use the official, well-tested and well-optimized version linked above.
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们了解了分布式模块的工作原理，让我们用它来写一些有用的东西。我们的目标是复制[DistributedDataParallel](https://pytorch.org/docs/stable/nn.html#torch.nn.parallel.DistributedDataParallel)的功能。当然，这将是一个教学示例，在实际情况下，您应该使用上面链接的官方、经过充分测试和优化的版本。
 - en: Quite simply we want to implement a distributed version of stochastic gradient
     descent. Our script will let all processes compute the gradients of their model
     on their batch of data and then average their gradients. In order to ensure similar
     convergence results when changing the number of processes, we will first have
     to partition our dataset. (You could also use [tnt.dataset.SplitDataset](https://github.com/pytorch/tnt/blob/master/torchnet/dataset/splitdataset.py#L4),
     instead of the snippet below.)
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们简单地想要实现随机梯度下降的分布式版本。我们的脚本将让所有进程计算其模型在其数据批次上的梯度，然后平均它们的梯度。为了确保在改变进程数量时获得类似的收敛结果，我们首先需要对数据集进行分区。（您也可以使用[tnt.dataset.SplitDataset](https://github.com/pytorch/tnt/blob/master/torchnet/dataset/splitdataset.py#L4)，而不是下面的代码片段。）
 - en: '[PRE4]'
+  id: totrans-62
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: 'With the above snippet, we can now simply partition any dataset using the following
     few lines:'
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过上面的片段，我们现在可以简单地使用以下几行代码对任何数据集进行分区：
 - en: '[PRE5]'
+  id: totrans-64
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: Assuming we have 2 replicas, then each process will have a `train_set` of 60000
     / 2 = 30000 samples. We also divide the batch size by the number of replicas in
     order to maintain the *overall* batch size of 128.
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: 假设我们有2个副本，那么每个进程将有一个包含30000个样本的`train_set`。我们还将批量大小除以副本数量，以保持总批量大小为128。
 - en: We can now write our usual forward-backward-optimize training code, and add
     a function call to average the gradients of our models. (The following is largely
     inspired by the official [PyTorch MNIST example](https://github.com/pytorch/examples/blob/master/mnist/main.py).)
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们现在可以编写我们通常的前向-后向-优化训练代码，并添加一个函数调用来平均我们模型的梯度。（以下内容在很大程度上受到官方[PyTorch MNIST示例](https://github.com/pytorch/examples/blob/master/mnist/main.py)的启发。）
 - en: '[PRE6]'
+  id: totrans-67
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: It remains to implement the `average_gradients(model)` function, which simply
     takes in a model and averages its gradients across the whole world.
+  id: totrans-68
   prefs: []
   type: TYPE_NORMAL
+  zh: 还需要实现`average_gradients(model)`函数，它简单地接受一个模型，并在整个世界范围内对其梯度进行平均。
 - en: '[PRE7]'
+  id: totrans-69
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: '*Et voilà*! We successfully implemented distributed synchronous SGD and could
     train any model on a large computer cluster.'
+  id: totrans-70
   prefs: []
   type: TYPE_NORMAL
+  zh: '*看这里*！我们成功实现了分布式同步随机梯度下降，并且可以在大型计算机集群上训练任何模型。'
 - en: '**Note:** While the last sentence is *technically* true, there are [a lot more
     tricks](https://seba-1511.github.io/dist_blog) required to implement a production-level
     implementation of synchronous SGD. Again, use what [has been tested and optimized](https://pytorch.org/docs/stable/nn.html#torch.nn.parallel.DistributedDataParallel).'
+  id: totrans-71
   prefs: []
   type: TYPE_NORMAL
+  zh: '**注意：**虽然最后一句话在技术上是正确的，但要实现同步SGD的生产级实现需要更多的技巧。再次使用已经经过测试和优化的内容。'
 - en: Our Own Ring-Allreduce
+  id: totrans-72
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 我们自己的环形全局归约
 - en: As an additional challenge, imagine that we wanted to implement DeepSpeech’s
     efficient ring allreduce. This is fairly easy to implement using point-to-point
     collectives.
+  id: totrans-73
   prefs: []
   type: TYPE_NORMAL
+  zh: 作为一个额外的挑战，想象一下我们想要实现DeepSpeech的高效环形全局归约。使用点对点集合很容易实现这一目标。
 - en: '[PRE8]'
+  id: totrans-74
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: 'In the above script, the `allreduce(send, recv)` function has a slightly different
     signature than the ones in PyTorch. It takes a `recv` tensor and will store the
     sum of all `send` tensors in it. As an exercise left to the reader, there is still
     one difference between our version and the one in DeepSpeech: their implementation
     divides the gradient tensor into *chunks*, so as to optimally utilize the communication
     bandwidth. (Hint: [torch.chunk](https://pytorch.org/docs/stable/torch.html#torch.chunk))'
+  id: totrans-75
   prefs: []
   type: TYPE_NORMAL
+  zh: 在上面的脚本中，`allreduce(send, recv)` 函数的签名与 PyTorch 中的略有不同。它接受一个 `recv` 张量，并将所有 `send`
+    张量的总和存储在其中。作为留给读者的练习，我们的版本与 DeepSpeech 中的版本之间仍然有一个区别：他们的实现将梯度张量分成*块*，以便最佳地利用通信带宽。（提示：[torch.chunk](https://pytorch.org/docs/stable/torch.html#torch.chunk)）
 - en: Advanced Topics
+  id: totrans-76
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 高级主题
 - en: 'We are now ready to discover some of the more advanced functionalities of `torch.distributed`.
     Since there is a lot to cover, this section is divided into two subsections:'
+  id: totrans-77
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们现在准备探索`torch.distributed`更高级的功能。由于涉及内容较多，本节分为两个小节：
 - en: 'Communication Backends: where we learn how to use MPI and Gloo for GPU-GPU
     communication.'
+  id: totrans-78
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 通信后端：在这里我们学习如何使用MPI和Gloo进行GPU-GPU通信。
 - en: 'Initialization Methods: where we understand how to best set up the initial
     coordination phase in `dist.init_process_group()`.'
+  id: totrans-79
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 初始化方法：我们了解如何最好地设置`dist.init_process_group()`中的初始协调阶段。
 - en: Communication Backends
+  id: totrans-80
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 通信后端
 - en: 'One of the most elegant aspects of `torch.distributed` is its ability to abstract
     and build on top of different backends. As mentioned before, there are currently
     three backends implemented in PyTorch: Gloo, NCCL, and MPI. They each have different
     specifications and tradeoffs, depending on the desired use case. A comparative
     table of supported functions can be found [here](https://pytorch.org/docs/stable/distributed.html#module-torch.distributed).'
+  id: totrans-81
   prefs: []
   type: TYPE_NORMAL
+  zh: '`torch.distributed` 最优雅的一个方面是它能够抽象并构建在不同的后端之上。如前所述，目前在PyTorch中实现了三种后端：Gloo、NCCL和MPI。它们各自具有不同的规范和权衡，取决于所需的用例。支持的函数的比较表可以在[这里](https://pytorch.org/docs/stable/distributed.html#module-torch.distributed)找到。'
 - en: '**Gloo Backend**'
+  id: totrans-82
   prefs: []
   type: TYPE_NORMAL
+  zh: Gloo 后端
 - en: So far we have made extensive usage of the [Gloo backend](https://github.com/facebookincubator/gloo).
     It is quite handy as a development platform, as it is included in the pre-compiled
     PyTorch binaries and works on both Linux (since 0.2) and macOS (since 1.3). It
     supports all point-to-point and collective operations on CPU, and all collective
     operations on GPU. The implementation of the collective operations for CUDA tensors
     is not as optimized as the ones provided by the NCCL backend.
+  id: totrans-83
   prefs: []
   type: TYPE_NORMAL
+  zh: 到目前为止，我们已经广泛使用了[Gloo后端](https://github.com/facebookincubator/gloo)。作为一个开发平台，它非常方便，因为它包含在预编译的PyTorch二进制文件中，并且在Linux（自0.2版本起）和macOS（自1.3版本起）上都可以使用。它支持CPU上的所有点对点和集体操作，以及GPU上的所有集体操作。对于CUDA张量的集体操作的实现并不像NCCL后端提供的那样优化。
 - en: 'As you have surely noticed, our distributed SGD example does not work if you
     put `model` on the GPU. In order to use multiple GPUs, let us also make the following
     modifications:'
+  id: totrans-84
   prefs: []
   type: TYPE_NORMAL
+  zh: 正如您肯定已经注意到的那样，如果您将`model`放在GPU上，我们的分布式SGD示例将无法工作。为了使用多个GPU，让我们也进行以下修改：
 - en: Use `device = torch.device("cuda:{}".format(rank))`
+  id: totrans-85
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 使用 `device = torch.device("cuda:{}".format(rank))`
 - en: '`model = Net()` \(\rightarrow\) `model = Net().to(device)`'
+  id: totrans-86
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: '`model = Net()` -> `model = Net().to(device)`'
 - en: Use `data, target = data.to(device), target.to(device)`
+  id: totrans-87
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 使用 `data, target = data.to(device), target.to(device)` 将数据和目标转移到设备上。
 - en: With the above modifications, our model is now training on two GPUs and you
     can monitor their utilization with `watch nvidia-smi`.
+  id: totrans-88
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过上述修改，我们的模型现在正在两个GPU上训练，您可以使用`watch nvidia-smi`来监视它们的利用率。
 - en: '**MPI Backend**'
+  id: totrans-89
   prefs: []
   type: TYPE_NORMAL
+  zh: MPI 后端
 - en: The Message Passing Interface (MPI) is a standardized tool from the field of
     high-performance computing. It allows to do point-to-point and collective communications
     and was the main inspiration for the API of `torch.distributed`. Several implementations
@@ -397,42 +580,65 @@
     [recent](https://developer.nvidia.com/ibm-spectrum-mpi) [implementations](https://www.open-mpi.org/)
     are also able to take advantage of CUDA IPC and GPU Direct technologies in order
     to avoid memory copies through the CPU.
+  id: totrans-90
   prefs: []
   type: TYPE_NORMAL
+  zh: 消息传递接口（MPI）是来自高性能计算领域的标准化工具。它允许进行点对点和集体通信，并且是 `torch.distributed` API 的主要灵感来源。存在几种
+    MPI 的实现（例如 [Open-MPI](https://www.open-mpi.org/)、[MVAPICH2](http://mvapich.cse.ohio-state.edu/)、[Intel
+    MPI](https://software.intel.com/en-us/intel-mpi-library)），每种都针对不同的目的进行了优化。使用 MPI
+    后端的优势在于 MPI 在大型计算机集群上的广泛可用性和高度优化。一些最近的实现也能够利用 CUDA IPC 和 GPU Direct 技术，以避免通过 CPU
+    进行内存复制。
 - en: Unfortunately, PyTorch’s binaries cannot include an MPI implementation and we’ll
     have to recompile it by hand. Fortunately, this process is fairly simple given
     that upon compilation, PyTorch will look *by itself* for an available MPI implementation.
     The following steps install the MPI backend, by installing PyTorch [from source](https://github.com/pytorch/pytorch#from-source).
+  id: totrans-91
   prefs: []
   type: TYPE_NORMAL
+  zh: 不幸的是，PyTorch的二进制文件不能包含MPI实现，我们将不得不手动重新编译它。幸运的是，这个过程相当简单，因为在编译时，PyTorch会*自行*寻找可用的MPI实现。以下步骤安装MPI后端，通过安装PyTorch
+    [from source](https://github.com/pytorch/pytorch#from-source)。
 - en: Create and activate your Anaconda environment, install all the pre-requisites
     following [the guide](https://github.com/pytorch/pytorch#from-source), but do
     **not** run `python setup.py install` yet.
+  id: totrans-92
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 创建并激活您的Anaconda环境，按照[指南](https://github.com/pytorch/pytorch#from-source)安装所有先决条件，但是**不要**运行`python
+    setup.py install`。
 - en: 'Choose and install your favorite MPI implementation. Note that enabling CUDA-aware
     MPI might require some additional steps. In our case, we’ll stick to Open-MPI
     *without* GPU support: `conda install -c conda-forge openmpi`'
+  id: totrans-93
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 选择并安装您喜欢的MPI实现。请注意，启用CUDA-aware MPI可能需要一些额外的步骤。在我们的情况下，我们将使用不支持GPU的Open-MPI：`conda
+    install -c conda-forge openmpi`
 - en: Now, go to your cloned PyTorch repo and execute `python setup.py install`.
+  id: totrans-94
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 现在，转到您克隆的PyTorch存储库并执行`python setup.py install`。
 - en: In order to test our newly installed backend, a few modifications are required.
+  id: totrans-95
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了测试我们新安装的后端，需要进行一些修改。
 - en: Replace the content under `if __name__ == '__main__':` with `init_process(0,
     0, run, backend='mpi')`.
+  id: totrans-96
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 将`if __name__ == '__main__':`下面的内容替换为`init_process(0, 0, run, backend='mpi')`。
 - en: Run `mpirun -n 4 python myscript.py`.
+  id: totrans-97
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 运行 `mpirun -n 4 python myscript.py`。
 - en: The reason for these changes is that MPI needs to create its own environment
     before spawning the processes. MPI will also spawn its own processes and perform
     the handshake described in [Initialization Methods](#initialization-methods),
@@ -442,22 +648,31 @@
     of cores per process, hand-assigning machines to specific ranks, and [some more](https://www.open-mpi.org/faq/?category=running#mpirun-hostfile))
     Doing so, you should obtain the same familiar output as with the other communication
     backends.
+  id: totrans-98
   prefs: []
   type: TYPE_NORMAL
+  zh: 这些变化的原因是MPI需要在生成进程之前创建自己的环境。MPI还将生成自己的进程，并执行[初始化方法](#初始化方法)中描述的握手，使`init_process_group`的`rank`和`size`参数变得多余。实际上，这是非常强大的，因为您可以通过向`mpirun`传递附加参数来为每个进程定制计算资源。
+    （例如，每个进程的核心数，手动分配机器给特定的rank，以及[更多](https://www.open-mpi.org/faq/?category=running#mpirun-hostfile)）这样做，您应该获得与其他通信后端相同的熟悉输出。
 - en: '**NCCL Backend**'
+  id: totrans-99
   prefs: []
   type: TYPE_NORMAL
+  zh: NCCL 后端
 - en: The [NCCL backend](https://github.com/nvidia/nccl) provides an optimized implementation
     of collective operations against CUDA tensors. If you only use CUDA tensors for
     your collective operations, consider using this backend for the best in class
     performance. The NCCL backend is included in the pre-built binaries with CUDA
     support.
+  id: totrans-100
   prefs: []
   type: TYPE_NORMAL
+  zh: '[NCCL后端](https://github.com/nvidia/nccl)提供了针对CUDA张量的集体操作的优化实现。如果您只使用CUDA张量进行集体操作，请考虑使用此后端以获得最佳性能。NCCL后端已包含在带有CUDA支持的预构建二进制文件中。'
 - en: Initialization Methods
+  id: totrans-101
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 初始化方法
 - en: 'To finish this tutorial, let’s talk about the very first function we called:
     `dist.init_process_group(backend, init_method)`. In particular, we will go over
     the different initialization methods which are responsible for the initial coordination
@@ -465,69 +680,100 @@
     is done. Depending on your hardware setup, one of these methods should be naturally
     more suitable than the others. In addition to the following sections, you should
     also have a look at the [official documentation](https://pytorch.org/docs/stable/distributed.html#initialization).'
+  id: totrans-102
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了完成本教程，让我们谈谈我们调用的第一个函数：`dist.init_process_group(backend, init_method)`。特别是，我们将讨论不同的初始化方法，这些方法负责每个进程之间的初始协调步骤。这些方法允许您定义协调的方式。根据您的硬件设置，其中一种方法应该比其他方法更适合。除了以下部分，您还应该查看[官方文档](https://pytorch.org/docs/stable/distributed.html#initialization)。
 - en: '**Environment Variable**'
+  id: totrans-103
   prefs: []
   type: TYPE_NORMAL
+  zh: 环境变量
 - en: We have been using the environment variable initialization method throughout
     this tutorial. By setting the following four environment variables on all machines,
     all processes will be able to properly connect to the master, obtain information
     about the other processes, and finally handshake with them.
+  id: totrans-104
   prefs: []
   type: TYPE_NORMAL
+  zh: 在整个教程中，我们一直在使用环境变量初始化方法。通过在所有机器上设置以下四个环境变量，所有进程将能够正确连接到主节点，获取有关其他进程的信息，并最终与它们握手。
 - en: '`MASTER_PORT`: A free port on the machine that will host the process with rank
     0.'
+  id: totrans-105
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`MASTER_PORT`：主机上将托管排名为0的进程的空闲端口。'
 - en: '`MASTER_ADDR`: IP address of the machine that will host the process with rank
     0.'
+  id: totrans-106
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`MASTER_ADDR`: 将托管排名为0的进程的机器的IP地址。'
 - en: '`WORLD_SIZE`: The total number of processes, so that the master knows how many
     workers to wait for.'
+  id: totrans-107
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`WORLD_SIZE`：进程的总数，这样主进程就知道要等待多少个工作进程。'
 - en: '`RANK`: Rank of each process, so they will know whether it is the master of
     a worker.'
+  id: totrans-108
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`RANK`：每个进程的排名，这样它们就会知道它是主进程还是工作进程。'
 - en: '**Shared File System**'
+  id: totrans-109
   prefs: []
   type: TYPE_NORMAL
+  zh: 共享文件系统
 - en: The shared filesystem requires all processes to have access to a shared file
     system, and will coordinate them through a shared file. This means that each process
     will open the file, write its information, and wait until everybody did so. After
     that all required information will be readily available to all processes. In order
     to avoid race conditions, the file system must support locking through [fcntl](http://man7.org/linux/man-pages/man2/fcntl.2.html).
+  id: totrans-110
   prefs: []
   type: TYPE_NORMAL
+  zh: 共享文件系统要求所有进程都能访问共享文件系统，并通过共享文件进行协调。这意味着每个进程将打开文件，写入其信息，并等待直到所有人都这样做。之后，所有必要的信息将立即对所有进程可用。为了避免竞争条件，文件系统必须支持通过[fcntl](http://man7.org/linux/man-pages/man2/fcntl.2.html)进行锁定。
 - en: '[PRE9]'
+  id: totrans-111
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: '**TCP**'
+  id: totrans-112
   prefs: []
   type: TYPE_NORMAL
+  zh: 传输控制协议（TCP）是一种面向连接的协议，它提供可靠的数据传输服务。TCP在网络通信中起着重要作用，它确保数据在发送和接收之间的可靠传输。TCP使用三次握手建立连接，并使用流量控制和拥塞控制来确保数据传输的稳定性。TCP是互联网上最常用的协议之一，被广泛应用于各种网络应用中。
 - en: Initializing via TCP can be achieved by providing the IP address of the process
     with rank 0 and a reachable port number. Here, all workers will be able to connect
     to the process with rank 0 and exchange information on how to reach each other.
+  id: totrans-113
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过提供进程0的IP地址和可达端口号，可以通过TCP进行初始化。在这里，所有的工作进程都可以连接到进程0，并交换彼此如何联系的信息。
 - en: '[PRE10]'
+  id: totrans-114
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: '**Acknowledgements**'
+  id: totrans-115
   prefs: []
   type: TYPE_NORMAL
+  zh: 致谢
 - en: I’d like to thank the PyTorch developers for doing such a good job on their
     implementation, documentation, and tests. When the code was unclear, I could always
     count on the [docs](https://pytorch.org/docs/stable/distributed.html) or the [tests](https://github.com/pytorch/pytorch/tree/master/test/distributed)
     to find an answer. In particular, I’d like to thank Soumith Chintala, Adam Paszke,
     and Natalia Gimelshein for providing insightful comments and answering questions
     on early drafts.
+  id: totrans-116
   prefs: []
   type: TYPE_NORMAL
+  zh: 我想感谢PyTorch开发人员在他们的实现、文档和测试方面做得如此出色。当代码不清晰时，我总是可以依靠[文档](https://pytorch.org/docs/stable/distributed.html)或[测试](https://github.com/pytorch/pytorch/tree/master/test/distributed)找到答案。特别感谢Soumith
+    Chintala、Adam Paszke和Natalia Gimelshein在初稿中提供深刻的评论并回答问题。

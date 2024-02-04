@@ -1,92 +1,137 @@
 - en: Exploring TorchRec sharding
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 探索TorchRec分片
 - en: 原文：[https://pytorch.org/tutorials/advanced/sharding.html](https://pytorch.org/tutorials/advanced/sharding.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/advanced/sharding.html](https://pytorch.org/tutorials/advanced/sharding.html)
 - en: This tutorial will mainly cover the sharding schemes of embedding tables via
     `EmbeddingPlanner` and `DistributedModelParallel` API and explore the benefits
     of different sharding schemes for the embedding tables by explicitly configuring
     them.
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程将主要涵盖通过`EmbeddingPlanner`和`DistributedModelParallel` API对嵌入表进行分片方案的探索，并通过显式配置不同分片方案来探索嵌入表的不同分片方案的好处。
 - en: Installation
+  id: totrans-3
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 安装
 - en: 'Requirements: - python >= 3.7'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 要求：- python >= 3.7
 - en: 'We highly recommend CUDA when using torchRec. If using CUDA: - cuda >= 11.0'
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们强烈建议在使用torchRec时使用CUDA。如果使用CUDA：- cuda >= 11.0
 - en: '[PRE0]'
+  id: totrans-6
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: '[PRE1]'
+  id: totrans-7
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Installing torchRec will also install [FBGEMM](https://github.com/pytorch/fbgemm),
     a collection of CUDA kernels and GPU enabled operations to run
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 安装torchRec还将安装[FBGEMM](https://github.com/pytorch/fbgemm)，这是一组CUDA内核和GPU启用的操作，用于运行
 - en: '[PRE2]'
+  id: totrans-9
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Install multiprocess which works with ipython to for multi-processing programming
     within colab
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 安装multiprocess，它与ipython一起在colab中进行多进程编程
 - en: '[PRE3]'
+  id: totrans-11
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: The following steps are needed for the Colab runtime to detect the added shared
     libraries. The runtime searches for shared libraries in /usr/lib, so we copy over
     the libraries which were installed in /usr/local/lib/. **This is a very necessary
     step, only in the colab runtime**.
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: Colab运行时需要以下步骤来检测添加的共享库。运行时在/usr/lib中搜索共享库，因此我们复制在/usr/local/lib/中安装的库。**这是非常必要的步骤，仅在colab运行时中**。
 - en: '[PRE4]'
+  id: totrans-13
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: '**Restart your runtime at this point for the newly installed packages to be
     seen.** Run the step below immediately after restarting so that python knows where
     to look for packages. **Always run this step after restarting the runtime.**'
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: '**在此时重新启动您的运行时，以便看到新安装的软件包。**在重新启动后立即运行下面的步骤，以便python知道在哪里查找软件包。**在重新启动运行时后始终运行此步骤。**'
 - en: '[PRE5]'
+  id: totrans-15
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: Distributed Setup
+  id: totrans-16
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 分布式设置
 - en: Due to the notebook enviroment, we cannot run [SPMD](https://en.wikipedia.org/wiki/SPMD)
     program here but we can do multiprocessing inside the notebook to mimic the setup.
     Users should be responsible for setting up their own [SPMD](https://en.wikipedia.org/wiki/SPMD)
     launcher when using Torchrec. We setup our environment so that torch distributed
     based communication backend can work.
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于笔记本环境，我们无法在此运行[SPMD](https://en.wikipedia.org/wiki/SPMD)程序，但我们可以在笔记本内部进行多进程操作以模拟设置。用户在使用Torchrec时应负责设置自己的[SPMD](https://en.wikipedia.org/wiki/SPMD)启动器。我们设置我们的环境，以便torch分布式基于通信后端可以工作。
 - en: '[PRE6]'
+  id: totrans-18
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: Constructing our embedding model
+  id: totrans-19
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 构建我们的嵌入模型
 - en: Here we use TorchRec offering of [EmbeddingBagCollection](https://github.com/facebookresearch/torchrec/blob/main/torchrec/modules/embedding_modules.py#L59)
     to construct our embedding bag model with embedding tables.
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这里，我们使用TorchRec提供的[EmbeddingBagCollection](https://github.com/facebookresearch/torchrec/blob/main/torchrec/modules/embedding_modules.py#L59)来构建我们的嵌入包模型与嵌入表。
 - en: 'Here, we create an EmbeddingBagCollection (EBC) with four embedding bags. We
     have two types of tables: large tables and small tables differentiated by their
     row size difference: 4096 vs 1024\. Each table is still represented by 64 dimension
     embedding.'
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这里，我们创建了一个包含四个嵌入包的EmbeddingBagCollection（EBC）。我们有两种类型的表：大表和小表，通过它们的行大小差异区分：4096
+    vs 1024。每个表仍然由64维嵌入表示。
 - en: 'We configure the `ParameterConstraints` data structure for the tables, which
     provides hints for the model parallel API to help decide the sharding and placement
     strategy for the tables. In TorchRec, we support * `table-wise`: place the entire
@@ -96,65 +141,99 @@
     the communication world; * `table-row-wise`: special sharding optimized for intra-host
     communication for available fast intra-machine device interconnect, e.g. NVLink;
     * `data_parallel`: replicate the tables for every device;'
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们为表配置`ParameterConstraints`数据结构，为模型并行API提供提示，以帮助决定表的分片和放置策略。在TorchRec中，我们支持*
+    `table-wise`：将整个表放在一个设备上；* `row-wise`：按行维度均匀分片表，并将一个分片放在通信世界的每个设备上；* `column-wise`：按嵌入维度均匀分片表，并将一个分片放在通信世界的每个设备上；*
+    `table-row-wise`：针对可用的快速主机内部通信进行优化的特殊分片，例如NVLink；* `data_parallel`：为每个设备复制表；
 - en: Note how we initially allocate the EBC on device “meta”. This will tell EBC
     to not allocate memory yet.
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意我们最初在设备“meta”上分配EBC。这将告诉EBC暂时不分配内存。
 - en: '[PRE7]'
+  id: totrans-24
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: '[PRE8]'
+  id: totrans-25
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: DistributedModelParallel in multiprocessing
+  id: totrans-26
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 多进程中的分布式模型并行
 - en: Now, we have a single process execution function for mimicking one rank’s work
     during [SPMD](https://en.wikipedia.org/wiki/SPMD) execution.
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，我们有一个单进程执行函数，用于模拟[SPMD](https://en.wikipedia.org/wiki/SPMD)执行期间一个等级的工作。
 - en: This code will shard the model collectively with other processes and allocate
     memories accordingly. It first sets up process groups and do embedding table placement
     using planner and generate sharded model using `DistributedModelParallel`.
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: 此代码将与其他进程一起分片模型并相应地分配内存。它首先设置进程组，并使用规划器进行嵌入表放置，并使用`DistributedModelParallel`生成分片模型。
 - en: '[PRE9]'
+  id: totrans-29
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: Multiprocessing Execution
+  id: totrans-30
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 多进程执行
 - en: Now let’s execute the code in multi-processes representing multiple GPU ranks.
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在让我们在多个GPU等级中执行代码。
 - en: '[PRE10]'
+  id: totrans-32
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: Table Wise Sharding
+  id: totrans-33
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 表分片
 - en: Now let’s execute the code in two processes for 2 GPUs. We can see in the plan
     print that how our tables are sharded across GPUs. Each node will have one large
     table and one small which shows our planner tries for load balance for the embedding
     tables. Table-wise is the de-factor go-to sharding schemes for many small-medium
     size tables for load balancing over the devices.
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在让我们在两个进程中为2个GPU执行代码。我们可以在计划打印中看到我们的表如何跨GPU分片。每个节点将有一个大表和一个小表，显示我们的规划器尝试为嵌入表实现负载平衡。对于许多中小型表的负载平衡，表方式是默认的分片方案。
 - en: '[PRE11]'
+  id: totrans-35
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: '[PRE12]'
+  id: totrans-36
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: Explore other sharding modes
+  id: totrans-37
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 探索其他分片模式
 - en: 'We have initially explored what table-wise sharding would look like and how
     it balances the tables placement. Now we explore sharding modes with finer focus
     on load balance: row-wise. Row-wise is specifically addressing large tables which
@@ -162,37 +241,57 @@
     row numbers. It can address the placement of the super large tables in your models.
     Users can see that in the `shard_sizes` section in the printed plan log, the tables
     are halved by row dimension to be distributed onto two GPUs.'
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们最初探讨了表格分片的外观以及它如何平衡表格的放置。现在我们将更加专注于负载平衡的分片模式：按行分片。按行分片专门解决了由于大嵌入行数导致内存增加而单个设备无法容纳的大表格。它可以解决模型中超大表格的放置问题。用户可以在打印计划日志中的`shard_sizes`部分看到，表格按行维度减半，分布到两个GPU上。
 - en: '[PRE13]'
+  id: totrans-39
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: '[PRE14]'
+  id: totrans-40
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: Column-wise on the other hand, address the load imbalance problems for tables
     with large embedding dimensions. We will split the table vertically. Users can
     see that in the `shard_sizes` section in the printed plan log, the tables are
     halved by embedding dimension to be distributed onto two GPUs.
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 列式分割另一方面，解决了具有大嵌入维度的表格的负载不平衡问题。我们将表格垂直分割。用户可以在打印计划日志中的`shard_sizes`部分看到，表格按嵌入维度减半，分布到两个GPU上。
 - en: '[PRE15]'
+  id: totrans-42
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: '[PRE16]'
+  id: totrans-43
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: For `table-row-wise`, unfortuately we cannot simulate it due to its nature of
     operating under multi-host setup. We will present a python [SPMD](https://en.wikipedia.org/wiki/SPMD)
     example in the future to train models with `table-row-wise`.
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于`table-row-wise`，不幸的是，由于其在多主机设置下运行的特性，我们无法模拟它。我们将在未来提供一个Python [SPMD](https://en.wikipedia.org/wiki/SPMD)示例，以使用`table-row-wise`训练模型。
 - en: With data parallel, we will repeat the tables for all devices.
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用数据并行，我们将为所有设备重复表格。
 - en: '[PRE17]'
+  id: totrans-46
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: '[PRE18]'
+  id: totrans-47
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'

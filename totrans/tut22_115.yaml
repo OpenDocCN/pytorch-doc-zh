@@ -1,39 +1,59 @@
 - en: Getting Started with Distributed Data Parallel
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 开始使用分布式数据并行
 - en: 原文：[https://pytorch.org/tutorials/intermediate/ddp_tutorial.html](https://pytorch.org/tutorials/intermediate/ddp_tutorial.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: '[https://pytorch.org/tutorials/intermediate/ddp_tutorial.html](https://pytorch.org/tutorials/intermediate/ddp_tutorial.html)'
 - en: '**Author**: [Shen Li](https://mrshenli.github.io/)'
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: '**作者**：[Shen Li](https://mrshenli.github.io/)'
 - en: '**Edited by**: [Joe Zhu](https://github.com/gunandrose4u)'
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: '**编辑者**：[Joe Zhu](https://github.com/gunandrose4u)'
 - en: Note
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
-- en: '![edit](../Images/a8aa37bcc5edbf2ba5fcf18dba1e55f9.png)
-    View and edit this tutorial in [github](https://github.com/pytorch/tutorials/blob/main/intermediate_source/ddp_tutorial.rst).'
+  zh: 注意
+- en: '![edit](../Images/a8aa37bcc5edbf2ba5fcf18dba1e55f9.png) View and edit this
+    tutorial in [github](https://github.com/pytorch/tutorials/blob/main/intermediate_source/ddp_tutorial.rst).'
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 查看并编辑此教程在[github](https://github.com/pytorch/tutorials/blob/main/intermediate_source/ddp_tutorial.rst)。
 - en: 'Prerequisites:'
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: '先决条件:'
 - en: '[PyTorch Distributed Overview](../beginner/dist_overview.html)'
+  id: totrans-7
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[PyTorch 分布式概述](../beginner/dist_overview.html)'
 - en: '[DistributedDataParallel API documents](https://pytorch.org/docs/master/generated/torch.nn.parallel.DistributedDataParallel.html)'
+  id: totrans-8
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[DistributedDataParallel API 文档](https://pytorch.org/docs/master/generated/torch.nn.parallel.DistributedDataParallel.html)'
 - en: '[DistributedDataParallel notes](https://pytorch.org/docs/master/notes/ddp.html)'
+  id: totrans-9
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[DistributedDataParallel 笔记](https://pytorch.org/docs/master/notes/ddp.html)'
 - en: '[DistributedDataParallel](https://pytorch.org/docs/stable/nn.html#module-torch.nn.parallel)
     (DDP) implements data parallelism at the module level which can run across multiple
     machines. Applications using DDP should spawn multiple processes and create a
@@ -44,73 +64,103 @@
     DDP uses that signal to trigger gradient synchronization across processes. Please
     refer to [DDP design note](https://pytorch.org/docs/master/notes/ddp.html) for
     more details.'
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: '[DistributedDataParallel](https://pytorch.org/docs/stable/nn.html#module-torch.nn.parallel)（DDP）在模块级别实现了数据并行，可以在多台机器上运行。使用DDP的应用程序应该生成多个进程，并为每个进程创建一个单独的DDP实例。DDP使用[torch.distributed](https://pytorch.org/tutorials/intermediate/dist_tuto.html)包中的集体通信来同步梯度和缓冲区。更具体地说，DDP为`model.parameters()`给定的每个参数注册一个自动求导钩子，当在反向传播中计算相应的梯度时，该钩子将触发。然后DDP使用该信号来触发跨进程的梯度同步。更多详细信息请参考[DDP设计说明](https://pytorch.org/docs/master/notes/ddp.html)。'
 - en: The recommended way to use DDP is to spawn one process for each model replica,
     where a model replica can span multiple devices. DDP processes can be placed on
     the same machine or across machines, but GPU devices cannot be shared across processes.
     This tutorial starts from a basic DDP use case and then demonstrates more advanced
     use cases including checkpointing models and combining DDP with model parallel.
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用DDP的推荐方式是为每个模型副本生成一个进程，其中一个模型副本可以跨多个设备。DDP进程可以放置在同一台机器上或跨多台机器，但GPU设备不能在进程之间共享。本教程从基本的DDP用例开始，然后演示更高级的用例，包括模型检查点和将DDP与模型并行结合使用。
 - en: Note
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: The code in this tutorial runs on an 8-GPU server, but it can be easily generalized
     to other environments.
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程中的代码在一个8-GPU服务器上运行，但可以很容易地推广到其他环境。
 - en: Comparison between `DataParallel` and `DistributedDataParallel`
+  id: totrans-14
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: '`DataParallel`和`DistributedDataParallel`之间的比较'
 - en: 'Before we dive in, let’s clarify why, despite the added complexity, you would
     consider using `DistributedDataParallel` over `DataParallel`:'
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 在我们深入讨论之前，让我们澄清一下为什么尽管增加了复杂性，你会考虑使用`DistributedDataParallel`而不是`DataParallel`：
 - en: First, `DataParallel` is single-process, multi-thread, and only works on a single
     machine, while `DistributedDataParallel` is multi-process and works for both single-
     and multi- machine training. `DataParallel` is usually slower than `DistributedDataParallel`
     even on a single machine due to GIL contention across threads, per-iteration replicated
     model, and additional overhead introduced by scattering inputs and gathering outputs.
+  id: totrans-16
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 首先，`DataParallel` 是单进程、多线程的，仅适用于单台机器，而 `DistributedDataParallel` 是多进程的，适用于单机和多机训练。由于线程之间的
+    GIL 冲突、每次迭代复制模型以及输入散布和输出聚集引入的额外开销，即使在单台机器上，`DataParallel` 通常比 `DistributedDataParallel`
+    慢。
 - en: Recall from the [prior tutorial](https://pytorch.org/tutorials/intermediate/model_parallel_tutorial.html)
     that if your model is too large to fit on a single GPU, you must use **model parallel**
     to split it across multiple GPUs. `DistributedDataParallel` works with **model
     parallel**; `DataParallel` does not at this time. When DDP is combined with model
     parallel, each DDP process would use model parallel, and all processes collectively
     would use data parallel.
+  id: totrans-17
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 回想一下从[之前的教程](https://pytorch.org/tutorials/intermediate/model_parallel_tutorial.html)中得知，如果你的模型太大无法放入单个GPU中，你必须使用**模型并行**将其分割到多个GPU上。`DistributedDataParallel`与**模型并行**一起工作；`DataParallel`目前不支持。当DDP与模型并行结合时，每个DDP进程都会使用模型并行，所有进程共同使用数据并行。
 - en: If your model needs to span multiple machines or if your use case does not fit
     into data parallelism paradigm, please see [the RPC API](https://pytorch.org/docs/stable/rpc.html)
     for more generic distributed training support.
+  id: totrans-18
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 如果您的模型需要跨多台机器，或者您的用例不适合数据并行主义范式，请参阅[RPC API](https://pytorch.org/docs/stable/rpc.html)以获取更通用的分布式训练支持。
 - en: Basic Use Case
+  id: totrans-19
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 基本用例
 - en: To create a DDP module, you must first set up process groups properly. More
     details can be found in [Writing Distributed Applications with PyTorch](https://pytorch.org/tutorials/intermediate/dist_tuto.html).
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 要创建一个DDP模块，你必须首先正确设置进程组。更多细节可以在[使用PyTorch编写分布式应用程序](https://pytorch.org/tutorials/intermediate/dist_tuto.html)中找到。
 - en: '[PRE0]'
+  id: totrans-21
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: Now, let’s create a toy module, wrap it with DDP, and feed it some dummy input
     data. Please note, as DDP broadcasts model states from rank 0 process to all other
     processes in the DDP constructor, you do not need to worry about different DDP
     processes starting from different initial model parameter values.
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，让我们创建一个玩具模块，用DDP包装它，并提供一些虚拟输入数据。请注意，由于DDP在构造函数中从rank 0进程向所有其他进程广播模型状态，您不需要担心不同的DDP进程从不同的初始模型参数值开始。
 - en: '[PRE1]'
+  id: totrans-23
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: As you can see, DDP wraps lower-level distributed communication details and
     provides a clean API as if it were a local model. Gradient synchronization communications
     take place during the backward pass and overlap with the backward computation.
@@ -118,12 +168,16 @@
     gradient tensor. For basic use cases, DDP only requires a few more LoCs to set
     up the process group. When applying DDP to more advanced use cases, some caveats
     require caution.
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 正如您所看到的，DDP封装了较低级别的分布式通信细节，并提供了一个干净的API，就像它是一个本地模型一样。梯度同步通信发生在反向传播过程中，并与反向计算重叠。当`backward()`返回时，`param.grad`已经包含了同步的梯度张量。对于基本用例，DDP只需要几行额外的代码来设置进程组。当将DDP应用于更高级的用例时，一些注意事项需要谨慎处理。
 - en: Skewed Processing Speeds
+  id: totrans-25
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 处理速度不均衡
 - en: In DDP, the constructor, the forward pass, and the backward pass are distributed
     synchronization points. Different processes are expected to launch the same number
     of synchronizations and reach these synchronization points in the same order and
@@ -133,12 +187,16 @@
     skewed processing speeds are inevitable due to, e.g., network delays, resource
     contentions, or unpredictable workload spikes. To avoid timeouts in these situations,
     make sure that you pass a sufficiently large `timeout` value when calling [init_process_group](https://pytorch.org/docs/stable/distributed.html#torch.distributed.init_process_group).
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 在DDP中，构造函数、前向传递和后向传递是分布式同步点。预期不同的进程将启动相同数量的同步，并按相同顺序到达这些同步点，并在大致相同的时间进入每个同步点。否则，快速进程可能会提前到达并在等待滞后者时超时。因此，用户负责在进程之间平衡工作负载分布。有时，由于网络延迟、资源竞争或不可预测的工作负载波动等原因，不可避免地会出现处理速度不均衡的情况。为了避免在这些情况下超时，请确保在调用[init_process_group](https://pytorch.org/docs/stable/distributed.html#torch.distributed.init_process_group)时传递一个足够大的`timeout`值。
 - en: Save and Load Checkpoints
+  id: totrans-27
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 保存和加载检查点
 - en: It’s common to use `torch.save` and `torch.load` to checkpoint modules during
     training and recover from checkpoints. See [SAVING AND LOADING MODELS](https://pytorch.org/tutorials/beginner/saving_loading_models.html)
     for more details. When using DDP, one optimization is to save the model in only
@@ -153,72 +211,110 @@
     saved, which would result in all processes on the same machine using the same
     set of devices. For more advanced failure recovery and elasticity support, please
     refer to [TorchElastic](https://pytorch.org/elastic).
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: 在训练过程中，通常使用`torch.save`和`torch.load`来对模块进行检查点，并从检查点中恢复。有关更多详细信息，请参阅[SAVING AND
+    LOADING MODELS](https://pytorch.org/tutorials/beginner/saving_loading_models.html)。在使用DDP时，一种优化是在一个进程中保存模型，然后加载到所有进程中，减少写入开销。这是正确的，因为所有进程都从相同的参数开始，并且在反向传递中梯度是同步的，因此优化器应该保持将参数设置为相同的值。如果使用此优化，请确保在保存完成之前没有进程开始加载。此外，在加载模块时，您需要提供一个适当的`map_location`参数，以防止一个进程进入其他设备。如果缺少`map_location`，`torch.load`将首先将模块加载到CPU，然后将每个参数复制到保存的位置，这将导致同一台机器上的所有进程使用相同的设备集。有关更高级的故障恢复和弹性支持，请参阅[TorchElastic](https://pytorch.org/elastic)。
 - en: '[PRE2]'
+  id: totrans-29
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Combining DDP with Model Parallelism
+  id: totrans-30
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 将DDP与模型并行结合起来
 - en: DDP also works with multi-GPU models. DDP wrapping multi-GPU models is especially
     helpful when training large models with a huge amount of data.
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: DDP也适用于多GPU模型。在训练大型模型和大量数据时，DDP包装多GPU模型尤其有帮助。
 - en: '[PRE3]'
+  id: totrans-32
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: When passing a multi-GPU model to DDP, `device_ids` and `output_device` must
     NOT be set. Input and output data will be placed in proper devices by either the
     application or the model `forward()` method.
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: 当将多GPU模型传递给DDP时，`device_ids`和`output_device`必须不设置。输入和输出数据将由应用程序或模型的`forward()`方法放置在适当的设备上。
 - en: '[PRE4]'
+  id: totrans-34
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: Initialize DDP with torch.distributed.run/torchrun
+  id: totrans-35
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 使用torch.distributed.run/torchrun初始化DDP
 - en: We can leverage PyTorch Elastic to simplify the DDP code and initialize the
     job more easily. Let’s still use the Toymodel example and create a file named
     `elastic_ddp.py`.
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们可以利用PyTorch Elastic来简化DDP代码并更轻松地初始化作业。让我们仍然使用Toymodel示例并创建一个名为`elastic_ddp.py`的文件。
 - en: '[PRE5]'
+  id: totrans-37
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: 'One can then run a [torch elastic/torchrun](https://pytorch.org/docs/stable/elastic/quickstart.html)
     command on all nodes to initialize the DDP job created above:'
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后可以在所有节点上运行 [torch elastic/torchrun](https://pytorch.org/docs/stable/elastic/quickstart.html)
+    命令来初始化上面创建的DDP作业：
 - en: '[PRE6]'
+  id: totrans-39
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: We are running the DDP script on two hosts, and each host we run with 8 processes,
     aka, we are running it on 16 GPUs. Note that `$MASTER_ADDR` must be the same across
     all nodes.
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们在两台主机上运行DDP脚本，每台主机运行8个进程，也就是说我们在16个GPU上运行它。请注意，`$MASTER_ADDR`在所有节点上必须相同。
 - en: Here torchrun will launch 8 process and invoke `elastic_ddp.py` on each process
     on the node it is launched on, but user also needs to apply cluster management
     tools like slurm to actually run this command on 2 nodes.
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: torchrun将启动8个进程，并在启动它的节点上的每个进程上调用`elastic_ddp.py`，但用户还需要应用类似slurm的集群管理工具来实际在2个节点上运行此命令。
 - en: 'For example, on a SLURM enabled cluster, we can write a script to run the command
     above and set `MASTER_ADDR` as:'
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 例如，在启用了SLURM的集群上，我们可以编写一个脚本来运行上面的命令，并将`MASTER_ADDR`设置为：
 - en: '[PRE7]'
+  id: totrans-43
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: 'Then we can just run this script using the SLURM command: `srun --nodes=2 ./torchrun_script.sh`.
     Of course, this is just an example; you can choose your own cluster scheduling
     tools to initiate the torchrun job.'
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后我们可以使用SLURM命令运行此脚本：`srun --nodes=2 ./torchrun_script.sh`。当然，这只是一个例子；您可以选择自己的集群调度工具来启动torchrun作业。
 - en: For more information about Elastic run, one can check this [quick start document](https://pytorch.org/docs/stable/elastic/quickstart.html)
     to learn more.
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: 关于Elastic run 的更多信息，可以查看这个[快速入门文档](https://pytorch.org/docs/stable/elastic/quickstart.html)以了解更多。

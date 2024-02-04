@@ -1,21 +1,31 @@
 - en: Image Segmentation DeepLabV3 on Android
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 在Android上进行图像分割DeepLabV3
 - en: 原文：[https://pytorch.org/tutorials/beginner/deeplabv3_on_android.html](https://pytorch.org/tutorials/beginner/deeplabv3_on_android.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/beginner/deeplabv3_on_android.html](https://pytorch.org/tutorials/beginner/deeplabv3_on_android.html)
 - en: '**Author**: [Jeff Tang](https://github.com/jeffxtang)'
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: '**作者**：[Jeff Tang](https://github.com/jeffxtang)'
 - en: '**Reviewed by**: [Jeremiah Chung](https://github.com/jeremiahschung)'
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: '**审阅者**：[Jeremiah Chung](https://github.com/jeremiahschung)'
 - en: Introduction
+  id: totrans-4
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 介绍
 - en: Semantic image segmentation is a computer vision task that uses semantic labels
     to mark specific regions of an input image. The PyTorch semantic image segmentation
     [DeepLabV3 model](https://pytorch.org/hub/pytorch_vision_deeplabv3_resnet101)
@@ -23,102 +33,147 @@
     including, for example, bicycle, bus, car, dog, and person. Image segmentation
     models can be very useful in applications such as autonomous driving and scene
     understanding.
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 语义图像分割是一种计算机视觉任务，使用语义标签来标记输入图像的特定区域。PyTorch语义图像分割[DeepLabV3模型](https://pytorch.org/hub/pytorch_vision_deeplabv3_resnet101)可用于使用[20个语义类别](http://host.robots.ox.ac.uk:8080/pascal/VOC/voc2007/segexamples/index.html)标记图像区域，例如自行车、公共汽车、汽车、狗和人。图像分割模型在自动驾驶和场景理解等应用中非常有用。
 - en: In this tutorial, we will provide a step-by-step guide on how to prepare and
     run the PyTorch DeepLabV3 model on Android, taking you from the beginning of having
     a model you may want to use on Android to the end of having a complete Android
     app using the model. We will also cover practical and general tips on how to check
     if your next favorable pretrained PyTorch models can run on Android, and how to
     avoid pitfalls.
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，我们将提供一个逐步指南，介绍如何在Android上准备和运行PyTorch DeepLabV3模型，从拥有一个您可能想要在Android上使用的模型的开始，到拥有一个使用该模型的完整Android应用程序的结束。我们还将介绍如何检查您的下一个有利的预训练PyTorch模型是否可以在Android上运行的实用和一般提示，以及如何避免陷阱。
 - en: Note
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Before going through this tutorial, you should check out [PyTorch Mobile for
     Android](https://pytorch.org/mobile/android/) and give the PyTorch Android [Hello
     World](https://github.com/pytorch/android-demo-app/tree/master/HelloWorldApp)
     example app a quick try. This tutorial will go beyond the image classification
     model, usually the first kind of model deployed on mobile. The complete code for
     this tutorial is available [here](https://github.com/pytorch/android-demo-app/tree/master/ImageSegmentation).
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 在阅读本教程之前，您应该查看[用于Android的PyTorch Mobile](https://pytorch.org/mobile/android/)并尝试一下PyTorch
+    Android [Hello World](https://github.com/pytorch/android-demo-app/tree/master/HelloWorldApp)示例应用程序。本教程将超越通常部署在移动设备上的第一种模型——图像分类模型。本教程的完整代码可在[此处](https://github.com/pytorch/android-demo-app/tree/master/ImageSegmentation)找到。
 - en: Learning Objectives
+  id: totrans-9
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 学习目标
 - en: 'In this tutorial, you will learn how to:'
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，您将学习如何：
 - en: Convert the DeepLabV3 model for Android deployment.
+  id: totrans-11
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 将DeepLabV3模型转换为Android部署。
 - en: Get the output of the model for the example input image in Python and compare
     it to the output from the Android app.
+  id: totrans-12
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 在Python中获取示例输入图像的模型输出，并将其与Android应用程序的输出进行比较。
 - en: Build a new Android app or reuse an Android example app to load the converted
     model.
+  id: totrans-13
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 构建一个新的Android应用程序或重用一个Android示例应用程序来加载转换后的模型。
 - en: Prepare the input into the format that the model expects and process the model
     output.
+  id: totrans-14
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 准备模型期望的输入格式并处理模型输出。
 - en: Complete the UI, refactor, build and run the app to see image segmentation in
     action.
+  id: totrans-15
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 完成UI，重构，构建并运行应用程序，以查看图像分割的效果。
 - en: Prerequisites
+  id: totrans-16
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 先决条件
 - en: PyTorch 1.6 or 1.7
+  id: totrans-17
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: PyTorch 1.6或1.7
 - en: torchvision 0.7 or 0.8
+  id: totrans-18
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: torchvision 0.7或0.8
 - en: Android Studio 3.5.1 or above with NDK installed
+  id: totrans-19
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: Android Studio 3.5.1或更高版本，已安装NDK
 - en: Steps
+  id: totrans-20
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 步骤
 - en: 1\. Convert the DeepLabV3 model for Android deployment
+  id: totrans-21
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 1. 将DeepLabV3模型转换为Android部署
 - en: The first step to deploying a model on Android is to convert the model into
     the [TorchScript](https://pytorch.org/tutorials/beginner/Intro_to_TorchScript_tutorial.html)
     format.
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 在Android上部署模型的第一步是将模型转换为[TorchScript](https://pytorch.org/tutorials/beginner/Intro_to_TorchScript_tutorial.html)格式。
 - en: Note
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Not all PyTorch models can be converted to TorchScript at this time because
     a model definition may use language features that are not in TorchScript, which
     is a subset of Python. See the [Script and Optimize Recipe](../recipes/script_optimized.html)
     for more details.
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 目前并非所有PyTorch模型都可以转换为TorchScript，因为模型定义可能使用TorchScript中没有的语言特性，TorchScript是Python的一个子集。有关更多详细信息，请参阅[脚本和优化配方](../recipes/script_optimized.html)。
 - en: 'Simply run the script below to generate the scripted model deeplabv3_scripted.pt:'
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: 只需运行下面的脚本以生成脚本化模型deeplabv3_scripted.pt：
 - en: '[PRE0]'
+  id: totrans-26
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: The size of the generated deeplabv3_scripted.pt model file should be around
     168MB. Ideally, a model should also be quantized for significant size reduction
     and faster inference before being deployed on an Android app. To have a general
@@ -126,42 +181,58 @@
     and the resource links there. We will cover in detail how to correctly apply a
     quantization workflow called Post Training [Static Quantization](https://pytorch.org/tutorials/advanced/static_quantization_tutorial.html)
     to the DeepLabV3 model in a future tutorial or recipe.
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 生成的deeplabv3_scripted.pt模型文件的大小应该约为168MB。理想情况下，模型还应该进行量化以显著减小大小并加快推理速度，然后再部署到Android应用程序上。要对量化有一个一般的理解，请参阅[量化配方](../recipes/quantization.html)和那里的资源链接。我们将详细介绍如何在未来的教程或配方中正确应用名为后训练[静态量化](https://pytorch.org/tutorials/advanced/static_quantization_tutorial.html)的量化工作流程到DeepLabV3模型。
 - en: 2\. Get example input and output of the model in Python
+  id: totrans-28
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 2. 在Python中获取模型的示例输入和输出
 - en: 'Now that we have a scripted PyTorch model, let’s test with some example inputs
     to make sure the model works correctly on Android. First, let’s write a Python
     script that uses the model to make inferences and examine inputs and outputs.
     For this example of the DeepLabV3 model, we can reuse the code in Step 1 and in
     the [DeepLabV3 model hub site](https://pytorch.org/hub/pytorch_vision_deeplabv3_resnet101).
     Add the following code snippet to the code above:'
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们有了一个脚本化的PyTorch模型，让我们使用一些示例输入进行测试，以确保模型在Android上能够正确工作。首先，让我们编写一个使用模型进行推断并检查输入和输出的Python脚本。对于这个DeepLabV3模型的示例，我们可以重用第1步中的代码和[DeepLabV3模型中心网站](https://pytorch.org/hub/pytorch_vision_deeplabv3_resnet101)中的代码。将以下代码片段添加到上面的代码中：
 - en: '[PRE1]'
+  id: totrans-30
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: 'Download deeplab.jpg from [here](https://github.com/jeffxtang/android-demo-app/blob/new_demo_apps/ImageSegmentation/app/src/main/assets/deeplab.jpg),
     then run the script above and you will see the shapes of the input and output
     of the model:'
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: 从[这里](https://github.com/jeffxtang/android-demo-app/blob/new_demo_apps/ImageSegmentation/app/src/main/assets/deeplab.jpg)下载deeplab.jpg，然后运行上面的脚本，您将看到模型的输入和输出的形状：
 - en: '[PRE2]'
+  id: totrans-32
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: So if you provide the same image input deeplab.jpg of size 400x400 to the model
     on Android, the output of the model should have the size [21, 400, 400]. You should
     also print out at least the beginning parts of the actual data of the input and
     output, to be used in Step 4 below to compare with the actual input and output
     of the model when running in the Android app.
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: 因此，如果您在Android上向模型提供大小为400x400的相同图像输入deeplab.jpg，则模型的输出应该具有大小[21, 400, 400]。您还应该至少打印出输入和输出的实际数据的开始部分，以便在下面的第4步中与在Android应用程序中运行时模型的实际输入和输出进行比较。
 - en: 3\. Build a new Android app or reuse an example app and load the model
+  id: totrans-34
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 3. 构建一个新的Android应用程序或重用示例应用程序并加载模型
 - en: First, follow Step 3 of the [Model Preparation for Android recipe](../recipes/model_preparation_android.html#add-the-model-and-pytorch-library-on-android)
     to use our model in an Android Studio project with PyTorch Mobile enabled. Because
     both DeepLabV3 used in this tutorial and MobileNet v2 used in the PyTorch Hello
@@ -170,24 +241,36 @@
     to make it easier to modify the code that loads the model and processes the input
     and output. The main goal in this step and Step 4 is to make sure the model deeplabv3_scripted.pt
     generated in Step 1 can indeed work correctly on Android.
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 首先，按照[为Android准备模型的步骤3](../recipes/model_preparation_android.html#add-the-model-and-pytorch-library-on-android)使用我们的模型在启用PyTorch
+    Mobile的Android Studio项目中。因为本教程中使用的DeepLabV3和PyTorch Hello World Android示例中使用的MobileNet
+    v2都是计算机视觉模型，您还可以获取[Hello World示例存储库](https://github.com/pytorch/android-demo-app/tree/master/HelloWorldApp)以便更轻松地修改加载模型和处理输入和输出的代码。本步骤和第4步的主要目标是确保在Android上正确运行第1步生成的deeplabv3_scripted.pt模型。
 - en: 'Now let’s add deeplabv3_scripted.pt and deeplab.jpg used in Step 2 to the Android
     Studio project and modify the onCreate method in the MainActivity to resemble:'
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在让我们将在第2步中使用的deeplabv3_scripted.pt和deeplab.jpg添加到Android Studio项目中，并修改MainActivity中的onCreate方法如下：
 - en: '[PRE3]'
+  id: totrans-37
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: Then set a breakpoint at the line finish() and build and run the app. If the
     app doesn’t stop at the breakpoint, it means that the scripted model in Step 1
     has been successfully loaded on Android.
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后在finish()一行设置断点，构建并运行应用程序。如果应用程序没有在断点处停止，这意味着在Android上成功加载了第1步中的脚本模型。
 - en: 4\. Process the model input and output for model inference
+  id: totrans-39
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 4. 处理模型输入和输出以进行模型推断
 - en: 'After the model loads in the previous step, let’s verify that it works with
     expected inputs and can generate expected outputs. As the model input for the
     DeepLabV3 model is an image the same as that of the MobileNet v2 in the Hello
@@ -195,61 +278,90 @@
     file from Hello World for input processing. Replace the code snippet between [line
     50](https://github.com/pytorch/android-demo-app/blob/master/HelloWorldApp/app/src/main/java/org/pytorch/helloworld/MainActivity.java#L50)
     and 73 in MainActivity.java with the following code:'
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: 在上一步加载模型后，让我们验证它是否能够使用预期的输入并生成预期的输出。由于DeepLabV3模型的模型输入与Hello World示例中的MobileNet
+    v2相同，我们将重用Hello World中的[MainActivity.java](https://github.com/pytorch/android-demo-app/blob/master/HelloWorldApp/app/src/main/java/org/pytorch/helloworld/MainActivity.java)文件中的一些代码用于输入处理。将MainActivity.java中[line
+    50](https://github.com/pytorch/android-demo-app/blob/master/HelloWorldApp/app/src/main/java/org/pytorch/helloworld/MainActivity.java#L50)和73之间的代码片段替换为以下代码：
 - en: '[PRE4]'
+  id: totrans-41
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: Note
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: The model output is a dictionary for the DeepLabV3 model so we use toDictStringKey
     to correctly extract the result. For other models, the model output may also be
     a single tensor or a tuple of tensors, among other things.
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: DeepLabV3模型的模型输出是一个字典，因此我们使用toDictStringKey来正确提取结果。对于其他模型，模型输出也可能是单个张量或张量元组等。
 - en: With the code changes shown above, you can set breakpoints after final float[]
     inputs and final float[] outputs, which populate the input tensor and output tensor
     data to float arrays for easy debugging. Run the app and when it stops at the
     breakpoints, compare the numbers in inputs and outputs with the model input and
     output data you see in Step 2 to see if they match. For the same inputs to the
     models running on Android and Python, you should get the same outputs.
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过上面显示的代码更改，您可以在final float[] inputs和final float[] outputs之后设置断点，这些断点将将输入张量和输出张量数据填充到浮点数组中以便进行简单调试。运行应用程序，当它在断点处停止时，将输入和输出中的数字与第2步中看到的模型输入和输出数据进行比较，以查看它们是否匹配。对于在Android和Python上运行的模型相同的输入，您应该获得相同的输出。
 - en: Warning
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: You may see different model outputs with the same image input when running on
     an Android emulator due to some Android emulator’s floating point implementation
     issue. So it is best to test the app on a real Android device.
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于某些Android模拟器的浮点实现问题，当在Android模拟器上运行时，您可能会看到相同图像输入的不同模型输出。因此，最好在真实的Android设备上测试应用程序。
 - en: All we have done so far is to confirm that the model of our interest can be
     scripted and run correctly in our Android app as in Python. The steps we walked
     through so far for using a model in an iOS app consumes the bulk, if not most,
     of our app development time, similar to how data preprocessing is the heaviest
     lift for a typical machine learning project.
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: 到目前为止，我们所做的一切只是确认我们感兴趣的模型可以在我们的 Android 应用程序中像在 Python 中一样被脚本化和正确运行。到目前为止，我们在
+    iOS 应用程序中使用模型的步骤消耗了大部分，如果不是大部分，我们的应用程序开发时间，类似于数据预处理是典型机器学习项目中最繁重的工作。
 - en: 5\. Complete the UI, refactor, build and run the app
+  id: totrans-48
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 5\. 完成用户界面，重构，构建和运行应用程序
 - en: 'Now we are ready to complete the app and the UI to actually see the processed
     result as a new image. The output processing code should be like this, added to
     the end of the code snippet in Step 4:'
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们准备完成应用程序和用户界面，实际上看到处理后的结果作为新图像。输出处理代码应该像这样，添加到第 4 步中代码片段的末尾：
 - en: '[PRE5]'
+  id: totrans-50
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: 'The constants used in the code above are defined in the beginning of the class
     MainActivity:'
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
+  zh: 上面代码中使用的常量在 MainActivity 类的开头被定义：
 - en: '[PRE6]'
+  id: totrans-52
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: The implementation here is based on the understanding of the DeepLabV3 model
     which outputs a tensor of size [21, width, height] for an input image of width*height.
     Each element in the width*height output array is a value between 0 and 20 (for
@@ -257,58 +369,87 @@
     to set a specific color. Color coding of the segmentation here is based on the
     class with the highest probability, and you can extend the color coding for all
     classes in your own dataset.
+  id: totrans-53
   prefs: []
   type: TYPE_NORMAL
+  zh: 这里的实现是基于 DeepLabV3 模型的理解，该模型为宽度*高度的输入图像输出一个大小为 [21, width, height] 的张量。宽度*高度输出数组中的每个元素是一个介于
+    0 和 20 之间的值（共 21 个在介绍中描述的语义标签），该值用于设置特定颜色。这里的分割颜色编码基于具有最高概率的类，并且您可以扩展颜色编码以适用于您自己数据集中的所有类。
 - en: 'After the output processing, you will also need to call the code below to render
     the RGB intValues array to a bitmap instance outputBitmap before displaying it
     on an ImageView:'
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: 在输出处理之后，您还需要调用下面的代码将 RGB intValues 数组渲染到位图实例 outputBitmap，然后在 ImageView 上显示它：
 - en: '[PRE7]'
+  id: totrans-55
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: The UI for this app is also similar to that for Hello World, except that you
     do not need the TextView to show the image classification result. You can also
     add two buttons Segment and Restart as shown in the code repository to run the
     model inference and to show back the original image after the segmentation result
     is shown.
+  id: totrans-56
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个应用程序的用户界面也类似于 Hello World，只是您不需要 TextView 来显示图像分类结果。您还可以添加两个按钮 Segment 和 Restart，如代码存储库中所示，以运行模型推断并在显示分割结果后显示原始图像。
 - en: 'Now when you run the app on an Android emulator or preferably an actual device,
     you will see screens like the following:'
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，当您在 Android 模拟器上运行应用程序，或者最好是在实际设备上运行时，您将看到以下屏幕：
 - en: '![../_images/deeplabv3_android.png](../Images/1b0ecd17a6617abde8eb2e7e3409bbd0.png)
     ![../_images/deeplabv3_android2.png](../Images/01e9b7b7725f15ac40b77b270306d4f8.png)'
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: '![../_images/deeplabv3_android.png](../Images/1b0ecd17a6617abde8eb2e7e3409bbd0.png)
+    ![../_images/deeplabv3_android2.png](../Images/01e9b7b7725f15ac40b77b270306d4f8.png)'
 - en: Recap
+  id: totrans-59
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 总结
 - en: In this tutorial, we described what it takes to convert a pretrained PyTorch
     DeepLabV3 model for Android and how to make sure the model can run successfully
     on Android. Our focus was to help you understand the process of confirming that
     a model can indeed run on Android. The complete code repository is available [here](https://github.com/pytorch/android-demo-app/tree/master/ImageSegmentation).
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，我们描述了将预训练的 PyTorch DeepLabV3 模型转换为 Android 所需的步骤，以及如何确保模型可以在 Android 上成功运行。我们的重点是帮助您了解确认模型确实可以在
+    Android 上运行的过程。完整的代码存储库可在[此处](https://github.com/pytorch/android-demo-app/tree/master/ImageSegmentation)找到。
 - en: More advanced topics such as quantization and using models via transfer learning
     or of your own on Android will be covered soon in future demo apps and tutorials.
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: 更高级的主题，如量化和通过迁移学习或在 Android 上使用自己的模型，将很快在未来的演示应用程序和教程中进行介绍。
 - en: Learn More
+  id: totrans-62
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 了解更多
 - en: '[PyTorch Mobile site](https://pytorch.org/mobile)'
+  id: totrans-63
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: '[PyTorch Mobile 网站](https://pytorch.org/mobile)'
 - en: '[DeepLabV3 model](https://pytorch.org/hub/pytorch_vision_deeplabv3_resnet101)'
+  id: totrans-64
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: '[DeepLabV3 模型](https://pytorch.org/hub/pytorch_vision_deeplabv3_resnet101)'
 - en: '[DeepLabV3 paper](https://arxiv.org/pdf/1706.05587.pdf)'
+  id: totrans-65
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: '[DeepLabV3 论文](https://arxiv.org/pdf/1706.05587.pdf)'

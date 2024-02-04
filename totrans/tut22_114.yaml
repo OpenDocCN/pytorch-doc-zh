@@ -218,6 +218,7 @@
   id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 实验结果显示，将输入流水线传输到模型并行的ResNet50可以将训练过程加速大约`3.75/2.51-1=49%`。这仍然远远落后于理想的100%加速。由于我们在管道并行实现中引入了一个新参数`split_sizes`，目前还不清楚这个新参数如何影响整体训练时间。直觉上，使用较小的`split_size`会导致许多小的CUDA内核启动，而使用较大的`split_size`会导致在第一个和最后一个分割期间相对较长的空闲时间。两者都不是最佳选择。对于这个特定实验，可能存在一个最佳的`split_size`配置。让我们通过运行使用几个不同`split_size`值的实验来尝试找到它。
 - en: '[PRE6]'
   id: totrans-30
   prefs: []
@@ -227,6 +228,7 @@
   id: totrans-31
   prefs: []
   type: TYPE_IMG
+  zh: 把这个文件夹拖到另一个文件夹中。
 - en: The result shows that setting `split_size` to 12 achieves the fastest training
     speed, which leads to `3.75/2.43-1=54%` speedup. There are still opportunities
     to further accelerate the training process. For example, all operations on `cuda:0`

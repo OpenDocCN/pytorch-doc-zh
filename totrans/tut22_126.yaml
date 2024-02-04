@@ -1,21 +1,31 @@
 - en: Training Transformer models using Distributed Data Parallel and Pipeline Parallelism
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 使用Distributed Data Parallel和Pipeline Parallelism训练Transformer模型
 - en: 原文：[https://pytorch.org/tutorials/advanced/ddp_pipeline.html](https://pytorch.org/tutorials/advanced/ddp_pipeline.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/advanced/ddp_pipeline.html](https://pytorch.org/tutorials/advanced/ddp_pipeline.html)
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-advanced-ddp-pipeline-py) to download the full
     example code
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[这里](#sphx-glr-download-advanced-ddp-pipeline-py)下载完整示例代码
 - en: '**Author**: [Pritam Damania](https://github.com/pritamdamania87)'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '**作者**：[Pritam Damania](https://github.com/pritamdamania87)'
 - en: This tutorial demonstrates how to train a large Transformer model across multiple
     GPUs using [Distributed Data Parallel](https://pytorch.org/docs/stable/generated/torch.nn.parallel.DistributedDataParallel.html)
     and [Pipeline Parallelism](https://pytorch.org/docs/stable/pipeline.html). This
@@ -23,59 +33,82 @@
     and TorchText](https://pytorch.org/tutorials/beginner/transformer_tutorial.html)
     tutorial and scales up the same model to demonstrate how Distributed Data Parallel
     and Pipeline Parallelism can be used to train Transformer models.
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程演示了如何使用[Distributed Data Parallel](https://pytorch.org/docs/stable/generated/torch.nn.parallel.DistributedDataParallel.html)和[Pipeline
+    Parallelism](https://pytorch.org/docs/stable/pipeline.html)在多个GPU上训练大型Transformer模型。本教程是[使用nn.Transformer和TorchText进行序列到序列建模](https://pytorch.org/tutorials/beginner/transformer_tutorial.html)教程的延伸，扩展了相同的模型以演示如何使用Distributed
+    Data Parallel和Pipeline Parallelism来训练Transformer模型。
 - en: 'Prerequisites:'
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 先决条件：
 - en: '[Pipeline Parallelism](https://pytorch.org/docs/stable/pipeline.html)'
+  id: totrans-7
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[管道并行](https://pytorch.org/docs/stable/pipeline.html)'
 - en: ''
+  id: totrans-8
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-9
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: '[Sequence-to-Sequence Modeling with nn.Transformer and TorchText](https://pytorch.org/tutorials/beginner/transformer_tutorial.html)'
+  id: totrans-10
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[使用nn.Transformer和TorchText进行序列到序列建模](https://pytorch.org/tutorials/beginner/transformer_tutorial.html)'
 - en: ''
+  id: totrans-11
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-12
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: '[Getting Started with Distributed Data Parallel](https://pytorch.org/tutorials/intermediate/ddp_tutorial.html)'
+  id: totrans-13
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[使用分布式数据并行开始](https://pytorch.org/tutorials/intermediate/ddp_tutorial.html)'
 - en: Define the model
+  id: totrans-14
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 定义模型
 - en: '`PositionalEncoding` module injects some information about the relative or
     absolute position of the tokens in the sequence. The positional encodings have
     the same dimension as the embeddings so that the two can be summed. Here, we use
     `sine` and `cosine` functions of different frequencies.'
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: '`PositionalEncoding` 模块向序列中的令牌注入了一些关于相对或绝对位置的信息。位置编码与嵌入的维度相同，因此可以将两者相加。在这里，我们使用不同频率的
+    `sine` 和 `cosine` 函数。'
 - en: '[PRE0]'
+  id: totrans-16
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: In this tutorial, we will split a Transformer model across two GPUs and use
     pipeline parallelism to train the model. In addition to this, we use [Distributed
     Data Parallel](https://pytorch.org/docs/stable/generated/torch.nn.parallel.DistributedDataParallel.html)
@@ -93,104 +126,156 @@
     are on another. To do this, we pull out the `Encoder` and `Decoder` sections into
     separate modules and then build an `nn.Sequential` representing the original Transformer
     module.
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，我们将一个Transformer模型分割到两个GPU上，并使用管道并行来训练模型。除此之外，我们使用[Distributed Data Parallel](https://pytorch.org/docs/stable/generated/torch.nn.parallel.DistributedDataParallel.html)来训练这个管道的两个副本。我们有一个进程在GPU
+    0和1之间驱动一个管道，另一个进程在GPU 2和3之间驱动一个管道。然后，这两个进程使用Distributed Data Parallel来训练这两个副本。模型与[使用nn.Transformer和TorchText进行序列到序列建模](https://pytorch.org/tutorials/beginner/transformer_tutorial.html)教程中使用的模型完全相同，但被分成了两个阶段。最多的参数属于[nn.TransformerEncoder](https://pytorch.org/docs/stable/generated/torch.nn.TransformerEncoder.html)层。[nn.TransformerEncoder](https://pytorch.org/docs/stable/generated/torch.nn.TransformerEncoder.html)本身由`nlayers`个[nn.TransformerEncoderLayer](https://pytorch.org/docs/stable/generated/torch.nn.TransformerEncoderLayer.html)组成。因此，我们的重点是`nn.TransformerEncoder`，我们将模型分割成一半的`nn.TransformerEncoderLayer`在一个GPU上，另一半在另一个GPU上。为此，我们将`Encoder`和`Decoder`部分提取到单独的模块中，然后构建一个代表原始Transformer模块的`nn.Sequential`。
 - en: '[PRE1]'
+  id: totrans-18
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Start multiple processes for training
+  id: totrans-19
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 启动多个进程进行训练
 - en: We start two processes where each process drives its own pipeline across two
     GPUs. `run_worker` is executed for each process.
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们启动两个进程，每个进程在两个GPU上驱动自己的管道。对于每个进程，都会执行`run_worker`。
 - en: '[PRE2]'
+  id: totrans-21
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Load and batch data
+  id: totrans-22
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 加载和批处理数据
 - en: The training process uses Wikitext-2 dataset from `torchtext`. To access torchtext
     datasets, please install torchdata following instructions at [https://github.com/pytorch/data](https://github.com/pytorch/data).
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 训练过程使用了来自`torchtext`的Wikitext-2数据集。要访问torchtext数据集，请按照[https://github.com/pytorch/data](https://github.com/pytorch/data)上的说明安装torchdata。
 - en: 'The vocab object is built based on the train dataset and is used to numericalize
     tokens into tensors. Starting from sequential data, the `batchify()` function
     arranges the dataset into columns, trimming off any tokens remaining after the
     data has been divided into batches of size `batch_size`. For instance, with the
     alphabet as the sequence (total length of 26) and a batch size of 4, we would
     divide the alphabet into 4 sequences of length 6:'
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: vocab 对象是基于训练数据集构建的，并用于将令牌数值化为张量。从顺序数据开始，`batchify()` 函数将数据集排列成列，将数据分成大小为 `batch_size`
+    的批次后，修剪掉任何剩余的令牌。例如，对于字母表作为序列（总长度为26）和批次大小为4，我们将字母表分成长度为6的4个序列：
 - en: \[ \begin{bmatrix} \text{A} & \text{B} & \text{C} & \ldots & \text{X} & \text{Y}
     & \text{Z} \end{bmatrix} \Rightarrow \begin{bmatrix} \begin{bmatrix}\text{A} \\
     \text{B} \\ \text{C} \\ \text{D} \\ \text{E} \\ \text{F}\end{bmatrix} & \begin{bmatrix}\text{G}
     \\ \text{H} \\ \text{I} \\ \text{J} \\ \text{K} \\ \text{L}\end{bmatrix} & \begin{bmatrix}\text{M}
     \\ \text{N} \\ \text{O} \\ \text{P} \\ \text{Q} \\ \text{R}\end{bmatrix} & \begin{bmatrix}\text{S}
     \\ \text{T} \\ \text{U} \\ \text{V} \\ \text{W} \\ \text{X}\end{bmatrix} \end{bmatrix}\]
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: \[ \begin{bmatrix} \text{A} & \text{B} & \text{C} & \ldots & \text{X} & \text{Y}
+    & \text{Z} \end{bmatrix} \Rightarrow \begin{bmatrix} \begin{bmatrix}\text{A} \\
+    \text{B} \\ \text{C} \\ \text{D} \\ \text{E} \\ \text{F}\end{bmatrix} & \begin{bmatrix}\text{G}
+    \\ \text{H} \\ \text{I} \\ \text{J} \\ \text{K} \\ \text{L}\end{bmatrix} & \begin{bmatrix}\text{M}
+    \\ \text{N} \\ \text{O} \\ \text{P} \\ \text{Q} \\ \text{R}\end{bmatrix} & \begin{bmatrix}\text{S}
+    \\ \text{T} \\ \text{U} \\ \text{V} \\ \text{W} \\ \text{X}\end{bmatrix} \end{bmatrix}\]
 - en: These columns are treated as independent by the model, which means that the
     dependence of `G` and `F` can not be learned, but allows more efficient batch
     processing.
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 这些列被模型视为独立的，这意味着`G`和`F`之间的依赖关系无法被学习，但可以实现更高效的批处理。
 - en: '[PRE3]'
+  id: totrans-27
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: Functions to generate input and target sequence
+  id: totrans-28
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 生成输入和目标序列的函数
 - en: '`get_batch()` function generates the input and target sequence for the transformer
     model. It subdivides the source data into chunks of length `bptt`. For the language
     modeling task, the model needs the following words as `Target`. For example, with
     a `bptt` value of 2, we’d get the following two Variables for `i` = 0:'
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: '`get_batch()`函数为变压器模型生成输入和目标序列。它将源数据细分为长度为`bptt`的块。对于语言建模任务，模型需要以下单词作为`目标`。例如，对于`bptt`值为2，我们会得到以下两个变量，对于`i`
+    = 0：'
 - en: '![../_images/transformer_input_target.png](../Images/20ef8681366b44461cf49d1ab98ab8f2.png)'
+  id: totrans-30
   prefs: []
   type: TYPE_IMG
+  zh: '![../_images/transformer_input_target.png](../Images/20ef8681366b44461cf49d1ab98ab8f2.png)'
 - en: It should be noted that the chunks are along dimension 0, consistent with the
     `S` dimension in the Transformer model. The batch dimension `N` is along dimension
     1.
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: 值得注意的是，块沿着维度0，与变压器模型中的`S`维度一致。批处理维度`N`沿着维度1。
 - en: '[PRE4]'
+  id: totrans-32
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: Model scale and Pipe initialization
+  id: totrans-33
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 模型规模和Pipe初始化
 - en: To demonstrate training large Transformer models using pipeline parallelism,
     we scale up the Transformer layers appropriately. We use an embedding dimension
     of 4096, hidden size of 4096, 16 attention heads and 8 total transformer layers
     (`nn.TransformerEncoderLayer`). This creates a model with **~1 billion** parameters.
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了演示使用管道并行性训练大型Transformer模型，我们适当扩展Transformer层。我们使用4096的嵌入维度，4096的隐藏大小，16个注意力头和8个总变压器层（`nn.TransformerEncoderLayer`）。这创建了一个具有**~10亿**参数的模型。
 - en: We need to initialize the [RPC Framework](https://pytorch.org/docs/stable/rpc.html)
     since Pipe depends on the RPC framework via [RRef](https://pytorch.org/docs/stable/rpc.html#rref)
     which allows for future expansion to cross host pipelining. We need to initialize
     the RPC framework with only a single worker since we’re using a single process
     to drive multiple GPUs.
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们需要初始化[RPC框架](https://pytorch.org/docs/stable/rpc.html)，因为Pipe依赖于RPC框架通过[RRef](https://pytorch.org/docs/stable/rpc.html#rref)允许未来扩展到跨主机流水线。我们需要使用单个worker初始化RPC框架，因为我们使用单个进程驱动多个GPU。
 - en: The pipeline is then initialized with 8 transformer layers on one GPU and 8
     transformer layers on the other GPU. One pipe is setup across GPUs 0 and 1 and
     another across GPUs 2 and 3\. Both pipes are then replicated using `DistributedDataParallel`.
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后，在一个GPU上初始化8个变压器层，并在另一个GPU上初始化8个变压器层。一个管道设置在GPU 0和1之间，另一个设置在GPU 2和3之间。然后使用`DistributedDataParallel`复制这两个管道。
 - en: '[PRE5]'
+  id: totrans-37
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: Run the model
+  id: totrans-38
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 运行模型
 - en: '[CrossEntropyLoss](https://pytorch.org/docs/master/nn.html?highlight=crossentropyloss#torch.nn.CrossEntropyLoss)
     is applied to track the loss and [SGD](https://pytorch.org/docs/master/optim.html?highlight=sgd#torch.optim.SGD)
     implements stochastic gradient descent method as the optimizer. The initial learning
@@ -198,44 +283,70 @@
     is applied to adjust the learn rate through epochs. During the training, we use
     [nn.utils.clip_grad_norm_](https://pytorch.org/docs/master/nn.html?highlight=nn%20utils%20clip_grad_norm#torch.nn.utils.clip_grad_norm_)
     function to scale all the gradient together to prevent exploding.'
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: '[交叉熵损失](https://pytorch.org/docs/master/nn.html?highlight=crossentropyloss#torch.nn.CrossEntropyLoss)用于跟踪损失，[SGD](https://pytorch.org/docs/master/optim.html?highlight=sgd#torch.optim.SGD)实现随机梯度下降方法作为优化器。初始学习率设置为5.0。[StepLR](https://pytorch.org/docs/master/optim.html?highlight=steplr#torch.optim.lr_scheduler.StepLR)用于通过epochs调整学习率。在训练过程中，我们使用[nn.utils.clip_grad_norm_](https://pytorch.org/docs/master/nn.html?highlight=nn%20utils%20clip_grad_norm#torch.nn.utils.clip_grad_norm_)函数将所有梯度一起缩放，以防止梯度爆炸。'
 - en: '[PRE6]'
+  id: totrans-40
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: Loop over epochs. Save the model if the validation loss is the best we’ve seen
     so far. Adjust the learning rate after each epoch.
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 循环遍历epochs。如果验证损失是迄今为止看到的最佳损失，则保存模型。每个epoch后调整学习率。
 - en: '[PRE7]'
+  id: totrans-42
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: Evaluate the model with the test dataset
+  id: totrans-43
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 用测试数据集评估模型
 - en: Apply the best model to check the result with the test dataset.
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 将最佳模型应用于测试数据集以检查结果。
 - en: '[PRE8]'
+  id: totrans-45
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: Output
+  id: totrans-46
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 输出
 - en: '[PRE9]'
+  id: totrans-47
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: '**Total running time of the script:** ( 0 minutes 0.000 seconds)'
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: '**脚本的总运行时间：**（0分钟0.000秒）'
 - en: '[`Download Python source code: ddp_pipeline.py`](../_downloads/a4d9c51b5b801ca67ec48cde53047460/ddp_pipeline.py)'
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: 下载Python源代码：ddp_pipeline.py
 - en: '[`Download Jupyter notebook: ddp_pipeline.ipynb`](../_downloads/9c42ef95b5e306580f45ed7f652191bf/ddp_pipeline.ipynb)'
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: 下载Jupyter笔记本：ddp_pipeline.ipynb
 - en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Sphinx-Gallery生成的图库](https://sphinx-gallery.github.io)'

@@ -1,31 +1,44 @@
 - en: Advanced Model Training with Fully Sharded Data Parallel (FSDP)
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 使用完全分片数据并行（FSDP）进行高级模型训练。
 - en: 原文：[https://pytorch.org/tutorials/intermediate/FSDP_adavnced_tutorial.html](https://pytorch.org/tutorials/intermediate/FSDP_adavnced_tutorial.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: '[https://pytorch.org/tutorials/intermediate/FSDP_adavnced_tutorial.html](https://pytorch.org/tutorials/intermediate/FSDP_adavnced_tutorial.html)'
 - en: '**Author**: [Hamid Shojanazeri](https://github.com/HamidShojanazeri), [Less
     Wright](https://github.com/lessw2020), [Rohan Varma](https://github.com/rohan-varma/),
     [Yanli Zhao](https://github.com/zhaojuanmao)'
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: '**作者**：[Hamid Shojanazeri](https://github.com/HamidShojanazeri)，[Less Wright](https://github.com/lessw2020)，[Rohan
+    Varma](https://github.com/rohan-varma/)，[Yanli Zhao](https://github.com/zhaojuanmao)'
 - en: This tutorial introduces more advanced features of Fully Sharded Data Parallel
     (FSDP) as part of the PyTorch 1.12 release. To get familiar with FSDP, please
     refer to the [FSDP getting started tutorial](https://pytorch.org/tutorials/intermediate/FSDP_tutorial.html).
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程介绍了PyTorch 1.12版本中Fully Sharded Data Parallel（FSDP）的更高级特性。要熟悉FSDP，请参考[FSDP入门教程](https://pytorch.org/tutorials/intermediate/FSDP_tutorial.html)。
 - en: In this tutorial, we fine-tune a HuggingFace (HF) T5 model with FSDP for text
     summarization as a working example.
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，我们使用FSDP对HuggingFace（HF）的T5模型进行微调，作为文本摘要的工作示例。
 - en: The example uses Wikihow and for simplicity, we will showcase the training on
     a single node, P4dn instance with 8 A100 GPUs. We will soon have a blog post on
     large scale FSDP training on a multi-node cluster, please stay tuned for that
     on the PyTorch medium channel.
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个例子使用了Wikihow，为了简单起见，我们将展示在一个单节点上进行训练，使用带有8个A100 GPU的P4dn实例。我们很快将在多节点集群上发布一篇关于大规模FSDP训练的博客文章，请关注PyTorch的官方媒体渠道。
 - en: FSDP is a production ready package with focus on ease of use, performance, and
     long-term support. One of the main benefits of FSDP is reducing the memory footprint
     on each GPU. This enables training of larger models with lower total memory vs
@@ -33,82 +46,123 @@
     efficiently. This reduced memory pressure can be leveraged to either train larger
     models or increase batch size, potentially helping overall training throughput.
     You can read more about PyTorch FSDP [here](https://pytorch.org/blog/introducing-pytorch-fully-sharded-data-parallel-api/).
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: FSDP 是一个已经准备好的软件包，专注于易用性、性能和长期支持。FSDP 的主要优势之一是减少每个 GPU 上的内存占用。这使得可以使用更低的总内存训练更大的模型，同时利用计算和通信的重叠来高效训练模型。这种减少的内存压力可以用来训练更大的模型或增加批量大小，潜在地帮助提高整体训练吞吐量。您可以在这里阅读更多关于
+    PyTorch FSDP 的信息。
 - en: FSDP Features in This Tutorial
+  id: totrans-7
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 本教程中的FSDP功能
 - en: Transformer Auto Wrap Policy
+  id: totrans-8
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: Transformer自动包装策略
 - en: Mixed Precision
+  id: totrans-9
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 混合精度
 - en: Initializing FSDP Model on Device
+  id: totrans-10
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在设备上初始化FSDP模型
 - en: Sharding Strategy
+  id: totrans-11
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 分片策略
 - en: Backward Prefetch
+  id: totrans-12
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 向后预取
 - en: Model Checkpoint Saving via Streaming to CPU
+  id: totrans-13
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 通过流式传输保存模型检查点到CPU
 - en: Recap on How FSDP Works
+  id: totrans-14
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: FSDP工作原理回顾
 - en: 'At a high level FDSP works as follow:'
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 在高层次上，FDSP 的工作方式如下：
 - en: '*In constructor*'
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: '*在构造函数中*'
 - en: Shard model parameters and each rank only keeps its own shard
+  id: totrans-17
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 分片模型参数，每个等级只保留自己的分片
 - en: '*In forward pass*'
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: '*在前向传播中*'
 - en: Run all_gather to collect all shards from all ranks to recover the full parameter
     for this FSDP unit Run forward computation
+  id: totrans-19
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 运行all_gather以收集所有排名的所有碎片，以恢复此FSDP单元的完整参数 运行前向计算
 - en: Discard non-owned parameter shards it has just collected to free memory
+  id: totrans-20
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 丢弃刚刚收集的非所有者参数分片以释放内存
 - en: '*In backward pass*'
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 在反向传递中
 - en: Run all_gather to collect all shards from all ranks to recover the full parameter
     in this FSDP unit Run backward computation
+  id: totrans-22
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 运行all_gather以收集所有等级的所有碎片，以恢复此FSDP单元中的完整参数 运行向后计算
 - en: Discard non-owned parameters to free memory.
+  id: totrans-23
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 丢弃非所有者参数以释放内存。
 - en: Run reduce_scatter to sync gradients
+  id: totrans-24
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 运行reduce_scatter以同步梯度。
 - en: Fine-tuning HF T5
+  id: totrans-25
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 微调HF T5
 - en: HF T5 pre-trained models are available in four different sizes, ranging from
     small with 60 Million parameters to XXL with 11 Billion parameters. In this tutorial,
     we demonstrate the fine-tuning of a T5 3B with FSDP for text summarization using
@@ -116,106 +170,167 @@
     features in FSDP that are helpful for training large scale model above 3B parameters.
     Also, we cover specific features for Transformer based models. The code for this
     tutorial is available in [Pytorch examples](https://github.com/pytorch/examples/tree/main/distributed/FSDP/).
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: HF T5预训练模型有四种不同大小可供选择，从参数为6000万的小型模型到参数为110亿的XXL模型。在本教程中，我们演示了使用WikiHow数据集对T5
+    3B进行微调，以用于文本摘要。本教程的主要重点是突出FSDP中可用的不同功能，这些功能有助于训练超过3B参数的大规模模型。此外，我们还介绍了基于Transformer的模型的特定功能。本教程的代码可在[Pytorch示例](https://github.com/pytorch/examples/tree/main/distributed/FSDP/)中找到。
 - en: '*Setup*'
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: '*设置*'
 - en: 1.1 Install PyTorch Nightlies
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: 1.1 安装 PyTorch 最新版本
 - en: We will install PyTorch nightlies, as some of the features such as activation
     checkpointing is available in nightlies and will be added in next PyTorch release
     after 1.12.
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们将安装PyTorch的nightlies版本，因为一些功能，比如激活检查点，在nightlies版本中可用，并将在1.12版本之后的下一个PyTorch发布中添加。
 - en: '[PRE0]'
+  id: totrans-30
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: 1.2 Dataset Setup
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: 1.2 数据集设置
 - en: Please create a data folder, download the WikiHow dataset from [wikihowAll.csv](https://ucsb.app.box.com/s/ap23l8gafpezf4tq3wapr6u8241zz358)
     and [wikihowSep.cs](https://ucsb.app.box.com/s/7yq601ijl1lzvlfu4rjdbbxforzd2oag),
     and place them in the data folder. We will use the wikihow dataset from [summarization_dataset](https://github.com/pytorch/examples/blob/main/distributed/FSDP/summarization_dataset.py).
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 请创建一个名为data的文件夹，从[wikihowAll.csv](https://ucsb.app.box.com/s/ap23l8gafpezf4tq3wapr6u8241zz358)和[wikihowSep.cs](https://ucsb.app.box.com/s/7yq601ijl1lzvlfu4rjdbbxforzd2oag)下载WikiHow数据集，并将它们放在data文件夹中。我们将使用来自[summarization_dataset](https://github.com/pytorch/examples/blob/main/distributed/FSDP/summarization_dataset.py)的wikihow数据集。
 - en: Next, we add the following code snippets to a Python script “T5_training.py”.
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，我们将以下代码片段添加到一个名为“T5_training.py”的Python脚本中。
 - en: Note
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: The full source code for this tutorial is available in [PyTorch examples](https://github.com/pytorch/examples/tree/main/distributed/FSDP/).
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程的完整源代码可在[PyTorch示例](https://github.com/pytorch/examples/tree/main/distributed/FSDP/)中找到。
 - en: '1.3 Import necessary packages:'
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 1.3 导入必要的包：
 - en: '[PRE1]'
+  id: totrans-37
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: 1.4 Distributed training setup. Here we use two helper functions to initialize
     the processes for distributed training, and then to clean up after training completion.
     In this tutorial, we are going to use torch elastic, using [torchrun](https://pytorch.org/docs/stable/elastic/run.html)
     , which will set the worker RANK and WORLD_SIZE automatically.
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 1.4 分布式训练设置。在这里，我们使用两个辅助函数来初始化分布式训练的进程，然后在训练完成后进行清理。在本教程中，我们将使用torch elastic，使用[torchrun](https://pytorch.org/docs/stable/elastic/run.html)，它会自动设置工作进程的RANK和WORLD_SIZE。
 - en: '[PRE2]'
+  id: totrans-39
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: '2.1 Set up the HuggingFace T5 model:'
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: 2.1 设置HuggingFace T5模型：
 - en: '[PRE3]'
+  id: totrans-41
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: We also, add couple of helper functions here for date and formatting memory
     metrics.
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们还在这里添加了一些用于日期和格式化内存指标的辅助函数。
 - en: '[PRE4]'
+  id: totrans-43
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: '2.2 Define a train function:'
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 2.2 定义一个训练函数：
 - en: '[PRE5]'
+  id: totrans-45
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: '2.3 Define a validation function:'
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 2.3 定义一个验证函数：
 - en: '[PRE6]'
+  id: totrans-47
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: '2.4 Define a distributed train function that wraps the model in FSDP:'
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: 定义一个包装模型在FSDP中的分布式训练函数。
 - en: '[PRE7]'
+  id: totrans-49
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: '2.5 Parse the arguments and set the main function:'
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: 2.5 解析参数并设置主函数：
 - en: '[PRE8]'
+  id: totrans-51
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: 'To run the the training using torchrun:'
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用torchrun运行训练：
 - en: '[PRE9]'
+  id: totrans-53
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: '## Transformer Wrapping Policy'
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: '## 转换器包装策略'
 - en: As discussed in the [previous tutorial](https://pytorch.org/tutorials/intermediate/FSDP_tutorial.html),
     auto_wrap_policy is one of the FSDP features that make it easy to automatically
     shard a given model and put the model, optimizer and gradient shards into distinct
     FSDP units.
+  id: totrans-55
   prefs: []
   type: TYPE_NORMAL
+  zh: 正如在[上一个教程](https://pytorch.org/tutorials/intermediate/FSDP_tutorial.html)中讨论的，auto_wrap_policy是FSDP功能之一，它使得自动对给定模型进行分片并将模型、优化器和梯度分片放入不同的FSDP单元变得容易。
 - en: For some architectures such as Transformer encoder-decoders, some parts of the
     model such as embedding table is being shared with both encoder and decoder. In
     this case, we need to place the embedding table in the outer FSDP unit so that
@@ -223,169 +338,245 @@
     the layer class for a transformer, the sharding plan can be made much more communication
     efficient. In PyTorch 1.12, FSDP added this support and now we have a wrapping
     policy for transfomers.
+  id: totrans-56
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于一些架构，比如Transformer编码器-解码器，模型的一些部分，比如嵌入表，被编码器和解码器共享。在这种情况下，我们需要将嵌入表放在外部FSDP单元中，以便从编码器和解码器中访问。此外，通过为transformer注册层类，分片计划可以变得更加通信高效。在PyTorch
+    1.12中，FSDP添加了这种支持，现在我们有了一个用于transformers的包装策略。
 - en: It can be created as follows, where the T5Block represents the T5 transformer
     layer class (holding MHSA and FFN).
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: 可以按照以下方式创建，其中T5Block代表T5变压器层类（包含MHSA和FFN）。
 - en: '[PRE10]'
+  id: totrans-58
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: To see the wrapped model, you can easily print the model and visually inspect
     the sharding and FSDP units as well.
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: 要查看包装的模型，您可以轻松打印模型并直观地检查分片和FSDP单元。
 - en: Mixed Precision
+  id: totrans-60
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 混合精度
 - en: FSDP supports flexible mixed precision training allowing for arbitrary reduced
     precision types (such as fp16 or bfloat16). Currently BFloat16 is only available
     on Ampere GPUs, so you need to confirm native support before you use it. On V100s
     for example, BFloat16 can still be run but due to it running non-natively, it
     can result in significant slowdowns.
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: FSDP支持灵活的混合精度训练，允许使用任意降低精度类型（如fp16或bfloat16）。目前，BFloat16仅在安培GPU上可用，因此在使用之前需要确认是否有本机支持。例如，在V100上，仍然可以运行BFloat16，但由于它是非本机运行，可能会导致显著的减速。
 - en: 'To check if BFloat16 is natively supported, you can use the following :'
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
+  zh: 要检查是否原生支持BFloat16，您可以使用以下方法：
 - en: '[PRE11]'
+  id: totrans-63
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: 'One of the advantages of mixed percision in FSDP is providing granular control
     over different precision levels for parameters, gradients, and buffers as follows:'
+  id: totrans-64
   prefs: []
   type: TYPE_NORMAL
+  zh: 在FSDP中混合精度的一个优点是为参数、梯度和缓冲区提供不同精度级别的细粒度控制。
 - en: '[PRE12]'
+  id: totrans-65
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: Note that if a certain type (parameter, reduce, buffer) is not specified, they
     will not be casted at all.
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，如果某种类型（参数、减少、缓冲区）未指定，则它们将不会被转换。
 - en: 'This flexibility allows users fine grained control, such as only setting gradient
     communication to happen in reduced precision, and all parameters / buffer computation
     to be done in full precision. This is potentially useful in cases where intra-node
     communication is the main bottleneck and parameters / buffers must be in full
     precision to avoid accuracy issues. This can be done with the following policy:'
+  id: totrans-67
   prefs: []
   type: TYPE_NORMAL
+  zh: 这种灵活性使用户可以进行精细的控制，比如只将梯度通信设置为以降低精度进行，而所有参数/缓冲计算则以全精度进行。在节点内通信是主要瓶颈且参数/缓冲必须以全精度进行以避免精度问题的情况下，这种方法可能非常有用。可以使用以下策略来实现：
 - en: '[PRE13]'
+  id: totrans-68
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: 'In 2.4 we just add the relevant mixed precision policy to the FSDP wrapper:'
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: 在2.4版本中，我们只需将相关的混合精度策略添加到FSDP包装器中：
 - en: '[PRE14]'
+  id: totrans-70
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: In our experiments, we have observed up to 4x speed up by using BFloat16 for
     training and memory reduction of approximately 30% in some experiments that can
     be used for batch size increases.
+  id: totrans-71
   prefs: []
   type: TYPE_NORMAL
+  zh: 在我们的实验中，我们观察到使用BFloat16进行训练可以加快速度达到4倍，并且在一些实验中可以减少大约30%的内存，这可以用于增加批量大小。
 - en: Intializing FSDP Model on Device
+  id: totrans-72
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 在设备上初始化FSDP模型
 - en: 'In 1.12, FSDP supports a device_id argument meant to initialize input CPU module
     on the device given by device_id. This is useful when the entire model does not
     fit on a single GPU, but fits in a host’s CPU memory. When device_id is specified,
     FSDP will move the model to the specified device on a per-FSDP unit basis, avoiding
     GPU OOM issues while initializing several times faster than CPU-based initialization:'
+  id: totrans-73
   prefs: []
   type: TYPE_NORMAL
+  zh: 在1.12版本中，FSDP支持一个device_id参数，旨在初始化设备上的输入CPU模块。当整个模型无法适应单个GPU，但适应主机的CPU内存时，这将非常有用。当指定device_id时，FSDP将根据每个FSDP单元将模型移动到指定的设备上，避免GPU内存不足问题，同时初始化速度比基于CPU的初始化快数倍。
 - en: '[PRE15]'
+  id: totrans-74
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: Sharding Strategy
+  id: totrans-75
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 分片策略
 - en: 'FSDP sharding strategy by default is set to fully shard the model parameters,
     gradients and optimizer states get sharded across all ranks. (also termed Zero3
     sharding). In case you are interested to have the Zero2 sharding strategy, where
     only optimizer states and gradients are sharded, FSDP support this feature by
     passing the Sharding strategy by using “ShardingStrategy.SHARD_GRAD_OP”, instead
     of “ShardingStrategy.FULL_SHARD” to the FSDP initialization as follows:'
+  id: totrans-76
   prefs: []
   type: TYPE_NORMAL
+  zh: 默认情况下，FSDP分片策略被设置为完全分片模型参数，梯度和优化器状态在所有等级之间分片（也称为Zero3分片）。如果您希望使用Zero2分片策略，仅对优化器状态和梯度进行分片，FSDP支持通过将分片策略传递给FSDP初始化来实现此功能，如下所示：“ShardingStrategy.SHARD_GRAD_OP”，而不是“ShardingStrategy.FULL_SHARD”。
 - en: '[PRE16]'
+  id: totrans-77
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: This will reduce the communication overhead in FSDP, in this case, it holds
     full parameters after forward and through the backwards pass.
+  id: totrans-78
   prefs: []
   type: TYPE_NORMAL
+  zh: 这将减少FSDP中的通信开销，在这种情况下，在前向传播和反向传播后保持完整的参数。
 - en: This saves an all_gather during backwards so there is less communication at
     the cost of a higher memory footprint. Note that full model params are freed at
     the end of backwards and all_gather will happen on the next forward pass.
+  id: totrans-79
   prefs: []
   type: TYPE_NORMAL
+  zh: 在反向传播过程中，这样做可以节省一次全局聚合操作，从而减少通信量，但会增加内存占用。请注意，完整的模型参数会在反向传播结束时被释放，全局聚合操作将在下一次前向传播中进行。
 - en: Backward Prefetch
+  id: totrans-80
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 向后预取
 - en: 'The backward prefetch setting controls the timing of when the next FSDP unit’s
     parameters should be requested. By setting it to BACKWARD_PRE, the next FSDP’s
     unit params can begin to be requested and arrive sooner before the computation
     of the current unit starts. This overlaps the all_gather communication and gradient
     computation which can increase the training speed in exchange for slightly higher
     memory consumption. It can be utilized in the FSDP wrapper in 2.4 as follows:'
+  id: totrans-81
   prefs: []
   type: TYPE_NORMAL
+  zh: 后向预取设置控制了何时应请求下一个FSDP单元的参数。通过将其设置为BACKWARD_PRE，下一个FSDP单元的参数可以在当前单元的计算开始之前开始请求并到达。这会重叠所有收集通信和梯度计算，可以增加训练速度，但会略微增加内存消耗。可以在2.4版本中的FSDP包装器中利用它。
 - en: '[PRE17]'
+  id: totrans-82
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: backward_prefetch has two modes, BACKWARD_PRE and BACKWARD_POST. BACKWARD_POST
     means that the next FSDP unit’s params will not be requested until the current
     FSDP unit processing is complete, thus minimizing memory overhead. In some cases,
     using BACKWARD_PRE can increase model training speed up to 2-10%, with even higher
     speed improvements noted for larger models.
+  id: totrans-83
   prefs: []
   type: TYPE_NORMAL
+  zh: backward_prefetch有两种模式，BACKWARD_PRE和BACKWARD_POST。BACKWARD_POST意味着直到当前FSDP单元处理完成之前，不会请求下一个FSDP单元的参数，从而最大限度地减少内存开销。在某些情况下，使用BACKWARD_PRE可以将模型训练速度提高2-10%，对于更大的模型，速度提高更为显著。
 - en: Model Checkpoint Saving, by streaming to the Rank0 CPU
+  id: totrans-84
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 模型检查点保存，通过流式传输到Rank0 CPU。
 - en: To save model checkpoints using FULL_STATE_DICT saving which saves model in
     the same fashion as a local model, PyTorch 1.12 offers a few utilities to support
     the saving of larger models.
+  id: totrans-85
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用FULL_STATE_DICT保存模型检查点，该保存方式与本地模型相同，PyTorch 1.12提供了一些实用工具来支持保存更大的模型。
 - en: First, a FullStateDictConfig can be specified, allowing the state_dict to be
     populated on rank 0 only and offloaded to the CPU.
+  id: totrans-86
   prefs: []
   type: TYPE_NORMAL
+  zh: 首先，可以指定一个FullStateDictConfig，允许仅在rank 0上填充state_dict并转移到CPU。
 - en: When using this configuration, FSDP will allgather model parameters, offloading
     them to the CPU one by one, only on rank 0\. When the state_dict is finally saved,
     it will only be populated on rank 0 and contain CPU tensors. This avoids potential
     OOM for models that are larger than a single GPU memory and allows users to checkpoint
     models whose size is roughly the available CPU RAM on the user’s machine.
+  id: totrans-87
   prefs: []
   type: TYPE_NORMAL
+  zh: 在使用这种配置时，FSDP将会收集模型参数，逐个将其转移到CPU上，仅在rank 0上进行。当state_dict最终保存时，它只会在rank 0上填充，并包含CPU张量。这避免了对于大于单个GPU内存的模型可能出现的OOM，并允许用户对模型进行检查点，其大小大致等于用户机器上可用的CPU
+    RAM。
 - en: 'This feature can be run as follows:'
+  id: totrans-88
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个功能可以按照以下方式运行：
 - en: '[PRE18]'
+  id: totrans-89
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: Summary
+  id: totrans-90
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 摘要
 - en: In this tutorial, we have introduced many new features for FSDP available in
     Pytorch 1.12 and used HF T5 as the running example. Using the proper wrapping
     policy especially for transformer models, along with mixed precision and backward
     prefetch should speed up your training runs. Also, features such as initializing
     the model on device, and checkpoint saving via streaming to CPU should help to
     avoid OOM error in dealing with large models.
+  id: totrans-91
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，我们介绍了Pytorch 1.12中可用的许多FSDP的新功能，并以HF T5作为运行示例。特别是对于变压器模型，使用适当的包装策略，以及混合精度和向后预取应该可以加快您的训练速度。此外，诸如在设备上初始化模型和通过流式传输到CPU保存检查点等功能应该有助于避免处理大型模型时的OOM错误。
 - en: We are actively working to add new features to FSDP for the next release. If
     you have feedback, feature requests, questions or are encountering issues using
     FSDP, please feel free to contact us by opening an issue in the [PyTorch Github
     repository](https://github.com/pytorch/pytorch).
+  id: totrans-92
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们正在积极努力为下一个版本的FSDP添加新功能。如果您有反馈、功能请求、问题或在使用FSDP时遇到问题，请随时通过在[PyTorch Github存储库](https://github.com/pytorch/pytorch)中打开问题与我们联系。

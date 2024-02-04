@@ -1,57 +1,85 @@
 - en: Implementing Batch RPC Processing Using Asynchronous Executions
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 使用异步执行实现批量RPC处理
 - en: 原文：[https://pytorch.org/tutorials/intermediate/rpc_async_execution.html](https://pytorch.org/tutorials/intermediate/rpc_async_execution.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/intermediate/rpc_async_execution.html](https://pytorch.org/tutorials/intermediate/rpc_async_execution.html)
 - en: '**Author**: [Shen Li](https://mrshenli.github.io/)'
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: '**作者**：[Shen Li](https://mrshenli.github.io/)'
 - en: Note
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
-- en: '![edit](../Images/a8aa37bcc5edbf2ba5fcf18dba1e55f9.png)
-    View and edit this tutorial in [github](https://github.com/pytorch/tutorials/blob/main/intermediate_source/rpc_async_execution.rst).'
+  zh: 注意
+- en: '![edit](../Images/a8aa37bcc5edbf2ba5fcf18dba1e55f9.png) View and edit this
+    tutorial in [github](https://github.com/pytorch/tutorials/blob/main/intermediate_source/rpc_async_execution.rst).'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '![edit](../Images/a8aa37bcc5edbf2ba5fcf18dba1e55f9.png) 在[github](https://github.com/pytorch/tutorials/blob/main/intermediate_source/rpc_async_execution.rst)中查看和编辑本教程。'
 - en: 'Prerequisites:'
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 先决条件：
 - en: '[PyTorch Distributed Overview](../beginner/dist_overview.html)'
+  id: totrans-6
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[PyTorch分布式概述](../beginner/dist_overview.html)'
 - en: '[Getting started with Distributed RPC Framework](rpc_tutorial.html)'
+  id: totrans-7
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[使用分布式RPC框架入门](rpc_tutorial.html)'
 - en: '[Implementing a Parameter Server using Distributed RPC Framework](rpc_param_server_tutorial.html)'
+  id: totrans-8
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[使用分布式RPC框架实现参数服务器](rpc_param_server_tutorial.html)'
 - en: '[RPC Asynchronous Execution Decorator](https://pytorch.org/docs/master/rpc.html#torch.distributed.rpc.functions.async_execution)'
+  id: totrans-9
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[RPC异步执行装饰器](https://pytorch.org/docs/master/rpc.html#torch.distributed.rpc.functions.async_execution)'
 - en: This tutorial demonstrates how to build batch-processing RPC applications with
     the [@rpc.functions.async_execution](https://pytorch.org/docs/master/rpc.html#torch.distributed.rpc.functions.async_execution)
     decorator, which helps to speed up training by reducing the number of blocked
     RPC threads and consolidating CUDA operations on the callee. This shares the same
     idea as [Batch Inference with TorchServe](https://pytorch.org/serve/batch_inference_with_ts.html).
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程演示了如何使用[@rpc.functions.async_execution](https://pytorch.org/docs/master/rpc.html#torch.distributed.rpc.functions.async_execution)装饰器构建批处理RPC应用程序，通过减少阻塞的RPC线程数量和在被调用方上合并CUDA操作来加速训练。这与[TorchServe的批量推理](https://pytorch.org/serve/batch_inference_with_ts.html)的思想相同。
 - en: Note
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: This tutorial requires PyTorch v1.6.0 or above.
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程需要PyTorch v1.6.0或更高版本。
 - en: Basics
+  id: totrans-13
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 基础知识
 - en: Previous tutorials have shown the steps to build distributed training applications
     using [torch.distributed.rpc](https://pytorch.org/docs/stable/rpc.html), but they
     didn’t elaborate on what happens on the callee side when processing an RPC request.
@@ -65,23 +93,33 @@
     user functions as black boxes, and knows very little about what happens in the
     function. To allow user functions to yield and free RPC threads, more hints need
     to be provided to the RPC system.
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 以前的教程展示了使用[torch.distributed.rpc](https://pytorch.org/docs/stable/rpc.html)构建分布式训练应用程序的步骤，但没有详细说明在处理RPC请求时被调用方发生了什么。在PyTorch
+    v1.5中，每个RPC请求将阻塞被调用方的一个线程来执行该请求中的函数，直到该函数返回。这对许多用例有效，但有一个注意事项。如果用户函数在IO上阻塞，例如，嵌套的RPC调用，或者信号，例如，等待不同的RPC请求解除阻塞，那么被调用方上的RPC线程将不得不空闲等待，直到IO完成或信号事件发生。结果，RPC被调用方可能会使用比必要更多的线程。这个问题的原因是RPC将用户函数视为黑匣子，并且对函数中发生的事情知之甚少。为了允许用户函数产生并释放RPC线程，需要向RPC系统提供更多提示。
 - en: 'Since v1.6.0, PyTorch addresses this problem by introducing two new concepts:'
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 自v1.6.0以来，PyTorch通过引入两个新概念来解决这个问题：
 - en: A [torch.futures.Future](https://pytorch.org/docs/master/futures.html) type
     that encapsulates an asynchronous execution, which also supports installing callback
     functions.
+  id: totrans-16
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[torch.futures.Future](https://pytorch.org/docs/master/futures.html) 类型，封装了异步执行，还支持安装回调函数。'
 - en: An [@rpc.functions.async_execution](https://pytorch.org/docs/master/rpc.html#torch.distributed.rpc.functions.async_execution)
     decorator that allows applications to tell the callee that the target function
     will return a future and can pause and yield multiple times during execution.
+  id: totrans-17
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[@rpc.functions.async_execution](https://pytorch.org/docs/master/rpc.html#torch.distributed.rpc.functions.async_execution)
+    装饰器允许应用告诉被调用方目标函数将返回一个future，并且在执行过程中可以暂停和多次产生。'
 - en: With these two tools, the application code can break a user function into multiple
     smaller functions, chain them together as callbacks on `Future` objects, and return
     the `Future` that contains the final result. On the callee side, when getting
@@ -90,19 +128,26 @@
     In this way, the callee no longer needs to block one thread and wait until the
     final return value is ready. Please refer to the API doc of [@rpc.functions.async_execution](https://pytorch.org/docs/master/rpc.html#torch.distributed.rpc.functions.async_execution)
     for simple examples.
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: 有了这两个工具，应用代码可以将用户函数分解为多个较小的函数，将它们链接为`Future`对象上的回调，并返回包含最终结果的`Future`。在被调用方，当获取`Future`对象时，也会安装后续的RPC响应准备和通信作为回调，当最终结果准备好时将被触发。这样，被调用方不再需要阻塞一个线程并等待最终返回值准备好。请参考[@rpc.functions.async_execution](https://pytorch.org/docs/master/rpc.html#torch.distributed.rpc.functions.async_execution)的API文档，了解简单示例。
 - en: Besides reducing the number of idle threads on the callee, these tools also
     help to make batch RPC processing easier and faster. The following two sections
     of this tutorial demonstrate how to build distributed batch-updating parameter
     server and batch-processing reinforcement learning applications using the [@rpc.functions.async_execution](https://pytorch.org/docs/master/rpc.html#torch.distributed.rpc.functions.async_execution)
     decorator.
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 除了减少被调用方上的空闲线程数量外，这些工具还有助于使批处理 RPC 处理更加简单和快速。本教程的以下两个部分演示了如何使用 [@rpc.functions.async_execution](https://pytorch.org/docs/master/rpc.html#torch.distributed.rpc.functions.async_execution)
+    装饰器构建分布式批量更新参数服务器和批处理强化学习应用程序。
 - en: Batch-Updating Parameter Server
+  id: totrans-20
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 批量更新参数服务器
 - en: Consider a synchronized parameter server training application with one parameter
     server (PS) and multiple trainers. In this application, the PS holds the parameters
     and waits for all trainers to report gradients. In every iteration, it waits until
@@ -116,11 +161,18 @@
     all previously reported gradients. Then it sets the `future_model` with the updated
     model, which in turn notifies all previous requests from other trainers through
     the `Future` object and sends out the updated model to all trainers.
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 考虑一个具有一个参数服务器（PS）和多个训练器的同步参数服务器训练应用程序。在此应用程序中，PS 持有参数并等待所有训练器报告梯度。在每次迭代中，它等待直到从所有训练器接收到梯度，然后一次性更新所有参数。下面的代码显示了
+    PS 类的实现。`update_and_fetch_model` 方法使用 `@rpc.functions.async_execution` 装饰，并将被训练器调用。每次调用都返回一个将填充更新模型的
+    `Future` 对象。大多数训练器发起的调用只是将梯度累积到 `.grad` 字段中，立即返回，并在 PS 上释放 RPC 线程。最后到达的训练器将触发优化器步骤并消耗所有先前报告的梯度。然后它使用更新后的模型设置
+    `future_model`，进而通过 `Future` 对象通知其他训练器的所有先前请求，并将更新后的模型发送给所有训练器。
 - en: '[PRE0]'
+  id: totrans-22
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: For the trainers, they are all initialized using the same set of parameters
     from the PS. In every iteration, each trainer first runs the forward and the backward
     passes to generate gradients locally. Then, each trainer reports its gradients
@@ -129,11 +181,17 @@
     function is marked with `@rpc.functions.async_execution` or not makes no difference.
     The trainer simply calls `update_and_fetch_model` using `rpc_sync` which will
     block on the trainer until the updated model is returned.
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于训练器，它们都使用来自 PS 的相同参数集进行初始化。在每次迭代中，每个训练器首先运行前向和反向传递以在本地生成梯度。然后，每个训练器使用 RPC
+    报告其梯度给 PS，并通过相同 RPC 请求的返回值获取更新后的参数。在训练器的实现中，目标函数是否标记为 `@rpc.functions.async_execution`
+    都没有区别。训练器只需使用 `rpc_sync` 调用 `update_and_fetch_model`，它将在训练器上阻塞，直到更新的模型返回。
 - en: '[PRE1]'
+  id: totrans-24
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: We skip the code that launches multiple processes in this tutorial and please
     refer to the [examples](https://github.com/pytorch/examples/tree/master/distributed/rpc)
     repo for the full implementation. Note that, it is possible to implement batch
@@ -141,19 +199,29 @@
     decorator. However, that would require either blocking more RPC threads on the
     PS or use another round of RPC to fetch updated models, where the latter would
     add both more code complexity and more communication overhead.
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程跳过了启动多个进程的代码，请参考 [examples](https://github.com/pytorch/examples/tree/master/distributed/rpc)
+    仓库获取完整实现。请注意，可以在不使用 [@rpc.functions.async_execution](https://pytorch.org/docs/master/rpc.html#torch.distributed.rpc.functions.async_execution)
+    装饰器的情况下实现批处理。但是，这将要求在 PS 上阻塞更多的 RPC 线程，或者使用另一轮 RPC 来获取更新的模型，后者将增加代码复杂性和通信开销。
 - en: This section uses a simple parameter sever training example to show how to implement
     batch RPC applications using the [@rpc.functions.async_execution](https://pytorch.org/docs/master/rpc.html#torch.distributed.rpc.functions.async_execution)
     decorator. In the next section, we re-implement the reinforcement learning example
     in the previous [Getting started with Distributed RPC Framework](https://pytorch.org/tutorials/intermediate/rpc_tutorial.html)
     tutorial using batch processing, and demonstrate its impact on the training speed.
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 本节使用一个简单的参数服务器训练示例来展示如何使用 [@rpc.functions.async_execution](https://pytorch.org/docs/master/rpc.html#torch.distributed.rpc.functions.async_execution)
+    装饰器实现批处理 RPC 应用程序。在下一节中，我们将使用批处理重新实现之前的 [使用分布式 RPC 框架入门](https://pytorch.org/tutorials/intermediate/rpc_tutorial.html)
+    教程中的强化学习示例，并展示其对训练速度的影响。
 - en: Batch-Processing CartPole Solver
+  id: totrans-27
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 批处理 CartPole 求解器
 - en: This section uses CartPole-v1 from [OpenAI Gym](https://gym.openai.com/) as
     an example to show the performance impact of batch processing RPC. Please note
     that since the goal is to demonstrate the usage of [@rpc.functions.async_execution](https://pytorch.org/docs/master/rpc.html#torch.distributed.rpc.functions.async_execution)
@@ -165,20 +233,28 @@
     which controls the `dim` parameter for `F.softmax` because with batching, the
     `x` argument in the `forward` function contains states from multiple observers
     and hence the dimension needs to change properly. Everything else stays intact.
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: 本节使用[OpenAI Gym](https://gym.openai.com/)中的CartPole-v1作为示例，展示批处理RPC的性能影响。请注意，由于目标是演示[@rpc.functions.async_execution](https://pytorch.org/docs/master/rpc.html#torch.distributed.rpc.functions.async_execution)的用法，而不是构建最佳CartPole求解器或解决最多不同的RL问题，我们使用非常简单的策略和奖励计算策略，并专注于多观察者单代理批处理RPC实现。我们使用与之前教程相似的`Policy`模型，如下所示。与之前的教程相比，不同之处在于其构造函数接受一个额外的`batch`参数，该参数控制`F.softmax`的`dim`参数，因为在批处理中，`forward`函数中的`x`参数包含来自多个观察者的状态，因此维度需要适当更改。其他一切保持不变。
 - en: '[PRE2]'
+  id: totrans-29
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: The constructor of the `Observer` adjusts accordingly as well. It also takes
     a `batch` argument, which governs which `Agent` function it uses to select actions.
     In batch mode, it calls `select_action_batch` function on `Agent` which will be
     presented shortly, and this function will be decorated with [@rpc.functions.async_execution](https://pytorch.org/docs/master/rpc.html#torch.distributed.rpc.functions.async_execution).
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: '`Observer`的构造函数也相应地进行调整。它还接受一个`batch`参数，用于控制它使用哪个`Agent`函数来选择动作。在批处理模式下，它调用`Agent`上的`select_action_batch`函数，该函数将很快被介绍，并且此函数将被装饰为[@rpc.functions.async_execution](https://pytorch.org/docs/master/rpc.html#torch.distributed.rpc.functions.async_execution)。'
 - en: '[PRE3]'
+  id: totrans-31
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: Compared to the previous tutorial [Getting started with Distributed RPC Framework](https://pytorch.org/tutorials/intermediate/rpc_tutorial.html),
     observers behave a little differently. Instead of exiting when the environment
     is stopped, it always runs `n_steps` iterations in every episode. When the environment
@@ -192,28 +268,40 @@
     mark this function as `@rpc.functions.async_execution` too to avoid blocking one
     thread on the `Observer`. However, as the bottleneck is the `Agent` instead of
     the `Observer`, it should be OK to block one thread on the `Observer` process.
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 与之前的教程[使用分布式RPC框架入门](https://pytorch.org/tutorials/intermediate/rpc_tutorial.html)相比，观察者的行为有些不同。它不是在环境停止时退出，而是在每个情节中始终运行`n_steps`次迭代。当环境返回时，观察者简单地重置环境并重新开始。通过这种设计，代理将从每个观察者接收固定数量的状态，因此可以将它们打包到固定大小的张量中。在每一步中，`Observer`使用RPC将其状态发送给`Agent`，并通过返回值获取动作。在每个情节结束时，它将所有步骤的奖励返回给`Agent`。请注意，`run_episode`函数将由`Agent`使用RPC调用。因此，此函数中的`rpc_sync`调用将是一个嵌套的RPC调用。我们也可以将此函数标记为`@rpc.functions.async_execution`，以避免在`Observer`上阻塞一个线程。然而，由于瓶颈是`Agent`而不是`Observer`，在`Observer`进程上阻塞一个线程应该是可以接受的。
 - en: '[PRE4]'
+  id: totrans-33
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: The constructor of the `Agent` also takes a `batch` argument, which controls
     how action probs are batched. In batch mode, the `saved_log_probs` contains a
     list of tensors, where each tensor contains action robs from all observers in
     one step. Without batching, the `saved_log_probs` is a dictionary where the key
     is the observer id and the value is a list of action probs for that observer.
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: '`Agent`的构造函数还接受一个`batch`参数，用于控制如何对动作概率进行批处理。在批处理模式下，`saved_log_probs`包含一个张量列表，其中每个张量包含一个步骤中所有观察者的动作概率。没有批处理时，`saved_log_probs`是一个字典，其中键是观察者ID，值是该观察者的动作概率列表。'
 - en: '[PRE5]'
+  id: totrans-35
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: The non-batching `select_acion` simply runs the state throw the policy, saves
     the action prob, and returns the action to the observer right away.
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 非批处理的`select_action`简单地通过策略运行状态，保存动作概率，并立即将动作返回给观察者。
 - en: '[PRE6]'
+  id: totrans-37
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: With batching, the state is stored in a 2D tensor `self.states`, using the observer
     id as the row id. Then, it chains a `Future` by installing a callback function
     to the batch-generated `self.future_actions` `Future` object, which will be populated
@@ -223,11 +311,16 @@
     will be triggered and their return values will be used to populate the chained
     `Future` object, which in turn notifies the `Agent` to prepare and communicate
     responses for all previous RPC requests from other observers.
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过批处理，状态存储在一个二维张量`self.states`中，使用观察者ID作为行ID。然后，它通过安装回调函数到批处理生成的`self.future_actions`
+    `Future`对象来链接一个`Future`，该对象将用特定行索引填充，使用观察者的ID。最后到达的观察者将所有批处理状态一次性通过策略运行，并相应地设置`self.future_actions`。当这发生时，所有安装在`self.future_actions`上的回调函数将被触发，它们的返回值将用于填充链接的`Future`对象，进而通知`Agent`为其他观察者之前的所有RPC请求准备和通信响应。
 - en: '[PRE7]'
+  id: totrans-39
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: Now let’s define how different RPC functions are stitched together. The `Agent`
     controls the execution of every episode. It first uses `rpc_async` to kick off
     the episode on all observers and block on the returned futures which will be populated
@@ -237,48 +330,74 @@
     rewards into expected data format, and launch the training step. Finally, it resets
     all states and returns the reward of the current episode. This function is the
     entry point to run one episode.
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在让我们定义不同的 RPC 函数如何被串联在一起。`Agent` 控制每一集的执行。它首先使用 `rpc_async` 在所有观察者上启动集，并阻塞在返回的
+    futures 上，这些 futures 将填充观察者奖励。请注意，下面的代码使用 RRef 辅助函数 `ob_rref.rpc_async()` 在拥有
+    `ob_rref` RRef 的所有者上启动 `run_episode` 函数，并提供参数。然后将保存的动作概率和返回的观察者奖励转换为预期的数据格式，并启动训练步骤。最后，它重置所有状态并返回当前集的奖励。这个函数是运行一个集的入口点。
 - en: '[PRE8]'
+  id: totrans-41
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: The rest of the code is normal processes launching and logging which are similar
     to other RPC tutorials. In this tutorial, all observers passively waiting for
     commands from the agent. Please refer to the [examples](https://github.com/pytorch/examples/tree/master/distributed/rpc)
     repo for the full implementation.
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 代码的其余部分是正常的进程启动和日志记录，与其他 RPC 教程类似。在本教程中，所有观察者都 passively 等待来自 agent 的命令。请参考
+    [examples](https://github.com/pytorch/examples/tree/master/distributed/rpc) 仓库获取完整的实现。
 - en: '[PRE9]'
+  id: totrans-43
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: Batch RPC helps to consolidate the action inference into less CUDA operations,
     and hence reduces the amortized overhead. The above `main` function runs the same
     code on both batch and no-batch modes using different numbers of observers, ranging
     from 1 to 10\. The figure below plots the execution time of different world sizes
     using default argument values. The results confirmed our expectation that batch
     processing helped to speed up training.
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 批处理 RPC 有助于将动作推断整合为更少的 CUDA 操作，从而减少摊销开销。上面的 `main` 函数在批处理和非批处理模式下运行相同的代码，使用不同数量的观察者，范围从
+    1 到 10。下面的图表显示了使用默认参数值时不同世界大小的执行时间。结果证实了我们的预期，批处理有助于加快训练速度。
 - en: '![](../Images/f5504c7ed93640f2bed4d2a606c015ba.png)'
+  id: totrans-45
   prefs: []
   type: TYPE_IMG
+  zh: '![](../Images/f5504c7ed93640f2bed4d2a606c015ba.png)'
 - en: Learn More
+  id: totrans-46
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 了解更多
 - en: '[Batch-Updating Parameter Server Source Code](https://github.com/pytorch/examples/blob/master/distributed/rpc/batch/parameter_server.py)'
+  id: totrans-47
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[批量更新参数服务器源代码](https://github.com/pytorch/examples/blob/master/distributed/rpc/batch/parameter_server.py)'
 - en: '[Batch-Processing CartPole Solver](https://github.com/pytorch/examples/blob/master/distributed/rpc/batch/reinforce.py)'
+  id: totrans-48
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[批处理 CartPole 求解器](https://github.com/pytorch/examples/blob/master/distributed/rpc/batch/reinforce.py)'
 - en: '[Distributed Autograd](https://pytorch.org/docs/master/rpc.html#distributed-autograd-framework)'
+  id: totrans-49
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[分布式自动微分](https://pytorch.org/docs/master/rpc.html#distributed-autograd-framework)'
 - en: '[Distributed Pipeline Parallelism](dist_pipeline_parallel_tutorial.html)'
+  id: totrans-50
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[分布式管道并行](dist_pipeline_parallel_tutorial.html)'
