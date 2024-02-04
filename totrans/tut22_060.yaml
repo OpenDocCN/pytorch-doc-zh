@@ -1,335 +1,513 @@
 - en: Train a Mario-playing RL Agent
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 训练一个玛丽奥玩游戏的 RL 代理
 - en: 原文：[https://pytorch.org/tutorials/intermediate/mario_rl_tutorial.html](https://pytorch.org/tutorials/intermediate/mario_rl_tutorial.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/intermediate/mario_rl_tutorial.html](https://pytorch.org/tutorials/intermediate/mario_rl_tutorial.html)
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-intermediate-mario-rl-tutorial-py) to download
     the full example code
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[这里](#sphx-glr-download-intermediate-mario-rl-tutorial-py)下载完整的示例代码
 - en: '**Authors:** [Yuansong Feng](https://github.com/YuansongFeng), [Suraj Subramanian](https://github.com/suraj813),
     [Howard Wang](https://github.com/hw26), [Steven Guo](https://github.com/GuoYuzhang).'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '**作者：** [冯元松](https://github.com/YuansongFeng), [Suraj Subramanian](https://github.com/suraj813),
+    [王浩](https://github.com/hw26), [郭宇章](https://github.com/GuoYuzhang)。'
 - en: This tutorial walks you through the fundamentals of Deep Reinforcement Learning.
     At the end, you will implement an AI-powered Mario (using [Double Deep Q-Networks](https://arxiv.org/pdf/1509.06461.pdf))
     that can play the game by itself.
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个教程将带你了解深度强化学习的基础知识。最后，你将实现一个能够自己玩游戏的 AI 马里奥（使用[双深度 Q 网络](https://arxiv.org/pdf/1509.06461.pdf)）。
 - en: Although no prior knowledge of RL is necessary for this tutorial, you can familiarize
     yourself with these RL [concepts](https://spinningup.openai.com/en/latest/spinningup/rl_intro.html),
     and have this handy [cheatsheet](https://colab.research.google.com/drive/1eN33dPVtdPViiS1njTW_-r-IYCDTFU7N)
     as your companion. The full code is available [here](https://github.com/yuansongFeng/MadMario/).
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 虽然这个教程不需要 RL 的先验知识，但你可以通过这些 RL [概念](https://spinningup.openai.com/en/latest/spinningup/rl_intro.html)来熟悉，还可以使用这个方便的
+    [速查表](https://colab.research.google.com/drive/1eN33dPVtdPViiS1njTW_-r-IYCDTFU7N)作为参考。完整的代码在[这里](https://github.com/yuansongFeng/MadMario/)可用。
 - en: '![mario](../Images/e46d7dbb0cc58ac0895589bf255444be.png)'
+  id: totrans-7
   prefs: []
   type: TYPE_IMG
+  zh: '![mario](../Images/e46d7dbb0cc58ac0895589bf255444be.png)'
 - en: '[PRE0]'
+  id: totrans-8
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: '[PRE1]'
+  id: totrans-9
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: RL Definitions
+  id: totrans-10
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: RL 定义
 - en: '**Environment** The world that an agent interacts with and learns from.'
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: '**环境** 代理与之交互并学习的世界。'
 - en: '**Action** \(a\) : How the Agent responds to the Environment. The set of all
     possible Actions is called *action-space*.'
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: '**动作** \(a\)：代理对环境的响应。所有可能动作的集合称为*动作空间*。'
 - en: '**State** \(s\) : The current characteristic of the Environment. The set of
     all possible States the Environment can be in is called *state-space*.'
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: '**状态** \(s\)：环境的当前特征。环境可能处于的所有可能状态的集合称为*状态空间*。'
 - en: '**Reward** \(r\) : Reward is the key feedback from Environment to Agent. It
     is what drives the Agent to learn and to change its future action. An aggregation
     of rewards over multiple time steps is called **Return**.'
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: '**奖励** \(r\)：奖励是环境向代理提供的关键反馈。这是驱使代理学习并改变其未来行动的动力。在多个时间步骤上的奖励的聚合被称为**回报**。'
 - en: '**Optimal Action-Value function** \(Q^*(s,a)\) : Gives the expected return
     if you start in state \(s\), take an arbitrary action \(a\), and then for each
     future time step take the action that maximizes returns. \(Q\) can be said to
     stand for the “quality” of the action in a state. We try to approximate this function.'
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: '**最优动作-值函数** \(Q^*(s,a)\)：给出了如果你从状态 \(s\) 开始，采取任意动作 \(a\)，然后在每个未来时间步骤中采取最大化回报的动作的预期回报。\(Q\)
+    可以说代表了状态中动作的“质量”。我们试图近似这个函数。'
 - en: Environment
+  id: totrans-16
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 环境
 - en: Initialize Environment
+  id: totrans-17
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 初始化环境
 - en: In Mario, the environment consists of tubes, mushrooms and other components.
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: 在马里奥中，环境由管道、蘑菇和其他组件组成。
 - en: When Mario makes an action, the environment responds with the changed (next)
     state, reward and other info.
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 当马里奥执行一个动作时，环境会以改变的（下一个）状态、奖励和其他信息做出响应。
 - en: '[PRE2]'
+  id: totrans-20
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: '[PRE3]'
+  id: totrans-21
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: Preprocess Environment
+  id: totrans-22
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 预处理环境
 - en: Environment data is returned to the agent in `next_state`. As you saw above,
     each state is represented by a `[3, 240, 256]` size array. Often that is more
     information than our agent needs; for instance, Mario’s actions do not depend
     on the color of the pipes or the sky!
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 环境数据通过 `next_state` 返回给代理。正如你在上面看到的，每个状态由一个 `[3, 240, 256]` 大小的数组表示。通常这比我们的代理需要的信息更多；例如，马里奥的行动不取决于管道或天空的颜色！
 - en: We use **Wrappers** to preprocess environment data before sending it to the
     agent.
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们使用**包装器**在将环境数据发送给代理之前对其进行预处理。
 - en: '`GrayScaleObservation` is a common wrapper to transform an RGB image to grayscale;
     doing so reduces the size of the state representation without losing useful information.
     Now the size of each state: `[1, 240, 256]`'
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: '`GrayScaleObservation` 是一个常见的包装器，用于将 RGB 图像转换为灰度图像；这样做可以减小状态表示的大小而不丢失有用的信息。现在每个状态的大小为：`[1,
+    240, 256]`'
 - en: '`ResizeObservation` downsamples each observation into a square image. New size:
     `[1, 84, 84]`'
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: '`ResizeObservation` 将每个观察结果缩小为一个正方形图像。新的大小：`[1, 84, 84]`'
 - en: '`SkipFrame` is a custom wrapper that inherits from `gym.Wrapper` and implements
     the `step()` function. Because consecutive frames don’t vary much, we can skip
     n-intermediate frames without losing much information. The n-th frame aggregates
     rewards accumulated over each skipped frame.'
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: '`SkipFrame` 是一个自定义包装器，继承自 `gym.Wrapper` 并实现 `step()` 函数。因为连续帧变化不大，我们可以跳过 n
+    个中间帧而不会丢失太多信息。第 n 帧聚合了每个跳过帧累积的奖励。'
 - en: '`FrameStack` is a wrapper that allows us to squash consecutive frames of the
     environment into a single observation point to feed to our learning model. This
     way, we can identify if Mario was landing or jumping based on the direction of
     his movement in the previous several frames.'
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: '`FrameStack` 是一个包装器，允许我们将环境的连续帧压缩成一个观察点，以供我们的学习模型使用。这样，我们可以根据前几帧中他的移动方向来确定马里奥是着陆还是跳跃。'
 - en: '[PRE4]'
+  id: totrans-29
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: After applying the above wrappers to the environment, the final wrapped state
     consists of 4 gray-scaled consecutive frames stacked together, as shown above
     in the image on the left. Each time Mario makes an action, the environment responds
     with a state of this structure. The structure is represented by a 3-D array of
     size `[4, 84, 84]`.
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 将上述包装器应用于环境后，最终包装的状态由4个灰度连续帧堆叠在一起组成，如上图左侧所示。每次马里奥执行一个动作，环境会以这种结构的状态做出响应。该结构由一个大小为
+    `[4, 84, 84]` 的三维数组表示。
 - en: '![picture](../Images/ad48ffbd1cfc0475d744b8b89a0d962a.png)'
+  id: totrans-31
   prefs: []
   type: TYPE_IMG
+  zh: '![图片](../Images/ad48ffbd1cfc0475d744b8b89a0d962a.png)'
 - en: Agent
+  id: totrans-32
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 代理
 - en: 'We create a class `Mario` to represent our agent in the game. Mario should
     be able to:'
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们创建一个类`Mario`来代表游戏中的我们的代理。马里奥应该能够：
 - en: '**Act** according to the optimal action policy based on the current state (of
     the environment).'
+  id: totrans-34
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**行动**根据当前状态（环境的）的最优动作策略。'
 - en: '**Remember** experiences. Experience = (current state, current action, reward,
     next state). Mario *caches* and later *recalls* his experiences to update his
     action policy.'
+  id: totrans-35
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**记住**经验。经验 = (当前状态，当前动作，奖励，下一个状态)。马里奥*缓存*并稍后*回忆*他的经验以更新他的动作策略。'
 - en: '**Learn** a better action policy over time'
+  id: totrans-36
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 随着时间的推移**学习**更好的动作策略
 - en: '[PRE5]'
+  id: totrans-37
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: In the following sections, we will populate Mario’s parameters and define his
     functions.
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 在接下来的部分中，我们将填充马里奥的参数并定义他的函数。
 - en: Act
+  id: totrans-39
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 行动
 - en: For any given state, an agent can choose to do the most optimal action (**exploit**)
     or a random action (**explore**).
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于任何给定的状态，代理可以选择执行最优动作（**利用**）或随机动作（**探索**）。
 - en: Mario randomly explores with a chance of `self.exploration_rate`; when he chooses
     to exploit, he relies on `MarioNet` (implemented in `Learn` section) to provide
     the most optimal action.
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 马里奥以`self.exploration_rate`的机会随机探索；当他选择利用时，他依赖于`MarioNet`（在`Learn`部分中实现）提供最优动作。
 - en: '[PRE6]'
+  id: totrans-42
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: Cache and Recall
+  id: totrans-43
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 缓存和回忆
 - en: These two functions serve as Mario’s “memory” process.
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 这两个函数充当马里奥的“记忆”过程。
 - en: '`cache()`: Each time Mario performs an action, he stores the `experience` to
     his memory. His experience includes the current *state*, *action* performed, *reward*
     from the action, the *next state*, and whether the game is *done*.'
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: '`cache()`: 每次马里奥执行一个动作时，他将`experience`存储到他的记忆中。他的经验包括当前*状态*，执行的*动作*，动作的*奖励*，*下一个状态*，以及游戏是否*完成*。'
 - en: '`recall()`: Mario randomly samples a batch of experiences from his memory,
     and uses that to learn the game.'
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: '`recall()`: 马里奥随机从他的记忆中抽取一批经验，并用它来学习游戏。'
 - en: '[PRE7]'
+  id: totrans-47
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: Learn
+  id: totrans-48
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 学习
 - en: Mario uses the [DDQN algorithm](https://arxiv.org/pdf/1509.06461) under the
     hood. DDQN uses two ConvNets - \(Q_{online}\) and \(Q_{target}\) - that independently
     approximate the optimal action-value function.
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: 马里奥在幕后使用[DDQN算法](https://arxiv.org/pdf/1509.06461)。DDQN使用两个ConvNets - \(Q_{online}\)和\(Q_{target}\)
+    - 分别近似最优动作值函数。
 - en: In our implementation, we share feature generator `features` across \(Q_{online}\)
     and \(Q_{target}\), but maintain separate FC classifiers for each. \(\theta_{target}\)
     (the parameters of \(Q_{target}\)) is frozen to prevent updating by backprop.
     Instead, it is periodically synced with \(\theta_{online}\) (more on this later).
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: 在我们的实现中，我们在\(Q_{online}\)和\(Q_{target}\)之间共享特征生成器`features`，但为每个分类器保持单独的FC。
+    \(\theta_{target}\)（\(Q_{target}\)的参数）被冻结以防止通过反向传播进行更新。相反，它会定期与\(\theta_{online}\)同步（稍后会详细介绍）。
 - en: Neural Network
+  id: totrans-51
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 神经网络
 - en: '[PRE8]'
+  id: totrans-52
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: TD Estimate & TD Target
+  id: totrans-53
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: TD估计和TD目标
 - en: 'Two values are involved in learning:'
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: 学习涉及两个值：
 - en: '**TD Estimate** - the predicted optimal \(Q^*\) for a given state \(s\)'
+  id: totrans-55
   prefs: []
   type: TYPE_NORMAL
+  zh: '**TD估计** - 给定状态\(s\)的预测最优\(Q^*\)'
 - en: \[{TD}_e = Q_{online}^*(s,a)\]
+  id: totrans-56
   prefs: []
   type: TYPE_NORMAL
+  zh: \[{TD}_e = Q_{online}^*(s,a)\]
 - en: '**TD Target** - aggregation of current reward and the estimated \(Q^*\) in
     the next state \(s''\)'
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: '**TD目标** - 当前奖励和下一个状态\(s''\)中估计的\(Q^*\)的聚合'
 - en: \[a' = argmax_{a} Q_{online}(s', a)\]\[{TD}_t = r + \gamma Q_{target}^*(s',a')\]
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: \[a' = argmax_{a} Q_{online}(s', a)\]\[{TD}_t = r + \gamma Q_{target}^*(s',a')\]
 - en: Because we don’t know what next action \(a'\) will be, we use the action \(a'\)
     maximizes \(Q_{online}\) in the next state \(s'\).
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: 因为我们不知道下一个动作\(a'\)会是什么，所以我们使用在下一个状态\(s'\)中最大化\(Q_{online}\)的动作\(a'\)。
 - en: Notice we use the [@torch.no_grad()](https://pytorch.org/docs/stable/generated/torch.no_grad.html#no-grad)
     decorator on `td_target()` to disable gradient calculations here (because we don’t
     need to backpropagate on \(\theta_{target}\)).
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，我们在`td_target()`上使用[@torch.no_grad()](https://pytorch.org/docs/stable/generated/torch.no_grad.html#no-grad)装饰器来禁用梯度计算（因为我们不需要在\(\theta_{target}\)上进行反向传播）。
 - en: '[PRE9]'
+  id: totrans-61
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: Updating the model
+  id: totrans-62
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 更新模型
 - en: As Mario samples inputs from his replay buffer, we compute \(TD_t\) and \(TD_e\)
     and backpropagate this loss down \(Q_{online}\) to update its parameters \(\theta_{online}\)
     (\(\alpha\) is the learning rate `lr` passed to the `optimizer`)
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: 当马里奥从他的重放缓冲区中采样输入时，我们计算\(TD_t\)和\(TD_e\)，并将这个损失反向传播到\(Q_{online}\)以更新其参数\(\theta_{online}\)（\(\alpha\)是传递给`optimizer`的学习率`lr`）
 - en: \[\theta_{online} \leftarrow \theta_{online} + \alpha \nabla(TD_e - TD_t)\]
+  id: totrans-64
   prefs: []
   type: TYPE_NORMAL
+  zh: \[\theta_{online} \leftarrow \theta_{online} + \alpha \nabla(TD_e - TD_t)\]
 - en: \(\theta_{target}\) does not update through backpropagation. Instead, we periodically
     copy \(\theta_{online}\) to \(\theta_{target}\)
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: \(\theta_{target}\)不通过反向传播进行更新。相反，我们定期将\(\theta_{online}\)复制到\(\theta_{target}\)
 - en: \[\theta_{target} \leftarrow \theta_{online}\]
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: \[\theta_{target} \leftarrow \theta_{online}\]
 - en: '[PRE10]'
+  id: totrans-67
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: Save checkpoint
+  id: totrans-68
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 保存检查点
 - en: '[PRE11]'
+  id: totrans-69
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: Putting it all together
+  id: totrans-70
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 将所有内容整合在一起
 - en: '[PRE12]'
+  id: totrans-71
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: Logging
+  id: totrans-72
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 日志记录
 - en: '[PRE13]'
+  id: totrans-73
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: Let’s play!
+  id: totrans-74
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 让我们开始玩吧！
 - en: In this example we run the training loop for 40 episodes, but for Mario to truly
     learn the ways of his world, we suggest running the loop for at least 40,000 episodes!
+  id: totrans-75
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这个示例中，我们运行了40个剧集的训练循环，但为了马里奥真正学会他的世界的方式，我们建议至少运行40,000个剧集的循环！
 - en: '[PRE14]'
+  id: totrans-76
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: '![mario rl tutorial](../Images/4d4a02b1af752dcb28b536a50d0f9ee4.png)'
+  id: totrans-77
   prefs: []
   type: TYPE_IMG
+  zh: '![mario rl tutorial](../Images/4d4a02b1af752dcb28b536a50d0f9ee4.png)'
 - en: '[PRE15]'
+  id: totrans-78
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: Conclusion
+  id: totrans-79
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 结论
 - en: In this tutorial, we saw how we can use PyTorch to train a game-playing AI.
     You can use the same methods to train an AI to play any of the games at the [OpenAI
     gym](https://gym.openai.com/). Hope you enjoyed this tutorial, feel free to reach
     us at [our github](https://github.com/yuansongFeng/MadMario/)!
+  id: totrans-80
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，我们看到如何使用PyTorch训练一个玩游戏的AI。您可以使用相同的方法来训练AI玩[OpenAI gym](https://gym.openai.com/)中的任何游戏。希望您喜欢这个教程，欢迎在[我们的github](https://github.com/yuansongFeng/MadMario/)联系我们！
 - en: '**Total running time of the script:** ( 1 minutes 51.993 seconds)'
+  id: totrans-81
   prefs: []
   type: TYPE_NORMAL
+  zh: '**脚本的总运行时间：**（1分钟51.993秒）'
 - en: '[`Download Python source code: mario_rl_tutorial.py`](../_downloads/38360df5715ca8f0d232e62f3a303840/mario_rl_tutorial.py)'
+  id: totrans-82
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Python源代码：mario_rl_tutorial.py`](../_downloads/38360df5715ca8f0d232e62f3a303840/mario_rl_tutorial.py)'
 - en: '[`Download Jupyter notebook: mario_rl_tutorial.ipynb`](../_downloads/c195adbae0504b6504c93e0fd18235ce/mario_rl_tutorial.ipynb)'
+  id: totrans-83
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Jupyter笔记本：mario_rl_tutorial.ipynb`](../_downloads/c195adbae0504b6504c93e0fd18235ce/mario_rl_tutorial.ipynb)'
 - en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  id: totrans-84
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Sphinx-Gallery生成的画廊](https://sphinx-gallery.github.io)'

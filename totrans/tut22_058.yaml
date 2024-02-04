@@ -1,129 +1,190 @@
 - en: Reinforcement Learning (DQN) Tutorial
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 强化学习（DQN）教程
 - en: 原文：[https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html](https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html](https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html)
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-intermediate-reinforcement-q-learning-py) to
     download the full example code
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[这里](#sphx-glr-download-intermediate-reinforcement-q-learning-py)下载完整示例代码
 - en: '**Author**: [Adam Paszke](https://github.com/apaszke)'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '**作者**：[Adam Paszke](https://github.com/apaszke)'
 - en: '[Mark Towers](https://github.com/pseudo-rnd-thoughts)'
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Mark Towers](https://github.com/pseudo-rnd-thoughts)'
 - en: This tutorial shows how to use PyTorch to train a Deep Q Learning (DQN) agent
     on the CartPole-v1 task from [Gymnasium](https://gymnasium.farama.org).
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程展示了如何使用PyTorch在CartPole-v1任务上训练深度Q学习（DQN）代理，来自[Gymnasium](https://gymnasium.farama.org)。
 - en: '**Task**'
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: '**任务**'
 - en: The agent has to decide between two actions - moving the cart left or right
     - so that the pole attached to it stays upright. You can find more information
     about the environment and other more challenging environments at [Gymnasium’s
     website](https://gymnasium.farama.org/environments/classic_control/cart_pole/).
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 代理必须在两个动作之间做出决定 - 将小车向左或向右移动 - 以使连接到其上的杆保持竖直。您可以在[Gymnasium的网站](https://gymnasium.farama.org/environments/classic_control/cart_pole/)上找到有关环境和其他更具挑战性的环境的更多信息。
 - en: '![CartPole](../Images/fed25c69a6015a90b6e9406e4ac6e01c.png)'
+  id: totrans-9
   prefs: []
   type: TYPE_IMG
+  zh: '![CartPole](../Images/fed25c69a6015a90b6e9406e4ac6e01c.png)'
 - en: CartPole
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: CartPole
 - en: As the agent observes the current state of the environment and chooses an action,
     the environment *transitions* to a new state, and also returns a reward that indicates
     the consequences of the action. In this task, rewards are +1 for every incremental
     timestep and the environment terminates if the pole falls over too far or the
     cart moves more than 2.4 units away from center. This means better performing
     scenarios will run for longer duration, accumulating larger return.
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 当代理观察到环境的当前状态并选择一个动作时，环境会*转换*到一个新状态，并返回一个指示动作后果的奖励。在这个任务中，每个增量时间步的奖励为+1，如果杆倒下太远或小车离中心移动超过2.4个单位，环境将终止。这意味着表现更好的情况将运行更长时间，累积更大的回报。
 - en: The CartPole task is designed so that the inputs to the agent are 4 real values
     representing the environment state (position, velocity, etc.). We take these 4
     inputs without any scaling and pass them through a small fully-connected network
     with 2 outputs, one for each action. The network is trained to predict the expected
     value for each action, given the input state. The action with the highest expected
     value is then chosen.
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: CartPole任务设计为代理的输入是4个实数值，代表环境状态（位置、速度等）。我们将这4个输入不经过任何缩放，通过一个小型全连接网络，输出2个值，分别对应两个动作。网络被训练来预测每个动作的期望值，给定输入状态。然后选择具有最高期望值的动作。
 - en: '**Packages**'
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: '**包**'
 - en: 'First, let’s import needed packages. Firstly, we need [gymnasium](https://gymnasium.farama.org/)
     for the environment, installed by using pip. This is a fork of the original OpenAI
     Gym project and maintained by the same team since Gym v0.19. If you are running
     this in Google Colab, run:'
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 首先，让我们导入所需的包。首先，我们需要[gymnasium](https://gymnasium.farama.org/)用于环境，通过pip安装。这是原始OpenAI
+    Gym项目的一个分支，自Gym v0.19以来由同一团队维护。如果您在Google Colab中运行此代码，请运行：
 - en: '[PRE0]'
+  id: totrans-15
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: 'We’ll also use the following from PyTorch:'
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们还将使用PyTorch中的以下内容：
 - en: neural networks (`torch.nn`)
+  id: totrans-17
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 神经网络（`torch.nn`）
 - en: optimization (`torch.optim`)
+  id: totrans-18
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 优化（`torch.optim`）
 - en: automatic differentiation (`torch.autograd`)
+  id: totrans-19
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 自动微分（`torch.autograd`）
 - en: '[PRE1]'
+  id: totrans-20
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Replay Memory
+  id: totrans-21
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 重放内存
 - en: We’ll be using experience replay memory for training our DQN. It stores the
     transitions that the agent observes, allowing us to reuse this data later. By
     sampling from it randomly, the transitions that build up a batch are decorrelated.
     It has been shown that this greatly stabilizes and improves the DQN training procedure.
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们将使用经验重放内存来训练我们的DQN。它存储代理观察到的转换，允许我们稍后重用这些数据。通过随机抽样，构成一个批次的转换是不相关的。已经证明这极大地稳定和改进了DQN训练过程。
 - en: 'For this, we’re going to need two classes:'
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 为此，我们将需要两个类：
 - en: '`Transition` - a named tuple representing a single transition in our environment.
     It essentially maps (state, action) pairs to their (next_state, reward) result,
     with the state being the screen difference image as described later on.'
+  id: totrans-24
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`Transition` - 一个命名元组，表示环境中的单个转换。它基本上将（状态、动作）对映射到它们的（下一个状态、奖励）结果，其中状态是后面描述的屏幕差异图像。'
 - en: '`ReplayMemory` - a cyclic buffer of bounded size that holds the transitions
     observed recently. It also implements a `.sample()` method for selecting a random
     batch of transitions for training.'
+  id: totrans-25
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`ReplayMemory` - 一个有界大小的循环缓冲区，保存最近观察到的转换。它还实现了一个`.sample()`方法，用于选择用于训练的随机批次的转换。'
 - en: '[PRE2]'
+  id: totrans-26
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Now, let’s define our model. But first, let’s quickly recap what a DQN is.
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，让我们定义我们的模型。但首先，让我们快速回顾一下什么是DQN。
 - en: DQN algorithm
+  id: totrans-28
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: DQN算法
 - en: Our environment is deterministic, so all equations presented here are also formulated
     deterministically for the sake of simplicity. In the reinforcement learning literature,
     they would also contain expectations over stochastic transitions in the environment.
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们的环境是确定性的，因此这里呈现的所有方程也是确定性的，为简单起见。在强化学习文献中，它们还会包含对环境中随机转换的期望。
 - en: Our aim will be to train a policy that tries to maximize the discounted, cumulative
     reward \(R_{t_0} = \sum_{t=t_0}^{\infty} \gamma^{t - t_0} r_t\), where \(R_{t_0}\)
     is also known as the *return*. The discount, \(\gamma\), should be a constant
@@ -132,98 +193,144 @@
     in the near future that it can be fairly confident about. It also encourages agents
     to collect reward closer in time than equivalent rewards that are temporally far
     away in the future.
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们的目标是训练一个策略，试图最大化折现的累积奖励\(R_{t_0} = \sum_{t=t_0}^{\infty} \gamma^{t - t_0}
+    r_t\)，其中\(R_{t_0}\)也被称为*回报*。折现率\(\gamma\)应该是一个在\(0\)和\(1\)之间的常数，以确保总和收敛。较低的\(\gamma\)使得来自不确定的遥远未来的奖励对我们的代理不那么重要，而对于它可以相当自信的近期未来的奖励更为重要。它还鼓励代理收集比未来时间相对较远的等价奖励更接近的奖励。
 - en: 'The main idea behind Q-learning is that if we had a function \(Q^*: State \times
     Action \rightarrow \mathbb{R}\), that could tell us what our return would be,
     if we were to take an action in a given state, then we could easily construct
     a policy that maximizes our rewards:'
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: 训练循环
 - en: \[\pi^*(s) = \arg\!\max_a \ Q^*(s, a) \]
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个单元格实例化了我们的模型及其优化器，并定义了一些实用程序：
 - en: However, we don’t know everything about the world, so we don’t have access to
     \(Q^*\). But, since neural networks are universal function approximators, we can
     simply create one and train it to resemble \(Q^*\).
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于我们的训练更新规则，我们将使用一个事实，即某个策略的每个\(Q\)函数都遵守贝尔曼方程：
 - en: 'For our training update rule, we’ll use a fact that every \(Q\) function for
     some policy obeys the Bellman equation:'
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: '`plot_durations` - 用于绘制每一集的持续时间，以及最近100集的平均值（官方评估中使用的度量）。绘图将位于包含主训练循环的单元格下方，并将在每一集之后更新。'
 - en: \[Q^{\pi}(s, a) = r + \gamma Q^{\pi}(s', \pi(s')) \]
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这里，您可以找到一个`optimize_model`函数，执行优化的单个步骤。它首先对一批进行采样，将所有张量连接成一个张量，计算\(Q(s_t, a_t)\)和\(V(s_{t+1})
+    = \max_a Q(s_{t+1}, a)\)，并将它们组合成我们的损失。根据定义，如果\(s\)是一个终止状态，则我们设置\(V(s) = 0\)。我们还使用一个目标网络来计算\(V(s_{t+1})\)以增加稳定性。目标网络在每一步都会进行更新，使用由超参数`TAU`控制的[软更新](https://arxiv.org/pdf/1509.02971.pdf)，这个超参数之前已经定义过。
 - en: 'The difference between the two sides of the equality is known as the temporal
     difference error, \(\delta\):'
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们的模型将是一个前馈神经网络，它接收当前和前一个屏幕补丁之间的差异。它有两个输出，表示\(Q(s, \mathrm{left})\)和\(Q(s, \mathrm{right})\)（其中\(s\)是网络的输入）。实际上，网络试图预测在给定当前输入时采取每个动作的*预期回报*。
 - en: \[\delta = Q(s, a) - (r + \gamma \max_a' Q(s', a)) \]
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 最后，训练我们的模型的代码。
 - en: 'To minimize this error, we will use the [Huber loss](https://en.wikipedia.org/wiki/Huber_loss).
     The Huber loss acts like the mean squared error when the error is small, but like
     the mean absolute error when the error is large - this makes it more robust to
     outliers when the estimates of \(Q\) are very noisy. We calculate this over a
     batch of transitions, \(B\), sampled from the replay memory:'
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了最小化这个误差，我们将使用[Huber损失](https://en.wikipedia.org/wiki/Huber_loss)。当误差很小时，Huber损失的作用类似于均方误差，但当误差很大时，它的作用类似于平均绝对误差
+    - 这使得在估计\(Q\)非常嘈杂时更加健壮。我们在从重放内存中采样的一批转换\(B\)上计算这个损失：
 - en: \[\mathcal{L} = \frac{1}{|B|}\sum_{(s, a, s', r) \ \in \ B} \mathcal{L}(\delta)\]\[\text{where}
     \quad \mathcal{L}(\delta) = \begin{cases} \frac{1}{2}{\delta^2} & \text{for }
     |\delta| \le 1, \\ |\delta| - \frac{1}{2} & \text{otherwise.} \end{cases}\]
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: \[\mathcal{L} = \frac{1}{|B|}\sum_{(s, a, s', r) \ \in \ B} \mathcal{L}(\delta)\]
 - en: Q-network
+  id: totrans-40
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: \[\text{其中} \quad \mathcal{L}(\delta) = \begin{cases} \frac{1}{2}{\delta^2}
+    & \text{对于} |\delta| \le 1, \\ |\delta| - \frac{1}{2} & \text{否则。} \end{cases}\]
 - en: Our model will be a feed forward neural network that takes in the difference
     between the current and previous screen patches. It has two outputs, representing
     \(Q(s, \mathrm{left})\) and \(Q(s, \mathrm{right})\) (where \(s\) is the input
     to the network). In effect, the network is trying to predict the *expected return*
     of taking each action given the current input.
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: '`select_action` - 将根据ε贪婪策略选择一个动作。简单来说，我们有时会使用我们的模型来选择动作，有时我们只是均匀地随机采样一个。选择随机动作的概率将从`EPS_START`开始指数衰减到`EPS_END`。`EPS_DECAY`控制衰减的速率。'
 - en: '[PRE3]'
+  id: totrans-42
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: Training
+  id: totrans-43
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: \[\pi^*(s) = \arg\!\max_a \ Q^*(s, a) \]
 - en: Hyperparameters and utilities
+  id: totrans-44
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 然而，我们并不知道关于世界的一切，所以我们没有\(Q^*\)的访问权限。但是，由于神经网络是通用函数逼近器，我们可以简单地创建一个神经网络并训练它以类似于\(Q^*\)。超参数和实用程序
 - en: 'This cell instantiates our model and its optimizer, and defines some utilities:'
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: \[\delta = Q(s, a) - (r + \gamma \max_a' Q(s', a)) \]
 - en: '`select_action` - will select an action accordingly to an epsilon greedy policy.
     Simply put, we’ll sometimes use our model for choosing the action, and sometimes
     we’ll just sample one uniformly. The probability of choosing a random action will
     start at `EPS_START` and will decay exponentially towards `EPS_END`. `EPS_DECAY`
     controls the rate of the decay.'
+  id: totrans-46
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 训练
 - en: '`plot_durations` - a helper for plotting the duration of episodes, along with
     an average over the last 100 episodes (the measure used in the official evaluations).
     The plot will be underneath the cell containing the main training loop, and will
     update after every episode.'
+  id: totrans-47
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 'Q学习的主要思想是，如果我们有一个函数\(Q^*: State \times Action \rightarrow \mathbb{R}\)，可以告诉我们，如果我们在给定状态下采取一个动作，我们的回报将是多少，那么我们可以轻松构建一个最大化奖励的策略：'
 - en: '[PRE4]'
+  id: totrans-48
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: Training loop
+  id: totrans-49
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 等式两边之间的差异被称为时间差分误差\(\delta\)：
 - en: Finally, the code for training our model.
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: \[Q^{\pi}(s, a) = r + \gamma Q^{\pi}(s', \pi(s')) \]
 - en: Here, you can find an `optimize_model` function that performs a single step
     of the optimization. It first samples a batch, concatenates all the tensors into
     a single one, computes \(Q(s_t, a_t)\) and \(V(s_{t+1}) = \max_a Q(s_{t+1}, a)\),
@@ -231,57 +338,85 @@
     a terminal state. We also use a target network to compute \(V(s_{t+1})\) for added
     stability. The target network is updated at every step with a [soft update](https://arxiv.org/pdf/1509.02971.pdf)
     controlled by the hyperparameter `TAU`, which was previously defined.
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
+  zh: Q网络
 - en: '[PRE5]'
+  id: totrans-52
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: Below, you can find the main training loop. At the beginning we reset the environment
     and obtain the initial `state` Tensor. Then, we sample an action, execute it,
     observe the next state and the reward (always 1), and optimize our model once.
     When the episode ends (our model fails), we restart the loop.
+  id: totrans-53
   prefs: []
   type: TYPE_NORMAL
+  zh: 下面，您可以找到主要的训练循环。在开始时，我们重置环境并获取初始的`state`张量。然后，我们采样一个动作，执行它，观察下一个状态和奖励（始终为1），并优化我们的模型一次。当episode结束时（我们的模型失败），我们重新开始循环。
 - en: Below, num_episodes is set to 600 if a GPU is available, otherwise 50 episodes
     are scheduled so training does not take too long. However, 50 episodes is insufficient
     for to observe good performance on CartPole. You should see the model constantly
     achieve 500 steps within 600 training episodes. Training RL agents can be a noisy
     process, so restarting training can produce better results if convergence is not
     observed.
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果有GPU可用，则将num_episodes设置为600，否则将安排50个episodes，以便训练不会太长。然而，50个episodes对于观察CartPole的良好性能是不足够的。您应该看到模型在600个训练episodes内不断达到500步。训练RL代理可能是一个嘈杂的过程，因此如果没有观察到收敛，重新开始训练可能会产生更好的结果。
 - en: '[PRE6]'
+  id: totrans-55
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: '![Result](../Images/05d729b827824fa861fd321f0b87e771.png)'
+  id: totrans-56
   prefs: []
   type: TYPE_IMG
+  zh: '![结果](../Images/05d729b827824fa861fd321f0b87e771.png)'
 - en: '[PRE7]'
+  id: totrans-57
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: Here is the diagram that illustrates the overall resulting data flow.
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: 这是说明整体结果数据流的图表。
 - en: '![../_images/reinforcement_learning_diagram.jpg](../Images/8ec7228e178647ed9c25273de4b9a270.png)'
+  id: totrans-59
   prefs: []
   type: TYPE_IMG
+  zh: '![../_images/reinforcement_learning_diagram.jpg](../Images/8ec7228e178647ed9c25273de4b9a270.png)'
 - en: Actions are chosen either randomly or based on a policy, getting the next step
     sample from the gym environment. We record the results in the replay memory and
     also run optimization step on every iteration. Optimization picks a random batch
     from the replay memory to do training of the new policy. The “older” target_net
     is also used in optimization to compute the expected Q values. A soft update of
     its weights are performed at every step.
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: 动作是随机选择的，或者基于策略选择，从gym环境中获取下一步样本。我们将结果记录在重放内存中，并在每次迭代中运行优化步骤。优化从重放内存中选择一个随机批次来训练新策略。在优化中还使用“较旧”的target_net来计算预期的Q值。其权重的软更新在每一步中执行。
 - en: '**Total running time of the script:** ( 12 minutes 45.506 seconds)'
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: '**脚本的总运行时间：**（12分钟45.506秒）'
 - en: '[`Download Python source code: reinforcement_q_learning.py`](../_downloads/6ea0e49c7d0da2713588ef1a3b64eb35/reinforcement_q_learning.py)'
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Python源代码：reinforcement_q_learning.py`](../_downloads/6ea0e49c7d0da2713588ef1a3b64eb35/reinforcement_q_learning.py)'
 - en: '[`Download Jupyter notebook: reinforcement_q_learning.ipynb`](../_downloads/9da0471a9eeb2351a488cd4b44fc6bbf/reinforcement_q_learning.ipynb)'
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Jupyter笔记本：reinforcement_q_learning.ipynb`](../_downloads/9da0471a9eeb2351a488cd4b44fc6bbf/reinforcement_q_learning.ipynb)'
 - en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  id: totrans-64
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Sphinx-Gallery生成的图库](https://sphinx-gallery.github.io)'

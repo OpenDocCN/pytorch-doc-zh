@@ -1,34 +1,50 @@
 - en: Forward-mode Automatic Differentiation (Beta)
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 前向模式自动微分（Beta）
 - en: 原文：[https://pytorch.org/tutorials/intermediate/forward_ad_usage.html](https://pytorch.org/tutorials/intermediate/forward_ad_usage.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/intermediate/forward_ad_usage.html](https://pytorch.org/tutorials/intermediate/forward_ad_usage.html)
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-intermediate-forward-ad-usage-py) to download
     the full example code
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[这里](#sphx-glr-download-intermediate-forward-ad-usage-py)下载完整示例代码
 - en: This tutorial demonstrates how to use forward-mode AD to compute directional
     derivatives (or equivalently, Jacobian-vector products).
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程演示了如何使用前向模式自动微分来计算方向导数（或等效地，雅可比向量积）。
 - en: The tutorial below uses some APIs only available in versions >= 1.11 (or nightly
     builds).
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 下面的教程仅使用版本 >= 1.11（或夜间构建）中才可用的一些API。
 - en: Also note that forward-mode AD is currently in beta. The API is subject to change
     and operator coverage is still incomplete.
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 还要注意，前向模式自动微分目前处于 beta 阶段。API 可能会发生变化，操作符覆盖仍然不完整。
 - en: Basic Usage
+  id: totrans-7
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 基本用法
 - en: Unlike reverse-mode AD, forward-mode AD computes gradients eagerly alongside
     the forward pass. We can use forward-mode AD to compute a directional derivative
     by performing the forward pass as before, except we first associate our input
@@ -37,106 +53,164 @@
     “primal”, is associated with a “direction” tensor, which we call “tangent”, the
     resultant new tensor object is called a “dual tensor” for its connection to dual
     numbers[0].
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 与反向模式自动微分不同，前向模式自动微分在前向传递过程中急切地计算梯度。我们可以使用前向模式自动微分来计算方向导数，方法是在执行前向传递之前，将我们的输入与另一个表示方向导数方向（或等效地，雅可比向量积中的
+    `v`）的张量相关联。当一个称为“原始”的输入与一个称为“切向”的“方向”张量相关联时，所得到的新张量对象被称为“双张量”，因为它与双重数的连接[0]。
 - en: As the forward pass is performed, if any input tensors are dual tensors, extra
     computation is performed to propagate this “sensitivity” of the function.
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 在执行前向传递时，如果任何输入张量是双张量，则会执行额外的计算以传播函数的“敏感性”。
 - en: '[PRE0]'
+  id: totrans-10
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: Usage with Modules
+  id: totrans-11
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 使用模块
 - en: To use `nn.Module` with forward AD, replace the parameters of your model with
     dual tensors before performing the forward pass. At the time of writing, it is
     not possible to create dual tensor [`](#id1)nn.Parameter`s. As a workaround, one
     must register the dual tensor as a non-parameter attribute of the module.
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: 要使用前向自动微分与 `nn.Module`，在执行前向传递之前，将模型的参数替换为双张量。在撰写本文时，不可能创建双张量 [`](#id1)nn.Parameter`。作为解决方法，必须将双张量注册为模块的非参数属性。
 - en: '[PRE1]'
+  id: totrans-13
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Using the functional Module API (beta)
+  id: totrans-14
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 使用功能模块 API（beta）
 - en: Another way to use `nn.Module` with forward AD is to utilize the functional
     Module API (also known as the stateless Module API).
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用前向自动微分的另一种方法是利用功能模块 API（也称为无状态模块 API）。
 - en: '[PRE2]'
+  id: totrans-16
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Custom autograd Function
+  id: totrans-17
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 自定义 autograd 函数
 - en: Custom Functions also support forward-mode AD. To create custom Function supporting
     forward-mode AD, register the `jvp()` static method. It is possible, but not mandatory
     for custom Functions to support both forward and backward AD. See the [documentation](https://pytorch.org/docs/master/notes/extending.html#forward-mode-ad)
     for more information.
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: 自定义函数还支持前向模式自动微分。要创建支持前向模式自动微分的自定义函数，请注册 `jvp()` 静态方法。自定义函数可以支持前向和反向自动微分，但这不是强制的。有关更多信息，请参阅[文档](https://pytorch.org/docs/master/notes/extending.html#forward-mode-ad)。
 - en: '[PRE3]'
+  id: totrans-19
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: '[PRE4]'
+  id: totrans-20
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: Functional API (beta)
+  id: totrans-21
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 功能 API（beta）
 - en: We also offer a higher-level functional API in functorch for computing Jacobian-vector
     products that you may find simpler to use depending on your use case.
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们还提供了 functorch 中用于计算雅可比向量积的更高级功能 API，根据您的用例，您可能会发现更简单使用。
 - en: The benefit of the functional API is that there isn’t a need to understand or
     use the lower-level dual tensor API and that you can compose it with other [functorch
     transforms (like vmap)](https://pytorch.org/functorch/stable/notebooks/jacobians_hessians.html);
     the downside is that it offers you less control.
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 功能 API 的好处是不需要理解或使用较低级别的双张量 API，并且可以将其与其他 [functorch 转换（如 vmap）](https://pytorch.org/functorch/stable/notebooks/jacobians_hessians.html)组合；缺点是它提供的控制较少。
 - en: Note that the remainder of this tutorial will require functorch ([https://github.com/pytorch/functorch](https://github.com/pytorch/functorch))
     to run. Please find installation instructions at the specified link.
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，本教程的其余部分将需要 functorch ([https://github.com/pytorch/functorch](https://github.com/pytorch/functorch))
+    来运行。请在指定的链接找到安装说明。
 - en: '[PRE5]'
+  id: totrans-25
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: '[PRE6]'
+  id: totrans-26
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: Using the functional API with Modules
+  id: totrans-27
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 使用功能 API 与模块
 - en: To use `nn.Module` with `functorch.jvp` to compute Jacobian-vector products
     with respect to the model parameters, we need to reformulate the `nn.Module` as
     a function that accepts both the model parameters and inputs to the module.
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: 要使用 `functorch.jvp` 与 `nn.Module` 一起计算相对于模型参数的雅可比向量积，我们需要将 `nn.Module` 重新构建为一个接受模型参数和模块输入的函数。
 - en: '[PRE7]'
+  id: totrans-29
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: '[PRE8]'
+  id: totrans-30
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: '[0] [https://en.wikipedia.org/wiki/Dual_number](https://en.wikipedia.org/wiki/Dual_number)'
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: '[0] [https://en.wikipedia.org/wiki/Dual_number](https://en.wikipedia.org/wiki/Dual_number)'
 - en: '**Total running time of the script:** ( 0 minutes 0.149 seconds)'
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: '**脚本的总运行时间：**（0 分钟 0.149 秒）'
 - en: '[`Download Python source code: forward_ad_usage.py`](../_downloads/3a285734c191abde60d7db0362f294b1/forward_ad_usage.py)'
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载 Python 源代码：forward_ad_usage.py`](../_downloads/3a285734c191abde60d7db0362f294b1/forward_ad_usage.py)'
 - en: '[`Download Jupyter notebook: forward_ad_usage.ipynb`](../_downloads/31e117c487018c27130cd7b1fd3e3cad/forward_ad_usage.ipynb)'
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载 Jupyter 笔记本：forward_ad_usage.ipynb`](../_downloads/31e117c487018c27130cd7b1fd3e3cad/forward_ad_usage.ipynb)'
 - en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Sphinx-Gallery 生成的画廊](https://sphinx-gallery.github.io)'

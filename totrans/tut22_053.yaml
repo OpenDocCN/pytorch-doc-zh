@@ -1,62 +1,92 @@
 - en: Language Translation with nn.Transformer and torchtext
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 使用nn.Transformer和torchtext进行语言翻译
 - en: 原文：[https://pytorch.org/tutorials/beginner/translation_transformer.html](https://pytorch.org/tutorials/beginner/translation_transformer.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/beginner/translation_transformer.html](https://pytorch.org/tutorials/beginner/translation_transformer.html)
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-beginner-translation-transformer-py) to download
     the full example code
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[这里](#sphx-glr-download-beginner-translation-transformer-py)下载完整示例代码
 - en: 'This tutorial shows:'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程展示了：
 - en: How to train a translation model from scratch using Transformer.
+  id: totrans-5
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 如何使用Transformer从头开始训练翻译模型。
 - en: Use torchtext library to access [Multi30k](http://www.statmt.org/wmt16/multimodal-task.html#task1)
     dataset to train a German to English translation model.
+  id: totrans-6
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 使用torchtext库访问[Multi30k](http://www.statmt.org/wmt16/multimodal-task.html#task1)数据集，以训练德语到英语的翻译模型。
 - en: Data Sourcing and Processing
+  id: totrans-7
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 数据获取和处理
 - en: '[torchtext library](https://pytorch.org/text/stable/) has utilities for creating
     datasets that can be easily iterated through for the purposes of creating a language
     translation model. In this example, we show how to use torchtext’s inbuilt datasets,
     tokenize a raw text sentence, build vocabulary, and numericalize tokens into tensor.
     We will use [Multi30k dataset from torchtext library](https://pytorch.org/text/stable/datasets.html#multi30k)
     that yields a pair of source-target raw sentences.'
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: '[torchtext库](https://pytorch.org/text/stable/)提供了用于创建数据集的实用程序，可以轻松迭代，以便创建语言翻译模型。在这个例子中，我们展示了如何使用torchtext的内置数据集，对原始文本句子进行标记化，构建词汇表，并将标记数值化为张量。我们将使用[torchtext库中的Multi30k数据集](https://pytorch.org/text/stable/datasets.html#multi30k)，该数据集产生一对源-目标原始句子。'
 - en: To access torchtext datasets, please install torchdata following instructions
     at [https://github.com/pytorch/data](https://github.com/pytorch/data).
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 要访问torchtext数据集，请按照[https://github.com/pytorch/data](https://github.com/pytorch/data)上的说明安装torchdata。
 - en: '[PRE0]'
+  id: totrans-10
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: Create source and target language tokenizer. Make sure to install the dependencies.
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 创建源语言和目标语言的标记器。确保安装了依赖项。
 - en: '[PRE1]'
+  id: totrans-12
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: '[PRE2]'
+  id: totrans-13
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Seq2Seq Network using Transformer
+  id: totrans-14
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 使用Transformer的Seq2Seq网络
 - en: Transformer is a Seq2Seq model introduced in [“Attention is all you need”](https://papers.nips.cc/paper/2017/file/3f5ee243547dee91fbd053c1c4a845aa-Paper.pdf)
     paper for solving machine translation tasks. Below, we will create a Seq2Seq network
     that uses Transformer. The network consists of three parts. First part is the
@@ -66,78 +96,120 @@
     part is the actual [Transformer](https://pytorch.org/docs/stable/generated/torch.nn.Transformer.html)
     model. Finally, the output of the Transformer model is passed through linear layer
     that gives unnormalized probabilities for each token in the target language.
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: Transformer是一个Seq2Seq模型，介绍在[“Attention is all you need”](https://papers.nips.cc/paper/2017/file/3f5ee243547dee91fbd053c1c4a845aa-Paper.pdf)论文中，用于解决机器翻译任务。下面，我们将创建一个使用Transformer的Seq2Seq网络。该网络由三部分组成。第一部分是嵌入层。该层将输入索引的张量转换为相应的输入嵌入的张量。这些嵌入进一步与位置编码相结合，以向模型提供输入标记的位置信息。第二部分是实际的[Transformer](https://pytorch.org/docs/stable/generated/torch.nn.Transformer.html)模型。最后，Transformer模型的输出通过线性层传递，为目标语言中的每个标记提供未归一化的概率。
 - en: '[PRE3]'
+  id: totrans-16
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: During training, we need a subsequent word mask that will prevent the model
     from looking into the future words when making predictions. We will also need
     masks to hide source and target padding tokens. Below, let’s define a function
     that will take care of both.
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 在训练过程中，我们需要一个后续单词掩码，以防止模型在进行预测时查看未来的单词。我们还需要隐藏源和目标填充标记的掩码。下面，让我们定义一个函数，来处理这两个问题。
 - en: '[PRE4]'
+  id: totrans-18
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: Let’s now define the parameters of our model and instantiate the same. Below,
     we also define our loss function which is the cross-entropy loss and the optimizer
     used for training.
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在让我们定义模型的参数并实例化。下面，我们还定义了我们的损失函数，即交叉熵损失，以及用于训练的优化器。
 - en: '[PRE5]'
+  id: totrans-20
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: Collation
+  id: totrans-21
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 整理
 - en: As seen in the `Data Sourcing and Processing` section, our data iterator yields
     a pair of raw strings. We need to convert these string pairs into the batched
     tensors that can be processed by our `Seq2Seq` network defined previously. Below
     we define our collate function that converts a batch of raw strings into batch
     tensors that can be fed directly into our model.
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 如`数据获取和处理`部分所示，我们的数据迭代器产生一对原始字符串。我们需要将这些字符串对转换为批量张量，以便我们之前定义的`Seq2Seq`网络可以处理。下面我们定义我们的整理函数，将一批原始字符串转换为可以直接输入到我们的模型中的批量张量。
 - en: '[PRE6]'
+  id: totrans-23
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: Let’s define training and evaluation loop that will be called for each epoch.
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们定义训练和评估循环，每个时代都会调用它。
 - en: '[PRE7]'
+  id: totrans-25
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: Now we have all the ingredients to train our model. Let’s do it!
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们有了训练模型所需的所有要素。让我们开始吧！
 - en: '[PRE8]'
+  id: totrans-27
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: '[PRE9]'
+  id: totrans-28
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: References
+  id: totrans-29
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 参考
 - en: Attention is all you need paper. [https://papers.nips.cc/paper/2017/file/3f5ee243547dee91fbd053c1c4a845aa-Paper.pdf](https://papers.nips.cc/paper/2017/file/3f5ee243547dee91fbd053c1c4a845aa-Paper.pdf)
+  id: totrans-30
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 注意力就是你所需要的论文。[https://papers.nips.cc/paper/2017/file/3f5ee243547dee91fbd053c1c4a845aa-Paper.pdf](https://papers.nips.cc/paper/2017/file/3f5ee243547dee91fbd053c1c4a845aa-Paper.pdf)
 - en: The annotated transformer. [https://nlp.seas.harvard.edu/2018/04/03/attention.html#positional-encoding](https://nlp.seas.harvard.edu/2018/04/03/attention.html#positional-encoding)
+  id: totrans-31
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 带注释的Transformer。[https://nlp.seas.harvard.edu/2018/04/03/attention.html#positional-encoding](https://nlp.seas.harvard.edu/2018/04/03/attention.html#positional-encoding)
 - en: '**Total running time of the script:** ( 0 minutes 0.000 seconds)'
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 脚本的总运行时间：（0分钟0.000秒）
 - en: '[`Download Python source code: translation_transformer.py`](../_downloads/65562063b0d7441578a041b5a568eaf2/translation_transformer.py)'
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Python源代码：translation_transformer.py`](../_downloads/65562063b0d7441578a041b5a568eaf2/translation_transformer.py)'
 - en: '[`Download Jupyter notebook: translation_transformer.ipynb`](../_downloads/c64c91cf87c13c0e83586b8e66e4d74e/translation_transformer.ipynb)'
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Jupyter笔记本：translation_transformer.ipynb`](../_downloads/c64c91cf87c13c0e83586b8e66e4d74e/translation_transformer.ipynb)'
 - en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Sphinx-Gallery生成的画廊](https://sphinx-gallery.github.io)'

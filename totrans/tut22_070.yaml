@@ -1,258 +1,380 @@
 - en: Introduction to Holistic Trace Analysis
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 全面跟踪分析简介
 - en: 原文：[https://pytorch.org/tutorials/beginner/hta_intro_tutorial.html](https://pytorch.org/tutorials/beginner/hta_intro_tutorial.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/beginner/hta_intro_tutorial.html](https://pytorch.org/tutorials/beginner/hta_intro_tutorial.html)
 - en: '**Author:** [Anupam Bhatnagar](https://github.com/anupambhatnagar)'
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: '**作者：**[Anupam Bhatnagar](https://github.com/anupambhatnagar)'
 - en: In this tutorial, we demonstrate how to use Holistic Trace Analysis (HTA) to
     analyze traces from a distributed training job. To get started follow the steps
     below.
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，我们演示如何使用全面跟踪分析（HTA）来分析分布式训练作业的跟踪。要开始，请按照以下步骤操作。
 - en: Installing HTA
+  id: totrans-4
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 安装HTA
 - en: We recommend using a Conda environment to install HTA. To install Anaconda,
     see [the official Anaconda documentation](https://docs.anaconda.com/anaconda/install/index.html).
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们建议使用Conda环境安装HTA。要安装Anaconda，请参阅[官方Anaconda文档](https://docs.anaconda.com/anaconda/install/index.html)。
 - en: 'Install HTA using pip:'
+  id: totrans-6
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 使用pip安装HTA：
 - en: '[PRE0]'
+  id: totrans-7
   prefs:
   - PREF_IND
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: '(Optional and recommended) Set up a Conda environment:'
+  id: totrans-8
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: （可选但建议）设置一个Conda环境：
 - en: '[PRE1]'
+  id: totrans-9
   prefs:
   - PREF_IND
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Getting Started
+  id: totrans-10
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 入门指南
 - en: Launch a Jupyter notebook and set the `trace_dir` variable to the location of
     the traces.
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 启动Jupyter笔记本，并将`trace_dir`变量设置为跟踪位置。
 - en: '[PRE2]'
+  id: totrans-12
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Temporal Breakdown
+  id: totrans-13
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 时间细分
 - en: To effectively utilize the GPUs, it is crucial to understand how they are spending
     time for a specific job. Are they primarily engaged in computation, communication,
     memory events, or are they idle? The temporal breakdown feature provides a detailed
     analysis of the time spent in these three categories.
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了有效利用GPU，了解它们为特定作业花费时间至关重要。它们主要是在计算、通信、内存事件中还是空闲？时间细分功能提供了这三个类别中所花费时间的详细分析。
 - en: Idle time - GPU is idle.
+  id: totrans-15
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 空闲时间 - GPU空闲。
 - en: Compute time - GPU is being used for matrix multiplications or vector operations.
+  id: totrans-16
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 计算时间 - GPU用于矩阵乘法或向量操作。
 - en: Non-compute time - GPU is being used for communication or memory events.
+  id: totrans-17
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 非计算时间 - GPU用于通信或内存事件。
 - en: To achieve high training efficiency, the code should maximize compute time and
     minimize idle time and non-compute time. The following function generates a dataframe
     that provides a detailed breakdown of the temporal usage for each rank.
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了实现高效的训练，代码应最大化计算时间，最小化空闲时间和非计算时间。以下函数生成一个数据框，提供每个等级的时间使用情况的详细分解。
 - en: '[PRE3]'
+  id: totrans-19
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: '![../_images/temporal_breakdown_df.png](../Images/60b7f8f0a40cb20a24581889399ab070.png)'
+  id: totrans-20
   prefs: []
   type: TYPE_IMG
+  zh: '![../_images/temporal_breakdown_df.png](../Images/60b7f8f0a40cb20a24581889399ab070.png)'
 - en: When the `visualize` argument is set to `True` in the [get_temporal_breakdown](https://hta.readthedocs.io/en/latest/source/api/trace_analysis_api.html#hta.trace_analysis.TraceAnalysis.get_temporal_breakdown)
     function it also generates a bar graph representing the breakdown by rank.
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 当在[get_temporal_breakdown](https://hta.readthedocs.io/en/latest/source/api/trace_analysis_api.html#hta.trace_analysis.TraceAnalysis.get_temporal_breakdown)函数中将`visualize`参数设置为`True`时，它还会生成一个按等级分解的条形图。
 - en: '![../_images/temporal_breakdown_plot.png](../Images/3d68f72d6d1ff2ec6be135764006f250.png)'
+  id: totrans-22
   prefs: []
   type: TYPE_IMG
+  zh: '![../_images/temporal_breakdown_plot.png](../Images/3d68f72d6d1ff2ec6be135764006f250.png)'
 - en: Idle Time Breakdown
+  id: totrans-23
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 空闲时间细分
 - en: 'Gaining insight into the amount of time the GPU spends idle and the reasons
     behind it can help guide optimization strategies. A GPU is considered idle when
     no kernel is running on it. We have developed an algorithm to categorize the Idle
     time into three distinct categories:'
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 深入了解GPU空闲时间及其原因可以帮助指导优化策略。当GPU上没有运行任何内核时，GPU被视为空闲。我们开发了一种算法，将空闲时间分类为三个不同的类别：
 - en: '**Host wait:** refers to the idle time on the GPU that is caused by the CPU
     not enqueuing kernels quickly enough to keep the GPU fully utilized. These types
     of inefficiencies can be addressed by examining the CPU operators that are contributing
     to the slowdown, increasing the batch size and applying operator fusion.'
+  id: totrans-25
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**主机等待：**指的是由于CPU未能快速排队内核以使GPU完全利用而导致的GPU上的空闲时间。这些类型的低效率可以通过检查导致减速的CPU运算符、增加批量大小和应用运算符融合来解决。'
 - en: '**Kernel wait:** This refers to brief overhead associated with launching consecutive
     kernels on the GPU. The idle time attributed to this category can be minimized
     by using CUDA Graph optimizations.'
+  id: totrans-26
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**内核等待：**指的是在GPU上连续启动内核时伴随的短暂开销。归因为此类别的空闲时间可以通过使用CUDA图优化来最小化。'
 - en: '**Other wait:** This category includes idle time that cannot currently be attributed
     due to insufficient information. The likely causes include synchronization among
     CUDA streams using CUDA events and delays in launching kernels.'
+  id: totrans-27
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**其他等待：**此类别包括由于信息不足而目前无法归因的空闲时间。可能的原因包括使用CUDA事件在CUDA流之间同步以及启动内核时的延迟。'
 - en: 'The host wait time can be interpreted as the time when the GPU is stalling
     due to the CPU. To attribute the idle time as kernel wait we use the following
     heuristic:'
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: 主机等待时间可以解释为GPU由于CPU而停滞的时间。为了将空闲时间归因为内核等待，我们使用以下启发式方法：
 - en: '**gap between consecutive kernels < threshold**'
+  id: totrans-29
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: '**连续内核之间的间隔<阈值**'
 - en: 'The default threshold value is 30 nanoseconds and can be configured using the
     `consecutive_kernel_delay` argument. By default, the idle time breakdown is computed
     for rank 0 only. In order to calculate the breakdown for other ranks, use the
     `ranks` argument in the [get_idle_time_breakdown](https://hta.readthedocs.io/en/latest/source/api/trace_analysis_api.html#hta.trace_analysis.TraceAnalysis.get_idle_time_breakdown)
     function. The idle time breakdown can be generated as follows:'
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 默认阈值为30纳秒，可以使用`consecutive_kernel_delay`参数进行配置。默认情况下，仅为等级0计算空闲时间细分。为了计算其他等级的细分，可以在[get_idle_time_breakdown](https://hta.readthedocs.io/en/latest/source/api/trace_analysis_api.html#hta.trace_analysis.TraceAnalysis.get_idle_time_breakdown)函数中使用`ranks`参数。空闲时间细分可以按以下方式生成：
 - en: '[PRE4]'
+  id: totrans-31
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: '![../_images/idle_time_breakdown_percentage.png](../Images/e42cbade7eb10063307e87d32466961d.png)'
+  id: totrans-32
   prefs: []
   type: TYPE_IMG
+  zh: '![../_images/idle_time_breakdown_percentage.png](../Images/e42cbade7eb10063307e87d32466961d.png)'
 - en: The function returns a tuple of dataframes. The first dataframe contains the
     idle time by category on each stream for each rank.
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: 该函数返回一个数据框的元组。第一个数据框包含每个流中每个等级的类别空闲时间。
 - en: '[![../_images/idle_time.png](../Images/804d1bbaf4c125dff21648945b3082ff.png)](../_images/idle_time.png)'
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_images/idle_time.png](../Images/804d1bbaf4c125dff21648945b3082ff.png)](../_images/idle_time.png)'
 - en: The second dataframe is generated when `show_idle_interval_stats` is set to
     `True`. It contains the summary statistics of the idle time for each stream on
     each rank.
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 第二个数据框是在将`show_idle_interval_stats`设置为`True`时生成的。它包含每个流在每个rank上的空闲时间的摘要统计信息。
 - en: '[![../_images/idle_time_summary.png](../Images/0d0f42e11aa0c33b2fe4b1b2dcdc3d20.png)](../_images/idle_time_summary.png)'
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_images/idle_time_summary.png](../Images/0d0f42e11aa0c33b2fe4b1b2dcdc3d20.png)](../_images/idle_time_summary.png)'
 - en: Tip
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 提示
 - en: By default, the idle time breakdown presents the percentage of each of the idle
     time categories. Setting the `visualize_pctg` argument to `False`, the function
     renders with absolute time on the y-axis.
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 默认情况下，空闲时间分解显示每个空闲时间类别的百分比。将`visualize_pctg`参数设置为`False`，函数将以y轴上的绝对时间呈现。
 - en: Kernel Breakdown
+  id: totrans-39
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 内核分解
 - en: 'The kernel breakdown feature breaks down the time spent for each kernel type,
     such as communication (COMM), computation (COMP), and memory (MEM), across all
     ranks and presents the proportion of time spent in each category. Here is the
     percentage of time spent in each category as a pie chart:'
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: 内核分解功能将每种内核类型（如通信（COMM）、计算（COMP）和内存（MEM））花费的时间分解，跨所有rank，并呈现在每个类别中花费的时间比例。这是每个类别中花费的时间的百分比饼图：
 - en: '![../_images/kernel_type_breakdown.png](../Images/2045c580266388911dcf15707d71beb1.png)'
+  id: totrans-41
   prefs: []
   type: TYPE_IMG
+  zh: '![../_images/kernel_type_breakdown.png](../Images/2045c580266388911dcf15707d71beb1.png)'
 - en: 'The kernel breakdown can be calculated as follows:'
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 内核分解可以按以下方式计算：
 - en: '[PRE5]'
+  id: totrans-43
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: The first dataframe returned by the function contains the raw values used to
     generate the pie chart.
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 函数返回的第一个数据框包含生成饼图所使用的原始值。
 - en: Kernel Duration Distribution
+  id: totrans-45
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 内核持续时间分布
 - en: The second dataframe returned by [get_gpu_kernel_breakdown](https://hta.readthedocs.io/en/latest/source/api/trace_analysis_api.html#hta.trace_analysis.TraceAnalysis.get_gpu_kernel_breakdown)
     contains duration summary statistics for each kernel. In particular, this includes
     the count, min, max, average, standard deviation, sum, and kernel type for each
     kernel on each rank.
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 由[get_gpu_kernel_breakdown](https://hta.readthedocs.io/en/latest/source/api/trace_analysis_api.html#hta.trace_analysis.TraceAnalysis.get_gpu_kernel_breakdown)返回的第二个数据框包含每个内核的持续时间摘要统计信息。特别是，这包括每个rank上每个内核的计数、最小值、最大值、平均值、标准偏差、总和和内核类型。
 - en: '![../_images/kernel_metrics_df.png](../Images/f3d40422223cdceb830e8200c2cacacc.png)'
+  id: totrans-47
   prefs: []
   type: TYPE_IMG
+  zh: '![../_images/kernel_metrics_df.png](../Images/f3d40422223cdceb830e8200c2cacacc.png)'
 - en: Using this data HTA creates many visualizations to identify performance bottlenecks.
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用这些数据，HTA创建许多可视化来识别性能瓶颈。
 - en: Pie charts of the top kernels for each kernel type for each rank.
+  id: totrans-49
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 每个rank上每种内核类型的前5个内核的饼图。
 - en: Bar graphs of the average duration across all ranks for each of the top kernels
     and for each kernel type.
+  id: totrans-50
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 每个顶级内核和每种内核类型的所有rank上的平均持续时间的条形图。
 - en: '![../_images/pie_charts.png](../Images/9e31307e5d6ad0ae17c6a2b7b27a6c9a.png)'
+  id: totrans-51
   prefs: []
   type: TYPE_IMG
+  zh: '![../_images/pie_charts.png](../Images/9e31307e5d6ad0ae17c6a2b7b27a6c9a.png)'
 - en: Tip
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
+  zh: 提示
 - en: All images are generated using plotly. Hovering on the graph shows the mode
     bar on the top right which allows the user to zoom, pan, select, and download
     the graph.
+  id: totrans-53
   prefs: []
   type: TYPE_NORMAL
+  zh: 所有图像均使用plotly生成。在图表上悬停会显示位于右上角的模式栏，允许用户缩放、平移、选择和下载图表。
 - en: The pie charts above show the top 5 computation, communication, and memory kernels.
     Similar pie charts are generated for each rank. The pie charts can be configured
     to show the top k kernels using the `num_kernels` argument passed to the get_gpu_kernel_breakdown
     function. Additionally, the `duration_ratio` argument can be used to tune the
     percentage of time that needs to be analyzed. If both `num_kernels` and `duration_ratio`
     are specified, then `num_kernels` takes precedence.
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: 上面的饼图显示了前5个计算、通信和内存内核。为每个rank生成类似的饼图。可以使用传递给get_gpu_kernel_breakdown函数的`num_kernels`参数配置饼图以显示前k个内核。此外，可以使用`duration_ratio`参数来调整需要分析的时间百分比。如果同时指定了`num_kernels`和`duration_ratio`，则`num_kernels`优先。
 - en: '![../_images/comm_across_ranks.png](../Images/86d7071d6a176ea6b007dd4c911e8cf0.png)'
+  id: totrans-55
   prefs: []
   type: TYPE_IMG
+  zh: '![../_images/comm_across_ranks.png](../Images/86d7071d6a176ea6b007dd4c911e8cf0.png)'
 - en: The bar graph above shows the average duration of the NCCL AllReduce kernel
     across all the ranks. The black lines indicate the minimum and maximum time taken
     on each rank.
+  id: totrans-56
   prefs: []
   type: TYPE_NORMAL
+  zh: 上面的条形图显示了所有rank上NCCL AllReduce内核的平均持续时间。黑线表示每个rank上所花费的最短和最长时间。
 - en: Warning
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: When using jupyter-lab set the “image_renderer” argument value to “jupyterlab”
     otherwise the graphs will not render in the notebook.
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: 在使用jupyter-lab时，将“image_renderer”参数值设置为“jupyterlab”，否则图形将无法在笔记本中呈现。
 - en: For a detailed walkthrough of this feature see the [gpu_kernel_breakdown notebook](https://github.com/facebookresearch/HolisticTraceAnalysis/blob/main/examples/kernel_breakdown_demo.ipynb)
     in the examples folder of the repo.
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: 有关此功能的详细演练，请参阅存储库的示例文件夹中的[gpu_kernel_breakdown notebook](https://github.com/facebookresearch/HolisticTraceAnalysis/blob/main/examples/kernel_breakdown_demo.ipynb)。
 - en: Communication Computation Overlap
+  id: totrans-60
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 通信计算重叠
 - en: 'In distributed training, a significant amount of time is spent in communication
     and synchronization events between GPUs. To achieve high GPU efficiency (such
     as TFLOPS/GPU), it is crucial to keep the GPU oversubscribed with computation
@@ -264,48 +386,70 @@
     resulting in low efficiency. To sum up, a higher communication computation overlap
     is desirable. To calculate the overlap percentage for each rank, we measure the
     following ratio:'
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: 在分布式训练中，大量时间花费在GPU之间的通信和同步事件上。为了实现高GPU效率（如TFLOPS/GPU），保持GPU过度订阅计算内核是至关重要的。换句话说，GPU不应因未解决的数据依赖关系而被阻塞。衡量计算受数据依赖关系阻塞程度的一种方法是计算通信计算重叠。如果通信事件与计算事件重叠，就会观察到更高的GPU效率。缺乏通信和计算重叠将导致GPU空闲，从而导致效率低下。总之，更高的通信计算重叠是可取的。为了计算每个rank的重叠百分比，我们测量以下比率：
 - en: '**(time spent in computation while communicating) / (time spent in communication)**'
+  id: totrans-62
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: '**(在通信时花费的时间) / (在通信中花费的时间)**'
 - en: 'The communication computation overlap can be calculated as follows:'
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: 通信计算重叠可以计算如下：
 - en: '[PRE6]'
+  id: totrans-64
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: The function returns a dataframe containing the overlap percentage for each
     rank.
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: 该函数返回一个包含每个rank的重叠百分比的数据框。
 - en: '[![../_images/overlap_df.png](../Images/22a0d906eede5591c1d5935dba1324f4.png)](../_images/overlap_df.png)'
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_images/overlap_df.png](../Images/22a0d906eede5591c1d5935dba1324f4.png)](../_images/overlap_df.png)'
 - en: When the `visualize` argument is set to True, the [get_comm_comp_overlap](https://hta.readthedocs.io/en/latest/source/api/trace_analysis_api.html#hta.trace_analysis.TraceAnalysis.get_comm_comp_overlap)
     function also generates a bar graph representing the overlap by rank.
+  id: totrans-67
   prefs: []
   type: TYPE_NORMAL
+  zh: 当`visualize`参数设置为True时，[get_comm_comp_overlap](https://hta.readthedocs.io/en/latest/source/api/trace_analysis_api.html#hta.trace_analysis.TraceAnalysis.get_comm_comp_overlap)函数还会生成一个柱状图，表示每个rank的重叠。
 - en: '![../_images/overlap_plot.png](../Images/3a88d4853f57cfa224a569edfee9e5d0.png)'
+  id: totrans-68
   prefs: []
   type: TYPE_IMG
+  zh: '![../_images/overlap_plot.png](../Images/3a88d4853f57cfa224a569edfee9e5d0.png)'
 - en: Augmented Counters
+  id: totrans-69
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 增强计数器
 - en: Memory Bandwidth & Queue Length Counters
+  id: totrans-70
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 内存带宽和队列长度计数器
 - en: Memory bandwidth counters measure the memory copy bandwidth used while copying
     the data from H2D, D2H and D2D by memory copy (memcpy) and memory set (memset)
     events. HTA also computes the number of outstanding operations on each CUDA stream.
     We refer to this as **queue length**. When the queue length on a stream is 1024
     or larger new events cannot be scheduled on that stream and the CPU will stall
     until the events on the GPU stream have processed.
+  id: totrans-71
   prefs: []
   type: TYPE_NORMAL
+  zh: 内存带宽计数器测量从H2D、D2H和D2D复制数据时使用的内存复制带宽（memcpy）和内存设置（memset）事件。HTA还计算每个CUDA流中未完成操作的数量。我们将其称为**队列长度**。当流上的队列长度为1024或更大时，新事件无法在该流上调度，CPU将停止，直到GPU流上的事件被处理。
 - en: The [generate_trace_with_counters](https://hta.readthedocs.io/en/latest/source/api/trace_analysis_api.html#hta.trace_analysis.TraceAnalysis.generate_trace_with_counters)
     API outputs a new trace file with the memory bandwidth and queue length counters.
     The new trace file contains tracks which indicate the memory bandwidth used by
@@ -314,142 +458,218 @@
     the suffix `_with_counters` in its name. Users have the option to generate the
     counters for multiple ranks by using the `ranks` argument in the `generate_trace_with_counters`
     API.
+  id: totrans-72
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用[generate_trace_with_counters](https://hta.readthedocs.io/en/latest/source/api/trace_analysis_api.html#hta.trace_analysis.TraceAnalysis.generate_trace_with_counters)
+    API输出一个带有内存带宽和队列长度计数器的新跟踪文件。新的跟踪文件包含指示由memcpy/memset操作使用的内存带宽的轨道，以及每个流的队列长度的轨道。默认情况下，这些计数器是使用rank
+    0跟踪文件生成的，新文件的名称包含后缀`_with_counters`。用户可以通过在`generate_trace_with_counters` API中使用`ranks`参数来为多个rank生成计数器。
 - en: '[PRE7]'
+  id: totrans-73
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: A screenshot of the generated trace file with augmented counters.
+  id: totrans-74
   prefs: []
   type: TYPE_NORMAL
+  zh: 生成的带有增强计数器的跟踪文件的屏幕截图。
 - en: '[![../_images/mem_bandwidth_queue_length.png](../Images/7b09c2f07fe7daff2c296c3c17fec795.png)](../_images/mem_bandwidth_queue_length.png)'
+  id: totrans-75
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_images/mem_bandwidth_queue_length.png](../Images/7b09c2f07fe7daff2c296c3c17fec795.png)](../_images/mem_bandwidth_queue_length.png)'
 - en: 'HTA also provides a summary of the memory copy bandwidth and queue length counters
     as well as the time series of the counters for the profiled portion of the code
     using the following API:'
+  id: totrans-76
   prefs: []
   type: TYPE_NORMAL
+  zh: HTA还提供了内存复制带宽和队列长度计数器的摘要，以及使用以下API对代码的profile部分的计数器的时间序列：
 - en: '[get_memory_bw_summary](https://hta.readthedocs.io/en/latest/source/api/trace_analysis_api.html#hta.trace_analysis.TraceAnalysis.get_memory_bw_summary)'
+  id: totrans-77
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[get_memory_bw_summary](https://hta.readthedocs.io/en/latest/source/api/trace_analysis_api.html#hta.trace_analysis.TraceAnalysis.get_memory_bw_summary)'
 - en: '[get_queue_length_summary](https://hta.readthedocs.io/en/latest/source/api/trace_analysis_api.html#hta.trace_analysis.TraceAnalysis.get_queue_length_summary)'
+  id: totrans-78
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[get_queue_length_summary](https://hta.readthedocs.io/en/latest/source/api/trace_analysis_api.html#hta.trace_analysis.TraceAnalysis.get_queue_length_summary)'
 - en: '[get_memory_bw_time_series](https://hta.readthedocs.io/en/latest/source/api/trace_analysis_api.html#hta.trace_analysis.TraceAnalysis.get_memory_bw_time_series)'
+  id: totrans-79
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[get_memory_bw_time_series](https://hta.readthedocs.io/en/latest/source/api/trace_analysis_api.html#hta.trace_analysis.TraceAnalysis.get_memory_bw_time_series)'
 - en: '[get_queue_length_time_series](https://hta.readthedocs.io/en/latest/source/api/trace_analysis_api.html#hta.trace_analysis.TraceAnalysis.get_queue_length_time_series)'
+  id: totrans-80
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[get_queue_length_time_series](https://hta.readthedocs.io/en/latest/source/api/trace_analysis_api.html#hta.trace_analysis.TraceAnalysis.get_queue_length_time_series)'
 - en: 'To view the summary and time series, use:'
+  id: totrans-81
   prefs: []
   type: TYPE_NORMAL
+  zh: 要查看摘要和时间序列，请使用：
 - en: '[PRE8]'
+  id: totrans-82
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: The summary contains the count, min, max, mean, standard deviation, 25th, 50th,
     and 75th percentile.
+  id: totrans-83
   prefs: []
   type: TYPE_NORMAL
+  zh: 摘要包含计数、最小值、最大值、平均值、标准差、25th、50th和75th百分位数。
 - en: '[![../_images/queue_length_summary.png](../Images/c176e0b671c636afdb57c7dcde4ec7b2.png)](../_images/queue_length_summary.png)'
+  id: totrans-84
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_images/queue_length_summary.png](../Images/c176e0b671c636afdb57c7dcde4ec7b2.png)](../_images/queue_length_summary.png)'
 - en: The time series only contains the points when a value changes. Once a value
     is observed the time series stays constant until the next update. The memory bandwidth
     and queue length time series functions return a dictionary whose key is the rank
     and the value is the time series for that rank. By default, the time series is
     computed for rank 0 only.
+  id: totrans-85
   prefs: []
   type: TYPE_NORMAL
+  zh: 时间序列仅包含数值更改时的点。一旦观察到一个值，时间序列将保持恒定直到下一次更新。内存带宽和队列长度时间序列函数返回一个字典，其键是等级，值是该等级的时间序列。默认情况下，时间序列仅为等级0计算。
 - en: CUDA Kernel Launch Statistics
+  id: totrans-86
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: CUDA内核启动统计
 - en: '![../_images/cuda_kernel_launch.png](../Images/c27ff818f9cd6a18831ba7ce5bed959e.png)'
+  id: totrans-87
   prefs: []
   type: TYPE_IMG
+  zh: '![../_images/cuda_kernel_launch.png](../Images/c27ff818f9cd6a18831ba7ce5bed959e.png)'
 - en: 'For each event launched on the GPU, there is a corresponding scheduling event
     on the CPU, such as `CudaLaunchKernel`, `CudaMemcpyAsync`, `CudaMemsetAsync`.
     These events are linked by a common correlation ID in the trace - see the figure
     above. This feature computes the duration of the CPU runtime event, its corresponding
     GPU kernel and the launch delay, for example, the difference between GPU kernel
     starting and CPU operator ending. The kernel launch info can be generated as follows:'
+  id: totrans-88
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于在GPU上启动的每个事件，CPU上都有相应的调度事件，例如`CudaLaunchKernel`，`CudaMemcpyAsync`，`CudaMemsetAsync`。这些事件通过追踪中的一个共同的相关ID相互关联
+    - 请参见上图。此功能计算CPU运行时事件的持续时间，其相应的GPU内核和启动延迟，例如，GPU内核启动和CPU操作结束之间的差异。内核启动信息可以按如下方式生成：
 - en: '[PRE9]'
+  id: totrans-89
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: A screenshot of the generated dataframe is given below.
+  id: totrans-90
   prefs: []
   type: TYPE_NORMAL
+  zh: 下面给出了生成的数据框的屏幕截图。
 - en: '[![../_images/cuda_kernel_launch_stats.png](../Images/f08d3cd24db3c350255e51c1217848bf.png)](../_images/cuda_kernel_launch_stats.png)'
+  id: totrans-91
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_images/cuda_kernel_launch_stats.png](../Images/f08d3cd24db3c350255e51c1217848bf.png)](../_images/cuda_kernel_launch_stats.png)'
 - en: 'The duration of the CPU op, GPU kernel, and the launch delay allow us to find
     the following:'
+  id: totrans-92
   prefs: []
   type: TYPE_NORMAL
+  zh: CPU操作持续时间，GPU内核和启动延迟使我们能够找到以下内容：
 - en: '**Short GPU kernels** - GPU kernels with duration less than the corresponding
     CPU runtime event.'
+  id: totrans-93
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**短GPU内核** - GPU内核持续时间低于相应的CPU运行时事件。'
 - en: '**Runtime event outliers** - CPU runtime events with excessive duration.'
+  id: totrans-94
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**运行时事件异常值** - CPU运行时事件持续时间过长。'
 - en: '**Launch delay outliers** - GPU kernels which take too long to be scheduled.'
+  id: totrans-95
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**启动延迟异常值** - GPU内核调度时间过长。'
 - en: HTA generates distribution plots for each of the aforementioned three categories.
+  id: totrans-96
   prefs: []
   type: TYPE_NORMAL
+  zh: HTA为上述三个类别生成分布图。
 - en: '**Short GPU kernels**'
+  id: totrans-97
   prefs: []
   type: TYPE_NORMAL
+  zh: '**短GPU内核**'
 - en: Typically, the launch time on the CPU side ranges from 5-20 microseconds. In
     some cases, the GPU execution time is lower than the launch time itself. The graph
     below helps us to find how frequently such instances occur in the code.
+  id: totrans-98
   prefs: []
   type: TYPE_NORMAL
+  zh: 通常，CPU端的启动时间范围为5-20微秒。在某些情况下，GPU执行时间低于启动时间本身。下面的图表帮助我们找出代码中这种情况发生的频率。
 - en: '![../_images/short_gpu_kernels.png](../Images/5659a2d4c00bf8426b78c0ae3665a617.png)'
+  id: totrans-99
   prefs: []
   type: TYPE_IMG
+  zh: '![../_images/short_gpu_kernels.png](../Images/5659a2d4c00bf8426b78c0ae3665a617.png)'
 - en: '**Runtime event outliers**'
+  id: totrans-100
   prefs: []
   type: TYPE_NORMAL
+  zh: '**运行时事件异常值**'
 - en: The runtime outliers depend on the cutoff used to classify the outliers, hence
     the [get_cuda_kernel_launch_stats](https://hta.readthedocs.io/en/latest/source/api/trace_analysis_api.html#hta.trace_analysis.TraceAnalysis.get_cuda_kernel_launch_stats)
     API provides the `runtime_cutoff` argument to configure the value.
+  id: totrans-101
   prefs: []
   type: TYPE_NORMAL
+  zh: 运行时异常值取决于用于分类异常值的截止值，因此[get_cuda_kernel_launch_stats](https://hta.readthedocs.io/en/latest/source/api/trace_analysis_api.html#hta.trace_analysis.TraceAnalysis.get_cuda_kernel_launch_stats)
+    API提供`runtime_cutoff`参数来配置该值。
 - en: '![../_images/runtime_outliers.png](../Images/bdc1a7dd3417b484ec5a627c589915df.png)'
+  id: totrans-102
   prefs: []
   type: TYPE_IMG
+  zh: '![../_images/runtime_outliers.png](../Images/bdc1a7dd3417b484ec5a627c589915df.png)'
 - en: '**Launch delay outliers**'
+  id: totrans-103
   prefs: []
   type: TYPE_NORMAL
+  zh: '**启动延迟异常值**'
 - en: The launch delay outliers depend on the cutoff used to classify the outliers,
     hence the get_cuda_kernel_launch_stats API provides the `launch_delay_cutoff`
     argument to configure the value.
+  id: totrans-104
   prefs: []
   type: TYPE_NORMAL
+  zh: 启动延迟异常值取决于用于分类异常值的截止值，因此get_cuda_kernel_launch_stats API提供`launch_delay_cutoff`参数来配置该值。
 - en: '![../_images/launch_delay_outliers.png](../Images/048059c775c69a3b4b7b7e03ec1bd8fd.png)'
+  id: totrans-105
   prefs: []
   type: TYPE_IMG
+  zh: '![../_images/launch_delay_outliers.png](../Images/048059c775c69a3b4b7b7e03ec1bd8fd.png)'
 - en: Conclusion
+  id: totrans-106
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 结论
 - en: In this tutorial, you have learned how to install and use HTA, a performance
     tool that enables you analyze bottlenecks in your distributed training workflows.
     To learn how you can use the HTA tool to perform trace diff analysis, see [Trace
     Diff using Holistic Trace Analysis](https://pytorch.org/tutorials/beginner/hta_trace_diff_tutorial.html).
+  id: totrans-107
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，您已经学会了如何安装和使用HTA，这是一种性能工具，可以帮助您分析分布式训练工作流中的瓶颈。要了解如何使用HTA工具执行跟踪差异分析，请参阅[使用全面跟踪分析进行跟踪差异](https://pytorch.org/tutorials/beginner/hta_trace_diff_tutorial.html)。

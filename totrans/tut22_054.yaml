@@ -1,451 +1,679 @@
 - en: Preprocess custom text dataset using Torchtext
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 使用Torchtext预处理自定义文本数据集
 - en: 原文：[https://pytorch.org/tutorials/beginner/torchtext_custom_dataset_tutorial.html](https://pytorch.org/tutorials/beginner/torchtext_custom_dataset_tutorial.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: '[https://pytorch.org/tutorials/beginner/torchtext_custom_dataset_tutorial.html](https://pytorch.org/tutorials/beginner/torchtext_custom_dataset_tutorial.html)'
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-beginner-torchtext-custom-dataset-tutorial-py)
     to download the full example code
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[这里](#sphx-glr-download-beginner-torchtext-custom-dataset-tutorial-py)下载完整示例代码
 - en: '**Author**: [Anupam Sharma](https://anp-scp.github.io/)'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '**作者**：[Anupam Sharma](https://anp-scp.github.io/)'
 - en: 'This tutorial illustrates the usage of torchtext on a dataset that is not built-in.
     In the tutorial, we will preprocess a dataset that can be further utilized to
     train a sequence-to-sequence model for machine translation (something like, in
     this tutorial: [Sequence to Sequence Learning with Neural Networks](https://github.com/bentrevett/pytorch-seq2seq/blob/master/1%20-%20Sequence%20to%20Sequence%20Learning%20with%20Neural%20Networks.ipynb))
     but without using legacy version of torchtext.'
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程演示了torchtext在非内置数据集上的用法。在本教程中，我们将预处理一个数据集，可以进一步用于训练用于机器翻译的序列到序列模型（类似于本教程中的内容：[使用神经网络进行序列到序列学习](https://github.com/bentrevett/pytorch-seq2seq/blob/master/1%20-%20Sequence%20to%20Sequence%20Learning%20with%20Neural%20Networks.ipynb)），但不使用torchtext的旧版本。
 - en: 'In this tutorial, we will learn how to:'
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，我们将学习如何：
 - en: Read a dataset
+  id: totrans-7
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 读取数据集
 - en: Tokenize sentence
+  id: totrans-8
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 标记化句子
 - en: Apply transforms to sentence
+  id: totrans-9
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 对句子应用转换
 - en: Perform bucket batching
+  id: totrans-10
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 执行桶批处理
 - en: Let us assume that we need to prepare a dataset to train a model that can perform
     English to German translation. We will use a tab-delimited German - English sentence
     pairs provided by the [Tatoeba Project](https://tatoeba.org/en) which can be downloaded
     from [this link](https://www.manythings.org/anki/deu-eng.zip).
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 假设我们需要准备一个数据集来训练一个能够进行英语到德语翻译的模型。我们将使用[Tatoeba Project](https://tatoeba.org/en)提供的制表符分隔的德语
+    - 英语句对，可以从[此链接](https://www.manythings.org/anki/deu-eng.zip)下载。
 - en: Sentence pairs for other languages can be found in [this link](https://www.manythings.org/anki/).
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: 其他语言的句子对可以在[此链接](https://www.manythings.org/anki/)找到。
 - en: Setup
+  id: totrans-13
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 设置
 - en: First, download the dataset, extract the zip, and note the path to the file
     deu.txt.
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 首先，下载数据集，提取zip文件，并记下文件deu.txt的路径。
 - en: 'Ensure that following packages are installed:'
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 确保已安装以下软件包：
 - en: '[Torchdata 0.6.0](https://pytorch.org/data/beta/index.html) ([Installation
     instructions](https://github.com/pytorch/data) )'
+  id: totrans-16
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[Torchdata 0.6.0](https://pytorch.org/data/beta/index.html)（[安装说明](https://github.com/pytorch/data)）'
 - en: '[Torchtext 0.15.0](https://pytorch.org/text/stable/index.html) ([Installation
     instructions](https://github.com/pytorch/text) )'
+  id: totrans-17
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[Torchtext 0.15.0](https://pytorch.org/text/stable/index.html)（[安装说明](https://github.com/pytorch/text)）'
 - en: '[Spacy](https://spacy.io/usage)'
+  id: totrans-18
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[Spacy](https://spacy.io/usage)'
 - en: Here, we are using Spacy to tokenize text. In simple words tokenization means
     to convert a sentence to list of words. Spacy is a python package used for various
     Natural Language Processing (NLP) tasks.
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这里，我们使用Spacy对文本进行标记化。简单来说，标记化意味着将句子转换为单词列表。Spacy是一个用于各种自然语言处理（NLP）任务的Python包。
 - en: 'Download the English and German models from Spacy as shown below:'
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 从Spacy下载英语和德语模型，如下所示：
 - en: '[PRE0]'
+  id: totrans-21
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: 'Let us start by importing required modules:'
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们从导入所需模块开始：
 - en: '[PRE1]'
+  id: totrans-23
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Now we will load the dataset
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们将加载数据集
 - en: '[PRE2]'
+  id: totrans-25
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: 'In the above code block, we are doing following things:'
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 在上述代码块中，我们正在做以下事情：
 - en: At line 2, we are creating an iterable of filenames
+  id: totrans-27
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 在第2行，我们正在创建一个文件名的可迭代对象
 - en: At line 3, we pass the iterable to FileOpener which then opens the file in read
     mode
+  id: totrans-28
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 在第3行，我们将可迭代对象传递给FileOpener，然后以读取模式打开文件
 - en: At line 4, we call a function to parse the file, which again returns an iterable
     of tuples representing each rows of the tab-delimited file
+  id: totrans-29
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 在第4行，我们调用一个函数来解析文件，该函数再次返回一个元组的可迭代对象，表示制表符分隔文件的每一行
 - en: DataPipes can be thought of something like a dataset object, on which we can
     perform various operations. Check [this tutorial](https://pytorch.org/data/beta/dp_tutorial.html)
     for more details on DataPipes.
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: DataPipes可以被视为类似数据集对象的东西，我们可以在其上执行各种操作。查看[此教程](https://pytorch.org/data/beta/dp_tutorial.html)以获取有关DataPipes的更多详细信息。
 - en: 'We can verify if the iterable has the pair of sentences as shown below:'
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们可以验证可迭代对象是否包含句子对，如下所示：
 - en: '[PRE3]'
+  id: totrans-32
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: '[PRE4]'
+  id: totrans-33
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: 'Note that we also have attribution details along with pair of sentences. We
     will write a small function to remove the attribution details:'
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，我们还有句子对的归属细节。我们将编写一个小函数来删除归属细节：
 - en: '[PRE5]'
+  id: totrans-35
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: The map function at line 6 in above code block can be used to apply some function
     on each elements of data_pipe. Now, we can verify that the data_pipe only contains
     pair of sentences.
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 上述代码块中第6行的map函数可用于在data_pipe的每个元素上应用某个函数。现在，我们可以验证data_pipe只包含句子对。
 - en: '[PRE6]'
+  id: totrans-37
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: '[PRE7]'
+  id: totrans-38
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: 'Now, let us define few functions to perform tokenization:'
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，让我们定义一些函数来执行标记化：
 - en: '[PRE8]'
+  id: totrans-40
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: 'Above function accepts a text and returns a list of words as shown below:'
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 上述函数接受文本并返回如下所示的单词列表：
 - en: '[PRE9]'
+  id: totrans-42
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: '[PRE10]'
+  id: totrans-43
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: Building the vocabulary
+  id: totrans-44
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 构建词汇表
 - en: Let us consider an English sentence as the source and a German sentence as the
     target.
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们将英语句子作为源，德语句子作为目标。
 - en: Vocabulary can be considered as the set of unique words we have in the dataset.
     We will build vocabulary for both our source and target now.
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 词汇可以被视为数据集中我们拥有的唯一单词集合。我们现在将为源和目标构建词汇表。
 - en: Let us define a function to get tokens from elements of tuples in the iterator.
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们定义一个函数，从迭代器中的元组元素获取标记。
 - en: '[PRE11]'
+  id: totrans-48
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: 'Now, we will build vocabulary for source:'
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，我们将为源构建词汇表：
 - en: '[PRE12]'
+  id: totrans-50
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: 'The code above, builds the vocabulary from the iterator. In the above code
     block:'
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
+  zh: 上面的代码从迭代器构建词汇表。在上述代码块中：
 - en: At line 2, we call the getTokens() function with place=0 as we need vocabulary
     for source sentences.
+  id: totrans-52
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在第2行，我们调用getTokens()函数，并将place=0，因为我们需要源句子的词汇表。
 - en: At line 3, we set min_freq=2. This means, the function will skip those words
     that occurs less than 2 times.
+  id: totrans-53
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在第3行，我们设置min_freq=2。这意味着该函数将跳过出现少于2次的单词。
 - en: 'At line 4, we specify some special tokens:'
+  id: totrans-54
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在第4行，我们指定了一些特殊标记：
 - en: <sos> for start of sentence
+  id: totrans-55
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: <sos>表示句子的开始
 - en: <eos> for end of sentence
+  id: totrans-56
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: <eos>表示句子结束
 - en: <unk> for unknown words. An example of unknown word is the one skipped because
     of min_freq=2.
+  id: totrans-57
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: <unk>表示未知单词。一个未知单词的示例是由于min_freq=2而被跳过的单词。
 - en: <pad> is the padding token. While training, a model we mostly train in batches.
     In a batch, there can be sentences of different length. So, we pad the shorter
     sentences with <pad> token to make length of all sequences in the batch equal.
+  id: totrans-58
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: <pad>是填充标记。在训练模型时，我们大多数情况下是以批量的形式训练。在一个批次中，可能会有不同长度的句子。因此，我们用<pad>标记填充较短的句子，使批次中所有序列的长度相等。
 - en: At line 5, we set special_first=True. Which means <pad> will get index 0, <sos>
     index 1, <eos> index 2, and <unk> will get index 3 in the vocabulary.
+  id: totrans-59
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在第5行，我们设置special_first=True。这意味着<pad>将在词汇表中得到索引0，<sos>得到索引1，<eos>得到索引2，<unk>将在词汇表中得到索引3。
 - en: At line 7, we set default index as index of <unk>. That means if some word is
     not in vocabulary, we will use <unk> instead of that unknown word.
+  id: totrans-60
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在第7行，我们将默认索引设置为<unk>的索引。这意味着如果某个单词不在词汇表中，我们将使用<unk>代替该未知单词。
 - en: 'Similarly, we will build vocabulary for target sentences:'
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: 类似地，我们将为目标句子构建词汇表：
 - en: '[PRE13]'
+  id: totrans-62
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: Note that the example above shows how can we add special tokens to our vocabulary.
     The special tokens may change based on the requirements.
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，上面的示例显示了如何向我们的词汇表添加特殊标记。特殊标记可能会根据需求而变化。
 - en: Now, we can verify that special tokens are placed at the beginning and then
     other words. In the below code, source_vocab.get_itos() returns a list with tokens
     at index based on vocabulary.
+  id: totrans-64
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，我们可以验证特殊标记是放在开头的，然后是其他单词。在下面的代码中，source_vocab.get_itos()返回一个基于词汇表的索引的标记列表。
 - en: '[PRE14]'
+  id: totrans-65
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: '[PRE15]'
+  id: totrans-66
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: Numericalize sentences using vocabulary
+  id: totrans-67
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 使用词汇表对句子进行数字化
 - en: 'After building the vocabulary, we need to convert our sentences to corresponding
     indices. Let us define some functions for this:'
+  id: totrans-68
   prefs: []
   type: TYPE_NORMAL
+  zh: 构建词汇表后，我们需要将我们的句子转换为相应的索引。让我们为此定义一些函数：
 - en: '[PRE16]'
+  id: totrans-69
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: Now, let us see how to use the above function. The function returns an object
     of Transforms which we will use on our sentence. Let us take a random sentence
     and check how the transform works.
+  id: totrans-70
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，让我们看看如何使用上述函数。该函数返回一个Transforms对象，我们将在我们的句子上使用它。让我们取一个随机句子并检查转换的工作方式。
 - en: '[PRE17]'
+  id: totrans-71
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: '[PRE18]'
+  id: totrans-72
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: 'In the above code,:'
+  id: totrans-73
   prefs: []
   type: TYPE_NORMAL
+  zh: 在上面的代码中：
 - en: At line 2, we take a source sentence from list that we created from data_pipe
     at line 1
+  id: totrans-74
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在第2行，我们从在第1行从data_pipe创建的列表中取一个源句子
 - en: At line 5, we get a transform based on a source vocabulary and apply it to a
     tokenized sentence. Note that transforms take list of words and not a sentence.
+  id: totrans-75
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在第5行，我们根据源词汇表获取一个转换，并将其应用于一个标记化的句子。请注意，转换接受单词列表而不是句子。
 - en: At line 8, we get the mapping of index to string and then use it get the transformed
     sentence
+  id: totrans-76
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在第8行，我们获取索引到字符串的映射，然后使用它来获取转换后的句子
 - en: Now we will use DataPipe functions to apply transform to all our sentences.
     Let us define some more functions for this.
+  id: totrans-77
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们将使用DataPipe函数来对所有句子应用转换。让我们为此定义一些更多的函数。
 - en: '[PRE19]'
+  id: totrans-78
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE19]'
 - en: '[PRE20]'
+  id: totrans-79
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE20]'
 - en: Make batches (with bucket batch)
+  id: totrans-80
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 制作批次（使用bucket batch）
 - en: Generally, we train models in batches. While working for sequence to sequence
     models, it is recommended to keep the length of sequences in a batch similar.
     For that we will use bucketbatch function of data_pipe.
+  id: totrans-81
   prefs: []
   type: TYPE_NORMAL
+  zh: 通常，我们以批量的形式训练模型。在为序列到序列模型工作时，建议保持批次中序列的长度相似。为此，我们将使用data_pipe的bucketbatch函数。
 - en: Let us define some functions that will be used by the bucketbatch function.
+  id: totrans-82
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们定义一些将被bucketbatch函数使用的函数。
 - en: '[PRE21]'
+  id: totrans-83
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE21]'
 - en: 'Now, we will apply the bucketbatch function:'
+  id: totrans-84
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，我们将应用bucketbatch函数：
 - en: '[PRE22]'
+  id: totrans-85
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE22]'
 - en: 'In the above code block:'
+  id: totrans-86
   prefs: []
   type: TYPE_NORMAL
+  zh: 在上面的代码块中：
 - en: We keep batch size = 4.
+  id: totrans-87
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 我们保持批量大小为4。
 - en: ''
+  id: totrans-88
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-89
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: batch_num is the number of batches to keep in a bucket
+  id: totrans-90
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: batch_num是要在桶中保留的批次数
 - en: ''
+  id: totrans-91
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-92
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: bucket_num is the number of buckets to keep in a pool for shuffling
+  id: totrans-93
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: bucket_num是要在池中保留的桶数以进行洗牌。
 - en: ''
+  id: totrans-94
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-95
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: sort_key specifies the function that takes a bucket and sorts it
+  id: totrans-96
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: sort_key指定一个函数，该函数接受一个桶并对其进行排序
 - en: 'Now, let us consider a batch of source sentences as X and a batch of target
     sentences as y. Generally, while training a model, we predict on a batch of X
     and compare the result with y. But, a batch in our data_pipe is of the form [(X_1,y_1),
     (X_2,y_2), (X_3,y_3), (X_4,y_4)]:'
+  id: totrans-97
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，让我们将一批源句子表示为X，将一批目标句子表示为y。通常，在训练模型时，我们对一批X进行预测，并将结果与y进行比较。但是，在我们的data_pipe中，一个批次的形式是[(X_1,y_1),
+    (X_2,y_2), (X_3,y_3), (X_4,y_4)]：
 - en: '[PRE23]'
+  id: totrans-98
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE23]'
 - en: '[PRE24]'
+  id: totrans-99
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE24]'
 - en: 'So, we will now convert them into the form: ((X_1,X_2,X_3,X_4), (y_1,y_2,y_3,y_4)).
     For this we will write a small function:'
+  id: totrans-100
   prefs: []
   type: TYPE_NORMAL
+  zh: 因此，我们现在将把它们转换为这种形式：((X_1,X_2,X_3,X_4)，(y_1,y_2,y_3,y_4))。为此，我们将编写一个小函数：
 - en: '[PRE25]'
+  id: totrans-101
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE25]'
 - en: '[PRE26]'
+  id: totrans-102
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE26]'
 - en: Now, we have the data as desired.
+  id: totrans-103
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，我们已经得到了所需的数据。
 - en: Padding
+  id: totrans-104
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 填充
 - en: 'As discussed earlier while building vocabulary, we need to pad shorter sentences
     in a batch to make all the sequences in a batch of equal length. We can perform
     padding as follows:'
+  id: totrans-105
   prefs: []
   type: TYPE_NORMAL
+  zh: 如前所述，在构建词汇表时，我们需要填充批次中较短的句子，以使批次中所有序列的长度相等。我们可以按以下方式执行填充：
 - en: '[PRE27]'
+  id: totrans-106
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE27]'
 - en: 'Now, we can use the index to string mapping to see how the sequence would look
     with tokens instead of indices:'
+  id: totrans-107
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，我们可以使用索引到字符串映射来查看序列如何以标记而不是索引的形式呈现：
 - en: '[PRE28]'
+  id: totrans-108
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE28]'
 - en: '[PRE29]'
+  id: totrans-109
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE29]'
 - en: In the above output we can observe that the shorter sentences are padded with
     <pad>. Now, we can use data_pipe while writing our training function.
+  id: totrans-110
   prefs: []
   type: TYPE_NORMAL
+  zh: 在上面的输出中，我们可以观察到较短的句子被填充为<pad>。现在，我们可以在编写训练函数时使用data_pipe。
 - en: Some parts of this tutorial was inspired from [this article](https://medium.com/@bitdribble/migrate-torchtext-to-the-new-0-9-0-api-1ff1472b5d71).
+  id: totrans-111
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程的部分内容受到了[这篇文章](https://medium.com/@bitdribble/migrate-torchtext-to-the-new-0-9-0-api-1ff1472b5d71)的启发。
 - en: '**Total running time of the script:** ( 4 minutes 41.756 seconds)'
+  id: totrans-112
   prefs: []
   type: TYPE_NORMAL
+  zh: '**脚本的总运行时间：**（4分钟41.756秒）'
 - en: '[`Download Python source code: torchtext_custom_dataset_tutorial.py`](../_downloads/e80c8c5b8a71514d0905366c448448c0/torchtext_custom_dataset_tutorial.py)'
+  id: totrans-113
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Python源代码：torchtext_custom_dataset_tutorial.py`](../_downloads/e80c8c5b8a71514d0905366c448448c0/torchtext_custom_dataset_tutorial.py)'
 - en: '[`Download Jupyter notebook: torchtext_custom_dataset_tutorial.ipynb`](../_downloads/627c3342e113b9762abb19cc5568a16a/torchtext_custom_dataset_tutorial.ipynb)'
+  id: totrans-114
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Jupyter笔记本：torchtext_custom_dataset_tutorial.ipynb`](../_downloads/627c3342e113b9762abb19cc5568a16a/torchtext_custom_dataset_tutorial.ipynb)'
 - en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  id: totrans-115
   prefs: []
   type: TYPE_NORMAL
+  zh: '[由Sphinx-Gallery生成的图库](https://sphinx-gallery.github.io)'

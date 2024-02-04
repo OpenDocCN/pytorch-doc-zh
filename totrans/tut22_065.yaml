@@ -1,11 +1,15 @@
 - en: Loading a TorchScript Model in C++
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 在C++中加载TorchScript模型
 - en: 原文：[https://pytorch.org/tutorials/advanced/cpp_export.html](https://pytorch.org/tutorials/advanced/cpp_export.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/advanced/cpp_export.html](https://pytorch.org/tutorials/advanced/cpp_export.html)
 - en: As its name suggests, the primary interface to PyTorch is the Python programming
     language. While Python is a suitable and preferred language for many scenarios
     requiring dynamism and ease of iteration, there are equally many situations where
@@ -16,12 +20,17 @@
     The following paragraphs will outline the path PyTorch provides to go from an
     existing Python model to a serialized representation that can be *loaded* and
     *executed* purely from C++, with no dependency on Python.
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 正如其名称所示，PyTorch的主要接口是Python编程语言。虽然Python是许多需要动态性和迭代便利性的场景的合适和首选语言，但同样有许多情况下，Python的这些特性并不理想。其中一个经常适用后者的环境是*生产*
+    - 低延迟和严格部署要求的领域。对于生产场景，C++往往是首选的语言，即使只是将其绑定到另一种语言如Java、Rust或Go中。以下段落将概述PyTorch提供的路径，从现有的Python模型到可以纯粹从C++中*加载*和*执行*的序列化表示形式，而不依赖于Python。
 - en: 'Step 1: Converting Your PyTorch Model to Torch Script'
+  id: totrans-3
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 第1步：将您的PyTorch模型转换为Torch Script
 - en: A PyTorch model’s journey from Python to C++ is enabled by [Torch Script](https://pytorch.org/docs/master/jit.html),
     a representation of a PyTorch model that can be understood, compiled and serialized
     by the Torch Script compiler. If you are starting out from an existing PyTorch
@@ -29,8 +38,12 @@
     Torch Script. In the most common cases, discussed below, this requires only little
     effort. If you already have a Torch Script module, you can skip to the next section
     of this tutorial.
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch模型从Python到C++的旅程是由[Torch Script](https://pytorch.org/docs/master/jit.html)实现的，这是PyTorch模型的一种表示形式，可以被Torch
+    Script编译器理解、编译和序列化。如果您从使用原始“eager”API编写的现有PyTorch模型开始，您必须首先将您的模型转换为Torch Script。在下面讨论的最常见情况下，这只需要很少的努力。如果您已经有了一个Torch
+    Script模块，您可以跳过本教程的下一部分。
 - en: There exist two ways of converting a PyTorch model to Torch Script. The first
     is known as *tracing*, a mechanism in which the structure of the model is captured
     by evaluating it once using example inputs, and recording the flow of those inputs
@@ -38,89 +51,130 @@
     flow. The second approach is to add explicit annotations to your model that inform
     the Torch Script compiler that it may directly parse and compile your model code,
     subject to the constraints imposed by the Torch Script language.
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 将PyTorch模型转换为Torch Script有两种方法。第一种被称为*跟踪*，通过使用示例输入对模型进行一次评估并记录这些输入通过模型的流程来捕获模型的结构。这适用于对控制流使用有限的模型。第二种方法是向您的模型添加显式注释，通知Torch
+    Script编译器可以直接解析和编译您的模型代码，受Torch Script语言的约束。
 - en: Tip
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 提示
 - en: You can find the complete documentation for both of these methods, as well as
     further guidance on which to use, in the official [Torch Script reference](https://pytorch.org/docs/master/jit.html).
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可以在官方[Torch Script参考文档](https://pytorch.org/docs/master/jit.html)中找到这两种方法的完整文档，以及关于使用哪种方法的进一步指导。
 - en: Converting to Torch Script via Tracing
+  id: totrans-8
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 通过跟踪转换为Torch Script
 - en: 'To convert a PyTorch model to Torch Script via tracing, you must pass an instance
     of your model along with an example input to the `torch.jit.trace` function. This
     will produce a `torch.jit.ScriptModule` object with the trace of your model evaluation
     embedded in the module’s `forward` method:'
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 要通过跟踪将PyTorch模型转换为Torch Script，必须将模型实例和示例输入传递给`torch.jit.trace`函数。这将生成一个带有模型评估跟踪的`torch.jit.ScriptModule`对象，嵌入在模块的`forward`方法中：
 - en: '[PRE0]'
+  id: totrans-10
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: 'The traced `ScriptModule` can now be evaluated identically to a regular PyTorch
     module:'
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 跟踪的`ScriptModule`现在可以像常规PyTorch模块一样进行评估：
 - en: '[PRE1]'
+  id: totrans-12
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Converting to Torch Script via Annotation
+  id: totrans-13
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 通过注释转换为Torch Script
 - en: 'Under certain circumstances, such as if your model employs particular forms
     of control flow, you may want to write your model in Torch Script directly and
     annotate your model accordingly. For example, say you have the following vanilla
     Pytorch model:'
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 在某些情况下，例如如果您的模型使用特定形式的控制流，您可能希望直接在Torch Script中编写您的模型并相应地注释您的模型。例如，假设您有以下基本的Pytorch模型：
 - en: '[PRE2]'
+  id: totrans-15
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: 'Because the `forward` method of this module uses control flow that is dependent
     on the input, it is not suitable for tracing. Instead, we can convert it to a
     `ScriptModule`. In order to convert the module to the `ScriptModule`, one needs
     to compile the module with `torch.jit.script` as follows:'
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于此模块的`forward`方法使用依赖于输入的控制流，因此不适合跟踪。相反，我们可以将其转换为`ScriptModule`。为了将模块转换为`ScriptModule`，需要使用`torch.jit.script`编译模块，如下所示：
 - en: '[PRE3]'
+  id: totrans-17
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: If you need to exclude some methods in your `nn.Module` because they use Python
     features that TorchScript doesn’t support yet, you could annotate those with `@torch.jit.ignore`
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您需要排除`nn.Module`中的某些方法，因为它们使用TorchScript尚不支持的Python特性，您可以使用`@torch.jit.ignore`对其进行注释。
 - en: '`sm` is an instance of `ScriptModule` that is ready for serialization.'
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: '`sm`是一个准备好进行序列化的`ScriptModule`实例。'
 - en: 'Step 2: Serializing Your Script Module to a File'
+  id: totrans-20
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 第2步：将您的脚本模块序列化到文件
 - en: 'Once you have a `ScriptModule` in your hands, either from tracing or annotating
     a PyTorch model, you are ready to serialize it to a file. Later on, you’ll be
     able to load the module from this file in C++ and execute it without any dependency
     on Python. Say we want to serialize the `ResNet18` model shown earlier in the
     tracing example. To perform this serialization, simply call [save](https://pytorch.org/docs/master/jit.html#torch.jit.ScriptModule.save)
     on the module and pass it a filename:'
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 一旦您手头有一个`ScriptModule`，无论是通过跟踪还是注释PyTorch模型获得的，您就可以将其序列化到文件中。稍后，您将能够在C++中从此文件加载模块并执行它，而无需依赖Python。假设我们想要序列化前面在跟踪示例中显示的`ResNet18`模型。要执行此序列化，只需在模块上调用[save](https://pytorch.org/docs/master/jit.html#torch.jit.ScriptModule.save)并传递一个文件名：
 - en: '[PRE4]'
+  id: totrans-22
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: This will produce a `traced_resnet_model.pt` file in your working directory.
     If you also would like to serialize `sm`, call `sm.save("my_module_model.pt")`
     We have now officially left the realm of Python and are ready to cross over to
     the sphere of C++.
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 这将在您的工作目录中生成一个`traced_resnet_model.pt`文件。如果您还想序列化`sm`，请调用`sm.save("my_module_model.pt")`。我们现在正式离开了Python领域，准备进入C++领域。
 - en: 'Step 3: Loading Your Script Module in C++'
+  id: totrans-24
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 第3步：在C++中加载您的脚本模块
 - en: To load your serialized PyTorch model in C++, your application must depend on
     the PyTorch C++ API – also known as *LibTorch*. The LibTorch distribution encompasses
     a collection of shared libraries, header files and CMake build configuration files.
@@ -128,166 +182,245 @@
     approach and will be well supported into the future. For this tutorial, we will
     be building a minimal C++ application using CMake and LibTorch that simply loads
     and executes a serialized PyTorch model.
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: 在C++中加载您序列化的PyTorch模型，您的应用程序必须依赖于PyTorch C++ API - 也称为*LibTorch*。LibTorch分发包括一组共享库、头文件和CMake构建配置文件。虽然CMake不是依赖于LibTorch的必需条件，但它是推荐的方法，并且将在未来得到很好的支持。在本教程中，我们将构建一个最小的C++应用程序，使用CMake和LibTorch简单地加载和执行一个序列化的PyTorch模型。
 - en: A Minimal C++ Application
+  id: totrans-26
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 一个最小的C++应用程序
 - en: 'Let’s begin by discussing the code to load a module. The following will already
     do:'
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们从讨论加载模块的代码开始。以下内容已经足够：
 - en: '[PRE5]'
+  id: totrans-28
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: The `<torch/script.h>` header encompasses all relevant includes from the LibTorch
     library necessary to run the example. Our application accepts the file path to
     a serialized PyTorch `ScriptModule` as its only command line argument and then
     proceeds to deserialize the module using the `torch::jit::load()` function, which
     takes this file path as input. In return we receive a `torch::jit::script::Module`
     object. We will examine how to execute it in a moment.
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: '`<torch/script.h>`头文件包含了LibTorch库中运行示例所需的所有相关包含。我们的应用程序接受一个序列化的PyTorch `ScriptModule`的文件路径作为唯一的命令行参数，然后使用`torch::jit::load()`函数对模块进行反序列化，该函数以此文件路径作为输入。作为返回，我们收到一个`torch::jit::script::Module`对象。我们将在稍后看看如何执行它。'
 - en: Depending on LibTorch and Building the Application
+  id: totrans-30
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 依赖于LibTorch并构建应用程序
 - en: 'Assume we stored the above code into a file called `example-app.cpp`. A minimal
     `CMakeLists.txt` to build it could look as simple as:'
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: 假设我们将上面的代码存储到一个名为`example-app.cpp`的文件中。一个用于构建它的最小`CMakeLists.txt`可能看起来就像这样简单：
 - en: '[PRE6]'
+  id: totrans-32
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: 'The last thing we need to build the example application is the LibTorch distribution.
     You can always grab the latest stable release from the [download page](https://pytorch.org/)
     on the PyTorch website. If you download and unzip the latest archive, you should
     receive a folder with the following directory structure:'
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: 构建示例应用程序所需的最后一件事是LibTorch分发。您可以随时从PyTorch网站的[下载页面](https://pytorch.org/)上获取最新的稳定版本。如果下载并解压最新的存档，您应该会收到一个具有以下目录结构的文件夹：
 - en: '[PRE7]'
+  id: totrans-34
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: The `lib/` folder contains the shared libraries you must link against,
+  id: totrans-35
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`lib/`文件夹包含了您必须链接的共享库，'
 - en: The `include/` folder contains header files your program will need to include,
+  id: totrans-36
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`include/`文件夹包含了您的程序需要包含的头文件，'
 - en: The `share/` folder contains the necessary CMake configuration to enable the
     simple `find_package(Torch)` command above.
+  id: totrans-37
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`share/`文件夹包含了必要的CMake配置，以启用上面简单的`find_package(Torch)`命令。'
 - en: Tip
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 提示
 - en: On Windows, debug and release builds are not ABI-compatible. If you plan to
     build your project in debug mode, please try the debug version of LibTorch. Also,
     make sure you specify the correct configuration in the `cmake --build .` line
     below.
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 在Windows上，调试版本和发布版本不兼容。如果您计划在调试模式下构建项目，请尝试使用LibTorch的调试版本。此外，请确保在下面的`cmake --build
+    .`行中指定正确的配置。
 - en: 'The last step is building the application. For this, assume our example directory
     is laid out like this:'
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: 最后一步是构建应用程序。为此，假设我们的示例目录布局如下：
 - en: '[PRE8]'
+  id: totrans-41
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: 'We can now run the following commands to build the application from within
     the `example-app/` folder:'
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们现在可以运行以下命令来从`example-app/`文件夹中构建应用程序：
 - en: '[PRE9]'
+  id: totrans-43
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: 'where `/path/to/libtorch` should be the full path to the unzipped LibTorch
     distribution. If all goes well, it will look something like this:'
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 其中`/path/to/libtorch`应该是解压后的LibTorch分发的完整路径。如果一切顺利，它应该看起来像这样：
 - en: '[PRE10]'
+  id: totrans-45
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: If we supply the path to the traced `ResNet18` model `traced_resnet_model.pt`
     we created earlier to the resulting `example-app` binary, we should be rewarded
     with a friendly “ok”. Please note, if try to run this example with `my_module_model.pt`
     you will get an error saying that your input is of an incompatible shape. `my_module_model.pt`
     expects 1D instead of 4D.
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果我们将之前创建的跟踪的`ResNet18`模型`traced_resnet_model.pt`的路径提供给生成的`example-app`二进制文件，我们应该会得到一个友好的“ok”。请注意，如果尝试使用`my_module_model.pt`运行此示例，您将收到一个错误，指出您的输入形状不兼容。`my_module_model.pt`期望的是1D而不是4D。
 - en: '[PRE11]'
+  id: totrans-47
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: 'Step 4: Executing the Script Module in C++'
+  id: totrans-48
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 第4步：在C++中执行脚本模块
 - en: 'Having successfully loaded our serialized `ResNet18` in C++, we are now just
     a couple lines of code away from executing it! Let’s add those lines to our C++
     application’s `main()` function:'
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: 在C++中成功加载我们序列化的`ResNet18`之后，我们现在只需再加入几行代码就可以执行它了！让我们将这些行添加到我们的C++应用程序的`main()`函数中：
 - en: '[PRE12]'
+  id: totrans-50
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: The first two lines set up the inputs to our model. We create a vector of `torch::jit::IValue`
     (a type-erased value type `script::Module` methods accept and return) and add
     a single input. To create the input tensor, we use `torch::ones()`, the equivalent
     to `torch.ones` in the C++ API. We then run the `script::Module`’s `forward` method,
     passing it the input vector we created. In return we get a new `IValue`, which
     we convert to a tensor by calling `toTensor()`.
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
+  zh: 前两行设置了我们模型的输入。我们创建了一个`torch::jit::IValue`向量（一种类型擦除的值类型，`script::Module`方法接受和返回），并添加了一个单一的输入。为了创建输入张量，我们使用`torch::ones()`，相当于C++
+    API中的`torch.ones`。然后我们运行`script::Module`的`forward`方法，将我们创建的输入向量传递给它。作为返回，我们得到一个新的`IValue`，通过调用`toTensor()`将其转换为张量。
 - en: Tip
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
+  zh: 提示
 - en: To learn more about functions like `torch::ones` and the PyTorch C++ API in
     general, refer to its documentation at [https://pytorch.org/cppdocs](https://pytorch.org/cppdocs).
     The PyTorch C++ API provides near feature parity with the Python API, allowing
     you to further manipulate and process tensors just like in Python.
+  id: totrans-53
   prefs: []
   type: TYPE_NORMAL
+  zh: 要了解更多关于`torch::ones`等函数和PyTorch C++ API的信息，请参考其文档：[https://pytorch.org/cppdocs](https://pytorch.org/cppdocs)。PyTorch
+    C++ API几乎与Python API具有相同的功能，允许你像在Python中一样进一步操作和处理张量。
 - en: 'In the last line, we print the first five entries of the output. Since we supplied
     the same input to our model in Python earlier in this tutorial, we should ideally
     see the same output. Let’s try it out by re-compiling our application and running
     it with the same serialized model:'
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: 在最后一行，我们打印输出的前五个条目。由于我们在本教程中之前在Python中向模型提供了相同的输入，我们应该理想情况下看到相同的输出。让我们尝试重新编译我们的应用程序，并使用相同的序列化模型运行它：
 - en: '[PRE13]'
+  id: totrans-55
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: 'For reference, the output in Python previously was:'
+  id: totrans-56
   prefs: []
   type: TYPE_NORMAL
+  zh: 作为参考，之前在Python中的输出是：
 - en: '[PRE14]'
+  id: totrans-57
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: Looks like a good match!
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: 看起来很匹配！
 - en: Tip
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: 提示
 - en: To move your model to GPU memory, you can write `model.to(at::kCUDA);`. Make
     sure the inputs to a model are also living in CUDA memory by calling `tensor.to(at::kCUDA)`,
     which will return a new tensor in CUDA memory.
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: 要将模型移动到GPU内存，你可以写`model.to(at::kCUDA);`。确保模型的输入也在CUDA内存中，通过调用`tensor.to(at::kCUDA)`，这将返回一个在CUDA内存中的新张量。
 - en: 'Step 5: Getting Help and Exploring the API'
+  id: totrans-61
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 第五步：获取帮助和探索API
 - en: This tutorial has hopefully equipped you with a general understanding of a PyTorch
     model’s path from Python to C++. With the concepts described in this tutorial,
     you should be able to go from a vanilla, “eager” PyTorch model, to a compiled
     `ScriptModule` in Python, to a serialized file on disk and – to close the loop
     – to an executable `script::Module` in C++.
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个教程希望能让你对PyTorch模型从Python到C++的路径有一个基本的理解。有了这个教程中描述的概念，你应该能够从一个普通的“eager” PyTorch模型，转换为Python中编译的`ScriptModule`，再到磁盘上的序列化文件，最后到C++中可执行的`script::Module`。
 - en: 'Of course, there are many concepts we did not cover. For example, you may find
     yourself wanting to extend your `ScriptModule` with a custom operator implemented
     in C++ or CUDA, and executing this custom operator inside your `ScriptModule`
@@ -295,21 +428,31 @@
     and well supported! For now, you can explore [this](https://github.com/pytorch/pytorch/tree/master/test/custom_operator)
     folder for examples, and we will follow up with a tutorial shortly. In the time
     being, the following links may be generally helpful:'
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: 当然，还有许多概念我们没有涉及。例如，你可能会发现自己想要在C++或CUDA中实现自定义运算符来扩展你的`ScriptModule`，并在纯C++生产环境中加载这个自定义运算符并在你的`ScriptModule`中执行。好消息是：这是可能的，并且得到了很好的支持！目前，你可以在[这里](https://github.com/pytorch/pytorch/tree/master/test/custom_operator)探索示例，我们将很快推出教程。在此期间，以下链接可能会有所帮助：
 - en: 'The Torch Script reference: [https://pytorch.org/docs/master/jit.html](https://pytorch.org/docs/master/jit.html)'
+  id: totrans-64
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: Torch Script参考：[https://pytorch.org/docs/master/jit.html](https://pytorch.org/docs/master/jit.html)
 - en: 'The PyTorch C++ API documentation: [https://pytorch.org/cppdocs/](https://pytorch.org/cppdocs/)'
+  id: totrans-65
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: PyTorch C++ API文档：[https://pytorch.org/cppdocs/](https://pytorch.org/cppdocs/)
 - en: 'The PyTorch Python API documentation: [https://pytorch.org/docs/](https://pytorch.org/docs/)'
+  id: totrans-66
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: PyTorch Python API文档：[https://pytorch.org/docs/](https://pytorch.org/docs/)
 - en: As always, if you run into any problems or have questions, you can use our [forum](https://discuss.pytorch.org/)
     or [GitHub issues](https://github.com/pytorch/pytorch/issues) to get in touch.
+  id: totrans-67
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果遇到任何问题或有疑问，你可以使用我们的[论坛](https://discuss.pytorch.org/)或[GitHub问题](https://github.com/pytorch/pytorch/issues)来联系我们。

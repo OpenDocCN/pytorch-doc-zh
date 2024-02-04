@@ -1,195 +1,293 @@
 - en: Profiling your PyTorch Module
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 分析您的PyTorch模块
 - en: 原文：[https://pytorch.org/tutorials/beginner/profiler.html](https://pytorch.org/tutorials/beginner/profiler.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/beginner/profiler.html](https://pytorch.org/tutorials/beginner/profiler.html)
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-beginner-profiler-py) to download the full example
     code
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[这里](#sphx-glr-download-beginner-profiler-py)下载完整示例代码
 - en: '**Author:** [Suraj Subramanian](https://github.com/suraj813)'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '**作者：**[Suraj Subramanian](https://github.com/suraj813)'
 - en: PyTorch includes a profiler API that is useful to identify the time and memory
     costs of various PyTorch operations in your code. Profiler can be easily integrated
     in your code, and the results can be printed as a table or returned in a JSON
     trace file.
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch包含一个分析器API，可用于识别代码中各种PyTorch操作的时间和内存成本。分析器可以轻松集成到您的代码中，并且结果可以打印为表格或返回为JSON跟踪文件。
 - en: Note
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Profiler supports multithreaded models. Profiler runs in the same thread as
     the operation but it will also profile child operators that might run in another
     thread. Concurrently-running profilers will be scoped to their own thread to prevent
     mixing of results.
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 分析器支持多线程模型。分析器在与操作相同的线程中运行，但也会分析可能在另一个线程中运行的子操作符。同时运行的分析器将被限定在自己的线程中，以防止结果混合。
 - en: Note
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: PyTorch 1.8 introduces the new API that will replace the older profiler API
     in the future releases. Check the new API at [this page](https://pytorch.org/docs/master/profiler.html).
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch 1.8引入了新的API，将在未来版本中取代旧的分析器API。请查看新API页面：[此处](https://pytorch.org/docs/master/profiler.html)。
 - en: Head on over to [this recipe](https://pytorch.org/tutorials/recipes/recipes/profiler_recipe.html)
     for a quicker walkthrough of Profiler API usage.
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 前往[此处的教程](https://pytorch.org/tutorials/recipes/recipes/profiler_recipe.html)快速了解分析器API的使用。
 - en: '* * *'
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: '* * *'
 - en: '[PRE0]'
+  id: totrans-12
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: Performance debugging using Profiler
+  id: totrans-13
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 使用分析器进行性能调试
 - en: 'Profiler can be useful to identify performance bottlenecks in your models.
     In this example, we build a custom module that performs two sub-tasks:'
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 分析器可用于识别模型中的性能瓶颈。在此示例中，我们构建了一个执行两个子任务的自定义模块：
 - en: a linear transformation on the input, and
+  id: totrans-15
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 对输入进行线性变换，并
 - en: use the transformation result to get indices on a mask tensor.
+  id: totrans-16
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 使用转换结果在掩码张量上获取索引。
 - en: We wrap the code for each sub-task in separate labelled context managers using
     `profiler.record_function("label")`. In the profiler output, the aggregate performance
     metrics of all operations in the sub-task will show up under its corresponding
     label.
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们使用`profiler.record_function("label")`将每个子任务的代码包装在单独的带标签的上下文管理器中。在分析器输出中，子任务中所有操作的聚合性能指标将显示在相应的标签下。
 - en: Note that using Profiler incurs some overhead, and is best used only for investigating
     code. Remember to remove it if you are benchmarking runtimes.
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，使用分析器会产生一些开销，最好仅用于调查代码。如果您正在进行运行时间基准测试，请记得将其删除。
 - en: '[PRE1]'
+  id: totrans-19
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Profile the forward pass
+  id: totrans-20
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 分析前向传递
 - en: We initialize random input and mask tensors, and the model.
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们初始化随机输入和掩码张量，以及模型。
 - en: Before we run the profiler, we warm-up CUDA to ensure accurate performance benchmarking.
     We wrap the forward pass of our module in the `profiler.profile` context manager.
     The `with_stack=True` parameter appends the file and line number of the operation
     in the trace.
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 在运行分析器之前，我们先热身CUDA以确保准确的性能基准测试。我们将模块的前向传递包装在`profiler.profile`上下文管理器中。`with_stack=True`参数会在跟踪中附加操作的文件和行号。
 - en: Warning
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: '`with_stack=True` incurs an additional overhead, and is better suited for investigating
     code. Remember to remove it if you are benchmarking performance.'
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: '`with_stack=True`会产生额外的开销，更适合用于调查代码。如果您正在进行性能基准测试，请记得将其删除。'
 - en: '[PRE2]'
+  id: totrans-25
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Print profiler results
+  id: totrans-26
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 打印分析器结果
 - en: Finally, we print the profiler results. `profiler.key_averages` aggregates the
     results by operator name, and optionally by input shapes and/or stack trace events.
     Grouping by input shapes is useful to identify which tensor shapes are utilized
     by the model.
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 最后，我们打印分析器结果。`profiler.key_averages`按运算符名称聚合结果，并可选择按输入形状和/或堆栈跟踪事件进行分组。按输入形状分组有助于识别模型使用的张量形状。
 - en: Here, we use `group_by_stack_n=5` which aggregates runtimes by the operation
     and its traceback (truncated to the most recent 5 events), and display the events
     in the order they are registered. The table can also be sorted by passing a `sort_by`
     argument (refer to the [docs](https://pytorch.org/docs/stable/autograd.html#profiler)
     for valid sorting keys).
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这里，我们使用`group_by_stack_n=5`，它按操作及其回溯（截断为最近的5个事件）对运行时间进行聚合，并按其注册顺序显示事件。表格也可以通过传递`sort_by`参数进行排序（请参考[文档](https://pytorch.org/docs/stable/autograd.html#profiler)以获取有效的排序键）。
 - en: Note
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: 'When running profiler in a notebook, you might see entries like `<ipython-input-18-193a910735e8>(13):
     forward` instead of filenames in the stacktrace. These correspond to `<notebook-cell>(line
     number): calling-function`.'
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: '在笔记本中运行分析器时，您可能会看到类似`<ipython-input-18-193a910735e8>(13): forward`的条目，而不是堆栈跟踪中的文件名。这些对应于`<notebook-cell>(行号):
+    调用函数`。'
 - en: '[PRE3]'
+  id: totrans-31
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: Improve memory performance
+  id: totrans-32
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 提高内存性能
 - en: Note that the most expensive operations - in terms of memory and time - are
     at `forward (10)` representing the operations within MASK INDICES. Let’s try to
     tackle the memory consumption first. We can see that the `.to()` operation at
     line 12 consumes 953.67 Mb. This operation copies `mask` to the CPU. `mask` is
     initialized with a `torch.double` datatype. Can we reduce the memory footprint
     by casting it to `torch.float` instead?
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，从内存和时间方面来看，最昂贵的操作是`forward (10)`，代表MASK INDICES内的操作。让我们先尝试解决内存消耗问题。我们可以看到第12行的`.to()`操作消耗了953.67
+    Mb。此操作将`mask`复制到CPU。`mask`是用`torch.double`数据类型初始化的。我们是否可以通过将其转换为`torch.float`来减少内存占用？
 - en: '[PRE4]'
+  id: totrans-34
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: The CPU memory footprint for this operation has halved.
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 此操作的CPU内存占用减半。
 - en: Improve time performance
+  id: totrans-36
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 提高时间性能
 - en: While the time consumed has also reduced a bit, it’s still too high. Turns out
     copying a matrix from CUDA to CPU is pretty expensive! The `aten::copy_` operator
     in `forward (12)` copies `mask` to CPU so that it can use the NumPy `argwhere`
     function. `aten::copy_` at `forward(13)` copies the array back to CUDA as a tensor.
     We could eliminate both of these if we use a `torch` function `nonzero()` here
     instead.
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 虽然消耗的时间也有所减少，但仍然太高。原来从CUDA到CPU复制矩阵是非常昂贵的！`forward (12)`中的`aten::copy_`操作符将`mask`复制到CPU，以便可以使用NumPy的`argwhere`函数。`forward(13)`中的`aten::copy_`将数组复制回CUDA作为张量。如果我们在这里使用`torch`函数`nonzero()`，就可以消除这两个操作。
 - en: '[PRE5]'
+  id: totrans-38
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: Further Reading
+  id: totrans-39
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 进一步阅读
 - en: 'We have seen how Profiler can be used to investigate time and memory bottlenecks
     in PyTorch models. Read more about Profiler here:'
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们已经看到了如何使用分析器来调查PyTorch模型中的时间和内存瓶颈。在这里阅读更多关于分析器的信息：
 - en: '[Profiler Usage Recipe](https://pytorch.org/tutorials/recipes/recipes/profiler.html)'
+  id: totrans-41
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[分析器使用方法](https://pytorch.org/tutorials/recipes/recipes/profiler.html)'
 - en: '[Profiling RPC-Based Workloads](https://pytorch.org/tutorials/recipes/distributed_rpc_profiling.html)'
+  id: totrans-42
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[基于RPC的工作负载分析](https://pytorch.org/tutorials/recipes/distributed_rpc_profiling.html)'
 - en: '[Profiler API Docs](https://pytorch.org/docs/stable/autograd.html?highlight=profiler#profiler)'
+  id: totrans-43
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[分析器API文档](https://pytorch.org/docs/stable/autograd.html?highlight=profiler#profiler)'
 - en: '**Total running time of the script:** ( 0 minutes 0.000 seconds)'
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: '**脚本的总运行时间:** ( 0 分钟 0.000 秒)'
 - en: '[`Download Python source code: profiler.py`](../_downloads/1df539a85371bf035ce170fb872b4f7f/profiler.py)'
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Python源代码: profiler.py`](../_downloads/1df539a85371bf035ce170fb872b4f7f/profiler.py)'
 - en: '[`Download Jupyter notebook: profiler.ipynb`](../_downloads/9fc6c90b1bbbfd4201d66c498708f33f/profiler.ipynb)'
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Jupyter笔记本: profiler.ipynb`](../_downloads/9fc6c90b1bbbfd4201d66c498708f33f/profiler.ipynb)'
 - en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Sphinx-Gallery生成的图库](https://sphinx-gallery.github.io)'

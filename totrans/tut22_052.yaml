@@ -1,267 +1,391 @@
 - en: Text classification with the torchtext library
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 使用torchtext库进行文本分类
 - en: 原文：[https://pytorch.org/tutorials/beginner/text_sentiment_ngrams_tutorial.html](https://pytorch.org/tutorials/beginner/text_sentiment_ngrams_tutorial.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/beginner/text_sentiment_ngrams_tutorial.html](https://pytorch.org/tutorials/beginner/text_sentiment_ngrams_tutorial.html)
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-beginner-text-sentiment-ngrams-tutorial-py)
     to download the full example code
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[这里](#sphx-glr-download-beginner-text-sentiment-ngrams-tutorial-py)下载完整示例代码
 - en: In this tutorial, we will show how to use the torchtext library to build the
     dataset for the text classification analysis. Users will have the flexibility
     to
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，我们将展示如何使用torchtext库构建文本分类分析的数据集。用户将有灵活性
 - en: Access to the raw data as an iterator
+  id: totrans-5
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 访问原始数据的迭代器
 - en: ''
+  id: totrans-6
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-7
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: Build data processing pipeline to convert the raw text strings into `torch.Tensor`
     that can be used to train the model
+  id: totrans-8
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 构建数据处理管道，将原始文本字符串转换为可用于训练模型的`torch.Tensor`
 - en: ''
+  id: totrans-9
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-10
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: Shuffle and iterate the data with [torch.utils.data.DataLoader](https://pytorch.org/docs/stable/data.html?highlight=dataloader#torch.utils.data.DataLoader)
+  id: totrans-11
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 使用[torch.utils.data.DataLoader](https://pytorch.org/docs/stable/data.html?highlight=dataloader#torch.utils.data.DataLoader)对数据进行洗牌和迭代
 - en: Prerequisites
+  id: totrans-12
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 先决条件
 - en: 'A recent 2.x version of the `portalocker` package needs to be installed prior
     to running the tutorial. For example, in the Colab environment, this can be done
     by adding the following line at the top of the script:'
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: 在运行教程之前，需要安装最新的`portalocker`包。例如，在Colab环境中，可以通过在脚本顶部添加以下行来完成：
 - en: '[PRE0]'
+  id: totrans-14
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: Access to the raw dataset iterators
+  id: totrans-15
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 访问原始数据集迭代器
 - en: The torchtext library provides a few raw dataset iterators, which yield the
     raw text strings. For example, the `AG_NEWS` dataset iterators yield the raw data
     as a tuple of label and text.
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: torchtext库提供了一些原始数据集迭代器，可以产生原始文本字符串。例如，`AG_NEWS`数据集迭代器将原始数据作为标签和文本的元组产生。
 - en: To access torchtext datasets, please install torchdata following instructions
     at [https://github.com/pytorch/data](https://github.com/pytorch/data).
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 要访问torchtext数据集，请按照[https://github.com/pytorch/data](https://github.com/pytorch/data)上的说明安装torchdata。
 - en: '[PRE1]'
+  id: totrans-18
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: '[PRE2]'
+  id: totrans-19
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Prepare data processing pipelines
+  id: totrans-20
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 准备数据处理管道
 - en: We have revisited the very basic components of the torchtext library, including
     vocab, word vectors, tokenizer. Those are the basic data processing building blocks
     for raw text string.
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们已经重新审视了torchtext库的非常基本组件，包括词汇表、词向量、分词器。这些是原始文本字符串的基本数据处理构建模块。
 - en: Here is an example for typical NLP data processing with tokenizer and vocabulary.
     The first step is to build a vocabulary with the raw training dataset. Here we
     use built in factory function build_vocab_from_iterator which accepts iterator
     that yield list or iterator of tokens. Users can also pass any special symbols
     to be added to the vocabulary.
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 这是一个使用分词器和词汇表进行典型NLP数据处理的示例。第一步是使用原始训练数据集构建词汇表。在这里，我们使用内置的工厂函数`build_vocab_from_iterator`，它接受产生标记列表或标记迭代器的迭代器。用户还可以传递任何要添加到词汇表中的特殊符号。
 - en: '[PRE3]'
+  id: totrans-23
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: The vocabulary block converts a list of tokens into integers.
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 词汇表块将标记列表转换为整数。
 - en: '[PRE4]'
+  id: totrans-25
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: Prepare the text processing pipeline with the tokenizer and vocabulary. The
     text and label pipelines will be used to process the raw data strings from the
     dataset iterators.
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用分词器和词汇表准备文本处理管道。文本和标签管道将用于处理数据集迭代器中的原始数据字符串。
 - en: '[PRE5]'
+  id: totrans-27
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: The text pipeline converts a text string into a list of integers based on the
     lookup table defined in the vocabulary. The label pipeline converts the label
     into integers. For example,
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: 文本管道将文本字符串转换为基于词汇表中定义的查找表的整数列表。标签管道将标签转换为整数。例如，
 - en: '[PRE6]'
+  id: totrans-29
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: Generate data batch and iterator
+  id: totrans-30
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 生成数据批次和迭代器
 - en: '[torch.utils.data.DataLoader](https://pytorch.org/docs/stable/data.html?highlight=dataloader#torch.utils.data.DataLoader)
     is recommended for PyTorch users (a tutorial is [here](https://pytorch.org/tutorials/beginner/data_loading_tutorial.html)).
     It works with a map-style dataset that implements the `getitem()` and `len()`
     protocols, and represents a map from indices/keys to data samples. It also works
     with an iterable dataset with the shuffle argument of `False`.'
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于PyTorch用户，建议使用[torch.utils.data.DataLoader](https://pytorch.org/docs/stable/data.html?highlight=dataloader#torch.utils.data.DataLoader)（教程在[这里](https://pytorch.org/tutorials/beginner/data_loading_tutorial.html)）。它适用于实现`getitem()`和`len()`协议的映射样式数据集，并表示从索引/键到数据样本的映射。它还适用于具有`False`洗牌参数的可迭代数据集。
 - en: Before sending to the model, `collate_fn` function works on a batch of samples
     generated from `DataLoader`. The input to `collate_fn` is a batch of data with
     the batch size in `DataLoader`, and `collate_fn` processes them according to the
     data processing pipelines declared previously. Pay attention here and make sure
     that `collate_fn` is declared as a top level def. This ensures that the function
     is available in each worker.
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 在发送到模型之前，`collate_fn`函数处理从`DataLoader`生成的样本批次。`collate_fn`的输入是`DataLoader`中的批量数据，`collate_fn`根据先前声明的数据处理管道对其进行处理。请注意，在这里确保`collate_fn`声明为顶级def。这确保该函数在每个工作进程中都可用。
 - en: In this example, the text entries in the original data batch input are packed
     into a list and concatenated as a single tensor for the input of `nn.EmbeddingBag`.
     The offset is a tensor of delimiters to represent the beginning index of the individual
     sequence in the text tensor. Label is a tensor saving the labels of individual
     text entries.
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: 在此示例中，原始数据批次输入中的文本条目被打包成列表，并连接为`nn.EmbeddingBag`输入的单个张量。偏移量是一个分隔符张量，用于表示文本张量中各个序列的起始索引。标签是一个张量，保存各个文本条目的标签。
 - en: '[PRE7]'
+  id: totrans-34
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: Define the model
+  id: totrans-35
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 定义模型
 - en: The model is composed of the [nn.EmbeddingBag](https://pytorch.org/docs/stable/nn.html?highlight=embeddingbag#torch.nn.EmbeddingBag)
     layer plus a linear layer for the classification purpose. `nn.EmbeddingBag` with
     the default mode of “mean” computes the mean value of a “bag” of embeddings. Although
     the text entries here have different lengths, `nn.EmbeddingBag` module requires
     no padding here since the text lengths are saved in offsets.
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 该模型由[nn.EmbeddingBag](https://pytorch.org/docs/stable/nn.html?highlight=embeddingbag#torch.nn.EmbeddingBag)层和一个用于分类目的的线性层组成。`nn.EmbeddingBag`默认模式为“mean”，计算“bag”中嵌入的平均值。虽然这里的文本条目长度不同，但`nn.EmbeddingBag`模块在这里不需要填充，因为文本长度保存在偏移量中。
 - en: Additionally, since `nn.EmbeddingBag` accumulates the average across the embeddings
     on the fly, `nn.EmbeddingBag` can enhance the performance and memory efficiency
     to process a sequence of tensors.
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 此外，由于`nn.EmbeddingBag`在运行时累积嵌入的平均值，`nn.EmbeddingBag`可以增强性能和内存效率以处理一系列张量。
 - en: '![../_images/text_sentiment_ngrams_model.png](../Images/30f766e7717c0e45a583a4f58ebc322a.png)'
+  id: totrans-38
   prefs: []
   type: TYPE_IMG
+  zh: '![../_images/text_sentiment_ngrams_model.png](../Images/30f766e7717c0e45a583a4f58ebc322a.png)'
 - en: '[PRE8]'
+  id: totrans-39
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: Initiate an instance
+  id: totrans-40
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 初始化一个实例
 - en: The `AG_NEWS` dataset has four labels and therefore the number of classes is
     four.
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: '`AG_NEWS`数据集有四个标签，因此类别数为四。'
 - en: '[PRE9]'
+  id: totrans-42
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: We build a model with the embedding dimension of 64\. The vocab size is equal
     to the length of the vocabulary instance. The number of classes is equal to the
     number of labels,
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们构建了一个嵌入维度为64的模型。词汇量大小等于词汇实例的长度。类别数等于标签数，
 - en: '[PRE10]'
+  id: totrans-44
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: Define functions to train the model and evaluate results.
+  id: totrans-45
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 定义训练模型和评估结果的函数。
 - en: '[PRE11]'
+  id: totrans-46
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: Split the dataset and run the model
+  id: totrans-47
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 拆分数据集并运行模型
 - en: Since the original `AG_NEWS` has no valid dataset, we split the training dataset
     into train/valid sets with a split ratio of 0.95 (train) and 0.05 (valid). Here
     we use [torch.utils.data.dataset.random_split](https://pytorch.org/docs/stable/data.html?highlight=random_split#torch.utils.data.random_split)
     function in PyTorch core library.
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于原始的`AG_NEWS`没有有效数据集，我们将训练数据集拆分为训练/验证集，拆分比例为0.95（训练）和0.05（验证）。在这里，我们使用PyTorch核心库中的[torch.utils.data.dataset.random_split](https://pytorch.org/docs/stable/data.html?highlight=random_split#torch.utils.data.random_split)函数。
 - en: '[CrossEntropyLoss](https://pytorch.org/docs/stable/nn.html?highlight=crossentropyloss#torch.nn.CrossEntropyLoss)
     criterion combines `nn.LogSoftmax()` and `nn.NLLLoss()` in a single class. It
     is useful when training a classification problem with C classes. [SGD](https://pytorch.org/docs/stable/_modules/torch/optim/sgd.html)
     implements stochastic gradient descent method as the optimizer. The initial learning
     rate is set to 5.0. [StepLR](https://pytorch.org/docs/master/_modules/torch/optim/lr_scheduler.html#StepLR)
     is used here to adjust the learning rate through epochs.'
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: '[CrossEntropyLoss](https://pytorch.org/docs/stable/nn.html?highlight=crossentropyloss#torch.nn.CrossEntropyLoss)标准将`nn.LogSoftmax()`和`nn.NLLLoss()`结合在一个类中。在训练具有C类别的分类问题时很有用。[SGD](https://pytorch.org/docs/stable/_modules/torch/optim/sgd.html)实现了随机梯度下降方法作为优化器。初始学习率设置为5.0。这里使用[StepLR](https://pytorch.org/docs/master/_modules/torch/optim/lr_scheduler.html#StepLR)来通过epochs调整学习率。'
 - en: '[PRE12]'
+  id: totrans-50
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: '[PRE13]'
+  id: totrans-51
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: Evaluate the model with test dataset
+  id: totrans-52
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 用测试数据集评估模型
 - en: Checking the results of the test dataset…
+  id: totrans-53
   prefs: []
   type: TYPE_NORMAL
+  zh: 检查测试数据集的结果...
 - en: '[PRE14]'
+  id: totrans-54
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: '[PRE15]'
+  id: totrans-55
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: Test on a random news
+  id: totrans-56
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 在随机新闻上进行测试
 - en: Use the best model so far and test a golf news.
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用迄今为止最佳模型并测试一条高尔夫新闻。
 - en: '[PRE16]'
+  id: totrans-58
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: '[PRE17]'
+  id: totrans-59
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: '**Total running time of the script:** ( 2 minutes 4.692 seconds)'
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: '**脚本的总运行时间:** (2 分钟 4.692 秒)'
 - en: '[`Download Python source code: text_sentiment_ngrams_tutorial.py`](../_downloads/f003f262713c341f497ab4d8dd9be880/text_sentiment_ngrams_tutorial.py)'
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Python源代码：text_sentiment_ngrams_tutorial.py`](../_downloads/f003f262713c341f497ab4d8dd9be880/text_sentiment_ngrams_tutorial.py)'
 - en: '[`Download Jupyter notebook: text_sentiment_ngrams_tutorial.ipynb`](../_downloads/b5fa995b1432ebc93ea7bfe7ec9daed1/text_sentiment_ngrams_tutorial.ipynb)'
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Jupyter笔记本：text_sentiment_ngrams_tutorial.ipynb`](../_downloads/b5fa995b1432ebc93ea7bfe7ec9daed1/text_sentiment_ngrams_tutorial.ipynb)'
 - en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Sphinx-Gallery生成的图库](https://sphinx-gallery.github.io)'

@@ -1,14 +1,20 @@
 - en: Trace Diff using Holistic Trace Analysis
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 使用整体追踪分析的追踪差异
 - en: 原文：[https://pytorch.org/tutorials/beginner/hta_trace_diff_tutorial.html](https://pytorch.org/tutorials/beginner/hta_trace_diff_tutorial.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/beginner/hta_trace_diff_tutorial.html](https://pytorch.org/tutorials/beginner/hta_trace_diff_tutorial.html)
 - en: '**Author:** [Anupam Bhatnagar](https://github.com/anupambhatnagar)'
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: '**作者:** [Anupam Bhatnagar](https://github.com/anupambhatnagar)'
 - en: Occasionally, users need to identify the changes in PyTorch operators and CUDA
     kernels resulting from a code change. To support this requirement, HTA provides
     a trace comparison feature. This feature allows the user to input two sets of
@@ -18,135 +24,183 @@
     differences. In particular, users can find operators and kernels that were added
     and removed from each group, along with the frequency of each operator/kernel
     and the cumulative time taken by the operator/kernel.
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 有时，用户需要识别由代码更改导致的PyTorch操作符和CUDA内核的变化。为了支持这一需求，HTA提供了一个追踪比较功能。该功能允许用户输入两组追踪文件，第一组可以被视为*控制组*，第二组可以被视为*测试组*，类似于A/B测试。`TraceDiff`类提供了比较追踪之间差异的函数以及可视化这些差异的功能。特别是，用户可以找到每个组中添加和删除的操作符和内核，以及每个操作符/内核的频率和操作符/内核所花费的累积时间。
 - en: 'The [TraceDiff](https://hta.readthedocs.io/en/latest/source/api/trace_diff_api.html)
     class has the following methods:'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '[TraceDiff](https://hta.readthedocs.io/en/latest/source/api/trace_diff_api.html)类具有以下方法：'
 - en: '[compare_traces](https://hta.readthedocs.io/en/latest/source/api/trace_diff_api.html#hta.trace_diff.TraceDiff.compare_traces):
     Compare the frequency and total duration of CPU operators and GPU kernels from
     two sets of traces.'
+  id: totrans-5
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[compare_traces](https://hta.readthedocs.io/en/latest/source/api/trace_diff_api.html#hta.trace_diff.TraceDiff.compare_traces):
+    比较两组追踪中CPU操作符和GPU内核的频率和总持续时间。'
 - en: '[ops_diff](https://hta.readthedocs.io/en/latest/source/api/trace_diff_api.html#hta.trace_diff.TraceDiff.ops_diff):
     Get the operators and kernels which have been:'
+  id: totrans-6
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[ops_diff](https://hta.readthedocs.io/en/latest/source/api/trace_diff_api.html#hta.trace_diff.TraceDiff.ops_diff):
+    获取已被以下操作符和内核删除的操作符和内核：'
 - en: '**added** to the test trace and are absent in the control trace'
+  id: totrans-7
   prefs:
   - PREF_IND
   - PREF_BQ
   - PREF_OL
   type: TYPE_NORMAL
+  zh: '**添加**到测试追踪中并在控制追踪中不存在'
 - en: ''
+  id: totrans-8
   prefs:
   - PREF_IND
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-9
   prefs:
   - PREF_IND
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: '**deleted** from the test trace and are present in the control trace'
+  id: totrans-10
   prefs:
   - PREF_IND
   - PREF_BQ
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 从测试追踪中**删除**并存在于控制追踪中
 - en: ''
+  id: totrans-11
   prefs:
   - PREF_IND
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-12
   prefs:
   - PREF_IND
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: '**increased** in frequency in the test trace and exist in the control trace'
+  id: totrans-13
   prefs:
   - PREF_IND
   - PREF_BQ
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 在测试追踪中**增加**并存在于控制追踪中
 - en: ''
+  id: totrans-14
   prefs:
   - PREF_IND
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-15
   prefs:
   - PREF_IND
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: '**decreased** in frequency in the test trace and exist in the control trace'
+  id: totrans-16
   prefs:
   - PREF_IND
   - PREF_BQ
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 在测试追踪中**减少**并存在于控制追踪中
 - en: ''
+  id: totrans-17
   prefs:
   - PREF_IND
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-18
   prefs:
   - PREF_IND
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: '**unchanged** between the two sets of traces'
+  id: totrans-19
   prefs:
   - PREF_IND
   - PREF_BQ
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 在两组追踪中**未更改**
 - en: '[visualize_counts_diff](https://hta.readthedocs.io/en/latest/source/api/trace_diff_api.html#hta.trace_diff.TraceDiff.visualize_counts_diff)'
+  id: totrans-20
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[visualize_counts_diff](https://hta.readthedocs.io/en/latest/source/api/trace_diff_api.html#hta.trace_diff.TraceDiff.visualize_counts_diff)'
 - en: '[visualize_duration_diff](https://hta.readthedocs.io/en/latest/source/api/trace_diff_api.html#hta.trace_diff.TraceDiff.visualize_duration_diff)'
+  id: totrans-21
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[visualize_duration_diff](https://hta.readthedocs.io/en/latest/source/api/trace_diff_api.html#hta.trace_diff.TraceDiff.visualize_duration_diff)'
 - en: The last two methods can be used to visualize various changes in frequency and
     duration of CPU operators and GPU kernels, using the output of the `compare_traces`
     method.
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 最后两种方法可用于使用`compare_traces`方法的输出可视化CPU操作符和GPU内核的频率和持续时间的各种变化。
 - en: 'For example, the top ten operators with increase in frequency can be computed
     as follows:'
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 例如，可以计算出频率增加最多的前十个操作符如下：
 - en: '[PRE0]'
+  id: totrans-24
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: '![../_images/counts_diff.png](../Images/8ba7a34a81fdec8189722df7c9895675.png)'
+  id: totrans-25
   prefs: []
   type: TYPE_IMG
+  zh: '![../_images/counts_diff.png](../Images/8ba7a34a81fdec8189722df7c9895675.png)'
 - en: 'Similarly, the top ten operators with the largest change in duration can be
     computed as follows:'
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 类似地，可以计算出持续时间变化最大的前十个操作符如下：
 - en: '[PRE1]'
+  id: totrans-27
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: '![../_images/duration_diff.png](../Images/e623103bec502426b3540b481b474ce7.png)'
+  id: totrans-28
   prefs: []
   type: TYPE_IMG
+  zh: '![../_images/duration_diff.png](../Images/e623103bec502426b3540b481b474ce7.png)'
 - en: For a detailed example of this feature see the [trace_diff_demo notebook](https://github.com/facebookresearch/HolisticTraceAnalysis/blob/main/examples/trace_diff_demo.ipynb)
     in the examples folder of the repository.
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 有关此功能的详细示例，请参阅存储库的示例文件夹中的[trace_diff_demo notebook](https://github.com/facebookresearch/HolisticTraceAnalysis/blob/main/examples/trace_diff_demo.ipynb)。

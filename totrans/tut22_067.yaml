@@ -1,344 +1,532 @@
 - en: Real Time Inference on Raspberry Pi 4 (30 fps!)
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 树莓派4上的实时推理（30 fps！）
 - en: 原文：[https://pytorch.org/tutorials/intermediate/realtime_rpi.html](https://pytorch.org/tutorials/intermediate/realtime_rpi.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: '[https://pytorch.org/tutorials/intermediate/realtime_rpi.html](https://pytorch.org/tutorials/intermediate/realtime_rpi.html)'
 - en: '**Author**: [Tristan Rice](https://github.com/d4l3k)'
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: '**作者**：[Tristan Rice](https://github.com/d4l3k)'
 - en: PyTorch has out of the box support for Raspberry Pi 4\. This tutorial will guide
     you on how to setup a Raspberry Pi 4 for running PyTorch and run a MobileNet v2
     classification model in real time (30 fps+) on the CPU.
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch对树莓派4有开箱即用的支持。本教程将指导您如何为运行PyTorch的树莓派4设置树莓派4，并在CPU上实时运行MobileNet v2分类模型（30
+    fps+）。
 - en: This was all tested with Raspberry Pi 4 Model B 4GB but should work with the
     2GB variant as well as on the 3B with reduced performance.
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 这一切都是在树莓派4型B 4GB上测试的，但也应该适用于2GB变体以及性能降低的3B。
 - en: '![https://user-images.githubusercontent.com/909104/153093710-bc736b6f-69d9-4a50-a3e8-9f2b2c9e04fd.gif](../Images/e1b6e9e801c40dcecd46ba020ff59fce.png)'
+  id: totrans-5
   prefs: []
   type: TYPE_IMG
+  zh: '![https://user-images.githubusercontent.com/909104/153093710-bc736b6f-69d9-4a50-a3e8-9f2b2c9e04fd.gif](../Images/e1b6e9e801c40dcecd46ba020ff59fce.png)'
 - en: Prerequisites
+  id: totrans-6
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 先决条件
 - en: To follow this tutorial you’ll need a Raspberry Pi 4, a camera for it and all
     the other standard accessories.
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 要按照本教程进行操作，您需要一个树莓派4，一个相机以及所有其他标准配件。
 - en: '[Raspberry Pi 4 Model B 2GB+](https://www.raspberrypi.com/products/raspberry-pi-4-model-b/)'
+  id: totrans-8
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[树莓派4型B 2GB+](https://www.raspberrypi.com/products/raspberry-pi-4-model-b/)'
 - en: '[Raspberry Pi Camera Module](https://www.raspberrypi.com/products/camera-module-v2/)'
+  id: totrans-9
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[树莓派摄像头模块](https://www.raspberrypi.com/products/camera-module-v2/)'
 - en: Heat sinks and Fan (optional but recommended)
+  id: totrans-10
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 散热片和风扇（可选但建议）
 - en: 5V 3A USB-C Power Supply
+  id: totrans-11
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 5V 3A USB-C电源适配器
 - en: SD card (at least 8gb)
+  id: totrans-12
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: SD卡（至少8GB）
 - en: SD card read/writer
+  id: totrans-13
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: SD卡读/写器
 - en: Raspberry Pi 4 Setup
+  id: totrans-14
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 树莓派4设置
 - en: PyTorch only provides pip packages for Arm 64bit (aarch64) so you’ll need to
     install a 64 bit version of the OS on your Raspberry Pi
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch仅为Arm 64位（aarch64）提供pip软件包，因此您需要在树莓派上安装64位版本的操作系统
 - en: You can download the latest arm64 Raspberry Pi OS from [https://downloads.raspberrypi.org/raspios_arm64/images/](https://downloads.raspberrypi.org/raspios_arm64/images/)
     and install it via rpi-imager.
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可以从[https://downloads.raspberrypi.org/raspios_arm64/images/](https://downloads.raspberrypi.org/raspios_arm64/images/)下载最新的arm64树莓派OS，并通过rpi-imager安装它。
 - en: '**32-bit Raspberry Pi OS will not work.**'
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: '**32位树莓派OS将无法工作。**'
 - en: '![https://user-images.githubusercontent.com/909104/152866212-36ce29b1-aba6-4924-8ae6-0a283f1fca14.gif](../Images/a74749f46e1b7b1c4cca5b95d030994f.png)'
+  id: totrans-18
   prefs: []
   type: TYPE_IMG
+  zh: '![https://user-images.githubusercontent.com/909104/152866212-36ce29b1-aba6-4924-8ae6-0a283f1fca14.gif](../Images/a74749f46e1b7b1c4cca5b95d030994f.png)'
 - en: 'Installation will take at least a few minutes depending on your internet speed
     and sdcard speed. Once it’s done it should look like:'
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 安装将至少需要几分钟，具体取决于您的互联网速度和sd卡速度。完成后，应如下所示：
 - en: '![https://user-images.githubusercontent.com/909104/152867425-c005cff0-5f3f-47f1-922d-e0bbb541cd25.png](../Images/16e60b917befb99c2f0717800d2d5fbd.png)'
+  id: totrans-20
   prefs: []
   type: TYPE_IMG
+  zh: '![https://user-images.githubusercontent.com/909104/152867425-c005cff0-5f3f-47f1-922d-e0bbb541cd25.png](../Images/16e60b917befb99c2f0717800d2d5fbd.png)'
 - en: Time to put your sdcard in your Raspberry Pi, connect the camera and boot it
     up.
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在是时候将您的sd卡放入树莓派中，连接摄像头并启动它。
 - en: '![https://user-images.githubusercontent.com/909104/152869862-c239c980-b089-4bd5-84eb-0a1e5cf22df2.png](../Images/a7acb9a95909dde5e3117930780632d9.png)'
+  id: totrans-22
   prefs: []
   type: TYPE_IMG
+  zh: '![https://user-images.githubusercontent.com/909104/152869862-c239c980-b089-4bd5-84eb-0a1e5cf22df2.png](../Images/a7acb9a95909dde5e3117930780632d9.png)'
 - en: Once that boots and you complete the initial setup you’ll need to edit the `/boot/config.txt`
     file to enable the camera.
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 一旦启动并完成初始设置，您需要编辑`/boot/config.txt`文件以启用摄像头。
 - en: '[PRE0]'
+  id: totrans-24
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: And then reboot. After you reboot the video4linux2 device `/dev/video0` should
     exist.
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后重新启动。重新启动后，video4linux2设备`/dev/video0`应该存在。
 - en: Installing PyTorch and OpenCV
+  id: totrans-26
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 安装PyTorch和OpenCV
 - en: PyTorch and all the other libraries we need have ARM 64-bit/aarch64 variants
     so you can just install them via pip and have it work like any other Linux system.
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch和我们需要的所有其他库都有ARM 64位/aarch64变体，因此您可以通过pip安装它们，并使其像任何其他Linux系统一样工作。
 - en: '[PRE1]'
+  id: totrans-28
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: '![https://user-images.githubusercontent.com/909104/152874260-95a7a8bd-0f9b-438a-9c0b-5b67729e233f.png](../Images/6905c748f74b28be8422c72e188095a7.png)'
+  id: totrans-29
   prefs: []
   type: TYPE_IMG
+  zh: '![https://user-images.githubusercontent.com/909104/152874260-95a7a8bd-0f9b-438a-9c0b-5b67729e233f.png](../Images/6905c748f74b28be8422c72e188095a7.png)'
 - en: 'We can now check that everything installed correctly:'
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们现在可以检查所有安装是否正确：
 - en: '[PRE2]'
+  id: totrans-31
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: '![https://user-images.githubusercontent.com/909104/152874271-d7057c2d-80fd-4761-aed4-df6c8b7aa99f.png](../Images/5d0e59134b5e88fc00e83deb3a3ccab2.png)'
+  id: totrans-32
   prefs: []
   type: TYPE_IMG
+  zh: '![https://user-images.githubusercontent.com/909104/152874271-d7057c2d-80fd-4761-aed4-df6c8b7aa99f.png](../Images/5d0e59134b5e88fc00e83deb3a3ccab2.png)'
 - en: Video Capture
+  id: totrans-33
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 视频捕获
 - en: For video capture we’re going to be using OpenCV to stream the video frames
     instead of the more common `picamera`. picamera isn’t available on 64-bit Raspberry
     Pi OS and it’s much slower than OpenCV. OpenCV directly accesses the `/dev/video0`
     device to grab frames.
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于视频捕获，我们将使用OpenCV来流式传输视频帧，而不是更常见的`picamera`。 picamera在64位树莓派OS上不可用，而且比OpenCV慢得多。
+    OpenCV直接访问`/dev/video0`设备以抓取帧。
 - en: The model we’re using (MobileNetV2) takes in image sizes of `224x224` so we
     can request that directly from OpenCV at 36fps. We’re targeting 30fps for the
     model but we request a slightly higher framerate than that so there’s always enough
     frames.
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们正在使用的模型（MobileNetV2）接受`224x224`的图像尺寸，因此我们可以直接从OpenCV请求36fps。我们的目标是模型的30fps，但我们请求的帧率略高于此，以确保始终有足够的帧。
 - en: '[PRE3]'
+  id: totrans-36
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: OpenCV returns a `numpy` array in BGR so we need to read and do a bit of shuffling
     to get it into the expected RGB format.
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: OpenCV以BGR返回一个`numpy`数组，因此我们需要读取并进行一些调整，以使其符合预期的RGB格式。
 - en: '[PRE4]'
+  id: totrans-38
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: This data reading and processing takes about `3.5 ms`.
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个数据读取和处理大约需要`3.5毫秒`。
 - en: Image Preprocessing
+  id: totrans-40
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 图像预处理
 - en: We need to take the frames and transform them into the format the model expects.
     This is the same processing as you would do on any machine with the standard torchvision
     transforms.
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们需要获取帧并将其转换为模型期望的格式。这与您在任何具有标准torchvision转换的机器上执行的处理相同。
 - en: '[PRE5]'
+  id: totrans-42
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: Model Choices
+  id: totrans-43
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 模型选择
 - en: There’s a number of models you can choose from to use with different performance
     characteristics. Not all models provide a `qnnpack` pretrained variant so for
     testing purposes you should chose one that does but if you train and quantize
     your own model you can use any of them.
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可以选择多种模型，具有不同的性能特征。并非所有模型都提供`qnnpack`预训练变体，因此为了测试目的，您应该选择一个提供此功能的模型，但如果您训练和量化自己的模型，可以使用其中任何一个。
 - en: We’re using `mobilenet_v2` for this tutorial since it has good performance and
     accuracy.
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们在本教程中使用`mobilenet_v2`，因为它具有良好的性能和准确性。
 - en: 'Raspberry Pi 4 Benchmark Results:'
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 树莓派4基准测试结果：
 - en: '| Model | FPS | Total Time (ms/frame) | Model Time (ms/frame) | qnnpack Pretrained
     |'
+  id: totrans-47
   prefs: []
   type: TYPE_TB
+  zh: '| 模型 | FPS | 总时间（毫秒/帧） | 模型时间（毫秒/帧） | qnnpack 预训练 |'
 - en: '| --- | --- | --- | --- | --- |'
+  id: totrans-48
   prefs: []
   type: TYPE_TB
+  zh: '| --- | --- | --- | --- | --- |'
 - en: '| mobilenet_v2 | 33.7 | 29.7 | 26.4 | True |'
+  id: totrans-49
   prefs: []
   type: TYPE_TB
+  zh: '| mobilenet_v2 | 33.7 | 29.7 | 26.4 | True |'
 - en: '| mobilenet_v3_large | 29.3 | 34.1 | 30.7 | True |'
+  id: totrans-50
   prefs: []
   type: TYPE_TB
+  zh: '| mobilenet_v3_large | 29.3 | 34.1 | 30.7 | True |'
 - en: '| resnet18 | 9.2 | 109.0 | 100.3 | False |'
+  id: totrans-51
   prefs: []
   type: TYPE_TB
+  zh: '| resnet18 | 9.2 | 109.0 | 100.3 | False |'
 - en: '| resnet50 | 4.3 | 233.9 | 225.2 | False |'
+  id: totrans-52
   prefs: []
   type: TYPE_TB
+  zh: '| resnet50 | 4.3 | 233.9 | 225.2 | False |'
 - en: '| resnext101_32x8d | 1.1 | 892.5 | 885.3 | False |'
+  id: totrans-53
   prefs: []
   type: TYPE_TB
+  zh: '| resnext101_32x8d | 1.1 | 892.5 | 885.3 | False |'
 - en: '| inception_v3 | 4.9 | 204.1 | 195.5 | False |'
+  id: totrans-54
   prefs: []
   type: TYPE_TB
+  zh: '| inception_v3 | 4.9 | 204.1 | 195.5 | False |'
 - en: '| googlenet | 7.4 | 135.3 | 132.0 | False |'
+  id: totrans-55
   prefs: []
   type: TYPE_TB
+  zh: '| googlenet | 7.4 | 135.3 | 132.0 | False |'
 - en: '| shufflenet_v2_x0_5 | 46.7 | 21.4 | 18.2 | False |'
+  id: totrans-56
   prefs: []
   type: TYPE_TB
+  zh: '| shufflenet_v2_x0_5 | 46.7 | 21.4 | 18.2 | False |'
 - en: '| shufflenet_v2_x1_0 | 24.4 | 41.0 | 37.7 | False |'
+  id: totrans-57
   prefs: []
   type: TYPE_TB
+  zh: '| shufflenet_v2_x1_0 | 24.4 | 41.0 | 37.7 | False |'
 - en: '| shufflenet_v2_x1_5 | 16.8 | 59.6 | 56.3 | False |'
+  id: totrans-58
   prefs: []
   type: TYPE_TB
+  zh: '| shufflenet_v2_x1_5 | 16.8 | 59.6 | 56.3 | False |'
 - en: '| shufflenet_v2_x2_0 | 11.6 | 86.3 | 82.7 | False |'
+  id: totrans-59
   prefs: []
   type: TYPE_TB
+  zh: '| shufflenet_v2_x2_0 | 11.6 | 86.3 | 82.7 | False |'
 - en: 'MobileNetV2: Quantization and JIT'
+  id: totrans-60
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: MobileNetV2：量化和JIT
 - en: For optimal performance we want a model that’s quantized and fused. Quantized
     means that it does the computation using int8 which is much more performant than
     the standard float32 math. Fused means that consecutive operations have been fused
     together into a more performant version where possible. Commonly things like activations
     (`ReLU`) can be merged into the layer before (`Conv2d`) during inference.
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了获得最佳性能，我们希望使用量化和融合的模型。量化意味着使用int8进行计算，这比标准的float32数学更高效。融合意味着连续的操作已经被合并成更高效的版本，可能会合并像激活函数（`ReLU`）这样的操作到推断期间的前一层（`Conv2d`）中。
 - en: The aarch64 version of pytorch requires using the `qnnpack` engine.
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
+  zh: pytorch的aarch64版本需要使用`qnnpack`引擎。
 - en: '[PRE6]'
+  id: totrans-63
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: For this example we’ll use a prequantized and fused version of MobileNetV2 that’s
     provided out of the box by torchvision.
+  id: totrans-64
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这个示例中，我们将使用torchvision提供的预量化和融合版本的MobileNetV2。
 - en: '[PRE7]'
+  id: totrans-65
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: We then want to jit the model to reduce Python overhead and fuse any ops. Jit
     gives us ~30fps instead of ~20fps without it.
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后，我们希望对模型进行jit以减少Python开销并融合任何操作。jit使我们的帧率达到了约30fps，而没有jit时只有约20fps。
 - en: '[PRE8]'
+  id: totrans-67
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: Putting It Together
+  id: totrans-68
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 将其放在一起
 - en: 'We can now put all the pieces together and run it:'
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们可以将所有部分组合在一起并运行它：
 - en: '[PRE9]'
+  id: totrans-70
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: Running it shows that we’re hovering at ~30 fps.
+  id: totrans-71
   prefs: []
   type: TYPE_NORMAL
+  zh: 运行后，我们发现帧率约为30fps。
 - en: '![https://user-images.githubusercontent.com/909104/152892609-7d115705-3ec9-4f8d-beed-a51711503a32.png](../Images/85471d8bad6acb9e759049d828861c14.png)'
+  id: totrans-72
   prefs: []
   type: TYPE_IMG
+  zh: '![https://user-images.githubusercontent.com/909104/152892609-7d115705-3ec9-4f8d-beed-a51711503a32.png](../Images/85471d8bad6acb9e759049d828861c14.png)'
 - en: This is with all the default settings in Raspberry Pi OS. If you disabled the
     UI and all the other background services that are enabled by default it’s more
     performant and stable.
+  id: totrans-73
   prefs: []
   type: TYPE_NORMAL
+  zh: 这是在Raspberry Pi OS中的所有默认设置下。如果您禁用了默认启用的UI和所有其他后台服务，性能和稳定性会更好。
 - en: If we check `htop` we see that we have almost 100% utilization.
+  id: totrans-74
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果我们检查`htop`，我们会看到几乎100%的利用率。
 - en: '![https://user-images.githubusercontent.com/909104/152892630-f094b84b-19ba-48f6-8632-1b954abc59c7.png](../Images/a869ca455dfc3672a29fa30bda2b03a0.png)'
+  id: totrans-75
   prefs: []
   type: TYPE_IMG
+  zh: '![https://user-images.githubusercontent.com/909104/152892630-f094b84b-19ba-48f6-8632-1b954abc59c7.png](../Images/a869ca455dfc3672a29fa30bda2b03a0.png)'
 - en: To verify that it’s working end to end we can compute the probabilities of the
     classes and [use the ImageNet class labels](https://gist.github.com/yrevar/942d3a0ac09ec9e5eb3a)
     to print the detections.
+  id: totrans-76
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了验证它是否正常工作，我们可以计算类别的概率并[使用ImageNet类标签](https://gist.github.com/yrevar/942d3a0ac09ec9e5eb3a)来打印检测结果。
 - en: '[PRE10]'
+  id: totrans-77
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: '`mobilenet_v3_large` running in real time:'
+  id: totrans-78
   prefs: []
   type: TYPE_NORMAL
+  zh: '`mobilenet_v3_large`实时运行：'
 - en: '![https://user-images.githubusercontent.com/909104/153093710-bc736b6f-69d9-4a50-a3e8-9f2b2c9e04fd.gif](../Images/e1b6e9e801c40dcecd46ba020ff59fce.png)'
+  id: totrans-79
   prefs: []
   type: TYPE_IMG
+  zh: '![https://user-images.githubusercontent.com/909104/153093710-bc736b6f-69d9-4a50-a3e8-9f2b2c9e04fd.gif](../Images/e1b6e9e801c40dcecd46ba020ff59fce.png)'
 - en: 'Detecting an orange:'
+  id: totrans-80
   prefs: []
   type: TYPE_NORMAL
+  zh: 检测一个橙色物体：
 - en: '![https://user-images.githubusercontent.com/909104/153092153-d9c08dfe-105b-408a-8e1e-295da8a78c19.jpg](../Images/bc46e0b298d88972360b661b4bbe5b49.png)'
+  id: totrans-81
   prefs: []
   type: TYPE_IMG
+  zh: '![https://user-images.githubusercontent.com/909104/153092153-d9c08dfe-105b-408a-8e1e-295da8a78c19.jpg](../Images/bc46e0b298d88972360b661b4bbe5b49.png)'
 - en: 'Detecting a mug:'
+  id: totrans-82
   prefs: []
   type: TYPE_NORMAL
+  zh: 检测一个杯子：
 - en: '![https://user-images.githubusercontent.com/909104/153092155-4b90002f-a0f3-4267-8d70-e713e7b4d5a0.jpg](../Images/9d6ef3cc6c8976013a2cc76e7328778a.png)'
+  id: totrans-83
   prefs: []
   type: TYPE_IMG
+  zh: '![https://user-images.githubusercontent.com/909104/153092155-4b90002f-a0f3-4267-8d70-e713e7b4d5a0.jpg](../Images/9d6ef3cc6c8976013a2cc76e7328778a.png)'
 - en: 'Troubleshooting: Performance'
+  id: totrans-84
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 故障排除：性能
 - en: PyTorch by default will use all of the cores available. If you have anything
     running in the background on the Raspberry Pi it may cause contention with the
     model inference causing latency spikes. To alleviate this you can reduce the number
     of threads which will reduce the peak latency at a small performance penalty.
+  id: totrans-85
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch默认会使用所有可用的核心。如果您的树莓派上有任何后台运行的东西，可能会导致模型推断时出现延迟峰值。为了缓解这个问题，您可以减少线程数，这将减少峰值延迟，但会有一点性能损失。
 - en: '[PRE11]'
+  id: totrans-86
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: For `shufflenet_v2_x1_5` using `2 threads` instead of `4 threads` increases
     best case latency to `72 ms` from `60 ms` but eliminates the latency spikes of
     `128 ms`.
+  id: totrans-87
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于`shufflenet_v2_x1_5`，使用`2个线程`而不是`4个线程`会将最佳情况下的延迟增加到`72毫秒`，而不是`60毫秒`，但会消除`128毫秒`的延迟峰值。
 - en: Next Steps
+  id: totrans-88
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 下一步
 - en: You can create your own model or fine tune an existing one. If you fine tune
     on one of the models from [torchvision.models.quantized](https://pytorch.org/vision/stable/models.html#quantized-models)
     most of the work to fuse and quantize has already been done for you so you can
     directly deploy with good performance on a Raspberry Pi.
+  id: totrans-89
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可以创建自己的模型或微调现有模型。如果您在[torchvision.models.quantized](https://pytorch.org/vision/stable/models.html#quantized-models)中的一个模型上进行微调，大部分融合和量化的工作已经为您完成，因此您可以直接在树莓派上部署并获得良好的性能。
 - en: 'See more:'
+  id: totrans-90
   prefs: []
   type: TYPE_NORMAL
+  zh: 查看更多：
 - en: '[Quantization](https://pytorch.org/docs/stable/quantization.html) for more
     information on how to quantize and fuse your model.'
+  id: totrans-91
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[量化](https://pytorch.org/docs/stable/quantization.html)获取有关如何量化和融合您的模型的更多信息。'
 - en: '[Transfer Learning Tutorial](https://pytorch.org/tutorials/beginner/transfer_learning_tutorial.html)
     for how to use transfer learning to fine tune a pre-existing model to your dataset.'
+  id: totrans-92
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[迁移学习教程](https://pytorch.org/tutorials/beginner/transfer_learning_tutorial.html)介绍如何使用迁移学习来微调预先存在的模型以适应您的数据集。'

@@ -1,228 +1,344 @@
 - en: Fast Transformer Inference with Better Transformer
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 使用Better Transformer进行快速Transformer推理
 - en: 原文：[https://pytorch.org/tutorials/beginner/bettertransformer_tutorial.html](https://pytorch.org/tutorials/beginner/bettertransformer_tutorial.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/beginner/bettertransformer_tutorial.html](https://pytorch.org/tutorials/beginner/bettertransformer_tutorial.html)
 - en: '**Author**: [Michael Gschwind](https://github.com/mikekgfb)'
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: '**作者**：[Michael Gschwind](https://github.com/mikekgfb)'
 - en: This tutorial introduces Better Transformer (BT) as part of the PyTorch 1.12
     release. In this tutorial, we show how to use Better Transformer for production
     inference with torchtext. Better Transformer is a production ready fastpath to
     accelerate deployment of Transformer models with high performance on CPU and GPU.
     The fastpath feature works transparently for models based either directly on PyTorch
     core `nn.module` or with torchtext.
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程将Better Transformer（BT）作为PyTorch 1.12版本的一部分进行介绍。在本教程中，我们展示了如何使用Better Transformer进行torchtext的生产推理。Better
+    Transformer是一个生产就绪的快速路径，可加速在CPU和GPU上部署具有高性能的Transformer模型。快速路径功能对基于PyTorch核心`nn.module`或torchtext的模型透明地工作。
 - en: Models which can be accelerated by Better Transformer fastpath execution are
     those using the following PyTorch core `torch.nn.module` classes `TransformerEncoder`,
     `TransformerEncoderLayer`, and `MultiHeadAttention`. In addition, torchtext has
     been updated to use the core library modules to benefit from fastpath acceleration.
     (Additional modules may be enabled with fastpath execution in the future.)
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 可以通过Better Transformer快速路径执行加速的模型是使用以下PyTorch核心`torch.nn.module`类`TransformerEncoder`、`TransformerEncoderLayer`和`MultiHeadAttention`的模型。此外，torchtext已更新为使用核心库模块以从快速路径加速中受益。
+    （未来可能会启用其他模块以进行快速路径执行。）
 - en: 'Better Transformer offers two types of acceleration:'
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: Better Transformer提供了两种加速类型：
 - en: Native multihead attention (MHA) implementation for CPU and GPU to improve overall
     execution efficiency.
+  id: totrans-6
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 为CPU和GPU实现的原生多头注意力（MHA）以提高整体执行效率。
 - en: Exploiting sparsity in NLP inference. Because of variable input lengths, input
     tokens may contain a large number of padding tokens for which processing may be
     skipped, delivering significant speedups.
+  id: totrans-7
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 利用NLP推理中的稀疏性。由于输入长度可变，输入标记可能包含大量填充标记，处理时可以跳过，从而实现显著加速。
 - en: Fastpath execution is subject to some criteria. Most importantly, the model
     must be executed in inference mode and operate on input tensors that do not collect
     gradient tape information (e.g., running with torch.no_grad).
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 快速路径执行受一些标准的限制。最重要的是，模型必须在推理模式下执行，并且在不收集梯度磁带信息的输入张量上运行（例如，使用torch.no_grad运行）。
 - en: To follow this example in Google Colab, [click here](https://colab.research.google.com/drive/1KZnMJYhYkOMYtNIX5S3AGIYnjyG0AojN?usp=sharing).
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 要在Google Colab中查看此示例，请[点击这里](https://colab.research.google.com/drive/1KZnMJYhYkOMYtNIX5S3AGIYnjyG0AojN?usp=sharing)。
 - en: Better Transformer Features in This Tutorial
+  id: totrans-10
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 本教程中的Better Transformer功能
 - en: Load pretrained models (created before PyTorch version 1.12 without Better Transformer)
+  id: totrans-11
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 加载预训练模型（在PyTorch版本1.12之前创建，没有Better Transformer）
 - en: Run and benchmark inference on CPU with and without BT fastpath (native MHA
     only)
+  id: totrans-12
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在CPU上运行和基准推理，使用BT快速路径（仅原生MHA）
 - en: Run and benchmark inference on (configurable) DEVICE with and without BT fastpath
     (native MHA only)
+  id: totrans-13
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在（可配置的）设备上运行和基准推理，使用BT快速路径（仅原生MHA）
 - en: Enable sparsity support
+  id: totrans-14
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 启用稀疏性支持
 - en: Run and benchmark inference on (configurable) DEVICE with and without BT fastpath
     (native MHA + sparsity)
+  id: totrans-15
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在（可配置的）设备上运行和基准推理，使用BT快速路径（原生MHA + 稀疏性）
 - en: Additional Information
+  id: totrans-16
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 附加信息
 - en: Additional information about Better Transformer may be found in the PyTorch.Org
     blog [A Better Transformer for Fast Transformer Inference](https://pytorch.org/blog/a-better-transformer-for-fast-transformer-encoder-inference//).
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 有关Better Transformer的更多信息可以在PyTorch.Org博客[A Better Transformer for Fast Transformer
+    Inference](https://pytorch.org/blog/a-better-transformer-for-fast-transformer-encoder-inference//)中找到。
 - en: Setup
+  id: totrans-18
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 设置
 - en: 1.1 Load pretrained models
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 1.1 加载预训练模型
 - en: We download the XLM-R model from the predefined torchtext models by following
     the instructions in [torchtext.models](https://pytorch.org/text/main/models.html).
     We also set the DEVICE to execute on-accelerator tests. (Enable GPU execution
     for your environment as appropriate.)
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们通过按照[torchtext.models](https://pytorch.org/text/main/models.html)中的说明从预定义的torchtext模型中下载XLM-R模型。我们还将设备设置为在加速器测试上执行。（根据需要启用GPU执行环境。）
 - en: '[PRE0]'
+  id: totrans-21
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: 1.2 Dataset Setup
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 1.2 数据集设置
 - en: 'We set up two types of inputs: a small input batch and a big input batch with
     sparsity.'
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们设置了两种类型的输入：一个小输入批次和一个带有稀疏性的大输入批次。
 - en: '[PRE1]'
+  id: totrans-24
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Next, we select either the small or large input batch, preprocess the inputs
     and test the model.
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，我们选择小批量或大批量输入，预处理输入并测试模型。
 - en: '[PRE2]'
+  id: totrans-26
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: 'Finally, we set the benchmark iteration count:'
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 最后，我们设置基准迭代次数：
 - en: '[PRE3]'
+  id: totrans-28
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: Execution
+  id: totrans-29
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 执行
 - en: 2.1 Run and benchmark inference on CPU with and without BT fastpath (native
     MHA only)
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 在CPU上运行和基准推理，使用BT快速路径（仅原生MHA）
 - en: 'We run the model on CPU, and collect profile information:'
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们在CPU上运行模型，并收集性能信息：
 - en: The first run uses traditional (“slow path”) execution.
+  id: totrans-32
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 第一次运行使用传统（“慢速路径”）执行。
 - en: The second run enables BT fastpath execution by putting the model in inference
     mode using model.eval() and disables gradient collection with torch.no_grad().
+  id: totrans-33
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 第二次运行通过将模型置于推理模式并使用model.eval()启用BT快速路径执行，并使用torch.no_grad()禁用梯度收集。
 - en: You can see an improvement (whose magnitude will depend on the CPU model) when
     the model is executing on CPU. Notice that the fastpath profile shows most of
     the execution time in the native TransformerEncoderLayer implementation aten::_transformer_encoder_layer_fwd.
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 当模型在CPU上执行时，您会看到改进（其幅度取决于CPU模型）。请注意，快速路径概要显示大部分执行时间在本地TransformerEncoderLayer实现aten::_transformer_encoder_layer_fwd中。
 - en: '[PRE4]'
+  id: totrans-35
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: 2.2 Run and benchmark inference on (configurable) DEVICE with and without BT
     fastpath (native MHA only)
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 在（可配置的）设备上运行和基准推理，使用BT快速路径（仅原生MHA）
 - en: 'We check the BT sparsity setting:'
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们检查BT的稀疏性设置：
 - en: '[PRE5]'
+  id: totrans-38
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: 'We disable the BT sparsity:'
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们禁用了BT的稀疏性：
 - en: '[PRE6]'
+  id: totrans-40
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: 'We run the model on DEVICE, and collect profile information for native MHA
     execution on DEVICE:'
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们在设备上运行模型，并收集用于设备上原生MHA执行的性能信息：
 - en: The first run uses traditional (“slow path”) execution.
+  id: totrans-42
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 第一次运行使用传统的（“慢路径”）执行。
 - en: The second run enables BT fastpath execution by putting the model in inference
     mode using model.eval() and disables gradient collection with torch.no_grad().
+  id: totrans-43
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 第二次运行通过将模型置于推理模式并使用model.eval()禁用梯度收集来启用BT快速执行路径。
 - en: 'When executing on a GPU, you should see a significant speedup, in particular
     for the small input batch setting:'
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 在GPU上执行时，您应该看到显着的加速，特别是对于小输入批处理设置：
 - en: '[PRE7]'
+  id: totrans-45
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: 2.3 Run and benchmark inference on (configurable) DEVICE with and without BT
     fastpath (native MHA + sparsity)
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 2.3 在（可配置的）DEVICE上运行和对比推理，包括BT快速执行路径和不包括BT快速执行路径（原生MHA + 稀疏性）
 - en: 'We enable sparsity support:'
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们启用稀疏性支持：
 - en: '[PRE8]'
+  id: totrans-48
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: 'We run the model on DEVICE, and collect profile information for native MHA
     and sparsity support execution on DEVICE:'
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们在DEVICE上运行模型，并收集原生MHA和稀疏性支持在DEVICE上的执行的概要信息：
 - en: The first run uses traditional (“slow path”) execution.
+  id: totrans-50
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 第一次运行使用传统的（“慢路径”）执行。
 - en: The second run enables BT fastpath execution by putting the model in inference
     mode using model.eval() and disables gradient collection with torch.no_grad().
+  id: totrans-51
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 第二次运行通过将模型置于推理模式并使用model.eval()禁用梯度收集来启用BT快速执行路径。
 - en: 'When executing on a GPU, you should see a significant speedup, in particular
     for the large input batch setting which includes sparsity:'
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
+  zh: 在GPU上执行时，您应该看到显着的加速，特别是对于包含稀疏性的大输入批处理设置：
 - en: '[PRE9]'
+  id: totrans-53
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: Summary
+  id: totrans-54
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 总结
 - en: In this tutorial, we have introduced fast transformer inference with Better
     Transformer fastpath execution in torchtext using PyTorch core Better Transformer
     support for Transformer Encoder models. We have demonstrated the use of Better
     Transformer with models trained prior to the availability of BT fastpath execution.
     We have demonstrated and benchmarked the use of both BT fastpath execution modes,
     native MHA execution and BT sparsity acceleration.
+  id: totrans-55
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，我们介绍了在torchtext中使用PyTorch核心Better Transformer支持Transformer编码器模型的快速变压器推理。我们演示了在BT快速执行路径可用之前训练的模型中使用Better
+    Transformer的方法。我们演示并对比了BT快速执行路径模式、原生MHA执行和BT稀疏性加速的使用。

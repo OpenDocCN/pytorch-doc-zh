@@ -1,94 +1,140 @@
 - en: (optional) Exporting a Model from PyTorch to ONNX and Running it using ONNX
     Runtime
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: （可选）将模型从PyTorch导出到ONNX并使用ONNX Runtime运行
 - en: 原文：[https://pytorch.org/tutorials/advanced/super_resolution_with_onnxruntime.html](https://pytorch.org/tutorials/advanced/super_resolution_with_onnxruntime.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/advanced/super_resolution_with_onnxruntime.html](https://pytorch.org/tutorials/advanced/super_resolution_with_onnxruntime.html)
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-advanced-super-resolution-with-onnxruntime-py)
     to download the full example code
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[这里](#sphx-glr-download-advanced-super-resolution-with-onnxruntime-py)下载完整示例代码。
 - en: Note
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: As of PyTorch 2.1, there are two versions of ONNX Exporter.
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 截至PyTorch 2.1，ONNX Exporter有两个版本。
 - en: '[``](#id1)torch.onnx.dynamo_export`is the newest (still in beta) exporter based
     on the TorchDynamo technology released with PyTorch 2.0.'
+  id: totrans-6
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[``](#id1)torch.onnx.dynamo_export`是基于TorchDynamo技术发布的最新（仍处于测试阶段）导出器，随PyTorch
+    2.0发布。'
 - en: '`torch.onnx.export` is based on TorchScript backend and has been available
     since PyTorch 1.2.0.'
+  id: totrans-7
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`torch.onnx.export`基于TorchScript后端，自PyTorch 1.2.0以来一直可用。'
 - en: In this tutorial, we describe how to convert a model defined in PyTorch into
     the ONNX format using the TorchScript [``](#id3)torch.onnx.export` ONNX exporter.
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，我们描述了如何使用TorchScript [``](#id3)torch.onnx.export` ONNX导出器将在PyTorch中定义的模型转换为ONNX格式。
 - en: The exported model will be executed with ONNX Runtime. ONNX Runtime is a performance-focused
     engine for ONNX models, which inferences efficiently across multiple platforms
     and hardware (Windows, Linux, and Mac and on both CPUs and GPUs). ONNX Runtime
     has proved to considerably increase performance over multiple models as explained
     [here](https://cloudblogs.microsoft.com/opensource/2019/05/22/onnx-runtime-machine-learning-inferencing-0-4-release)
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 导出的模型将使用ONNX Runtime执行。ONNX Runtime是一个专注于性能的引擎，用于有效地推断跨多个平台和硬件（Windows、Linux和Mac以及CPU和GPU）的ONNX模型。ONNX
+    Runtime已被证明在多个模型上显著提高性能，如[此处所述](https://cloudblogs.microsoft.com/opensource/2019/05/22/onnx-runtime-machine-learning-inferencing-0-4-release)。
 - en: For this tutorial, you will need to install [ONNX](https://github.com/onnx/onnx)
     and [ONNX Runtime](https://github.com/microsoft/onnxruntime). You can get binary
     builds of ONNX and ONNX Runtime with
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，您需要安装[ONNX](https://github.com/onnx/onnx)和[ONNX Runtime](https://github.com/microsoft/onnxruntime)。您可以通过以下方式获取ONNX和ONNX
+    Runtime的二进制构建。
 - en: '[PRE0]'
+  id: totrans-11
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: ONNX Runtime recommends using the latest stable runtime for PyTorch.
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: ONNX Runtime建议使用最新的稳定运行时环境来运行PyTorch。
 - en: '[PRE1]'
+  id: totrans-13
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Super-resolution is a way of increasing the resolution of images, videos and
     is widely used in image processing or video editing. For this tutorial, we will
     use a small super-resolution model.
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 超分辨率是一种增加图像、视频分辨率的方法，在图像处理或视频编辑中被广泛使用。在本教程中，我们将使用一个小型的超分辨率模型。
 - en: First, let’s create a `SuperResolution` model in PyTorch. This model uses the
     efficient sub-pixel convolution layer described in [“Real-Time Single Image and
     Video Super-Resolution Using an Efficient Sub-Pixel Convolutional Neural Network”
     - Shi et al](https://arxiv.org/abs/1609.05158) for increasing the resolution of
     an image by an upscale factor. The model expects the Y component of the `YCbCr`
     of an image as an input, and outputs the upscaled Y component in super resolution.
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 首先，在PyTorch中创建一个`SuperResolution`模型。该模型使用了在[“使用高效子像素卷积神经网络实现实时单图像和视频超分辨率” -
+    Shi等人](https://arxiv.org/abs/1609.05158)中描述的高效子像素卷积层，通过一个放大因子增加图像的分辨率。该模型期望图像的`YCbCr`的Y分量作为输入，并输出超分辨率中的放大Y分量。
 - en: '[The model](https://github.com/pytorch/examples/blob/master/super_resolution/model.py)
     comes directly from PyTorch’s examples without modification:'
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: '[该模型](https://github.com/pytorch/examples/blob/master/super_resolution/model.py)直接来自PyTorch的示例，没有修改：'
 - en: '[PRE2]'
+  id: totrans-17
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Ordinarily, you would now train this model; however, for this tutorial, we will
     instead download some pretrained weights. Note that this model was not trained
     fully for good accuracy and is used here for demonstration purposes only.
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: 通常情况下，您现在会训练这个模型；但是，在本教程中，我们将下载一些预训练权重。请注意，这个模型并没有完全训练以获得良好的准确性，仅用于演示目的。
 - en: It is important to call `torch_model.eval()` or `torch_model.train(False)` before
     exporting the model, to turn the model to inference mode. This is required since
     operators like dropout or batchnorm behave differently in inference and training
     mode.
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 在导出模型之前，重要的是调用`torch_model.eval()`或`torch_model.train(False)`，将模型转换为推断模式。这是必需的，因为像dropout或batchnorm这样的操作符在推断和训练模式下的行为是不同的。
 - en: '[PRE3]'
+  id: totrans-20
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: Exporting a model in PyTorch works via tracing or scripting. This tutorial will
     use as an example a model exported by tracing. To export a model, we call the
     `torch.onnx.export()` function. This will execute the model, recording a trace
@@ -100,20 +146,29 @@
     specify the first dimension as dynamic in the `dynamic_axes` parameter in `torch.onnx.export()`.
     The exported model will thus accept inputs of size [batch_size, 1, 224, 224] where
     batch_size can be variable.
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 在PyTorch中导出模型可以通过跟踪或脚本化来实现。本教程将使用一个通过跟踪导出的模型作为示例。要导出一个模型，我们调用`torch.onnx.export()`函数。这将执行模型，记录计算输出所使用的操作符的跟踪。因为`export`运行模型，我们需要提供一个输入张量`x`。这个张量中的值可以是随机的，只要它是正确的类型和大小。请注意，在导出的ONNX图中，所有输入的维度的大小将被固定，除非指定为动态轴。在这个示例中，我们导出具有批大小1的模型，但然后在`torch.onnx.export()`的`dynamic_axes`参数中将第一个维度指定为动态。因此，导出的模型将接受大小为[batch_size,
+    1, 224, 224]的输入，其中batch_size可以是可变的。
 - en: To learn more details about PyTorch’s export interface, check out the [torch.onnx
     documentation](https://pytorch.org/docs/master/onnx.html).
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 要了解更多关于PyTorch导出接口的细节，请查看[torch.onnx文档](https://pytorch.org/docs/master/onnx.html)。
 - en: '[PRE4]'
+  id: totrans-23
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: We also computed `torch_out`, the output after of the model, which we will use
     to verify that the model we exported computes the same values when run in ONNX
     Runtime.
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们还计算了`torch_out`，模型输出之后的结果，我们将使用它来验证我们导出的模型在ONNX Runtime中运行时是否计算出相同的值。
 - en: But before verifying the model’s output with ONNX Runtime, we will check the
     ONNX model with ONNX API. First, `onnx.load("super_resolution.onnx")` will load
     the saved model and will output a `onnx.ModelProto` structure (a top-level file/container
@@ -122,106 +177,160 @@
     and confirm that the model has a valid schema. The validity of the ONNX graph
     is verified by checking the model’s version, the graph’s structure, as well as
     the nodes and their inputs and outputs.
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: 但在使用ONNX Runtime验证模型输出之前，我们将使用ONNX API检查ONNX模型。首先，`onnx.load("super_resolution.onnx")`将加载保存的模型，并输出一个`onnx.ModelProto`结构（用于捆绑ML模型的顶层文件/容器格式。更多信息请参阅[onnx.proto文档](https://github.com/onnx/onnx/blob/master/onnx/onnx.proto)）。然后，`onnx.checker.check_model(onnx_model)`将验证模型的结构，并确认模型具有有效的模式。通过检查模型的版本、图的结构以及节点及其输入和输出来验证ONNX图的有效性。
 - en: '[PRE5]'
+  id: totrans-26
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: Now let’s compute the output using ONNX Runtime’s Python APIs. This part can
     normally be done in a separate process or on another machine, but we will continue
     in the same process so that we can verify that ONNX Runtime and PyTorch are computing
     the same value for the network.
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在让我们使用ONNX Runtime的Python API计算输出。这部分通常可以在单独的进程或另一台机器上完成，但我们将继续在同一进程中进行，以便验证ONNX
+    Runtime和PyTorch为网络计算相同的值。
 - en: In order to run the model with ONNX Runtime, we need to create an inference
     session for the model with the chosen configuration parameters (here we use the
     default config). Once the session is created, we evaluate the model using the
     run() API. The output of this call is a list containing the outputs of the model
     computed by ONNX Runtime.
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了使用ONNX Runtime运行模型，我们需要为模型创建一个推理会话，并选择配置参数（这里我们使用默认配置）。会话创建后，我们使用run() API评估模型。此调用的输出是一个包含ONNX
+    Runtime计算的模型输出的列表。
 - en: '[PRE6]'
+  id: totrans-29
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: We should see that the output of PyTorch and ONNX Runtime runs match numerically
     with the given precision (`rtol=1e-03` and `atol=1e-05`). As a side-note, if they
     do not match then there is an issue in the ONNX exporter, so please contact us
     in that case.
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们应该看到PyTorch和ONNX Runtime的输出在给定精度(`rtol=1e-03`和`atol=1e-05`)下数值匹配。值得一提的是，如果它们不匹配，则ONNX导出器存在问题，请在这种情况下与我们联系。
 - en: Running the model on an image using ONNX Runtime
+  id: totrans-31
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 在ONNX Runtime上运行图像模型
 - en: So far we have exported a model from PyTorch and shown how to load it and run
     it in ONNX Runtime with a dummy tensor as an input.
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 到目前为止，我们已经从PyTorch导出了一个模型，并展示了如何加载它并在ONNX Runtime中使用一个虚拟张量作为输入来运行它。
 - en: For this tutorial, we will use a famous cat image used widely which looks like
     below
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，我们将使用广泛使用的一张著名的猫图像，如下所示
 - en: '![cat](../Images/35d54d0c48ca1c52d56850a202a2c160.png)'
+  id: totrans-34
   prefs: []
   type: TYPE_IMG
+  zh: '![猫](../Images/35d54d0c48ca1c52d56850a202a2c160.png)'
 - en: First, let’s load the image, preprocess it using standard PIL python library.
     Note that this preprocessing is the standard practice of processing data for training/testing
     neural networks.
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 首先，让我们加载图像，使用标准的PIL Python库对其进行预处理。请注意，这种预处理是训练/测试神经网络数据的标准做法。
 - en: We first resize the image to fit the size of the model’s input (224x224). Then
     we split the image into its Y, Cb, and Cr components. These components represent
     a grayscale image (Y), and the blue-difference (Cb) and red-difference (Cr) chroma
     components. The Y component being more sensitive to the human eye, we are interested
     in this component which we will be transforming. After extracting the Y component,
     we convert it to a tensor which will be the input of our model.
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们首先将图像调整大小以适应模型的输入大小（224x224）。然后我们将图像分割为其Y、Cb和Cr组件。这些组件代表灰度图像（Y）以及蓝差（Cb）和红差（Cr）色度分量。Y分量对人眼更敏感，我们对这个分量感兴趣，我们将对其进行转换。提取Y分量后，我们将其转换为一个张量，这将是我们模型的输入。
 - en: '[PRE7]'
+  id: totrans-37
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: Now, as a next step, let’s take the tensor representing the grayscale resized
     cat image and run the super-resolution model in ONNX Runtime as explained previously.
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，作为下一步，让我们取代表灰度调整后的猫图像的张量，并像之前解释的那样在ONNX Runtime中运行超分辨率模型。
 - en: '[PRE8]'
+  id: totrans-39
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: At this point, the output of the model is a tensor. Now, we’ll process the output
     of the model to construct back the final output image from the output tensor,
     and save the image. The post-processing steps have been adopted from PyTorch implementation
     of super-resolution model [here](https://github.com/pytorch/examples/blob/master/super_resolution/super_resolve.py).
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: 此时，模型的输出是一个张量。现在，我们将处理模型的输出，从输出张量中构建最终的输出图像，并保存图像。后处理步骤是从PyTorch超分辨率模型的实现中采用的[这里](https://github.com/pytorch/examples/blob/master/super_resolution/super_resolve.py)。
 - en: '[PRE9]'
+  id: totrans-41
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: '![output\_cat](../Images/efb29904552d032a076d8512d4e60b95.png)'
+  id: totrans-42
   prefs: []
   type: TYPE_IMG
+  zh: '![输出\_猫](../Images/efb29904552d032a076d8512d4e60b95.png)'
 - en: ONNX Runtime being a cross platform engine, you can run it across multiple platforms
     and on both CPUs and GPUs.
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: ONNX Runtime是一个跨平台引擎，可以在多个平台上以及CPU和GPU上运行。
 - en: ONNX Runtime can also be deployed to the cloud for model inferencing using Azure
     Machine Learning Services. More information [here](https://docs.microsoft.com/en-us/azure/machine-learning/service/concept-onnx).
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: ONNX Runtime也可以部署到云端，用于使用Azure机器学习服务进行模型推断。更多信息[在这里](https://docs.microsoft.com/en-us/azure/machine-learning/service/concept-onnx)。
 - en: More information about ONNX Runtime’s performance [here](https://github.com/microsoft/onnxruntime#high-performance).
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: 关于ONNX Runtime性能的更多信息[在这里](https://github.com/microsoft/onnxruntime#high-performance)。
 - en: For more information about ONNX Runtime [here](https://github.com/microsoft/onnxruntime).
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 关于ONNX Runtime的更多信息[在这里](https://github.com/microsoft/onnxruntime)。
 - en: '**Total running time of the script:** ( 0 minutes 0.000 seconds)'
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: '**脚本的总运行时间:** (0分钟0.000秒)'
 - en: '[`Download Python source code: super_resolution_with_onnxruntime.py`](../_downloads/443402f98df8c37ed150fc9266eb8dee/super_resolution_with_onnxruntime.py)'
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: '[下载Python源代码：super_resolution_with_onnxruntime.py](../_downloads/443402f98df8c37ed150fc9266eb8dee/super_resolution_with_onnxruntime.py)'
 - en: '[`Download Jupyter notebook: super_resolution_with_onnxruntime.ipynb`](../_downloads/f41f6eb36b8dff464b9cd21b8ea30765/super_resolution_with_onnxruntime.ipynb)'
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: '[下载Jupyter笔记本：super_resolution_with_onnxruntime.ipynb](../_downloads/f41f6eb36b8dff464b9cd21b8ea30765/super_resolution_with_onnxruntime.ipynb)'
 - en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Sphinx-Gallery生成的图库](https://sphinx-gallery.github.io)'

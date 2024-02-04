@@ -1,80 +1,118 @@
 - en: (beta) Building a Convolution/Batch Norm fuser in FX
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: （beta）在FX中构建一个卷积/批量归一化融合器
 - en: 原文：[https://pytorch.org/tutorials/intermediate/fx_conv_bn_fuser.html](https://pytorch.org/tutorials/intermediate/fx_conv_bn_fuser.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/intermediate/fx_conv_bn_fuser.html](https://pytorch.org/tutorials/intermediate/fx_conv_bn_fuser.html)
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-intermediate-fx-conv-bn-fuser-py) to download
     the full example code
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[这里](#sphx-glr-download-intermediate-fx-conv-bn-fuser-py)下载完整示例代码
 - en: '**Author**: [Horace He](https://github.com/chillee)'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '**作者**：[Horace He](https://github.com/chillee)'
 - en: 'In this tutorial, we are going to use FX, a toolkit for composable function
     transformations of PyTorch, to do the following:'
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，我们将使用FX，一个用于PyTorch可组合函数转换的工具包，执行以下操作：
 - en: Find patterns of conv/batch norm in the data dependencies.
+  id: totrans-6
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 在数据依赖关系中查找卷积/批量归一化的模式。
 - en: For the patterns found in 1), fold the batch norm statistics into the convolution
     weights.
+  id: totrans-7
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 对于在1)中找到的模式，将批量归一化统计数据折叠到卷积权重中。
 - en: Note that this optimization only works for models in inference mode (i.e. mode.eval())
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，此优化仅适用于处于推理模式的模型（即mode.eval()）
 - en: 'We will be building the fuser that exists here: [https://github.com/pytorch/pytorch/blob/orig/release/1.8/torch/fx/experimental/fuser.py](https://github.com/pytorch/pytorch/blob/orig/release/1.8/torch/fx/experimental/fuser.py)'
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们将构建存在于此处的融合器：[https://github.com/pytorch/pytorch/blob/orig/release/1.8/torch/fx/experimental/fuser.py](https://github.com/pytorch/pytorch/blob/orig/release/1.8/torch/fx/experimental/fuser.py)
 - en: First, let’s get some imports out of the way (we will be using all of these
     later in the code).
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 首先，让我们导入一些模块（我们稍后将在代码中使用所有这些）。
 - en: '[PRE0]'
+  id: totrans-11
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: For this tutorial, we are going to create a model consisting of convolutions
     and batch norms. Note that this model has some tricky components - some of the
     conv/batch norm patterns are hidden within Sequentials and one of the `BatchNorms`
     is wrapped in another Module.
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于本教程，我们将创建一个由卷积和批量归一化组成的模型。请注意，这个模型有一些棘手的组件 - 一些卷积/批量归一化模式隐藏在Sequential中，一个`BatchNorms`被包装在另一个模块中。
 - en: '[PRE1]'
+  id: totrans-13
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Fusing Convolution with Batch Norm
+  id: totrans-14
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 融合卷积与批量归一化
 - en: One of the primary challenges with trying to automatically fuse convolution
     and batch norm in PyTorch is that PyTorch does not provide an easy way of accessing
     the computational graph. FX resolves this problem by symbolically tracing the
     actual operations called, so that we can track the computations through the forward
     call, nested within Sequential modules, or wrapped in an user-defined module.
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 尝试在PyTorch中自动融合卷积和批量归一化的主要挑战之一是PyTorch没有提供一种轻松访问计算图的方法。FX通过符号跟踪实际调用的操作来解决这个问题，这样我们就可以通过前向调用、嵌套在Sequential模块中或包装在用户定义模块中来跟踪计算。
 - en: '[PRE2]'
+  id: totrans-16
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: This gives us a graph representation of our model. Note that both the modules
     hidden within the sequential as well as the wrapped Module have been inlined into
     the graph. This is the default level of abstraction, but it can be configured
     by the pass writer. More information can be found at the FX overview [https://pytorch.org/docs/master/fx.html#module-torch.fx](https://pytorch.org/docs/master/fx.html#module-torch.fx)
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 这给我们提供了模型的图形表示。请注意，顺序内部的模块以及包装的模块都已内联到图中。这是默认的抽象级别，但可以由通道编写者配置。更多信息请参阅FX概述[https://pytorch.org/docs/master/fx.html#module-torch.fx](https://pytorch.org/docs/master/fx.html#module-torch.fx)
 - en: Fusing Convolution with Batch Norm
+  id: totrans-18
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 融合卷积与批量归一化
 - en: Unlike some other fusions, fusion of convolution with batch norm does not require
     any new operators. Instead, as batch norm during inference consists of a pointwise
     add and multiply, these operations can be “baked” into the preceding convolution’s
@@ -82,72 +120,110 @@
     [https://nenadmarkus.com/p/fusing-batchnorm-and-conv/](https://nenadmarkus.com/p/fusing-batchnorm-and-conv/)
     for further details. The code here is copied from [https://github.com/pytorch/pytorch/blob/orig/release/1.8/torch/nn/utils/fusion.py](https://github.com/pytorch/pytorch/blob/orig/release/1.8/torch/nn/utils/fusion.py)
     clarity purposes.
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 与其他一些融合不同，卷积与批量归一化的融合不需要任何新的运算符。相反，在推理期间，批量归一化由逐点加法和乘法组成，这些操作可以“烘烤”到前面卷积的权重中。这使我们能够完全从我们的模型中删除批量归一化！阅读[https://nenadmarkus.com/p/fusing-batchnorm-and-conv/](https://nenadmarkus.com/p/fusing-batchnorm-and-conv/)获取更多详细信息。这里的代码是从[https://github.com/pytorch/pytorch/blob/orig/release/1.8/torch/nn/utils/fusion.py](https://github.com/pytorch/pytorch/blob/orig/release/1.8/torch/nn/utils/fusion.py)复制的，以便更清晰。
 - en: '[PRE3]'
+  id: totrans-20
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: FX Fusion Pass
+  id: totrans-21
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: FX Fusion Pass
 - en: Now that we have our computational graph as well as a method for fusing convolution
     and batch norm, all that remains is to iterate over the FX graph and apply the
     desired fusions.
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们有了我们的计算图以及融合卷积和批量归一化的方法，剩下的就是迭代FX图并应用所需的融合。
 - en: '[PRE4]'
+  id: totrans-23
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: Note
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: We make some simplifications here for demonstration purposes, such as only matching
     2D convolutions. View [https://github.com/pytorch/pytorch/blob/master/torch/fx/experimental/fuser.py](https://github.com/pytorch/pytorch/blob/master/torch/fx/experimental/fuser.py)
     for a more usable pass.
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了演示目的，我们在这里进行了一些简化，比如只匹配2D卷积。查看[https://github.com/pytorch/pytorch/blob/master/torch/fx/experimental/fuser.py](https://github.com/pytorch/pytorch/blob/master/torch/fx/experimental/fuser.py)以获取更可用的通道。
 - en: Testing out our Fusion Pass
+  id: totrans-26
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 测试我们的融合通道
 - en: We can now run this fusion pass on our initial toy model and verify that our
     results are identical. In addition, we can print out the code for our fused model
     and verify that there are no more batch norms.
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们可以在初始的玩具模型上运行这个融合通道，并验证我们的结果是相同的。此外，我们可以打印出我们融合模型的代码，并验证是否还有批量归一化。
 - en: '[PRE5]'
+  id: totrans-28
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: Benchmarking our Fusion on ResNet18
+  id: totrans-29
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 在ResNet18上对我们的融合进行基准测试
 - en: We can test our fusion pass on a larger model like ResNet18 and see how much
     this pass improves inference performance.
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们可以在像ResNet18这样的较大模型上测试我们的融合通道，看看这个通道如何提高推理性能。
 - en: '[PRE6]'
+  id: totrans-31
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: As we previously saw, the output of our FX transformation is (“torchscriptable”)
     PyTorch code, we can easily `jit.script` the output to try and increase our performance
     even more. In this way, our FX model transformation composes with TorchScript
     with no issues.
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 正如我们之前看到的，我们的FX转换的输出是（“torchscriptable”）PyTorch代码，我们可以轻松地`jit.script`输出，尝试进一步提高性能。通过这种方式，我们的FX模型转换与TorchScript组合在一起，没有任何问题。
 - en: '[PRE7]'
+  id: totrans-33
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: '**Total running time of the script:** ( 0 minutes 0.000 seconds)'
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 脚本的总运行时间：（0分钟0.000秒）
 - en: '[`Download Python source code: fx_conv_bn_fuser.py`](../_downloads/a8a58591f09624693bd748be066141fd/fx_conv_bn_fuser.py)'
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Python源代码：fx_conv_bn_fuser.py`](../_downloads/a8a58591f09624693bd748be066141fd/fx_conv_bn_fuser.py)'
 - en: '[`Download Jupyter notebook: fx_conv_bn_fuser.ipynb`](../_downloads/a22e5922e71fe39ad848a64968a5570e/fx_conv_bn_fuser.ipynb)'
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Jupyter笔记本：fx_conv_bn_fuser.ipynb`](../_downloads/a22e5922e71fe39ad848a64968a5570e/fx_conv_bn_fuser.ipynb)'
 - en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Sphinx-Gallery生成的画廊](https://sphinx-gallery.github.io)'

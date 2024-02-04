@@ -1,324 +1,502 @@
 - en: 'Jacobians, Hessians, hvp, vhp, and more: composing function transforms'
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 雅可比矩阵、海森矩阵、hvp、vhp 等：组合函数转换
 - en: 原文：[https://pytorch.org/tutorials/intermediate/jacobians_hessians.html](https://pytorch.org/tutorials/intermediate/jacobians_hessians.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/intermediate/jacobians_hessians.html](https://pytorch.org/tutorials/intermediate/jacobians_hessians.html)
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-intermediate-jacobians-hessians-py) to download
     the full example code
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[这里](#sphx-glr-download-intermediate-jacobians-hessians-py)下载完整的示例代码
 - en: Computing jacobians or hessians are useful in a number of non-traditional deep
     learning models. It is difficult (or annoying) to compute these quantities efficiently
     using PyTorch’s regular autodiff APIs (`Tensor.backward()`, `torch.autograd.grad`).
     PyTorch’s [JAX-inspired](https://github.com/google/jax) [function transforms API](https://pytorch.org/docs/master/func.html)
     provides ways of computing various higher-order autodiff quantities efficiently.
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 计算雅可比矩阵或海森矩阵在许多非传统的深度学习模型中是有用的。使用 PyTorch 的常规自动微分 API（`Tensor.backward()`，`torch.autograd.grad`）高效地计算这些量是困难的（或者烦人的）。PyTorch
+    的 [受 JAX 启发的](https://github.com/google/jax) [函数转换 API](https://pytorch.org/docs/master/func.html)
+    提供了高效计算各种高阶自动微分量的方法。
 - en: Note
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: This tutorial requires PyTorch 2.0.0 or later.
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程需要 PyTorch 2.0.0 或更高版本。
 - en: Computing the Jacobian
+  id: totrans-7
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 计算雅可比矩阵
 - en: '[PRE0]'
+  id: totrans-8
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: Let’s start with a function that we’d like to compute the jacobian of. This
     is a simple linear function with non-linear activation.
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们从一个我们想要计算雅可比矩阵的函数开始。这是一个带有非线性激活的简单线性函数。
 - en: '[PRE1]'
+  id: totrans-10
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: 'Let’s add some dummy data: a weight, a bias, and a feature vector x.'
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们添加一些虚拟数据：一个权重、一个偏置和一个特征向量 x。
 - en: '[PRE2]'
+  id: totrans-12
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Let’s think of `predict` as a function that maps the input `x` from \(R^D \to
     R^D\). PyTorch Autograd computes vector-Jacobian products. In order to compute
     the full Jacobian of this \(R^D \to R^D\) function, we would have to compute it
     row-by-row by using a different unit vector each time.
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们将 `predict` 视为一个将输入 `x` 从 \(R^D \to R^D\) 的函数。PyTorch Autograd 计算向量-雅可比乘积。为了计算这个
+    \(R^D \to R^D\) 函数的完整雅可比矩阵，我们将不得不逐行计算，每次使用一个不同的单位向量。
 - en: '[PRE3]'
+  id: totrans-14
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: '[PRE4]'
+  id: totrans-15
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: 'Instead of computing the jacobian row-by-row, we can use PyTorch’s `torch.vmap`
     function transform to get rid of the for-loop and vectorize the computation. We
     can’t directly apply `vmap` to `torch.autograd.grad`; instead, PyTorch provides
     a `torch.func.vjp` transform that composes with `torch.vmap`:'
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们可以使用 PyTorch 的 `torch.vmap` 函数转换来消除循环并向量化计算，而不是逐行计算雅可比矩阵。我们不能直接将 `vmap` 应用于
+    `torch.autograd.grad`；相反，PyTorch 提供了一个 `torch.func.vjp` 转换，与 `torch.vmap` 组合使用：
 - en: '[PRE5]'
+  id: totrans-17
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: In a later tutorial a composition of reverse-mode AD and `vmap` will give us
     per-sample-gradients. In this tutorial, composing reverse-mode AD and `vmap` gives
     us Jacobian computation! Various compositions of `vmap` and autodiff transforms
     can give us different interesting quantities.
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: 在后续教程中，反向模式自动微分和 `vmap` 的组合将给我们提供每个样本的梯度。在本教程中，组合反向模式自动微分和 `vmap` 将给我们提供雅可比矩阵的计算！`vmap`
+    和自动微分转换的各种组合可以给我们提供不同的有趣量。
 - en: PyTorch provides `torch.func.jacrev` as a convenience function that performs
     the `vmap-vjp` composition to compute jacobians. `jacrev` accepts an `argnums`
     argument that says which argument we would like to compute Jacobians with respect
     to.
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch 提供了 `torch.func.jacrev` 作为一个方便的函数，执行 `vmap-vjp` 组合来计算雅可比矩阵。`jacrev`
+    接受一个 `argnums` 参数，指定我们想要相对于哪个参数计算雅可比矩阵。
 - en: '[PRE6]'
+  id: totrans-20
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: Let’s compare the performance of the two ways to compute the jacobian. The function
     transform version is much faster (and becomes even faster the more outputs there
     are).
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们比较两种计算雅可比矩阵的方式的性能。函数转换版本要快得多（并且随着输出数量的增加而变得更快）。
 - en: In general, we expect that vectorization via `vmap` can help eliminate overhead
     and give better utilization of your hardware.
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 一般来说，我们期望通过 `vmap` 的向量化可以帮助消除开销，并更好地利用硬件。
 - en: '`vmap` does this magic by pushing the outer loop down into the function’s primitive
     operations in order to obtain better performance.'
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: '`vmap` 通过将外部循环下推到函数的原始操作中，以获得更好的性能。'
 - en: 'Let’s make a quick function to evaluate performance and deal with microseconds
     and milliseconds measurements:'
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们快速创建一个函数来评估性能，并处理微秒和毫秒的测量：
 - en: '[PRE7]'
+  id: totrans-25
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: 'And then run the performance comparison:'
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后进行性能比较：
 - en: '[PRE8]'
+  id: totrans-27
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: '[PRE9]'
+  id: totrans-28
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: 'Let’s do a relative performance comparison of the above with our `get_perf`
     function:'
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们通过我们的 `get_perf` 函数进行上述的相对性能比较：
 - en: '[PRE10]'
+  id: totrans-30
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: '[PRE11]'
+  id: totrans-31
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: Furthermore, it’s pretty easy to flip the problem around and say we want to
     compute Jacobians of the parameters to our model (weight, bias) instead of the
     input
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 此外，很容易将问题转换过来，说我们想要计算模型参数（权重、偏置）的雅可比矩阵，而不是输入的雅可比矩阵
 - en: '[PRE12]'
+  id: totrans-33
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: Reverse-mode Jacobian (`jacrev`) vs forward-mode Jacobian (`jacfwd`)
+  id: totrans-34
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 反向模式雅可比矩阵（`jacrev`） vs 正向模式雅可比矩阵（`jacfwd`）
 - en: 'We offer two APIs to compute jacobians: `jacrev` and `jacfwd`:'
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们提供了两个 API 来计算雅可比矩阵：`jacrev` 和 `jacfwd`：
 - en: '`jacrev` uses reverse-mode AD. As you saw above it is a composition of our
     `vjp` and `vmap` transforms.'
+  id: totrans-36
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`jacrev` 使用反向模式自动微分。正如你在上面看到的，它是我们 `vjp` 和 `vmap` 转换的组合。'
 - en: '`jacfwd` uses forward-mode AD. It is implemented as a composition of our `jvp`
     and `vmap` transforms.'
+  id: totrans-37
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`jacfwd` 使用正向模式自动微分。它是我们 `jvp` 和 `vmap` 转换的组合实现。'
 - en: '`jacfwd` and `jacrev` can be substituted for each other but they have different
     performance characteristics.'
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: '`jacfwd` 和 `jacrev` 可以互相替代，但它们具有不同的性能特征。'
 - en: 'As a general rule of thumb, if you’re computing the jacobian of an \(R^N \to
     R^M\) function, and there are many more outputs than inputs (for example, \(M
     > N\)) then `jacfwd` is preferred, otherwise use `jacrev`. There are exceptions
     to this rule, but a non-rigorous argument for this follows:'
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 作为一个经验法则，如果你正在计算一个 \(R^N \to R^M\) 函数的雅可比矩阵，并且输出比输入要多得多（例如，\(M > N\)），那么首选 `jacfwd`，否则使用
+    `jacrev`。当然，这个规则也有例外，但以下是一个非严格的论证：
 - en: In reverse-mode AD, we are computing the jacobian row-by-row, while in forward-mode
     AD (which computes Jacobian-vector products), we are computing it column-by-column.
     The Jacobian matrix has M rows and N columns, so if it is taller or wider one
     way we may prefer the method that deals with fewer rows or columns.
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: 在反向模式AD中，我们逐行计算雅可比矩阵，而在正向模式AD（计算雅可比向量积）中，我们逐列计算。雅可比矩阵有M行和N列，因此如果它在某个方向上更高或更宽，我们可能更喜欢处理较少行或列的方法。
 - en: '[PRE13]'
+  id: totrans-41
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: 'First, let’s benchmark with more inputs than outputs:'
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 首先，让我们使用更多的输入进行基准测试：
 - en: '[PRE14]'
+  id: totrans-43
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: '[PRE15]'
+  id: totrans-44
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: 'and then do a relative benchmark:'
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后进行相对基准测试：
 - en: '[PRE16]'
+  id: totrans-46
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: '[PRE17]'
+  id: totrans-47
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: 'and now the reverse - more outputs (M) than inputs (N):'
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在反过来 - 输出（M）比输入（N）更多：
 - en: '[PRE18]'
+  id: totrans-49
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: '[PRE19]'
+  id: totrans-50
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE19]'
 - en: 'and a relative performance comparison:'
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
+  zh: 以及相对性能比较：
 - en: '[PRE20]'
+  id: totrans-52
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE20]'
 - en: '[PRE21]'
+  id: totrans-53
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE21]'
 - en: Hessian computation with functorch.hessian
+  id: totrans-54
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 使用functorch.hessian进行Hessian计算
 - en: 'We offer a convenience API to compute hessians: `torch.func.hessiani`. Hessians
     are the jacobian of the jacobian (or the partial derivative of the partial derivative,
     aka second order).'
+  id: totrans-55
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们提供了一个方便的API来计算Hessian：`torch.func.hessiani`。Hessians是雅可比矩阵的雅可比矩阵（或偏导数的偏导数，也称为二阶导数）。
 - en: This suggests that one can just compose functorch jacobian transforms to compute
     the Hessian. Indeed, under the hood, `hessian(f)` is simply `jacfwd(jacrev(f))`.
+  id: totrans-56
   prefs: []
   type: TYPE_NORMAL
+  zh: 这表明可以简单地组合functorch雅可比变换来计算Hessian。实际上，在内部，`hessian(f)`就是`jacfwd(jacrev(f))`。
 - en: 'Note: to boost performance: depending on your model, you may also want to use
     `jacfwd(jacfwd(f))` or `jacrev(jacrev(f))` instead to compute hessians leveraging
     the rule of thumb above regarding wider vs taller matrices.'
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意：为了提高性能：根据您的模型，您可能还希望使用`jacfwd(jacfwd(f))`或`jacrev(jacrev(f))`来计算Hessian，利用上述关于更宽还是更高矩阵的经验法则。
 - en: '[PRE22]'
+  id: totrans-58
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE22]'
 - en: Let’s verify we have the same result regardless of using hessian API or using
     `jacfwd(jacfwd())`.
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们验证无论是使用Hessian API还是使用`jacfwd(jacfwd())`，我们都会得到相同的结果。
 - en: '[PRE23]'
+  id: totrans-60
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE23]'
 - en: '[PRE24]'
+  id: totrans-61
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE24]'
 - en: Batch Jacobian and Batch Hessian
+  id: totrans-62
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 批处理雅可比矩阵和批处理Hessian
 - en: In the above examples we’ve been operating with a single feature vector. In
     some cases you might want to take the Jacobian of a batch of outputs with respect
     to a batch of inputs. That is, given a batch of inputs of shape `(B, N)` and a
     function that goes from \(R^N \to R^M\), we would like a Jacobian of shape `(B,
     M, N)`.
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: 在上面的例子中，我们一直在操作单个特征向量。在某些情况下，您可能希望对一批输出相对于一批输入进行雅可比矩阵的计算。也就是说，给定形状为`(B, N)`的输入批次和一个从\(R^N
+    \to R^M\)的函数，我们希望得到形状为`(B, M, N)`的雅可比矩阵。
 - en: 'The easiest way to do this is to use `vmap`:'
+  id: totrans-64
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用`vmap`是最简单的方法：
 - en: '[PRE25]'
+  id: totrans-65
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE25]'
 - en: '[PRE26]'
+  id: totrans-66
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE26]'
 - en: 'If you have a function that goes from (B, N) -> (B, M) instead and are certain
     that each input produces an independent output, then it’s also sometimes possible
     to do this without using `vmap` by summing the outputs and then computing the
     Jacobian of that function:'
+  id: totrans-67
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您有一个从(B, N) -> (B, M)的函数，而且确定每个输入产生独立的输出，那么有时也可以通过对输出求和，然后计算该函数的雅可比矩阵来实现，而无需使用`vmap`：
 - en: '[PRE27]'
+  id: totrans-68
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE27]'
 - en: 'If you instead have a function that goes from \(R^N \to R^M\) but inputs that
     are batched, you compose `vmap` with `jacrev` to compute batched jacobians:'
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您的函数是从\(R^N \to R^M\)，但输入是批处理的，您可以组合`vmap`和`jacrev`来计算批处理雅可比矩阵：
 - en: Finally, batch hessians can be computed similarly. It’s easiest to think about
     them by using `vmap` to batch over hessian computation, but in some cases the
     sum trick also works.
+  id: totrans-70
   prefs: []
   type: TYPE_NORMAL
+  zh: 最后，批次Hessian矩阵的计算方式类似。最容易的方法是使用`vmap`批处理Hessian计算，但在某些情况下，求和技巧也适用。
 - en: '[PRE28]'
+  id: totrans-71
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE28]'
 - en: '[PRE29]'
+  id: totrans-72
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE29]'
 - en: Computing Hessian-vector products
+  id: totrans-73
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 计算Hessian向量积
 - en: 'The naive way to compute a Hessian-vector product (hvp) is to materialize the
     full Hessian and perform a dot-product with a vector. We can do better: it turns
     out we don’t need to materialize the full Hessian to do this. We’ll go through
     two (of many) different strategies to compute Hessian-vector products: - composing
     reverse-mode AD with reverse-mode AD - composing reverse-mode AD with forward-mode
     AD'
+  id: totrans-74
   prefs: []
   type: TYPE_NORMAL
+  zh: 计算Hessian向量积的朴素方法是将完整的Hessian材料化并与向量进行点积。我们可以做得更好：事实证明，我们不需要材料化完整的Hessian来做到这一点。我们将介绍两种（许多种）不同的策略来计算Hessian向量积：-将反向模式AD与反向模式AD组合-将反向模式AD与正向模式AD组合
 - en: 'Composing reverse-mode AD with forward-mode AD (as opposed to reverse-mode
     with reverse-mode) is generally the more memory efficient way to compute a hvp
     because forward-mode AD doesn’t need to construct an Autograd graph and save intermediates
     for backward:'
+  id: totrans-75
   prefs: []
   type: TYPE_NORMAL
+  zh: 将反向模式AD与正向模式AD组合（而不是反向模式与反向模式）通常是计算HVP的更节省内存的方式，因为正向模式AD不需要构建Autograd图并保存反向传播的中间结果：
 - en: '[PRE30]'
+  id: totrans-76
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE30]'
 - en: Here’s some sample usage.
+  id: totrans-77
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下是一些示例用法。
 - en: '[PRE31]'
+  id: totrans-78
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE31]'
 - en: 'If PyTorch forward-AD does not have coverage for your operations, then we can
     instead compose reverse-mode AD with reverse-mode AD:'
+  id: totrans-79
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果PyTorch正向AD没有覆盖您的操作，那么我们可以将反向模式AD与反向模式AD组合：
 - en: '[PRE32]'
+  id: totrans-80
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE32]'
 - en: '**Total running time of the script:** ( 0 minutes 10.644 seconds)'
+  id: totrans-81
   prefs: []
   type: TYPE_NORMAL
+  zh: '**脚本的总运行时间：**（0分钟10.644秒）'
 - en: '[`Download Python source code: jacobians_hessians.py`](../_downloads/089b69a49b6eb4080d35c4b983b939a5/jacobians_hessians.py)'
+  id: totrans-82
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Python源代码：jacobians_hessians.py`](../_downloads/089b69a49b6eb4080d35c4b983b939a5/jacobians_hessians.py)'
 - en: '[`Download Jupyter notebook: jacobians_hessians.ipynb`](../_downloads/748f25c58a5ac0f57235c618e51c869b/jacobians_hessians.ipynb)'
+  id: totrans-83
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Jupyter笔记本：jacobians_hessians.ipynb`](../_downloads/748f25c58a5ac0f57235c618e51c869b/jacobians_hessians.ipynb)'
 - en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  id: totrans-84
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Sphinx-Gallery生成的图库](https://sphinx-gallery.github.io)'
