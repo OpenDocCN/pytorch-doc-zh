@@ -3,16 +3,20 @@
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: （beta）在PyTorch中使用急切模式的静态量化
 - en: 原文：[https://pytorch.org/tutorials/advanced/static_quantization_tutorial.html](https://pytorch.org/tutorials/advanced/static_quantization_tutorial.html)
   id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/advanced/static_quantization_tutorial.html](https://pytorch.org/tutorials/advanced/static_quantization_tutorial.html)
 - en: '**Author**: [Raghuraman Krishnamoorthi](https://github.com/raghuramank100)
     **Edited by**: [Seth Weidman](https://github.com/SethHWeidman/), [Jerry Zhang](https:github.com/jerryzh168)'
   id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: '**作者**：[Raghuraman Krishnamoorthi](https://github.com/raghuramank100) **编辑**：[Seth
+    Weidman](https://github.com/SethHWeidman/)，[Jerry Zhang](https:github.com/jerryzh168)'
 - en: 'This tutorial shows how to do post-training static quantization, as well as
     illustrating two more advanced techniques - per-channel quantization and quantization-aware
     training - to further improve the model’s accuracy. Note that quantization is
@@ -29,6 +33,8 @@
   id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程展示了如何进行后训练静态量化，以及展示了两种更高级的技术 - 按通道量化和量化感知训练 - 以进一步提高模型的准确性。请注意，目前量化仅支持CPU，因此在本教程中我们将不使用GPU/CUDA。通过本教程，您将看到PyTorch中的量化如何导致模型尺寸显著减小，同时提高速度。此外，您将看到如何轻松应用一些高级量化技术，使您的量化模型比以往更少地准确性下降。警告：我们从其他PyTorch存储库中使用了大量样板代码，例如定义`MobileNetV2`模型架构，定义数据加载器等。当然我们鼓励您阅读它；但如果您想了解量化功能，请随时跳到“4.
+    后训练静态量化”部分。我们将从进行必要的导入开始：
 - en: '[PRE0]'
   id: totrans-4
   prefs: []
@@ -39,30 +45,36 @@
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 1\. 模型架构
 - en: 'We first define the MobileNetV2 model architecture, with several notable modifications
     to enable quantization:'
   id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们首先定义MobileNetV2模型架构，进行了几个显著的修改以实现量化：
 - en: Replacing addition with `nn.quantized.FloatFunctional`
   id: totrans-7
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 用`nn.quantized.FloatFunctional`替换加法
 - en: Insert `QuantStub` and `DeQuantStub` at the beginning and end of the network.
   id: totrans-8
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在网络的开头和结尾插入`QuantStub`和`DeQuantStub`。
 - en: Replace ReLU6 with ReLU
   id: totrans-9
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 用ReLU替换ReLU6
 - en: 'Note: this code is taken from [here](https://github.com/pytorch/vision/blob/main/torchvision/models/mobilenetv2.py).'
   id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意：此代码取自[这里](https://github.com/pytorch/vision/blob/main/torchvision/models/mobilenetv2.py)。
 - en: '[PRE1]'
   id: totrans-11
   prefs: []
@@ -73,11 +85,13 @@
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 2\. 辅助函数
 - en: We next define several helper functions to help with model evaluation. These
     mostly come from [here](https://github.com/pytorch/examples/blob/master/imagenet/main.py).
   id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，我们定义了几个辅助函数来帮助模型评估。这些大部分来自[这里](https://github.com/pytorch/examples/blob/master/imagenet/main.py)。
 - en: '[PRE2]'
   id: totrans-14
   prefs: []
@@ -88,27 +102,32 @@
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 3\. 定义数据集和数据加载器
 - en: As our last major setup step, we define our dataloaders for our training and
     testing set.
   id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 作为我们最后的主要设置步骤，我们为训练集和测试集定义数据加载器。
 - en: ImageNet Data
   id: totrans-17
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: ImageNet数据
 - en: To run the code in this tutorial using the entire ImageNet dataset, first download
     imagenet by following the instructions at here [ImageNet Data](http://www.image-net.org/download).
     Unzip the downloaded file into the ‘data_path’ folder.
   id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: 要使用整个ImageNet数据集运行本教程中的代码，请首先按照[ImageNet数据](http://www.image-net.org/download)中的说明下载imagenet。将下载的文件解压缩到“data_path”文件夹中。
 - en: With the data downloaded, we show functions below that define dataloaders we’ll
     use to read in this data. These functions mostly come from [here](https://github.com/pytorch/vision/blob/master/references/detection/train.py).
   id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 数据下载完成后，我们展示下面的函数定义数据加载器，我们将使用这些数据读取。这些函数大部分来自[这里](https://github.com/pytorch/vision/blob/master/references/detection/train.py)。
 - en: '[PRE3]'
   id: totrans-20
   prefs: []
@@ -119,6 +138,7 @@
   id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，我们将加载预训练的MobileNetV2模型。我们提供了下载模型的URL [here](https://download.pytorch.org/models/mobilenet_v2-b0353104.pth)。
 - en: '[PRE4]'
   id: totrans-22
   prefs: []
@@ -129,6 +149,7 @@
   id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 最后，为了获得“基线”准确性，让我们看看我们未量化模型与融合模块的准确性。
 - en: '[PRE5]'
   id: totrans-24
   prefs: []
@@ -139,16 +160,19 @@
   id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: 在整个模型上，我们在包含50,000张图像的评估数据集上获得了71.9%的准确率。
 - en: This will be our baseline to compare to. Next, let’s try different quantization
     methods
   id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 这将是我们用来比较的基线。接下来，让我们尝试不同的量化方法
 - en: 4\. Post-training static quantization
   id: totrans-27
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 4\. 后训练静态量化
 - en: Post-training static quantization involves not just converting the weights from
     float to int, as in dynamic quantization, but also performing the additional step
     of first feeding batches of data through the network and computing the resulting
