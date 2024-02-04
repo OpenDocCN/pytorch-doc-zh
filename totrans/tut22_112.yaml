@@ -3,24 +3,30 @@
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: PyTorch 分布式概述
 - en: 原文：[https://pytorch.org/tutorials/beginner/dist_overview.html](https://pytorch.org/tutorials/beginner/dist_overview.html)
   id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/beginner/dist_overview.html](https://pytorch.org/tutorials/beginner/dist_overview.html)
 - en: '**Author**: [Shen Li](https://mrshenli.github.io/)'
   id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: '**作者**：[Shen Li](https://mrshenli.github.io/)'
 - en: Note
   id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: '![edit](../Images/a8aa37bcc5edbf2ba5fcf18dba1e55f9.png) View and edit this
     tutorial in [github](https://github.com/pytorch/tutorials/blob/main/beginner_source/dist_overview.rst).'
   id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '![edit](../Images/a8aa37bcc5edbf2ba5fcf18dba1e55f9.png) 在 [github](https://github.com/pytorch/tutorials/blob/main/beginner_source/dist_overview.rst)
+    中查看并编辑本教程。'
 - en: This is the overview page for the `torch.distributed` package. The goal of this
     page is to categorize documents into different topics and briefly describe each
     of them. If this is your first time building distributed training applications
@@ -29,16 +35,19 @@
   id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 这是 `torch.distributed` 包的概述页面。本页面的目标是将文档分类为不同主题，并简要描述每个主题。如果这是您第一次使用PyTorch构建分布式训练应用程序，建议使用本文档导航到最适合您用例的技术。
 - en: Introduction
   id: totrans-6
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 介绍
 - en: 'As of PyTorch v1.6.0, features in `torch.distributed` can be categorized into
     three main components:'
   id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 截至PyTorch v1.6.0，`torch.distributed` 中的功能可以分为三个主要组件：
 - en: '[Distributed Data-Parallel Training](https://pytorch.org/docs/stable/generated/torch.nn.parallel.DistributedDataParallel.html)
     (DDP) is a widely adopted single-program multiple-data training paradigm. With
     DDP, the model is replicated on every process, and every model replica will be
@@ -49,6 +58,7 @@
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[分布式数据并行训练](https://pytorch.org/docs/stable/generated/torch.nn.parallel.DistributedDataParallel.html)（DDP）是一种广泛采用的单程序多数据训练范式。使用DDP，模型在每个进程上被复制，并且每个模型副本将被提供不同的输入数据样本。DDP负责梯度通信以保持模型副本同步，并将其与梯度计算重叠以加快训练速度。'
 - en: '[RPC-Based Distributed Training](https://pytorch.org/docs/stable/rpc.html)
     (RPC) supports general training structures that cannot fit into data-parallel
     training such as distributed pipeline parallelism, parameter server paradigm,
@@ -59,6 +69,7 @@
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[基于RPC的分布式训练](https://pytorch.org/docs/stable/rpc.html)（RPC）支持无法适应数据并行训练的一般训练结构，如分布式管道并行性、参数服务器范式以及DDP与其他训练范式的组合。它有助于管理远程对象的生命周期，并将[autograd引擎](https://pytorch.org/docs/stable/autograd.html)扩展到机器边界之外。'
 - en: '[Collective Communication](https://pytorch.org/docs/stable/distributed.html)
     (c10d) library supports sending tensors across processes within a group. It offers
     both collective communication APIs (e.g., [all_reduce](https://pytorch.org/docs/stable/distributed.html#torch.distributed.all_reduce)
@@ -81,6 +92,9 @@
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[集体通信](https://pytorch.org/docs/stable/distributed.html)（c10d）库支持在组内的进程之间发送张量。它提供了集体通信API（例如，[all_reduce](https://pytorch.org/docs/stable/distributed.html#torch.distributed.all_reduce)和[all_gather](https://pytorch.org/docs/stable/distributed.html#torch.distributed.all_gather)）以及P2P通信API（例如，[send](https://pytorch.org/docs/stable/distributed.html#torch.distributed.send)和[isend](https://pytorch.org/docs/stable/distributed.html#torch.distributed.isend)）。DDP和RPC（[ProcessGroup
+    Backend](https://pytorch.org/docs/stable/rpc.html#process-group-backend)）构建在c10d之上，前者使用集体通信，后者使用P2P通信。通常，开发人员不需要直接使用这个原始通信API，因为DDP和RPC
+    API可以满足许多分布式训练场景。然而，仍有一些用例可以从这个API中获益。一个例子是分布式参数平均化，应用程序希望在反向传播后计算所有模型参数的平均值，而不是使用DDP来通信梯度。这可以将通信与计算分离，并允许更精细地控制要通信的内容，但另一方面，也放弃了DDP提供的性能优化。[使用PyTorch编写分布式应用程序](../intermediate/dist_tuto.html)展示了使用c10d通信API的示例。'
 - en: Data Parallel Training
   id: totrans-11
   prefs:
@@ -125,6 +139,7 @@
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 如果应用程序需要跨机器边界扩展，请使用多机器[DistributedDataParallel](https://pytorch.org/docs/stable/generated/torch.nn.parallel.DistributedDataParallel.html)和[启动脚本](https://github.com/pytorch/examples/blob/master/distributed/ddp/README.md)。
 - en: Use multi-GPU [FullyShardedDataParallel](https://pytorch.org/docs/stable/fsdp.html)
     training on a single-machine or multi-machine when the data and model cannot fit
     on one GPU.
@@ -132,6 +147,7 @@
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 当数据和模型无法放入一个GPU时，在单机或多机上使用多GPU的[FullyShardedDataParallel](https://pytorch.org/docs/stable/fsdp.html)训练。
 - en: Use [torch.distributed.elastic](https://pytorch.org/docs/stable/distributed.elastic.html)
     to launch distributed training if errors (e.g., out-of-memory) are expected or
     if resources can join and leave dynamically during training.
@@ -139,19 +155,23 @@
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 使用[torch.distributed.elastic](https://pytorch.org/docs/stable/distributed.elastic.html)来启动分布式训练，如果预期会出现错误（例如，内存不足），或者在训练过程中资源可以动态加入和离开。
 - en: Note
   id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Data-parallel training also works with [Automatic Mixed Precision (AMP)](https://pytorch.org/docs/stable/notes/amp_examples.html#working-with-multiple-gpus).
   id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 数据并行训练也可以与[Automatic Mixed Precision (AMP)](https://pytorch.org/docs/stable/notes/amp_examples.html#working-with-multiple-gpus)一起使用。
 - en: '`torch.nn.DataParallel`'
   id: totrans-21
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: '`torch.nn.DataParallel`'
 - en: 'The [DataParallel](https://pytorch.org/docs/stable/generated/torch.nn.DataParallel.html)
     package enables single-machine multi-GPU parallelism with the lowest coding hurdle.
     It only requires a one-line change to the application code. The tutorial [Optional:
@@ -163,11 +183,16 @@
   id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: '[DataParallel](https://pytorch.org/docs/stable/generated/torch.nn.DataParallel.html)
+    包能够在单机多GPU上实现并行计算，且编码难度最低。只需要在应用代码中进行一行更改。教程 [Optional: Data Parallelism](../beginner/blitz/data_parallel_tutorial.html)
+    展示了一个例子。虽然 `DataParallel` 很容易使用，但通常性能不是最佳的，因为它在每次前向传播中都会复制模型，并且其单进程多线程并行自然受到 [GIL](https://wiki.python.org/moin/GlobalInterpreterLock)
+    的影响。为了获得更好的性能，考虑使用 [DistributedDataParallel](https://pytorch.org/docs/stable/generated/torch.nn.parallel.DistributedDataParallel.html)。'
 - en: '`torch.nn.parallel.DistributedDataParallel`'
   id: totrans-23
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: '`torch.nn.parallel.DistributedDataParallel`'
 - en: Compared to [DataParallel](https://pytorch.org/docs/stable/generated/torch.nn.DataParallel.html),
     [DistributedDataParallel](https://pytorch.org/docs/stable/generated/torch.nn.parallel.DistributedDataParallel.html)
     requires one more step to set up, i.e., calling [init_process_group](https://pytorch.org/docs/stable/distributed.html#torch.distributed.init_process_group).
@@ -219,6 +244,8 @@
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: '[Shard Optimizer States With ZeroRedundancyOptimizer](../recipes/zero_redundancy_optimizer.html)
+    配方演示了如何使用[ZeroRedundancyOptimizer](https://pytorch.org/docs/stable/distributed.optim.html)来减少优化器的内存占用。'
 - en: The [Distributed Training with Uneven Inputs Using the Join Context Manager](../advanced/generic_join.html)
     tutorial walks through using the generic join context for distributed training
     with uneven inputs.
@@ -226,11 +253,14 @@
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: '[Distributed Training with Uneven Inputs Using the Join Context Manager](../advanced/generic_join.html)
+    教程介绍了如何使用通用的连接上下文管理器进行不均匀输入的分布式训练。'
 - en: '`torch.distributed.FullyShardedDataParallel`'
   id: totrans-31
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: '`torch.distributed.FullyShardedDataParallel`'
 - en: The [FullyShardedDataParallel](https://pytorch.org/docs/stable/fsdp.html) (FSDP)
     is a type of data parallelism paradigm which maintains a per-GPU copy of a model’s
     parameters, gradients and optimizer states, it shards all of these states across
@@ -240,11 +270,14 @@
   id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: '[FullyShardedDataParallel](https://pytorch.org/docs/stable/fsdp.html)（FSDP）是一种数据并行范例，它在每个GPU上维护模型参数、梯度和优化器状态的副本，将所有这些状态分片到数据并行工作器中。对FSDP的支持从PyTorch
+    v1.11开始添加。教程[Getting Started with FSDP](https://pytorch.org/tutorials/intermediate/FSDP_tutorial.html)提供了关于FSDP如何工作的深入解释和示例。'
 - en: torch.distributed.elastic
   id: totrans-33
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: torch.distributed.elastic
 - en: With the growth of the application complexity and scale, failure recovery becomes
     a requirement. Sometimes it is inevitable to hit errors like out-of-memory (OOM)
     when using DDP, but DDP itself cannot recover from those errors, and it is not
@@ -258,11 +291,14 @@
   id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 随着应用程序复杂性和规模的增长，故障恢复变得必不可少。在使用DDP时，有时会不可避免地遇到诸如内存溢出（OOM）等错误，但DDP本身无法从这些错误中恢复，也无法使用标准的`try-except`结构来处理它们。这是因为DDP要求所有进程以密切同步的方式运行，并且在不同进程中启动的所有`AllReduce`通信必须匹配。如果组中的一个进程抛出异常，很可能会导致不同步（不匹配的`AllReduce`操作），从而导致崩溃或挂起。[torch.distributed.elastic](https://pytorch.org/docs/stable/distributed.elastic.html)
+    添加了容错性和利用动态机器池（弹性）的能力。
 - en: RPC-Based Distributed Training
   id: totrans-35
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 基于RPC的分布式训练
 - en: Many training paradigms do not fit into data parallelism, e.g., parameter server
     paradigm, distributed pipeline parallelism, reinforcement learning applications
     with multiple observers or agents, etc. [torch.distributed.rpc](https://pytorch.org/docs/stable/rpc.html)
@@ -270,17 +306,21 @@
   id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 许多训练范式不适合数据并行ism，例如参数服务器范式、分布式管道并行ism、具有多个观察者或代理的强化学习应用等。[torch.distributed.rpc](https://pytorch.org/docs/stable/rpc.html)
+    旨在支持一般的分布式训练场景。
 - en: '[torch.distributed.rpc](https://pytorch.org/docs/stable/rpc.html) has four
     main pillars:'
   id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: '[torch.distributed.rpc](https://pytorch.org/docs/stable/rpc.html) 有四个主要支柱：'
 - en: '[RPC](https://pytorch.org/docs/stable/rpc.html#rpc) supports running a given
     function on a remote worker.'
   id: totrans-38
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[RPC](https://pytorch.org/docs/stable/rpc.html#rpc) 支持在远程工作节点上运行给定函数。'
 - en: '[RRef](https://pytorch.org/docs/stable/rpc.html#rref) helps to manage the lifetime
     of a remote object. The reference counting protocol is presented in the [RRef
     notes](https://pytorch.org/docs/stable/rpc/rref.html#remote-reference-protocol).'
@@ -288,6 +328,7 @@
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[RRef](https://pytorch.org/docs/stable/rpc.html#rref) 帮助管理远程对象的生命周期。引用计数协议在[RRef笔记](https://pytorch.org/docs/stable/rpc/rref.html#remote-reference-protocol)中介绍。'
 - en: '[Distributed Autograd](https://pytorch.org/docs/stable/rpc.html#distributed-autograd-framework)
     extends the autograd engine beyond machine boundaries. Please refer to [Distributed
     Autograd Design](https://pytorch.org/docs/stable/rpc/distributed_autograd.html#distributed-autograd-design)
@@ -296,6 +337,8 @@
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[Distributed Autograd](https://pytorch.org/docs/stable/rpc.html#distributed-autograd-framework)
+    将自动求导引擎扩展到机器边界之外。更多细节请参考[Distributed Autograd Design](https://pytorch.org/docs/stable/rpc/distributed_autograd.html#distributed-autograd-design)。'
 - en: '[Distributed Optimizer](https://pytorch.org/docs/stable/rpc.html#module-torch.distributed.optim)
     automatically reaches out to all participating workers to update parameters using
     gradients computed by the distributed autograd engine.'
@@ -303,10 +346,13 @@
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[Distributed Optimizer](https://pytorch.org/docs/stable/rpc.html#module-torch.distributed.optim)
+    自动联系所有参与的工作节点，使用分布式自动求导引擎计算的梯度来更新参数。'
 - en: 'RPC Tutorials are listed below:'
   id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: RPC教程如下：
 - en: The [Getting Started with Distributed RPC Framework](../intermediate/rpc_tutorial.html)
     tutorial first uses a simple Reinforcement Learning (RL) example to demonstrate
     RPC and RRef. Then, it applies a basic distributed model parallelism to an RNN
@@ -315,6 +361,7 @@
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: '[使用分布式RPC框架入门](../intermediate/rpc_tutorial.html) 教程首先使用一个简单的强化学习（RL）示例来演示RPC和RRef。然后，它将基本的分布式模型并行应用到一个RNN示例中，展示如何使用分布式自动求导和分布式优化器。'
 - en: The [Implementing a Parameter Server Using Distributed RPC Framework](../intermediate/rpc_param_server_tutorial.html)
     tutorial borrows the spirit of [HogWild! training](https://people.eecs.berkeley.edu/~brecht/papers/hogwildTR.pdf)
     and applies it to an asynchronous parameter server (PS) training application.
@@ -322,6 +369,7 @@
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: '[使用分布式RPC框架实现参数服务器](../intermediate/rpc_param_server_tutorial.html) 教程借鉴了[HogWild!训练](https://people.eecs.berkeley.edu/~brecht/papers/hogwildTR.pdf)的精神，并将其应用于异步参数服务器（PS）训练应用。'
 - en: The [Distributed Pipeline Parallelism Using RPC](../intermediate/dist_pipeline_parallel_tutorial.html)
     tutorial extends the single-machine pipeline parallel example (presented in [Single-Machine
     Model Parallel Best Practices](../intermediate/model_parallel_tutorial.html))
@@ -330,6 +378,7 @@
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: '[使用RPC实现分布式管道并行性](../intermediate/dist_pipeline_parallel_tutorial.html) 教程将单机管道并行示例（在[单机模型并行最佳实践](../intermediate/model_parallel_tutorial.html)中介绍）扩展到分布式环境，并展示如何使用RPC实现它。'
 - en: The [Implementing Batch RPC Processing Using Asynchronous Executions](../intermediate/rpc_async_execution.html)
     tutorial demonstrates how to implement RPC batch processing using the [@rpc.functions.async_execution](https://pytorch.org/docs/stable/rpc.html#torch.distributed.rpc.functions.async_execution)
     decorator, which can help speed up inference and training. It uses RL and PS examples
@@ -338,6 +387,7 @@
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: '[使用异步执行实现批量RPC处理的教程](../intermediate/rpc_async_execution.html)演示了如何使用[@rpc.functions.async_execution](https://pytorch.org/docs/stable/rpc.html#torch.distributed.rpc.functions.async_execution)装饰器实现RPC批处理，这可以帮助加速推理和训练。它使用了类似于上述教程1和2中的RL和PS示例。'
 - en: The [Combining Distributed DataParallel with Distributed RPC Framework](../advanced/rpc_ddp_tutorial.html)
     tutorial demonstrates how to combine DDP with RPC to train a model using distributed
     data parallelism combined with distributed model parallelism.
@@ -345,13 +395,16 @@
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: '[将分布式数据并行与分布式RPC框架相结合的教程](../advanced/rpc_ddp_tutorial.html)演示了如何将DDP与RPC结合起来，使用分布式数据并行性和分布式模型并行性来训练模型。'
 - en: PyTorch Distributed Developers
   id: totrans-48
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: PyTorch分布式开发者
 - en: If you’d like to contribute to PyTorch Distributed, please refer to our [Developer
     Guide](https://github.com/pytorch/pytorch/blob/master/torch/distributed/CONTRIBUTING.md).
   id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您想为PyTorch分布式做出贡献，请参考我们的[开发者指南](https://github.com/pytorch/pytorch/blob/master/torch/distributed/CONTRIBUTING.md)。

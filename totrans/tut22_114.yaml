@@ -1,21 +1,31 @@
 - en: Single-Machine Model Parallel Best Practices
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 单机模型并行最佳实践
 - en: 原文：[https://pytorch.org/tutorials/intermediate/model_parallel_tutorial.html](https://pytorch.org/tutorials/intermediate/model_parallel_tutorial.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/intermediate/model_parallel_tutorial.html](https://pytorch.org/tutorials/intermediate/model_parallel_tutorial.html)
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-intermediate-model-parallel-tutorial-py) to
     download the full example code
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[这里](#sphx-glr-download-intermediate-model-parallel-tutorial-py)下载完整示例代码
 - en: '**Author**: [Shen Li](https://mrshenli.github.io/)'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '**作者**：[Shen Li](https://mrshenli.github.io/)'
 - en: 'Model parallel is widely-used in distributed training techniques. Previous
     posts have explained how to use [DataParallel](https://pytorch.org/tutorials/beginner/blitz/data_parallel_tutorial.html)
     to train a neural network on multiple GPUs; this feature replicates the same model
@@ -27,8 +37,10 @@
     the entire model on each GPU (to be concrete, say a model `m` contains 10 layers:
     when using `DataParallel`, each GPU will have a replica of each of these 10 layers,
     whereas when using model parallel on two GPUs, each GPU could host 5 layers).'
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 模型并行在分布式训练技术中被广泛使用。先前的帖子已经解释了如何使用[DataParallel](https://pytorch.org/tutorials/beginner/blitz/data_parallel_tutorial.html)在多个GPU上训练神经网络；这个功能将相同的模型复制到所有GPU上，每个GPU消耗不同的输入数据分区。虽然它可以显著加速训练过程，但对于一些模型太大无法适应单个GPU的情况，它无法工作。这篇文章展示了如何通过使用**模型并行**来解决这个问题，与`DataParallel`相反，它将单个模型分割到不同的GPU上，而不是在每个GPU上复制整个模型（具体来说，假设一个模型`m`包含10层：使用`DataParallel`时，每个GPU将有这10层的副本，而使用两个GPU上的模型并行时，每个GPU可以承载5层）。
 - en: The high-level idea of model parallel is to place different sub-networks of
     a model onto different devices, and implement the `forward` method accordingly
     to move intermediate outputs across devices. As only part of a model operates
@@ -36,84 +48,118 @@
     In this post, we will not try to construct huge models and squeeze them into a
     limited number of GPUs. Instead, this post focuses on showing the idea of model
     parallel. It is up to the readers to apply the ideas to real-world applications.
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 模型并行的高级思想是将模型的不同子网络放置在不同的设备上，并相应地实现`forward`方法以在设备之间传递中间输出。由于模型的部分在任何单独的设备上运行，一组设备可以共同为一个更大的模型提供服务。在这篇文章中，我们不会尝试构建庞大的模型并将它们压缩到有限数量的GPU中。相反，这篇文章侧重于展示模型并行的思想。读者可以将这些思想应用到现实世界的应用中。
 - en: Note
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: For distributed model parallel training where a model spans multiple servers,
     please refer to [Getting Started With Distributed RPC Framework](rpc_tutorial.html)
     for examples and details.
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于跨多个服务器的分布式模型并行训练，请参考[使用分布式RPC框架入门](rpc_tutorial.html)以获取示例和详细信息。
 - en: Basic Usage
+  id: totrans-9
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 基本用法
 - en: Let us start with a toy model that contains two linear layers. To run this model
     on two GPUs, simply put each linear layer on a different GPU, and move inputs
     and intermediate outputs to match the layer devices accordingly.
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们从一个包含两个线性层的玩具模型开始。要在两个GPU上运行这个模型，只需将每个线性层放在不同的GPU上，并将输入和中间输出移动到匹配层设备的位置。
 - en: '[PRE0]'
+  id: totrans-11
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: Note that, the above `ToyModel` looks very similar to how one would implement
     it on a single GPU, except the four `to(device)` calls which place linear layers
     and tensors on proper devices. That is the only place in the model that requires
     changes. The `backward()` and `torch.optim` will automatically take care of gradients
     as if the model is on one GPU. You only need to make sure that the labels are
     on the same device as the outputs when calling the loss function.
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，上面的`ToyModel`看起来与在单个GPU上实现它的方式非常相似，除了四个`to(device)`调用，这些调用将线性层和张量放置在适当的设备上。这是模型中唯一需要更改的地方。`backward()`和`torch.optim`将自动处理梯度，就好像模型在一个GPU上一样。您只需要确保在调用损失函数时标签与输出在同一设备上。
 - en: '[PRE1]'
+  id: totrans-13
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Apply Model Parallel to Existing Modules
+  id: totrans-14
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 将模型并行应用于现有模块
 - en: It is also possible to run an existing single-GPU module on multiple GPUs with
     just a few lines of changes. The code below shows how to decompose `torchvision.models.resnet50()`
     to two GPUs. The idea is to inherit from the existing `ResNet` module, and split
     the layers to two GPUs during construction. Then, override the `forward` method
     to stitch two sub-networks by moving the intermediate outputs accordingly.
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 也可以通过只更改几行代码在多个GPU上运行现有的单GPU模块。下面的代码显示了如何将`torchvision.models.resnet50()`分解为两个GPU。思路是继承现有的`ResNet`模块，并在构造过程中将层分割到两个GPU上。然后，重写`forward`方法，通过相应地移动中间输出来拼接两个子网络。
 - en: '[PRE2]'
+  id: totrans-16
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: The above implementation solves the problem for cases where the model is too
     large to fit into a single GPU. However, you might have already noticed that it
     will be slower than running it on a single GPU if your model fits. It is because,
     at any point in time, only one of the two GPUs are working, while the other one
     is sitting there doing nothing. The performance further deteriorates as the intermediate
     outputs need to be copied from `cuda:0` to `cuda:1` between `layer2` and `layer3`.
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 上述实现解决了模型过大无法适应单个GPU的情况。然而，您可能已经注意到，如果您的模型适合单个GPU，则运行速度会比在单个GPU上运行要慢。这是因为，在任何时候，只有两个GPU中的一个在工作，而另一个则闲置。性能进一步恶化，因为需要在`layer2`和`layer3`之间将中间输出从`cuda:0`复制到`cuda:1`。
 - en: Let us run an experiment to get a more quantitative view of the execution time.
     In this experiment, we train `ModelParallelResNet50` and the existing `torchvision.models.resnet50()`
     by running random inputs and labels through them. After the training, the models
     will not produce any useful predictions, but we can get a reasonable understanding
     of the execution times.
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们进行一个实验，以更量化地了解执行时间。在这个实验中，我们通过将随机输入和标签传递给它们来训练`ModelParallelResNet50`和现有的`torchvision.models.resnet50()`。训练之后，模型将不会产生任何有用的预测，但我们可以对执行时间有一个合理的了解。
 - en: '[PRE3]'
+  id: totrans-19
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: The `train(model)` method above uses `nn.MSELoss` as the loss function, and
     `optim.SGD` as the optimizer. It mimics training on `128 X 128` images which are
     organized into 3 batches where each batch contains 120 images. Then, we use `timeit`
     to run the `train(model)` method 10 times and plot the execution times with standard
     deviations.
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: '上面的`train(model)`方法使用`nn.MSELoss`作为损失函数，使用`optim.SGD`作为优化器。它模拟对`128 X 128`图像进行训练，这些图像被组织成3个批次，每个批次包含120张图像。然后，我们使用`timeit`运行`train(model)`方法10次，并绘制带有标准偏差的执行时间。 '
 - en: '[PRE4]'
+  id: totrans-21
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: '![](../Images/7f2d776cf49fcf3fd44fd84a238a3cc6.png)'
+  id: totrans-22
   prefs: []
   type: TYPE_IMG
+  zh: '![](../Images/7f2d776cf49fcf3fd44fd84a238a3cc6.png)'
 - en: The result shows that the execution time of model parallel implementation is
     `4.02/3.75-1=7%` longer than the existing single-GPU implementation. So we can
     conclude there is roughly 7% overhead in copying tensors back and forth across
@@ -122,20 +168,28 @@
     into a pipeline of splits, such that when one split reaches the second sub-network,
     the following split can be fed into the first sub-network. In this way, two consecutive
     splits can run concurrently on two GPUs.
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 结果显示，模型并行实现的执行时间比现有的单GPU实现长了`4.02/3.75-1=7%`。因此，我们可以得出结论，在跨GPU传输张量时大约有7%的开销。还有改进的空间，因为我们知道两个GPU中的一个在整个执行过程中处于空闲状态。一种选择是将每个批次进一步分成一系列分割的管道，这样当一个分割到达第二个子网络时，接下来的分割可以被送入第一个子网络。这样，两个连续的分割可以在两个GPU上同时运行。
 - en: Speed Up by Pipelining Inputs
+  id: totrans-24
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 通过流水线输入加速
 - en: In the following experiments, we further divide each 120-image batch into 20-image
     splits. As PyTorch launches CUDA operations asynchronously, the implementation
     does not need to spawn multiple threads to achieve concurrency.
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: 在以下实验中，我们将每个120张图像批次进一步分成20张图像的拆分。由于PyTorch异步启动CUDA操作，实现不需要生成多个线程来实现并发。
 - en: '[PRE5]'
+  id: totrans-26
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: Please note, device-to-device tensor copy operations are synchronized on current
     streams on the source and the destination devices. If you create multiple streams,
     you have to make sure that copy operations are properly synchronized. Writing
@@ -143,11 +197,15 @@
     copy operation can lead to undefined behavior. The above implementation only uses
     default streams on both source and destination devices, hence it is not necessary
     to enforce additional synchronizations.
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，设备之间的张量复制操作在源设备和目标设备上的当前流上是同步的。如果您创建多个流，您必须确保复制操作得到适当的同步。在完成复制操作之前写入源张量或读取/写入目标张量可能导致未定义的行为。上述实现仅在源设备和目标设备上使用默认流，因此不需要强制执行额外的同步。
 - en: '![](../Images/48d2e67f025b05eeb9259e249566add3.png)'
+  id: totrans-28
   prefs: []
   type: TYPE_IMG
+  zh: '![](../Images/48d2e67f025b05eeb9259e249566add3.png)'
 - en: The experiment result shows that, pipelining inputs to model parallel ResNet50
     speeds up the training process by roughly `3.75/2.51-1=49%`. It is still quite
     far away from the ideal 100% speedup. As we have introduced a new parameter `split_sizes`
@@ -157,12 +215,16 @@
     long idle times during the first and last splits. Neither are optimal. There might
     be an optimal `split_size` configuration for this specific experiment. Let us
     try to find it by running experiments using several different `split_size` values.
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE6]'
+  id: totrans-30
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: '![](../Images/9d53a7aba4b9016ea39aa794905ee059.png)'
+  id: totrans-31
   prefs: []
   type: TYPE_IMG
 - en: The result shows that setting `split_size` to 12 achieves the fastest training
@@ -175,27 +237,41 @@
     both GPUs, and different sub-network structures require different stream management
     strategies. As no general multi-stream solution works for all model parallel use
     cases, we will not discuss it in this tutorial.
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 结果显示，将`split_size`设置为12可以实现最快的训练速度，从而导致`3.75/2.43-1=54%`的加速。仍然有机会进一步加快训练过程。例如，所有在`cuda:0`上的操作都放在其默认流中。这意味着下一个分割的计算不能与`prev`分割的复制操作重叠。然而，由于`prev`和下一个分割是不同的张量，因此可以将一个的计算与另一个的复制重叠。实现需要在两个GPU上使用多个流，不同的子网络结构需要不同的流管理策略。由于没有通用的多流解决方案适用于所有模型并行使用情况，我们在本教程中不会讨论这个问题。
 - en: '**Note:**'
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: '**注意：**'
 - en: This post shows several performance measurements. You might see different numbers
     when running the same code on your own machine, because the result depends on
     the underlying hardware and software. To get the best performance for your environment,
     a proper approach is to first generate the curve to figure out the best split
     size, and then use that split size to pipeline inputs.
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 本文展示了几个性能测量。当在您自己的机器上运行相同的代码时，您可能会看到不同的数字，因为结果取决于底层硬件和软件。为了在您的环境中获得最佳性能，一个正确的方法是首先生成曲线以找出最佳的拆分大小，然后使用该拆分大小来流水线输入。
 - en: '**Total running time of the script:** ( 5 minutes 48.653 seconds)'
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: '**脚本的总运行时间：**（5分钟48.653秒）'
 - en: '[`Download Python source code: model_parallel_tutorial.py`](../_downloads/84ab670fda2216116ac8e3ecd5805f0b/model_parallel_tutorial.py)'
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Python源代码：model_parallel_tutorial.py`](../_downloads/84ab670fda2216116ac8e3ecd5805f0b/model_parallel_tutorial.py)'
 - en: '[`Download Jupyter notebook: model_parallel_tutorial.ipynb`](../_downloads/03a48646520c277662581e858e680809/model_parallel_tutorial.ipynb)'
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Jupyter笔记本：model_parallel_tutorial.ipynb`](../_downloads/03a48646520c277662581e858e680809/model_parallel_tutorial.ipynb)'
 - en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Sphinx-Gallery生成的画廊](https://sphinx-gallery.github.io)'
