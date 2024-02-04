@@ -187,6 +187,7 @@
   id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: 深度学习训练或推断中的大部分时间都花在了GEMM的数百万次重复操作上，这是完全连接层的核心。自从多层感知器（MLP）[被证明是任何连续函数的通用逼近器](https://en.wikipedia.org/wiki/Universal_approximation_theorem)以来，完全连接层已经被使用了几十年。任何MLP都可以完全表示为GEMM。甚至卷积也可以通过使用[Toepliz矩阵](https://en.wikipedia.org/wiki/Toeplitz_matrix)表示为GEMM。
 - en: Returning to the original topic, most GEMM operators benefit from using non-hyperthreading,
     because the majority of time in deep learning training or inference is spent on
     millions of repeated operations of GEMM running on fused-multiply-add (FMA) or
@@ -195,10 +196,12 @@
   id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 回到原来的话题，大多数GEMM运算符受益于使用非超线程，因为深度学习训练或推断中的大部分时间都花在了运行在超线程核心上的融合乘加（FMA）或点积（DP）执行单元上的数百万次重复操作上。启用超线程后，OpenMP线程将争夺相同的GEMM执行单元。
 - en: '[![../_images/1_.png](../Images/155a9f07e52c325ee9b974697797746c.png)](../_images/1_.png)'
   id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_images/1_.png](../Images/155a9f07e52c325ee9b974697797746c.png)](../_images/1_.png)'
 - en: And if 2 logical threads run GEMM at the same time, they will be sharing the
     same core resources causing front end bound, such that the overhead from this
     front end bound is greater than the gain from running both logical threads at
@@ -206,6 +209,7 @@
   id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果2个逻辑线程同时运行GEMM，它们将共享相同的核心资源，导致前端绑定，这样前端绑定带来的开销大于同时运行两个逻辑线程带来的收益。
 - en: Therefore we generally recommend avoiding using logical cores for deep learning
     workloads to achieve good performance. The launch script by default uses physical
     cores only; however, users can easily experiment with logical vs. physical cores
@@ -213,14 +217,17 @@
   id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 因此，我们通常建议避免在深度学习工作负载中使用逻辑核心以获得良好的性能。默认情况下，启动脚本仅使用物理核心；但是，用户可以通过简单切换`--use_logical_core`启动脚本旋钮来轻松尝试逻辑核心与物理核心。
 - en: '**Exercise**'
   id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: '**练习**'
 - en: 'We’ll use the following example of feeding ResNet50 dummy tensor:'
   id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们将使用以下示例来提供ResNet50虚拟张量：
 - en: '[PRE0]'
   id: totrans-35
   prefs: []
@@ -233,26 +240,32 @@
   id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 在博客中，我们将使用[Intel® VTune™ Profiler](https://www.intel.com/content/www/us/en/developer/tools/oneapi/vtune-profiler.html#gs.v4egjg)来进行分析和验证优化。我们将在一台配备两个Intel(R)
+    Xeon(R) Platinum 8180M CPU的机器上运行所有练习。CPU信息如图2.1所示。
 - en: Environment variable `OMP_NUM_THREADS` is used to set the number of threads
     for parallel region. We’ll compare `OMP_NUM_THREADS=2` with (1) use of logical
     cores and (2) use of physical cores only.
   id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 环境变量`OMP_NUM_THREADS`用于设置并行区域的线程数。我们将比较`OMP_NUM_THREADS=2`与（1）使用逻辑核心和（2）仅使用物理核心。
 - en: Both OpenMP threads trying to utilize the same GEMM execution units shared by
     hyperthreading cores (0, 56)
   id: totrans-38
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 两个OpenMP线程尝试利用由超线程核心（0, 56）共享的相同GEMM执行单元
 - en: We can visualize this by running `htop` command on Linux as shown below.
   id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们可以通过在Linux上运行`htop`命令来可视化这一点。
 - en: '[![../_images/2.png](../Images/ea54206cf91398975d9ffa16edf04058.png)](../_images/2.png)[![../_images/3.png](../Images/ea77107db83563dd38651a1cd5831c9c.png)](../_images/3.png)'
   id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_images/2.png](../Images/ea54206cf91398975d9ffa16edf04058.png)](../_images/2.png)[![../_images/3.png](../Images/ea77107db83563dd38651a1cd5831c9c.png)](../_images/3.png)'
 - en: We notice that the Spin Time is flagged, and Imbalance or Serial Spinning contributed
     to the majority of it - 4.980 seconds out of the 8.982 seconds total. The Imbalance
     or Serial Spinning when using logical cores is due to insufficient concurrency
@@ -260,28 +273,33 @@
   id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们注意到旋转时间被标记，并且不平衡或串行旋转占据了大部分时间 - 在总共8.982秒中的4.980秒。使用逻辑核心时的不平衡或串行旋转是由于工作线程的并发性不足，因为每个逻辑线程争夺相同的核心资源。
 - en: The Top Hotspots section of the execution summary indicates that `__kmp_fork_barrier`
     took 4.589 seconds of CPU time - during 9.33% of the CPU execution time, threads
     were just spinning at this barrier due to thread synchronization.
   id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 执行摘要的Top Hotspots部分显示，`__kmp_fork_barrier`占用了4.589秒的CPU时间 - 在CPU执行时间的9.33%期间，线程在这个屏障处旋转以进行线程同步。
 - en: Each OpenMP thread utilizing GEMM execution units in respective physical cores
     (0,1)
   id: totrans-43
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 每个OpenMP线程利用各自物理核心（0,1）中的GEMM执行单元
 - en: '[![../_images/4.png](../Images/709b5ac62c0252784e8beaf785047853.png)](../_images/4.png)[![../_images/5.png](../Images/6803d67e46cc078fee10a753e7e95e0f.png)](../_images/5.png)'
   id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_images/4.png](../Images/709b5ac62c0252784e8beaf785047853.png)](../_images/4.png)[![../_images/5.png](../Images/6803d67e46cc078fee10a753e7e95e0f.png)](../_images/5.png)'
 - en: We first note that the execution time dropped from 32 seconds to 23 seconds
     by avoiding logical cores. While there’s still some non-negligible Imbalance or
     Serial Spinning, we note relative improvement from 4.980 seconds to 3.887 seconds.
   id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们首先注意到，通过避免逻辑核心，执行时间从32秒降至23秒。虽然仍存在一些不可忽略的不平衡或串行旋转，但我们注意到从4.980秒到3.887秒的相对改善。
 - en: By not using logical threads (instead, using 1 thread per physical core), we
     avoid logical threads contending for the same core resources. The Top Hotspots
     section also indicates relative improvement of `__kmp_fork_barrier` time from
@@ -289,11 +307,13 @@
   id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过不使用逻辑线程（而是每个物理核心使用1个线程），我们避免了逻辑线程争夺相同核心资源。Top Hotspots部分还显示了`__kmp_fork_barrier`时间从4.589秒改善到3.530秒的相对改善。
 - en: Local memory access is always faster than remote memory access
   id: totrans-47
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 本地内存访问始终比远程内存访问快。
 - en: We generally recommend binding a process to a local socket such that the process
     does not migrate across sockets. Generally the goal of doing so is to utilize
     high speed cache on local memory and to avoid remote memory access which can be

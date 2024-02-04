@@ -1,35 +1,51 @@
 - en: Grokking PyTorch Intel CPU performance from first principles (Part 2)
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 从第一原则开始理解PyTorch英特尔CPU性能（第2部分）
 - en: 原文：[https://pytorch.org/tutorials/intermediate/torchserve_with_ipex_2.html](https://pytorch.org/tutorials/intermediate/torchserve_with_ipex_2.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/intermediate/torchserve_with_ipex_2.html](https://pytorch.org/tutorials/intermediate/torchserve_with_ipex_2.html)
 - en: 'Authors: [Min Jean Cho](https://github.com/min-jean-cho), [Jing Xu](https://github.com/jingxu10),
     [Mark Saroufim](https://github.com/msaroufim)'
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 作者：[Min Jean Cho](https://github.com/min-jean-cho)，[Jing Xu](https://github.com/jingxu10)，[Mark
+    Saroufim](https://github.com/msaroufim)
 - en: In the [Grokking PyTorch Intel CPU Performance From First Principles](https://pytorch.org/tutorials/intermediate/torchserve_with_ipex.html)
     tutorial , we have introduced how to tune CPU runtime configurations, how to profile
     them, and how to integrate them into [TorchServe](https://github.com/pytorch/serve)
     for optimized CPU performance.
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 在[Grokking PyTorch英特尔CPU性能从第一原则开始](https://pytorch.org/tutorials/intermediate/torchserve_with_ipex.html)教程中，我们介绍了如何调整CPU运行时配置，如何对其进行性能分析，以及如何将它们集成到[TorchServe](https://github.com/pytorch/serve)中以获得优化的CPU性能。
 - en: In this tutorial, we will demonstrate boosting performance with memory allocator
     via the [Intel® Extension for PyTorch* Launcher](https://github.com/intel/intel-extension-for-pytorch/blob/master/docs/tutorials/performance_tuning/launch_script.md)
     , and optimized kernels on CPU via [Intel® Extension for PyTorch*](https://github.com/intel/intel-extension-for-pytorch)
     , and apply them to TorchServe showcasing 7.71x throughput speedup for ResNet50
     and 2.20x throughput speedup for BERT.
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，我们将通过[英特尔® PyTorch*扩展启动器](https://github.com/intel/intel-extension-for-pytorch/blob/master/docs/tutorials/performance_tuning/launch_script.md)演示如何通过内存分配器提高性能，并通过[英特尔®
+    PyTorch*扩展](https://github.com/intel/intel-extension-for-pytorch)在CPU上优化内核，并将它们应用于TorchServe，展示ResNet50的吞吐量提升了7.71倍，BERT的吞吐量提升了2.20倍。
 - en: '[![../_images/1.png](../Images/74cc44a62474337c4fc6d0bc99098db9.png)](../_images/1.png)'
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_images/1.png](../Images/74cc44a62474337c4fc6d0bc99098db9.png)](../_images/1.png)'
 - en: Prerequisites
+  id: totrans-6
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 先决条件
 - en: Throughout this tutorial, we will use [Top-down Microarchitecture Analysis (TMA)](https://www.intel.com/content/www/us/en/develop/documentation/vtune-cookbook/top/methodologies/top-down-microarchitecture-analysis-method.html)
     to profile and show that the Back End Bound (Memory Bound, Core Bound) is often
     the primary bottleneck for under-optimized or under-tuned deep learning workloads,
@@ -37,27 +53,39 @@
     improving Back End Bound. We will use [toplev](https://github.com/andikleen/pmu-tools/wiki/toplev-manual),
     a tool part of [pmu-tools](https://github.com/andikleen/pmu-tools) built on top
     of [Linux perf](https://man7.org/linux/man-pages/man1/perf.1.html), for TMA.
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 在整个本教程中，我们将使用[自顶向下的微体系结构分析（TMA）](https://www.intel.com/content/www/us/en/develop/documentation/vtune-cookbook/top/methodologies/top-down-microarchitecture-analysis-method.html)来对性能进行分析，并展示未经优化或未调整的深度学习工作负载通常主要受到后端受限（内存受限、核心受限）的影响，并通过英特尔®
+    PyTorch*扩展演示优化技术以改善后端受限。我们将使用[toplev](https://github.com/andikleen/pmu-tools/wiki/toplev-manual)，这是[pmu-tools](https://github.com/andikleen/pmu-tools)的一部分工具，构建在[Linux
+    perf](https://man7.org/linux/man-pages/man1/perf.1.html)之上，用于TMA。
 - en: We will also use [Intel® VTune™ Profiler’s Instrumentation and Tracing Technology
     (ITT)](https://github.com/pytorch/pytorch/issues/41001) to profile at finer granularity.
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们还将使用[英特尔® VTune™ Profiler的仪器化和跟踪技术（ITT）](https://github.com/pytorch/pytorch/issues/41001)以更精细的粒度进行性能分析。
 - en: Top-down Microarchitecture Analysis Method (TMA)
+  id: totrans-9
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 自顶向下的微体系结构分析方法（TMA）
 - en: 'When tuning CPU for optimal performance, it’s useful to know where the bottleneck
     is. Most CPU cores have on-chip Performance Monitoring Units (PMUs). PMUs are
     dedicated pieces of logic within a CPU core that count specific hardware events
     as they occur on the system. Examples of these events may be Cache Misses or Branch
     Mispredictions. PMUs are used for Top-down Microarchitecture Analysis (TMA) to
     identify the bottlenecks. TMA consists of hierarchical levels as shown:'
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 在调整CPU以获得最佳性能时，了解瓶颈所在是很有用的。大多数CPU核心都有芯片上的性能监控单元（PMUs）。PMUs是CPU核心内的专用逻辑单元，用于计算系统上发生的特定硬件事件。这些事件的示例可能是缓存未命中或分支误预测。PMUs用于自顶向下的微体系结构分析（TMA）以识别瓶颈。TMA包括如下层次结构：
 - en: '[![../_images/26.png](../Images/cd7487204a4dc972818b86076a766477.png)](../_images/26.png)'
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_images/26.png](../Images/cd7487204a4dc972818b86076a766477.png)](../_images/26.png)'
 - en: 'The top level, level-1, metrics collect *Retiring*, *Bad Speculation*, *Front
     End Bound*, *Back End Bound*. The pipeline of CPU can conceptually be simplified
     and divided into two: the frontend and the backend. The *frontend* is responsible
@@ -68,18 +96,24 @@
     In contrast, a *bad speculation* is when speculatively fetched uOps are canceled
     before retiring such as in the case of mispredicted branches. Each of these metrics
     can further be broken down in the subsequent levels to pinpoint the bottleneck.'
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: 顶层，即一级，指标收集*退休*、*错误猜测*、*前端受限*、*后端受限*。CPU的流水线在概念上可以简化并分为两部分：前端和后端。*前端*负责获取程序代码并将其解码为称为微操作（uOps）的低级硬件操作。然后将uOps传送到*后端*，这个过程称为分配。一旦分配，后端负责在可用的执行单元中执行uOp。uOp的执行完成称为*退休*。相反，*错误猜测*是指在退休之前取消了被推测获取的uOps，例如在误预测分支的情况下。这些指标中的每一个都可以进一步细分为后续级别，以确定瓶颈。
 - en: Tune for the Back End Bound
+  id: totrans-13
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 调整后端受限
 - en: The majority of untuned deep learning workloads will be Back End Bound. Resolving
     Back End bound is often resolving sources of latency causing retirement to take
     longer than necessary. As shown above, Back End Bound has two sub-metrics – Core
     Bound and Memory Bound.
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 大多数未调整的深度学习工作负载将是后端受限的。解决后端受限通常是解决导致退休时间超过必要时间的延迟源。如上所示，后端受限有两个子指标 - 核心受限和内存受限。
 - en: Memory Bound stalls have causes related to the memory subsystem. For example,
     last-level cache (LLC or L3 cache) miss causing access to DRAM. Scaling deep learning
     models often requires significant compute. And high compute utilization requires
@@ -89,55 +123,77 @@
     be starved while data is being returned. Throughout this tutorial, we wll show
     that a more efficient memory allocator, operator fusion, memory layout format
     optimization reduce overhead on Memory Bound with better cache locality.
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 内存绑定停顿与内存子系统相关。例如，最后一级缓存（LLC或L3缓存）缺失导致访问DRAM。扩展深度学习模型通常需要大量计算。高计算利用率要求在执行单元需要执行uOps时数据可用。这需要预取数据并在缓存中重用数据，而不是多次从主存储器中获取相同的数据，这会导致执行单元在数据返回时被饿死。在整个教程中，我们将展示更高效的内存分配器、操作融合、内存布局格式优化如何减少内存绑定的开销，提高缓存局部性。
 - en: Core Bound stalls indicate sub-optimal use of available execution units while
     there are no uncompleted memory accesses. For example, several general matrix-matrix
     multiplication (GEMM) instructions in a row competing for fused-multiply-add (FMA)
     or dot-product (DP) execution units could cause Core Bound stalls. Key deep learning
     kernels, including the DP kernels, have been well optimized by [oneDNN library](https://github.com/oneapi-src/oneDNN)
     (oneAPI Deep Neural Network Library), reducing overhead on Core Bound.
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 核心绑定停顿表示可用执行单元的子优化使用，而没有未完成的内存访问。例如，连续的多个通用矩阵乘法（GEMM）指令竞争融合乘加（FMA）或点积（DP）执行单元可能导致核心绑定停顿。关键的深度学习核心，包括DP核心，已经通过[oneDNN库](https://github.com/oneapi-src/oneDNN)（oneAPI深度神经网络库）进行了优化，减少了核心绑定的开销。
 - en: Operations like GEMM, convolution, deconvolution are compute-intensive. While
     operations like pooling, batch normalization, activation functions like ReLU are
     memory-bound.
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: GEMM、卷积、反卷积等操作是计算密集型的。而池化、批量归一化、激活函数如ReLU等操作是内存绑定的。
 - en: Intel® VTune™ Profiler’s Instrumentation and Tracing Technology (ITT)
+  id: totrans-18
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: Intel® VTune™ Profiler的仪器化和跟踪技术（ITT）
 - en: The ITT APIs of Intel® VTune Profiler is a useful tool to annotate a region
     of your workload for tracing to profile and visualize at a finer granularity of
     your annotation – OP/function/sub-function granularity. By annotating at the granularity
     of your PyTorch model’s OPs, Intel® VTune Profiler’s ITT enables op-level profiling.
     Intel® VTune Profiler’s ITT has been integrated into [PyTorch Autograd Profiler](https://pytorch.org/tutorials/beginner/introyt/autogradyt_tutorial.html#autograd-profiler).
     ¹
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: Intel® VTune Profiler的ITT API是一个有用的工具，用于注释您的工作负载的区域，以便以更细粒度的注释-OP/函数/子函数粒度进行跟踪和可视化。通过在PyTorch模型的OP级别进行注释，Intel®
+    VTune Profiler的ITT实现了OP级别的性能分析。Intel® VTune Profiler的ITT已经集成到[PyTorch Autograd
+    Profiler](https://pytorch.org/tutorials/beginner/introyt/autogradyt_tutorial.html#autograd-profiler)中。¹
 - en: The feature has to be explicitly enabled by *with torch.autograd.profiler.emit_itt()*.
+  id: totrans-20
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 该功能必须通过*with torch.autograd.profiler.emit_itt()*来显式启用。
 - en: TorchServe with Intel® Extension for PyTorch*
+  id: totrans-21
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 带有Intel® Extension for PyTorch*的TorchServe
 - en: '[Intel® Extension for PyTorch*](https://github.com/intel/intel-extension-for-pytorch)
     is a Python package to extend PyTorch with optimizations for extra performance
     boost on Intel hardware.'
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Intel® Extension for PyTorch*](https://github.com/intel/intel-extension-for-pytorch)是一个Python包，用于通过在Intel硬件上进行额外性能优化来扩展PyTorch。'
 - en: Intel® Extension for PyTorch* has already been integrated into TorchServe to
     improve the performance out-of-box. ² For custom handler scripts, we recommend
     adding the *intel_extension_for_pytorch* package in.
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: Intel® Extension for PyTorch*已经集成到TorchServe中，以提高性能。² 对于自定义处理程序脚本，我们建议添加*intel_extension_for_pytorch*包。
 - en: The feature has to be explicitly enabled by setting *ipex_enable=true* in *config.properties*.
+  id: totrans-24
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 该功能必须通过在*config.properties*中设置*ipex_enable=true*来显式启用。
 - en: Throughout this section, we will show that Back End Bound is often the primary
     bottleneck for under-optimized or under-tuned deep learning workloads, and demonstrate
     optimization techniques via Intel® Extension for PyTorch* for improving Back End
@@ -147,73 +203,96 @@
     and better cache locality. And key deep learning primitives, such as convolution,
     matrix multiplication, dot-product, have been well optimized by Intel® Extension
     for PyTorch* and oneDNN library, improving Core Bound.
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本节中，我们将展示后端绑定通常是未经优化或未调整的深度学习工作负载的主要瓶颈，并通过Intel® Extension for PyTorch*演示优化技术，以改善后端绑定，后端绑定有两个子指标-内存绑定和核心绑定。更高效的内存分配器、操作融合、内存布局格式优化改善了内存绑定。理想情况下，通过优化操作符和更好的缓存局部性，内存绑定可以改善为核心绑定。关键的深度学习基元，如卷积、矩阵乘法、点积，已经通过Intel®
+    Extension for PyTorch*和oneDNN库进行了优化，改善了核心绑定。
 - en: 'Leveraging Advanced Launcher Configuration: Memory Allocator'
+  id: totrans-26
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 利用高级启动器配置：内存分配器
 - en: Memory allocator plays an important role from performance perspective. A more
     efficient memory usage reduces overhead on unnecessary memory allocations or destructions,
     and thus faster execution. For deep learning workloads in practice, especially
     those running on large multi-core systems or servers like TorchServe, TCMalloc,
     or JeMalloc can generally get better memory usage than the default PyTorch memory
     allocator, PTMalloc.
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 从性能的角度来看，内存分配器起着重要作用。更高效的内存使用减少了不必要的内存分配或销毁的开销，从而实现更快的执行。在实践中的深度学习工作负载中，特别是在像TorchServe这样的大型多核系统或服务器上运行的工作负载中，TCMalloc或JeMalloc通常比默认的PyTorch内存分配器PTMalloc具有更好的内存使用。
 - en: TCMalloc, JeMalloc, PTMalloc
+  id: totrans-28
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: TCMalloc，JeMalloc，PTMalloc
 - en: Both TCMalloc and JeMalloc use thread-local caches to reduce overhead on thread
     synchronization, and lock contention by using spinlocks and per-thread arenas
     respectively. TCMalloc and JeMalloc reduce overhead on unnecessary memory allocation
     and deallocation. Both allocators categorize memory allocations by sizes to reduce
     overhead on memory fragmentation.
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
 - en: With the launcher, users can easily experiment with different memory allocators
     by choosing one of the three launcher knobs *–enable_tcmalloc* (TCMalloc), *–enable_jemalloc*
     (JeMalloc), *–use_default_allocator* (PTMalloc).
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
 - en: Exercise
+  id: totrans-31
   prefs:
   - PREF_H5
   type: TYPE_NORMAL
 - en: Let’s profile PTMalloc vs. JeMalloc.
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
 - en: We will use the launcher to designate the memory allocator, and to bind the
     workload to physical cores of the first socket to avoid any NUMA complication
     – to profile the effect of memory allocator only.
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
 - en: 'The following example measures the average inference time of ResNet50:'
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE0]'
+  id: totrans-35
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: Let’s collect level-1 TMA metrics.
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
 - en: '[![../_images/32.png](../Images/92b08c13c370b320e540a278fa5c05a3.png)](../_images/32.png)'
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
 - en: Level-1 TMA shows that both PTMalloc and JeMalloc are bounded by the backend.
     More than half of the execution time was stalled by the backend. Let’s go one
     level deeper.
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
 - en: '[![../_images/41.png](../Images/4c4e1618b6431d1689b0e0c84efef1d3.png)](../_images/41.png)'
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
 - en: Level-2 TMA shows that the Back End Bound was caused by Memory Bound. Let’s
     go one level deeper.
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
 - en: '[![../_images/51.png](../Images/20c7abc0c93bd57ad7a3dd3655c2f294.png)](../_images/51.png)'
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
 - en: Most of the metrics under the Memory Bound identify which level of the memory
@@ -223,58 +302,76 @@
     core. Level-3 TMA shows that PTMalloc was bottlenecked by DRAM Bound. On the other
     hand, JeMalloc was bottlenecked by L1 Bound – JeMalloc moved data closer to the
     core, and thus faster execution.
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
 - en: Let’s look at Intel® VTune Profiler ITT trace. In the example script, we have
     annotated each *step_x* of the inference loop.
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
 - en: '[![../_images/61.png](../Images/ecb098b61b1ff2137e4d3a18ab854273.png)](../_images/61.png)'
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
 - en: Each step is traced in the timeline graph. The duration of model inference on
     the last step (step_99) decreased from 304.308 ms to 261.843 ms.
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
 - en: Exercise with TorchServe
+  id: totrans-46
   prefs:
   - PREF_H5
   type: TYPE_NORMAL
 - en: Let’s profile PTMalloc vs. JeMalloc with TorchServe.
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
 - en: We will use [TorchServe apache-bench benchmarking](https://github.com/pytorch/serve/tree/master/benchmarks#benchmarking-with-apache-bench)
     with ResNet50 FP32, batch size 32, concurrency 32, requests 8960\. All other parameters
     are the same as the [default parameters](https://github.com/pytorch/serve/tree/master/benchmarks#benchmark-parameters).
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
 - en: 'As in the previous exercise, we will use the launcher to designate the memory
     allocator, and to bind the workload to physical cores of the first socket. To
     do so, user simply needs to add a few lines in [config.properties](https://pytorch.org/serve/configuration.html#config-properties-file):'
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
 - en: PTMalloc
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE1]'
+  id: totrans-51
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: JeMalloc
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE2]'
+  id: totrans-53
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Let’s collect level-1 TMA metrics.
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
 - en: '[![../_images/71.png](../Images/5f87dd66115567eb48eaa61c41e17b25.png)](../_images/71.png)'
+  id: totrans-55
   prefs: []
   type: TYPE_NORMAL
 - en: Let’s go one level deeper.
+  id: totrans-56
   prefs: []
   type: TYPE_NORMAL
 - en: '[![../_images/81.png](../Images/23960c03e87ed20b8dc0954e8d420e20.png)](../_images/81.png)'
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
 - en: Let’s use Intel® VTune Profiler ITT to annotate [TorchServe inference scope](https://github.com/pytorch/serve/blob/master/ts/torch_handler/base_handler.py#L188)
@@ -282,148 +379,227 @@
     consists of several sub-components, including the Java frontend for handling request/response,
     and the Python backend for running the actual inference on the models, it is helpful
     to use Intel® VTune Profiler ITT to limit the collection of trace data at inference-level.
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
 - en: '[![../_images/9.png](../Images/503e0ca767cc22bc9c9fcad2ebb78311.png)](../_images/9.png)'
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_images/9.png](../Images/503e0ca767cc22bc9c9fcad2ebb78311.png)](../_images/9.png)'
 - en: Each inference call is traced in the timeline graph. The duration of the last
     model inference decreased from 561.688 ms to 251.287 ms - 2.2x speedup.
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: 每个推断调用都在时间线图中被跟踪。最后一个模型推断的持续时间从561.688毫秒减少到251.287毫秒 - 加速2.2倍。
 - en: '[![../_images/101.png](../Images/b028bfe554248a98ae3e2a0d6250a5f4.png)](../_images/101.png)'
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_images/101.png](../Images/b028bfe554248a98ae3e2a0d6250a5f4.png)](../_images/101.png)'
 - en: The timeline graph can be expanded to see op-level profiling results. The duration
     of *aten::conv2d* decreased from 16.401 ms to 6.392 ms - 2.6x speedup.
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
+  zh: 时间线图可以展开以查看操作级别的性能分析结果。*aten::conv2d*的持续时间从16.401毫秒减少到6.392毫秒 - 加速2.6倍。
 - en: In this section, we have demonstrated that JeMalloc can give better performance
     than the default PyTorch memory allocator, PTMalloc, with efficient thread-local
     caches improving Back-End-Bound.
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本节中，我们已经证明JeMalloc可以比默认的PyTorch内存分配器PTMalloc提供更好的性能，有效的线程本地缓存可以改善后端绑定。
 - en: Intel® Extension for PyTorch*
+  id: totrans-64
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: Intel® Extension for PyTorch*
 - en: 'The three major [Intel® Extension for PyTorch*](https://github.com/intel/intel-extension-for-pytorch)
     optimization techniques, Operator, Graph, Runtime, are as shown:'
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: 三个主要的[Intel® Extension for PyTorch*](https://github.com/intel/intel-extension-for-pytorch)优化技术，运算符、图形、运行时，如下所示：
 - en: '| Intel® Extension for PyTorch* Optimization Techniques |'
+  id: totrans-66
   prefs: []
   type: TYPE_TB
+  zh: '| Intel® Extension for PyTorch* 优化技术 |'
 - en: '| --- |'
+  id: totrans-67
   prefs: []
   type: TYPE_TB
+  zh: '| --- |'
 - en: '| Operator | Graph | Runtime |'
+  id: totrans-68
   prefs: []
   type: TYPE_TB
+  zh: '| 运算符 | 图形 | 运行时 |'
 - en: '|'
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: '|'
 - en: Vectorization and Multi-threading
+  id: totrans-70
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 矢量化和多线程
 - en: Low-precision BF16/INT8 compute
+  id: totrans-71
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 低精度BF16/INT8计算
 - en: Data layout optimization for better cache locality
+  id: totrans-72
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 为了更好的缓存局部性进行的数据布局优化
 - en: '|'
+  id: totrans-73
   prefs: []
   type: TYPE_NORMAL
+  zh: '|'
 - en: Constant folding to reduce compute
+  id: totrans-74
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 常量折叠以减少计算
 - en: Op fusion for better cache locality
+  id: totrans-75
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 为了更好的缓存局部性而进行的操作融合
 - en: '|'
+  id: totrans-76
   prefs: []
   type: TYPE_NORMAL
+  zh: '|'
 - en: Thread affinitization
+  id: totrans-77
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 线程亲和性
 - en: Memory buffer pooling
+  id: totrans-78
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 内存缓冲池
 - en: GPU runtime
+  id: totrans-79
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: GPU运行时
 - en: Launcher
+  id: totrans-80
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 启动器
 - en: '|'
+  id: totrans-81
   prefs: []
   type: TYPE_NORMAL
+  zh: '|'
 - en: Operator Optimization
+  id: totrans-82
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 运算符优化
 - en: Optimized operators and kernels are registered through PyTorch dispatching mechanism.
     These operators and kernels are accelerated from native vectorization feature
     and matrix calculation feature of Intel hardware. During execution, Intel® Extension
     for PyTorch* intercepts invocation of ATen operators, and replaces the original
     ones with these optimized ones. Popular operators like Convolution, Linear have
     been optimized in Intel® Extension for PyTorch*.
+  id: totrans-83
   prefs: []
   type: TYPE_NORMAL
+  zh: 优化的运算符和内核通过PyTorch调度机制进行注册。这些运算符和内核从英特尔硬件的本机矢量化特性和矩阵计算特性加速。在执行过程中，Intel® Extension
+    for PyTorch*拦截ATen运算符的调用，并用这些优化的运算符替换原始运算符。像卷积、线性等流行的运算符已经在Intel® Extension for
+    PyTorch*中进行了优化。
 - en: Exercise
+  id: totrans-84
   prefs:
   - PREF_H5
   type: TYPE_NORMAL
+  zh: 练习
 - en: Let’s profile optimized operator with Intel® Extension for PyTorch*. We will
     compare with and without the lines in code changes.
+  id: totrans-85
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们使用Intel® Extension for PyTorch*对优化的运算符进行性能分析。我们将比较在代码中添加和不添加这些行的变化。
 - en: As in the previous exercises, we will bind the workload to physical cores of
     the first socket.
+  id: totrans-86
   prefs: []
   type: TYPE_NORMAL
+  zh: 与以前的练习一样，我们将将工作负载绑定到第一个插槽的物理核心。
 - en: '[PRE3]'
+  id: totrans-87
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: The model consists of two operations—Conv2d and ReLU. By printing the model
     object, we get the following output.
+  id: totrans-88
   prefs: []
   type: TYPE_NORMAL
+  zh: 该模型由两个操作组成——Conv2d和ReLU。通过打印模型对象，我们得到以下输出。
 - en: '[![../_images/11.png](../Images/80104f40ec5b9cc463c39342ea6908a7.png)](../_images/11.png)'
+  id: totrans-89
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_images/11.png](../Images/80104f40ec5b9cc463c39342ea6908a7.png)](../_images/11.png)'
 - en: Let’s collect level-1 TMA metrics.
+  id: totrans-90
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们收集一级TMA指标。
 - en: '[![../_images/121.png](../Images/81c6ba8b688066ce19f4d4a274996485.png)](../_images/121.png)'
+  id: totrans-91
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_images/121.png](../Images/81c6ba8b688066ce19f4d4a274996485.png)](../_images/121.png)'
 - en: Notice the Back End Bound reduced from 68.9 to 38.5 – 1.8x speedup.
+  id: totrans-92
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意后端绑定从68.9减少到38.5 - 加速1.8倍。
 - en: Additionally, let’s profile with PyTorch Profiler.
+  id: totrans-93
   prefs: []
   type: TYPE_NORMAL
+  zh: 此外，让我们使用PyTorch Profiler进行性能分析。
 - en: '[![../_images/131.png](../Images/42c2d372d466f39f3cd12d8c9260c4d1.png)](../_images/131.png)'
+  id: totrans-94
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_images/131.png](../Images/42c2d372d466f39f3cd12d8c9260c4d1.png)](../_images/131.png)'
 - en: Notice the CPU time reduced from 851 us to 310 us – 2.7X speedup.
+  id: totrans-95
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意CPU时间从851微秒减少到310微秒 - 加速2.7倍。
 - en: Graph Optimization
+  id: totrans-96
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 图形优化
 - en: It is highly recommended for users to take advantage of Intel® Extension for
     PyTorch* with [TorchScript](https://pytorch.org/docs/stable/jit.html) for further
     graph optimizations. To optimize performance further with TorchScript, Intel®
@@ -435,46 +611,70 @@
     to deliver good statistical accuracy for popular DL workloads including CNN, NLP
     and recommendation models. The quantized model is then optimized with oneDNN fusion
     support.
+  id: totrans-97
   prefs: []
   type: TYPE_NORMAL
+  zh: 强烈建议用户利用Intel® Extension for PyTorch*与[TorchScript](https://pytorch.org/docs/stable/jit.html)进一步优化图形。为了通过TorchScript进一步优化性能，Intel®
+    Extension for PyTorch*支持常用FP32/BF16运算符模式的oneDNN融合，如Conv2D+ReLU、Linear+ReLU等，以减少运算符/内核调用开销，提高缓存局部性。一些运算符融合允许保持临时计算、数据类型转换、数据布局以提高缓存局部性。此外，对于INT8，Intel®
+    Extension for PyTorch*具有内置的量化配方，为包括CNN、NLP和推荐模型在内的流行DL工作负载提供良好的统计精度。量化模型然后通过oneDNN融合支持进行优化。
 - en: Exercise
+  id: totrans-98
   prefs:
   - PREF_H5
   type: TYPE_NORMAL
+  zh: 练习
 - en: Let’s profile FP32 graph optimization with TorchScript.
+  id: totrans-99
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们使用TorchScript对FP32图形优化进行性能分析。
 - en: As in the previous exercises, we will bind the workload to physical cores of
     the first socket.
+  id: totrans-100
   prefs: []
   type: TYPE_NORMAL
+  zh: 与以前的练习一样，我们将将工作负载绑定到第一个插槽的物理核心。
 - en: '[PRE4]'
+  id: totrans-101
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: Let’s collect level-1 TMA metrics.
+  id: totrans-102
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们收集一级TMA指标。
 - en: '[![../_images/141.png](../Images/6d467b7f5180ed2749ec54aa4196fab0.png)](../_images/141.png)'
+  id: totrans-103
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_images/141.png](../Images/6d467b7f5180ed2749ec54aa4196fab0.png)](../_images/141.png)'
 - en: Notice the Back End Bound reduced from 67.1 to 37.5 – 1.8x speedup.
+  id: totrans-104
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意后端绑定从67.1减少到37.5 - 加速1.8倍。
 - en: Additionally, let’s profile with PyTorch Profiler.
+  id: totrans-105
   prefs: []
   type: TYPE_NORMAL
+  zh: 此外，让我们使用PyTorch Profiler进行性能分析。
 - en: '[![../_images/151.png](../Images/4d256b81c69edc40a7d9551d270c1b48.png)](../_images/151.png)'
+  id: totrans-106
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_images/151.png](../Images/4d256b81c69edc40a7d9551d270c1b48.png)](../_images/151.png)'
 - en: 'Notice that with Intel® Extension for PyTorch* Conv + ReLU operators are fused,
     and the CPU time reduced from 803 us to 248 us – 3.2X speedup. The oneDNN eltwise
     post-op enables fusing a primitive with an elementwise primitive. This is one
     of the most popular kinds of fusion: an eltwise (typically an activation function
     such as ReLU) with preceding convolution or inner product. Have a look at the
     oneDNN verbose log shown in the next section.'
+  id: totrans-107
   prefs: []
   type: TYPE_NORMAL
 - en: Channels Last Memory Format
+  id: totrans-108
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
@@ -484,6 +684,7 @@
     default channels first NCHW (batch, channels, height, width) memory format, channels
     last NHWC (batch, height, width, channels) memory format generally accelerates
     convolutional neural networks with better cache locality.
+  id: totrans-109
   prefs: []
   type: TYPE_NORMAL
 - en: One thing to note is that it is expensive to convert memory format. So it’s
@@ -494,81 +695,104 @@
     are only made in between channels last unsupported layers. See [Memory Format
     Propagation](https://www.intel.com/content/www/us/en/develop/documentation/onednn-developer-guide-and-reference/top/programming-model/memory-format-propagation.html)
     for more details.
+  id: totrans-110
   prefs: []
   type: TYPE_NORMAL
 - en: Exercise
+  id: totrans-111
   prefs:
   - PREF_H5
   type: TYPE_NORMAL
 - en: Let’s demonstrate channels last optimization.
+  id: totrans-112
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE5]'
+  id: totrans-113
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: We will use [oneDNN verbose mode](https://oneapi-src.github.io/oneDNN/dev_guide_verbose.html),
     a tool to help collect information at oneDNN graph level such as operator fusions,
     kernel execution time spent on executing oneDNN primitives. For more information,
     refer to the [oneDNN Documentation](https://oneapi-src.github.io/oneDNN/index.html).
+  id: totrans-114
   prefs: []
   type: TYPE_NORMAL
 - en: '[![../_images/161.png](../Images/52018fb59ebe653af37a7e977764e699.png)](../_images/161.png)[![../_images/171.png](../Images/466f4685aff041f4d0f735aaae4593d5.png)](../_images/171.png)'
+  id: totrans-115
   prefs: []
   type: TYPE_NORMAL
 - en: Above is oneDNN verbose from channels first. We can verify that there are reorders
     from weight and data, then do computation, and finally reorder output back.
+  id: totrans-116
   prefs: []
   type: TYPE_NORMAL
 - en: '[![../_images/181.png](../Images/37fca356cd849c6f51a0b2d155565535.png)](../_images/181.png)'
+  id: totrans-117
   prefs: []
   type: TYPE_NORMAL
 - en: Above is oneDNN verbose from channels last. We can verify that channels last
     memory format avoids unnecessary reorders.
+  id: totrans-118
   prefs: []
   type: TYPE_NORMAL
 - en: Performance Boost with Intel® Extension for PyTorch*
+  id: totrans-119
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
 - en: Below summarizes performance boost of TorchServe with Intel® Extension for PyTorch*
     for ResNet50 and BERT-base-uncased.
+  id: totrans-120
   prefs: []
   type: TYPE_NORMAL
 - en: '[![../_images/191.png](../Images/70692f21eb61fe41d0b7a67d8ae8a54d.png)](../_images/191.png)'
+  id: totrans-121
   prefs: []
   type: TYPE_NORMAL
 - en: Exercise with TorchServe
+  id: totrans-122
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
 - en: Let’s profile Intel® Extension for PyTorch* optimizations with TorchServe.
+  id: totrans-123
   prefs: []
   type: TYPE_NORMAL
 - en: We will use [TorchServe apache-bench benchmarking](https://github.com/pytorch/serve/tree/master/benchmarks#benchmarking-with-apache-bench)
     with ResNet50 FP32 TorchScript, batch size 32, concurrency 32, requests 8960\.
     All other parameters are the same as the [default parameters](https://github.com/pytorch/serve/tree/master/benchmarks#benchmark-parameters).
+  id: totrans-124
   prefs: []
   type: TYPE_NORMAL
 - en: 'As in the previous exercise, we will use the launcher to bind the workload
     to physical cores of the first socket. To do so, user simply needs to add a few
     lines in [config.properties](https://github.com/pytorch/serve/tree/master/benchmarks#benchmark-parameters):'
+  id: totrans-125
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE6]'
+  id: totrans-126
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: Let’s collect level-1 TMA metrics.
+  id: totrans-127
   prefs: []
   type: TYPE_NORMAL
 - en: '[![../_images/20.png](../Images/90ff6d2c5ef9b558de384a1a802a7781.png)](../_images/20.png)'
+  id: totrans-128
   prefs: []
   type: TYPE_NORMAL
 - en: Level-1 TMA shows that both are bounded by the backend. As discussed earlier,
     the majority of untuned deep learning workloads will be Back End Bound. Notice
     the Back End Bound reduced from 70.0 to 54.1\. Let’s go one level deeper.
+  id: totrans-129
   prefs: []
   type: TYPE_NORMAL
 - en: '[![../_images/211.png](../Images/7986245e21288e28a0d187026c929c7d.png)](../_images/211.png)'
+  id: totrans-130
   prefs: []
   type: TYPE_NORMAL
 - en: As discussed earlier, Back End Bound has two submetrics – Memory Bound and Core
@@ -576,94 +800,139 @@
     and ideally memory-bound operations can be improved to core-bound by optimizing
     the OPs and improving cache locality. Level-2 TMA shows that the Back End Bound
     improved from Memory Bound to Core Bound. Let’s go one level deeper.
+  id: totrans-131
   prefs: []
   type: TYPE_NORMAL
+  zh: 如前所述，后端绑定有两个子指标 - 内存绑定和核心绑定。内存绑定表示工作负载未经优化或未充分利用，理想情况下，内存绑定操作可以通过优化OPs和改善缓存局部性来改善为核心绑定。Level-2
+    TMA显示后端绑定从内存绑定改善为核心绑定。让我们深入一层。
 - en: '[![../_images/221.png](../Images/694c98433e22e56db7436b3cc54c153a.png)](../_images/221.png)'
+  id: totrans-132
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_images/221.png](../Images/694c98433e22e56db7436b3cc54c153a.png)](../_images/221.png)'
 - en: Scaling deep learning models for production on a model serving framework like
     TorchServe requires high compute utilization. This requires that data is available
     through prefetching and reusing the data in cache when the execution units need
     it to execute the uOps. Level-3 TMA shows that the Back End Memory Bound improved
     from DRAM Bound to Core Bound.
+  id: totrans-133
   prefs: []
   type: TYPE_NORMAL
+  zh: 在像TorchServe这样的模型服务框架上为生产扩展深度学习模型需要高计算利用率。这要求数据通过预取并在执行单元需要执行uOps时在缓存中重复使用。Level-3
+    TMA显示后端内存绑定从DRAM绑定改善为核心绑定。
 - en: As in the previous exercise with TorchServe, let’s use Intel® VTune Profiler
     ITT to annotate [TorchServe inference scope](https://github.com/pytorch/serve/blob/master/ts/torch_handler/base_handler.py#L188)
     to profile at inference-level granularity.
+  id: totrans-134
   prefs: []
   type: TYPE_NORMAL
+  zh: 与TorchServe之前的练习一样，让我们使用Intel® VTune Profiler ITT来注释[TorchServe推断范围](https://github.com/pytorch/serve/blob/master/ts/torch_handler/base_handler.py#L188)，以便以推断级别的粒度进行分析。
 - en: '[![../_images/231.png](../Images/7bac8eb911646b9101914663163d1958.png)](../_images/231.png)'
+  id: totrans-135
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_images/231.png](../Images/7bac8eb911646b9101914663163d1958.png)](../_images/231.png)'
 - en: Each inference call is traced in the timeline graph. The duration of the last
     inference call decreased from 215.731 ms to 95.634 ms - 2.3x speedup.
+  id: totrans-136
   prefs: []
   type: TYPE_NORMAL
+  zh: 时间轴图中跟踪了每个推断调用。最后一个推断调用的持续时间从215.731毫秒减少到95.634毫秒 - 2.3倍加速。
 - en: '[![../_images/241.png](../Images/6e43f3a1c63c0ea0223edb29e584267d.png)](../_images/241.png)'
+  id: totrans-137
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_images/241.png](../Images/6e43f3a1c63c0ea0223edb29e584267d.png)](../_images/241.png)'
 - en: The timeline graph can be expanded to see op-level profiling results. Notice
     that Conv + ReLU has been fused, and the duration decreased from 6.393 ms + 1.731
     ms to 3.408 ms - 2.4x speedup.
+  id: totrans-138
   prefs: []
   type: TYPE_NORMAL
+  zh: 时间轴图可以展开以查看操作级别的分析结果。请注意，Conv + ReLU已经被融合，持续时间从6.393毫秒+1.731毫秒减少到3.408毫秒 - 2.4倍加速。
 - en: Conclusion
+  id: totrans-139
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 结论
 - en: In this tutorial, we have used Top-down Microarchitecture Analysis (TMA) and
     Intel® VTune™ Profiler’s Instrumentation and Tracing Technology (ITT) to demonstrate
     that
+  id: totrans-140
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，我们使用了自顶向下微架构分析（TMA）和Intel® VTune™ Profiler的仪器化和跟踪技术（ITT）来演示
 - en: Often the primary bottleneck of under-optimized or under-tuned deep learning
     workloads are Back End Bound, which has two submetrics, Memory Bound and Core
     Bound.
+  id: totrans-141
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 通常，未经优化或调整不足的深度学习工作负载的主要瓶颈是后端绑定，它有两个子指标，即内存绑定和核心绑定。
 - en: A more efficient memory allocator, operator fusion, memory layout format optimization
     by Intel® Extension for PyTorch* improve Memory Bound.
+  id: totrans-142
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: Intel® PyTorch*的更高效的内存分配器、操作融合、内存布局格式优化改善了内存绑定。
 - en: Key deep learning primitives, such as convolution, matrix multiplication, dot-product,
     etc have been well optimized by Intel® Extension for PyTorch* and oneDNN library,
     improving Core Bound.
+  id: totrans-143
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 关键的深度学习基元，如卷积、矩阵乘法、点积等，已经被Intel® PyTorch*扩展和oneDNN库进行了优化，提高了核心绑定。
 - en: Intel® Extension for PyTorch* has been integrated into TorchServe with an ease-of-use
     API.
+  id: totrans-144
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: Intel® PyTorch*扩展已经集成到TorchServe中，具有易于使用的API。
 - en: TorchServe with Intel® Extension for PyTorch* shows 7.71x throughput speedup
     for ResNet50, and 2.20x throughput speedup for BERT.
+  id: totrans-145
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: TorchServe与Intel® PyTorch*扩展展示了ResNet50的7.71倍吞吐量提升，以及BERT的2.20倍吞吐量提升。
 - en: Related Readings
+  id: totrans-146
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 相关阅读
 - en: '[Top-down Microarchitecture Analysis Method](https://www.intel.com/content/www/us/en/develop/documentation/vtune-cookbook/top/methodologies/top-down-microarchitecture-analysis-method.html)'
+  id: totrans-147
   prefs: []
   type: TYPE_NORMAL
+  zh: '[自顶向下微架构分析方法](https://www.intel.com/content/www/us/en/develop/documentation/vtune-cookbook/top/methodologies/top-down-microarchitecture-analysis-method.html)'
 - en: '[Top-Down performance analysis methodology](https://easyperf.net/blog/2019/02/09/Top-Down-performance-analysis-methodology)'
+  id: totrans-148
   prefs: []
   type: TYPE_NORMAL
+  zh: '[自顶向下性能分析方法](https://easyperf.net/blog/2019/02/09/Top-Down-performance-analysis-methodology)'
 - en: '[Accelerating PyTorch with Intel® Extension for PyTorch*](https://medium.com/pytorch/accelerating-pytorch-with-intel-extension-for-pytorch-3aef51ea3722)'
+  id: totrans-149
   prefs: []
   type: TYPE_NORMAL
+  zh: '[使用Intel® PyTorch*扩展加速PyTorch](https://medium.com/pytorch/accelerating-pytorch-with-intel-extension-for-pytorch-3aef51ea3722)'
 - en: Acknowledgement
+  id: totrans-150
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 致谢
 - en: We would like to thank Ashok Emani (Intel) and Jiong Gong (Intel) for their
     immense guidance and support, and thorough feedback and reviews throughout many
     steps of this tutorial. We would also like to thank Hamid Shojanazeri (Meta) and
     Li Ning (AWS) for their helpful feedback in code review and the tutorial.
+  id: totrans-151
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们要感谢Ashok Emani（Intel）和Jiong Gong（Intel）在本教程的许多步骤中提供的巨大指导和支持，以及全面的反馈和审查。我们还要感谢Hamid
+    Shojanazeri（Meta）和Li Ning（AWS）在代码审查和教程中提供的有用反馈。
