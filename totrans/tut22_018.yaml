@@ -1,36 +1,54 @@
 - en: The Fundamentals of Autograd
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 自动微分的基础知识
 - en: 原文：[https://pytorch.org/tutorials/beginner/introyt/autogradyt_tutorial.html](https://pytorch.org/tutorials/beginner/introyt/autogradyt_tutorial.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/beginner/introyt/autogradyt_tutorial.html](https://pytorch.org/tutorials/beginner/introyt/autogradyt_tutorial.html)
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-beginner-introyt-autogradyt-tutorial-py) to
     download the full example code
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[这里](#sphx-glr-download-beginner-introyt-autogradyt-tutorial-py)下载完整的示例代码
 - en: '[Introduction](introyt1_tutorial.html) || [Tensors](tensors_deeper_tutorial.html)
     || **Autograd** || [Building Models](modelsyt_tutorial.html) || [TensorBoard Support](tensorboardyt_tutorial.html)
     || [Training Models](trainingyt.html) || [Model Understanding](captumyt.html)'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '[介绍](introyt1_tutorial.html) || [张量](tensors_deeper_tutorial.html) || **自动微分**
+    || [构建模型](modelsyt_tutorial.html) || [TensorBoard支持](tensorboardyt_tutorial.html)
+    || [训练模型](trainingyt.html) || [模型理解](captumyt.html)'
 - en: Follow along with the video below or on [youtube](https://www.youtube.com/watch?v=M0fX15_-xrY).
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 请跟随下面的视频或在[youtube](https://www.youtube.com/watch?v=M0fX15_-xrY)观看。
 - en: '[https://www.youtube.com/embed/M0fX15_-xrY](https://www.youtube.com/embed/M0fX15_-xrY)'
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: '[https://www.youtube.com/embed/M0fX15_-xrY](https://www.youtube.com/embed/M0fX15_-xrY)'
 - en: PyTorch’s *Autograd* feature is part of what make PyTorch flexible and fast
     for building machine learning projects. It allows for the rapid and easy computation
     of multiple partial derivatives (also referred to as *gradients)* over a complex
     computation. This operation is central to backpropagation-based neural network
     learning.
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch的*Autograd*功能是PyTorch灵活和快速构建机器学习项目的一部分。它允许快速且轻松地计算复杂计算中的多个偏导数（也称为*梯度*）。这个操作对基于反向传播的神经网络学习至关重要。
 - en: The power of autograd comes from the fact that it traces your computation dynamically
     *at runtime,* meaning that if your model has decision branches, or loops whose
     lengths are not known until runtime, the computation will still be traced correctly,
@@ -38,47 +56,67 @@
     that your models are built in Python, offers far more flexibility than frameworks
     that rely on static analysis of a more rigidly-structured model for computing
     gradients.
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 自动微分的强大之处在于它在运行时动态跟踪您的计算，这意味着如果您的模型具有决策分支，或者循环的长度直到运行时才知道，计算仍将被正确跟踪，并且您将获得正确的梯度来推动学习。这与您的模型是在Python中构建的事实结合在一起，比依赖于更严格结构化模型的静态分析来计算梯度的框架提供了更灵活的选择。
 - en: What Do We Need Autograd For?
+  id: totrans-9
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 我们为什么需要自动微分？
 - en: 'A machine learning model is a *function*, with inputs and outputs. For this
     discussion, we’ll treat the inputs as an *i*-dimensional vector \(\vec{x}\), with
     elements \(x_{i}\). We can then express the model, *M*, as a vector-valued function
     of the input: \(\vec{y} = \vec{M}(\vec{x})\). (We treat the value of M’s output
     as a vector because in general, a model may have any number of outputs.)'
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 机器学习模型是一个*函数*，具有输入和输出。在这里讨论中，我们将输入视为一个*i*维向量\(\vec{x}\)，其中元素为\(x_{i}\)。然后我们可以将模型*M*表示为输入的矢量值函数：\(\vec{y}
+    = \vec{M}(\vec{x})\)。（我们将M的输出值视为矢量，因为一般来说，模型可能具有任意数量的输出。）
 - en: 'Since we’ll mostly be discussing autograd in the context of training, our output
     of interest will be the model’s loss. The *loss function* L(\(\vec{y}\)) = L(\(\vec{M}\)(\(\vec{x}\)))
     is a single-valued scalar function of the model’s output. This function expresses
     how far off our model’s prediction was from a particular input’s *ideal* output.
     *Note: After this point, we will often omit the vector sign where it should be
     contextually clear - e.g.,* \(y\) instead of \(\vec y\).'
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于我们将主要讨论自动微分在训练的上下文中，我们感兴趣的输出将是模型的损失。*损失函数* L(\(\vec{y}\)) = L(\(\vec{M}\)(\(\vec{x}\)))是模型输出的单值标量函数。这个函数表达了我们的模型预测与特定输入的*理想*输出相差多远。*注意：在此之后，我们经常会省略向量符号，只要在上下文中清楚即可
+    - 例如，* \(y\) 而不是 \(\vec y\)。
 - en: In training a model, we want to minimize the loss. In the idealized case of
     a perfect model, that means adjusting its learning weights - that is, the adjustable
     parameters of the function - such that loss is zero for all inputs. In the real
     world, it means an iterative process of nudging the learning weights until we
     see that we get a tolerable loss for a wide variety of inputs.
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: 在训练模型时，我们希望最小化损失。在理想情况下，对于一个完美的模型，这意味着调整其学习权重 - 即函数的可调参数 - 使得所有输入的损失为零。在现实世界中，这意味着一个迭代的过程，微调学习权重，直到我们看到我们对各种输入获得了可接受的损失。
 - en: 'How do we decide how far and in which direction to nudge the weights? We want
     to *minimize* the loss, which means making its first derivative with respect to
     the input equal to 0: \(\frac{\partial L}{\partial x} = 0\).'
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们如何决定在多远和哪个方向微调权重？我们希望*最小化*损失，这意味着使其对输入的一阶导数等于0：\(\frac{\partial L}{\partial
+    x} = 0\)。
 - en: Recall, though, that the loss is not *directly* derived from the input, but
     a function of the model’s output (which is a function of the input directly),
     \(\frac{\partial L}{\partial x}\) = \(\frac{\partial {L({\vec y})}}{\partial x}\).
     By the chain rule of differential calculus, we have \(\frac{\partial {L({\vec
     y})}}{\partial x}\) = \(\frac{\partial L}{\partial y}\frac{\partial y}{\partial
     x}\) = \(\frac{\partial L}{\partial y}\frac{\partial M(x)}{\partial x}\).
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 然而，请记住，损失并不是*直接*从输入导出的，而是模型输出的函数（这是输入的函数），\(\frac{\partial L}{\partial x}\)
+    = \(\frac{\partial {L({\vec y})}}{\partial x}\)。根据微分计算的链式法则，我们有\(\frac{\partial
+    {L({\vec y})}}{\partial x}\) = \(\frac{\partial L}{\partial y}\frac{\partial y}{\partial
+    x}\) = \(\frac{\partial L}{\partial y}\frac{\partial M(x)}{\partial x}\)。
 - en: \(\frac{\partial M(x)}{\partial x}\) is where things get complex. The partial
     derivatives of the model’s outputs with respect to its inputs, if we were to expand
     the expression using the chain rule again, would involve many local partial derivatives
@@ -87,13 +125,17 @@
     derivative is the sum of the products of the local gradient of *every possible
     path* through the computation graph that ends with the variable whose gradient
     we are trying to measure.
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: \(\frac{\partial M(x)}{\partial x}\) 是复杂的地方。如果我们再次使用链式法则展开表达式，模型输出相对于输入的偏导数将涉及每个乘以学习权重、每个激活函数和模型中的每个其他数学变换的许多局部偏导数。每个这样的局部偏导数的完整表达式是通过计算图中以我们试图测量梯度的变量结尾的*每条可能路径*的局部梯度的乘积之和。
 - en: In particular, the gradients over the learning weights are of interest to us
     - they tell us *what direction to change each weight* to get the loss function
     closer to zero.
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 特别是，我们对学习权重上的梯度感兴趣 - 它们告诉我们*改变每个权重的方向*以使损失函数更接近零。
 - en: 'Since the number of such local derivatives (each corresponding to a separate
     path through the model’s computation graph) will tend to go up exponentially with
     the depth of a neural network, so does the complexity in computing them. This
@@ -103,272 +145,417 @@
     meant to act on tensors each have a built-in implementation for computing their
     own derivatives, this greatly speeds the computation of the local derivatives
     needed for learning.'
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于这种局部导数的数量（每个对应于模型计算图中的一个单独路径）往往会随着神经网络的深度呈指数增长，因此计算它们的复杂性也会增加。这就是自动微分的作用：它跟踪每次计算的历史。您PyTorch模型中的每个计算张量都携带其输入张量的历史记录以及用于创建它的函数。结合PyTorch函数旨在作用于张量的事实，每个函数都有一个用于计算自己导数的内置实现，这极大地加速了用于学习的局部导数的计算。
 - en: A Simple Example
+  id: totrans-18
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 一个简单的例子
 - en: That was a lot of theory - but what does it look like to use autograd in practice?
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 这是很多理论 - 但在实践中使用自动微分是什么样子呢？
 - en: 'Let’s start with a straightforward example. First, we’ll do some imports to
     let us graph our results:'
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们从一个简单的例子开始。首先，我们将进行一些导入，以便让我们绘制我们的结果：
 - en: '[PRE0]'
+  id: totrans-21
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: Next, we’ll create an input tensor full of evenly spaced values on the interval
     \([0, 2{\pi}]\), and specify `requires_grad=True`. (Like most functions that create
     tensors, `torch.linspace()` accepts an optional `requires_grad` option.) Setting
     this flag means that in every computation that follows, autograd will be accumulating
     the history of the computation in the output tensors of that computation.
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，我们将创建一个输入张量，其中包含区间\([0, 2{\pi}]\)上均匀间隔的值，并指定`requires_grad=True`。（像大多数创建张量的函数一样，`torch.linspace()`接受一个可选的`requires_grad`选项。）设置此标志意味着在接下来的每次计算中，autograd将在该计算的输出张量中累积计算的历史。
 - en: '[PRE1]'
+  id: totrans-23
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: '[PRE2]'
+  id: totrans-24
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: 'Next, we’ll perform a computation, and plot its output in terms of its inputs:'
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，我们将进行计算，并以输入为单位绘制其输出：
 - en: '[PRE3]'
+  id: totrans-26
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: '![autogradyt tutorial](../Images/c0fd39cae39bc44746dc67d7e9a22ff1.png)'
+  id: totrans-27
   prefs: []
   type: TYPE_IMG
+  zh: '![autogradyt tutorial](../Images/c0fd39cae39bc44746dc67d7e9a22ff1.png)'
 - en: '[PRE4]'
+  id: totrans-28
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: 'Let’s have a closer look at the tensor `b`. When we print it, we see an indicator
     that it is tracking its computation history:'
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们更仔细地看看张量`b`。当我们打印它时，我们看到一个指示它正在跟踪其计算历史的指示器：
 - en: '[PRE5]'
+  id: totrans-30
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: '[PRE6]'
+  id: totrans-31
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: This `grad_fn` gives us a hint that when we execute the backpropagation step
     and compute gradients, we’ll need to compute the derivative of \(\sin(x)\) for
     all this tensor’s inputs.
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个`grad_fn`给了我们一个提示，即当我们执行反向传播步骤并计算梯度时，我们需要计算所有这个张量的输入的\(\sin(x)\)的导数。
 - en: 'Let’s perform some more computations:'
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们进行更多的计算：
 - en: '[PRE7]'
+  id: totrans-34
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: '[PRE8]'
+  id: totrans-35
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: Finally, let’s compute a single-element output. When you call `.backward()`
     on a tensor with no arguments, it expects the calling tensor to contain only a
     single element, as is the case when computing a loss function.
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 最后，让我们计算一个单元素输出。当您在没有参数的张量上调用`.backward()`时，它期望调用张量仅包含一个元素，就像在计算损失函数时一样。
 - en: '[PRE9]'
+  id: totrans-37
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: '[PRE10]'
+  id: totrans-38
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: Each `grad_fn` stored with our tensors allows you to walk the computation all
     the way back to its inputs with its `next_functions` property. We can see below
     that drilling down on this property on `d` shows us the gradient functions for
     all the prior tensors. Note that `a.grad_fn` is reported as `None`, indicating
     that this was an input to the function with no history of its own.
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们的张量中存储的每个`grad_fn`都允许您通过其`next_functions`属性一直回溯到其输入。我们可以看到，深入研究`d`的这个属性会显示出所有先前张量的梯度函数。请注意，`a.grad_fn`报告为`None`，表示这是一个没有自己历史记录的函数的输入。
 - en: '[PRE11]'
+  id: totrans-40
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: '[PRE12]'
+  id: totrans-41
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: 'With all this machinery in place, how do we get derivatives out? You call the
     `backward()` method on the output, and check the input’s `grad` property to inspect
     the gradients:'
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 有了所有这些机制，我们如何得到导数？您在输出上调用`backward()`方法，并检查输入的`grad`属性以检查梯度：
 - en: '[PRE13]'
+  id: totrans-43
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: '![autogradyt tutorial](../Images/240722184f25ec9362a34b6c16336c3a.png)'
+  id: totrans-44
   prefs: []
   type: TYPE_IMG
+  zh: '![autogradyt tutorial](../Images/240722184f25ec9362a34b6c16336c3a.png)'
 - en: '[PRE14]'
+  id: totrans-45
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: 'Recall the computation steps we took to get here:'
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 回顾我们走过的计算步骤：
 - en: '[PRE15]'
+  id: totrans-47
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: Adding a constant, as we did to compute `d`, does not change the derivative.
     That leaves \(c = 2 * b = 2 * \sin(a)\), the derivative of which should be \(2
     * \cos(a)\). Looking at the graph above, that’s just what we see.
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: 添加一个常数，就像我们计算`d`时所做的那样，不会改变导数。这留下了\(c = 2 * b = 2 * \sin(a)\)，其导数应该是\(2 * \cos(a)\)。从上面的图中可以看到，这正是我们看到的。
 - en: Be aware that only *leaf nodes* of the computation have their gradients computed.
     If you tried, for example, `print(c.grad)` you’d get back `None`. In this simple
     example, only the input is a leaf node, so only it has gradients computed.
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，只有计算的*叶节点*的梯度被计算。例如，如果您尝试`print(c.grad)`，您会得到`None`。在这个简单的例子中，只有输入是叶节点，因此只有它的梯度被计算。
 - en: Autograd in Training
+  id: totrans-50
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 训练中的自动微分
 - en: 'We’ve had a brief look at how autograd works, but how does it look when it’s
     used for its intended purpose? Let’s define a small model and examine how it changes
     after a single training batch. First, define a few constants, our model, and some
     stand-ins for inputs and outputs:'
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们已经简要了解了自动求导的工作原理，但是当它用于其预期目的时会是什么样子呢？让我们定义一个小模型，并检查在单个训练批次后它是如何变化的。首先，定义一些常量，我们的模型，以及一些输入和输出的替代品：
 - en: '[PRE16]'
+  id: totrans-52
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: One thing you might notice is that we never specify `requires_grad=True` for
     the model’s layers. Within a subclass of `torch.nn.Module`, it’s assumed that
     we want to track gradients on the layers’ weights for learning.
+  id: totrans-53
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可能会注意到，我们从未为模型的层指定`requires_grad=True`。在`torch.nn.Module`的子类中，我们假设我们希望跟踪层的权重以进行学习。
 - en: 'If we look at the layers of the model, we can examine the values of the weights,
     and verify that no gradients have been computed yet:'
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果我们查看模型的层，我们可以检查权重的值，并验证尚未计算梯度：
 - en: '[PRE17]'
+  id: totrans-55
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: '[PRE18]'
+  id: totrans-56
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: Let’s see how this changes when we run through one training batch. For a loss
     function, we’ll just use the square of the Euclidean distance between our `prediction`
     and the `ideal_output`, and we’ll use a basic stochastic gradient descent optimizer.
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们看看当我们运行一个训练批次时会发生什么变化。对于损失函数，我们将使用`prediction`和`ideal_output`之间的欧几里德距离的平方，我们将使用基本的随机梯度下降优化器。
 - en: '[PRE19]'
+  id: totrans-58
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE19]'
 - en: '[PRE20]'
+  id: totrans-59
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE20]'
 - en: 'Now, let’s call `loss.backward()` and see what happens:'
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，让我们调用`loss.backward()`并看看会发生什么：
 - en: '[PRE21]'
+  id: totrans-61
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE21]'
 - en: '[PRE22]'
+  id: totrans-62
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE22]'
 - en: We can see that the gradients have been computed for each learning weight, but
     the weights remain unchanged, because we haven’t run the optimizer yet. The optimizer
     is responsible for updating model weights based on the computed gradients.
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们可以看到为每个学习权重计算了梯度，但是权重保持不变，因为我们还没有运行优化器。优化器负责根据计算出的梯度更新模型权重。
 - en: '[PRE23]'
+  id: totrans-64
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE23]'
 - en: '[PRE24]'
+  id: totrans-65
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE24]'
 - en: You should see that `layer2`’s weights have changed.
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: 您应该看到`layer2`的权重已经改变了。
 - en: 'One important thing about the process: After calling `optimizer.step()`, you
     need to call `optimizer.zero_grad()`, or else every time you run `loss.backward()`,
     the gradients on the learning weights will accumulate:'
+  id: totrans-67
   prefs: []
   type: TYPE_NORMAL
+  zh: 关于这个过程的一个重要事项：在调用`optimizer.step()`之后，您需要调用`optimizer.zero_grad()`，否则每次运行`loss.backward()`时，学习权重上的梯度将会累积：
 - en: '[PRE25]'
+  id: totrans-68
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE25]'
 - en: '[PRE26]'
+  id: totrans-69
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE26]'
 - en: After running the cell above, you should see that after running `loss.backward()`
     multiple times, the magnitudes of most of the gradients will be much larger. Failing
     to zero the gradients before running your next training batch will cause the gradients
     to blow up in this manner, causing incorrect and unpredictable learning results.
+  id: totrans-70
   prefs: []
   type: TYPE_NORMAL
+  zh: 在运行上面的单元格后，您应该看到在多次运行`loss.backward()`后，大多数梯度的幅度会更大。在运行下一个训练批次之前未将梯度归零会导致梯度以这种方式增加，从而导致不正确和不可预测的学习结果。
 - en: Turning Autograd Off and On
+  id: totrans-71
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 关闭和打开自动求导
 - en: There are situations where you will need fine-grained control over whether autograd
     is enabled. There are multiple ways to do this, depending on the situation.
+  id: totrans-72
   prefs: []
   type: TYPE_NORMAL
+  zh: 有些情况下，您需要对是否启用自动求导进行细粒度控制。根据情况，有多种方法可以实现这一点。
 - en: 'The simplest is to change the `requires_grad` flag on a tensor directly:'
+  id: totrans-73
   prefs: []
   type: TYPE_NORMAL
+  zh: 最简单的方法是直接在张量上更改`requires_grad`标志：
 - en: '[PRE27]'
+  id: totrans-74
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE27]'
 - en: '[PRE28]'
+  id: totrans-75
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE28]'
 - en: In the cell above, we see that `b1` has a `grad_fn` (i.e., a traced computation
     history), which is what we expect, since it was derived from a tensor, `a`, that
     had autograd turned on. When we turn off autograd explicitly with `a.requires_grad
     = False`, computation history is no longer tracked, as we see when we compute
     `b2`.
+  id: totrans-76
   prefs: []
   type: TYPE_NORMAL
+  zh: 在上面的单元格中，我们看到`b1`有一个`grad_fn`（即跟踪的计算历史），这是我们所期望的，因为它是从打开自动求导的张量`a`派生出来的。当我们使用`a.requires_grad
+    = False`显式关闭自动求导时，计算历史不再被跟踪，这是我们在计算`b2`时看到的。
 - en: 'If you only need autograd turned off temporarily, a better way is to use the
     `torch.no_grad()`:'
+  id: totrans-77
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您只需要暂时关闭自动求导，更好的方法是使用`torch.no_grad()`：
 - en: '[PRE29]'
+  id: totrans-78
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE29]'
 - en: '[PRE30]'
+  id: totrans-79
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE30]'
 - en: '`torch.no_grad()` can also be used as a function or method decorator:'
+  id: totrans-80
   prefs: []
   type: TYPE_NORMAL
+  zh: '`torch.no_grad()`也可以作为函数或方法装饰器使用：'
 - en: '[PRE31]'
+  id: totrans-81
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE31]'
 - en: '[PRE32]'
+  id: totrans-82
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE32]'
 - en: There’s a corresponding context manager, `torch.enable_grad()`, for turning
     autograd on when it isn’t already. It may also be used as a decorator.
+  id: totrans-83
   prefs: []
   type: TYPE_NORMAL
+  zh: 有一个相应的上下文管理器`torch.enable_grad()`，用于在自动求导尚未启用时打开自动求导。它也可以用作装饰器。
 - en: 'Finally, you may have a tensor that requires gradient tracking, but you want
     a copy that does not. For this we have the `Tensor` object’s `detach()` method
     - it creates a copy of the tensor that is *detached* from the computation history:'
+  id: totrans-84
   prefs: []
   type: TYPE_NORMAL
+  zh: 最后，您可能有一个需要跟踪梯度的张量，但您想要一个不需要的副本。为此，我们有`Tensor`对象的`detach()`方法-它创建一个与计算历史*分离*的张量的副本：
 - en: '[PRE33]'
+  id: totrans-85
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE33]'
 - en: '[PRE34]'
+  id: totrans-86
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE34]'
 - en: We did this above when we wanted to graph some of our tensors. This is because
     `matplotlib` expects a NumPy array as input, and the implicit conversion from
     a PyTorch tensor to a NumPy array is not enabled for tensors with requires_grad=True.
     Making a detached copy lets us move forward.
+  id: totrans-87
   prefs: []
   type: TYPE_NORMAL
+  zh: 当我们想要绘制一些张量时，我们在上面做了这个操作。这是因为`matplotlib`期望输入为NumPy数组，并且对于`requires_grad=True`的张量，PyTorch不会启用从PyTorch张量到NumPy数组的隐式转换。制作一个分离的副本让我们可以继续前进。
 - en: Autograd and In-place Operations
+  id: totrans-88
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 自动求导和原地操作
 - en: In every example in this notebook so far, we’ve used variables to capture the
     intermediate values of a computation. Autograd needs these intermediate values
     to perform gradient computations. *For this reason, you must be careful about
@@ -376,69 +563,103 @@
     you need to compute derivatives in the `backward()` call. PyTorch will even stop
     you if you attempt an in-place operation on leaf variable that requires autograd,
     as shown below.
+  id: totrans-89
   prefs: []
   type: TYPE_NORMAL
+  zh: 到目前为止，在本笔记本中的每个示例中，我们都使用变量来捕获计算的中间值。自动求导需要这些中间值来执行梯度计算。*因此，在使用自动求导时，您必须小心使用原地操作。*这样做可能会破坏您在`backward()`调用中需要计算导数的信息。如果您尝试对需要自动求导的叶变量进行原地操作，PyTorch甚至会阻止您，如下所示。
 - en: Note
+  id: totrans-90
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: The following code cell throws a runtime error. This is expected.
+  id: totrans-91
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 以下代码单元格会抛出运行时错误。这是预期的。
 - en: '[PRE35]'
+  id: totrans-92
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE35]'
 - en: Autograd Profiler
+  id: totrans-93
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 自动求导分析器
 - en: 'Autograd tracks every step of your computation in detail. Such a computation
     history, combined with timing information, would make a handy profiler - and autograd
     has that feature baked in. Here’s a quick example usage:'
+  id: totrans-94
   prefs: []
   type: TYPE_NORMAL
+  zh: Autograd详细跟踪计算的每一步。这样的计算历史，结合时间信息，将成为一个方便的分析器 - autograd已经内置了这个功能。这里是一个快速示例用法：
 - en: '[PRE36]'
+  id: totrans-95
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE36]'
 - en: '[PRE37]'
+  id: totrans-96
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE37]'
 - en: The profiler can also label individual sub-blocks of code, break out the data
     by input tensor shape, and export data as a Chrome tracing tools file. For full
     details of the API, see the [documentation](https://pytorch.org/docs/stable/autograd.html#profiler).
+  id: totrans-97
   prefs: []
   type: TYPE_NORMAL
+  zh: 分析器还可以标记代码的各个子块，按输入张量形状拆分数据，并将数据导出为Chrome跟踪工具文件。有关API的完整详细信息，请参阅[文档](https://pytorch.org/docs/stable/autograd.html#profiler)。
 - en: 'Advanced Topic: More Autograd Detail and the High-Level API'
+  id: totrans-98
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 高级主题：更多Autograd细节和高级API
 - en: If you have a function with an n-dimensional input and m-dimensional output,
     \(\vec{y}=f(\vec{x})\), the complete gradient is a matrix of the derivative of
     every output with respect to every input, called the *Jacobian:*
+  id: totrans-99
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果你有一个具有n维输入和m维输出的函数\(\vec{y}=f(\vec{x})\)，完整的梯度是一个矩阵，表示每个输出对每个输入的导数，称为*雅可比矩阵*：
 - en: \[J = \left(\begin{array}{ccc} \frac{\partial y_{1}}{\partial x_{1}} & \cdots
     & \frac{\partial y_{1}}{\partial x_{n}}\\ \vdots & \ddots & \vdots\\ \frac{\partial
     y_{m}}{\partial x_{1}} & \cdots & \frac{\partial y_{m}}{\partial x_{n}} \end{array}\right)\]
+  id: totrans-100
   prefs: []
   type: TYPE_NORMAL
+  zh: \[J = \left(\begin{array}{ccc} \frac{\partial y_{1}}{\partial x_{1}} & \cdots
+    & \frac{\partial y_{1}}{\partial x_{n}}\\ \vdots & \ddots & \vdots\\ \frac{\partial
+    y_{m}}{\partial x_{1}} & \cdots & \frac{\partial y_{m}}{\partial x_{n}} \end{array}\right)\]
 - en: If you have a second function, \(l=g\left(\vec{y}\right)\) that takes m-dimensional
     input (that is, the same dimensionality as the output above), and returns a scalar
     output, you can express its gradients with respect to \(\vec{y}\) as a column
     vector, \(v=\left(\begin{array}{ccc}\frac{\partial l}{\partial y_{1}} & \cdots
     & \frac{\partial l}{\partial y_{m}}\end{array}\right)^{T}\) - which is really
     just a one-column Jacobian.
+  id: totrans-101
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果你有一个第二个函数，\(l=g\left(\vec{y}\right)\)，它接受m维输入（即与上面输出相同维度），并返回一个标量输出，你可以将其相对于\(\vec{y}\)的梯度表示为一个列向量，\(v=\left(\begin{array}{ccc}\frac{\partial
+    l}{\partial y_{1}} & \cdots & \frac{\partial l}{\partial y_{m}}\end{array}\right)^{T}\)
+    - 这实际上只是一个一列雅可比矩阵。
 - en: More concretely, imagine the first function as your PyTorch model (with potentially
     many inputs and many outputs) and the second function as a loss function (with
     the model’s output as input, and the loss value as the scalar output).
+  id: totrans-102
   prefs: []
   type: TYPE_NORMAL
+  zh: 更具体地，想象第一个函数是你的PyTorch模型（可能有许多输入和许多输出），第二个函数是一个损失函数（以模型的输出为输入，损失值为标量输出）。
 - en: 'If we multiply the first function’s Jacobian by the gradient of the second
     function, and apply the chain rule, we get:'
+  id: totrans-103
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果我们将第一个函数的雅可比矩阵乘以第二个函数的梯度，并应用链式法则，我们得到：
 - en: \[J^{T}\cdot v=\left(\begin{array}{ccc} \frac{\partial y_{1}}{\partial x_{1}}
     & \cdots & \frac{\partial y_{m}}{\partial x_{1}}\\ \vdots & \ddots & \vdots\\
     \frac{\partial y_{1}}{\partial x_{n}} & \cdots & \frac{\partial y_{m}}{\partial
@@ -446,115 +667,181 @@
     \vdots\\ \frac{\partial l}{\partial y_{m}} \end{array}\right)=\left(\begin{array}{c}
     \frac{\partial l}{\partial x_{1}}\\ \vdots\\ \frac{\partial l}{\partial x_{n}}
     \end{array}\right)\]
+  id: totrans-104
   prefs: []
   type: TYPE_NORMAL
+  zh: \[J^{T}\cdot v=\left(\begin{array}{ccc} \frac{\partial y_{1}}{\partial x_{1}}
+    & \cdots & \frac{\partial y_{m}}{\partial x_{1}}\\ \vdots & \ddots & \vdots\\
+    \frac{\partial y_{1}}{\partial x_{n}} & \cdots & \frac{\partial y_{m}}{\partial
+    x_{n}} \end{array}\right)\left(\begin{array}{c} \frac{\partial l}{\partial y_{1}}\\
+    \vdots\\ \frac{\partial l}{\partial y_{m}} \end{array}\right)=\left(\begin{array}{c}
+    \frac{\partial l}{\partial x_{1}}\\ \vdots\\ \frac{\partial l}{\partial x_{n}}
+    \end{array}\right)\]
 - en: 'Note: You could also use the equivalent operation \(v^{T}\cdot J\), and get
     back a row vector.'
+  id: totrans-105
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意：你也可以使用等效的操作\(v^{T}\cdot J\)，并得到一个行向量。
 - en: The resulting column vector is the *gradient of the second function with respect
     to the inputs of the first* - or in the case of our model and loss function, the
     gradient of the loss with respect to the model inputs.
+  id: totrans-106
   prefs: []
   type: TYPE_NORMAL
+  zh: 得到的列向量是第二个函数相对于第一个函数的输入的*梯度* - 或者在我们的模型和损失函数的情况下，是损失相对于模型输入的梯度。
 - en: '**``torch.autograd`` is an engine for computing these products.** This is how
     we accumulate the gradients over the learning weights during the backward pass.'
+  id: totrans-107
   prefs: []
   type: TYPE_NORMAL
+  zh: '**``torch.autograd``是用于计算这些乘积的引擎。**这是我们在反向传播过程中累积梯度的方式。'
 - en: 'For this reason, the `backward()` call can *also* take an optional vector input.
     This vector represents a set of gradients over the tensor, which are multiplied
     by the Jacobian of the autograd-traced tensor that precedes it. Let’s try a specific
     example with a small vector:'
+  id: totrans-108
   prefs: []
   type: TYPE_NORMAL
+  zh: 因此，`backward()`调用也可以*同时*接受一个可选的向量输入。这个向量表示张量上的一组梯度，这些梯度将乘以其前面的autograd跟踪张量的雅可比矩阵。让我们尝试一个具体的例子，使用一个小向量：
 - en: '[PRE38]'
+  id: totrans-109
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE38]'
 - en: '[PRE39]'
+  id: totrans-110
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE39]'
 - en: 'If we tried to call `y.backward()` now, we’d get a runtime error and a message
     that gradients can only be *implicitly* computed for scalar outputs. For a multi-dimensional
     output, autograd expects us to provide gradients for those three outputs that
     it can multiply into the Jacobian:'
+  id: totrans-111
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果我们现在尝试调用`y.backward()`，我们会得到一个运行时错误和一个梯度只能*隐式*计算为标量输出的消息。对于多维输出，autograd希望我们提供这三个输出的梯度，以便将其乘入雅可比矩阵：
 - en: '[PRE40]'
+  id: totrans-112
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE40]'
 - en: '[PRE41]'
+  id: totrans-113
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE41]'
 - en: (Note that the output gradients are all related to powers of two - which we’d
     expect from a repeated doubling operation.)
+  id: totrans-114
   prefs: []
   type: TYPE_NORMAL
+  zh: （请注意，输出梯度都与2的幂相关 - 这是我们从重复加倍操作中期望的。）
 - en: The High-Level API
+  id: totrans-115
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 高级API
 - en: There is an API on autograd that gives you direct access to important differential
     matrix and vector operations. In particular, it allows you to calculate the Jacobian
     and the *Hessian* matrices of a particular function for particular inputs. (The
     Hessian is like the Jacobian, but expresses all partial *second* derivatives.)
     It also provides methods for taking vector products with these matrices.
+  id: totrans-116
   prefs: []
   type: TYPE_NORMAL
+  zh: 在autograd上有一个API，它可以直接访问重要的微分矩阵和向量运算。特别是，它允许你计算特定输入的特定函数的雅可比矩阵和*Hessian*矩阵。（Hessian类似于雅可比矩阵，但表达了所有偏导数的*二阶*导数。）它还提供了用这些矩阵进行向量乘积的方法。
 - en: 'Let’s take the Jacobian of a simple function, evaluated for a 2 single-element
     inputs:'
+  id: totrans-117
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们计算一个简单函数的雅可比矩阵，对于2个单元素输入进行评估：
 - en: '[PRE42]'
+  id: totrans-118
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE42]'
 - en: '[PRE43]'
+  id: totrans-119
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE43]'
 - en: If you look closely, the first output should equal \(2e^x\) (since the derivative
     of \(e^x\) is \(e^x\)), and the second value should be 3.
+  id: totrans-120
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果仔细观察，第一个输出应该等于\(2e^x\)（因为\(e^x\)的导数是\(e^x\)），第二个值应该是3。
 - en: 'You can, of course, do this with higher-order tensors:'
+  id: totrans-121
   prefs: []
   type: TYPE_NORMAL
+  zh: 当然，您也可以使用高阶张量来做到这一点：
 - en: '[PRE44]'
+  id: totrans-122
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE44]'
 - en: '[PRE45]'
+  id: totrans-123
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE45]'
 - en: The `torch.autograd.functional.hessian()` method works identically (assuming
     your function is twice differentiable), but returns a matrix of all second derivatives.
+  id: totrans-124
   prefs: []
   type: TYPE_NORMAL
+  zh: '`torch.autograd.functional.hessian()`方法的工作方式相同（假设您的函数是两次可微的），但返回所有二阶导数的矩阵。'
 - en: 'There is also a function to directly compute the vector-Jacobian product, if
     you provide the vector:'
+  id: totrans-125
   prefs: []
   type: TYPE_NORMAL
+  zh: 还有一个函数可以直接计算向量-Jacobian乘积，如果您提供向量的话：
 - en: '[PRE46]'
+  id: totrans-126
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE46]'
 - en: '[PRE47]'
+  id: totrans-127
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE47]'
 - en: The `torch.autograd.functional.jvp()` method performs the same matrix multiplication
     as `vjp()` with the operands reversed. The `vhp()` and `hvp()` methods do the
     same for a vector-Hessian product.
+  id: totrans-128
   prefs: []
   type: TYPE_NORMAL
+  zh: '`torch.autograd.functional.jvp()`方法执行与`vjp()`相同的矩阵乘法，但操作数的顺序相反。`vhp()`和`hvp()`方法对向量-海森乘积执行相同的操作。'
 - en: For more information, including performance notes on the [docs for the functional
     API](https://pytorch.org/docs/stable/autograd.html#functional-higher-level-api)
+  id: totrans-129
   prefs: []
   type: TYPE_NORMAL
+  zh: 有关更多信息，包括有关功能API的性能说明，请参阅[功能API文档](https://pytorch.org/docs/stable/autograd.html#functional-higher-level-api)
 - en: '**Total running time of the script:** ( 0 minutes 0.706 seconds)'
+  id: totrans-130
   prefs: []
   type: TYPE_NORMAL
+  zh: '**脚本的总运行时间：**（0分钟0.706秒）'
 - en: '[`Download Python source code: autogradyt_tutorial.py`](../../_downloads/1a94e27be9b0e79da5acafc1f68a7143/autogradyt_tutorial.py)'
+  id: totrans-131
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Python源代码：autogradyt_tutorial.py`](../../_downloads/1a94e27be9b0e79da5acafc1f68a7143/autogradyt_tutorial.py)'
 - en: '[`Download Jupyter notebook: autogradyt_tutorial.ipynb`](../../_downloads/ed9d4f94afb79f7dada6742a06c486a5/autogradyt_tutorial.ipynb)'
+  id: totrans-132
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Jupyter笔记本：autogradyt_tutorial.ipynb`](../../_downloads/ed9d4f94afb79f7dada6742a06c486a5/autogradyt_tutorial.ipynb)'
 - en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  id: totrans-133
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Sphinx-Gallery生成的图库](https://sphinx-gallery.github.io)'

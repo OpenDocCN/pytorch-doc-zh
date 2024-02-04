@@ -1,271 +1,404 @@
 - en: Automatic Differentiation with torch.autograd
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 使用torch.autograd进行自动微分
 - en: 原文：[https://pytorch.org/tutorials/beginner/basics/autogradqs_tutorial.html](https://pytorch.org/tutorials/beginner/basics/autogradqs_tutorial.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/beginner/basics/autogradqs_tutorial.html](https://pytorch.org/tutorials/beginner/basics/autogradqs_tutorial.html)
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-beginner-basics-autogradqs-tutorial-py) to download
     the full example code
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[这里](#sphx-glr-download-beginner-basics-autogradqs-tutorial-py)下载完整的示例代码
 - en: '[Learn the Basics](intro.html) || [Quickstart](quickstart_tutorial.html) ||
     [Tensors](tensorqs_tutorial.html) || [Datasets & DataLoaders](data_tutorial.html)
     || [Transforms](transforms_tutorial.html) || [Build Model](buildmodel_tutorial.html)
     || **Autograd** || [Optimization](optimization_tutorial.html) || [Save & Load
     Model](saveloadrun_tutorial.html)'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '[学习基础知识](intro.html) || [快速入门](quickstart_tutorial.html) || [张量](tensorqs_tutorial.html)
+    || [数据集和数据加载器](data_tutorial.html) || [变换](transforms_tutorial.html) || [构建模型](buildmodel_tutorial.html)
+    || **自动微分** || [优化](optimization_tutorial.html) || [保存和加载模型](saveloadrun_tutorial.html)'
 - en: When training neural networks, the most frequently used algorithm is **back
     propagation**. In this algorithm, parameters (model weights) are adjusted according
     to the **gradient** of the loss function with respect to the given parameter.
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 在训练神经网络时，最常用的算法是**反向传播**。在这个算法中，参数（模型权重）根据损失函数相对于给定参数的**梯度**进行调整。
 - en: To compute those gradients, PyTorch has a built-in differentiation engine called
     `torch.autograd`. It supports automatic computation of gradient for any computational
     graph.
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了计算这些梯度，PyTorch有一个名为`torch.autograd`的内置微分引擎。它支持对任何计算图进行梯度的自动计算。
 - en: 'Consider the simplest one-layer neural network, with input `x`, parameters
     `w` and `b`, and some loss function. It can be defined in PyTorch in the following
     manner:'
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 考虑最简单的单层神经网络，具有输入`x`、参数`w`和`b`，以及一些损失函数。可以在PyTorch中以以下方式定义它：
 - en: '[PRE0]'
+  id: totrans-8
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: Tensors, Functions and Computational graph
+  id: totrans-9
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 张量、函数和计算图
 - en: 'This code defines the following **computational graph**:'
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 这段代码定义了以下**计算图**：
 - en: '![](../Images/d0eedb65a2f210ca185c89e964ee05ec.png)'
+  id: totrans-11
   prefs: []
   type: TYPE_IMG
+  zh: '![](../Images/d0eedb65a2f210ca185c89e964ee05ec.png)'
 - en: In this network, `w` and `b` are **parameters**, which we need to optimize.
     Thus, we need to be able to compute the gradients of loss function with respect
     to those variables. In order to do that, we set the `requires_grad` property of
     those tensors.
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这个网络中，`w`和`b`是**参数**，我们需要优化它们。因此，我们需要能够计算损失函数相对于这些变量的梯度。为了做到这一点，我们设置这些张量的`requires_grad`属性。
 - en: Note
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: You can set the value of `requires_grad` when creating a tensor, or later by
     using `x.requires_grad_(True)` method.
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可以在创建张量时设置`requires_grad`的值，或稍后使用`x.requires_grad_(True)`方法设置。
 - en: A function that we apply to tensors to construct computational graph is in fact
     an object of class `Function`. This object knows how to compute the function in
     the *forward* direction, and also how to compute its derivative during the *backward
     propagation* step. A reference to the backward propagation function is stored
     in `grad_fn` property of a tensor. You can find more information of `Function`
     [in the documentation](https://pytorch.org/docs/stable/autograd.html#function).
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们应用于张量以构建计算图的函数实际上是`Function`类的对象。这个对象知道如何在*前向*方向计算函数，也知道如何在*反向传播*步骤中计算它的导数。反向传播函数的引用存储在张量的`grad_fn`属性中。您可以在[文档](https://pytorch.org/docs/stable/autograd.html#function)中找到有关`Function`的更多信息。
 - en: '[PRE1]'
+  id: totrans-16
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: '[PRE2]'
+  id: totrans-17
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Computing Gradients
+  id: totrans-18
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 计算梯度
 - en: 'To optimize weights of parameters in the neural network, we need to compute
     the derivatives of our loss function with respect to parameters, namely, we need
     \(\frac{\partial loss}{\partial w}\) and \(\frac{\partial loss}{\partial b}\)
     under some fixed values of `x` and `y`. To compute those derivatives, we call
     `loss.backward()`, and then retrieve the values from `w.grad` and `b.grad`:'
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了优化神经网络中参数的权重，我们需要计算损失函数相对于参数的导数，即我们需要在一些固定的`x`和`y`值下计算\(\frac{\partial loss}{\partial
+    w}\)和\(\frac{\partial loss}{\partial b}\)。要计算这些导数，我们调用`loss.backward()`，然后从`w.grad`和`b.grad`中检索值：
 - en: '[PRE3]'
+  id: totrans-20
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: '[PRE4]'
+  id: totrans-21
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: Note
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: We can only obtain the `grad` properties for the leaf nodes of the computational
     graph, which have `requires_grad` property set to `True`. For all other nodes
     in our graph, gradients will not be available.
+  id: totrans-23
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 我们只能获取计算图的叶节点的`grad`属性，这些叶节点的`requires_grad`属性设置为`True`。对于图中的所有其他节点，梯度将不可用。
 - en: We can only perform gradient calculations using `backward` once on a given graph,
     for performance reasons. If we need to do several `backward` calls on the same
     graph, we need to pass `retain_graph=True` to the `backward` call.
+  id: totrans-24
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 出于性能原因，我们只能在给定图上一次使用`backward`进行梯度计算。如果我们需要在同一图上进行多次`backward`调用，我们需要在`backward`调用中传递`retain_graph=True`。
 - en: Disabling Gradient Tracking
+  id: totrans-25
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 禁用梯度跟踪
 - en: 'By default, all tensors with `requires_grad=True` are tracking their computational
     history and support gradient computation. However, there are some cases when we
     do not need to do that, for example, when we have trained the model and just want
     to apply it to some input data, i.e. we only want to do *forward* computations
     through the network. We can stop tracking computations by surrounding our computation
     code with `torch.no_grad()` block:'
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 默认情况下，所有`requires_grad=True`的张量都在跟踪它们的计算历史并支持梯度计算。然而，在某些情况下，我们不需要这样做，例如，当我们已经训练好模型，只想将其应用于一些输入数据时，即我们只想通过网络进行*前向*计算。我们可以通过在计算代码周围加上`torch.no_grad()`块来停止跟踪计算：
 - en: '[PRE5]'
+  id: totrans-27
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: '[PRE6]'
+  id: totrans-28
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: 'Another way to achieve the same result is to use the `detach()` method on the
     tensor:'
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 实现相同结果的另一种方法是在张量上使用`detach()`方法：
 - en: '[PRE7]'
+  id: totrans-30
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: '[PRE8]'
+  id: totrans-31
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: 'There are reasons you might want to disable gradient tracking:'
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 有一些原因您可能希望禁用梯度跟踪：
 - en: To mark some parameters in your neural network as **frozen parameters**.
+  id: totrans-33
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 将神经网络中的一些参数标记为**冻结参数**。
 - en: To **speed up computations** when you are only doing forward pass, because computations
     on tensors that do not track gradients would be more efficient.
+  id: totrans-34
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在只进行前向传递时**加速计算**，因为不跟踪梯度的张量上的计算会更有效率。
 - en: More on Computational Graphs
+  id: totrans-35
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 关于计算图的更多信息
 - en: Conceptually, autograd keeps a record of data (tensors) and all executed operations
     (along with the resulting new tensors) in a directed acyclic graph (DAG) consisting
     of [Function](https://pytorch.org/docs/stable/autograd.html#torch.autograd.Function)
     objects. In this DAG, leaves are the input tensors, roots are the output tensors.
     By tracing this graph from roots to leaves, you can automatically compute the
     gradients using the chain rule.
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 从概念上讲，autograd在有向无环图（DAG）中保留了数据（张量）和所有执行的操作（以及生成的新张量）的记录，这些操作由[Function](https://pytorch.org/docs/stable/autograd.html#torch.autograd.Function)对象组成。在这个DAG中，叶子是输入张量，根是输出张量。通过从根到叶子追踪这个图，您可以使用链式法则自动计算梯度。
 - en: 'In a forward pass, autograd does two things simultaneously:'
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 在前向传递中，autograd同时执行两个操作：
 - en: run the requested operation to compute a resulting tensor
+  id: totrans-38
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 运行请求的操作以计算生成的张量
 - en: maintain the operation’s *gradient function* in the DAG.
+  id: totrans-39
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在DAG中维护操作的*梯度函数*。
 - en: 'The backward pass kicks off when `.backward()` is called on the DAG root. `autograd`
     then:'
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: 当在DAG根上调用`.backward()`时，反向传递开始。然后`autograd`：
 - en: computes the gradients from each `.grad_fn`,
+  id: totrans-41
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 计算每个`.grad_fn`的梯度，
 - en: accumulates them in the respective tensor’s `.grad` attribute
+  id: totrans-42
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在相应张量的`.grad`属性中累积它们
 - en: using the chain rule, propagates all the way to the leaf tensors.
+  id: totrans-43
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 使用链式法则，将所有内容传播到叶张量。
 - en: Note
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: '**DAGs are dynamic in PyTorch** An important thing to note is that the graph
     is recreated from scratch; after each `.backward()` call, autograd starts populating
     a new graph. This is exactly what allows you to use control flow statements in
     your model; you can change the shape, size and operations at every iteration if
     needed.'
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: '**PyTorch中的DAGs是动态的** 需要注意的一点是，图是从头开始重新创建的；在每次`.backward()`调用之后，autograd开始填充一个新图。这正是允许您在模型中使用控制流语句的原因；如果需要，您可以在每次迭代中更改形状、大小和操作。'
 - en: 'Optional Reading: Tensor Gradients and Jacobian Products'
+  id: totrans-46
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 可选阅读：张量梯度和Jacobian乘积
 - en: In many cases, we have a scalar loss function, and we need to compute the gradient
     with respect to some parameters. However, there are cases when the output function
     is an arbitrary tensor. In this case, PyTorch allows you to compute so-called
     **Jacobian product**, and not the actual gradient.
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: 在许多情况下，我们有一个标量损失函数，需要计算相对于某些参数的梯度。然而，有些情况下输出函数是任意张量。在这种情况下，PyTorch允许您计算所谓的**Jacobian
+    product**，而不是实际梯度。
 - en: 'For a vector function \(\vec{y}=f(\vec{x})\), where \(\vec{x}=\langle x_1,\dots,x_n\rangle\)
     and \(\vec{y}=\langle y_1,\dots,y_m\rangle\), a gradient of \(\vec{y}\) with respect
     to \(\vec{x}\) is given by **Jacobian matrix**:'
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于向量函数\(\vec{y}=f(\vec{x})\)，其中\(\vec{x}=\langle x_1,\dots,x_n\rangle\)和\(\vec{y}=\langle
+    y_1,\dots,y_m\rangle\)，\(\vec{y}\)相对于\(\vec{x}\)的梯度由**Jacobian矩阵**给出：
 - en: \[J=\left(\begin{array}{ccc} \frac{\partial y_{1}}{\partial x_{1}} & \cdots
     & \frac{\partial y_{1}}{\partial x_{n}}\\ \vdots & \ddots & \vdots\\ \frac{\partial
     y_{m}}{\partial x_{1}} & \cdots & \frac{\partial y_{m}}{\partial x_{n}} \end{array}\right)\]
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: \[J=\left(\begin{array}{ccc} \frac{\partial y_{1}}{\partial x_{1}} & \cdots
+    & \frac{\partial y_{1}}{\partial x_{n}}\\ \vdots & \ddots & \vdots\\ \frac{\partial
+    y_{m}}{\partial x_{1}} & \cdots & \frac{\partial y_{m}}{\partial x_{n}} \end{array}\right)\]
 - en: 'Instead of computing the Jacobian matrix itself, PyTorch allows you to compute
     **Jacobian Product** \(v^T\cdot J\) for a given input vector \(v=(v_1 \dots v_m)\).
     This is achieved by calling `backward` with \(v\) as an argument. The size of
     \(v\) should be the same as the size of the original tensor, with respect to which
     we want to compute the product:'
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch允许您计算给定输入向量\(v=(v_1 \dots v_m)\)的**Jacobian Product** \(v^T\cdot J\)，而不是计算Jacobian矩阵本身。通过使用\(v\)作为参数调用`backward`来实现这一点。\(v\)的大小应该与原始张量的大小相同，我们希望计算乘积的大小：
 - en: '[PRE9]'
+  id: totrans-51
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: '[PRE10]'
+  id: totrans-52
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: Notice that when we call `backward` for the second time with the same argument,
     the value of the gradient is different. This happens because when doing `backward`
     propagation, PyTorch **accumulates the gradients**, i.e. the value of computed
     gradients is added to the `grad` property of all leaf nodes of computational graph.
     If you want to compute the proper gradients, you need to zero out the `grad` property
     before. In real-life training an *optimizer* helps us to do this.
+  id: totrans-53
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，当我们第二次使用相同参数调用`backward`时，梯度的值是不同的。这是因为在进行`backward`传播时，PyTorch **累积梯度**，即计算出的梯度值被添加到计算图的所有叶节点的`grad`属性中。如果要计算正确的梯度，需要在之前将`grad`属性清零。在实际训练中，*优化器*帮助我们做到这一点。
 - en: Note
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Previously we were calling `backward()` function without parameters. This is
     essentially equivalent to calling `backward(torch.tensor(1.0))`, which is a useful
     way to compute the gradients in case of a scalar-valued function, such as loss
     during neural network training.
+  id: totrans-55
   prefs: []
   type: TYPE_NORMAL
+  zh: 以前我们在没有参数的情况下调用`backward()`函数。这本质上等同于调用`backward(torch.tensor(1.0))`，这是在神经网络训练中计算标量值函数（如损失）梯度的一种有用方式。
 - en: '* * *'
+  id: totrans-56
   prefs: []
   type: TYPE_NORMAL
+  zh: '* * *'
 - en: Further Reading
+  id: totrans-57
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 进一步阅读
 - en: '[Autograd Mechanics](https://pytorch.org/docs/stable/notes/autograd.html)'
+  id: totrans-58
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[Autograd Mechanics](https://pytorch.org/docs/stable/notes/autograd.html)'
 - en: '**Total running time of the script:** ( 0 minutes 1.594 seconds)'
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: '**脚本的总运行时间：**（0分钟1.594秒）'
 - en: '[`Download Python source code: autogradqs_tutorial.py`](../../_downloads/fbf83d81ea8e82d633984f21bab274cc/autogradqs_tutorial.py)'
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Python源代码：autogradqs_tutorial.py`](../../_downloads/fbf83d81ea8e82d633984f21bab274cc/autogradqs_tutorial.py)'
 - en: '[`Download Jupyter notebook: autogradqs_tutorial.ipynb`](../../_downloads/ad7e62b138c384adac98888ce94ff659/autogradqs_tutorial.ipynb)'
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Jupyter笔记本：autogradqs_tutorial.ipynb`](../../_downloads/ad7e62b138c384adac98888ce94ff659/autogradqs_tutorial.ipynb)'
 - en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Sphinx-Gallery生成的画廊](https://sphinx-gallery.github.io)'

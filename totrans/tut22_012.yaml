@@ -1,24 +1,36 @@
 - en: Optimizing Model Parameters
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 优化模型参数
 - en: 原文：[https://pytorch.org/tutorials/beginner/basics/optimization_tutorial.html](https://pytorch.org/tutorials/beginner/basics/optimization_tutorial.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/beginner/basics/optimization_tutorial.html](https://pytorch.org/tutorials/beginner/basics/optimization_tutorial.html)
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-beginner-basics-optimization-tutorial-py) to
     download the full example code
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[这里](#sphx-glr-download-beginner-basics-optimization-tutorial-py)下载完整示例代码
 - en: '[Learn the Basics](intro.html) || [Quickstart](quickstart_tutorial.html) ||
     [Tensors](tensorqs_tutorial.html) || [Datasets & DataLoaders](data_tutorial.html)
     || [Transforms](transforms_tutorial.html) || [Build Model](buildmodel_tutorial.html)
     || [Autograd](autogradqs_tutorial.html) || **Optimization** || [Save & Load Model](saveloadrun_tutorial.html)'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '[学习基础知识](intro.html) || [快速入门](quickstart_tutorial.html) || [张量](tensorqs_tutorial.html)
+    || [数据集和数据加载器](data_tutorial.html) || [转换](transforms_tutorial.html) || [构建模型](buildmodel_tutorial.html)
+    || [自动求导](autogradqs_tutorial.html) || **优化** || [保存和加载模型](saveloadrun_tutorial.html)'
 - en: Now that we have a model and data it’s time to train, validate and test our
     model by optimizing its parameters on our data. Training a model is an iterative
     process; in each iteration the model makes a guess about the output, calculates
@@ -26,108 +38,156 @@
     to its parameters (as we saw in the [previous section](autograd_tutorial.html)),
     and **optimizes** these parameters using gradient descent. For a more detailed
     walkthrough of this process, check out this video on [backpropagation from 3Blue1Brown](https://www.youtube.com/watch?v=tIeHLnjs5U8).
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们有了模型和数据，是时候通过优化其参数在数据上训练、验证和测试我们的模型了。训练模型是一个迭代过程；在每次迭代中，模型对输出进行猜测，计算其猜测的错误（*损失*），收集关于其参数的错误的导数（正如我们在[上一节](autograd_tutorial.html)中看到的），并使用梯度下降**优化**这些参数。要了解此过程的更详细步骤，请查看这个关于[3Blue1Brown的反向传播视频](https://www.youtube.com/watch?v=tIeHLnjs5U8)。
 - en: Prerequisite Code
+  id: totrans-6
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 先决条件代码
 - en: We load the code from the previous sections on [Datasets & DataLoaders](data_tutorial.html)
     and [Build Model](buildmodel_tutorial.html).
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们加载了前几节关于[数据集和数据加载器](data_tutorial.html)和[构建模型](buildmodel_tutorial.html)的代码。
 - en: '[PRE0]'
+  id: totrans-8
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: '[PRE1]'
+  id: totrans-9
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Hyperparameters
+  id: totrans-10
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 超参数
 - en: Hyperparameters are adjustable parameters that let you control the model optimization
     process. Different hyperparameter values can impact model training and convergence
     rates ([read more](https://pytorch.org/tutorials/beginner/hyperparameter_tuning_tutorial.html)
     about hyperparameter tuning)
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 超参数是可调参数，让您控制模型优化过程。不同的超参数值可能会影响模型训练和收敛速度（[了解更多](https://pytorch.org/tutorials/beginner/hyperparameter_tuning_tutorial.html)关于超参数调整）
 - en: 'We define the following hyperparameters for training:'
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们为训练定义以下超参数：
 - en: '**Number of Epochs** - the number times to iterate over the dataset'
+  id: totrans-13
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**Epoch的数量** - 数据集迭代的次数'
 - en: '**Batch Size** - the number of data samples propagated through the network
     before the parameters are updated'
+  id: totrans-14
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**批量大小** - 在更新参数之前通过网络传播的数据样本数量'
 - en: '**Learning Rate** - how much to update models parameters at each batch/epoch.
     Smaller values yield slow learning speed, while large values may result in unpredictable
     behavior during training.'
+  id: totrans-15
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**学习率** - 每个批次/epoch更新模型参数的量。较小的值会导致学习速度较慢，而较大的值可能会导致训练过程中出现不可预测的行为。'
 - en: '[PRE2]'
+  id: totrans-16
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Optimization Loop
+  id: totrans-17
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 优化循环
 - en: Once we set our hyperparameters, we can then train and optimize our model with
     an optimization loop. Each iteration of the optimization loop is called an **epoch**.
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: 一旦设置了超参数，我们就可以通过优化循环训练和优化我们的模型。优化循环的每次迭代称为**epoch**。
 - en: 'Each epoch consists of two main parts:'
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 每个epoch包括两个主要部分：
 - en: '**The Train Loop** - iterate over the training dataset and try to converge
     to optimal parameters.'
+  id: totrans-20
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**训练循环** - 迭代训练数据集并尝试收敛到最佳参数。'
 - en: '**The Validation/Test Loop** - iterate over the test dataset to check if model
     performance is improving.'
+  id: totrans-21
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**验证/测试循环** - 迭代测试数据集以检查模型性能是否改善。'
 - en: Let’s briefly familiarize ourselves with some of the concepts used in the training
     loop. Jump ahead to see the [Full Implementation](#full-impl-label) of the optimization
     loop.
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们简要了解一下训练循环中使用的一些概念。跳转到[完整实现](#full-impl-label)以查看优化循环。
 - en: Loss Function
+  id: totrans-23
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 损失函数
 - en: When presented with some training data, our untrained network is likely not
     to give the correct answer. **Loss function** measures the degree of dissimilarity
     of obtained result to the target value, and it is the loss function that we want
     to minimize during training. To calculate the loss we make a prediction using
     the inputs of our given data sample and compare it against the true data label
     value.
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 当给定一些训练数据时，我们未经训练的网络可能不会给出正确答案。**损失函数**衡量获得的结果与目标值的不相似程度，我们希望在训练过程中最小化损失函数。为了计算损失，我们使用给定数据样本的输入进行预测，并将其与真实数据标签值进行比较。
 - en: Common loss functions include [nn.MSELoss](https://pytorch.org/docs/stable/generated/torch.nn.MSELoss.html#torch.nn.MSELoss)
     (Mean Square Error) for regression tasks, and [nn.NLLLoss](https://pytorch.org/docs/stable/generated/torch.nn.NLLLoss.html#torch.nn.NLLLoss)
     (Negative Log Likelihood) for classification. [nn.CrossEntropyLoss](https://pytorch.org/docs/stable/generated/torch.nn.CrossEntropyLoss.html#torch.nn.CrossEntropyLoss)
     combines `nn.LogSoftmax` and `nn.NLLLoss`.
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: 常见的损失函数包括[nn.MSELoss](https://pytorch.org/docs/stable/generated/torch.nn.MSELoss.html#torch.nn.MSELoss)（均方误差）用于回归任务，以及[nn.NLLLoss](https://pytorch.org/docs/stable/generated/torch.nn.NLLLoss.html#torch.nn.NLLLoss)（负对数似然）用于分类。[nn.CrossEntropyLoss](https://pytorch.org/docs/stable/generated/torch.nn.CrossEntropyLoss.html#torch.nn.CrossEntropyLoss)结合了`nn.LogSoftmax`和`nn.NLLLoss`。
 - en: We pass our model’s output logits to `nn.CrossEntropyLoss`, which will normalize
     the logits and compute the prediction error.
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们将模型的输出logits传递给`nn.CrossEntropyLoss`，它将对logits进行归一化并计算预测错误。
 - en: '[PRE3]'
+  id: totrans-27
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: Optimizer
+  id: totrans-28
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 优化器
 - en: Optimization is the process of adjusting model parameters to reduce model error
     in each training step. **Optimization algorithms** define how this process is
     performed (in this example we use Stochastic Gradient Descent). All optimization
@@ -135,80 +195,122 @@
     additionally, there are many [different optimizers](https://pytorch.org/docs/stable/optim.html)
     available in PyTorch such as ADAM and RMSProp, that work better for different
     kinds of models and data.
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 优化是调整模型参数以减少每个训练步骤中模型误差的过程。**优化算法**定义了如何执行这个过程（在这个例子中我们使用随机梯度下降）。所有的优化逻辑都封装在`optimizer`对象中。在这里，我们使用SGD优化器；此外，PyTorch还有许多[不同的优化器](https://pytorch.org/docs/stable/optim.html)可供选择，如ADAM和RMSProp，适用于不同类型的模型和数据。
 - en: We initialize the optimizer by registering the model’s parameters that need
     to be trained, and passing in the learning rate hyperparameter.
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们通过注册需要训练的模型参数并传入学习率超参数来初始化优化器。
 - en: '[PRE4]'
+  id: totrans-31
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: 'Inside the training loop, optimization happens in three steps:'
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 在训练循环中，优化分为三个步骤：
 - en: Call `optimizer.zero_grad()` to reset the gradients of model parameters. Gradients
     by default add up; to prevent double-counting, we explicitly zero them at each
     iteration.
+  id: totrans-33
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 调用`optimizer.zero_grad()`来重置模型参数的梯度。梯度默认会累加；为了防止重复计算，我们在每次迭代时明确将其归零。
 - en: Backpropagate the prediction loss with a call to `loss.backward()`. PyTorch
     deposits the gradients of the loss w.r.t. each parameter.
+  id: totrans-34
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 通过调用`loss.backward()`来反向传播预测损失。PyTorch会将损失相对于每个参数的梯度存储起来。
 - en: Once we have our gradients, we call `optimizer.step()` to adjust the parameters
     by the gradients collected in the backward pass.
+  id: totrans-35
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 一旦我们有了梯度，我们调用`optimizer.step()`来根据反向传播中收集的梯度调整参数。
 - en: '## Full Implementation'
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: '## 完整实现'
 - en: We define `train_loop` that loops over our optimization code, and `test_loop`
     that evaluates the model’s performance against our test data.
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们定义`train_loop`循环优化代码，并定义`test_loop`评估模型在测试数据上的性能。
 - en: '[PRE5]'
+  id: totrans-38
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: We initialize the loss function and optimizer, and pass it to `train_loop` and
     `test_loop`. Feel free to increase the number of epochs to track the model’s improving
     performance.
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们初始化损失函数和优化器，并将其传递给`train_loop`和`test_loop`。可以增加epoch的数量来跟踪模型的性能改进。
 - en: '[PRE6]'
+  id: totrans-40
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: '[PRE7]'
+  id: totrans-41
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: Further Reading
+  id: totrans-42
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 进一步阅读
 - en: '[Loss Functions](https://pytorch.org/docs/stable/nn.html#loss-functions)'
+  id: totrans-43
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[损失函数](https://pytorch.org/docs/stable/nn.html#loss-functions)'
 - en: '[torch.optim](https://pytorch.org/docs/stable/optim.html)'
+  id: totrans-44
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[torch.optim](https://pytorch.org/docs/stable/optim.html)'
 - en: '[Warmstart Training a Model](https://pytorch.org/tutorials/recipes/recipes/warmstarting_model_using_parameters_from_a_different_model.html)'
+  id: totrans-45
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[热启动训练模型](https://pytorch.org/tutorials/recipes/recipes/warmstarting_model_using_parameters_from_a_different_model.html)'
 - en: '**Total running time of the script:** ( 2 minutes 0.365 seconds)'
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: '**脚本的总运行时间：**（2分钟0.365秒）'
 - en: '[`Download Python source code: optimization_tutorial.py`](../../_downloads/0662a149d54bd776924742c96eb6282d/optimization_tutorial.py)'
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Python源代码：optimization_tutorial.py`](../../_downloads/0662a149d54bd776924742c96eb6282d/optimization_tutorial.py)'
 - en: '[`Download Jupyter notebook: optimization_tutorial.ipynb`](../../_downloads/91d72708edab956d7293bb263e2ab53f/optimization_tutorial.ipynb)'
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Jupyter笔记本：optimization_tutorial.ipynb`](../../_downloads/91d72708edab956d7293bb263e2ab53f/optimization_tutorial.ipynb)'
 - en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Sphinx-Gallery生成的图库](https://sphinx-gallery.github.io)'

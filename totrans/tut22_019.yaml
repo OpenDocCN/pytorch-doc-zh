@@ -1,156 +1,225 @@
 - en: Building Models with PyTorch
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 使用PyTorch构建模型
 - en: 原文：[https://pytorch.org/tutorials/beginner/introyt/modelsyt_tutorial.html](https://pytorch.org/tutorials/beginner/introyt/modelsyt_tutorial.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/beginner/introyt/modelsyt_tutorial.html](https://pytorch.org/tutorials/beginner/introyt/modelsyt_tutorial.html)
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-beginner-introyt-modelsyt-tutorial-py) to download
     the full example code
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[这里](#sphx-glr-download-beginner-introyt-modelsyt-tutorial-py)下载完整示例代码
 - en: '[Introduction](introyt1_tutorial.html) || [Tensors](tensors_deeper_tutorial.html)
     || [Autograd](autogradyt_tutorial.html) || **Building Models** || [TensorBoard
     Support](tensorboardyt_tutorial.html) || [Training Models](trainingyt.html) ||
     [Model Understanding](captumyt.html)'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '[介绍](introyt1_tutorial.html) || [张量](tensors_deeper_tutorial.html) || [自动微分](autogradyt_tutorial.html)
+    || **构建模型** || [TensorBoard支持](tensorboardyt_tutorial.html) || [训练模型](trainingyt.html)
+    || [模型理解](captumyt.html)'
 - en: Follow along with the video below or on [youtube](https://www.youtube.com/watch?v=OSqIP-mOWOI).
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 跟随下面的视频或在[youtube](https://www.youtube.com/watch?v=OSqIP-mOWOI)上观看。
 - en: '[https://www.youtube.com/embed/OSqIP-mOWOI](https://www.youtube.com/embed/OSqIP-mOWOI)'
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: '[https://www.youtube.com/embed/OSqIP-mOWOI](https://www.youtube.com/embed/OSqIP-mOWOI)'
 - en: '`torch.nn.Module` and `torch.nn.Parameter`'
+  id: totrans-7
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: '`torch.nn.Module`和`torch.nn.Parameter`'
 - en: In this video, we’ll be discussing some of the tools PyTorch makes available
     for building deep learning networks.
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这个视频中，我们将讨论PyTorch为构建深度学习网络提供的一些工具。
 - en: Except for `Parameter`, the classes we discuss in this video are all subclasses
     of `torch.nn.Module`. This is the PyTorch base class meant to encapsulate behaviors
     specific to PyTorch Models and their components.
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 除了`Parameter`，我们在这个视频中讨论的类都是`torch.nn.Module`的子类。这是PyTorch的基类，旨在封装特定于PyTorch模型及其组件的行为。
 - en: One important behavior of `torch.nn.Module` is registering parameters. If a
     particular `Module` subclass has learning weights, these weights are expressed
     as instances of `torch.nn.Parameter`. The `Parameter` class is a subclass of `torch.Tensor`,
     with the special behavior that when they are assigned as attributes of a `Module`,
     they are added to the list of that modules parameters. These parameters may be
     accessed through the `parameters()` method on the `Module` class.
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: '`torch.nn.Module`的一个重要行为是注册参数。如果特定的`Module`子类具有学习权重，这些权重被表示为`torch.nn.Parameter`的实例。`Parameter`类是`torch.Tensor`的子类，具有特殊行为，当它们被分配为`Module`的属性时，它们被添加到该模块的参数列表中。这些参数可以通过`Module`类上的`parameters()`方法访问。'
 - en: 'As a simple example, here’s a very simple model with two linear layers and
     an activation function. We’ll create an instance of it and ask it to report on
     its parameters:'
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 作为一个简单的例子，这里是一个非常简单的模型，有两个线性层和一个激活函数。我们将创建一个实例，并要求它报告其参数：
 - en: '[PRE0]'
+  id: totrans-12
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: '[PRE1]'
+  id: totrans-13
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: 'This shows the fundamental structure of a PyTorch model: there is an `__init__()`
     method that defines the layers and other components of a model, and a `forward()`
     method where the computation gets done. Note that we can print the model, or any
     of its submodules, to learn about its structure.'
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 这显示了PyTorch模型的基本结构：有一个`__init__()`方法定义了模型的层和其他组件，还有一个`forward()`方法用于执行计算。注意我们可以打印模型或其子模块来了解其结构。
 - en: Common Layer Types
+  id: totrans-15
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 常见的层类型
 - en: Linear Layers
+  id: totrans-16
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 线性层
 - en: 'The most basic type of neural network layer is a *linear* or *fully connected*
     layer. This is a layer where every input influences every output of the layer
     to a degree specified by the layer’s weights. If a model has *m* inputs and *n*
     outputs, the weights will be an *m* x *n* matrix. For example:'
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 最基本的神经网络层类型是*线性*或*全连接*层。这是一个每个输入都影响层的每个输出的程度由层的权重指定的层。如果一个模型有*m*个输入和*n*个输出，权重将是一个*m*
+    x *n*矩阵。例如：
 - en: '[PRE2]'
+  id: totrans-18
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: '[PRE3]'
+  id: totrans-19
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: If you do the matrix multiplication of `x` by the linear layer’s weights, and
     add the biases, you’ll find that you get the output vector `y`.
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果对`x`进行矩阵乘法，乘以线性层的权重，并加上偏置，你会发现得到输出向量`y`。
 - en: 'One other important feature to note: When we checked the weights of our layer
     with `lin.weight`, it reported itself as a `Parameter` (which is a subclass of
     `Tensor`), and let us know that it’s tracking gradients with autograd. This is
     a default behavior for `Parameter` that differs from `Tensor`.'
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 还有一个重要的特点需要注意：当我们用`lin.weight`检查层的权重时，它报告自己是一个`Parameter`（它是`Tensor`的子类），并告诉我们它正在使用autograd跟踪梯度。这是`Parameter`的默认行为，与`Tensor`不同。
 - en: Linear layers are used widely in deep learning models. One of the most common
     places you’ll see them is in classifier models, which will usually have one or
     more linear layers at the end, where the last layer will have *n* outputs, where
     *n* is the number of classes the classifier addresses.
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 线性层在深度学习模型中被广泛使用。你最常见到它们的地方之一是在分类器模型中，通常在末尾会有一个或多个线性层，最后一层将有*n*个输出，其中*n*是分类器处理的类的数量。
 - en: Convolutional Layers
+  id: totrans-23
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 卷积层
 - en: '*Convolutional* layers are built to handle data with a high degree of spatial
     correlation. They are very commonly used in computer vision, where they detect
     close groupings of features which the compose into higher-level features. They
     pop up in other contexts too - for example, in NLP applications, where a word’s
     immediate context (that is, the other words nearby in the sequence) can affect
     the meaning of a sentence.'
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: '*卷积*层被设计用于处理具有高度空间相关性的数据。它们在计算机视觉中非常常见，用于检测特征的紧密组合，然后将其组合成更高级的特征。它们也出现在其他上下文中
+    - 例如，在NLP应用中，一个词的即时上下文（即，序列中附近的其他词）可以影响句子的含义。'
 - en: 'We saw convolutional layers in action in LeNet5 in an earlier video:'
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们在早期的视频中看到了LeNet5中卷积层的作用：
 - en: '[PRE4]'
+  id: totrans-26
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: 'Let’s break down what’s happening in the convolutional layers of this model.
     Starting with `conv1`:'
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们分解一下这个模型的卷积层中发生的事情。从`conv1`开始：
 - en: LeNet5 is meant to take in a 1x32x32 black & white image. **The first argument
     to a convolutional layer’s constructor is the number of input channels.** Here,
     it is 1\. If we were building this model to look at 3-color channels, it would
     be 3.
+  id: totrans-28
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: LeNet5旨在接收1x32x32的黑白图像。**卷积层构造函数的第一个参数是输入通道的数量。**这里是1。如果我们构建这个模型来查看3色通道，那么它将是3。
 - en: A convolutional layer is like a window that scans over the image, looking for
     a pattern it recognizes. These patterns are called *features,* and one of the
     parameters of a convolutional layer is the number of features we would like it
     to learn. **This is the second argument to the constructor is the number of output
     features.** Here, we’re asking our layer to learn 6 features.
+  id: totrans-29
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 卷积层就像一个窗口，扫描图像，寻找它认识的模式。这些模式称为*特征*，卷积层的一个参数是我们希望它学习的特征数量。**构造函数的第二个参数是输出特征的数量。**在这里，我们要求我们的层学习6个特征。
 - en: Just above, I likened the convolutional layer to a window - but how big is the
     window? **The third argument is the window or kernel size.** Here, the “5” means
     we’ve chosen a 5x5 kernel. (If you want a kernel with height different from width,
     you can specify a tuple for this argument - e.g., `(3, 5)` to get a 3x5 convolution
     kernel.)
+  id: totrans-30
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在上面，我将卷积层比作一个窗口 - 但窗口有多大呢？**第三个参数是窗口或内核大小。**在这里，“5”表示我们选择了一个5x5的内核。（如果您想要高度与宽度不同的内核，可以为此参数指定一个元组
+    - 例如，`(3, 5)`以获得一个3x5的卷积内核。）
 - en: The output of a convolutional layer is an *activation map* - a spatial representation
     of the presence of features in the input tensor. `conv1` will give us an output
     tensor of 6x28x28; 6 is the number of features, and 28 is the height and width
     of our map. (The 28 comes from the fact that when scanning a 5-pixel window over
     a 32-pixel row, there are only 28 valid positions.)
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: 卷积层的输出是一个*激活图* - 表示输入张量中特征存在的空间表示。`conv1`将给我们一个6x28x28的输出张量；6是特征的数量，28是我们地图的高度和宽度。（28来自于在32像素行上扫描5像素窗口时，只有28个有效位置的事实。）
 - en: We then pass the output of the convolution through a ReLU activation function
     (more on activation functions later), then through a max pooling layer. The max
     pooling layer takes features near each other in the activation map and groups
@@ -158,65 +227,90 @@
     cells in the output into a single cell, and assigning that cell the maximum value
     of the 4 cells that went into it. This gives us a lower-resolution version of
     the activation map, with dimensions 6x14x14.
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后我们通过ReLU激活函数（稍后会详细介绍激活函数）将卷积的输出传递，然后通过一个最大池化层。最大池化层将激活图中相邻的特征组合在一起。它通过减少张量，将输出中的每个2x2组合的单元格合并为一个单元格，并将该单元格分配为其中输入的4个单元格的最大值。这给我们一个激活图的低分辨率版本，尺寸为6x14x14。
 - en: Our next convolutional layer, `conv2`, expects 6 input channels (corresponding
     to the 6 features sought by the first layer), has 16 output channels, and a 3x3
     kernel. It puts out a 16x12x12 activation map, which is again reduced by a max
     pooling layer to 16x6x6\. Prior to passing this output to the linear layers, it
     is reshaped to a 16 * 6 * 6 = 576-element vector for consumption by the next layer.
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们的下一个卷积层`conv2`期望6个输入通道（对应于第一层寻找的6个特征），有16个输出通道和一个3x3的内核。它输出一个16x12x12的激活图，然后再通过最大池化层减少到16x6x6。在将此输出传递给线性层之前，它被重新塑造为一个16
+    * 6 * 6 = 576元素的向量，以供下一层使用。
 - en: There are convolutional layers for addressing 1D, 2D, and 3D tensors. There
     are also many more optional arguments for a conv layer constructor, including
     stride length(e.g., only scanning every second or every third position) in the
     input, padding (so you can scan out to the edges of the input), and more. See
     the [documentation](https://pytorch.org/docs/stable/nn.html#convolution-layers)
     for more information.
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 有用于处理1D、2D和3D张量的卷积层。卷积层构造函数还有许多可选参数，包括步长（例如，仅扫描每第二个或第三个位置）在输入中，填充（这样您可以扫描到输入的边缘）等。有关更多信息，请参阅[文档](https://pytorch.org/docs/stable/nn.html#convolution-layers)。
 - en: Recurrent Layers
+  id: totrans-35
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 循环层
 - en: '*Recurrent neural networks* (or *RNNs)* are used for sequential data - anything
     from time-series measurements from a scientific instrument to natural language
     sentences to DNA nucleotides. An RNN does this by maintaining a *hidden state*
     that acts as a sort of memory for what it has seen in the sequence so far.'
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: '*循环神经网络*（或*RNNs*）用于顺序数据 - 从科学仪器的时间序列测量到自然语言句子到DNA核苷酸。RNN通过保持作为其迄今为止在序列中看到的记忆的*隐藏状态*来实现这一点。'
 - en: 'The internal structure of an RNN layer - or its variants, the LSTM (long short-term
     memory) and GRU (gated recurrent unit) - is moderately complex and beyond the
     scope of this video, but we’ll show you what one looks like in action with an
     LSTM-based part-of-speech tagger (a type of classifier that tells you if a word
     is a noun, verb, etc.):'
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: RNN层的内部结构 - 或其变体，LSTM（长短期记忆）和GRU（门控循环单元） - 是适度复杂的，超出了本视频的范围，但我们将通过一个基于LSTM的词性标注器来展示其工作原理（一种告诉你一个词是名词、动词等的分类器）：
 - en: '[PRE5]'
+  id: totrans-38
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: 'The constructor has four arguments:'
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 构造函数有四个参数：
 - en: '`vocab_size` is the number of words in the input vocabulary. Each word is a
     one-hot vector (or unit vector) in a `vocab_size`-dimensional space.'
+  id: totrans-40
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`vocab_size`是输入词汇表中单词的数量。每个单词是一个在`vocab_size`维空间中的单热向量（或单位向量）。'
 - en: '`tagset_size` is the number of tags in the output set.'
+  id: totrans-41
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`tagset_size`是输出集合中标签的数量。'
 - en: '`embedding_dim` is the size of the *embedding* space for the vocabulary. An
     embedding maps a vocabulary onto a low-dimensional space, where words with similar
     meanings are close together in the space.'
+  id: totrans-42
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`embedding_dim`是词汇表的*嵌入*空间的大小。嵌入将词汇表映射到一个低维空间，其中具有相似含义的单词在空间中靠在一起。'
 - en: '`hidden_dim` is the size of the LSTM’s memory.'
+  id: totrans-43
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`hidden_dim`是LSTM的记忆大小。'
 - en: The input will be a sentence with the words represented as indices of one-hot
     vectors. The embedding layer will then map these down to an `embedding_dim`-dimensional
     space. The LSTM takes this sequence of embeddings and iterates over it, fielding
@@ -224,17 +318,23 @@
     applying `log_softmax()` to the output of the final layer converts the output
     into a normalized set of estimated probabilities that a given word maps to a given
     tag.
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 输入将是一个句子，其中单词表示为单热向量的索引。嵌入层将把这些映射到一个`embedding_dim`维空间。LSTM接受这些嵌入的序列并对其进行迭代，生成一个长度为`hidden_dim`的输出向量。最终的线性层充当分类器；将`log_softmax()`应用于最终层的输出将输出转换为给定单词映射到给定标签的估计概率的归一化集。
 - en: If you’d like to see this network in action, check out the [Sequence Models
     and LSTM Networks](https://pytorch.org/tutorials/beginner/nlp/sequence_models_tutorial.html)
     tutorial on pytorch.org.
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您想看到这个网络的运行情况，请查看pytorch.org上的[序列模型和LSTM网络](https://pytorch.org/tutorials/beginner/nlp/sequence_models_tutorial.html)教程。
 - en: Transformers
+  id: totrans-46
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 变压器
 - en: '*Transformers* are multi-purpose networks that have taken over the state of
     the art in NLP with models like BERT. A discussion of transformer architecture
     is beyond the scope of this video, but PyTorch has a `Transformer` class that
@@ -247,85 +347,125 @@
     the [documentation](https://pytorch.org/docs/stable/nn.html#transformer-layers)
     on transformer classes, and the relevant [tutorial](https://pytorch.org/tutorials/beginner/transformer_tutorial.html)
     on pytorch.org.'
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: '*变压器*是多功能网络，已经在NLP领域的最新技术中占据主导地位，如BERT模型。变压器架构的讨论超出了本视频的范围，但PyTorch有一个`Transformer`类，允许您定义变压器模型的整体参数
+    - 注意头的数量，编码器和解码器层数的数量，dropout和激活函数等（您甚至可以根据正确的参数从这个单一类构建BERT模型！）。`torch.nn.Transformer`类还有类来封装各个组件（`TransformerEncoder`，`TransformerDecoder`）和子组件（`TransformerEncoderLayer`，`TransformerDecoderLayer`）。有关详细信息，请查看pytorch.org上有关变压器类的[文档](https://pytorch.org/docs/stable/nn.html#transformer-layers)，以及有关pytorch.org上相关的[教程](https://pytorch.org/tutorials/beginner/transformer_tutorial.html)。'
 - en: Other Layers and Functions
+  id: totrans-48
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 其他层和函数
 - en: Data Manipulation Layers
+  id: totrans-49
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 数据操作层
 - en: There are other layer types that perform important functions in models, but
     don’t participate in the learning process themselves.
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: 还有其他层类型在模型中执行重要功能，但本身不参与学习过程。
 - en: '**Max pooling** (and its twin, min pooling) reduce a tensor by combining cells,
     and assigning the maximum value of the input cells to the output cell (we saw
     this). For example:'
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
+  zh: '**最大池化**（以及它的孪生，最小池化）通过组合单元格并将输入单元格的最大值分配给输出单元格来减少张量（我们看到了这一点）。例如：'
 - en: '[PRE6]'
+  id: totrans-52
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: '[PRE7]'
+  id: totrans-53
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: If you look closely at the values above, you’ll see that each of the values
     in the maxpooled output is the maximum value of each quadrant of the 6x6 input.
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您仔细查看上面的数值，您会发现maxpooled输出中的每个值都是6x6输入的每个象限的最大值。
 - en: '**Normalization layers** re-center and normalize the output of one layer before
     feeding it to another. Centering and scaling the intermediate tensors has a number
     of beneficial effects, such as letting you use higher learning rates without exploding/vanishing
     gradients.'
+  id: totrans-55
   prefs: []
   type: TYPE_NORMAL
+  zh: '**归一化层**在将一个层的输出重新居中和归一化之前将其馈送到另一个层。对中间张量进行居中和缩放具有许多有益的效果，例如让您在不爆炸/消失梯度的情况下使用更高的学习速率。'
 - en: '[PRE8]'
+  id: totrans-56
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: '[PRE9]'
+  id: totrans-57
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: Running the cell above, we’ve added a large scaling factor and offset to an
     input tensor; you should see the input tensor’s `mean()` somewhere in the neighborhood
     of 15\. After running it through the normalization layer, you can see that the
     values are smaller, and grouped around zero - in fact, the mean should be very
     small (> 1e-8).
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: 运行上面的单元格，我们向输入张量添加了一个大的缩放因子和偏移量；您应该看到输入张量的`mean()`大约在15的附近。通过归一化层后，您会看到值变小，并围绕零分组
+    - 实际上，均值应该非常小（> 1e-8）。
 - en: This is beneficial because many activation functions (discussed below) have
     their strongest gradients near 0, but sometimes suffer from vanishing or exploding
     gradients for inputs that drive them far away from zero. Keeping the data centered
     around the area of steepest gradient will tend to mean faster, better learning
     and higher feasible learning rates.
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: 这是有益的，因为许多激活函数（下面讨论）在0附近具有最强的梯度，但有时会因为输入将它们远离零而出现消失或爆炸梯度。保持数据围绕梯度最陡峭的区域将倾向于意味着更快、更好的学习和更高的可行学习速度。
 - en: '**Dropout layers** are a tool for encouraging *sparse representations* in your
     model - that is, pushing it to do inference with less data.'
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: '**Dropout层**是鼓励模型中*稀疏表示*的工具 - 也就是说，推动它使用更少的数据进行推理。'
 - en: 'Dropout layers work by randomly setting parts of the input tensor *during training*
     - dropout layers are always turned off for inference. This forces the model to
     learn against this masked or reduced dataset. For example:'
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: Dropout层通过在训练期间随机设置输入张量的部分来工作 - 推断时始终关闭dropout层。这迫使模型学习针对这个掩码或减少的数据集。例如：
 - en: '[PRE10]'
+  id: totrans-62
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: '[PRE11]'
+  id: totrans-63
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: Above, you can see the effect of dropout on a sample tensor. You can use the
     optional `p` argument to set the probability of an individual weight dropping
     out; if you don’t it defaults to 0.5.
+  id: totrans-64
   prefs: []
   type: TYPE_NORMAL
+  zh: 在上面，您可以看到对样本张量的dropout效果。您可以使用可选的`p`参数设置单个权重丢失的概率；如果不设置，默认为0.5。
 - en: Activation Functions
+  id: totrans-65
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 激活函数
 - en: Activation functions make deep learning possible. A neural network is really
     a program - with many parameters - that *simulates a mathematical function*. If
     all we did was multiple tensors by layer weights repeatedly, we could only simulate
@@ -333,33 +473,50 @@
     the whole network would reduce could be reduced to a single matrix multiplication.
     Inserting *non-linear* activation functions between layers is what allows a deep
     learning model to simulate any function, rather than just linear ones.
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: 激活函数使深度学习成为可能。神经网络实际上是一个程序 - 具有许多参数 - *模拟数学函数*。如果我们只是重复地将张量乘以层权重，我们只能模拟*线性函数*；此外，拥有许多层也没有意义，因为整个网络可以简化为单个矩阵乘法。在层之间插入*非线性*激活函数是让深度学习模型能够模拟任何函数，而不仅仅是线性函数的关键。
 - en: '`torch.nn.Module` has objects encapsulating all of the major activation functions
     including ReLU and its many variants, Tanh, Hardtanh, sigmoid, and more. It also
     includes other functions, such as Softmax, that are most useful at the output
     stage of a model.'
+  id: totrans-67
   prefs: []
   type: TYPE_NORMAL
+  zh: '`torch.nn.Module` 包含了封装所有主要激活函数的对象，包括 ReLU 及其许多变体，Tanh，Hardtanh，sigmoid 等。它还包括其他函数，如
+    Softmax，在模型的输出阶段最有用。'
 - en: Loss Functions
+  id: totrans-68
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 损失函数
 - en: Loss functions tell us how far a model’s prediction is from the correct answer.
     PyTorch contains a variety of loss functions, including common MSE (mean squared
     error = L2 norm), Cross Entropy Loss and Negative Likelihood Loss (useful for
     classifiers), and others.
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: 损失函数告诉我们模型的预测与正确答案之间有多远。PyTorch 包含各种损失函数，包括常见的 MSE（均方误差 = L2 范数），交叉熵损失和负对数似然损失（对分类器有用），以及其他函数。
 - en: '**Total running time of the script:** ( 0 minutes 0.029 seconds)'
+  id: totrans-70
   prefs: []
   type: TYPE_NORMAL
+  zh: '**脚本的总运行时间：**（0 分钟 0.029 秒）'
 - en: '[`Download Python source code: modelsyt_tutorial.py`](../../_downloads/88355d650eb3d5ee6afedaebb57fb9b3/modelsyt_tutorial.py)'
+  id: totrans-71
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Python源代码：modelsyt_tutorial.py`](../../_downloads/88355d650eb3d5ee6afedaebb57fb9b3/modelsyt_tutorial.py)'
 - en: '[`Download Jupyter notebook: modelsyt_tutorial.ipynb`](../../_downloads/fe726e041160526cf828806536922cf6/modelsyt_tutorial.ipynb)'
+  id: totrans-72
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Jupyter笔记本：modelsyt_tutorial.ipynb`](../../_downloads/fe726e041160526cf828806536922cf6/modelsyt_tutorial.ipynb)'
 - en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  id: totrans-73
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Sphinx-Gallery 生成的图库](https://sphinx-gallery.github.io)'

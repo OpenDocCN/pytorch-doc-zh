@@ -1,204 +1,314 @@
 - en: PyTorch TensorBoard Support
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: PyTorch TensorBoard支持
 - en: 原文：[https://pytorch.org/tutorials/beginner/introyt/tensorboardyt_tutorial.html](https://pytorch.org/tutorials/beginner/introyt/tensorboardyt_tutorial.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: '[https://pytorch.org/tutorials/beginner/introyt/tensorboardyt_tutorial.html](https://pytorch.org/tutorials/beginner/introyt/tensorboardyt_tutorial.html)'
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-beginner-introyt-tensorboardyt-tutorial-py)
     to download the full example code
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[这里](#sphx-glr-download-beginner-introyt-tensorboardyt-tutorial-py)下载完整示例代码
 - en: '[Introduction](introyt1_tutorial.html) || [Tensors](tensors_deeper_tutorial.html)
     || [Autograd](autogradyt_tutorial.html) || [Building Models](modelsyt_tutorial.html)
     || **TensorBoard Support** || [Training Models](trainingyt.html) || [Model Understanding](captumyt.html)'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '[介绍](introyt1_tutorial.html) || [张量](tensors_deeper_tutorial.html) || [自动微分](autogradyt_tutorial.html)
+    || [构建模型](modelsyt_tutorial.html) || **TensorBoard支持** || [训练模型](trainingyt.html)
+    || [模型理解](captumyt.html)'
 - en: Follow along with the video below or on [youtube](https://www.youtube.com/watch?v=6CEld3hZgqc).
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 请跟随下面的视频或[youtube](https://www.youtube.com/watch?v=6CEld3hZgqc)。
 - en: '[https://www.youtube.com/embed/6CEld3hZgqc](https://www.youtube.com/embed/6CEld3hZgqc)'
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: '[https://www.youtube.com/embed/6CEld3hZgqc](https://www.youtube.com/embed/6CEld3hZgqc)'
 - en: Before You Start
+  id: totrans-7
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 开始之前
 - en: To run this tutorial, you’ll need to install PyTorch, TorchVision, Matplotlib,
     and TensorBoard.
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 要运行此教程，您需要安装PyTorch、TorchVision、Matplotlib和TensorBoard。
 - en: 'With `conda`:'
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用`conda`：
 - en: '[PRE0]'
+  id: totrans-10
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: 'With `pip`:'
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用`pip`：
 - en: '[PRE1]'
+  id: totrans-12
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Once the dependencies are installed, restart this notebook in the Python environment
     where you installed them.
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: 安装完依赖项后，在安装它们的Python环境中重新启动此笔记本。
 - en: Introduction
+  id: totrans-14
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 介绍
 - en: In this notebook, we’ll be training a variant of LeNet-5 against the Fashion-MNIST
     dataset. Fashion-MNIST is a set of image tiles depicting various garments, with
     ten class labels indicating the type of garment depicted.
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本笔记本中，我们将针对时尚-MNIST数据集训练LeNet-5的变体。时尚-MNIST是一组图像瓷砖，描绘了各种服装，有十个类标签表示所描绘的服装类型。
 - en: '[PRE2]'
+  id: totrans-16
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Showing Images in TensorBoard
+  id: totrans-17
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 在TensorBoard中显示图像
 - en: 'Let’s start by adding sample images from our dataset to TensorBoard:'
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们从我们的数据集中向TensorBoard添加样本图像：
 - en: '[PRE3]'
+  id: totrans-19
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: '![tensorboardyt tutorial](../Images/8498a1fd8664fde87cab20edccaf4cb9.png)'
+  id: totrans-20
   prefs: []
   type: TYPE_IMG
+  zh: '![tensorboardyt教程](../Images/8498a1fd8664fde87cab20edccaf4cb9.png)'
 - en: '[PRE4]'
+  id: totrans-21
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: Above, we used TorchVision and Matplotlib to create a visual grid of a minibatch
     of our input data. Below, we use the `add_image()` call on `SummaryWriter` to
     log the image for consumption by TensorBoard, and we also call `flush()` to make
     sure it’s written to disk right away.
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 以上，我们使用TorchVision和Matplotlib创建了一个输入数据小批量的可视网格。下面，我们使用`SummaryWriter`上的`add_image()`调用来记录图像以供TensorBoard使用，并调用`flush()`确保它立即写入磁盘。
 - en: '[PRE5]'
+  id: totrans-23
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: If you start TensorBoard at the command line and open it in a new browser tab
     (usually at [localhost:6006](localhost:6006)), you should see the image grid under
     the IMAGES tab.
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您在命令行启动TensorBoard并在新的浏览器选项卡中打开它（通常在[localhost:6006](localhost:6006)），您应该在IMAGES选项卡下看到图像网格。
 - en: Graphing Scalars to Visualize Training
+  id: totrans-25
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 绘制标量以可视化训练
 - en: TensorBoard is useful for tracking the progress and efficacy of your training.
     Below, we’ll run a training loop, track some metrics, and save the data for TensorBoard’s
     consumption.
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: TensorBoard对于跟踪训练的进展和有效性非常有用。在下面，我们将运行一个训练循环，跟踪一些指标，并保存数据供TensorBoard使用。
 - en: 'Let’s define a model to categorize our image tiles, and an optimizer and loss
     function for training:'
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们定义一个模型来对我们的图像瓷砖进行分类，以及用于训练的优化器和损失函数：
 - en: '[PRE6]'
+  id: totrans-28
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: 'Now let’s train a single epoch, and evaluate the training vs. validation set
     losses every 1000 batches:'
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在让我们训练一个epoch，并在每1000批次时评估训练与验证集的损失：
 - en: '[PRE7]'
+  id: totrans-30
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: '[PRE8]'
+  id: totrans-31
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: Switch to your open TensorBoard and have a look at the SCALARS tab.
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 切换到您打开的TensorBoard，并查看SCALARS选项卡。
 - en: Visualizing Your Model
+  id: totrans-33
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 可视化您的模型
 - en: TensorBoard can also be used to examine the data flow within your model. To
     do this, call the `add_graph()` method with a model and sample input. When you
     open
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: TensorBoard还可以用于检查模型内部的数据流。为此，请使用模型和样本输入调用`add_graph()`方法。当您打开
 - en: '[PRE9]'
+  id: totrans-35
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: When you switch over to TensorBoard, you should see a GRAPHS tab. Double-click
     the “NET” node to see the layers and data flow within your model.
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 当您切换到TensorBoard时，您应该看到一个GRAPHS选项卡。双击“NET”节点以查看模型内部的层和数据流。
 - en: Visualizing Your Dataset with Embeddings
+  id: totrans-37
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 使用嵌入可视化您的数据集
 - en: The 28-by-28 image tiles we’re using can be modeled as 784-dimensional vectors
     (28 * 28 = 784). It can be instructive to project this to a lower-dimensional
     representation. The `add_embedding()` method will project a set of data onto the
     three dimensions with highest variance, and display them as an interactive 3D
     chart. The `add_embedding()` method does this automatically by projecting to the
     three dimensions with highest variance.
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们使用的28x28图像瓷砖可以建模为784维向量（28 * 28 = 784）。将其投影到较低维度表示可能很有启发性。`add_embedding()`方法将一组数据投影到具有最高方差的三个维度，并将它们显示为交互式3D图表。`add_embedding()`方法通过自动投影到具有最高方差的三个维度来实现这一点。
 - en: 'Below, we’ll take a sample of our data, and generate such an embedding:'
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，我们将取一部分数据，并生成这样一个嵌入：
 - en: '[PRE10]'
+  id: totrans-40
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: Now if you switch to TensorBoard and select the PROJECTOR tab, you should see
     a 3D representation of the projection. You can rotate and zoom the model. Examine
     it at large and small scales, and see whether you can spot patterns in the projected
     data and the clustering of labels.
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，如果您切换到TensorBoard并选择PROJECTOR选项卡，您应该看到投影的3D表示。您可以旋转和缩放模型。在大尺度和小尺度上检查它，并查看是否可以在投影数据和标签的聚类中发现模式。
 - en: 'For better visibility, it’s recommended to:'
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了更好地可见，建议：
 - en: Select “label” from the “Color by” drop-down on the left.
+  id: totrans-43
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 从左侧的“按颜色分类”下拉菜单中选择“标签”。
 - en: Toggle the Night Mode icon along the top to place the light-colored images on
     a dark background.
+  id: totrans-44
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在顶部切换到夜间模式图标，将浅色图像放在黑色背景上。
 - en: Other Resources
+  id: totrans-45
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 其他资源
 - en: 'For more information, have a look at:'
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 有关更多信息，请查看：
 - en: PyTorch documentation on [torch.utils.tensorboard.SummaryWriter](https://pytorch.org/docs/stable/tensorboard.html?highlight=summarywriter)
+  id: totrans-47
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: PyTorch关于[torch.utils.tensorboard.SummaryWriter](https://pytorch.org/docs/stable/tensorboard.html?highlight=summarywriter)的文档
 - en: Tensorboard tutorial content in the [PyTorch.org Tutorials](https://pytorch.org/tutorials/)
+  id: totrans-48
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[PyTorch.org教程中的Tensorboard教程内容](https://pytorch.org/tutorials/)'
 - en: For more information about TensorBoard, see the [TensorBoard documentation](https://www.tensorflow.org/tensorboard)
+  id: totrans-49
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 有关TensorBoard的更多信息，请参阅[TensorBoard文档](https://www.tensorflow.org/tensorboard)
 - en: '**Total running time of the script:** ( 2 minutes 34.092 seconds)'
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: 脚本的总运行时间：（2分钟34.092秒）
 - en: '[`Download Python source code: tensorboardyt_tutorial.py`](../../_downloads/ba6d64f1f8bd0d6b3c21839705dc840a/tensorboardyt_tutorial.py)'
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Python源代码：tensorboardyt_tutorial.py`](../../_downloads/ba6d64f1f8bd0d6b3c21839705dc840a/tensorboardyt_tutorial.py)'
 - en: '[`Download Jupyter notebook: tensorboardyt_tutorial.ipynb`](../../_downloads/e2e556f6b4693c2cef716dd7f40caaf6/tensorboardyt_tutorial.ipynb)'
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Jupyter笔记本：tensorboardyt_tutorial.ipynb`](../../_downloads/e2e556f6b4693c2cef716dd7f40caaf6/tensorboardyt_tutorial.ipynb)'
 - en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  id: totrans-53
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Sphinx-Gallery生成的画廊](https://sphinx-gallery.github.io)'
