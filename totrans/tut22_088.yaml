@@ -1,19 +1,25 @@
 - en: Extending TorchScript with Custom C++ Operators
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 使用自定义C++运算符扩展TorchScript
 - en: 原文：[https://pytorch.org/tutorials/advanced/torch_script_custom_ops.html](https://pytorch.org/tutorials/advanced/torch_script_custom_ops.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/advanced/torch_script_custom_ops.html](https://pytorch.org/tutorials/advanced/torch_script_custom_ops.html)
 - en: The PyTorch 1.0 release introduced a new programming model to PyTorch called
     [TorchScript](https://pytorch.org/docs/master/jit.html). TorchScript is a subset
     of the Python programming language which can be parsed, compiled and optimized
     by the TorchScript compiler. Further, compiled TorchScript models have the option
     of being serialized into an on-disk file format, which you can subsequently load
     and run from pure C++ (as well as Python) for inference.
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch 1.0发布引入了一个称为[TorchScript](https://pytorch.org/docs/master/jit.html)的新编程模型到PyTorch中。TorchScript是Python编程语言的一个子集，可以被TorchScript编译器解析、编译和优化。此外，编译后的TorchScript模型可以选择被序列化为磁盘文件格式，然后可以在纯C++（以及Python）中加载和运行进行推断。
 - en: TorchScript supports a large subset of operations provided by the `torch` package,
     allowing you to express many kinds of complex models purely as a series of tensor
     operations from PyTorch’s “standard library”. Nevertheless, there may be times
@@ -25,30 +31,41 @@
     C++ tensor library. Once bound into TorchScript, you can embed these custom kernels
     (or “ops”) into your TorchScript model and execute them both in Python and in
     their serialized form directly in C++.
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: TorchScript支持`torch`包提供的大量操作的子集，允许您纯粹将许多种复杂模型表达为PyTorch“标准库”中的一系列张量操作。然而，可能会有时候您需要扩展TorchScript以使用自定义的C++或CUDA函数。虽然我们建议只有在您的想法无法（足够高效地）表达为简单的Python函数时才使用此选项，但我们提供了一个非常友好和简单的接口来使用[ATen](https://pytorch.org/cppdocs/#aten)，PyTorch的高性能C++张量库来定义自定义的C++和CUDA核心。一旦绑定到TorchScript中，您可以将这些自定义核心（或“ops”）嵌入到您的TorchScript模型中，并在Python中执行它们，也可以直接在C++中执行它们的序列化形式。
 - en: The following paragraphs give an example of writing a TorchScript custom op
     to call into [OpenCV](https://www.opencv.org), a computer vision library written
     in C++. We will discuss how to work with tensors in C++, how to efficiently convert
     them to third party tensor formats (in this case, OpenCV `Mat`), how to register
     your operator with the TorchScript runtime and finally how to compile the operator
     and use it in Python and C++.
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下段落给出了一个编写TorchScript自定义操作的示例，以调用[OpenCV](https://www.opencv.org)，这是一个用C++编写的计算机视觉库。我们将讨论如何在C++中处理张量，如何高效地将它们转换为第三方张量格式（在本例中为OpenCV
+    `Mat`），如何在TorchScript运行时注册您的运算符，最后如何编译运算符并在Python和C++中使用它。
 - en: Implementing the Custom Operator in C++
+  id: totrans-5
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 在C++中实现自定义运算符
 - en: 'For this tutorial, we’ll be exposing the [warpPerspective](https://docs.opencv.org/2.4/modules/imgproc/doc/geometric_transformations.html#warpperspective)
     function, which applies a perspective transformation to an image, from OpenCV
     to TorchScript as a custom operator. The first step is to write the implementation
     of our custom operator in C++. Let’s call the file for this implementation `op.cpp`
     and make it look like this:'
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，我们将暴露[warpPerspective](https://docs.opencv.org/2.4/modules/imgproc/doc/geometric_transformations.html#warpperspective)函数，该函数将OpenCV中的透视变换应用于图像，将其作为自定义运算符从OpenCV到TorchScript。第一步是在C++中编写我们自定义运算符的实现。让我们将此实现的文件命名为`op.cpp`，并使其如下所示：
 - en: '[PRE0]'
+  id: totrans-7
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: 'The code for this operator is quite short. At the top of the file, we include
     the OpenCV header file, `opencv2/opencv.hpp`, alongside the `torch/script.h` header
     which exposes all the necessary goodies from PyTorch’s C++ API that we need to
@@ -57,37 +74,52 @@
     to the image. The type of these inputs is `torch::Tensor`, PyTorch’s tensor type
     in C++ (which is also the underlying type of all tensors in Python). The return
     type of our `warp_perspective` function will also be a `torch::Tensor`.'
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个运算符的代码非常简短。在文件顶部，我们包含了OpenCV头文件`opencv2/opencv.hpp`，以及`torch/script.h`头文件，后者从PyTorch的C++
+    API中暴露了我们编写自定义TorchScript运算符所需的所有必要内容。我们的函数`warp_perspective`接受两个参数：一个输入`image`和我们希望应用于图像的`warp`变换矩阵。这些输入的类型是`torch::Tensor`，PyTorch在C++中的张量类型（也是Python中所有张量的基础类型）。我们的`warp_perspective`函数的返回类型也将是`torch::Tensor`。
 - en: Tip
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 提示
 - en: See [this note](https://pytorch.org/cppdocs/notes/tensor_basics.html) for more
     information about ATen, the library that provides the `Tensor` class to PyTorch.
     Further, [this tutorial](https://pytorch.org/cppdocs/notes/tensor_creation.html)
     describes how to allocate and initialize new tensor objects in C++ (not required
     for this operator).
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 有关ATen的更多信息，请参阅[此说明](https://pytorch.org/cppdocs/notes/tensor_basics.html)，该说明提供了`Tensor`类给PyTorch。此外，[此教程](https://pytorch.org/cppdocs/notes/tensor_creation.html)描述了如何在C++中分配和初始化新的张量对象（对于此运算符不是必需的）。
 - en: Attention
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: 'The TorchScript compiler understands a fixed number of types. Only these types
     can be used as arguments to your custom operator. Currently these types are: `torch::Tensor`,
     `torch::Scalar`, `double`, `int64_t` and `std::vector` s of these types. Note
     that *only* `double` and *not* `float`, and *only* `int64_t` and *not* other integral
     types such as `int`, `short` or `long` are supported.'
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: TorchScript编译器了解固定数量的类型。只有这些类型可以用作自定义运算符的参数。目前这些类型是：`torch::Tensor`、`torch::Scalar`、`double`、`int64_t`和这些类型的`std::vector`。请注意*只有*`double`而不是`float`，*只有*`int64_t`而不是其他整数类型如`int`、`short`或`long`被支持。
 - en: Inside of our function, the first thing we need to do is convert our PyTorch
     tensors to OpenCV matrices, as OpenCV’s `warpPerspective` expects `cv::Mat` objects
     as inputs. Fortunately, there is a way to do this **without copying any** data.
     In the first few lines,
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: 在我们的函数内部，我们需要做的第一件事是将我们的PyTorch张量转换为OpenCV矩阵，因为OpenCV的`warpPerspective`期望`cv::Mat`对象作为输入。幸运的是，有一种方法可以**不复制任何**数据来做到这一点。在前几行中，
 - en: '[PRE1]'
+  id: totrans-14
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: 'we are calling [this constructor](https://docs.opencv.org/trunk/d3/d63/classcv_1_1Mat.html#a922de793eabcec705b3579c5f95a643e)
     of the OpenCV `Mat` class to convert our tensor to a `Mat` object. We pass it
     the number of rows and columns of the original `image` tensor, the datatype (which
@@ -100,39 +132,57 @@
     native matrix type, even though we’re actually storing the data in a PyTorch tensor.
     We repeat this procedure to convert the `warp` PyTorch tensor to the `warp_mat`
     OpenCV matrix:'
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们正在调用OpenCV `Mat`类的[此构造函数](https://docs.opencv.org/trunk/d3/d63/classcv_1_1Mat.html#a922de793eabcec705b3579c5f95a643e)来将我们的张量转换为`Mat`对象。我们传递原始`image`张量的行数和列数，数据类型（在本例中我们将其固定为`float32`），最后是底层数据的原始指针
+    - 一个`float*`。`Mat`类的这个构造函数的特殊之处在于它不会复制输入数据。相反，它将简单地引用这个内存，用于对`Mat`执行的所有操作。如果在`image_mat`上执行了原位操作，这将反映在原始`image`张量中（反之亦然）。这使我们能够使用库的本机矩阵类型调用后续的OpenCV例程，即使我们实际上是在PyTorch张量中存储数据。我们重复这个过程将`warp`
+    PyTorch张量转换为`warp_mat` OpenCV矩阵：
 - en: '[PRE2]'
+  id: totrans-16
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: 'Next, we are ready to call the OpenCV function we were so eager to use in TorchScript:
     `warpPerspective`. For this, we pass the OpenCV function the `image_mat` and `warp_mat`
     matrices, as well as an empty output matrix called `output_mat`. We also specify
     the size `dsize` we want the output matrix (image) to be. It is hardcoded to `8
     x 8` for this example:'
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，我们准备调用我们在TorchScript中急切想要使用的OpenCV函数：`warpPerspective`。为此，我们将`image_mat`和`warp_mat`矩阵以及一个名为`output_mat`的空输出矩阵传递给OpenCV函数。我们还指定了我们希望输出矩阵（图像）的大小`dsize`。在本例中，它被硬编码为`8
+    x 8`：
 - en: '[PRE3]'
+  id: totrans-18
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: 'The final step in our custom operator implementation is to convert the `output_mat`
     back into a PyTorch tensor, so that we can further use it in PyTorch. This is
     strikingly similar to what we did earlier to convert in the other direction. In
     this case, PyTorch provides a `torch::from_blob` method. A *blob* in this case
     is intended to mean some opaque, flat pointer to memory that we want to interpret
     as a PyTorch tensor. The call to `torch::from_blob` looks like this:'
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们自定义运算符实现的最后一步是将`output_mat`转换回PyTorch张量，以便我们可以在PyTorch中进一步使用它。这与我们之前转换的过程非常相似。在这种情况下，PyTorch提供了一个`torch::from_blob`方法。在这种情况下，*blob*意味着我们希望将其解释为PyTorch张量的一些不透明的、扁平的内存指针。调用`torch::from_blob`看起来像这样：
 - en: '[PRE4]'
+  id: totrans-20
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: We use the `.ptr<float>()` method on the OpenCV `Mat` class to get a raw pointer
     to the underlying data (just like `.data_ptr<float>()` for the PyTorch tensor
     earlier). We also specify the output shape of the tensor, which we hardcoded as
     `8 x 8`. The output of `torch::from_blob` is then a `torch::Tensor`, pointing
     to the memory owned by the OpenCV matrix.
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们使用OpenCV的`Mat`类上的`.ptr<float>()`方法来获取底层数据的原始指针（就像之前PyTorch张量的`.data_ptr<float>()`一样）。我们还指定了张量的输出形状，我们将其硬编码为`8
+    x 8`。`torch::from_blob`的输出是一个指向OpenCV矩阵所拥有内存的`torch::Tensor`。
 - en: Before returning this tensor from our operator implementation, we must call
     `.clone()` on the tensor to perform a memory copy of the underlying data. The
     reason for this is that `torch::from_blob` returns a tensor that does not own
@@ -142,22 +192,30 @@
     the time we use it outside the function. Calling `.clone()` returns a new tensor
     with a copy of the original data that the new tensor owns itself. It is thus safe
     to return to the outside world.
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 在从我们的运算符实现中返回这个张量之前，我们必须在张量上调用`.clone()`来执行底层数据的内存复制。这样做的原因是`torch::from_blob`返回一个不拥有数据的张量。此时，数据仍然由OpenCV矩阵拥有。然而，这个OpenCV矩阵将在函数结束时超出范围并被释放。如果我们原样返回`output`张量，那么在函数外部使用时它将指向无效的内存。调用`.clone()`返回一个新的张量，其中包含原始数据的副本，新张量自己拥有。因此，可以安全地返回到外部世界。
 - en: Registering the Custom Operator with TorchScript
+  id: totrans-23
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 使用TorchScript注册自定义运算符
 - en: 'Now that have implemented our custom operator in C++, we need to *register*
     it with the TorchScript runtime and compiler. This will allow the TorchScript
     compiler to resolve references to our custom operator in TorchScript code. If
     you have ever used the pybind11 library, our syntax for registration resembles
     the pybind11 syntax very closely. To register a single function, we write:'
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们已经在C++中实现了自定义运算符，我们需要在TorchScript运行时和编译器中*注册*它。这将允许TorchScript编译器解析TorchScript代码中对我们自定义运算符的引用。如果您曾经使用过pybind11库，我们的注册语法与pybind11语法非常相似。要注册单个函数，我们写入：
 - en: '[PRE5]'
+  id: totrans-25
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: somewhere at the top level of our `op.cpp` file. The `TORCH_LIBRARY` macro creates
     a function that will be called when your program starts. The name of your library
     (`my_ops`) is given as the first argument (it should not be in quotes). The second
@@ -165,18 +223,24 @@
     to register your operators. The method `Library::def` actually creates an operator
     named `warp_perspective`, exposing it to both Python and TorchScript. You can
     define as many operators as you like by making multiple calls to `def`.
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 在我们的`op.cpp`文件的顶层某处。`TORCH_LIBRARY`宏创建一个函数，该函数在程序启动时将被调用。你的库的名称（`my_ops`）作为第一个参数给出（不应该用引号括起来）。第二个参数（`m`）定义了一个`torch::Library`类型的变量，它是注册你的运算符的主要接口。方法`Library::def`实际上创建了一个名为`warp_perspective`的运算符，将其暴露给Python和TorchScript。你可以通过多次调用`def`来定义任意数量的运算符。
 - en: 'Behinds the scenes, the `def` function is actually doing quite a bit of work:
     it is using template metaprogramming to inspect the type signature of your function
     and translate it into an operator schema which specifies the operators type within
     TorchScript’s type system.'
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 在幕后，`def`函数实际上做了很多工作：它使用模板元编程来检查函数的类型签名，并将其转换为一个运算符模式，该模式指定了TorchScript类型系统中的运算符类型。
 - en: Building the Custom Operator
+  id: totrans-28
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 构建自定义运算符
 - en: Now that we have implemented our custom operator in C++ and written its registration
     code, it is time to build the operator into a (shared) library that we can load
     into Python for research and experimentation, or into C++ for inference in a no-Python
@@ -184,84 +248,124 @@
     CMake, or Python alternatives like `setuptools`. For brevity, the paragraphs below
     only discuss the CMake approach. The appendix of this tutorial dives into other
     alternatives.
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们已经在C++中实现了我们的自定义运算符并编写了其注册代码，是时候将运算符构建成一个（共享）库，以便我们可以将其加载到Python中进行研究和实验，或者加载到C++中进行无Python环境中的推断。有多种方法可以构建我们的运算符，可以使用纯CMake，也可以使用Python的替代方法，如`setuptools`。为简洁起见，以下段落仅讨论CMake方法。本教程的附录将深入探讨其他替代方法。
 - en: Environment setup
+  id: totrans-30
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 环境设置
 - en: 'We need an installation of PyTorch and OpenCV. The easiest and most platform
     independent way to get both is to via Conda:'
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们需要安装PyTorch和OpenCV。获取两者最简单和最独立于平台的方法是通过Conda：
 - en: '[PRE6]'
+  id: totrans-32
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: Building with CMake
+  id: totrans-33
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 使用CMake构建
 - en: 'To build our custom operator into a shared library using the [CMake](https://cmake.org)
     build system, we need to write a short `CMakeLists.txt` file and place it with
     our previous `op.cpp` file. For this, let’s agree on a a directory structure that
     looks like this:'
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用[CMake](https://cmake.org)构建系统将我们的自定义运算符构建成一个共享库，我们需要编写一个简短的`CMakeLists.txt`文件，并将其与之前的`op.cpp`文件放在一起。为此，让我们同意一个看起来像这样的目录结构：
 - en: '[PRE7]'
+  id: totrans-35
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: 'The contents of our `CMakeLists.txt` file should then be the following:'
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后我们的`CMakeLists.txt`文件的内容应该是以下内容：
 - en: '[PRE8]'
+  id: totrans-37
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: 'To now build our operator, we can run the following commands from our `warp_perspective`
     folder:'
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在要构建我们的运算符，我们可以从我们的`warp_perspective`文件夹中运行以下命令：
 - en: '[PRE9]'
+  id: totrans-39
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: which will place a `libwarp_perspective.so` shared library file in the `build`
     folder. In the `cmake` command above, we use the helper variable `torch.utils.cmake_prefix_path`
     to conveniently tell us where the cmake files for our PyTorch install are.
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: 这将在`build`文件夹中放置一个`libwarp_perspective.so`共享库文件。在上面的`cmake`命令中，我们使用辅助变量`torch.utils.cmake_prefix_path`方便地告诉我们PyTorch安装的cmake文件在哪里。
 - en: 'We will explore how to use and call our operator in detail further below, but
     to get an early sensation of success, we can try running the following code in
     Python:'
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们将在下面详细探讨如何使用和调用我们的运算符，但为了早点感受到成功，我们可以尝试在Python中运行以下代码：
 - en: '[PRE10]'
+  id: totrans-42
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: 'If all goes well, this should print something like:'
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果一切顺利，这应该打印出类似的内容：
 - en: '[PRE11]'
+  id: totrans-44
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: which is the Python function we will later use to invoke our custom operator.
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: 这是我们以后将用来调用我们自定义运算符的Python函数。
 - en: Using the TorchScript Custom Operator in Python
+  id: totrans-46
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 在Python中使用TorchScript自定义运算符
 - en: 'Once our custom operator is built into a shared library we are ready to use
     this operator in our TorchScript models in Python. There are two parts to this:
     first loading the operator into Python, and second using the operator in TorchScript
     code.'
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: 一旦我们的自定义运算符构建到一个共享库中，我们就可以在Python中的TorchScript模型中使用这个运算符。这有两个部分：首先将运算符加载到Python中，然后在TorchScript代码中使用该运算符。
 - en: 'You already saw how to import your operator into Python: `torch.ops.load_library()`.
     This function takes the path to a shared library containing custom operators,
     and loads it into the current process. Loading the shared library will also execute
     the `TORCH_LIBRARY` block. This will register our custom operator with the TorchScript
     compiler and allow us to use that operator in TorchScript code.'
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: 你已经看到如何将你的运算符导入Python：`torch.ops.load_library()`。这个函数接受包含自定义运算符的共享库路径，并将其加载到当前进程中。加载共享库还将执行`TORCH_LIBRARY`块。这将注册我们的自定义运算符到TorchScript编译器，并允许我们在TorchScript代码中使用该运算符。
 - en: 'You can refer to your loaded operator as `torch.ops.<namespace>.<function>`,
     where `<namespace>` is the namespace part of your operator name, and `<function>`
     the function name of your operator. For the operator we wrote above, the namespace
@@ -269,20 +373,30 @@
     is available as `torch.ops.my_ops.warp_perspective`. While this function can be
     used in scripted or traced TorchScript modules, we can also just use it in vanilla
     eager PyTorch and pass it regular PyTorch tensors:'
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: 你可以将加载的运算符称为`torch.ops.<namespace>.<function>`，其中`<namespace>`是你的运算符名称的命名空间部分，`<function>`是你的运算符的函数名称。对于我们上面编写的运算符，命名空间是`my_ops`，函数名称是`warp_perspective`，这意味着我们的运算符可以作为`torch.ops.my_ops.warp_perspective`使用。虽然这个函数可以在脚本化或跟踪的TorchScript模块中使用，我们也可以在普通的急切PyTorch中使用它，并传递常规的PyTorch张量：
 - en: '[PRE12]'
+  id: totrans-50
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: 'producing:'
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
+  zh: 生产：
 - en: '[PRE13]'
+  id: totrans-52
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: Note
+  id: totrans-53
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: 'What happens behind the scenes is that the first time you access `torch.ops.namespace.function`
     in Python, the TorchScript compiler (in C++ land) will see if a function `namespace::function`
     has been registered, and if so, return a Python handle to this function that we
@@ -292,8 +406,10 @@
     custom ops are bound on the fly by PyTorch itself. Pybind11 gives you more flexibility
     with regards to what types and classes you can bind into Python and is thus recommended
     for purely eager code, but it is not supported for TorchScript ops.'
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: 在幕后发生的事情是，当您在Python中第一次访问`torch.ops.namespace.function`时，TorchScript编译器（在C++领域）将查看是否已经注册了函数`namespace::function`，如果是，则返回一个Python句柄到这个函数，我们随后可以使用这个句柄从Python调用我们的C++运算符实现。这是TorchScript自定义运算符和C++扩展之间的一个值得注意的区别：C++扩展是通过pybind11手动绑定的，而TorchScript自定义运算符是由PyTorch自身动态绑定的。Pybind11在绑定到Python时给您更多的灵活性，因此建议用于纯粹的急切代码，但不支持TorchScript运算符。
 - en: From here on, you can use your custom operator in scripted or traced code just
     as you would other functions from the `torch` package. In fact, “standard library”
     functions like `torch.matmul` go through largely the same registration path as
@@ -301,61 +417,93 @@
     it comes to how and where they can be used in TorchScript. (One difference, however,
     is that standard library functions have custom written Python argument parsing
     logic that differs from `torch.ops` argument parsing.)
+  id: totrans-55
   prefs: []
   type: TYPE_NORMAL
+  zh: 从这里开始，您可以在脚本化或跟踪的代码中像使用`torch`包中的其他函数一样使用您的自定义运算符。事实上，“标准库”函数如`torch.matmul`通过与自定义运算符基本相同的注册路径，这使得自定义运算符在TorchScript中如何以及在哪里使用时成为真正的一等公民。（然而，一个区别是，标准库函数具有自定义编写的Python参数解析逻辑，与`torch.ops`参数解析不同。）
 - en: Using the Custom Operator with Tracing
+  id: totrans-56
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 使用跟踪的自定义运算符
 - en: 'Let’s start by embedding our operator in a traced function. Recall that for
     tracing, we start with some vanilla Pytorch code:'
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们首先将我们的运算符嵌入到一个跟踪函数中。回想一下，对于跟踪，我们从一些普通的PyTorch代码开始：
 - en: '[PRE14]'
+  id: totrans-58
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: 'and then call `torch.jit.trace` on it. We further pass `torch.jit.trace` some
     example inputs, which it will forward to our implementation to record the sequence
     of operations that occur as the inputs flow through it. The result of this is
     effectively a “frozen” version of the eager PyTorch program, which the TorchScript
     compiler can further analyze, optimize and serialize:'
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后在其上调用`torch.jit.trace`。我们进一步传递给`torch.jit.trace`一些示例输入，它将转发给我们的实现以记录输入流经过时发生的操作序列。这样做的结果实际上是急切PyTorch程序的“冻结”版本，TorchScript编译器可以进一步分析、优化和序列化：
 - en: '[PRE15]'
+  id: totrans-60
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: 'Producing:'
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: 生成：
 - en: '[PRE16]'
+  id: totrans-62
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: 'Now, the exciting revelation is that we can simply drop our custom operator
     into our PyTorch trace as if it were `torch.relu` or any other `torch` function:'
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，令人兴奋的发现是，我们可以简单地将我们的自定义运算符放入我们的PyTorch跟踪中，就像它是`torch.relu`或任何其他`torch`函数一样：
 - en: '[PRE17]'
+  id: totrans-64
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: 'and then trace it as before:'
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后像以前一样对其进行跟踪：
 - en: '[PRE18]'
+  id: totrans-66
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: 'Producing:'
+  id: totrans-67
   prefs: []
   type: TYPE_NORMAL
+  zh: 生成：
 - en: '[PRE19]'
+  id: totrans-68
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE19]'
 - en: Integrating TorchScript custom ops into traced PyTorch code is as easy as this!
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: 将TorchScript自定义运算符集成到跟踪的PyTorch代码中就像这样简单！
 - en: Using the Custom Operator with Script
+  id: totrans-70
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 使用脚本的自定义运算符
 - en: Besides tracing, another way to arrive at a TorchScript representation of a
     PyTorch program is to directly write your code *in* TorchScript. TorchScript is
     largely a subset of the Python language, with some restrictions that make it easier
@@ -364,66 +512,98 @@
     and `@torch.jit.script_method` for methods in a class (which must also derive
     from `torch.jit.ScriptModule`). See [here](https://pytorch.org/docs/master/jit.html)
     for more details on TorchScript annotations.
+  id: totrans-71
   prefs: []
   type: TYPE_NORMAL
+  zh: 除了跟踪之外，另一种获得PyTorch程序的TorchScript表示的方法是直接在TorchScript中编写代码。TorchScript在很大程度上是Python语言的一个子集，具有一些限制，使得TorchScript编译器更容易推理程序。通过使用`@torch.jit.script`对自由函数进行注释，以及对类中的方法使用`@torch.jit.script_method`（该类还必须派生自`torch.jit.ScriptModule`），您可以将常规的PyTorch代码转换为TorchScript。有关TorchScript注释的更多详细信息，请参见[这里](https://pytorch.org/docs/master/jit.html)。
 - en: 'One particular reason to use TorchScript instead of tracing is that tracing
     is unable to capture control flow in PyTorch code. As such, let us consider this
     function which does use control flow:'
+  id: totrans-72
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用TorchScript而不是跟踪的一个特别原因是，跟踪无法捕获PyTorch代码中的控制流。因此，让我们考虑这个使用控制流的函数：
 - en: '[PRE20]'
+  id: totrans-73
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE20]'
 - en: 'To convert this function from vanilla PyTorch to TorchScript, we annotate it
     with `@torch.jit.script`:'
+  id: totrans-74
   prefs: []
   type: TYPE_NORMAL
+  zh: 要将这个函数从普通的PyTorch转换为TorchScript，我们使用`@torch.jit.script`对其进行注释：
 - en: '[PRE21]'
+  id: totrans-75
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE21]'
 - en: 'This will just-in-time compile the `compute` function into a graph representation,
     which we can inspect in the `compute.graph` property:'
+  id: totrans-76
   prefs: []
   type: TYPE_NORMAL
+  zh: 这将把`compute`函数即时编译成图表示，我们可以在`compute.graph`属性中检查它：
 - en: '[PRE22]'
+  id: totrans-77
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE22]'
 - en: 'And now, just like before, we can use our custom operator like any other function
     inside of our script code:'
+  id: totrans-78
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，就像以前一样，我们可以在我们的脚本代码中像使用任何其他函数一样使用我们的自定义运算符：
 - en: '[PRE23]'
+  id: totrans-79
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE23]'
 - en: 'When the TorchScript compiler sees the reference to `torch.ops.my_ops.warp_perspective`,
     it will find the implementation we registered via the `TORCH_LIBRARY` function
     in C++, and compile it into its graph representation:'
+  id: totrans-80
   prefs: []
   type: TYPE_NORMAL
+  zh: 当TorchScript编译器看到对`torch.ops.my_ops.warp_perspective`的引用时，它将找到我们通过C++中的`TORCH_LIBRARY`函数注册的实现，并将其编译成其图表示：
 - en: '[PRE24]'
+  id: totrans-81
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE24]'
 - en: Notice in particular the reference to `my_ops::warp_perspective` at the end
     of the graph.
+  id: totrans-82
   prefs: []
   type: TYPE_NORMAL
+  zh: 特别注意图的末尾对`my_ops::warp_perspective`的引用。
 - en: Attention
+  id: totrans-83
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: The TorchScript graph representation is still subject to change. Do not rely
     on it looking like this.
+  id: totrans-84
   prefs: []
   type: TYPE_NORMAL
+  zh: TorchScript图表示仍然可能会发生变化。不要依赖它看起来像这样。
 - en: And that’s really it when it comes to using our custom operator in Python. In
     short, you import the library containing your operator(s) using `torch.ops.load_library`,
     and call your custom op like any other `torch` operator from your traced or scripted
     TorchScript code.
+  id: totrans-85
   prefs: []
   type: TYPE_NORMAL
+  zh: 这就是在Python中使用我们的自定义运算符时的全部内容。简而言之，您可以使用`torch.ops.load_library`导入包含您的运算符的库，并像从您的跟踪或脚本化的TorchScript代码中调用任何其他`torch`运算符一样调用您的自定义运算符。
 - en: Using the TorchScript Custom Operator in C++
+  id: totrans-86
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 在C++中使用TorchScript自定义运算符
 - en: One useful feature of TorchScript is the ability to serialize a model into an
     on-disk file. This file can be sent over the wire, stored in a file system or,
     more importantly, be dynamically deserialized and executed without needing to
@@ -433,90 +613,135 @@
     please read [the tutorial on loading and running serialized TorchScript models
     in C++](https://pytorch.org/tutorials/advanced/cpp_export.html), on which the
     next few paragraphs will build.
+  id: totrans-87
   prefs: []
   type: TYPE_NORMAL
+  zh: TorchScript的一个有用功能是将模型序列化为磁盘文件。这个文件可以通过网络发送，存储在文件系统中，或者更重要的是，可以在不需要保留原始源代码的情况下动态反序列化和执行。这在Python中是可能的，但在C++中也是可能的。为此，PyTorch提供了[一个纯C++
+    API](https://pytorch.org/cppdocs/)用于反序列化以及执行TorchScript模型。如果您还没有，请阅读[在C++中加载和运行序列化的TorchScript模型的教程](https://pytorch.org/tutorials/advanced/cpp_export.html)，接下来的几段将基于此构建。
 - en: In short, custom operators can be executed just like regular `torch` operators
     even when deserialized from a file and run in C++. The only requirement for this
     is to link the custom operator shared library we built earlier with the C++ application
     in which we execute the model. In Python, this worked simply calling `torch.ops.load_library`.
     In C++, you need to link the shared library with your main application in whatever
     build system you are using. The following example will showcase this using CMake.
+  id: totrans-88
   prefs: []
   type: TYPE_NORMAL
+  zh: 简而言之，即使从文件中反序列化并在C++中运行，自定义运算符也可以像常规的`torch`运算符一样执行。这唯一的要求是将我们之前构建的自定义运算符共享库与我们在其中执行模型的C++应用程序链接起来。在Python中，这只需简单调用`torch.ops.load_library`。在C++中，您需要将共享库与您正在使用的任何构建系统中的主应用程序链接起来。以下示例将使用CMake展示这一点。
 - en: Note
+  id: totrans-89
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Technically, you can also dynamically load the shared library into your C++
     application at runtime in much the same way we did it in Python. On Linux, [you
     can do this with dlopen](https://tldp.org/HOWTO/Program-Library-HOWTO/dl-libraries.html).
     There exist equivalents on other platforms.
+  id: totrans-90
   prefs: []
   type: TYPE_NORMAL
+  zh: 从技术上讲，您也可以在运行时以与我们在Python中所做的方式相同的方式动态加载共享库到您的C++应用程序中。在Linux上，[您可以使用dlopen来做到这一点](https://tldp.org/HOWTO/Program-Library-HOWTO/dl-libraries.html)。其他平台上也存在等价物。
 - en: 'Building on the C++ execution tutorial linked above, let’s start with a minimal
     C++ application in one file, `main.cpp` in a different folder from our custom
     operator, that loads and executes a serialized TorchScript model:'
+  id: totrans-91
   prefs: []
   type: TYPE_NORMAL
+  zh: 在上面链接的C++执行教程的基础上，让我们从一个最小的C++应用程序开始，该应用程序位于一个不同的文件夹中的`main.cpp`文件中，加载并执行一个序列化的TorchScript模型：
 - en: '[PRE25]'
+  id: totrans-92
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE25]'
 - en: 'Along with a small `CMakeLists.txt` file:'
+  id: totrans-93
   prefs: []
   type: TYPE_NORMAL
+  zh: 还有一个小的`CMakeLists.txt`文件：
 - en: '[PRE26]'
+  id: totrans-94
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE26]'
 - en: 'At this point, we should be able to build the application:'
+  id: totrans-95
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这一点上，我们应该能够构建应用程序：
 - en: '[PRE27]'
+  id: totrans-96
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE27]'
 - en: 'And run it without passing a model just yet:'
+  id: totrans-97
   prefs: []
   type: TYPE_NORMAL
+  zh: 并且在不传递模型的情况下运行它：
 - en: '[PRE28]'
+  id: totrans-98
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE28]'
 - en: 'Next, let’s serialize the script function we wrote earlier that uses our custom
     operator:'
+  id: totrans-99
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，让我们序列化我们之前编写的使用我们自定义运算符的脚本函数：
 - en: '[PRE29]'
+  id: totrans-100
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE29]'
 - en: 'The last line will serialize the script function into a file called “example.pt”.
     If we then pass this serialized model to our C++ application, we can run it straight
     away:'
+  id: totrans-101
   prefs: []
   type: TYPE_NORMAL
+  zh: 最后一行将脚本函数序列化为一个名为“example.pt”的文件。如果我们将这个序列化模型传递给我们的C++应用程序，我们可以立即运行它：
 - en: '[PRE30]'
+  id: totrans-102
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE30]'
 - en: 'Or maybe not. Maybe not just yet. Of course! We haven’t linked the custom operator
     library with our application yet. Let’s do this right now, and to do it properly
     let’s update our file organization slightly, to look like this:'
+  id: totrans-103
   prefs: []
   type: TYPE_NORMAL
+  zh: 或者也许不是。也许还不是。当然！我们还没有将自定义运算符库与我们的应用程序链接起来。让我们立即做这个，为了正确地做这件事，让我们稍微更新我们的文件组织，看起来像这样：
 - en: '[PRE31]'
+  id: totrans-104
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE31]'
 - en: 'This will allow us to add the `warp_perspective` library CMake target as a
     subdirectory of our application target. The top level `CMakeLists.txt` in the
     `example_app` folder should look like this:'
+  id: totrans-105
   prefs: []
   type: TYPE_NORMAL
+  zh: 这将允许我们将`warp_perspective`库CMake目标作为我们应用程序目标的子目录。`example_app`文件夹中的顶层`CMakeLists.txt`应该如下所示：
 - en: '[PRE32]'
+  id: totrans-106
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE32]'
 - en: This basic CMake configuration looks much like before, except that we add the
     `warp_perspective` CMake build as a subdirectory. Once its CMake code runs, we
     link our `example_app` application with the `warp_perspective` shared library.
+  id: totrans-107
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个基本的CMake配置看起来与以前很像，只是我们将`warp_perspective` CMake构建添加为一个子目录。一旦它的CMake代码运行，我们将我们的`example_app`应用程序与`warp_perspective`共享库链接起来。
 - en: Attention
+  id: totrans-108
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: 'There is one crucial detail embedded in the above example: The `-Wl,--no-as-needed`
     prefix to the `warp_perspective` link line. This is required because we will not
     actually be calling any function from the `warp_perspective` shared library in
@@ -532,37 +757,56 @@
     Unfortunately, this is outside of our control, and we would rather let you know
     the reason and the simple workaround for this than handing you some opaque macro
     to plop in your code.'
+  id: totrans-109
   prefs: []
   type: TYPE_NORMAL
+  zh: 上面示例中嵌入了一个关键细节：`warp_perspective`链接行前缀`-Wl,--no-as-needed`。这是必需的，因为我们实际上不会在应用程序代码中调用`warp_perspective`共享库中的任何函数。我们只需要`TORCH_LIBRARY`函数运行。不方便的是，这会让链接器混淆，并使其认为可以完全跳过与库的链接。在Linux上，`-Wl,--no-as-needed`标志强制进行链接（注意：此标志特定于Linux！）。还有其他解决方法。最简单的方法是在您需要从主应用程序调用的运算符库中定义*某个函数*。这可以是在某个头文件中声明的简单函数`void
+    init();`，然后在运算符库中定义为`void init() { }`。在主应用程序中调用此`init()`函数将使链接器认为这是值得链接的库。不幸的是，这超出了我们的控制范围，我们宁愿让您了解这个原因和简单的解决方法，而不是给您一些不透明的宏来放入您的代码中。
 - en: 'Now, since we find the `Torch` package at the top level now, the `CMakeLists.txt`
     file in the `warp_perspective` subdirectory can be shortened a bit. It should
     look like this:'
+  id: totrans-110
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，由于我们现在在顶层找到了`Torch`包，`warp_perspective`子目录中的`CMakeLists.txt`文件可以稍微缩短一点。它应该是这样的：
 - en: '[PRE33]'
+  id: totrans-111
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE33]'
 - en: 'Let’s re-build our example app, which will also link with the custom operator
     library. In the top level `example_app` directory:'
+  id: totrans-112
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们重新构建我们的示例应用程序，它还将链接到自定义运算符库。在顶层`example_app`目录中：
 - en: '[PRE34]'
+  id: totrans-113
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE34]'
 - en: 'If we now run the `example_app` binary and hand it our serialized model, we
     should arrive at a happy ending:'
+  id: totrans-114
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果我们现在运行`example_app`二进制文件并将序列化模型交给它，我们应该会得到一个美好的结局：
 - en: '[PRE35]'
+  id: totrans-115
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE35]'
 - en: Success! You are now ready to inference away.
+  id: totrans-116
   prefs: []
   type: TYPE_NORMAL
+  zh: 成功！您现在已经准备好进行推理了。
 - en: Conclusion
+  id: totrans-117
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 结论
 - en: This tutorial walked you throw how to implement a custom TorchScript operator
     in C++, how to build it into a shared library, how to use it in Python to define
     TorchScript models and lastly how to load it into a C++ application for inference
@@ -570,18 +814,24 @@
     that interface with third party C++ libraries, write custom high performance CUDA
     kernels, or implement any other use case that requires the lines between Python,
     TorchScript and C++ to blend smoothly.
+  id: totrans-118
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程向您展示了如何在C++中实现自定义TorchScript运算符，如何将其构建为共享库，如何在Python中使用它来定义TorchScript模型，最后如何将其加载到用于推理工作负载的C++应用程序中。您现在已经准备好通过C++运算符扩展您的TorchScript模型，这些运算符与第三方C++库进行接口，编写自定义高性能CUDA内核，或实现任何其他需要Python、TorchScript和C++之间无缝融合的用例。
 - en: As always, if you run into any problems or have questions, you can use our [forum](https://discuss.pytorch.org/)
     or [GitHub issues](https://github.com/pytorch/pytorch/issues) to get in touch.
     Also, our [frequently asked questions (FAQ) page](https://pytorch.org/cppdocs/notes/faq.html)
     may have helpful information.
+  id: totrans-119
   prefs: []
   type: TYPE_NORMAL
+  zh: 如往常一样，如果遇到任何问题或有疑问，您可以使用我们的[论坛](https://discuss.pytorch.org/)或[GitHub问题](https://github.com/pytorch/pytorch/issues)联系我们。此外，我们的[常见问题（FAQ）页面](https://pytorch.org/cppdocs/notes/faq.html)可能会提供有用的信息。
 - en: 'Appendix A: More Ways of Building Custom Operators'
+  id: totrans-120
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 附录A：构建自定义运算符的更多方法
 - en: The section “Building the Custom Operator” explained how to build a custom operator
     into a shared library using CMake. This appendix outlines two further approaches
     for compilation. Both of them use Python as the “driver” or “interface” to the
@@ -590,8 +840,10 @@
     which are the vanilla (eager) PyTorch equivalent of TorchScript custom operators
     that rely on [pybind11](https://github.com/pybind/pybind11) for “explicit” binding
     of functions from C++ into Python.
+  id: totrans-121
   prefs: []
   type: TYPE_NORMAL
+  zh: “构建自定义运算符”部分解释了如何使用CMake将自定义运算符构建为共享库。本附录概述了两种进一步的编译方法。它们都使用Python作为编译过程的“驱动程序”或“接口”。此外，它们都重用了PyTorch为[*C++扩展*](https://pytorch.org/tutorials/advanced/cpp_extension.html)提供的[现有基础设施](https://pytorch.org/docs/stable/cpp_extension.html)，这些扩展是依赖于[pybind11](https://github.com/pybind/pybind11)的TorchScript自定义运算符的等效版本，用于将C++函数“显式”绑定到Python中。
 - en: The first approach uses C++ extensions’ [convenient just-in-time (JIT) compilation
     interface](https://pytorch.org/docs/stable/cpp_extension.html#torch.utils.cpp_extension.load)
     to compile your code in the background of your PyTorch script the first time you
@@ -599,26 +851,36 @@
     writing a separate `setup.py` file. This allows more advanced configuration as
     well as integration with other `setuptools`-based projects. We will explore both
     approaches in detail below.
+  id: totrans-122
   prefs: []
   type: TYPE_NORMAL
+  zh: 第一种方法使用C++扩展的[方便的即时（JIT）编译接口](https://pytorch.org/docs/stable/cpp_extension.html#torch.utils.cpp_extension.load)在您首次运行PyTorch脚本时在后台编译您的代码。第二种方法依赖于古老的`setuptools`包，并涉及编写一个单独的`setup.py`文件。这允许更高级的配置以及与其他基于`setuptools`的项目集成。我们将在下面详细探讨这两种方法。
 - en: Building with JIT compilation
+  id: totrans-123
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 使用JIT编译进行构建
 - en: The JIT compilation feature provided by the PyTorch C++ extension toolkit allows
     embedding the compilation of your custom operator directly into your Python code,
     e.g. at the top of your training script.
+  id: totrans-124
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch C++扩展工具包提供的JIT编译功能允许将自定义运算符的编译直接嵌入到您的Python代码中，例如在您的训练脚本顶部。
 - en: Note
+  id: totrans-125
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: “JIT compilation” here has nothing to do with the JIT compilation taking place
     in the TorchScript compiler to optimize your program. It simply means that your
     custom operator C++ code will be compiled in a folder under your system’s /tmp
     directory the first time you import it, as if you had compiled it yourself beforehand.
+  id: totrans-126
   prefs: []
   type: TYPE_NORMAL
+  zh: 这里的“JIT编译”与TorchScript编译器中进行的JIT编译优化程序无关。它只是意味着您的自定义运算符C++代码将在您首次导入时编译到系统的/tmp目录下的一个文件夹中，就好像您之前自己编译过一样。
 - en: 'This JIT compilation feature comes in two flavors. In the first, you still
     keep your operator implementation in a separate file (`op.cpp`), and then use
     `torch.utils.cpp_extension.load()` to compile your extension. Usually, this function
@@ -629,38 +891,56 @@
     we are only interested in building a shared library and not a Python module. `torch.utils.cpp_extension.load()`
     will then compile and also load the shared library into the current process, just
     like `torch.ops.load_library` did before:'
+  id: totrans-127
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个JIT编译功能有两种方式。在第一种方式中，您仍然将您的运算符实现放在一个单独的文件中（`op.cpp`），然后使用`torch.utils.cpp_extension.load()`来编译您的扩展。通常，这个函数会返回暴露您的C++扩展的Python模块。然而，由于我们没有将自定义运算符编译成自己的Python模块，我们只想编译一个普通的共享库。幸运的是，`torch.utils.cpp_extension.load()`有一个参数`is_python_module`，我们可以将其设置为`False`，以指示我们只对构建共享库感兴趣，而不是Python模块。`torch.utils.cpp_extension.load()`然后会编译并加载共享库到当前进程中，就像之前`torch.ops.load_library`做的那样：
 - en: '[PRE36]'
+  id: totrans-128
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE36]'
 - en: 'This should approximately print:'
+  id: totrans-129
   prefs: []
   type: TYPE_NORMAL
+  zh: 这应该大致打印：
 - en: '[PRE37]'
+  id: totrans-130
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE37]'
 - en: 'The second flavor of JIT compilation allows you to pass the source code for
     your custom TorchScript operator as a string. For this, use `torch.utils.cpp_extension.load_inline`:'
+  id: totrans-131
   prefs: []
   type: TYPE_NORMAL
+  zh: 第二种JIT编译的方式允许您将自定义TorchScript运算符的源代码作为字符串传递。为此，请使用`torch.utils.cpp_extension.load_inline`：
 - en: '[PRE38]'
+  id: totrans-132
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE38]'
 - en: Naturally, it is best practice to only use `torch.utils.cpp_extension.load_inline`
     if your source code is reasonably short.
+  id: totrans-133
   prefs: []
   type: TYPE_NORMAL
+  zh: 自然地，最佳实践是只在您的源代码相当短的情况下使用`torch.utils.cpp_extension.load_inline`。
 - en: Note that if you’re using this in a Jupyter Notebook, you should not execute
     the cell with the registration multiple times because each execution registers
     a new library and re-registers the custom operator. If you need to re-execute
     it, please restart the Python kernel of your notebook beforehand.
+  id: totrans-134
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，如果您在Jupyter Notebook中使用这个功能，不要多次执行注册单元格，因为每次执行都会注册一个新的库并重新注册自定义运算符。如果需要重新执行，请在此之前重新启动笔记本的Python内核。
 - en: Building with Setuptools
+  id: totrans-135
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 使用Setuptools构建
 - en: 'The second approach to building our custom operator exclusively from Python
     is to use `setuptools`. This has the advantage that `setuptools` has a quite powerful
     and extensive interface for building Python modules written in C++. However, since
@@ -668,31 +948,46 @@
     libraries (which do not have the necessary entry points Python expects from a
     module), this route can be slightly quirky. That said, all you need is a `setup.py`
     file in place of the `CMakeLists.txt` which looks like this:'
+  id: totrans-136
   prefs: []
   type: TYPE_NORMAL
+  zh: 从Python中构建我们的自定义运算符的第二种方法是使用`setuptools`。这样做的好处是`setuptools`具有一个非常强大和广泛的接口，用于构建用C++编写的Python模块。然而，由于`setuptools`实际上是用于构建Python模块而不是普通的共享库（这些库没有模块所需的入口点），这条路线可能有点古怪。也就是说，您只需要一个`setup.py`文件来替代`CMakeLists.txt`，它看起来像这样：
 - en: '[PRE39]'
+  id: totrans-137
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE39]'
 - en: Notice that we enabled the `no_python_abi_suffix` option in the `BuildExtension`
     at the bottom. This instructs `setuptools` to omit any Python-3 specific ABI suffixes
     in the name of the produced shared library. Otherwise, on Python 3.7 for example,
     the library may be called `warp_perspective.cpython-37m-x86_64-linux-gnu.so` where
     `cpython-37m-x86_64-linux-gnu` is the ABI tag, but we really just want it to be
     called `warp_perspective.so`
+  id: totrans-138
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，在底部的`BuildExtension`中启用了`no_python_abi_suffix`选项。这指示`setuptools`在生成的共享库名称中省略任何Python-3特定的ABI后缀。否则，在Python
+    3.7中，库可能被称为`warp_perspective.cpython-37m-x86_64-linux-gnu.so`，其中`cpython-37m-x86_64-linux-gnu`是ABI标签，但我们真的只想让它被称为`warp_perspective.so`。
 - en: 'If we now run `python setup.py build develop` in a terminal from within the
     folder in which `setup.py` is situated, we should see something like:'
+  id: totrans-139
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果我们现在在包含`setup.py`的文件夹中的终端中运行`python setup.py build develop`，我们应该会看到类似以下的内容：
 - en: '[PRE40]'
+  id: totrans-140
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE40]'
 - en: 'This will produce a shared library called `warp_perspective.so`, which we can
     pass to `torch.ops.load_library` as we did earlier to make our operator visible
     to TorchScript:'
+  id: totrans-141
   prefs: []
   type: TYPE_NORMAL
+  zh: 这将生成一个名为`warp_perspective.so`的共享库，我们可以像之前那样将其传递给`torch.ops.load_library`，以使我们的运算符对TorchScript可见：
 - en: '[PRE41]'
+  id: totrans-142
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE41]'
