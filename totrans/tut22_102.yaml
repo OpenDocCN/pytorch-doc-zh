@@ -301,14 +301,17 @@
   id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: 通常我们建议将一个进程绑定到本地插槽，以便该进程不会在不同插槽之间迁移。通常这样做的目的是利用本地内存上的高速缓存，并避免远程内存访问，后者可能慢大约2倍。
 - en: '[![../_images/6.png](../Images/4883ee88dea607f56c62f6bd09501713.png)](../_images/6.png)'
   id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_images/6.png](../Images/4883ee88dea607f56c62f6bd09501713.png)](../_images/6.png)'
 - en: Figure 1\. Two-socket configuration
   id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: 图1. 双插槽配置
 - en: Figure 1\. shows a typical two-socket configuration. Notice that each socket
     has its own local memory. Sockets are connected to each other via Intel Ultra
     Path Interconnect (UPI) which allows each socket to access the local memory of
@@ -317,14 +320,17 @@
   id: totrans-51
   prefs: []
   type: TYPE_NORMAL
+  zh: 图1. 显示了一个典型的双插槽配置。请注意，每个插槽都有自己的本地内存。插槽通过Intel Ultra Path Interconnect (UPI)连接到彼此，这允许每个插槽访问另一个插槽的本地内存，称为远程内存。本地内存访问始终比远程内存访问快。
 - en: '[![../_images/7.png](../Images/9f8fe3672209c49d3625946847233f4b.png)](../_images/7.png)'
   id: totrans-52
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_images/7.png](../Images/9f8fe3672209c49d3625946847233f4b.png)](../_images/7.png)'
 - en: Figure 2.1\. CPU information
   id: totrans-53
   prefs: []
   type: TYPE_NORMAL
+  zh: 图2.1. CPU信息
 - en: Users can get their CPU information by running `lscpu` command on their Linux
     machine. Figure 2.1\. shows an example of `lscpu` execution on a machine with
     two Intel(R) Xeon(R) Platinum 8180M CPUs. Notice that there are 28 cores per socket,
@@ -335,14 +341,19 @@
   id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: 用户可以通过在他们的Linux机器上运行`lscpu`命令来获取他们的CPU信息。图2.1. 显示了在一台装有两个Intel(R) Xeon(R) Platinum
+    8180M CPU的机器上执行`lscpu`的示例。请注意，每个插槽有28个核心，每个核心有2个线程（即启用了超线程）。换句话说，除了28个物理核心外，还有28个逻辑核心，每个插槽总共有56个核心。而且有2个插槽，总共有112个核心（`每个核心的线程数`
+    x `每个插槽的核心数` x `插槽数`）。
 - en: '[![../_images/8.png](../Images/401010f7117d9febf2003c41ba5c4559.png)](../_images/8.png)'
   id: totrans-55
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_images/8.png](../Images/401010f7117d9febf2003c41ba5c4559.png)](../_images/8.png)'
 - en: Figure 2.2\. CPU information
   id: totrans-56
   prefs: []
   type: TYPE_NORMAL
+  zh: 图2.2. CPU信息
 - en: The 2 sockets are mapped to 2 NUMA nodes (NUMA node 0, NUMA node 1) respectively.
     Physical cores are indexed prior to logical cores. As shown in Figure 2.2., the
     first 28 physical cores (0-27) and the first 28 logical cores (56-83) on the first
@@ -353,35 +364,43 @@
   id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: 这2个插槽分别映射到2个NUMA节点（NUMA节点0，NUMA节点1）。物理核心在逻辑核心之前进行索引。如图2.2.所示，第一个插槽上的前28个物理核心（0-27）和前28个逻辑核心（56-83）位于NUMA节点0。第二个插槽上的第28个物理核心（28-55）和第二个插槽上的第28个逻辑核心（84-111）位于NUMA节点1。同一插槽上的核心共享本地内存和最后一级缓存（LLC），比通过Intel
+    UPI进行跨插槽通信要快得多。
 - en: Now that we understand NUMA, cross-socket (UPI) traffic, local vs. remote memory
     access in multi-processor systems, let’s profile and verify our understanding.
   id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们了解了NUMA、跨插槽（UPI）流量、多处理器系统中的本地与远程内存访问，让我们对其进行分析和验证。
 - en: '**Exercise**'
   id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: '**练习**'
 - en: We’ll reuse the ResNet50 example above.
   id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们将重用上面的ResNet50示例。
 - en: As we did not pin threads to processor cores of a specific socket, the operating
     system periodically schedules threads on processor cores located in different
     sockets.
   id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于我们没有将线程固定到特定插槽的处理器核心上，操作系统会定期将线程调度到位于不同插槽中的处理器核心上。
 - en: '[![../_images/9.gif](../Images/34e582c1c262c693f8472ce4254570ba.png)](../_images/9.gif)'
   id: totrans-62
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_images/9.gif](../Images/34e582c1c262c693f8472ce4254570ba.png)](../_images/9.gif)'
 - en: Figure 3\. CPU usage of non NUMA-aware application. 1 main worker thread was
     launched, then it launched a physical core number (56) of threads on all cores,
     including logical cores.
   id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: 图3. 非NUMA感知应用程序的CPU使用情况。启动了1个主工作线程，然后在所有核心上启动了一个物理核心编号（56）的线程，包括逻辑核心。
 - en: '(Aside: If the number of threads is not set by [torch.set_num_threads](https://pytorch.org/docs/stable/generated/torch.set_num_threads.html),
     the default number of threads is the number of physical cores in a hyperthreading
     enabled system. This can be verified by [torch.get_num_threads](https://pytorch.org/docs/stable/generated/torch.get_num_threads.html).
@@ -389,24 +408,29 @@
   id: totrans-64
   prefs: []
   type: TYPE_NORMAL
+  zh: （附注：如果线程数未通过[torch.set_num_threads](https://pytorch.org/docs/stable/generated/torch.set_num_threads.html)设置，那么默认线程数是启用超线程系统中的物理核心数。这可以通过[torch.get_num_threads](https://pytorch.org/docs/stable/generated/torch.get_num_threads.html)来验证。因此，我们看到大约一半的核心忙于运行示例脚本。）
 - en: '[![../_images/10.png](../Images/19d05986d8f0236e3463065f779359e1.png)](../_images/10.png)'
   id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_images/10.png](../Images/19d05986d8f0236e3463065f779359e1.png)](../_images/10.png)'
 - en: Figure 4\. Non-Uniform Memory Access Analysis graph
   id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: 图4. 非均匀内存访问分析图
 - en: Figure 4\. compares local vs. remote memory access over time. We verify usage
     of remote memory which could result in sub-optimal performance.
   id: totrans-67
   prefs: []
   type: TYPE_NORMAL
+  zh: 图4. 比较了随时间变化的本地与远程内存访问。我们验证了远程内存的使用，这可能导致性能不佳。
 - en: '**Set thread affinity to reduce remote memory access and cross-socket (UPI)
     traffic**'
   id: totrans-68
   prefs: []
   type: TYPE_NORMAL
+  zh: '**设置线程亲和性以减少远程内存访问和跨插槽（UPI）流量**'
 - en: Pinning threads to cores on the same socket helps maintain locality of memory
     access. In this example, we’ll pin to the physical cores on the first NUMA node
     (0-27). With the launch script, users can easily experiment with NUMA nodes configuration
@@ -414,18 +438,22 @@
   id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: 将线程固定到同一插槽上的核心有助于保持内存访问的局部性。在这个例子中，我们将固定到第一个NUMA节点上的物理核心（0-27）。通过启动脚本，用户可以通过简单切换`--node_id`启动脚本旋钮来轻松尝试NUMA节点配置。
 - en: Let’s visualize the CPU usage now.
   id: totrans-70
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们现在来可视化CPU使用情况。
 - en: '[![../_images/11.gif](../Images/7dad920dd5537d51cf51649c1e4da9d5.png)](../_images/11.gif)'
   id: totrans-71
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_images/11.gif](../Images/7dad920dd5537d51cf51649c1e4da9d5.png)](../_images/11.gif)'
 - en: Figure 5\. CPU usage of NUMA-aware application
   id: totrans-72
   prefs: []
   type: TYPE_NORMAL
+  zh: 图5. NUMA感知应用程序的CPU使用情况
 - en: 1 main worker thread was launched, then it launched threads on all physical
     cores on the first numa node.
   id: totrans-73
@@ -582,11 +610,13 @@
   id: totrans-96
   prefs: []
   type: TYPE_NORMAL
+  zh: 未填充微操作（uOps）的空管道槽位被归因于停顿。例如，没有核心固定时，CPU使用率可能不会有效地用于计算，而是用于来自Linux内核的其他操作，如线程调度。我们可以看到`__sched_yield`贡献了大部分自旋时间。
 - en: Thread Migration
   id: totrans-97
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 线程迁移
 - en: Without core pinning, scheduler may migrate thread executing on a core to a
     different core. Thread migration can disassociate the thread from data that has
     already been fetched into the caches resulting in longer data access latencies.
@@ -596,10 +626,12 @@
   id: totrans-98
   prefs: []
   type: TYPE_NORMAL
+  zh: 没有核心固定，调度程序可能会将在一个核心上执行的线程迁移到另一个核心。线程迁移可能会使线程与已经获取到缓存中的数据分离，导致更长的数据访问延迟。在NUMA系统中，当线程在插座之间迁移时，这个问题会加剧。已经获取到本地内存高速缓存的数据现在变成了远程内存，速度要慢得多。
 - en: '[![../_images/17.png](../Images/2a12b3c78a1e37b95144e879414c7bee.png)](../_images/17.png)'
   id: totrans-99
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_images/17.png](../Images/2a12b3c78a1e37b95144e879414c7bee.png)](../_images/17.png)'
 - en: Generally the total number of threads should be less than or equal to the total
     number of threads supported by the core. In the above example, we notice a large
     number of threads executing on core_51 instead of the expected 2 threads (since
@@ -608,10 +640,13 @@
   id: totrans-100
   prefs: []
   type: TYPE_NORMAL
+  zh: 通常，总线程数应小于或等于核心支持的总线程数。在上面的示例中，我们注意到大量线程在core_51上执行，而不是预期的2个线程（因为Intel(R) Xeon(R)
+    Platinum 8180 CPU启用了超线程）。这表明线程迁移。
 - en: '[![../_images/18.png](../Images/3b6d2c15f792114de5f771ac3eabe97e.png)](../_images/18.png)'
   id: totrans-101
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_images/18.png](../Images/3b6d2c15f792114de5f771ac3eabe97e.png)](../_images/18.png)'
 - en: Additionally, notice that thread (TID:97097) was executing on a large number
     of CPU cores, indicating CPU migration. For example, this thread was executing
     on cpu_81, then migrated to cpu_14, then migrated to cpu_5, and so on. Furthermore,
@@ -622,33 +657,39 @@
   id: totrans-102
   prefs: []
   type: TYPE_NORMAL
+  zh: 此外，请注意线程（TID:97097）正在大量CPU核心上执行，表明CPU迁移。例如，此线程在cpu_81上执行，然后迁移到cpu_14，然后迁移到cpu_5，依此类推。此外，请注意此线程多次在不同插槽之间迁移，导致内存访问非常低效。例如，此线程在cpu_70（NUMA节点0）上执行，然后迁移到cpu_100（NUMA节点1），然后迁移到cpu_24（NUMA节点0）。
 - en: Non Uniform Memory Access Analysis
   id: totrans-103
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 非均匀内存访问分析
 - en: '[![../_images/19.png](../Images/eb535b6f0a49e85a2f6c69b3307eb58d.png)](../_images/19.png)'
   id: totrans-104
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_images/19.png](../Images/eb535b6f0a49e85a2f6c69b3307eb58d.png)](../_images/19.png)'
 - en: Compare local vs. remote memory access over time. We observe that about half,
     51.09%, of the memory accesses were remote accesses, indicating sub-optimal NUMA
     configuration.
   id: totrans-105
   prefs: []
   type: TYPE_NORMAL
+  zh: 比较随时间变化的本地与远程内存访问。我们观察到大约一半，即51.09%，的内存访问是远程访问，表明NUMA配置不佳。
 - en: 2\. torch.set_num_threads = `number of physical cores / number of workers` (no
     core pinning)
   id: totrans-106
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 2\. torch.set_num_threads = `物理核心数/工作线程数`（无核心固定）
 - en: 'For an apple-to-apple comparison with launcher’s core pinning, we’ll set the
     number of threads to the number of cores divided by the number of workers (launcher
     does this internally). Add the following code snippet in the [base_handler](https://github.com/pytorch/serve/blob/master/ts/torch_handler/base_handler.py):'
   id: totrans-107
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了与启动器的核心固定进行苹果对苹果的比较，我们将将线程数设置为核心数除以工作线程数（启动器在内部执行此操作）。在[base_handler](https://github.com/pytorch/serve/blob/master/ts/torch_handler/base_handler.py)中添加以下代码片段：
 - en: '[PRE1]'
   id: totrans-108
   prefs: []
@@ -660,47 +701,57 @@
   id: totrans-109
   prefs: []
   type: TYPE_NORMAL
+  zh: 与之前一样，没有核心固定，这些线程没有与特定CPU核心关联，导致操作系统周期性地在位于不同插座的核心上调度线程。
 - en: CPU usage
   id: totrans-110
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: CPU使用率
 - en: '[![../_images/20.gif](../Images/324a4abab610044d4447be1f203420e5.png)](../_images/20.gif)'
   id: totrans-111
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_images/20.gif](../Images/324a4abab610044d4447be1f203420e5.png)](../_images/20.gif)'
 - en: 4 main worker threads were launched, then each launched a `num_physical_cores/num_workers`
     number (14) of threads on all cores, including logical cores.
   id: totrans-112
   prefs: []
   type: TYPE_NORMAL
+  zh: 启动了4个主要工作线程，然后每个线程在所有核心上启动了`num_physical_cores/num_workers`（14）个线程，包括逻辑核心。
 - en: Core Bound stalls
   id: totrans-113
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 核心绑定停顿
 - en: '[![../_images/21.png](../Images/c8d610422cd75e7798fb7a63febc2cf1.png)](../_images/21.png)'
   id: totrans-114
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_images/21.png](../Images/c8d610422cd75e7798fb7a63febc2cf1.png)](../_images/21.png)'
 - en: Although the percentage of Core Bound stalls has decreased from 88.4% to 73.5%,
     the Core Bound is still very high.
   id: totrans-115
   prefs: []
   type: TYPE_NORMAL
+  zh: 尽管核心绑定停顿的百分比从88.4%降至73.5%，但核心绑定仍然非常高。
 - en: '[![../_images/22.png](../Images/38f5ccd2ad70dfa738cd25d4795a2103.png)](../_images/22.png)[![../_images/23.png](../Images/27c04f2268b595a2bd5299b190141526.png)](../_images/23.png)'
   id: totrans-116
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_images/22.png](../Images/38f5ccd2ad70dfa738cd25d4795a2103.png)](../_images/22.png)[![../_images/23.png](../Images/27c04f2268b595a2bd5299b190141526.png)](../_images/23.png)'
 - en: Thread Migration
   id: totrans-117
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 线程迁移
 - en: '[![../_images/24.png](../Images/f5b0a04ed3cae12a3b77548c56420027.png)](../_images/24.png)'
   id: totrans-118
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_images/24.png](../Images/f5b0a04ed3cae12a3b77548c56420027.png)](../_images/24.png)'
 - en: Similar as before, without core pinning thread (TID:94290) was executing on
     a large number of CPU cores, indicating CPU migration. We notice again cross-socket
     thread migration, resulting in very inefficient memory access. For example, this
@@ -708,15 +759,18 @@
   id: totrans-119
   prefs: []
   type: TYPE_NORMAL
+  zh: 与之前类似，没有核心固定时，线程（TID:94290）在大量CPU核心上执行，表明CPU迁移。我们再次注意到跨插槽的线程迁移，导致内存访问非常低效。例如，此线程在cpu_78（NUMA节点0）上执行，然后迁移到cpu_108（NUMA节点1）。
 - en: Non Uniform Memory Access Analysis
   id: totrans-120
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 非均匀内存访问分析
 - en: '[![../_images/25.png](../Images/6d7d4b4277221a27dd70ad2125f77d31.png)](../_images/25.png)'
   id: totrans-121
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_images/25.png](../Images/6d7d4b4277221a27dd70ad2125f77d31.png)](../_images/25.png)'
 - en: Although an improvement from the original 51.09%, still 40.45% of memory access
     is remote, indicating sub-optimal NUMA configuration.
   id: totrans-122
