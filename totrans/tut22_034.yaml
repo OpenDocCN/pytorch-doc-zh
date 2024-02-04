@@ -1,242 +1,371 @@
 - en: Optimizing Vision Transformer Model for Deployment
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 优化用于部署的Vision Transformer模型
 - en: 原文：[https://pytorch.org/tutorials/beginner/vt_tutorial.html](https://pytorch.org/tutorials/beginner/vt_tutorial.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/beginner/vt_tutorial.html](https://pytorch.org/tutorials/beginner/vt_tutorial.html)
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-beginner-vt-tutorial-py) to download the full
     example code
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[此处](#sphx-glr-download-beginner-vt-tutorial-py)下载完整示例代码
 - en: '[Jeff Tang](https://github.com/jeffxtang), [Geeta Chauhan](https://github.com/gchauhan/)'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Jeff Tang](https://github.com/jeffxtang), [Geeta Chauhan](https://github.com/gchauhan/)'
 - en: Vision Transformer models apply the cutting-edge attention-based transformer
     models, introduced in Natural Language Processing to achieve all kinds of the
     state of the art (SOTA) results, to Computer Vision tasks. Facebook Data-efficient
     Image Transformers [DeiT](https://ai.facebook.com/blog/data-efficient-image-transformers-a-promising-new-technique-for-image-classification)
     is a Vision Transformer model trained on ImageNet for image classification.
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: Vision Transformer模型应用了引入自自然语言处理的最先进的基于注意力的Transformer模型，以实现各种最先进（SOTA）结果，用于计算机视觉任务。Facebook
+    Data-efficient Image Transformers [DeiT](https://ai.facebook.com/blog/data-efficient-image-transformers-a-promising-new-technique-for-image-classification)是在ImageNet上进行图像分类训练的Vision
+    Transformer模型。
 - en: In this tutorial, we will first cover what DeiT is and how to use it, then go
     through the complete steps of scripting, quantizing, optimizing, and using the
     model in iOS and Android apps. We will also compare the performance of quantized,
     optimized and non-quantized, non-optimized models, and show the benefits of applying
     quantization and optimization to the model along the steps.
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，我们将首先介绍DeiT是什么以及如何使用它，然后逐步介绍脚本化、量化、优化和在iOS和Android应用程序中使用模型的完整步骤。我们还将比较量化、优化和非量化、非优化模型的性能，并展示在各个步骤中应用量化和优化对模型的好处。
 - en: What is DeiT
+  id: totrans-7
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 什么是DeiT
 - en: 'Convolutional Neural Networks (CNNs) have been the main models for image classification
     since deep learning took off in 2012, but CNNs typically require hundreds of millions
     of images for training to achieve the SOTA results. DeiT is a vision transformer
     model that requires a lot less data and computing resources for training to compete
     with the leading CNNs in performing image classification, which is made possible
     by two key components of of DeiT:'
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 自2012年深度学习兴起以来，卷积神经网络（CNNs）一直是图像分类的主要模型，但CNNs通常需要数亿张图像进行训练才能实现SOTA结果。DeiT是一个视觉Transformer模型，需要更少的数据和计算资源进行训练，以与领先的CNNs竞争执行图像分类，这是由DeiT的两个关键组件实现的：
 - en: Data augmentation that simulates training on a much larger dataset;
+  id: totrans-9
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 数据增强模拟在更大数据集上进行训练；
 - en: Native distillation that allows the transformer network to learn from a CNN’s
     output.
+  id: totrans-10
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 原生蒸馏允许Transformer网络从CNN的输出中学习。
 - en: DeiT shows that Transformers can be successfully applied to computer vision
     tasks, with limited access to data and resources. For more details on DeiT, see
     the [repo](https://github.com/facebookresearch/deit) and [paper](https://arxiv.org/abs/2012.12877).
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: DeiT表明Transformer可以成功应用于计算机视觉任务，且对数据和资源的访问有限。有关DeiT的更多详细信息，请参见[存储库](https://github.com/facebookresearch/deit)和[论文](https://arxiv.org/abs/2012.12877)。
 - en: Classifying Images with DeiT
+  id: totrans-12
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 使用DeiT对图像进行分类
 - en: 'Follow the `README.md` at the DeiT repository for detailed information on how
     to classify images using DeiT, or for a quick test, first install the required
     packages:'
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: 请按照DeiT存储库中的`README.md`中的详细信息来对图像进行分类，或者进行快速测试，首先安装所需的软件包：
 - en: '[PRE0]'
+  id: totrans-14
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: 'To run in Google Colab, install dependencies by running the following command:'
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 要在Google Colab中运行，请通过运行以下命令安装依赖项：
 - en: '[PRE1]'
+  id: totrans-16
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: 'then run the script below:'
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后运行下面的脚本：
 - en: '[PRE2]'
+  id: totrans-18
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: '[PRE3]'
+  id: totrans-19
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: The output should be 269, which, according to the ImageNet list of class index
     to [labels file](https://gist.github.com/yrevar/942d3a0ac09ec9e5eb3a), maps to
     `timber wolf, grey wolf, gray wolf, Canis lupus`.
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 输出应该是269，根据ImageNet类索引到[标签文件](https://gist.github.com/yrevar/942d3a0ac09ec9e5eb3a)，对应`timber
+    wolf, grey wolf, gray wolf, Canis lupus`。
 - en: Now that we have verified that we can use the DeiT model to classify images,
     let’s see how to modify the model so it can run on iOS and Android apps.
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们已经验证了可以使用DeiT模型对图像进行分类，让我们看看如何修改模型以便在iOS和Android应用程序上运行。
 - en: Scripting DeiT
+  id: totrans-22
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 脚本化DeiT
 - en: To use the model on mobile, we first need to script the model. See the [Script
     and Optimize recipe](https://pytorch.org/tutorials/recipes/script_optimized.html)
     for a quick overview. Run the code below to convert the DeiT model used in the
     previous step to the TorchScript format that can run on mobile.
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 要在移动设备上使用模型，我们首先需要对模型进行脚本化。查看[脚本化和优化配方](https://pytorch.org/tutorials/recipes/script_optimized.html)以获取快速概述。运行下面的代码将DeiT模型转换为TorchScript格式，以便在移动设备上运行。
 - en: '[PRE4]'
+  id: totrans-24
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: '[PRE5]'
+  id: totrans-25
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: The scripted model file `fbdeit_scripted.pt` of size about 346MB is generated.
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 生成的脚本模型文件`fbdeit_scripted.pt`大小约为346MB。
 - en: Quantizing DeiT
+  id: totrans-27
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 量化DeiT
 - en: To reduce the trained model size significantly while keeping the inference accuracy
     about the same, quantization can be applied to the model. Thanks to the transformer
     model used in DeiT, we can easily apply dynamic-quantization to the model, because
     dynamic quantization works best for LSTM and transformer models (see [here](https://pytorch.org/docs/stable/quantization.html?highlight=quantization#dynamic-quantization)
     for more details).
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了显著减小训练模型的大小，同时保持推理准确性大致相同，可以对模型应用量化。由于DeiT中使用的Transformer模型，我们可以轻松地将动态量化应用于模型，因为动态量化最适用于LSTM和Transformer模型（有关更多详细信息，请参见[此处](https://pytorch.org/docs/stable/quantization.html?highlight=quantization#dynamic-quantization)）。
 - en: 'Now run the code below:'
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在运行下面的代码：
 - en: '[PRE6]'
+  id: totrans-30
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: '[PRE7]'
+  id: totrans-31
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: This generates the scripted and quantized version of the model `fbdeit_quantized_scripted.pt`,
     with size about 89MB, a 74% reduction of the non-quantized model size of 346MB!
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 这将生成脚本化和量化版本的模型`fbdeit_quantized_scripted.pt`，大小约为89MB，比346MB的非量化模型大小减少了74％！
 - en: 'You can use the `scripted_quantized_model` to generate the same inference result:'
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可以使用`scripted_quantized_model`生成相同的推理结果：
 - en: '[PRE8]'
+  id: totrans-34
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: '[PRE9]'
+  id: totrans-35
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: Optimizing DeiT
+  id: totrans-36
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 优化DeiT
 - en: 'The final step before using the quantized and scripted model on mobile is to
     optimize it:'
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 在将量化和脚本化模型应用于移动设备之前的最后一步是对其进行优化：
 - en: '[PRE10]'
+  id: totrans-38
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: The generated `fbdeit_optimized_scripted_quantized.pt` file has about the same
     size as the quantized, scripted, but non-optimized model. The inference result
     remains the same.
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 生成的`fbdeit_optimized_scripted_quantized.pt`文件的大小与量化、脚本化但非优化模型的大小大致相同。推理结果保持不变。
 - en: '[PRE11]'
+  id: totrans-40
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: '[PRE12]'
+  id: totrans-41
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: Using Lite Interpreter
+  id: totrans-42
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 使用Lite解释器
 - en: To see how much model size reduction and inference speed up the Lite Interpreter
     can result in, let’s create the lite version of the model.
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: 要查看Lite解释器可以导致多少模型大小减小和推理速度提升，请创建模型的精简版本。
 - en: '[PRE13]'
+  id: totrans-44
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: Although the lite model size is comparable to the non-lite version, when running
     the lite version on mobile, the inference speed up is expected.
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: 尽管精简模型的大小与非精简版本相当，但在移动设备上运行精简版本时，预计会加快推理速度。
 - en: Comparing Inference Speed
+  id: totrans-46
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 比较推理速度
 - en: 'To see how the inference speed differs for the four models - the original model,
     the scripted model, the quantized-and-scripted model, the optimized-quantized-and-scripted
     model - run the code below:'
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: 要查看四个模型的推理速度差异 - 原始模型、脚本模型、量化和脚本模型、优化的量化和脚本模型 - 运行下面的代码：
 - en: '[PRE14]'
+  id: totrans-48
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: '[PRE15]'
+  id: totrans-49
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: 'The results running on a Google Colab are:'
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: 在Google Colab上运行的结果是：
 - en: '[PRE16]'
+  id: totrans-51
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: The following results summarize the inference time taken by each model and the
     percentage reduction of each model relative to the original model.
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下结果总结了每个模型的推理时间以及相对于原始模型的每个模型的百分比减少。
 - en: '[PRE17]'
+  id: totrans-53
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: '[PRE18]'
+  id: totrans-54
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: Learn More
+  id: totrans-55
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 了解更多
 - en: '[Facebook Data-efficient Image Transformers](https://ai.facebook.com/blog/data-efficient-image-transformers-a-promising-new-technique-for-image-classification)'
+  id: totrans-56
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[Facebook数据高效图像变换器](https://ai.facebook.com/blog/data-efficient-image-transformers-a-promising-new-technique-for-image-classification)'
 - en: '[Vision Transformer with ImageNet and MNIST on iOS](https://github.com/pytorch/ios-demo-app/tree/master/ViT4MNIST)'
+  id: totrans-57
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[使用ImageNet和MNIST在iOS上的Vision Transformer](https://github.com/pytorch/ios-demo-app/tree/master/ViT4MNIST)'
 - en: '[Vision Transformer with ImageNet and MNIST on Android](https://github.com/pytorch/android-demo-app/tree/master/ViT4MNIST)'
+  id: totrans-58
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[使用ImageNet和MNIST在Android上的Vision Transformer](https://github.com/pytorch/android-demo-app/tree/master/ViT4MNIST)'
 - en: '**Total running time of the script:** ( 0 minutes 20.779 seconds)'
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: '**脚本的总运行时间：**（0分钟20.779秒）'
 - en: '[`Download Python source code: vt_tutorial.py`](../_downloads/82714b1145e891e2eba191bec427b2dd/vt_tutorial.py)'
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Python源代码：vt_tutorial.py`](../_downloads/82714b1145e891e2eba191bec427b2dd/vt_tutorial.py)'
 - en: '[`Download Jupyter notebook: vt_tutorial.ipynb`](../_downloads/b4e406d3f9b5f0552ca1010014ca4164/vt_tutorial.ipynb)'
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Jupyter笔记本：vt_tutorial.ipynb`](../_downloads/b4e406d3f9b5f0552ca1010014ca4164/vt_tutorial.ipynb)'
 - en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Sphinx-Gallery生成的画廊](https://sphinx-gallery.github.io)'

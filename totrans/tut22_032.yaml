@@ -3,29 +3,35 @@
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: DCGAN教程
 - en: 原文：[https://pytorch.org/tutorials/beginner/dcgan_faces_tutorial.html](https://pytorch.org/tutorials/beginner/dcgan_faces_tutorial.html)
   id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/beginner/dcgan_faces_tutorial.html](https://pytorch.org/tutorials/beginner/dcgan_faces_tutorial.html)
 - en: Note
   id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-beginner-dcgan-faces-tutorial-py) to download
     the full example code
   id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[这里](#sphx-glr-download-beginner-dcgan-faces-tutorial-py)下载完整示例代码
 - en: '**Author**: [Nathan Inkawhich](https://github.com/inkawhich)'
   id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '**作者**：[Nathan Inkawhich](https://github.com/inkawhich)'
 - en: Introduction
   id: totrans-5
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 介绍
 - en: This tutorial will give an introduction to DCGANs through an example. We will
     train a generative adversarial network (GAN) to generate new celebrities after
     showing it pictures of many real celebrities. Most of the code here is from the
@@ -38,16 +44,19 @@
   id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程将通过一个示例介绍DCGAN。我们将训练一个生成对抗网络(GAN)，向其展示许多真实名人的照片后，生成新的名人。这里的大部分代码来自[pytorch/examples](https://github.com/pytorch/examples)，本文档将对实现进行详细解释，并阐明这个模型是如何工作的。但不用担心，不需要对GAN有任何先验知识，但可能需要初学者花一些时间思考底层实际发生的事情。另外，为了节省时间，最好有一个GPU，或两个。让我们从头开始。
 - en: Generative Adversarial Networks
   id: totrans-7
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 生成对抗网络
 - en: What is a GAN?
   id: totrans-8
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 什么是GAN？
 - en: GANs are a framework for teaching a deep learning model to capture the training
     data distribution so we can generate new data from that same distribution. GANs
     were invented by Ian Goodfellow in 2014 and first described in the paper [Generative
@@ -65,6 +74,7 @@
   id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: GAN是一个框架，用于教授深度学习模型捕获训练数据分布，以便我们可以从相同分布生成新数据。GAN是由Ian Goodfellow于2014年发明的，并首次在论文[生成对抗网络](https://papers.nips.cc/paper/5423-generative-adversarial-nets.pdf)中描述。它们由两个不同的模型组成，一个*生成器*和一个*判别器*。生成器的任务是生成看起来像训练图像的“假”图像。判别器的任务是查看图像并输出它是来自真实训练图像还是来自生成器的假图像的概率。在训练过程中，生成器不断尝试欺骗判别器，生成越来越好的假图像，而判别器则努力成为更好的侦探，并正确分类真实和假图像。这个游戏的平衡是当生成器生成完美的假图像，看起来就像直接来自训练数据时，判别器总是以50%的置信度猜测生成器的输出是真实的还是假的。
 - en: Now, lets define some notation to be used throughout tutorial starting with
     the discriminator. Let \(x\) be data representing an image. \(D(x)\) is the discriminator
     network which outputs the (scalar) probability that \(x\) came from training data
@@ -75,6 +85,7 @@
   id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，让我们定义一些符号，这些符号将在整个教程中使用，从判别器开始。让\(x\)表示代表图像的数据。\(D(x)\)是判别器网络，它输出\(x\)来自训练数据而不是生成器的(标量)概率。在这里，由于我们处理的是图像，\(D(x)\)的输入是CHW大小为3x64x64的图像。直观地说，当\(x\)来自训练数据时，\(D(x)\)应该是高的，当\(x\)来自生成器时，\(D(x)\)应该是低的。\(D(x)\)也可以被视为传统的二元分类器。
 - en: For the generator’s notation, let \(z\) be a latent space vector sampled from
     a standard normal distribution. \(G(z)\) represents the generator function which
     maps the latent vector \(z\) to data-space. The goal of \(G\) is to estimate the
@@ -83,6 +94,7 @@
   id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于生成器的表示，让\(z\)是从标准正态分布中采样的潜在空间向量。\(G(z)\)表示生成器函数，它将潜在向量\(z\)映射到数据空间。生成器\(G\)的目标是估计训练数据来自的分布(\(p_{data}\))，以便可以从该估计分布(\(p_g\))生成假样本。
 - en: So, \(D(G(z))\) is the probability (scalar) that the output of the generator
     \(G\) is a real image. As described in [Goodfellow’s paper](https://papers.nips.cc/paper/5423-generative-adversarial-nets.pdf),
     \(D\) and \(G\) play a minimax game in which \(D\) tries to maximize the probability
@@ -92,12 +104,16 @@
   id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: 因此，\(D(G(z))\)是生成器\(G\)的输出是真实图像的概率(标量)。如[Goodfellow的论文](https://papers.nips.cc/paper/5423-generative-adversarial-nets.pdf)所述，\(D\)和\(G\)在一个最小最大游戏中发挥作用，其中\(D\)试图最大化它正确分类真实和假图像的概率(\(logD(x)\))，而\(G\)试图最小化\(D\)预测其输出是假的概率(\(log(1-D(G(z)))\))。从论文中，GAN的损失函数为：
 - en: \[\underset{G}{\text{min}} \underset{D}{\text{max}}V(D,G) = \mathbb{E}_{x\sim
     p_{data}(x)}\big[logD(x)\big] + \mathbb{E}_{z\sim p_{z}(z)}\big[log(1-D(G(z)))\big]
     \]
   id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: \[ \underset{G}{\text{min}} \underset{D}{\text{max}}V(D,G) = \mathbb{E}_{x\sim
+    p_{data}(x)}\big[logD(x)\big] + \mathbb{E}_{z\sim p_{z}(z)}\big[log(1-D(G(z)))\big]
+    \]
 - en: In theory, the solution to this minimax game is where \(p_g = p_{data}\), and
     the discriminator guesses randomly if the inputs are real or fake. However, the
     convergence theory of GANs is still being actively researched and in reality models

@@ -1,22 +1,32 @@
 - en: Whole Slide Image Classification Using PyTorch and TIAToolbox
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 使用PyTorch和TIAToolbox进行全幻灯片图像分类
 - en: 原文：[https://pytorch.org/tutorials/intermediate/tiatoolbox_tutorial.html](https://pytorch.org/tutorials/intermediate/tiatoolbox_tutorial.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/intermediate/tiatoolbox_tutorial.html](https://pytorch.org/tutorials/intermediate/tiatoolbox_tutorial.html)
 - en: Tip
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 提示
 - en: To get the most of this tutorial, we suggest using this [Colab Version](https://colab.research.google.com/github/pytorch/tutorials/blob/main/_static/tiatoolbox_tutorial.ipynb).
     This will allow you to experiment with the information presented below.
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了充分利用本教程，我们建议使用这个[Colab版本](https://colab.research.google.com/github/pytorch/tutorials/blob/main/_static/tiatoolbox_tutorial.ipynb)。这将允许您尝试下面介绍的信息。
 - en: Introduction
+  id: totrans-4
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 介绍
 - en: In this tutorial, we will show how to classify Whole Slide Images (WSIs) using
     PyTorch deep learning models with help from TIAToolbox. A WSI is an image of a
     sample of human tissue taken through a surgery or biopsy and scanned using specialized
@@ -24,15 +34,19 @@
     to [study diseases such as cancer at the microscopic level](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7522141/)
     in order to understand for example tumor growth and help improve treatment for
     patients.
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，我们将展示如何使用PyTorch深度学习模型和TIAToolbox来对全幻灯片图像（WSIs）进行分类。WSI是通过手术或活检拍摄的人体组织样本的图像，并使用专门的扫描仪进行扫描。病理学家和计算病理学研究人员使用它们来[研究疾病，如癌症在微观水平上的情况](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7522141/)，以便了解肿瘤生长等情况，并帮助改善患者的治疗。
 - en: What makes WSIs challenging to process is their enormous size. For example,
     a typical slide image has in the order of [100,000x100,000 pixels](https://doi.org/10.1117%2F12.912388)
     where each pixel can correspond to about 0.25x0.25 microns on the slide. This
     introduces challenges in loading and processing such images, not to mention hundreds
     or even thousands of WSIs in a single study (larger studies produce better results)!
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 使WSI难以处理的是它们的巨大尺寸。例如，典型的幻灯片图像具有[100,000x100,000像素](https://doi.org/10.1117%2F12.912388)，其中每个像素可能对应于幻灯片上约0.25x0.25微米。这在加载和处理这样的图像中带来了挑战，更不用说单个研究中可能有数百甚至数千个WSI（更大的研究产生更好的结果）！
 - en: Conventional image processing pipelines are not suitable for WSI processing
     so we need better tools. This is where [TIAToolbox](https://github.com/TissueImageAnalytics/tiatoolbox)
     can help as it brings a set of useful tools to import and process tissue slides
@@ -42,12 +56,16 @@
     contains the image at the highest magnification or zoom level, whereas the higher
     levels in the pyramid have a lower resolution copy of the base image. The pyramid
     structure is sketched below.
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 传统的图像处理流程不适用于WSI处理，因此我们需要更好的工具。这就是[TIAToolbox](https://github.com/TissueImageAnalytics/tiatoolbox)可以帮助的地方，它提供了一组有用的工具，以快速和高效地导入和处理组织幻灯片。通常，WSI以金字塔结构保存，具有多个在各种放大级别上优化可视化的相同图像副本。金字塔的级别0（或底层）包含具有最高放大倍数或缩放级别的图像，而金字塔中的较高级别具有基础图像的较低分辨率副本。金字塔结构如下所示。
 - en: '![WSI pyramid stack](../Images/952e5eeb116db4fab98e5ff8dca0069e.png) *WSI pyramid
     stack (*[source](https://tia-toolbox.readthedocs.io/en/latest/_autosummary/tiatoolbox.wsicore.wsireader.WSIReader.html#)*)*'
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: '![WSI金字塔堆栈](../Images/952e5eeb116db4fab98e5ff8dca0069e.png) *WSI金字塔堆栈（*[来源](https://tia-toolbox.readthedocs.io/en/latest/_autosummary/tiatoolbox.wsicore.wsireader.WSIReader.html#)*)*'
 - en: 'TIAToolbox allows us to automate common downstream analysis tasks such as [tissue
     classification](https://doi.org/10.1016/j.media.2022.102685). In this tutorial
     we show how you can: 1\. Load WSI images using TIAToolbox; and 2\. Use different
@@ -55,156 +73,237 @@
     provide an example of using TorchVision `ResNet18` model and custom HistoEncoder
     <[https://github.com/jopo666/HistoEncoder](https://github.com/jopo666/HistoEncoder)>`__
     model.'
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: TIAToolbox允许我们自动化常见的下游分析任务，例如[组织分类](https://doi.org/10.1016/j.media.2022.102685)。在本教程中，我们将展示如何：1.
+    使用TIAToolbox加载WSI图像；2. 使用不同的PyTorch模型对幻灯片进行补丁级别的分类。在本教程中，我们将提供使用TorchVision `ResNet18`模型和自定义HistoEncoder
+    <[https://github.com/jopo666/HistoEncoder](https://github.com/jopo666/HistoEncoder)>`__模型的示例。
 - en: Let’s get started!
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们开始吧！
 - en: Setting up the environment
+  id: totrans-11
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 设置环境
 - en: To run the examples provided in this tutorial, the following packages are required
     as prerequisites.
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: 要运行本教程中提供的示例，需要以下软件包作为先决条件。
 - en: OpenJpeg
+  id: totrans-13
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: OpenJpeg
 - en: OpenSlide
+  id: totrans-14
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: OpenSlide
 - en: Pixman
+  id: totrans-15
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: Pixman
 - en: TIAToolbox
+  id: totrans-16
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: TIAToolbox
 - en: HistoEncoder (for a custom model example)
+  id: totrans-17
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: HistoEncoder（用于自定义模型示例）
 - en: 'Please run the following command in your terminal to install these packages:'
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: 请在终端中运行以下命令以安装这些软件包：
 - en: apt-get -y -qq install libopenjp2-7-dev libopenjp2-tools openslide-tools libpixman-1-dev
     pip install -q ‘tiatoolbox<1.5’ histoencoder && echo “Installation is done.”
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: apt-get -y -qq install libopenjp2-7-dev libopenjp2-tools openslide-tools libpixman-1-dev
+    pip install -q ‘tiatoolbox<1.5’ histoencoder && echo “安装完成。”
 - en: Alternatively, you can run `brew install openjpeg openslide` to install the
     prerequisite packages on MacOS instead of `apt-get`. Further information on installation
     can be [found here](https://tia-toolbox.readthedocs.io/en/latest/installation.html).
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 或者，您可以运行`brew install openjpeg openslide`在MacOS上安装先决条件软件包，而不是`apt-get`。有关安装的更多信息可以在[这里找到](https://tia-toolbox.readthedocs.io/en/latest/installation.html)。
 - en: Importing related libraries
+  id: totrans-21
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 导入相关库
 - en: '[PRE0]'
+  id: totrans-22
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: Clean-up before a run
+  id: totrans-23
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 运行前清理
 - en: To ensure proper clean-up (for example in abnormal termination), all files downloaded
     or created in this run are saved in a single directory `global_save_dir`, which
     we set equal to “./tmp/”. To simplify maintenance, the name of the directory occurs
     only at this one place, so that it can easily be changed, if desired.
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了确保适当的清理（例如在异常终止时），此次运行中下载或创建的所有文件都保存在一个名为`global_save_dir`的单个目录中，我们将其设置为“./tmp/”。为了简化维护，目录的名称只出现在这一个地方，因此如果需要，可以轻松更改。
 - en: '[PRE1]'
+  id: totrans-25
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Downloading the data
+  id: totrans-26
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 下载数据
 - en: For our sample data, we will use one whole-slide image, and patches from the
     validation subset of [Kather 100k](https://zenodo.org/record/1214456#.YJ-tn3mSkuU)
     dataset.
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于我们的样本数据，我们将使用一个整个幻灯片图像，以及来自[Kather 100k](https://zenodo.org/record/1214456#.YJ-tn3mSkuU)数据集验证子集的补丁。
 - en: '[PRE2]'
+  id: totrans-28
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Reading the data
+  id: totrans-29
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 读取数据
 - en: We create a list of patches and a list of corresponding labels. For example,
     the first label in `label_list` will indicate the class of the first image patch
     in `patch_list`.
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们创建一个补丁列表和一个相应标签列表。例如，`label_list`中的第一个标签将指示`patch_list`中第一个图像补丁的类。
 - en: '[PRE3]'
+  id: totrans-31
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: '![tiatoolbox tutorial](../Images/b7d43588d22380ce1ab4b5fd0aa7a3d7.png)'
+  id: totrans-32
   prefs: []
   type: TYPE_IMG
+  zh: '![tiatoolbox教程](../Images/b7d43588d22380ce1ab4b5fd0aa7a3d7.png)'
 - en: '[PRE4]'
+  id: totrans-33
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: 'As you can see for this patch dataset, we have 9 classes/labels with IDs 0-8
     and associated class names. describing the dominant tissue type in the patch:'
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 如您所见，对于这个补丁数据集，我们有9个类/标签，ID为0-8，并附带类名，描述补丁中的主要组织类型：
 - en: BACK ⟶ Background (empty glass region)
+  id: totrans-35
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: BACK ⟶ 背景（空玻璃区域）
 - en: LYM ⟶ Lymphocytes
+  id: totrans-36
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: LYM ⟶ 淋巴细胞
 - en: NORM ⟶ Normal colon mucosa
+  id: totrans-37
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: NORM ⟶ 正常结肠粘膜
 - en: DEB ⟶ Debris
+  id: totrans-38
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: DEB ⟶ 碎片
 - en: MUS ⟶ Smooth muscle
+  id: totrans-39
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: MUS ⟶ 平滑肌
 - en: STR ⟶ Cancer-associated stroma
+  id: totrans-40
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: STR ⟶ 癌相关基质
 - en: ADI ⟶ Adipose
+  id: totrans-41
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: ADI ⟶ 脂肪
 - en: MUC ⟶ Mucus
+  id: totrans-42
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: MUC ⟶ 粘液
 - en: TUM ⟶ Colorectal adenocarcinoma epithelium
+  id: totrans-43
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: TUM ⟶ 结直肠腺癌上皮
 - en: Classify image patches
+  id: totrans-44
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 分类图像补丁
 - en: We demonstrate how to obtain a prediction for each patch within a digital slide
     first with the `patch` mode and then with a large slide using `wsi` mode.
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们首先使用`patch`模式，然后使用`wsi`模式来为数字切片中的每个补丁获取预测。
 - en: Define `PatchPredictor` model
+  id: totrans-46
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 定义`PatchPredictor`模型
 - en: The PatchPredictor class runs a CNN-based classifier written in PyTorch.
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: PatchPredictor类运行基于PyTorch编写的CNN分类器。
 - en: '`model` can be any trained PyTorch model with the constraint that it should
     follow the `tiatoolbox.models.abc.ModelABC` (docs) <[https://tia-toolbox.readthedocs.io/en/latest/_autosummary/tiatoolbox.models.models_abc.ModelABC.html](https://tia-toolbox.readthedocs.io/en/latest/_autosummary/tiatoolbox.models.models_abc.ModelABC.html)>`__
     class structure. For more information on this matter, please refer to [our example
@@ -212,180 +311,265 @@
     In order to load a custom model, you need to write a small preprocessing function,
     as in `preproc_func(img)`, which makes sure the input tensors are in the right
     format for the loaded network.'
+  id: totrans-48
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`model`可以是任何经过训练的PyTorch模型，约束是它应该遵循`tiatoolbox.models.abc.ModelABC`（文档）<[https://tia-toolbox.readthedocs.io/en/latest/_autosummary/tiatoolbox.models.models_abc.ModelABC.html](https://tia-toolbox.readthedocs.io/en/latest/_autosummary/tiatoolbox.models.models_abc.ModelABC.html)>`__类结构。有关此事的更多信息，请参阅[我们关于高级模型技术的示例笔记本](https://github.com/TissueImageAnalytics/tiatoolbox/blob/develop/examples/07-advanced-modeling.ipynb)。为了加载自定义模型，您需要编写一个小的预处理函数，如`preproc_func(img)`，确保输入张量的格式适合加载的网络。'
 - en: 'Alternatively, you can pass `pretrained_model` as a string argument. This specifies
     the CNN model that performs the prediction, and it must be one of the models listed
     [here](https://tia-toolbox.readthedocs.io/en/latest/usage.html?highlight=pretrained%20models#tiatoolbox.models.architecture.get_pretrained_model).
     The command will look like this: `predictor = PatchPredictor(pretrained_model=''resnet18-kather100k'',
     pretrained_weights=weights_path, batch_size=32)`.'
+  id: totrans-49
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 或者，您可以将`pretrained_model`作为字符串参数传递。这指定执行预测的CNN模型，必须是[这里](https://tia-toolbox.readthedocs.io/en/latest/usage.html?highlight=pretrained%20models#tiatoolbox.models.architecture.get_pretrained_model)列出的模型之一。命令将如下：`predictor
+    = PatchPredictor(pretrained_model='resnet18-kather100k', pretrained_weights=weights_path,
+    batch_size=32)`。
 - en: '`pretrained_weights`: When using a `pretrained_model`, the corresponding pretrained
     weights will also be downloaded by default. You can override the default with
     your own set of weights via the `pretrained_weight` argument.'
+  id: totrans-50
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`pretrained_weights`：当使用`pretrained_model`时，默认情况下也会下载相应的预训练权重。您可以通过`pretrained_weight`参数使用自己的一组权重覆盖默认设置。'
 - en: '`batch_size`: Number of images fed into the model each time. Higher values
     for this parameter require a larger (GPU) memory capacity.'
+  id: totrans-51
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`batch_size`：每次馈送到模型中的图像数量。此参数的较高值需要更大的（GPU）内存容量。'
 - en: '[PRE5]'
+  id: totrans-52
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: Predict patch labels
+  id: totrans-53
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 预测补丁标签
 - en: We create a predictor object and then call the `predict` method using the `patch`
     mode. We then compute the classification accuracy and confusion matrix.
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们创建一个预测器对象，然后使用`patch`模式调用`predict`方法。然后计算分类准确度和混淆矩阵。
 - en: '[PRE6]'
+  id: totrans-55
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: '[PRE7]'
+  id: totrans-56
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: '|  | BACK | NORM | DEB | TUM | ADI | MUC | MUS | STR | LYM |'
+  id: totrans-57
   prefs: []
   type: TYPE_TB
+  zh: '|  | 背景 | 正常 | 碎片 | 肿瘤 | 脂肪 | 粘液 | 平滑肌 | 结缔组织 | 淋巴 |'
 - en: '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |'
+  id: totrans-58
   prefs: []
   type: TYPE_TB
+  zh: '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |'
 - en: '| BACK | 1.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000 |
     0.000000 | 0.000000 | 0.00000 |'
+  id: totrans-59
   prefs: []
   type: TYPE_TB
+  zh: '| BACK | 1.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000 |
+    0.000000 | 0.000000 | 0.00000 |'
 - en: '| NORM | 0.000000 | 0.988636 | 0.000000 | 0.011364 | 0.000000 | 0.000000 |
     0.000000 | 0.000000 | 0.00000 |'
+  id: totrans-60
   prefs: []
   type: TYPE_TB
+  zh: '| NORM | 0.000000 | 0.988636 | 0.000000 | 0.011364 | 0.000000 | 0.000000 |
+    0.000000 | 0.000000 | 0.00000 |'
 - en: '| DEB | 0.000000 | 0.000000 | 0.991304 | 0.000000 | 0.000000 | 0.000000 | 0.000000
     | 0.008696 | 0.00000 |'
+  id: totrans-61
   prefs: []
   type: TYPE_TB
+  zh: '| DEB | 0.000000 | 0.000000 | 0.991304 | 0.000000 | 0.000000 | 0.000000 | 0.000000
+    | 0.008696 | 0.00000 |'
 - en: '| TUM | 0.000000 | 0.000000 | 0.000000 | 0.996503 | 0.000000 | 0.003497 | 0.000000
     | 0.000000 | 0.00000 |'
+  id: totrans-62
   prefs: []
   type: TYPE_TB
+  zh: '| TUM | 0.000000 | 0.000000 | 0.000000 | 0.996503 | 0.000000 | 0.003497 | 0.000000
+    | 0.000000 | 0.00000 |'
 - en: '| ADI | 0.004808 | 0.000000 | 0.000000 | 0.000000 | 0.990385 | 0.000000 | 0.004808
     | 0.000000 | 0.00000 |'
+  id: totrans-63
   prefs: []
   type: TYPE_TB
+  zh: '| ADI | 0.004808 | 0.000000 | 0.000000 | 0.000000 | 0.990385 | 0.000000 | 0.004808
+    | 0.000000 | 0.00000 |'
 - en: '| MUC | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.988764 | 0.000000
     | 0.011236 | 0.00000 |'
+  id: totrans-64
   prefs: []
   type: TYPE_TB
+  zh: '| MUC | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.988764 | 0.000000
+    | 0.011236 | 0.00000 |'
 - en: '| MUS | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.996296
     | 0.003704 | 0.00000 |'
+  id: totrans-65
   prefs: []
   type: TYPE_TB
+  zh: '| MUS | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.996296
+    | 0.003704 | 0.00000 |'
 - en: '| STR | 0.000000 | 0.000000 | 0.004785 | 0.000000 | 0.000000 | 0.004785 | 0.004785
     | 0.985646 | 0.00000 |'
+  id: totrans-66
   prefs: []
   type: TYPE_TB
+  zh: '| STR | 0.000000 | 0.000000 | 0.004785 | 0.000000 | 0.000000 | 0.004785 | 0.004785
+    | 0.985646 | 0.00000 |'
 - en: '| LYM | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000
     | 0.004310 | 0.99569 |'
+  id: totrans-67
   prefs: []
   type: TYPE_TB
+  zh: '| LYM | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000
+    | 0.004310 | 0.99569 |'
 - en: Predict patch labels for a whole slide
+  id: totrans-68
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 为整个幻灯片预测补丁标签
 - en: We now introduce `IOPatchPredictorConfig`, a class that specifies the configuration
     of image reading and prediction writing for the model prediction engine. This
     is required to inform the classifier which level of the WSI pyramid the classifier
     should read, process data and generate output.
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们介绍`IOPatchPredictorConfig`，这是一个指定图像读取和预测写入的配置的类，用于模型预测引擎。这是为了通知分类器应该读取WSI金字塔的哪个级别，处理数据并生成输出。
 - en: 'Parameters of `IOPatchPredictorConfig` are defined as:'
+  id: totrans-70
   prefs: []
   type: TYPE_NORMAL
+  zh: '`IOPatchPredictorConfig`的参数定义如下：'
 - en: '`input_resolutions`: A list, in the form of a dictionary, specifying the resolution
     of each input. List elements must be in the same order as in the target `model.forward()`.
     If your model accepts only one input, you just need to put one dictionary specifying
     `''units''` and `''resolution''`. Note that TIAToolbox supports a model with more
     than one input. For more information on units and resolution, please see [TIAToolbox
     documentation](https://tia-toolbox.readthedocs.io/en/latest/_autosummary/tiatoolbox.wsicore.wsireader.WSIReader.html#tiatoolbox.wsicore.wsireader.WSIReader.read_rect).'
+  id: totrans-71
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`input_resolutions`: 以字典形式的列表，指定每个输入的分辨率。列表元素必须与目标`model.forward()`中的顺序相同。如果您的模型只接受一个输入，您只需要放置一个指定`''units''`和`''resolution''`的字典。请注意，TIAToolbox支持具有多个输入的模型。有关单位和分辨率的更多信息，请参阅[TIAToolbox文档](https://tia-toolbox.readthedocs.io/en/latest/_autosummary/tiatoolbox.wsicore.wsireader.WSIReader.html#tiatoolbox.wsicore.wsireader.WSIReader.read_rect)。'
 - en: '`patch_input_shape`: Shape of the largest input in (height, width) format.'
+  id: totrans-72
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`patch_input_shape`: 最大输入的形状（高度，宽度）格式。'
 - en: '`stride_shape`: The size of a stride (steps) between two consecutive patches,
     used in the patch extraction process. If the user sets `stride_shape` equal to
     `patch_input_shape`, patches will be extracted and processed without any overlap.'
+  id: totrans-73
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`stride_shape`: 两个连续补丁之间的步幅（步数）的大小，在补丁提取过程中使用。如果用户将`stride_shape`设置为等于`patch_input_shape`，则将提取和处理补丁而不会重叠。'
 - en: '[PRE8]'
+  id: totrans-74
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: 'The `predict` method applies the CNN on the input patches and get the results.
     Here are the arguments and their descriptions:'
+  id: totrans-75
   prefs: []
   type: TYPE_NORMAL
+  zh: '`predict`方法将CNN应用于输入补丁并获取结果。以下是参数及其描述：'
 - en: '`mode`: Type of input to be processed. Choose from `patch`, `tile` or `wsi`
     according to your application.'
+  id: totrans-76
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`mode`: 要处理的输入类型。根据您的应用程序选择`patch`、`tile`或`wsi`。'
 - en: '`imgs`: List of inputs, which should be a list of paths to the input tiles
     or WSIs.'
+  id: totrans-77
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`imgs`: 输入列表，应该是指向输入瓷砖或WSI的路径列表。'
 - en: '`return_probabilities`: Set to **True** to get per class probabilities alongside
     predicted labels of input patches. If you wish to merge the predictions to generate
     prediction maps for `tile` or `wsi` modes, you can set `return_probabilities=True`.'
+  id: totrans-78
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`return_probabilities`: 设置为**True**以在输入补丁的预测标签旁获取每个类别的概率。如果您希望合并预测以生成`tile`或`wsi`模式的预测地图，可以将`return_probabilities=True`。'
 - en: '`ioconfig`: set the IO configuration information using the `IOPatchPredictorConfig`
     class.'
+  id: totrans-79
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`ioconfig`: 使用`IOPatchPredictorConfig`类设置IO配置信息。'
 - en: '`resolution` and `unit` (not shown below): These arguments specify the level
     or micron-per-pixel resolution of the WSI levels from which we plan to extract
     patches and can be used instead of `ioconfig`. Here we specify the WSI level as
     `''baseline''`, which is equivalent to level 0\. In general, this is the level
     of greatest resolution. In this particular case, the image has only one level.
     More information can be found in the [documentation](https://tia-toolbox.readthedocs.io/en/latest/usage.html?highlight=WSIReader.read_rect#tiatoolbox.wsicore.wsireader.WSIReader.read_rect).'
+  id: totrans-80
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`resolution`和`unit`（未在下面显示）：这些参数指定我们计划从中提取补丁的WSI级别的级别或每像素微米分辨率，并可以代替`ioconfig`。在这里，我们将WSI级别指定为`''baseline''`，相当于级别0。一般来说，这是最高分辨率的级别。在这种特殊情况下，图像只有一个级别。更多信息可以在[文档](https://tia-toolbox.readthedocs.io/en/latest/usage.html?highlight=WSIReader.read_rect#tiatoolbox.wsicore.wsireader.WSIReader.read_rect)中找到。'
 - en: '`masks`: A list of paths corresponding to the masks of WSIs in the `imgs` list.
     These masks specify the regions in the original WSIs from which we want to extract
     patches. If the mask of a particular WSI is specified as `None`, then the labels
     for all patches of that WSI (even background regions) would be predicted. This
     could cause unnecessary computation.'
+  id: totrans-81
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`masks`: 与`imgs`列表中WSI的掩模对应的路径列表。这些掩模指定了我们要从原始WSI中提取补丁的区域。如果特定WSI的掩模指定为`None`，则将预测该WSI的所有补丁的标签（甚至是背景区域）。这可能导致不必要的计算。'
 - en: '`merge_predictions`: You can set this parameter to `True` if it’s required
     to generate a 2D map of patch classification results. However, for large WSIs
     this will require large available memory. An alternative (default) solution is
     to set `merge_predictions=False`, and then generate the 2D prediction maps using
     the `merge_predictions` function as you will see later on.'
+  id: totrans-82
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`merge_predictions`: 如果需要生成补丁分类结果的二维地图，则可以将此参数设置为`True`。然而，对于大型WSI，这将需要大量可用内存。另一种（默认）解决方案是将`merge_predictions=False`，然后使用稍后将看到的`merge_predictions`函数生成2D预测地图。'
 - en: Since we are using a large WSI the patch extraction and prediction processes
     may take some time (make sure to set the `ON_GPU=True` if you have access to Cuda
     enabled GPU and PyTorch+Cuda).
+  id: totrans-83
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于我们使用了大型WSI，补丁提取和预测过程可能需要一些时间（如果您可以访问启用了Cuda的GPU和PyTorch+Cuda，请确保将`ON_GPU=True`）。
 - en: '[PRE9]'
+  id: totrans-84
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: We see how the prediction model works on our whole-slide images by visualizing
     the `wsi_output`. We first need to merge patch prediction outputs and then visualize
     them as an overlay on the original image. As before, the `merge_predictions` method
@@ -395,73 +579,109 @@
     to change these parameters accordingly. When the predictions are merged, use the
     `overlay_patch_prediction` function to overlay the prediction map on the WSI thumbnail,
     which should be extracted at the resolution used for prediction merging.
+  id: totrans-85
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们通过可视化`wsi_output`来查看预测模型在我们的全幻灯片图像上的工作方式。我们首先需要合并补丁预测输出，然后将其可视化为覆盖在原始图像上的叠加图。与之前一样，使用`merge_predictions`方法来合并补丁预测。在这里，我们设置参数`resolution=1.25,
+    units='power'`以在1.25倍放大率下生成预测地图。如果您想要更高/更低分辨率（更大/更小）的预测地图，您需要相应地更改这些参数。当预测合并完成后，使用`overlay_patch_prediction`函数将预测地图叠加在WSI缩略图上，该缩略图应该以用于预测合并的分辨率提取。
 - en: '[PRE10]'
+  id: totrans-86
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: '![tiatoolbox tutorial](../Images/865d9230ac1bfcbd3aac13636beac597.png)'
+  id: totrans-87
   prefs: []
   type: TYPE_IMG
+  zh: '![tiatoolbox tutorial](../Images/865d9230ac1bfcbd3aac13636beac597.png)'
 - en: 'Overlaying the prediction map on this image as below gives:'
+  id: totrans-88
   prefs: []
   type: TYPE_NORMAL
+  zh: 将预测地图叠加在这幅图像上如下所示：
 - en: '[PRE11]'
+  id: totrans-89
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: '![tiatoolbox tutorial](../Images/7c24cb0988ddf895e05e78dafb6192b7.png)'
+  id: totrans-90
   prefs: []
   type: TYPE_IMG
+  zh: '![tiatoolbox tutorial](../Images/7c24cb0988ddf895e05e78dafb6192b7.png)'
 - en: Feature extraction with a pathology-specific model
+  id: totrans-91
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 使用专门用于病理学的模型进行特征提取
 - en: 'In this section, we will show how to extract features from a pretrained PyTorch
     model that exists outside TIAToolbox, using the WSI inference engines provided
     by TIAToolbox. To illustrate this we will use HistoEncoder, a computational-pathology
     specific model that has been trained in a self-supervised fashion to extract features
     from histology images. The model has been made available here:'
+  id: totrans-92
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本节中，我们将展示如何从TIAToolbox之外存在的预训练PyTorch模型中提取特征，使用TIAToolbox提供的WSI推理引擎。为了说明这一点，我们将使用HistoEncoder，这是一个专门用于计算病理学的模型，已经以自监督的方式进行训练，以从组织学图像中提取特征。该模型已经在这里提供：
 - en: '‘HistoEncoder: Foundation models for digital pathology’ ([https://github.com/jopo666/HistoEncoder](https://github.com/jopo666/HistoEncoder))
     by Pohjonen, Joona and team at the University of Helsinki.'
+  id: totrans-93
   prefs: []
   type: TYPE_NORMAL
+  zh: '‘HistoEncoder: Foundation models for digital pathology’ ([https://github.com/jopo666/HistoEncoder](https://github.com/jopo666/HistoEncoder))
+    由赫尔辛基大学的Pohjonen, Joona和团队提供。'
 - en: We will plot a umap reduction into 3D (RGB) of the feature map to visualize
     how the features capture the differences between some of the above mentioned tissue
     types.
+  id: totrans-94
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们将绘制一个3D（RGB）的UMAP降维特征图，以可视化特征如何捕捉上述提到的一些组织类型之间的差异。
 - en: '[PRE12]'
+  id: totrans-95
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: TIAToolbox defines a ModelABC which is a class inheriting PyTorch [nn.Module](https://pytorch.org/docs/stable/generated/torch.nn.Module.html)
     and specifies how a model should look in order to be used in the TIAToolbox inference
     engines. The histoencoder model doesn’t follow this structure, so we need to wrap
     it in a class whose output and methods are those that the TIAToolbox engine expects.
+  id: totrans-96
   prefs: []
   type: TYPE_NORMAL
+  zh: TIAToolbox定义了一个名为ModelABC的类，它是一个继承PyTorch [nn.Module](https://pytorch.org/docs/stable/generated/torch.nn.Module.html)的类，并指定了模型应该如何才能在TIAToolbox推理引擎中使用。histoencoder模型不遵循这种结构，因此我们需要将其包装在一个类中，该类的输出和方法是TIAToolbox引擎所期望的。
 - en: '[PRE13]'
+  id: totrans-97
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: Now that we have our wrapper, we will create our feature extraction model and
     instantiate a [DeepFeatureExtractor](https://tia-toolbox.readthedocs.io/en/v1.4.1/_autosummary/tiatoolbox.models.engine.semantic_segmentor.DeepFeatureExtractor.html)
     to allow us to use this model over a WSI. We will use the same WSI as above, but
     this time we will extract features from the patches of the WSI using the HistoEncoder
     model, rather than predicting some label for each patch.
+  id: totrans-98
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们有了我们的包装器，我们将创建我们的特征提取模型，并实例化一个[DeepFeatureExtractor](https://tia-toolbox.readthedocs.io/en/v1.4.1/_autosummary/tiatoolbox.models.engine.semantic_segmentor.DeepFeatureExtractor.html)以允许我们在WSI上使用这个模型。我们将使用与上面相同的WSI，但这次我们将使用HistoEncoder模型从WSI的补丁中提取特征，而不是为每个补丁预测某个标签。
 - en: '[PRE14]'
+  id: totrans-99
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: When we create the `DeepFeatureExtractor`, we will pass the `auto_generate_mask=True`
     argument. This will automatically create a mask of the tissue region using otsu
     thresholding, so that the extractor processes only those patches containing tissue.
+  id: totrans-100
   prefs: []
   type: TYPE_NORMAL
+  zh: 当我们创建`DeepFeatureExtractor`时，我们将传递`auto_generate_mask=True`参数。这将自动使用大津阈值法创建组织区域的掩模，以便提取器仅处理包含组织的那些补丁。
 - en: '[PRE15]'
+  id: totrans-101
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: These features could be used to train a downstream model, but here in order
     to get some intuition for what the features represent, we will use a UMAP reduction
     to visualize the features in RGB space. The points labeled in a similar color
@@ -470,38 +690,52 @@
     WSI thumbnail. We will plot it along with the patch-level prediction map from
     above to see how the features compare to the patch-level predictions in the following
     cells.
+  id: totrans-102
   prefs: []
   type: TYPE_NORMAL
+  zh: '这些特征可以用于训练下游模型，但在这里，为了对特征代表的内容有一些直观认识，我们将使用UMAP降维来在RGB空间中可视化特征。相似颜色标记的点应该具有相似的特征，因此我们可以检查当我们将UMAP降维叠加在WSI缩略图上时，特征是否自然地分离成不同的组织区域。我们将把它与上面的补丁级别预测地图一起绘制，以查看特征与补丁级别预测的比较。 '
 - en: '[PRE16]'
+  id: totrans-103
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: '![tiatoolbox tutorial](../Images/e3d81525e31f1599360cd4117379bc8c.png)'
+  id: totrans-104
   prefs:
   - PREF_UL
   type: TYPE_IMG
+  zh: '![tiatoolbox tutorial](../Images/e3d81525e31f1599360cd4117379bc8a.png)'
 - en: '![UMAP reduction of HistoEnc features](../Images/3b1dcd170e5bbc4b2a46dacd27686bec.png)'
+  id: totrans-105
   prefs:
   - PREF_UL
   type: TYPE_IMG
+  zh: '![UMAP reduction of HistoEnc features](../Images/3b1dcd170e5bbc4b2a46dacd27686bec.png)'
 - en: We see that the prediction map from our patch-level predictor, and the feature
     map from our self-supervised feature encoder, capture similar information about
     the tissue types in the WSI. This is a good sanity check that our models are working
     as expected. It also shows that the features extracted by the HistoEncoder model
     are capturing the differences between the tissue types, and so that they are encoding
     histologically relevant information.
+  id: totrans-106
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们看到，来自我们的补丁级预测器的预测地图和来自我们的自监督特征编码器的特征地图捕捉了WSI中关于组织类型的类似信息。这是一个很好的健全检查，表明我们的模型正在按预期工作。它还显示了HistoEncoder模型提取的特征捕捉了组织类型之间的差异，因此它们正在编码组织学相关信息。
 - en: Where to Go From Here
+  id: totrans-107
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 下一步去哪里
 - en: In this notebook, we show how we can use the `PatchPredictor` and `DeepFeatureExtractor`
     classes and their `predict` method to predict the label, or extract features,
     for patches of big tiles and WSIs. We introduce `merge_predictions` and `overlay_prediction_mask`
     helper functions that merge the patch prediction outputs and visualize the resulting
     prediction map as an overlay on the input image/WSI.
+  id: totrans-108
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这个笔记本中，我们展示了如何使用`PatchPredictor`和`DeepFeatureExtractor`类及其`predict`方法来预测大块瓷砖和WSI的补丁的标签，或提取特征。我们介绍了`merge_predictions`和`overlay_prediction_mask`辅助函数，这些函数合并了补丁预测输出，并将结果预测地图可视化为覆盖在输入图像/WSI上的叠加图。
 - en: All the processes take place within TIAToolbox and we can easily put the pieces
     together, following our example code. Please make sure to set inputs and options
     correctly. We encourage you to further investigate the effect on the prediction
@@ -509,16 +743,24 @@
     use your own pretrained model or one provided by the research community for a
     specific task in the TIAToolbox framework to do inference on large WSIs even if
     the model structure is not defined in the TIAToolbox model class.
+  id: totrans-109
   prefs: []
   type: TYPE_NORMAL
+  zh: 所有过程都在TIAToolbox内部进行，我们可以轻松地将各个部分组合在一起，按照我们的示例代码。请确保正确设置输入和选项。我们鼓励您进一步调查更改`predict`函数参数对预测输出的影响。我们已经演示了如何在TIAToolbox框架中使用您自己预训练的模型或研究社区提供的模型来执行对大型WSI的推断，即使模型结构未在TIAToolbox模型类中定义。
 - en: 'You can learn more through the following resources:'
+  id: totrans-110
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可以通过以下资源了解更多信息：
 - en: '[Advanced model handling with PyTorch and TIAToolbox](https://tia-toolbox.readthedocs.io/en/latest/_notebooks/jnb/07-advanced-modeling.html)'
+  id: totrans-111
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[使用PyTorch和TIAToolbox进行高级模型处理](https://tia-toolbox.readthedocs.io/en/latest/_notebooks/jnb/07-advanced-modeling.html)'
 - en: '[Creating slide graphs for WSI with a custom PyTorch graph neural network](https://tia-toolbox.readthedocs.io/en/latest/_notebooks/jnb/full-pipelines/slide-graph.html)'
+  id: totrans-112
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[使用自定义PyTorch图神经网络为WSI创建幻灯片图](https://tia-toolbox.readthedocs.io/en/latest/_notebooks/jnb/full-pipelines/slide-graph.html)'
