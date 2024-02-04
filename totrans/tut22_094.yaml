@@ -490,11 +490,13 @@
   id: totrans-81
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这个例子中，我们可以看到以`enumerate(DataLoader)`为前缀的事件耗费了大量时间。在大部分时间内，GPU处于空闲状态。因为这个函数正在主机端加载数据和转换数据，期间GPU资源被浪费。
 - en: 5\. Improve performance with the help of profiler
   id: totrans-82
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 5. 借助分析器提高性能
 - en: At the bottom of “Overview” page, the suggestion in “Performance Recommendation”
     hints the bottleneck is `DataLoader`. The PyTorch `DataLoader` uses single process
     by default. User could enable multi-process data loading by setting the parameter
@@ -503,12 +505,14 @@
   id: totrans-83
   prefs: []
   type: TYPE_NORMAL
+  zh: 在“概览”页面的底部，“性能建议”中的建议提示瓶颈是`DataLoader`。PyTorch的`DataLoader`默认使用单进程。用户可以通过设置参数`num_workers`来启用多进程数据加载。[这里](https://pytorch.org/docs/stable/data.html#single-and-multi-process-data-loading)有更多细节。
 - en: In this example, we follow the “Performance Recommendation” and set `num_workers`
     as below, pass a different name such as `./log/resnet18_4workers` to `tensorboard_trace_handler`,
     and run it again.
   id: totrans-84
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这个例子中，我们遵循“性能建议”，将`num_workers`设置如下，将不同的名称传递给`tensorboard_trace_handler`，然后再次运行。
 - en: '[PRE10]'
   id: totrans-85
   prefs: []
@@ -518,42 +522,51 @@
   id: totrans-86
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后在左侧的“Runs”下拉列表中选择最近分析的运行。
 - en: '[![../_static/img/profiler_overview2.png](../Images/837967744e5997b8debc071b27685596.png)](../_static/img/profiler_overview2.png)'
   id: totrans-87
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_static/img/profiler_overview2.png](../Images/837967744e5997b8debc071b27685596.png)](../_static/img/profiler_overview2.png)'
 - en: From the above view, we can find the step time is reduced to about 76ms comparing
     with previous run’s 132ms, and the time reduction of `DataLoader` mainly contributes.
   id: totrans-88
   prefs: []
   type: TYPE_NORMAL
+  zh: 从上述视图中，我们可以看到步骤时间与之前的运行相比减少到约76ms，而`DataLoader`的时间减少主要起作用。
 - en: '[![../_static/img/profiler_trace_view2.png](../Images/9126a2827ef47b32d4dd38a1e813505e.png)](../_static/img/profiler_trace_view2.png)'
   id: totrans-89
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_static/img/profiler_trace_view2.png](../Images/9126a2827ef47b32d4dd38a1e813505e.png)](../_static/img/profiler_trace_view2.png)'
 - en: From the above view, we can see that the runtime of `enumerate(DataLoader)`
     is reduced, and the GPU utilization is increased.
   id: totrans-90
   prefs: []
   type: TYPE_NORMAL
+  zh: 从上述视图中，我们可以看到`enumerate(DataLoader)`的运行时间减少了，GPU利用率增加了。
 - en: 6\. Analyze performance with other advanced features
   id: totrans-91
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 6. 使用其他高级功能进行性能分析
 - en: Memory view
   id: totrans-92
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 内存视图
 - en: To profile memory, `profile_memory` must be set to `True` in arguments of `torch.profiler.profile`.
   id: totrans-93
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了对内存进行分析，必须在`torch.profiler.profile`的参数中将`profile_memory`设置为`True`。
 - en: You can try it by using existing example on Azure
   id: totrans-94
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可以尝试在Azure上使用现有示例
 - en: '[PRE11]'
   id: totrans-95
   prefs: []
@@ -565,21 +578,25 @@
   id: totrans-96
   prefs: []
   type: TYPE_NORMAL
+  zh: 分析器在分析过程中记录所有内存分配/释放事件和分配器的内部状态。内存视图由以下三个组件组成。
 - en: '[![../_static/img/profiler_memory_view.png](../Images/c6251499e3b25e142059d0e53c1c3007.png)](../_static/img/profiler_memory_view.png)'
   id: totrans-97
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_static/img/profiler_memory_view.png](../Images/c6251499e3b25e142059d0e53c1c3007.png)](../_static/img/profiler_memory_view.png)'
 - en: The components are memory curve graph, memory events table and memory statistics
     table, from top to bottom, respectively.
   id: totrans-98
   prefs: []
   type: TYPE_NORMAL
+  zh: 这些组件分别是内存曲线图、内存事件表和内存统计表，从上到下依次排列。
 - en: The memory type could be selected in “Device” selection box. For example, “GPU0”
     means the following table only shows each operator’s memory usage on GPU 0, not
     including CPU or other GPUs.
   id: totrans-99
   prefs: []
   type: TYPE_NORMAL
+  zh: 内存类型可以在“设备”选择框中选择。例如，“GPU0”表示以下表格仅显示GPU 0上每个操作符的内存使用情况，不包括CPU或其他GPU。
 - en: 'The memory curve shows the trends of memory consumption. The “Allocated” curve
     shows the total memory that is actually in use, e.g., tensors. In PyTorch, caching
     mechanism is employed in CUDA allocator and some other allocators. The “Reserved”
@@ -588,10 +605,12 @@
   id: totrans-100
   prefs: []
   type: TYPE_NORMAL
+  zh: 内存曲线显示内存消耗的趋势。“已分配”曲线显示实际使用的总内存，例如张量。在PyTorch中，CUDA分配器和一些其他分配器采用了缓存机制。“保留”曲线显示分配器保留的总内存。您可以在图表上左键单击并拖动以选择所需范围内的事件：
 - en: '[![../_static/img/profiler_memory_curve_selecting.png](../Images/e9ec73bd94cda9e0afe2f7d66988efb3.png)](../_static/img/profiler_memory_curve_selecting.png)'
   id: totrans-101
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_static/img/profiler_memory_curve_selecting.png](../Images/e9ec73bd94cda9e0afe2f7d66988efb3.png)](../_static/img/profiler_memory_curve_selecting.png)'
 - en: After selection, the three components will be updated for the restricted time
     range, so that you can gain more information about it. By repeating this process,
     you can zoom into a very fine-grained detail. Right click on the graph will reset
@@ -599,10 +618,12 @@
   id: totrans-102
   prefs: []
   type: TYPE_NORMAL
+  zh: 选择后，这三个组件将针对受限时间范围进行更新，以便您可以获取更多信息。通过重复这个过程，您可以深入了解非常细微的细节。右键单击图表将重置图表到初始状态。
 - en: '[![../_static/img/profiler_memory_curve_single.png](../Images/b34a9076e55573e9c29e772fd4fc8238.png)](../_static/img/profiler_memory_curve_single.png)'
   id: totrans-103
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![../_static/img/profiler_memory_curve_single.png](../Images/b34a9076e55573e9c29e772fd4fc8238.png)](../_static/img/profiler_memory_curve_single.png)'
 - en: In the memory events table, the allocation and release events are paired into
     one entry. The “operator” column shows the immediate ATen operator that is causing
     the allocation. Notice that in PyTorch, ATen operators commonly use `aten::empty`
@@ -614,6 +635,8 @@
   id: totrans-104
   prefs: []
   type: TYPE_NORMAL
+  zh: 在内存事件表中，分配和释放事件成对显示在一个条目中。“operator”列显示导致分配的即时ATen操作符。请注意，在PyTorch中，ATen操作符通常使用`aten::empty`来分配内存。例如，`aten::ones`实际上是由`aten::empty`后跟一个`aten::fill_`实现的。仅显示`aten::empty`操作符名称并没有太大帮助。在这种特殊情况下，它将显示为`aten::ones
+    (aten::empty)`。如果事件发生在时间范围之外，则“分配时间”、“释放时间”和“持续时间”列的数据可能会丢失。
 - en: In the memory statistics table, the “Size Increase” column sums up all allocation
     size and minus all the memory release size, that is, the net increase of memory
     usage after this operator. The “Self Size Increase” column is similar to “Size
