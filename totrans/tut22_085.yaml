@@ -1,172 +1,258 @@
 - en: Double Backward with Custom Functions
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 使用自定义函数进行双向传播
 - en: 原文：[https://pytorch.org/tutorials/intermediate/custom_function_double_backward_tutorial.html](https://pytorch.org/tutorials/intermediate/custom_function_double_backward_tutorial.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/intermediate/custom_function_double_backward_tutorial.html](https://pytorch.org/tutorials/intermediate/custom_function_double_backward_tutorial.html)
 - en: It is sometimes useful to run backwards twice through backward graph, for example
     to compute higher-order gradients. It takes an understanding of autograd and some
     care to support double backwards, however. Functions that support performing backward
     a single time are not necessarily equipped to support double backward. In this
     tutorial we show how to write a custom autograd function that supports double
     backward, and point out some things to look out for.
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 有时候需要通过向后图两次运行反向传播，例如计算高阶梯度。然而，要支持双向传播需要对autograd有一定的理解和谨慎。支持单次向后传播的函数不一定能够支持双向传播。在本教程中，我们展示了如何编写支持双向传播的自定义autograd函数，并指出一些需要注意的事项。
 - en: When writing a custom autograd function to backward through twice, it is important
     to know when operations performed in a custom function are recorded by autograd,
     when they aren’t, and most importantly, how save_for_backward works with all of
     this.
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 当编写自定义autograd函数以进行两次向后传播时，重要的是要知道自定义函数中的操作何时被autograd记录，何时不被记录，以及最重要的是，save_for_backward如何与所有这些操作一起使用。
 - en: 'Custom functions implicitly affects grad mode in two ways:'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 自定义函数隐式影响梯度模式的两种方式：
 - en: During forward, autograd does not record any the graph for any operations performed
     within the forward function. When forward completes, the backward function of
     the custom function becomes the grad_fn of each of the forward’s outputs
+  id: totrans-5
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在向前传播期间，autograd不会记录任何在前向函数内执行的操作的图形。当前向完成时，自定义函数的向后函数将成为每个前向输出的grad_fn
 - en: During backward, autograd records the computation graph used to compute the
     backward pass if create_graph is specified
+  id: totrans-6
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在向后传播期间，如果指定了create_graph参数，autograd会记录用于计算向后传播的计算图
 - en: 'Next, to understand how save_for_backward interacts with the above, we can
     explore a couple examples:'
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，为了了解save_for_backward如何与上述交互，我们可以探索一些示例：
 - en: Saving the Inputs
+  id: totrans-8
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 保存输入
 - en: Consider this simple squaring function. It saves an input tensor for backward.
     Double backward works automatically when autograd is able to record operations
     in the backward pass, so there is usually nothing to worry about when we save
     an input for backward as the input should have grad_fn if it is a function of
     any tensor that requires grad. This allows the gradients to be properly propagated.
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 考虑这个简单的平方函数。它保存一个输入张量以备向后传播使用。当autograd能够记录向后传播中的操作时，双向传播会自动工作，因此当我们保存一个输入以备向后传播时，通常不需要担心，因为如果输入是任何需要梯度的张量的函数，它应该有grad_fn。这样可以正确传播梯度。
 - en: '[PRE0]'
+  id: totrans-10
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: We can use torchviz to visualize the graph to see why this works
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们可以使用torchviz来可视化图形以查看为什么这样可以工作
 - en: '[PRE1]'
+  id: totrans-12
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: We can see that the gradient wrt to x, is itself a function of x (dout/dx =
     2x) And the graph of this function has been properly constructed
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们可以看到对于x的梯度本身是x的函数（dout/dx = 2x），并且这个函数的图形已经正确构建
 - en: '[![https://user-images.githubusercontent.com/13428986/126559699-e04f3cb1-aaf2-4a9a-a83d-b8767d04fbd9.png](../Images/664c9393ebdb32f044c3ab5f5780b3f7.png)](https://user-images.githubusercontent.com/13428986/126559699-e04f3cb1-aaf2-4a9a-a83d-b8767d04fbd9.png)'
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![https://user-images.githubusercontent.com/13428986/126559699-e04f3cb1-aaf2-4a9a-a83d-b8767d04fbd9.png](../Images/664c9393ebdb32f044c3ab5f5780b3f7.png)](https://user-images.githubusercontent.com/13428986/126559699-e04f3cb1-aaf2-4a9a-a83d-b8767d04fbd9.png)'
 - en: Saving the Outputs
+  id: totrans-15
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 保存输出
 - en: A slight variation on the previous example is to save an output instead of input.
     The mechanics are similar because outputs are also associated with a grad_fn.
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 在前一个示例的轻微变化是保存输出而不是输入。机制类似，因为输出也与grad_fn相关联。
 - en: '[PRE2]'
+  id: totrans-17
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: 'Use torchviz to visualize the graph:'
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用torchviz来可视化图形：
 - en: '[PRE3]'
+  id: totrans-19
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: '[![https://user-images.githubusercontent.com/13428986/126559780-d141f2ba-1ee8-4c33-b4eb-c9877b27a954.png](../Images/7ab379f6d65d456373fdf6a3cdb35b1a.png)](https://user-images.githubusercontent.com/13428986/126559780-d141f2ba-1ee8-4c33-b4eb-c9877b27a954.png)'
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![https://user-images.githubusercontent.com/13428986/126559780-d141f2ba-1ee8-4c33-b4eb-c9877b27a954.png](../Images/7ab379f6d65d456373fdf6a3cdb35b1a.png)](https://user-images.githubusercontent.com/13428986/126559780-d141f2ba-1ee8-4c33-b4eb-c9877b27a954.png)'
 - en: Saving Intermediate Results
+  id: totrans-21
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 保存中间结果
 - en: 'A more tricky case is when we need to save an intermediate result. We demonstrate
     this case by implementing:'
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 更棘手的情况是当我们需要保存一个中间结果时。我们通过实现以下情况来演示这种情况：
 - en: \[sinh(x) := \frac{e^x - e^{-x}}{2} \]
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: \[sinh(x) := \frac{e^x - e^{-x}}{2} \]
 - en: Since the derivative of sinh is cosh, it might be useful to reuse exp(x) and
     exp(-x), the two intermediate results in forward in the backward computation.
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于sinh的导数是cosh，因此在向后计算中重复使用exp(x)和exp(-x)这两个中间结果可能很有用。
 - en: Intermediate results should not be directly saved and used in backward though.
     Because forward is performed in no-grad mode, if an intermediate result of the
     forward pass is used to compute gradients in the backward pass the backward graph
     of the gradients would not include the operations that computed the intermediate
     result. This leads to incorrect gradients.
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: 尽管如此，中间结果不应直接保存并在向后传播中使用。因为前向是在无梯度模式下执行的，如果前向传递的中间结果用于计算向后传递中的梯度，则梯度的向后图将不包括计算中间结果的操作。这会导致梯度不正确。
 - en: '[PRE4]'
+  id: totrans-26
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: 'Use torchviz to visualize the graph:'
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用torchviz来可视化图形：
 - en: '[PRE5]'
+  id: totrans-28
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: '[![https://user-images.githubusercontent.com/13428986/126560494-e48eba62-be84-4b29-8c90-a7f6f40b1438.png](../Images/66f87d1f09778a82307fefa72409569c.png)](https://user-images.githubusercontent.com/13428986/126560494-e48eba62-be84-4b29-8c90-a7f6f40b1438.png)'
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![https://user-images.githubusercontent.com/13428986/126560494-e48eba62-be84-4b29-8c90-a7f6f40b1438.png](../Images/66f87d1f09778a82307fefa72409569c.png)](https://user-images.githubusercontent.com/13428986/126560494-e48eba62-be84-4b29-8c90-a7f6f40b1438.png)'
 - en: 'Saving Intermediate Results: What not to do'
+  id: totrans-30
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 保存中间结果：不要这样做
 - en: 'Now we show what happens when we don’t also return our intermediate results
     as outputs: grad_x would not even have a backward graph because it is purely a
     function exp and expnegx, which don’t require grad.'
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们展示当我们不返回中间结果作为输出时会发生什么：grad_x甚至不会有一个反向图，因为它纯粹是一个函数exp和expnegx，它们不需要grad。
 - en: '[PRE6]'
+  id: totrans-32
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: Use torchviz to visualize the graph. Notice that grad_x is not part of the graph!
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用torchviz来可视化图形。请注意，grad_x不是图形的一部分！
 - en: '[PRE7]'
+  id: totrans-34
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: '[![https://user-images.githubusercontent.com/13428986/126565889-13992f01-55bc-411a-8aee-05b721fe064a.png](../Images/c57a22a13ed99e177d45732c5bcc36ff.png)](https://user-images.githubusercontent.com/13428986/126565889-13992f01-55bc-411a-8aee-05b721fe064a.png)'
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![https://user-images.githubusercontent.com/13428986/126565889-13992f01-55bc-411a-8aee-05b721fe064a.png](../Images/c57a22a13ed99e177d45732c5bcc36ff.png)](https://user-images.githubusercontent.com/13428986/126565889-13992f01-55bc-411a-8aee-05b721fe064a.png)'
 - en: When Backward is not Tracked
+  id: totrans-36
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 当不跟踪反向传播时
 - en: Finally, let’s consider an example when it may not be possible for autograd
     to track gradients for a functions backward at all. We can imagine cube_backward
     to be a function that may require a non-PyTorch library like SciPy or NumPy, or
     written as a C++ extension. The workaround demonstrated here is to create another
     custom function CubeBackward where you also manually specify the backward of cube_backward!
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 最后，让我们考虑一个例子，即autograd可能根本无法跟踪函数的反向梯度。我们可以想象cube_backward是一个可能需要非PyTorch库（如SciPy或NumPy）或编写为C++扩展的函数。这里演示的解决方法是创建另一个自定义函数CubeBackward，在其中手动指定cube_backward的反向传播！
 - en: '[PRE8]'
+  id: totrans-38
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: 'Use torchviz to visualize the graph:'
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用torchviz来可视化图形：
 - en: '[PRE9]'
+  id: totrans-40
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: '[![https://user-images.githubusercontent.com/13428986/126559935-74526b4d-d419-4983-b1f0-a6ee99428531.png](../Images/44368555f30978a287e8a47e0cfff9ee.png)](https://user-images.githubusercontent.com/13428986/126559935-74526b4d-d419-4983-b1f0-a6ee99428531.png)'
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![https://user-images.githubusercontent.com/13428986/126559935-74526b4d-d419-4983-b1f0-a6ee99428531.png](../Images/44368555f30978a287e8a47e0cfff9ee.png)](https://user-images.githubusercontent.com/13428986/126559935-74526b4d-d419-4983-b1f0-a6ee99428531.png)'
 - en: To conclude, whether double backward works for your custom function simply depends
     on whether the backward pass can be tracked by autograd. With the first two examples
     we show situations where double backward works out of the box. With the third
     and fourth examples, we demonstrate techniques that enable a backward function
     to be tracked, when they otherwise would not be.
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 总之，双向传播是否适用于您的自定义函数取决于反向传播是否可以被autograd跟踪。通过前两个示例，我们展示了双向传播可以直接使用的情况。通过第三和第四个示例，我们展示了使反向函数可以被跟踪的技术，否则它们将无法被跟踪。

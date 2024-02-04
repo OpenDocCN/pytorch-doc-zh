@@ -1,11 +1,15 @@
 - en: Using the PyTorch C++ Frontend
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 使用 PyTorch C++ 前端
 - en: 原文：[https://pytorch.org/tutorials/advanced/cpp_frontend.html](https://pytorch.org/tutorials/advanced/cpp_frontend.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/advanced/cpp_frontend.html](https://pytorch.org/tutorials/advanced/cpp_frontend.html)
 - en: The PyTorch C++ frontend is a pure C++ interface to the PyTorch machine learning
     framework. While the primary interface to PyTorch naturally is Python, this Python
     API sits atop a substantial C++ codebase providing foundational data structures
@@ -16,8 +20,13 @@
     this collection with custom modules; a library of popular optimization algorithms
     such as stochastic gradient descent; a parallel data loader with an API to define
     and load datasets; serialization routines and more.
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch C++ 前端是 PyTorch 机器学习框架的纯 C++ 接口。虽然 PyTorch 的主要接口自然是 Python，但这个 Python
+    API 坐落在一个庞大的 C++ 代码库之上，提供了基础数据结构和功能，如张量和自动微分。C++ 前端暴露了一个纯 C++11 API，扩展了这个底层 C++
+    代码库，提供了用于机器学习训练和推断所需的工具。这包括一个内置的常见神经网络建模组件集合；一个 API 用于扩展此集合以添加自定义模块；一个流行的优化算法库，如随机梯度下降；一个并行数据加载器，具有定义和加载数据集的
+    API；序列化例程等。
 - en: This tutorial will walk you through an end-to-end example of training a model
     with the C++ frontend. Concretely, we will be training a [DCGAN](https://arxiv.org/abs/1511.06434)
     – a kind of generative model – to generate images of MNIST digits. While conceptually
@@ -25,66 +34,98 @@
     PyTorch C++ frontend and wet your appetite for training more complex models. We
     will begin with some motivating words for why you would want to use the C++ frontend
     to begin with, and then dive straight into defining and training our model.
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程将带您完成一个使用 C++ 前端训练模型的端到端示例。具体来说，我们将训练一个[DCGAN](https://arxiv.org/abs/1511.06434)
+    - 一种生成模型 - 生成 MNIST 数字的图像。虽然在概念上是一个简单的例子，但应该足以让您快速了解 PyTorch C++ 前端，并激发您对训练更复杂模型的兴趣。我们将从一些激励性的话语开始，解释为什么您首先要使用
+    C++ 前端，然后直接进入定义和训练我们的模型。
 - en: Tip
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 提示
 - en: Watch [this lightning talk from CppCon 2018](https://www.youtube.com/watch?v=auRPXMMHJzc)
     for a quick (and humorous) presentation on the C++ frontend.
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 观看[来自 CppCon 2018 的这个闪电演讲](https://www.youtube.com/watch?v=auRPXMMHJzc)，了解有关
+    C++ 前端的快速（而幽默）介绍。
 - en: Tip
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 提示
 - en: '[This note](https://pytorch.org/cppdocs/frontend.html) provides a sweeping
     overview of the C++ frontend’s components and design philosophy.'
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: '[这个注释](https://pytorch.org/cppdocs/frontend.html)提供了对 C++ 前端组件和设计理念的概述。'
 - en: Tip
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 提示
 - en: Documentation for the PyTorch C++ ecosystem is available at [https://pytorch.org/cppdocs](https://pytorch.org/cppdocs).
     There you can find high level descriptions as well as API-level documentation.
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch C++ 生态系统的文档可在[https://pytorch.org/cppdocs](https://pytorch.org/cppdocs)找到。在那里，您可以找到高级描述以及
+    API 级文档。
 - en: Motivation
+  id: totrans-10
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 动机
 - en: 'Before we embark on our exciting journey of GANs and MNIST digits, let’s take
     a step back and discuss why you would want to use the C++ frontend instead of
     the Python one to begin with. We (the PyTorch team) created the C++ frontend to
     enable research in environments in which Python cannot be used, or is simply not
     the right tool for the job. Examples for such environments include:'
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 在我们激动人心的 GAN 和 MNIST 数字之旅开始之前，让我们退后一步，讨论为什么您首选使用 C++ 前端而不是 Python 前端。我们（PyTorch
+    团队）创建了 C++ 前端，以便在无法使用 Python 或简单不适合工作的环境中进行研究。这种环境的示例包括：
 - en: '**Low Latency Systems**: You may want to do reinforcement learning research
     in a pure C++ game engine with high frames-per-second and low latency requirements.
     Using a pure C++ library is a much better fit to such an environment than a Python
     library. Python may not be tractable at all because of the slowness of the Python
     interpreter.'
+  id: totrans-12
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**低延迟系统**：您可能希望在具有高每秒帧数和低延迟要求的纯 C++ 游戏引擎中进行强化学习研究。在这种环境中，使用纯 C++ 库比使用 Python
+    库更合适。由于 Python 解释器的速度慢，Python 可能根本无法胜任。'
 - en: '**Highly Multithreaded Environments**: Due to the Global Interpreter Lock (GIL),
     Python cannot run more than one system thread at a time. Multiprocessing is an
     alternative, but not as scalable and has significant shortcomings. C++ has no
     such constraints and threads are easy to use and create. Models requiring heavy
     parallelization, like those used in [Deep Neuroevolution](https://eng.uber.com/deep-neuroevolution/),
     can benefit from this.'
+  id: totrans-13
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**高度多线程环境**：由于全局解释器锁（GIL），Python 无法同时运行多个系统线程。多进程是一种替代方法，但不如可扩展且存在重大缺陷。C++
+    没有这样的约束，线程易于使用和创建。需要大量并行化的模型，如[深度神经进化](https://eng.uber.com/deep-neuroevolution/)中使用的模型，可以从中受益。'
 - en: '**Existing C++ Codebases**: You may be the owner of an existing C++ application
     doing anything from serving web pages in a backend server to rendering 3D graphics
     in photo editing software, and wish to integrate machine learning methods into
     your system. The C++ frontend allows you to remain in C++ and spare yourself the
     hassle of binding back and forth between Python and C++, while retaining much
     of the flexibility and intuitiveness of the traditional PyTorch (Python) experience.'
+  id: totrans-14
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**现有的 C++ 代码库**：您可能是一个现有的 C++ 应用程序的所有者，从在后端服务器中提供网页到在照片编辑软件中渲染 3D 图形，希望将机器学习方法集成到您的系统中。C++
+    前端允许您保持在 C++ 中，避免在 Python 和 C++ 之间来回绑定的麻烦，同时保留传统 PyTorch（Python）体验的灵活性和直观性的大部分。'
 - en: The C++ frontend is not intended to compete with the Python frontend. It is
     meant to complement it. We know researchers and engineers alike love PyTorch for
     its simplicity, flexibility and intuitive API. Our goal is to make sure you can
@@ -92,22 +133,30 @@
     including the ones described above. If one of these scenarios describes your use
     case well, or if you are simply interested or curious, follow along as we explore
     the C++ frontend in detail in the following paragraphs.
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: C++前端并不打算与Python前端竞争。它旨在补充它。我们知道研究人员和工程师都喜欢PyTorch的简单性、灵活性和直观的API。我们的目标是确保您可以在包括上述环境在内的每一个可能的环境中利用这些核心设计原则。如果其中一个场景很好地描述了您的用例，或者您只是感兴趣或好奇，请跟随我们在接下来的段落中详细探讨C++前端。
 - en: Tip
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 提示
 - en: The C++ frontend tries to provide an API as close as possible to that of the
     Python frontend. If you are experienced with the Python frontend and ever ask
     yourself “how do I do X with the C++ frontend?”, write your code the way you would
     in Python, and more often than not the same functions and methods will be available
     in C++ as in Python (just remember to replace dots with double colons).
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: C++前端试图提供尽可能接近Python前端的API。如果您熟悉Python前端，并且有时会问自己“如何在C++前端中做X？”，请像在Python中一样编写代码，很多时候相同的函数和方法将在C++中和Python中都可用（只需记住用双冒号替换点）。
 - en: Writing a Basic Application
+  id: totrans-18
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 编写一个基本应用程序
 - en: Let’s begin by writing a minimal C++ application to verify that we’re on the
     same page regarding our setup and build environment. First, you will need to grab
     a copy of the *LibTorch* distribution – our ready-built zip archive that packages
@@ -116,142 +165,208 @@
     website](https://pytorch.org/get-started/locally/) for Linux, MacOS and Windows.
     The rest of this tutorial will assume a basic Ubuntu Linux environment, however
     you are free to follow along on MacOS or Windows too.
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们从编写一个最小的C++应用程序开始，以验证我们在设置和构建环境方面是否一致。首先，您需要获取*LibTorch*分发 - 我们准备好的zip存档，其中包含所有相关的头文件、库和CMake构建文件，以便使用C++前端所需。LibTorch分发可在[PyTorch网站](https://pytorch.org/get-started/locally/)上下载，适用于Linux、MacOS和Windows。本教程的其余部分将假定一个基本的Ubuntu
+    Linux环境，但您也可以在MacOS或Windows上跟随操作。
 - en: Tip
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 提示
 - en: The note on [Installing C++ Distributions of PyTorch](https://pytorch.org/cppdocs/installing.html)
     describes the following steps in more detail.
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: '[安装PyTorch的C++分发](https://pytorch.org/cppdocs/installing.html)上的说明更详细地描述了以下步骤。'
 - en: Tip
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 提示
 - en: On Windows, debug and release builds are not ABI-compatible. If you plan to
     build your project in debug mode, please try the debug version of LibTorch. Also,
     make sure you specify the correct configuration in the `cmake --build .` line
     below.
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 在Windows上，调试版本和发布版本不兼容。如果您计划以调试模式构建项目，请尝试LibTorch的调试版本。此外，请确保在下面的`cmake --build
+    .`行中指定正确的配置。
 - en: 'The first step is to download the LibTorch distribution locally, via the link
     retrieved from the PyTorch website. For a vanilla Ubuntu Linux environment, this
     means running:'
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 第一步是通过从PyTorch网站检索的链接在本地下载LibTorch分发。对于一个普通的Ubuntu Linux环境，这意味着运行：
 - en: '[PRE0]'
+  id: totrans-25
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: 'Next, let’s write a tiny C++ file called `dcgan.cpp` that includes `torch/torch.h`
     and for now simply prints out a three by three identity matrix:'
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，让我们编写一个名为`dcgan.cpp`的小型C++文件，其中包含`torch/torch.h`，目前只是简单地打印出一个三乘三的单位矩阵：
 - en: '[PRE1]'
+  id: totrans-27
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: 'To build this tiny application as well as our full-fledged training script
     later on we’ll use this `CMakeLists.txt` file:'
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了构建这个小应用程序以及稍后我们的完整训练脚本，我们将使用这个`CMakeLists.txt`文件：
 - en: '[PRE2]'
+  id: totrans-29
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Note
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: While CMake is the recommended build system for LibTorch, it is not a hard requirement.
     You can also use Visual Studio project files, QMake, plain Makefiles or any other
     build environment you feel comfortable with. However, we do not provide out-of-the-box
     support for this.
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: 虽然CMake是LibTorch的推荐构建系统，但这不是硬性要求。您也可以使用Visual Studio项目文件、QMake、普通的Makefiles或任何您感觉舒适的其他构建环境。但是，我们不提供这方面的开箱即用支持。
 - en: 'Make note of line 4 in the above CMake file: `find_package(Torch REQUIRED)`.
     This instructs CMake to find the build configuration for the LibTorch library.
     In order for CMake to know *where* to find these files, we must set the `CMAKE_PREFIX_PATH`
     when invoking `cmake`. Before we do this, let’s agree on the following directory
     structure for our `dcgan` application:'
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 在上面的CMake文件中注意第4行：`find_package(Torch REQUIRED)`。这指示CMake查找LibTorch库的构建配置。为了让CMake知道*在哪里*找到这些文件，我们在调用`cmake`时必须设置`CMAKE_PREFIX_PATH`。在这之前，让我们就我们的`dcgan`应用程序达成以下目录结构的一致意见：
 - en: '[PRE3]'
+  id: totrans-33
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: 'Further, I will refer to the path to the unzipped LibTorch distribution as
     `/path/to/libtorch`. Note that this **must be an absolute path**. In particular,
     setting `CMAKE_PREFIX_PATH` to something like `../../libtorch` will break in unexpected
     ways. Instead, write `$PWD/../../libtorch` to get the corresponding absolute path.
     Now, we are ready to build our application:'
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 此外，我将把解压后的LibTorch分发的路径称为`/path/to/libtorch`。请注意这**必须是绝对路径**。特别是，将`CMAKE_PREFIX_PATH`设置为类似`../../libtorch`的内容会以意想不到的方式中断。相反，请写`$PWD/../../libtorch`以获得相应的绝对路径。现在，我们已经准备好构建我们的应用程序：
 - en: '[PRE4]'
+  id: totrans-35
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: 'Above, we first created a `build` folder inside of our `dcgan` directory, entered
     this folder, ran the `cmake` command to generate the necessary build (Make) files
     and finally compiled the project successfully by running `cmake --build . --config
     Release`. We are now all set to execute our minimal binary and complete this section
     on basic project configuration:'
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 在上面，我们首先在我们的`dcgan`目录中创建了一个`build`文件夹，进入这个文件夹，运行`cmake`命令生成必要的构建（Make）文件，最后通过运行`cmake
+    --build . --config Release`成功编译了项目。现在我们已经准备好执行我们的最小二进制文件，并完成这一部分关于基本项目配置的内容：
 - en: '[PRE5]'
+  id: totrans-37
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: Looks like an identity matrix to me!
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 对我来说看起来像一个单位矩阵！
 - en: Defining the Neural Network Models
+  id: totrans-39
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 定义神经网络模型
 - en: Now that we have our basic environment configured, we can dive into the much
     more interesting parts of this tutorial. First, we will discuss how to define
     and interact with modules in the C++ frontend. We’ll begin with basic, small-scale
     example modules and then implement a full-fledged GAN using the extensive library
     of built-in modules provided by the C++ frontend.
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们已经配置好基本环境，我们可以深入到本教程的更有趣的部分。首先，我们将讨论如何在C++前端定义和交互模块。我们将从基本的小规模示例模块开始，然后使用C++前端提供的大量内置模块库实现一个完整的GAN。
 - en: Module API Basics
+  id: totrans-41
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 模块API基础
 - en: 'In line with the Python interface, neural networks based on the C++ frontend
     are composed of reusable building blocks called *modules*. There is a base module
     class from which all other modules are derived. In Python, this class is `torch.nn.Module`
     and in C++ it is `torch::nn::Module`. Besides a `forward()` method that implements
     the algorithm the module encapsulates, a module usually contains any of three
     kinds of sub-objects: parameters, buffers and submodules.'
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 与Python接口一致，基于C++前端的神经网络由可重用的构建块称为*模块*组成。有一个基本模块类，所有其他模块都是从这个类派生的。在Python中，这个类是`torch.nn.Module`，在C++中是`torch::nn::Module`。除了实现模块封装的算法的`forward()`方法外，模块通常包含三种类型的子对象：参数、缓冲区和子模块。
 - en: Parameters and buffers store state in form of tensors. Parameters record gradients,
     while buffers do not. Parameters are usually the trainable weights of your neural
     network. Examples of buffers include means and variances for batch normalization.
     In order to re-use particular blocks of logic and state, the PyTorch API allows
     modules to be nested. A nested module is termed a *submodule*.
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数和缓冲区以张量形式存储状态。参数记录梯度，而缓冲区不记录。参数通常是神经网络的可训练权重。缓冲区的示例包括批量归一化的均值和方差。为了重复使用特定的逻辑块和状态，PyTorch
+    API允许模块嵌套。嵌套模块称为*子模块*。
 - en: Parameters, buffers and submodules must be explicitly registered. Once registered,
     methods like `parameters()` or `buffers()` can be used to retrieve a container
     of all parameters in the entire (nested) module hierarchy. Similarly, methods
     like `to(...)`, where e.g. `to(torch::kCUDA)` moves all parameters and buffers
     from CPU to CUDA memory, work on the entire module hierarchy.
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数、缓冲区和子模块必须显式注册。一旦注册，就可以使用`parameters()`或`buffers()`等方法来检索整个（嵌套的）模块层次结构中的所有参数的容器。类似的方法，比如`to(...)`，例如`to(torch::kCUDA)`将所有参数和缓冲区从CPU移动到CUDA内存，适用于整个模块层次结构。
 - en: Defining a Module and Registering Parameters
+  id: totrans-45
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 定义模块和注册参数
 - en: 'To put these words into code, let’s consider this simple module written in
     the Python interface:'
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了将这些话语转化为代码，让我们考虑这个简单的模块在Python接口中编写：
 - en: '[PRE6]'
+  id: totrans-47
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: 'In C++, it would look like this:'
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: 在C++中，它看起来像这样：
 - en: '[PRE7]'
+  id: totrans-49
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: Just like in Python, we define a class called `Net` (for simplicity here a `struct`
     instead of a `class`) and derive it from the module base class. Inside the constructor,
     we create tensors using `torch::randn` just like we use `torch.randn` in Python.
@@ -261,42 +376,63 @@
     is that the Python API can detect that an attribute is of type `torch.nn.Parameter`
     and automatically registers such tensors. In C++, reflection is very limited,
     so a more traditional (and less magical) approach is provided.
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: 就像在Python中一样，我们定义了一个名为`Net`的类（这里简单起见使用`struct`而不是`class`），并将其派生自模块基类。在构造函数内部，我们使用`torch::randn`创建张量，就像我们在Python中使用`torch.randn`一样。一个有趣的区别是我们如何注册参数。在Python中，我们用`torch.nn.Parameter`类包装张量，而在C++中，我们必须通过`register_parameter`方法传递张量。这样做的原因是Python
+    API可以检测到属性的类型是`torch.nn.Parameter`并自动注册这样的张量。在C++中，反射非常有限，因此提供了一种更传统（也更少神奇）的方法。
 - en: Registering Submodules and Traversing the Module Hierarchy
+  id: totrans-51
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 注册子模块和遍历模块层次结构
 - en: 'In the same way we can register parameters, we can also register submodules.
     In Python, submodules are automatically detected and registered when they are
     assigned as an attribute of a module:'
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们可以像注册参数一样注册子模块。在Python中，当将子模块分配为模块的属性时，子模块会自动检测并注册：
 - en: '[PRE8]'
+  id: totrans-53
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: 'This allows, for example, to use the `parameters()` method to recursively access
     all parameters in our module hierarchy:'
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: 例如，可以使用`parameters()`方法递归访问我们模块层次结构中的所有参数：
 - en: '[PRE9]'
+  id: totrans-55
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: 'To register submodules in C++, use the aptly named `register_module()` method
     to register a module like `torch::nn::Linear`:'
+  id: totrans-56
   prefs: []
   type: TYPE_NORMAL
+  zh: 在C++中注册子模块，使用名为`register_module()`的方法注册一个模块，如`torch::nn::Linear`：
 - en: '[PRE10]'
+  id: totrans-57
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: Tip
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: 提示
 - en: You can find the full list of available built-in modules like `torch::nn::Linear`,
     `torch::nn::Dropout` or `torch::nn::Conv2d` in the documentation of the `torch::nn`
     namespace [here](https://pytorch.org/cppdocs/api/namespace_torch__nn.html).
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可以在`torch::nn`命名空间的文档中找到所有可用的内置模块列表，如`torch::nn::Linear`、`torch::nn::Dropout`或`torch::nn::Conv2d`。
 - en: 'One subtlety about the above code is why the submodule was created in the constructor’s
     initializer list, while the parameter was created inside the constructor body.
     There is a good reason for this, which we’ll touch upon this in the section on
@@ -304,60 +440,93 @@
     that we can recursively access our module tree’s parameters just like in Python.
     Calling `parameters()` returns a `std::vector<torch::Tensor>`, which we can iterate
     over:'
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: 关于上面代码的一个微妙之处是为什么子模块在构造函数的初始化列表中创建，而参数在构造函数体内创建。这有一个很好的原因，我们将在下面关于C++前端*所有权模型*部分详细介绍。然而，最终结果是我们可以像在Python中一样递归访问我们的模块树的参数。调用`parameters()`返回一个`std::vector<torch::Tensor>`，我们可以对其进行迭代：
 - en: '[PRE11]'
+  id: totrans-61
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: 'which prints:'
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
+  zh: 它打印：
 - en: '[PRE12]'
+  id: totrans-63
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: 'with three parameters just like in Python. To also see the names of these parameters,
     the C++ API provides a `named_parameters()` method which returns an `OrderedDict`
     just like in Python:'
+  id: totrans-64
   prefs: []
   type: TYPE_NORMAL
+  zh: 就像在Python中一样有三个参数。为了查看这些参数的名称，C++ API提供了一个`named_parameters()`方法，返回一个`OrderedDict`，就像在Python中一样：
 - en: '[PRE13]'
+  id: totrans-65
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: 'which we can execute again to see the output:'
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们可以再次执行以查看输出：
 - en: '[PRE14]'
+  id: totrans-67
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: Note
+  id: totrans-68
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: '[The documentation](https://pytorch.org/cppdocs/api/classtorch_1_1nn_1_1_module.html#exhale-class-classtorch-1-1nn-1-1-module)
     for `torch::nn::Module` contains the full list of methods that operate on the
     module hierarchy.'
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`torch::nn::Module`](https://pytorch.org/cppdocs/api/classtorch_1_1nn_1_1_module.html#exhale-class-classtorch-1-1nn-1-1-module)
+    的文档包含了在模块层次结构上操作的完整方法列表。'
 - en: Running the Network in Forward Mode
+  id: totrans-70
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 在前向模式下运行网络
 - en: 'To execute the network in C++, we simply call the `forward()` method we defined
     ourselves:'
+  id: totrans-71
   prefs: []
   type: TYPE_NORMAL
+  zh: 要在 C++ 中执行网络，我们只需调用我们自己定义的 `forward()` 方法：
 - en: '[PRE15]'
+  id: totrans-72
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: 'which prints something like:'
+  id: totrans-73
   prefs: []
   type: TYPE_NORMAL
+  zh: 打印出类似于以下内容：
 - en: '[PRE16]'
+  id: totrans-74
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: Module Ownership
+  id: totrans-75
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 模块所有权
 - en: At this point, we know how to define a module in C++, register parameters, register
     submodules, traverse the module hierarchy via methods like `parameters()` and
     finally run the module’s `forward()` method. While there are many more methods,
@@ -366,16 +535,24 @@
     DCGAN model and end-to-end training pipeline in just a second. Before we do so,
     let me briefly touch upon the *ownership model* the C++ frontend provides for
     subclasses of `torch::nn::Module`.
+  id: totrans-76
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这一点上，我们知道如何在 C++ 中定义模块，注册参数，注册子模块，通过 `parameters()` 等方法遍历模块层次结构，最后运行模块的 `forward()`
+    方法。虽然在 C++ API 中还有许多方法、类和主题需要掌握，但我会引导您查看[文档](https://pytorch.org/cppdocs/api/namespace_torch__nn.html)以获取完整的菜单。我们还将在实现
+    DCGAN 模型和端到端训练流水线时涉及一些更多的概念。在我们这样做之前，让我简要谈一下 C++ 前端为 `torch::nn::Module` 的子类提供的
+    *所有权模型*。
 - en: For this discussion, the ownership model refers to the way modules are stored
     and passed around – which determines who or what *owns* a particular module instance.
     In Python, objects are always allocated dynamically (on the heap) and have reference
     semantics. This is very easy to work with and straightforward to understand. In
     fact, in Python, you can largely forget about where objects live and how they
     get referenced, and focus on getting things done.
+  id: totrans-77
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这个讨论中，所有权模型指的是模块是如何存储和传递的 - 这决定了谁或什么 *拥有* 特定模块实例。在 Python 中，对象总是动态分配（在堆上）并具有引用语义。这非常容易使用和理解。事实上，在
+    Python 中，您可以基本上忘记对象位于何处以及它们如何被引用，而专注于完成任务。
 - en: 'C++, being a lower level language, provides more options in this realm. This
     increases complexity and heavily influences the design and ergonomics of the C++
     frontend. In particular, for modules in the C++ frontend, we have the option of
@@ -383,30 +560,46 @@
     simplest and was shown in the examples thus far: module objects are allocated
     on the stack and when passed to a function, can be either copied, moved (with
     `std::move`) or taken by reference or by pointer:'
+  id: totrans-78
   prefs: []
   type: TYPE_NORMAL
+  zh: C++ 作为一种较低级别的语言，在这个领域提供了更多选项。这增加了复杂性，并且严重影响了 C++ 前端的设计和人机工程学。特别是，在 C++ 前端的模块中，我们可以选择
+    *要么* 使用值语义 *要么* 使用引用语义。第一种情况是最简单的，迄今为止的示例中已经展示过：模块对象在堆栈上分配，当传递给函数时，可以被复制、移动（使用
+    `std::move`）或通过引用或指针传递：
 - en: '[PRE17]'
+  id: totrans-79
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: For the second case – reference semantics – we can use `std::shared_ptr`. The
     advantage of reference semantics is that, like in Python, it reduces the cognitive
     overhead of thinking about how modules must be passed to functions and how arguments
     must be declared (assuming you use `shared_ptr` everywhere).
+  id: totrans-80
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于第二种情况 - 引用语义 - 我们可以使用 `std::shared_ptr`。引用语义的优点是，就像在 Python 中一样，它减少了思考模块如何传递给函数以及如何声明参数的认知负担（假设您在所有地方都使用
+    `shared_ptr`）。
 - en: '[PRE18]'
+  id: totrans-81
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: 'In our experience, researchers coming from dynamic languages greatly prefer
     reference semantics over value semantics, even though the latter is more “native”
     to C++. It is also important to note that `torch::nn::Module`’s design, in order
     to stay close to the ergonomics of the Python API, relies on shared ownership.
     For example, take our earlier (here shortened) definition of `Net`:'
+  id: totrans-82
   prefs: []
   type: TYPE_NORMAL
+  zh: 根据我们的经验，来自动态语言的研究人员更喜欢引用语义而不是值语义，尽管后者更“本地”于 C++。还要注意，`torch::nn::Module` 的设计为了保持与
+    Python API 的人机工程学接近，依赖于共享所有权。例如，考虑我们之前（这里缩短了）对 `Net` 的定义：
 - en: '[PRE19]'
+  id: totrans-83
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE19]'
 - en: In order to use the `linear` submodule, we want to store it directly in our
     class. However, we also want the module base class to know about and have access
     to this submodule. For this, it must store a reference to this submodule. At this
@@ -414,8 +607,11 @@
     class and concrete `Net` class require a reference to the submodule. For this
     reason, the base class stores modules as `shared_ptr`s, and therefore the concrete
     class must too.
+  id: totrans-84
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了使用 `linear` 子模块，我们希望直接将其存储在我们的类中。但是，我们也希望模块基类知道并能够访问这个子模块。为此，它必须存储对这个子模块的引用。在这一点上，我们已经到达了需要共享所有权的地步。`torch::nn::Module`
+    类和具体的 `Net` 类都需要对子模块的引用。因此，基类将模块存储为 `shared_ptr`，因此具体类也必须如此。
 - en: 'But wait! I don’t see any mention of `shared_ptr` in the above code! Why is
     that? Well, because `std::shared_ptr<MyModule>` is a hell of a lot to type. To
     keep our researchers productive, we came up with an elaborate scheme to hide the
@@ -423,11 +619,17 @@
     retaining reference semantics. To understand how this works, we can take a look
     at a simplified definition of the `torch::nn::Linear` module in the core library
     (the full definition is [here](https://github.com/pytorch/pytorch/blob/master/torch/csrc/api/include/torch/nn/modules/linear.h)):'
+  id: totrans-85
   prefs: []
   type: TYPE_NORMAL
+  zh: 但等等！我在上面的代码中没有看到 `shared_ptr` 的提及！为什么呢？那是因为 `std::shared_ptr<MyModule>` 是一个很长的类型。为了保持我们的研究人员高效，我们想出了一个复杂的方案来隐藏
+    `shared_ptr` 的提及 - 这通常是保留给值语义的好处 - 同时保留引用语义。要了解这是如何工作的，我们可以看一下核心库中 `torch::nn::Linear`
+    模块的简化定义（完整定义在[这里](https://github.com/pytorch/pytorch/blob/master/torch/csrc/api/include/torch/nn/modules/linear.h)）：
 - en: '[PRE20]'
+  id: totrans-86
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE20]'
 - en: 'In brief: the module is not called `Linear`, but `LinearImpl`. A macro, `TORCH_MODULE`
     then defines the actual `Linear` class. This “generated” class is effectively
     a wrapper over a `std::shared_ptr<LinearImpl>`. It is a wrapper instead of a simple
@@ -439,11 +641,17 @@
     closely. Reference semantics become the default, but without the extra typing
     of `std::shared_ptr` or `std::make_shared`. For our `Net`, using the module holder
     API looks like this:'
+  id: totrans-87
   prefs: []
   type: TYPE_NORMAL
+  zh: 简而言之：模块不叫`Linear`，而是`LinearImpl`。一个宏，`TORCH_MODULE`然后定义了实际的`Linear`类。这个“生成”的类实际上是`std::shared_ptr<LinearImpl>`的包装器。它是一个包装器而不是一个简单的typedef，这样，构造函数仍然按预期工作，即你仍然可以写`torch::nn::Linear(3,
+    4)`而不是`std::make_shared<LinearImpl>(3, 4)`。我们称宏创建的类为模块*持有者*。就像（共享）指针一样，你可以使用箭头运算符访问底层对象（比如`model->forward(...)`）。最终结果是一个所有权模型，与Python
+    API非常接近。引用语义成为默认，但不需要额外输入`std::shared_ptr`或`std::make_shared`。对于我们的`Net`，使用模块持有者API看起来像这样：
 - en: '[PRE21]'
+  id: totrans-88
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE21]'
 - en: There is one subtle issue that deserves mention here. A default constructed
     `std::shared_ptr` is “empty”, i.e. contains a null pointer. What is a default
     constructed `Linear` or `Net`? Well, it’s a tricky choice. We could say it should
@@ -456,22 +664,33 @@
     module (`LinearImpl()`). If the underlying module does not have a default constructor,
     you get a compiler error. To instead construct the empty holder, you can pass
     `nullptr` to the constructor of the holder.
+  id: totrans-89
   prefs: []
   type: TYPE_NORMAL
+  zh: 这里有一个值得一提的微妙问题。一个默认构造的`std::shared_ptr`是“空的”，即包含一个空指针。一个默认构造的`Linear`或`Net`是什么？嗯，这是一个棘手的选择。我们可以说它应该是一个空（null）的`std::shared_ptr<LinearImpl>`。然而，请记住，`Linear(3,
+    4)`等同于`std::make_shared<LinearImpl>(3, 4)`。这意味着如果我们决定`Linear linear;`应该是一个空指针，那么就没有办法构造一个不带任何构造函数参数或默认所有参数的模块。因此，在当前的API中，一个默认构造的模块持有者（比如`Linear()`）会调用底层模块的默认构造函数（`LinearImpl()`）。如果底层模块没有默认构造函数，你会得到一个编译错误。要代替构造空的持有者，你可以将`nullptr`传递给持有者的构造函数。
 - en: 'In practice, this means you can use submodules either like shown earlier, where
     the module is registered and constructed in the *initializer list*:'
+  id: totrans-90
   prefs: []
   type: TYPE_NORMAL
+  zh: 在实践中，这意味着你可以像之前展示的那样使用子模块，其中模块在*初始化列表*中注册和构造：
 - en: '[PRE22]'
+  id: totrans-91
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE22]'
 - en: 'or you can first construct the holder with a null pointer and then assign to
     it in the constructor (more familiar for Pythonistas):'
+  id: totrans-92
   prefs: []
   type: TYPE_NORMAL
+  zh: 或者你可以首先用空指针构造持有者，然后在构造函数中分配给它（对Python程序员来说更熟悉）：
 - en: '[PRE23]'
+  id: totrans-93
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE23]'
 - en: 'In conclusion: Which ownership model – which semantics – should you use? The
     C++ frontend’s API best supports the ownership model provided by module holders.
     The only disadvantage of this mechanism is one extra line of boilerplate below
@@ -482,12 +701,16 @@
     and `torch::load`) only supports module holders (or plain `shared_ptr`). As such,
     the module holder API is the recommended way of defining modules with the C++
     frontend, and we will use this API in this tutorial henceforth.'
+  id: totrans-94
   prefs: []
   type: TYPE_NORMAL
+  zh: 总之：你应该使用哪种所有权模型 - 哪种语义？C++前端的API最好支持模块持有者提供的所有权模型。这种机制的唯一缺点是模块声明下方多了一行样板代码。也就是说，最简单的模型仍然是介绍C++模块时展示的值语义模型。对于小型、简单的脚本，你也许可以使用它。但你迟早会发现，出于技术原因，它并不总是被支持。例如，序列化API（`torch::save`和`torch::load`）只支持模块持有者（或普通的`shared_ptr`）。因此，模块持有者API是在C++前端定义模块的推荐方式，我们将在本教程中继续使用这个API。
 - en: Defining the DCGAN Modules
+  id: totrans-95
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 定义DCGAN模块
 - en: 'We now have the necessary background and introduction to define the modules
     for the machine learning task we want to solve in this post. To recap: our task
     is to generate images of digits from the [MNIST dataset](http://yann.lecun.com/exdb/mnist/).
@@ -495,18 +718,27 @@
     to solve this task. In particular, we’ll use a [DCGAN architecture](https://arxiv.org/abs/1511.06434)
     – one of the first and simplest of its kind, but entirely sufficient for this
     task.'
+  id: totrans-96
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们已经有了必要的背景和介绍，来定义我们想要在这篇文章中解决的机器学习任务的模块。回顾一下：我们的任务是从[MNIST数据集](http://yann.lecun.com/exdb/mnist/)生成数字图像。我们想要使用[生成对抗网络（GAN）](https://papers.nips.cc/paper/5423-generative-adversarial-nets.pdf)来解决这个任务。特别是，我们将使用[DCGAN架构](https://arxiv.org/abs/1511.06434)
+    - 这是一种最早和最简单的架构之一，但完全足够解决这个任务。
 - en: Tip
+  id: totrans-97
   prefs: []
   type: TYPE_NORMAL
+  zh: 提示
 - en: You can find the full source code presented in this tutorial [in this repository](https://github.com/pytorch/examples/tree/master/cpp/dcgan).
+  id: totrans-98
   prefs: []
   type: TYPE_NORMAL
+  zh: 你可以在本教程中提供的完整源代码中找到：[在这个存储库中](https://github.com/pytorch/examples/tree/master/cpp/dcgan)。
 - en: What was a GAN aGAN?
+  id: totrans-99
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 什么是GAN aGAN？
 - en: 'A GAN consists of two distinct neural network models: a *generator* and a *discriminator*.
     The generator receives samples from a noise distribution, and its aim is to transform
     each noise sample into an image that resembles those of a target distribution
@@ -522,41 +754,59 @@
     eye into emitting a probability of `0.5` for both real and fake images. For us,
     the end result is a machine that receives noise as input and generates realistic
     images of digits as its output.'
+  id: totrans-100
   prefs: []
   type: TYPE_NORMAL
+  zh: GAN由两个不同的神经网络模型组成：一个*生成器*和一个*鉴别器*。生成器接收来自噪声分布的样本，其目的是将每个噪声样本转换为类似目标分布（在我们的情况下是MNIST数据集）的图像。鉴别器依次接收来自MNIST数据集的*真实*图像或来自生成器的*假*图像。它被要求发出一个概率，判断特定图像是多么真实（接近`1`）或假（接近`0`）。鉴别器对生成器生成的图像的真实程度的反馈用于训练生成器。对鉴别器对真实性的眼光有多好的反馈用于优化鉴别器。理论上，生成器和鉴别器之间的微妙平衡使它们共同改进，导致生成器生成的图像与目标分布中无法区分，欺骗鉴别器（那时）优秀的眼睛为真实和假图像都发出概率`0.5`。对我们来说，最终结果是一台机器，接收噪声作为输入，并生成逼真的数字图像作为输出。
 - en: The Generator Module
+  id: totrans-101
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 生成器模块
 - en: 'We begin by defining the generator module, which consists of a series of transposed
     2D convolutions, batch normalizations and ReLU activation units. We explicitly
     pass inputs (in a functional way) between modules in the `forward()` method of
     a module we define ourselves:'
+  id: totrans-102
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们首先定义生成器模块，它由一系列转置的2D卷积、批量归一化和ReLU激活单元组成。我们在自己定义的模块的`forward()`方法中以功能性的方式明确地在模块之间传递输入：
 - en: '[PRE24]'
+  id: totrans-103
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE24]'
 - en: We can now invoke `forward()` on the `DCGANGenerator` to map a noise sample
     to an image.
+  id: totrans-104
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们现在可以在`DCGANGenerator`上调用`forward()`，将噪声样本映射到图像上。
 - en: The particular modules chosen, like `nn::ConvTranspose2d` and `nn::BatchNorm2d`,
     follows the structure outlined earlier. The `kNoiseSize` constant determines the
     size of the input noise vector and is set to `100`. Hyperparameters were, of course,
     found via grad student descent.
+  id: totrans-105
   prefs: []
   type: TYPE_NORMAL
+  zh: 所选的特定模块，如`nn::ConvTranspose2d`和`nn::BatchNorm2d`，遵循了前面概述的结构。`kNoiseSize`常量确定了输入噪声向量的大小，设置为`100`。超参数当然是通过研究生下降法找到的。
 - en: Attention
+  id: totrans-106
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: No grad students were harmed in the discovery of hyperparameters. They were
     fed Soylent regularly.
+  id: totrans-107
   prefs: []
   type: TYPE_NORMAL
+  zh: 在发现超参数的过程中没有伤害到研究生。他们定期喂养Soylent。
 - en: Note
+  id: totrans-108
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: 'A brief word on the way options are passed to built-in modules like `Conv2d`
     in the C++ frontend: Every module has some required options, like the number of
     features for `BatchNorm2d`. If you only need to configure the required options,
@@ -567,107 +817,152 @@
     pass an *options* object. Every module in the C++ frontend has an associated options
     struct, called `ModuleOptions` where `Module` is the name of the module, like
     `LinearOptions` for `Linear`. This is what we do for the `Conv2d` modules above.'
+  id: totrans-109
   prefs: []
   type: TYPE_NORMAL
+  zh: 关于在C++前端将选项传递给内置模块如`Conv2d`的简短说明：每个模块都有一些必需的选项，比如`BatchNorm2d`的特征数量。如果您只需要配置必需的选项，您可以直接将它们传递给模块的构造函数，比如`BatchNorm2d(128)`或`Dropout(0.5)`或`Conv2d(8,
+    4, 2)`（用于输入通道数、输出通道数和核大小）。然而，如果您需要修改其他通常默认的选项，比如`Conv2d`的`bias`，您需要构造并传递一个*options*对象。C++前端中的每个模块都有一个相关的选项结构，称为`ModuleOptions`，其中`Module`是模块的名称，如`Linear`的`LinearOptions`。这就是我们上面对`Conv2d`模块所做的事情。
 - en: The Discriminator Module
+  id: totrans-110
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 鉴别器模块
 - en: The discriminator is similarly a sequence of convolutions, batch normalizations
     and activations. However, the convolutions are now regular ones instead of transposed,
     and we use a leaky ReLU with an alpha value of 0.2 instead of a vanilla ReLU.
     Also, the final activation becomes a Sigmoid, which squashes values into a range
     between 0 and 1\. We can then interpret these squashed values as the probabilities
     the discriminator assigns to images being real.
+  id: totrans-111
   prefs: []
   type: TYPE_NORMAL
+  zh: 鉴别器同样是一系列卷积、批量归一化和激活函数。然而，这些卷积现在是常规的而不是转置的，我们使用带有alpha值0.2的leaky ReLU而不是普通的ReLU。此外，最终激活函数变为Sigmoid，将值压缩到0到1的范围内。然后，我们可以将这些压缩后的值解释为鉴别器分配给图像真实性的概率。
 - en: 'To build the discriminator, we will try something different: a Sequential module.
     Like in Python, PyTorch here provides two APIs for model definition: a functional
     one where inputs are passed through successive functions (e.g. the generator module
     example), and a more object-oriented one where we build a Sequential module containing
     the entire model as submodules. Using Sequential, the discriminator would look
     like:'
+  id: totrans-112
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了构建鉴别器，我们将尝试一些不同的方法：一个Sequential模块。就像在Python中一样，PyTorch在这里提供了两种模型定义的API：一种是功能性的，其中输入通过连续的函数传递（例如生成器模块示例），另一种是更面向对象的，我们构建一个包含整个模型的子模块的Sequential模块。使用Sequential，鉴别器将如下所示：
 - en: '[PRE25]'
+  id: totrans-113
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE25]'
 - en: Tip
+  id: totrans-114
   prefs: []
   type: TYPE_NORMAL
+  zh: 提示
 - en: A `Sequential` module simply performs function composition. The output of the
     first submodule becomes the input of the second, the output of the third becomes
     the input of the fourth and so on.
+  id: totrans-115
   prefs: []
   type: TYPE_NORMAL
+  zh: '`Sequential`模块简单地执行函数组合。第一个子模块的输出成为第二个的输入，第三个的输出成为第四个的输入，依此类推。'
 - en: Loading Data
+  id: totrans-116
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 加载数据
 - en: Now that we have defined the generator and discriminator model, we need some
     data we can train these models with. The C++ frontend, like the Python one, comes
     with a powerful parallel data loader. This data loader can read batches of data
     from a dataset (which you can define yourself) and provides many configuration
     knobs.
+  id: totrans-117
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们已经定义了生成器和鉴别器模型，我们需要一些数据来训练这些模型。与Python一样，C++前端也配备了一个强大的并行数据加载器。这个数据加载器可以从数据集中读取数据批次（您可以自己定义），并提供许多配置选项。
 - en: Note
+  id: totrans-118
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: While the Python data loader uses multi-processing, the C++ data loader is truly
     multi-threaded and does not launch any new processes.
+  id: totrans-119
   prefs: []
   type: TYPE_NORMAL
+  zh: 虽然Python数据加载器使用多进程，但C++数据加载器是真正多线程的，不会启动任何新进程。
 - en: 'The data loader is part of the C++ frontend’s `data` api, contained in the
     `torch::data::` namespace. This API consists of a few different components:'
+  id: totrans-120
   prefs: []
   type: TYPE_NORMAL
+  zh: 数据加载器是C++前端的`data` api的一部分，包含在`torch::data::`命名空间中。这个API由几个不同的组件组成：
 - en: The data loader class,
+  id: totrans-121
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 数据加载器类，
 - en: An API for defining datasets,
+  id: totrans-122
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 用于定义数据集的API，
 - en: An API for defining *transforms*, which can be applied to datasets,
+  id: totrans-123
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 用于定义*变换*的API，可以应用于数据集，
 - en: An API for defining *samplers*, which produce the indices with which datasets
     are indexed,
+  id: totrans-124
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 用于定义*采样器*的API，用于生成数据集的索引，
 - en: A library of existing datasets, transforms and samplers.
+  id: totrans-125
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 现有数据集、转换和采样器的库。
 - en: 'For this tutorial, we can use the `MNIST` dataset that comes with the C++ frontend.
     Let’s instantiate a `torch::data::datasets::MNIST` for this, and apply two transformations:
     First, we normalize the images so that they are in the range of `-1` to `+1` (from
     an original range of `0` to `1`). Second, we apply the `Stack` *collation*, which
     takes a batch of tensors and stacks them into a single tensor along the first
     dimension:'
+  id: totrans-126
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于本教程，我们可以使用C++前端提供的`MNIST`数据集。让我们为此实例化一个`torch::data::datasets::MNIST`，并应用两个转换：首先，我们将图像归一化，使其范围在`-1`到`+1`之间（从原始范围`0`到`1`）。其次，我们应用`Stack`整理，将一批张量堆叠成一个沿第一维的单个张量：
 - en: '[PRE26]'
+  id: totrans-127
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE26]'
 - en: Note that the MNIST dataset should be located in the `./mnist` directory relative
     to wherever you execute the training binary from. You can use [this script](https://gist.github.com/goldsborough/6dd52a5e01ed73a642c1e772084bcd03)
     to download the MNIST dataset.
+  id: totrans-128
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，MNIST数据集应该位于您执行训练二进制文件的位置的`./mnist`目录中。您可以使用[此脚本](https://gist.github.com/goldsborough/6dd52a5e01ed73a642c1e772084bcd03)下载MNIST数据集。
 - en: 'Next, we create a data loader and pass it this dataset. To make a new data
     loader, we use `torch::data::make_data_loader`, which returns a `std::unique_ptr`
     of the correct type (which depends on the type of the dataset, the type of the
     sampler and some other implementation details):'
+  id: totrans-129
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，我们创建一个数据加载器，并将其传递给这个数据集。要创建一个新的数据加载器，我们使用`torch::data::make_data_loader`，它返回正确类型的`std::unique_ptr`（这取决于数据集的类型、采样器的类型和一些其他实现细节）：
 - en: '[PRE27]'
+  id: totrans-130
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE27]'
 - en: 'The data loader does come with a lot of options. You can inspect the full set
     [here](https://github.com/pytorch/pytorch/blob/master/torch/csrc/api/include/torch/data/dataloader_options.h).
     For example, to speed up the data loading, we can increase the number of workers.
@@ -676,76 +971,113 @@
     should also increase the batch size from its default of `1` to something more
     reasonable, like `64` (the value of `kBatchSize`). So let’s create a `DataLoaderOptions`
     object and set the appropriate properties:'
+  id: totrans-131
   prefs: []
   type: TYPE_NORMAL
+  zh: 数据加载器确实带有许多选项。您可以在[这里](https://github.com/pytorch/pytorch/blob/master/torch/csrc/api/include/torch/data/dataloader_options.h)查看完整的设置。例如，为了加快数据加载速度，我们可以增加工作线程的数量。默认数量为零，这意味着将使用主线程。如果我们将`workers`设置为`2`，将会生成两个线程同时加载数据。我们还应该将批量大小从默认值`1`增加到更合理的值，比如`64`（`kBatchSize`的值）。因此，让我们创建一个`DataLoaderOptions`对象并设置适当的属性：
 - en: '[PRE28]'
+  id: totrans-132
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE28]'
 - en: 'We can now write a loop to load batches of data, which we’ll only print to
     the console for now:'
+  id: totrans-133
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们可以编写一个循环来加载数据批次，目前我们只会将其打印到控制台：
 - en: '[PRE29]'
+  id: totrans-134
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE29]'
 - en: The type returned by the data loader in this case is a `torch::data::Example`.
     This type is a simple struct with a `data` field for the data and a `target` field
     for the label. Because we applied the `Stack` collation earlier, the data loader
     returns only a single such example. If we had not applied the collation, the data
     loader would yield `std::vector<torch::data::Example<>>` instead, with one element
     per example in the batch.
+  id: totrans-135
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这种情况下，数据加载器返回的类型是`torch::data::Example`。这种类型是一个简单的结构体，有一个`data`字段用于数据，一个`target`字段用于标签。因为我们之前应用了`Stack`整理，数据加载器只返回一个这样的示例。如果我们没有应用整理，数据加载器将返回`std::vector<torch::data::Example<>>`，每个示例在批次中有一个元素。
 - en: 'If you rebuild and run this code, you should see something like this:'
+  id: totrans-136
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您重新构建并运行此代码，您应该会看到类似以下的内容：
 - en: '[PRE30]'
+  id: totrans-137
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE30]'
 - en: Which means we are successfully able to load data from the MNIST dataset.
+  id: totrans-138
   prefs: []
   type: TYPE_NORMAL
+  zh: 这意味着我们成功地能够从MNIST数据集中加载数据。
 - en: Writing the Training Loop
+  id: totrans-139
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 编写训练循环
 - en: 'Let’s now finish the algorithmic part of our example and implement the delicate
     dance between the generator and discriminator. First, we’ll create two optimizers,
     one for the generator and one for the discriminator. The optimizers we use implement
     the [Adam](https://arxiv.org/pdf/1412.6980.pdf) algorithm:'
+  id: totrans-140
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在让我们完成示例的算法部分，并实现生成器和鉴别器之间的微妙协作。首先，我们将创建两个优化器，一个用于生成器，一个用于鉴别器。我们使用的优化器实现了[Adam](https://arxiv.org/pdf/1412.6980.pdf)算法：
 - en: '[PRE31]'
+  id: totrans-141
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE31]'
 - en: Note
+  id: totrans-142
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: As of this writing, the C++ frontend provides optimizers implementing Adagrad,
     Adam, LBFGS, RMSprop and SGD. The [docs](https://pytorch.org/cppdocs/api/namespace_torch__optim.html)
     have the up-to-date list.
+  id: totrans-143
   prefs: []
   type: TYPE_NORMAL
+  zh: 截至目前，C++前端提供了实现Adagrad、Adam、LBFGS、RMSprop和SGD的优化器。[文档](https://pytorch.org/cppdocs/api/namespace_torch__optim.html)中有最新的列表。
 - en: 'Next, we need to update our training loop. We’ll add an outer loop to exhaust
     the data loader every epoch and then write the GAN training code:'
+  id: totrans-144
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，我们需要更新我们的训练循环。我们将添加一个外部循环来在每个时期耗尽数据加载器，然后编写GAN训练代码：
 - en: '[PRE32]'
+  id: totrans-145
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE32]'
 - en: Above, we first evaluate the discriminator on real images, for which it should
     assign a high probability. For this, we use `torch::empty(batch.data.size(0)).uniform_(0.8,
     1.0)` as the target probabilities.
+  id: totrans-146
   prefs: []
   type: TYPE_NORMAL
+  zh: 在上面的代码中，我们首先评估真实图像上的鉴别器，对于这些图像，它应该分配一个高概率。为此，我们使用`torch::empty(batch.data.size(0)).uniform_(0.8,
+    1.0)`作为目标概率。
 - en: Note
+  id: totrans-147
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: We pick random values uniformly distributed between 0.8 and 1.0 instead of 1.0
     everywhere in order to make the discriminator training more robust. This trick
     is called *label smoothing*.
+  id: totrans-148
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们选择在0.8和1.0之间均匀分布的随机值，而不是在所有地方都是1.0，以使鉴别器训练更加稳健。这个技巧被称为*标签平滑*。
 - en: Before evaluating the discriminator, we zero out the gradients of its parameters.
     After computing the loss, we back-propagate it through the network by calling
     `d_loss.backward()` to compute new gradients. We repeat this spiel for the fake
@@ -755,30 +1087,41 @@
     low probabilities, ideally all zeros. Once we have computed the discriminator
     loss for both the batch of real and the batch of fake images, we can progress
     the discriminator’s optimizer by one step in order to update its parameters.
+  id: totrans-149
   prefs: []
   type: TYPE_NORMAL
+  zh: 在评估鉴别器之前，我们将其参数的梯度清零。计算损失后，我们通过调用`d_loss.backward()`来通过网络进行反向传播以计算新的梯度。我们对假图像重复这个过程。我们不使用数据集中的图像，而是让生成器通过提供一批随机噪声来创建这些假图像。然后我们将这些假图像传递给鉴别器。这一次，我们希望鉴别器发出低概率，理想情况下全为零。一旦我们计算了真实图像批次和假图像批次的鉴别器损失，我们就可以通过一步来推进鉴别器的优化器，以更新其参数。
 - en: To train the generator, we again first zero its gradients, and then re-evaluate
     the discriminator on the fake images. However, this time we want the discriminator
     to assign probabilities very close to one, which would indicate that the generator
     can produce images that fool the discriminator into thinking they are actually
     real (from the dataset). For this, we fill the `fake_labels` tensor with all ones.
     We finally step the generator’s optimizer to also update its parameters.
+  id: totrans-150
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了训练生成器，我们再次首先将其梯度清零，然后重新评估鉴别器对假图像的情况。然而，这一次我们希望鉴别器分配非常接近于1的概率，这将表明生成器可以生成欺骗鉴别器认为它们实际上是真实的（来自数据集）的图像。为此，我们将`fake_labels`张量填充为全1。最后，我们还要更新生成器的优化器以更新其参数。
 - en: 'We should now be ready to train our model on the CPU. We don’t have any code
     yet to capture state or sample outputs, but we’ll add this in just a moment. For
     now, let’s just observe that our model is doing *something* – we’ll later verify
     based on the generated images whether this something is meaningful. Re-building
     and running should print something like:'
+  id: totrans-151
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们现在应该准备在CPU上训练我们的模型。我们还没有任何代码来捕获状态或样本输出，但我们将在片刻之后添加这些内容。现在，让我们只观察我们的模型正在做*某些事情*
+    - 我们稍后将根据生成的图像验证这些事情是否有意义。重新构建和运行应该打印出类似以下的内容：
 - en: '[PRE33]'
+  id: totrans-152
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE33]'
 - en: Moving to the GPU
+  id: totrans-153
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 迁移到GPU
 - en: 'While our current script can run just fine on the CPU, we all know convolutions
     are a lot faster on GPU. Let’s quickly discuss how we can move our training onto
     the GPU. We’ll need to do two things for this: pass a GPU device specification
@@ -788,56 +1131,88 @@
     top level of our training script, and then pass that device to tensor factory
     functions like `torch::zeros` as well as the `to()` method. We can start by doing
     this with a CPU device:'
+  id: totrans-154
   prefs: []
   type: TYPE_NORMAL
+  zh: 虽然我们当前的脚本可以在CPU上正常运行，但我们都知道卷积在GPU上运行得更快。让我们快速讨论一下如何将训练迁移到GPU上。为此，我们需要做两件事：为我们分配的张量传递GPU设备规范，并通过`to()`方法将任何其他张量显式复制到GPU上，C++前端中的所有张量和模块都有这个方法。实现这两个目标的最简单方法是在我们的训练脚本的顶层创建一个`torch::Device`实例，然后将该设备传递给张量工厂函数，如`torch::zeros`以及`to()`方法。我们可以从CPU设备开始做这个：
 - en: '[PRE34]'
+  id: totrans-155
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE34]'
 - en: New tensor allocations like
+  id: totrans-156
   prefs: []
   type: TYPE_NORMAL
+  zh: 新的张量分配，如
 - en: '[PRE35]'
+  id: totrans-157
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE35]'
 - en: 'should be updated to take the `device` as the last argument:'
+  id: totrans-158
   prefs: []
   type: TYPE_NORMAL
+  zh: 应该更新为将`device`作为最后一个参数传递：
 - en: '[PRE36]'
+  id: totrans-159
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE36]'
 - en: For tensors whose creation is not in our hands, like those coming from the MNIST
     dataset, we must insert explicit `to()` calls. This means
+  id: totrans-160
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于那些不在我们手中创建的张量，比如来自MNIST数据集的张量，我们必须插入显式的`to()`调用。这意味着
 - en: '[PRE37]'
+  id: totrans-161
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE37]'
 - en: becomes
+  id: totrans-162
   prefs: []
   type: TYPE_NORMAL
+  zh: 变成
 - en: '[PRE38]'
+  id: totrans-163
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE38]'
 - en: 'and also our model parameters should be moved to the correct device:'
+  id: totrans-164
   prefs: []
   type: TYPE_NORMAL
+  zh: 还有我们的模型参数应该移动到正确的设备上：
 - en: '[PRE39]'
+  id: totrans-165
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE39]'
 - en: Note
+  id: totrans-166
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: If a tensor already lives on the device supplied to `to()`, the call is a no-op.
     No extra copy is made.
+  id: totrans-167
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果张量已经存在于传递给`to()`的设备上，调用将不起作用。不会进行额外的复制。
 - en: 'At this point, we’ve just made our previous CPU-residing code more explicit.
     However, it is now also very easy to change the device to a CUDA device:'
+  id: totrans-168
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这一点上，我们刚刚将之前的CPU代码更加明确。但是，现在也很容易将设备更改为CUDA设备：
 - en: '[PRE40]'
+  id: totrans-169
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE40]'
 - en: 'And now all tensors will live on the GPU, calling into fast CUDA kernels for
     all operations, without us having to change any downstream code. If we wanted
     to specify a particular device index, it could be passed as the second argument
@@ -845,21 +1220,31 @@
     devices, we could pass separate device instances (for example one on CUDA device
     0 and the other on CUDA device 1). We can even do this configuration dynamically,
     which is often useful to make our training scripts more portable:'
+  id: totrans-170
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在所有的张量都将存在于GPU上，调用快速的CUDA核心进行所有操作，而无需更改任何下游代码。如果我们想要指定特定的设备索引，可以将其作为第二个参数传递给`Device`构造函数。如果我们希望不同的张量存在于不同的设备上，我们可以传递单独的设备实例（例如一个在CUDA设备0上，另一个在CUDA设备1上）。我们甚至可以动态地进行这种配置，这通常对使我们的训练脚本更具可移植性很有用：
 - en: '[PRE41]'
+  id: totrans-171
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE41]'
 - en: or even
+  id: totrans-172
   prefs: []
   type: TYPE_NORMAL
+  zh: 甚至
 - en: '[PRE42]'
+  id: totrans-173
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE42]'
 - en: Checkpointing and Recovering the Training State
+  id: totrans-174
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 检查点和恢复训练状态
 - en: The last augmentation we should make to our training script is to periodically
     save the state of our model parameters, the state of our optimizers as well as
     a few generated image samples. If our computer were to crash in the middle of
@@ -867,69 +1252,103 @@
     For long-lasting training sessions, this is absolutely essential. Fortunately,
     the C++ frontend provides an API to serialize and deserialize both model and optimizer
     state, as well as individual tensors.
+  id: totrans-175
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们应该对训练脚本进行的最后一个增强是定期保存模型参数的状态，优化器的状态以及一些生成的图像样本。如果我们的计算机在训练过程中崩溃，前两者将允许我们恢复训练状态。对于持续时间较长的训练会话，这是绝对必要的。幸运的是，C++前端提供了一个API来序列化和反序列化模型和优化器状态，以及单个张量。
 - en: 'The core API for this is `torch::save(thing,filename)` and `torch::load(thing,filename)`,
     where `thing` could be a `torch::nn::Module` subclass or an optimizer instance
     like the `Adam` object we have in our training script. Let’s update our training
     loop to checkpoint the model and optimizer state at a certain interval:'
+  id: totrans-176
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个核心API是`torch::save(thing,filename)`和`torch::load(thing,filename)`，其中`thing`可以是`torch::nn::Module`子类或像我们在训练脚本中拥有的`Adam`对象这样的优化器实例。让我们更新我们的训练循环，以在一定间隔内检查点模型和优化器状态：
 - en: '[PRE43]'
+  id: totrans-177
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE43]'
 - en: where `kCheckpointEvery` is an integer set to something like `100` to checkpoint
     every `100` batches, and `checkpoint_counter` is a counter bumped every time we
     make a checkpoint.
+  id: totrans-178
   prefs: []
   type: TYPE_NORMAL
+  zh: 其中`kCheckpointEvery`是一个整数，设置为类似`100`这样的值，以便每`100`批次进行检查点，并且`checkpoint_counter`是一个计数器，每次进行检查点时都会增加。
 - en: 'To restore the training state, you can add lines like these after all models
     and optimizers are created, but before the training loop:'
+  id: totrans-179
   prefs: []
   type: TYPE_NORMAL
+  zh: 要恢复训练状态，您可以在创建所有模型和优化器之后，但在训练循环之前添加类似以下行：
 - en: '[PRE44]'
+  id: totrans-180
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE44]'
 - en: Inspecting Generated Images
+  id: totrans-181
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 检查生成的图像
 - en: 'Our training script is now complete. We are ready to train our GAN, whether
     on CPU or GPU. To inspect the intermediary output of our training procedure, for
     which we added code to periodically save image samples to the `"dcgan-sample-xxx.pt"`
     file, we can write a tiny Python script to load the tensors and display them with
     matplotlib:'
+  id: totrans-182
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们的训练脚本现在已经完成。我们准备在CPU或GPU上训练我们的GAN。要检查我们训练过程的中间输出，我们添加了代码以定期将图像样本保存到`"dcgan-sample-xxx.pt"`文件中，我们可以编写一个小的Python脚本来加载张量并使用matplotlib显示它们：
 - en: '[PRE45]'
+  id: totrans-183
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE45]'
 - en: 'Let’s now train our model for around 30 epochs:'
+  id: totrans-184
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在让我们训练我们的模型大约30个时期：
 - en: '[PRE46]'
+  id: totrans-185
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE46]'
 - en: 'And display the images in a plot:'
+  id: totrans-186
   prefs: []
   type: TYPE_NORMAL
+  zh: 并在图中显示图像：
 - en: '[PRE47]'
+  id: totrans-187
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE47]'
 - en: 'Which should look something like this:'
+  id: totrans-188
   prefs: []
   type: TYPE_NORMAL
+  zh: 应该看起来像这样：
 - en: '![digits](../Images/931dea1655c975ec616a9e22c80c242f.png)'
+  id: totrans-189
   prefs: []
   type: TYPE_IMG
+  zh: '![digits](../Images/931dea1655c975ec616a9e22c80c242f.png)'
 - en: 'Digits! Hooray! Now the ball is in your court: can you improve the model to
     make the digits look even better?'
+  id: totrans-190
   prefs: []
   type: TYPE_NORMAL
+  zh: 数字！万岁！现在轮到你了：你能改进模型，使数字看起来更好吗？
 - en: Conclusion
+  id: totrans-191
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 结论
 - en: This tutorial has hopefully given you a digestible digest of the PyTorch C++
     frontend. A machine learning library like PyTorch by necessity has a very broad
     and extensive API. As such, there are many concepts we did not have time or space
@@ -938,15 +1357,23 @@
     section when you get stuck. Also, remember that you can expect the C++ frontend
     to follow the design and semantics of the Python frontend whenever we could make
     this possible, so you can leverage this fact to increase your learning rate.
+  id: totrans-192
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程希望为您提供了一个易于理解的PyTorch C++前端摘要。像PyTorch这样的机器学习库必然具有非常广泛和广泛的API。因此，有许多概念我们在这里没有时间或空间讨论。但是，我鼓励您尝试API，并在遇到困难时参考[我们的文档](https://pytorch.org/cppdocs/)，特别是[库API](https://pytorch.org/cppdocs/api/library_root.html)部分。还要记住，每当可能时，您可以期望C++前端遵循Python前端的设计和语义，因此您可以利用这一事实来提高学习速度。
 - en: Tip
+  id: totrans-193
   prefs: []
   type: TYPE_NORMAL
+  zh: 提示
 - en: You can find the full source code presented in this tutorial [in this repository](https://github.com/pytorch/examples/tree/master/cpp/dcgan).
+  id: totrans-194
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可以在本教程中提供的完整源代码中找到[此存储库](https://github.com/pytorch/examples/tree/master/cpp/dcgan)。
 - en: As always, if you run into any problems or have questions, you can use our [forum](https://discuss.pytorch.org/)
     or [GitHub issues](https://github.com/pytorch/pytorch/issues) to get in touch.
+  id: totrans-195
   prefs: []
   type: TYPE_NORMAL
+  zh: 如往常一样，如果遇到任何问题或有疑问，您可以使用我们的[论坛](https://discuss.pytorch.org/)或[GitHub问题](https://github.com/pytorch/pytorch/issues)与我们联系。

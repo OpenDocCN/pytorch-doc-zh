@@ -3,29 +3,35 @@
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 模型集成
 - en: 原文：[https://pytorch.org/tutorials/intermediate/ensembling.html](https://pytorch.org/tutorials/intermediate/ensembling.html)
   id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: '[https://pytorch.org/tutorials/intermediate/ensembling.html](https://pytorch.org/tutorials/intermediate/ensembling.html)'
 - en: Note
   id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-intermediate-ensembling-py) to download the
     full example code
   id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[这里](#sphx-glr-download-intermediate-ensembling-py)下载完整的示例代码
 - en: This tutorial illustrates how to vectorize model ensembling using `torch.vmap`.
   id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个教程演示了如何使用`torch.vmap`来对模型集合进行向量化。
 - en: What is model ensembling?
   id: totrans-5
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 什么是模型集成？
 - en: Model ensembling combines the predictions from multiple models together. Traditionally
     this is done by running each model on some inputs separately and then combining
     the predictions. However, if you’re running models with the same architecture,
@@ -35,18 +41,22 @@
   id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 模型集成将多个模型的预测组合在一起。传统上，这是通过分别在一些输入上运行每个模型，然后组合预测来完成的。然而，如果您正在运行具有相同架构的模型，则可能可以使用`torch.vmap`将它们组合在一起。`vmap`是一个函数变换，它将函数映射到输入张量的维度。它的一个用例是通过向量化消除for循环并加速它们。
 - en: Let’s demonstrate how to do this using an ensemble of simple MLPs.
   id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们演示如何使用简单MLP的集成来做到这一点。
 - en: Note
   id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: This tutorial requires PyTorch 2.0.0 or later.
   id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个教程需要PyTorch 2.0.0或更高版本。
 - en: '[PRE0]'
   id: totrans-10
   prefs: []
@@ -59,6 +69,7 @@
   id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们生成一批虚拟数据，并假装我们正在处理一个MNIST数据集。因此，虚拟图像是28x28，我们有一个大小为64的小批量。此外，假设我们想要将来自10个不同模型的预测组合起来。
 - en: '[PRE1]'
   id: totrans-12
   prefs: []
@@ -71,10 +82,12 @@
   id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们有几种选项来生成预测。也许我们想给每个模型一个不同的随机小批量数据。或者，也许我们想通过每个模型运行相同的小批量数据（例如，如果我们正在测试不同模型初始化的效果）。
 - en: 'Option 1: different minibatch for each model'
   id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 选项1：为每个模型使用不同的小批量
 - en: '[PRE2]'
   id: totrans-15
   prefs: []
@@ -84,6 +97,7 @@
   id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 选项2：相同的小批量
 - en: '[PRE3]'
   id: totrans-17
   prefs: []
@@ -94,11 +108,13 @@
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 使用`vmap`来对集合进行向量化
 - en: Let’s use `vmap` to speed up the for-loop. We must first prepare the models
     for use with `vmap`.
   id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们使用`vmap`来加速for循环。我们必须首先准备好模型以便与`vmap`一起使用。
 - en: First, let’s combine the states of the model together by stacking each parameter.
     For example, `model[i].fc1.weight` has shape `[784, 128]`; we are going to stack
     the `.fc1.weight` of each of the 10 models to produce a big weight of shape `[10,
@@ -106,11 +122,14 @@
   id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 首先，让我们通过堆叠每个参数来将模型的状态组合在一起。例如，`model[i].fc1.weight`的形状是`[784, 128]`；我们将堆叠这10个模型的`.fc1.weight`以产生形状为`[10,
+    784, 128]`的大权重。
 - en: PyTorch offers the `torch.func.stack_module_state` convenience function to do
     this.
   id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch提供了`torch.func.stack_module_state`便利函数来执行此操作。
 - en: '[PRE4]'
   id: totrans-22
   prefs: []
@@ -122,6 +141,7 @@
   id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，我们需要定义一个要在上面`vmap`的函数。给定参数和缓冲区以及输入，该函数应该使用这些参数、缓冲区和输入来运行模型。我们将使用`torch.func.functional_call`来帮助：
 - en: '[PRE5]'
   id: totrans-24
   prefs: []
@@ -131,6 +151,7 @@
   id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: 选项1：为每个模型使用不同的小批量获取预测。
 - en: By default, `vmap` maps a function across the first dimension of all inputs
     to the passed-in function. After using `stack_module_state`, each of the `params`
     and buffers have an additional dimension of size ‘num_models’ at the front, and
@@ -138,6 +159,7 @@
   id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 默认情况下，`vmap`将一个函数映射到传入函数的所有输入的第一个维度。在使用`stack_module_state`之后，每个`params`和缓冲区在前面都有一个大小为“num_models”的额外维度，小批量有一个大小为“num_models”的维度。
 - en: '[PRE6]'
   id: totrans-27
   prefs: []
@@ -152,12 +174,14 @@
   id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 选项2：使用相同的小批量数据获取预测。
 - en: '`vmap` has an `in_dims` argument that specifies which dimensions to map over.
     By using `None`, we tell `vmap` we want the same minibatch to apply for all of
     the 10 models.'
   id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: '`vmap`有一个`in_dims`参数，指定要映射的维度。通过使用`None`，我们告诉`vmap`我们希望相同的小批量适用于所有10个模型。'
 - en: '[PRE8]'
   id: totrans-31
   prefs: []
@@ -171,15 +195,18 @@
   id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个快速说明：关于哪些类型的函数可以被`vmap`转换存在一些限制。最适合转换的函数是纯函数：输出仅由没有副作用（例如突变）的输入决定的函数。`vmap`无法处理任意Python数据结构的突变，但它可以处理许多原地PyTorch操作。
 - en: Performance
   id: totrans-33
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 性能
 - en: Curious about performance numbers? Here’s how the numbers look.
   id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 对性能数字感到好奇吗？这里是数字的表现。
 - en: '[PRE9]'
   id: totrans-35
   prefs: []
@@ -194,6 +221,7 @@
   id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用`vmap`有很大的加速！
 - en: In general, vectorization with `vmap` should be faster than running a function
     in a for-loop and competitive with manual batching. There are some exceptions
     though, like if we haven’t implemented the `vmap` rule for a particular operation
@@ -202,14 +230,17 @@
   id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 一般来说，使用`vmap`进行向量化应该比在for循环中运行函数更快，并且与手动批处理竞争。不过也有一些例外，比如如果我们没有为特定操作实现`vmap`规则，或者底层内核没有针对旧硬件（GPU）进行优化。如果您看到这些情况，请通过在GitHub上开启一个问题来告诉我们。
 - en: '**Total running time of the script:** ( 0 minutes 0.798 seconds)'
   id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: '**脚本的总运行时间：**（0分钟0.798秒）'
 - en: '[`Download Python source code: ensembling.py`](../_downloads/626f23350a6d0b457ded1932a69ec7eb/ensembling.py)'
   id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Python源代码：ensembling.py`](../_downloads/626f23350a6d0b457ded1932a69ec7eb/ensembling.py)'
 - en: '[`Download Jupyter notebook: ensembling.ipynb`](../_downloads/1342193c7104875f1847417466d1417c/ensembling.ipynb)'
   id: totrans-41
   prefs: []

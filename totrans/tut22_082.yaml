@@ -1,48 +1,70 @@
 - en: Dynamic Parallelism in TorchScript
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: TorchScript中的动态并行性
 - en: 原文：[https://pytorch.org/tutorials/advanced/torch-script-parallelism.html](https://pytorch.org/tutorials/advanced/torch-script-parallelism.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/advanced/torch-script-parallelism.html](https://pytorch.org/tutorials/advanced/torch-script-parallelism.html)
 - en: 'In this tutorial, we introduce the syntax for doing *dynamic inter-op parallelism*
     in TorchScript. This parallelism has the following properties:'
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，我们介绍了在TorchScript中进行*动态跨操作并行性*的语法。这种并行性具有以下特性：
 - en: dynamic - The number of parallel tasks created and their workload can depend
     on the control flow of the program.
+  id: totrans-3
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 动态 - 并行任务的数量和它们的工作量可以取决于程序的控制流。
 - en: inter-op - The parallelism is concerned with running TorchScript program fragments
     in parallel. This is distinct from *intra-op parallelism*, which is concerned
     with splitting up individual operators and running subsets of the operator’s work
     in parallel.
+  id: totrans-4
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 跨操作 - 并行性涉及并行运行TorchScript程序片段。这与*内部操作并行性*不同，内部操作并行性涉及将单个运算符拆分并并行运行运算符工作的子集。
 - en: Basic Syntax
+  id: totrans-5
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 基本语法
 - en: 'The two important APIs for dynamic parallelism are:'
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 动态并行性的两个重要API是：
 - en: '`torch.jit.fork(fn : Callable[..., T], *args, **kwargs) -> torch.jit.Future[T]`'
+  id: totrans-7
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`torch.jit.fork(fn: Callable[..., T], *args, **kwargs) -> torch.jit.Future[T]`'
 - en: '`torch.jit.wait(fut : torch.jit.Future[T]) -> T`'
+  id: totrans-8
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`torch.jit.wait(fut: torch.jit.Future[T]) -> T`'
 - en: 'A good way to demonstrate how these work is by way of an example:'
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过一个例子演示这些工作的好方法是：
 - en: '[PRE0]'
+  id: totrans-10
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: '`fork()` takes the callable `fn` and arguments to that callable `args` and
     `kwargs` and creates an asynchronous task for the execution of `fn`. `fn` can
     be a function, method, or Module instance. `fork()` returns a reference to the
@@ -50,140 +72,208 @@
     immediately after creating the async task, `fn` may not have been executed by
     the time the line of code after the `fork()` call is executed. Thus, `wait()`
     is used to wait for the async task to complete and return the value.'
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: '`fork()`接受可调用的`fn`以及该可调用的参数`args`和`kwargs`，并为`fn`的执行创建一个异步任务。`fn`可以是一个函数、方法或模块实例。`fork()`返回对此执行结果值的引用，称为`Future`。由于`fork`在创建异步任务后立即返回，所以在`fork()`调用后的代码行执行时，`fn`可能尚未被执行。因此，使用`wait()`来等待异步任务完成并返回值。'
 - en: 'These constructs can be used to overlap the execution of statements within
     a function (shown in the worked example section) or be composed with other language
     constructs like loops:'
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: 这些结构可以用来重叠函数内语句的执行（在示例部分中显示），或者与其他语言结构如循环组合：
 - en: '[PRE1]'
+  id: totrans-13
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Note
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: 'When we initialized an empty list of Futures, we needed to add an explicit
     type annotation to `futures`. In TorchScript, empty containers default to assuming
     they contain Tensor values, so we annotate the list constructor # as being of
     type `List[torch.jit.Future[torch.Tensor]]`'
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 当我们初始化一个空的Future列表时，我们需要为`futures`添加显式类型注释。在TorchScript中，空容器默认假定它们包含Tensor值，因此我们将列表构造函数的注释标记为`List[torch.jit.Future[torch.Tensor]]`
 - en: This example uses `fork()` to launch 100 instances of the function `foo`, waits
     on the 100 tasks to complete, then sums the results, returning `-100.0`.
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个例子使用`fork()`启动100个`foo`函数的实例，等待这100个任务完成，然后对结果求和，返回`-100.0`。
 - en: 'Applied Example: Ensemble of Bidirectional LSTMs'
+  id: totrans-17
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 应用示例：双向LSTM集合
 - en: 'Let’s try to apply parallelism to a more realistic example and see what sort
     of performance we can get out of it. First, let’s define the baseline model: an
     ensemble of bidirectional LSTM layers.'
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们尝试将并行性应用于一个更现实的例子，看看我们能从中获得什么样的性能。首先，让我们定义基线模型：双向LSTM层的集合。
 - en: '[PRE2]'
+  id: totrans-19
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: On my machine, this network runs in `2.05` seconds. We can do a lot better!
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 在我的机器上，这个网络运行需要`2.05`秒。我们可以做得更好！
 - en: Parallelizing Forward and Backward Layers
+  id: totrans-21
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 并行化前向和后向层
 - en: 'A very simple thing we can do is parallelize the forward and backward layers
     within `BidirectionalRecurrentLSTM`. For this, the structure of the computation
     is static, so we don’t actually even need any loops. Let’s rewrite the `forward`
     method of `BidirectionalRecurrentLSTM` like so:'
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们可以做的一个非常简单的事情是并行化`BidirectionalRecurrentLSTM`中的前向和后向层。对于这个结构的计算是静态的，所以我们实际上甚至不需要任何循环。让我们像这样重写`BidirectionalRecurrentLSTM`的`forward`方法：
 - en: '[PRE3]'
+  id: totrans-23
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: In this example, `forward()` delegates execution of `cell_f` to another thread,
     while it continues to execute `cell_b`. This causes the execution of both the
     cells to be overlapped with each other.
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这个例子中，`forward()`将`cell_f`的执行委托给另一个线程，同时继续执行`cell_b`。这导致两个单元的执行互相重叠。
 - en: Running the script again with this simple modification yields a runtime of `1.71`
     seconds for an improvement of `17%`!
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用这个简单修改再次运行脚本，运行时间为`1.71`秒，提高了`17%`！
 - en: 'Aside: Visualizing Parallelism'
+  id: totrans-26
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 附注：可视化并行性
 - en: We’re not done optimizing our model but it’s worth introducing the tooling we
     have for visualizing performance. One important tool is the [PyTorch profiler](https://pytorch.org/docs/stable/autograd.html#profiler).
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们还没有优化完我们的模型，但值得介绍一下我们用于可视化性能的工具。一个重要的工具是[PyTorch分析器](https://pytorch.org/docs/stable/autograd.html#profiler)。
 - en: 'Let’s use the profiler along with the Chrome trace export functionality to
     visualize the performance of our parallelized model:'
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们使用分析器以及Chrome跟踪导出功能来可视化我们并行化模型的性能：
 - en: '[PRE4]'
+  id: totrans-29
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: 'This snippet of code will write out a file named `parallel.json`. If you navigate
     Google Chrome to `chrome://tracing`, click the `Load` button, and load in that
     JSON file, you should see a timeline like the following:'
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 这段代码将写出一个名为`parallel.json`的文件。如果你将Google Chrome导航到`chrome://tracing`，点击`Load`按钮，然后加载该JSON文件，你应该会看到如下时间线：
 - en: '![https://i.imgur.com/rm5hdG9.png](../Images/6b495cb0cd4336a2469d9f07696faa3e.png)'
+  id: totrans-31
   prefs: []
   type: TYPE_IMG
+  zh: '![https://i.imgur.com/rm5hdG9.png](../Images/6b495cb0cd4336a2469d9f07696faa3e.png)'
 - en: The horizontal axis of the timeline represents time and the vertical axis represents
     threads of execution. As we can see, we are running two `lstm` instances at a
     time. This is the result of our hard work parallelizing the bidirectional layers!
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 时间线的水平轴表示时间，垂直轴表示执行线程。正如我们所看到的，我们同时运行两个`lstm`实例。这是我们并行化双向层的努力的结果！
 - en: Parallelizing Models in the Ensemble
+  id: totrans-33
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 在集成模型中并行化模型
 - en: 'You may have noticed that there is a further parallelization opportunity in
     our code: we can also run the models contained in `LSTMEnsemble` in parallel with
     each other. The way to do that is simple enough, this is how we should change
     the `forward` method of `LSTMEnsemble`:'
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可能已经注意到我们的代码中还有进一步的并行化机会：我们也可以让包含在`LSTMEnsemble`中的模型相互并行运行。要做到这一点很简单，我们应该改变`LSTMEnsemble`的`forward`方法：
 - en: '[PRE5]'
+  id: totrans-35
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: 'Or, if you value brevity, we can use list comprehensions:'
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 或者，如果您更看重简洁性，我们可以使用列表推导：
 - en: '[PRE6]'
+  id: totrans-37
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: Like described in the intro, we’ve used loops to fork off tasks for each of
     the models in our ensemble. We’ve then used another loop to wait for all of the
     tasks to be completed. This provides even more overlap of computation.
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 就像在介绍中描述的那样，我们使用循环为集成模型中的每个模型启动任务。然后我们使用另一个循环等待所有任务完成。这提供了更多的计算重叠。
 - en: With this small update, the script runs in `1.4` seconds, for a total speedup
     of `32%`! Pretty good for two lines of code.
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过这个小更新，脚本运行时间缩短至`1.4`秒，总体加速达到`32%`！两行代码的效果相当不错。
 - en: 'We can also use the Chrome tracer again to see where’s going on:'
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们还可以再次使用Chrome跟踪器来查看发生了什么：
 - en: '![https://i.imgur.com/kA0gyQm.png](../Images/ac8752539498c11001a65c1ff470d696.png)'
+  id: totrans-41
   prefs: []
   type: TYPE_IMG
+  zh: '![https://i.imgur.com/kA0gyQm.png](../Images/ac8752539498c11001a65c1ff470d696.png)'
 - en: We can now see that all `LSTM` instances are being run fully in parallel.
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们可以看到所有的`LSTM`实例都在完全并行运行。
 - en: Conclusion
+  id: totrans-43
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 结论
 - en: In this tutorial, we learned about `fork()` and `wait()`, the basic APIs for
     doing dynamic, inter-op parallelism in TorchScript. We saw a few typical usage
     patterns for using these functions to parallelize the execution of functions,
     methods, or `Modules` in TorchScript code. Finally, we worked through an example
     of optimizing a model using this technique and explored the performance measurement
     and visualization tooling available in PyTorch.
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，我们学习了`fork()`和`wait()`，这是TorchScript中进行动态、跨操作并行处理的基本API。我们看到了一些使用这些函数来并行执行函数、方法或`Modules`的典型用法。最后，我们通过一个优化模型的示例来探讨了这种技术，并探索了PyTorch中可用的性能测量和可视化工具。

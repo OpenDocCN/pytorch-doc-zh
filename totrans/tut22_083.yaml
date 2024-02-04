@@ -1,329 +1,531 @@
 - en: Autograd in C++ Frontend
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: C++前端的Autograd
 - en: 原文：[https://pytorch.org/tutorials/advanced/cpp_autograd.html](https://pytorch.org/tutorials/advanced/cpp_autograd.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/tutorials/advanced/cpp_autograd.html](https://pytorch.org/tutorials/advanced/cpp_autograd.html)
 - en: The `autograd` package is crucial for building highly flexible and dynamic neural
     networks in PyTorch. Most of the autograd APIs in PyTorch Python frontend are
     also available in C++ frontend, allowing easy translation of autograd code from
     Python to C++.
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: '`autograd`包对于在PyTorch中构建高度灵活和动态的神经网络至关重要。PyTorch Python前端中的大多数autograd API在C++前端中也是可用的，允许将autograd代码从Python轻松翻译为C++。'
 - en: 'In this tutorial explore several examples of doing autograd in PyTorch C++
     frontend. Note that this tutorial assumes that you already have a basic understanding
     of autograd in Python frontend. If that’s not the case, please first read [Autograd:
     Automatic Differentiation](https://pytorch.org/tutorials/beginner/blitz/autograd_tutorial.html).'
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，探索了在PyTorch C++前端中进行autograd的几个示例。请注意，本教程假定您已经对Python前端中的autograd有基本的了解。如果不是这样，请先阅读[Autograd：自动微分](https://pytorch.org/tutorials/beginner/blitz/autograd_tutorial.html)。
 - en: Basic autograd operations
+  id: totrans-4
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 基本的autograd操作
 - en: (Adapted from [this tutorial](https://pytorch.org/tutorials/beginner/blitz/autograd_tutorial.html#autograd-automatic-differentiation))
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: （改编自[此教程](https://pytorch.org/tutorials/beginner/blitz/autograd_tutorial.html#autograd-automatic-differentiation)）
 - en: Create a tensor and set `torch::requires_grad()` to track computation with it
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 创建一个张量并设置`torch::requires_grad()`以跟踪计算
 - en: '[PRE0]'
+  id: totrans-7
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: 'Out:'
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 输出：
 - en: '[PRE1]'
+  id: totrans-9
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: 'Do a tensor operation:'
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 进行张量操作：
 - en: '[PRE2]'
+  id: totrans-11
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: 'Out:'
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: 输出：
 - en: '[PRE3]'
+  id: totrans-13
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: '`y` was created as a result of an operation, so it has a `grad_fn`.'
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: '`y`是作为操作的结果创建的，因此它有一个`grad_fn`。'
 - en: '[PRE4]'
+  id: totrans-15
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: 'Out:'
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 输出：
 - en: '[PRE5]'
+  id: totrans-17
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: Do more operations on `y`
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: 在`y`上执行更多操作
 - en: '[PRE6]'
+  id: totrans-19
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: 'Out:'
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 输出：
 - en: '[PRE7]'
+  id: totrans-21
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: '`.requires_grad_( ... )` changes an existing tensor’s `requires_grad` flag
     in-place.'
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: '`.requires_grad_( ... )`会就地更改现有张量的`requires_grad`标志。'
 - en: '[PRE8]'
+  id: totrans-23
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: 'Out:'
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 输出：
 - en: '[PRE9]'
+  id: totrans-25
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: Let’s backprop now. Because `out` contains a single scalar, `out.backward()`
     is equivalent to `out.backward(torch::tensor(1.))`.
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在进行反向传播。因为`out`包含一个标量，`out.backward()`等同于`out.backward(torch::tensor(1.))`。
 - en: '[PRE10]'
+  id: totrans-27
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: Print gradients d(out)/dx
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: 打印梯度d(out)/dx
 - en: '[PRE11]'
+  id: totrans-29
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: 'Out:'
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 输出：
 - en: '[PRE12]'
+  id: totrans-31
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: You should have got a matrix of `4.5`. For explanations on how we arrive at
     this value, please see [the corresponding section in this tutorial](https://pytorch.org/tutorials/beginner/blitz/autograd_tutorial.html#gradients).
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 您应该得到一个`4.5`的矩阵。有关我们如何得到这个值的解释，请参阅[此教程中的相应部分](https://pytorch.org/tutorials/beginner/blitz/autograd_tutorial.html#gradients)。
 - en: 'Now let’s take a look at an example of vector-Jacobian product:'
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在让我们看一个矢量-Jacobian乘积的例子：
 - en: '[PRE13]'
+  id: totrans-34
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: 'Out:'
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 输出：
 - en: '[PRE14]'
+  id: totrans-36
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: 'If we want the vector-Jacobian product, pass the vector to `backward` as argument:'
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果我们想要矢量-Jacobian乘积，请将矢量作为参数传递给`backward`：
 - en: '[PRE15]'
+  id: totrans-38
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: 'Out:'
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 输出：
 - en: '[PRE16]'
+  id: totrans-40
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: You can also stop autograd from tracking history on tensors that require gradients
     either by putting `torch::NoGradGuard` in a code block
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 您还可以通过在代码块中放置`torch::NoGradGuard`来停止自动梯度跟踪需要梯度的张量的历史记录
 - en: '[PRE17]'
+  id: totrans-42
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: 'Out:'
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: 输出：
 - en: '[PRE18]'
+  id: totrans-44
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: 'Or by using `.detach()` to get a new tensor with the same content but that
     does not require gradients:'
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: 或者通过使用`.detach()`来获得一个具有相同内容但不需要梯度的新张量：
 - en: '[PRE19]'
+  id: totrans-46
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE19]'
 - en: 'Out:'
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: 输出：
 - en: '[PRE20]'
+  id: totrans-48
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE20]'
 - en: For more information on C++ tensor autograd APIs such as `grad` / `requires_grad`
     / `is_leaf` / `backward` / `detach` / `detach_` / `register_hook` / `retain_grad`,
     please see [the corresponding C++ API docs](https://pytorch.org/cppdocs/api/classat_1_1_tensor.html).
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: 有关C++张量autograd API的更多信息，如`grad` / `requires_grad` / `is_leaf` / `backward`
+    / `detach` / `detach_` / `register_hook` / `retain_grad`，请参阅[相应的C++ API文档](https://pytorch.org/cppdocs/api/classat_1_1_tensor.html)。
 - en: Computing higher-order gradients in C++
+  id: totrans-50
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 在C++中计算高阶梯度
 - en: 'One of the applications of higher-order gradients is calculating gradient penalty.
     Let’s see an example of it using `torch::autograd::grad`:'
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
+  zh: 高阶梯度的一个应用是计算梯度惩罚。让我们看一个使用`torch::autograd::grad`的例子：
 - en: '[PRE21]'
+  id: totrans-52
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE21]'
 - en: 'Out:'
+  id: totrans-53
   prefs: []
   type: TYPE_NORMAL
+  zh: 输出：
 - en: '[PRE22]'
+  id: totrans-54
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE22]'
 - en: Please see the documentation for `torch::autograd::backward` ([link](https://pytorch.org/cppdocs/api/function_namespacetorch_1_1autograd_1afa9b5d4329085df4b6b3d4b4be48914b.html))
     and `torch::autograd::grad` ([link](https://pytorch.org/cppdocs/api/function_namespacetorch_1_1autograd_1a1e03c42b14b40c306f9eb947ef842d9c.html))
     for more information on how to use them.
+  id: totrans-55
   prefs: []
   type: TYPE_NORMAL
+  zh: 有关如何使用`torch::autograd::backward`（[链接](https://pytorch.org/cppdocs/api/function_namespacetorch_1_1autograd_1afa9b5d4329085df4b6b3d4b4be48914b.html)）和`torch::autograd::grad`（[链接](https://pytorch.org/cppdocs/api/function_namespacetorch_1_1autograd_1a1e03c42b14b40c306f9eb947ef842d9c.html)）的更多信息，请参阅文档。
 - en: Using custom autograd function in C++
+  id: totrans-56
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 在C++中使用自定义autograd函数
 - en: (Adapted from [this tutorial](https://pytorch.org/docs/stable/notes/extending.html#extending-torch-autograd))
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: （改编自[此教程](https://pytorch.org/docs/stable/notes/extending.html#extending-torch-autograd)）
 - en: 'Adding a new elementary operation to `torch::autograd` requires implementing
     a new `torch::autograd::Function` subclass for each operation. `torch::autograd::Function`
     s are what `torch::autograd` uses to compute the results and gradients, and encode
     the operation history. Every new function requires you to implement 2 methods:
     `forward` and `backward`, and please see [this link](https://pytorch.org/cppdocs/api/structtorch_1_1autograd_1_1_function.html)
     for the detailed requirements.'
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: 向`torch::autograd`添加一个新的基本操作需要为每个操作实现一个新的`torch::autograd::Function`子类。`torch::autograd::Function`是`torch::autograd`用于计算结果和梯度以及编码操作历史的内容。每个新函数都需要您实现2个方法：`forward`和`backward`，请参阅[此链接](https://pytorch.org/cppdocs/api/structtorch_1_1autograd_1_1_function.html)以获取详细要求。
 - en: 'Below you can find code for a `Linear` function from `torch::nn`:'
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: 下面是来自`torch::nn`的`Linear`函数的代码：
 - en: '[PRE23]'
+  id: totrans-60
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE23]'
 - en: 'Then, we can use the `LinearFunction` in the following way:'
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后，我们可以这样使用`LinearFunction`：
 - en: '[PRE24]'
+  id: totrans-62
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE24]'
 - en: 'Out:'
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: 输出：
 - en: '[PRE25]'
+  id: totrans-64
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE25]'
 - en: 'Here, we give an additional example of a function that is parametrized by non-tensor
     arguments:'
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: 这里，我们给出一个由非张量参数参数化的函数的额外示例：
 - en: '[PRE26]'
+  id: totrans-66
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE26]'
 - en: 'Then, we can use the `MulConstant` in the following way:'
+  id: totrans-67
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后，我们可以这样使用`MulConstant`：
 - en: '[PRE27]'
+  id: totrans-68
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE27]'
 - en: 'Out:'
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: 输出：
 - en: '[PRE28]'
+  id: totrans-70
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE28]'
 - en: For more information on `torch::autograd::Function`, please see [its documentation](https://pytorch.org/cppdocs/api/structtorch_1_1autograd_1_1_function.html).
+  id: totrans-71
   prefs: []
   type: TYPE_NORMAL
+  zh: 有关`torch::autograd::Function`的更多信息，请参阅[其文档](https://pytorch.org/cppdocs/api/structtorch_1_1autograd_1_1_function.html)。
 - en: Translating autograd code from Python to C++
+  id: totrans-72
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 从Python翻译autograd代码到C++
 - en: 'On a high level, the easiest way to use autograd in C++ is to have working
     autograd code in Python first, and then translate your autograd code from Python
     to C++ using the following table:'
+  id: totrans-73
   prefs: []
   type: TYPE_NORMAL
+  zh: 从高层次来看，在C++中使用autograd的最简单方法是首先在Python中编写工作的autograd代码，然后使用以下表格将您的autograd代码从Python翻译成C++：
 - en: '| Python | C++ |'
+  id: totrans-74
   prefs: []
   type: TYPE_TB
+  zh: '| Python | C++ |'
 - en: '| --- | --- |'
+  id: totrans-75
   prefs: []
   type: TYPE_TB
+  zh: '| --- | --- |'
 - en: '| `torch.autograd.backward` | `torch::autograd::backward` ([link](https://pytorch.org/cppdocs/api/function_namespacetorch_1_1autograd_1afa9b5d4329085df4b6b3d4b4be48914b.html))
     |'
+  id: totrans-76
   prefs: []
   type: TYPE_TB
+  zh: '| `torch.autograd.backward` | `torch::autograd::backward` ([link](https://pytorch.org/cppdocs/api/function_namespacetorch_1_1autograd_1afa9b5d4329085df4b6b3d4b4be48914b.html))
+    |'
 - en: '| `torch.autograd.grad` | `torch::autograd::grad` ([link](https://pytorch.org/cppdocs/api/function_namespacetorch_1_1autograd_1a1e03c42b14b40c306f9eb947ef842d9c.html))
     |'
+  id: totrans-77
   prefs: []
   type: TYPE_TB
+  zh: '| `torch.autograd.grad` | `torch::autograd::grad` ([link](https://pytorch.org/cppdocs/api/function_namespacetorch_1_1autograd_1a1e03c42b14b40c306f9eb947ef842d9c.html))
+    |'
 - en: '| `torch.Tensor.detach` | `torch::Tensor::detach` ([link](https://pytorch.org/cppdocs/api/classat_1_1_tensor.html#_CPPv4NK2at6Tensor6detachEv))
     |'
+  id: totrans-78
   prefs: []
   type: TYPE_TB
+  zh: '| `torch.Tensor.detach` | `torch::Tensor::detach` ([link](https://pytorch.org/cppdocs/api/classat_1_1_tensor.html#_CPPv4NK2at6Tensor6detachEv))
+    |'
 - en: '| `torch.Tensor.detach_` | `torch::Tensor::detach_` ([link](https://pytorch.org/cppdocs/api/classat_1_1_tensor.html#_CPPv4NK2at6Tensor7detach_Ev))
     |'
+  id: totrans-79
   prefs: []
   type: TYPE_TB
+  zh: '| `torch.Tensor.detach_` | `torch::Tensor::detach_` ([link](https://pytorch.org/cppdocs/api/classat_1_1_tensor.html#_CPPv4NK2at6Tensor7detach_Ev))
+    |'
 - en: '| `torch.Tensor.backward` | `torch::Tensor::backward` ([link](https://pytorch.org/cppdocs/api/classat_1_1_tensor.html#_CPPv4NK2at6Tensor8backwardERK6Tensorbb))
     |'
+  id: totrans-80
   prefs: []
   type: TYPE_TB
+  zh: '| `torch.Tensor.backward` | `torch::Tensor::backward` ([link](https://pytorch.org/cppdocs/api/classat_1_1_tensor.html#_CPPv4NK2at6Tensor8backwardERK6Tensorbb))
+    |'
 - en: '| `torch.Tensor.register_hook` | `torch::Tensor::register_hook` ([link](https://pytorch.org/cppdocs/api/classat_1_1_tensor.html#_CPPv4I0ENK2at6Tensor13register_hookE18hook_return_void_tI1TERR1T))
     |'
+  id: totrans-81
   prefs: []
   type: TYPE_TB
+  zh: '| `torch.Tensor.register_hook` | `torch::Tensor::register_hook` ([link](https://pytorch.org/cppdocs/api/classat_1_1_tensor.html#_CPPv4I0ENK2at6Tensor13register_hookE18hook_return_void_tI1TERR1T))
+    |'
 - en: '| `torch.Tensor.requires_grad` | `torch::Tensor::requires_grad_` ([link](https://pytorch.org/cppdocs/api/classat_1_1_tensor.html#_CPPv4NK2at6Tensor14requires_grad_Eb))
     |'
+  id: totrans-82
   prefs: []
   type: TYPE_TB
+  zh: '| `torch.Tensor.requires_grad` | `torch::Tensor::requires_grad_` ([link](https://pytorch.org/cppdocs/api/classat_1_1_tensor.html#_CPPv4NK2at6Tensor14requires_grad_Eb))
+    |'
 - en: '| `torch.Tensor.retain_grad` | `torch::Tensor::retain_grad` ([link](https://pytorch.org/cppdocs/api/classat_1_1_tensor.html#_CPPv4NK2at6Tensor11retain_gradEv))
     |'
+  id: totrans-83
   prefs: []
   type: TYPE_TB
+  zh: '| `torch.Tensor.retain_grad` | `torch::Tensor::retain_grad` ([link](https://pytorch.org/cppdocs/api/classat_1_1_tensor.html#_CPPv4NK2at6Tensor11retain_gradEv))
+    |'
 - en: '| `torch.Tensor.grad` | `torch::Tensor::grad` ([link](https://pytorch.org/cppdocs/api/classat_1_1_tensor.html#_CPPv4NK2at6Tensor4gradEv))
     |'
+  id: totrans-84
   prefs: []
   type: TYPE_TB
+  zh: '| `torch.Tensor.grad` | `torch::Tensor::grad` ([link](https://pytorch.org/cppdocs/api/classat_1_1_tensor.html#_CPPv4NK2at6Tensor4gradEv))
+    |'
 - en: '| `torch.Tensor.grad_fn` | `torch::Tensor::grad_fn` ([link](https://pytorch.org/cppdocs/api/classat_1_1_tensor.html#_CPPv4NK2at6Tensor7grad_fnEv))
     |'
+  id: totrans-85
   prefs: []
   type: TYPE_TB
+  zh: '| `torch.Tensor.grad_fn` | `torch::Tensor::grad_fn` ([link](https://pytorch.org/cppdocs/api/classat_1_1_tensor.html#_CPPv4NK2at6Tensor7grad_fnEv))
+    |'
 - en: '| `torch.Tensor.set_data` | `torch::Tensor::set_data` ([link](https://pytorch.org/cppdocs/api/classat_1_1_tensor.html#_CPPv4NK2at6Tensor8set_dataERK6Tensor))
     |'
+  id: totrans-86
   prefs: []
   type: TYPE_TB
+  zh: '| `torch.Tensor.set_data` | `torch::Tensor::set_data` ([link](https://pytorch.org/cppdocs/api/classat_1_1_tensor.html#_CPPv4NK2at6Tensor8set_dataERK6Tensor))
+    |'
 - en: '| `torch.Tensor.data` | `torch::Tensor::data` ([link](https://pytorch.org/cppdocs/api/classat_1_1_tensor.html#_CPPv4NK2at6Tensor4dataEv))
     |'
+  id: totrans-87
   prefs: []
   type: TYPE_TB
+  zh: '| `torch.Tensor.data` | `torch::Tensor::data` ([link](https://pytorch.org/cppdocs/api/classat_1_1_tensor.html#_CPPv4NK2at6Tensor4dataEv))
+    |'
 - en: '| `torch.Tensor.output_nr` | `torch::Tensor::output_nr` ([link](https://pytorch.org/cppdocs/api/classat_1_1_tensor.html#_CPPv4NK2at6Tensor9output_nrEv))
     |'
+  id: totrans-88
   prefs: []
   type: TYPE_TB
+  zh: '| `torch.Tensor.output_nr` | `torch::Tensor::output_nr` ([link](https://pytorch.org/cppdocs/api/classat_1_1_tensor.html#_CPPv4NK2at6Tensor9output_nrEv))
+    |'
 - en: '| `torch.Tensor.is_leaf` | `torch::Tensor::is_leaf` ([link](https://pytorch.org/cppdocs/api/classat_1_1_tensor.html#_CPPv4NK2at6Tensor7is_leafEv))
     |'
+  id: totrans-89
   prefs: []
   type: TYPE_TB
+  zh: '| `torch.Tensor.is_leaf` | `torch::Tensor::is_leaf` ([link](https://pytorch.org/cppdocs/api/classat_1_1_tensor.html#_CPPv4NK2at6Tensor7is_leafEv))
+    |'
 - en: After translation, most of your Python autograd code should just work in C++.
     If that’s not the case, please file a bug report at [GitHub issues](https://github.com/pytorch/pytorch/issues)
     and we will fix it as soon as possible.
+  id: totrans-90
   prefs: []
   type: TYPE_NORMAL
+  zh: 翻译后，大部分的Python自动求导代码应该可以在C++中正常工作。如果不是这种情况，请在[GitHub issues](https://github.com/pytorch/pytorch/issues)上报告bug，我们会尽快修复。
 - en: Conclusion
+  id: totrans-91
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 结论
 - en: You should now have a good overview of PyTorch’s C++ autograd API. You can find
     the code examples displayed in this note [here](https://github.com/pytorch/examples/tree/master/cpp/autograd).
     As always, if you run into any problems or have questions, you can use our [forum](https://discuss.pytorch.org/)
     or [GitHub issues](https://github.com/pytorch/pytorch/issues) to get in touch.
+  id: totrans-92
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，您应该对PyTorch的C++自动求导API有一个很好的概述。您可以在这个笔记中找到显示的代码示例[这里](https://github.com/pytorch/examples/tree/master/cpp/autograd)。如常，如果遇到任何问题或有疑问，您可以使用我们的[论坛](https://discuss.pytorch.org/)或[GitHub
+    issues](https://github.com/pytorch/pytorch/issues)与我们联系。
