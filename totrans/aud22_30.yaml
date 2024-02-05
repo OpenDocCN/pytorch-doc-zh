@@ -1,306 +1,480 @@
 - en: Filter design tutorial
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 滤波器设计教程
 - en: 原文：[https://pytorch.org/audio/stable/tutorials/filter_design_tutorial.html](https://pytorch.org/audio/stable/tutorials/filter_design_tutorial.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/audio/stable/tutorials/filter_design_tutorial.html](https://pytorch.org/audio/stable/tutorials/filter_design_tutorial.html)
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-tutorials-filter-design-tutorial-py) to download
     the full example code
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[这里](#sphx-glr-download-tutorials-filter-design-tutorial-py)下载完整示例代码
 - en: '**Author**: [Moto Hira](mailto:moto%40meta.com)'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '**作者**：[Moto Hira](mailto:moto%40meta.com)'
 - en: This tutorial shows how to create basic digital filters (impulse responses)
     and their properties.
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程展示了如何创建基本的数字滤波器（脉冲响应）及其属性。
 - en: We look into low-pass, high-pass and band-pass filters based on windowed-sinc
     kernels, and frequency sampling method.
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们将研究基于窗口化sinc核和频率采样方法的低通、高通和带通滤波器。
 - en: Warning
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: This tutorial requires prototype DSP features, which are available in nightly
     builds.
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个教程需要原型DSP功能，这些功能在夜间构建中可用。
 - en: Please refer to [https://pytorch.org/get-started/locally](https://pytorch.org/get-started/locally)
     for instructions for installing a nightly build.
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 请参考[https://pytorch.org/get-started/locally](https://pytorch.org/get-started/locally)获取安装夜间构建的说明。
 - en: '[PRE0]'
+  id: totrans-10
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: '[PRE1]'
+  id: totrans-11
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: '[PRE2]'
+  id: totrans-12
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Windowed-Sinc Filter[](#windowed-sinc-filter "Permalink to this heading")
+  id: totrans-13
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 窗口化Sinc滤波器[](#windowed-sinc-filter "跳转到此标题")
 - en: '[Sinc filter](https://en.wikipedia.org/wiki/Sinc_filter) is an idealized filter
     which removes frequencies above the cutoff frequency without affecting the lower
     frequencies.'
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Sinc滤波器](https://en.wikipedia.org/wiki/Sinc_filter)是一个理想化的滤波器，它可以去除高于截止频率的频率而不影响较低的频率。'
 - en: Sinc filter has infinite filter width in analytical solution. In numerical computation,
     sinc filter cannot be expressed exactly, so an approximation is required.
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 在分析解中，Sinc滤波器具有无限的滤波宽度。在数值计算中，无法精确表示sinc滤波器，因此需要近似。
 - en: Windowed-sinc finite impulse response is an approximation of sinc filter. It
     is obtained by first evaluating sinc function for given cutoff frequencies, then
     truncating the filter skirt, and applying a window, such as Hamming window, to
     reduce the artifacts introduced from the truncation.
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 窗口化sinc有限脉冲响应是sinc滤波器的近似。首先为给定的截止频率评估sinc函数，然后截断滤波器边缘，并应用窗口，如汉明窗，以减少由截断引入的伪影。
 - en: '[`sinc_impulse_response()`](../generated/torchaudio.prototype.functional.sinc_impulse_response.html#torchaudio.prototype.functional.sinc_impulse_response
     "torchaudio.prototype.functional.sinc_impulse_response") generates windowed-sinc
     impulse response for given cutoff frequencies.'
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`sinc_impulse_response()`](../generated/torchaudio.prototype.functional.sinc_impulse_response.html#torchaudio.prototype.functional.sinc_impulse_response
+    "torchaudio.prototype.functional.sinc_impulse_response")为给定的截止频率生成窗口化的sinc脉冲响应。'
 - en: Low-pass filter[](#low-pass-filter "Permalink to this heading")
+  id: totrans-18
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 低通滤波器[](#low-pass-filter "跳转到此标题")
 - en: Impulse Response[](#impulse-response "Permalink to this heading")
+  id: totrans-19
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 脉冲响应[](#impulse-response "跳转到此标题")
 - en: Creating sinc IR is as easy as passing cutoff frequency values to [`sinc_impulse_response()`](../generated/torchaudio.prototype.functional.sinc_impulse_response.html#torchaudio.prototype.functional.sinc_impulse_response
     "torchaudio.prototype.functional.sinc_impulse_response").
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 创建sinc脉冲响应就像将截止频率值传递给[`sinc_impulse_response()`](../generated/torchaudio.prototype.functional.sinc_impulse_response.html#torchaudio.prototype.functional.sinc_impulse_response
+    "torchaudio.prototype.functional.sinc_impulse_response")一样简单。
 - en: '[PRE3]'
+  id: totrans-21
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: '[PRE4]'
+  id: totrans-22
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: Let’s visualize the resulting impulse responses.
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们可视化结果脉冲响应。
 - en: '[PRE5]'
+  id: totrans-24
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: '[PRE6]'
+  id: totrans-25
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: '![Impulse response of sinc low-pass filter for different cut-off frequencies
     (Frequencies are relative to Nyquist frequency)](../Images/028f20c05a4c635e9b4dc624deff86d9.png)'
+  id: totrans-26
   prefs: []
   type: TYPE_IMG
+  zh: '![不同截止频率的sinc低通滤波器的脉冲响应（频率相对于奈奎斯特频率）](../Images/028f20c05a4c635e9b4dc624deff86d9.png)'
 - en: Frequency Response[](#frequency-response "Permalink to this heading")
+  id: totrans-27
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 频率响应[](#frequency-response "跳转到此标题")
 - en: Next, let’s look at the frequency responses. Simpy applying Fourier transform
     to the impulse responses will give the frequency responses.
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，让我们看看频率响应。简单地对脉冲响应应用傅立叶变换将给出频率响应。
 - en: '[PRE7]'
+  id: totrans-29
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: Let’s visualize the resulting frequency responses.
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们可视化结果频率响应。
 - en: '[PRE8]'
+  id: totrans-31
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: '[PRE9]'
+  id: totrans-32
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: '![Frequency response of sinc low-pass filter for different cut-off frequencies
     (Frequencies are relative to Nyquist frequency)](../Images/2140b91b338acf8e081880a8fc4c7276.png)'
+  id: totrans-33
   prefs: []
   type: TYPE_IMG
+  zh: '![不同截止频率的sinc低通滤波器的频率响应（频率相对于奈奎斯特频率）](../Images/2140b91b338acf8e081880a8fc4c7276.png)'
 - en: High-pass filter[](#high-pass-filter "Permalink to this heading")
+  id: totrans-34
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 高通滤波器[](#high-pass-filter "跳转到此标题")
 - en: High-pass filter can be obtained by subtracting low-pass impulse response from
     the Dirac delta function.
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 高通滤波器可以通过从Dirac delta函数中减去低通脉冲响应来获得。
 - en: Passing `high_pass=True` to [`sinc_impulse_response()`](../generated/torchaudio.prototype.functional.sinc_impulse_response.html#torchaudio.prototype.functional.sinc_impulse_response
     "torchaudio.prototype.functional.sinc_impulse_response") will change the returned
     filter kernel to high pass filter.
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 将`high_pass=True`传递给[`sinc_impulse_response()`](../generated/torchaudio.prototype.functional.sinc_impulse_response.html#torchaudio.prototype.functional.sinc_impulse_response
+    "torchaudio.prototype.functional.sinc_impulse_response")将使返回的滤波器核变为高通滤波器。
 - en: '[PRE10]'
+  id: totrans-37
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: Impulse Response[](#id1 "Permalink to this heading")
+  id: totrans-38
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 脉冲响应[](#id1 "跳转到此标题")
 - en: '[PRE11]'
+  id: totrans-39
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: '![Impulse response of sinc low-pass filter for different cut-off frequencies
     (Frequencies are relative to Nyquist frequency)](../Images/65616de3b8352de641f53a45c76f2b1a.png)'
+  id: totrans-40
   prefs: []
   type: TYPE_IMG
+  zh: '![不同截止频率的sinc低通滤波器的脉冲响应（频率相对于奈奎斯特频率）](../Images/65616de3b8352de641f53a45c76f2b1a.png)'
 - en: Frequency Response[](#id2 "Permalink to this heading")
+  id: totrans-41
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 频率响应[](#id2 "跳转到此标题")
 - en: '[PRE12]'
+  id: totrans-42
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: '![Frequency response of sinc low-pass filter for different cut-off frequencies
     (Frequencies are relative to Nyquist frequency)](../Images/d1dc9cc6065f29c5cad97da638fd2b56.png)'
+  id: totrans-43
   prefs: []
   type: TYPE_IMG
+  zh: '![不同截止频率的sinc低通滤波器的频率响应（频率相对于奈奎斯特频率）](../Images/d1dc9cc6065f29c5cad97da638fd2b56.png)'
 - en: Band-pass filter[](#band-pass-filter "Permalink to this heading")
+  id: totrans-44
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 带通滤波器[](#band-pass-filter "跳转到此标题")
 - en: Band-pass filter can be obtained by subtracting low-pass filter for upper band
     from that of lower band.
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: 带通滤波器可以通过从上频带的低通滤波器减去下频带的滤波器来获得。
 - en: '[PRE13]'
+  id: totrans-46
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: Impulse Response[](#id3 "Permalink to this heading")
+  id: totrans-47
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 脉冲响应[](#id3 "跳转到此标题")
 - en: '[PRE14]'
+  id: totrans-48
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: '![Impulse response of sinc low-pass filter for different cut-off frequencies
     (Frequencies are relative to Nyquist frequency)](../Images/1ab5671deb5c7117986c9ce609285f6d.png)'
+  id: totrans-49
   prefs: []
   type: TYPE_IMG
+  zh: '![不同截止频率的sinc低通滤波器的脉冲响应（频率相对于奈奎斯特频率）](../Images/1ab5671deb5c7117986c9ce609285f6d.png)'
 - en: Frequency Response[](#id4 "Permalink to this heading")
+  id: totrans-50
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 频率响应[](#id4 "跳转到此标题的永久链接")
 - en: '[PRE15]'
+  id: totrans-51
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: '![Frequency response of sinc low-pass filter for different cut-off frequencies
     (Frequencies are relative to Nyquist frequency)](../Images/82ae1c6a4120b6674596748c5b854b7d.png)'
+  id: totrans-52
   prefs: []
   type: TYPE_IMG
+  zh: '![不同截止频率的sinc低通滤波器的频率响应（频率相对于奈奎斯特频率）](../Images/82ae1c6a4120b6674596748c5b854b7d.png)'
 - en: Frequency Sampling[](#frequency-sampling "Permalink to this heading")
+  id: totrans-53
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 频率采样[](#frequency-sampling "跳转到此标题的永久链接")
 - en: The next method we look into starts from a desired frequency response and obtain
     impulse response by applying inverse Fourier transform.
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们接下来研究的方法是从所需的频率响应开始，通过应用逆傅立叶变换获得脉冲响应。
 - en: '[`frequency_impulse_response()`](../generated/torchaudio.prototype.functional.frequency_impulse_response.html#torchaudio.prototype.functional.frequency_impulse_response
     "torchaudio.prototype.functional.frequency_impulse_response") takes (unnormalized)
     magnitude distribution of frequencies and construct impulse response from it.'
+  id: totrans-55
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`frequency_impulse_response()`](../generated/torchaudio.prototype.functional.frequency_impulse_response.html#torchaudio.prototype.functional.frequency_impulse_response
+    "torchaudio.prototype.functional.frequency_impulse_response")接受（未归一化的）频率幅度分布，并从中构建脉冲响应。'
 - en: Note however that the resulting impulse response does not produce the desired
     frequency response.
+  id: totrans-56
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，结果脉冲响应并不产生所需的频率响应。
 - en: In the following, we create multiple filters and compare the input frequency
     response and the actual frequency response.
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，我们创建多个滤波器并比较输入频率响应和实际频率响应。
 - en: Brick-wall filter[](#brick-wall-filter "Permalink to this heading")
+  id: totrans-58
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 矩形窗滤波器[](#brick-wall-filter "跳转到此标题的永久链接")
 - en: Let’s start from brick-wall filter
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们从矩形窗滤波器开始
 - en: '[PRE16]'
+  id: totrans-60
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: '[PRE17]'
+  id: totrans-61
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: '[PRE18]'
+  id: totrans-62
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: '[PRE19]'
+  id: totrans-63
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE19]'
 - en: '![Impulse Response, Frequency Response, Frequency Response (log-scale)](../Images/9a28d6032c0d7c50bc347da6d6276d76.png)'
+  id: totrans-64
   prefs: []
   type: TYPE_IMG
+  zh: '![脉冲响应，频率响应，频率响应（对数刻度）](../Images/9a28d6032c0d7c50bc347da6d6276d76.png)'
 - en: Notice that there are artifacts around the transition band. This is more noticeable
     when the window size is small.
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，在过渡带周围存在伪影。当窗口大小较小时，这更加明显。
 - en: '[PRE20]'
+  id: totrans-66
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE20]'
 - en: '[PRE21]'
+  id: totrans-67
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE21]'
 - en: '![Impulse Response, Frequency Response, Frequency Response (log-scale)](../Images/cef2de44fa405d105abb8da640338eed.png)'
+  id: totrans-68
   prefs: []
   type: TYPE_IMG
+  zh: '![脉冲响应，频率响应，频率响应（对数刻度）](../Images/cef2de44fa405d105abb8da640338eed.png)'
 - en: Arbitrary shapes[](#arbitrary-shapes "Permalink to this heading")
+  id: totrans-69
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 任意形状[](#arbitrary-shapes "跳转到此标题的永久链接")
 - en: '[PRE22]'
+  id: totrans-70
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE22]'
 - en: '[PRE23]'
+  id: totrans-71
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE23]'
 - en: '![Impulse Response, Frequency Response, Frequency Response (log-scale)](../Images/a414b1b7403f4540005410fb0869d23f.png)'
+  id: totrans-72
   prefs: []
   type: TYPE_IMG
+  zh: '![脉冲响应，频率响应，频率响应（对数刻度）](../Images/a414b1b7403f4540005410fb0869d23f.png)'
 - en: '[PRE24]'
+  id: totrans-73
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE24]'
 - en: '[PRE25]'
+  id: totrans-74
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE25]'
 - en: '![Impulse Response, Frequency Response, Frequency Response (log-scale)](../Images/e4e2ca2af91e790e0296859449d7e9ed.png)'
+  id: totrans-75
   prefs: []
   type: TYPE_IMG
+  zh: '![脉冲响应，频率响应，频率响应（对数刻度）](../Images/e4e2ca2af91e790e0296859449d7e9ed.png)'
 - en: References[](#references "Permalink to this heading")
+  id: totrans-76
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 参考资料[](#references "跳转到此标题的永久链接")
 - en: '[https://en.wikipedia.org/wiki/Sinc_filter](https://en.wikipedia.org/wiki/Sinc_filter)'
+  id: totrans-77
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[https://en.wikipedia.org/wiki/Sinc_filter](https://en.wikipedia.org/wiki/Sinc_filter)'
 - en: '[https://www.analog.com/media/en/technical-documentation/dsp-book/dsp_book_Ch16.pdf](https://www.analog.com/media/en/technical-documentation/dsp-book/dsp_book_Ch16.pdf)'
+  id: totrans-78
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[https://www.analog.com/media/en/technical-documentation/dsp-book/dsp_book_Ch16.pdf](https://www.analog.com/media/en/technical-documentation/dsp-book/dsp_book_Ch16.pdf)'
 - en: '[https://courses.engr.illinois.edu/ece401/fa2020/slides/lec10.pdf](https://courses.engr.illinois.edu/ece401/fa2020/slides/lec10.pdf)'
+  id: totrans-79
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[https://courses.engr.illinois.edu/ece401/fa2020/slides/lec10.pdf](https://courses.engr.illinois.edu/ece401/fa2020/slides/lec10.pdf)'
 - en: '[https://ccrma.stanford.edu/~jos/sasp/Windowing_Desired_Impulse_Response.html](https://ccrma.stanford.edu/~jos/sasp/Windowing_Desired_Impulse_Response.html)'
+  id: totrans-80
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[https://ccrma.stanford.edu/~jos/sasp/Windowing_Desired_Impulse_Response.html](https://ccrma.stanford.edu/~jos/sasp/Windowing_Desired_Impulse_Response.html)'
 - en: '**Total running time of the script:** ( 0 minutes 5.087 seconds)'
+  id: totrans-81
   prefs: []
   type: TYPE_NORMAL
+  zh: 脚本的总运行时间：（0分钟5.087秒）
 - en: '[`Download Python source code: filter_design_tutorial.py`](../_downloads/5ff2f7762ef4d114b8d7b7a77e9e6967/filter_design_tutorial.py)'
+  id: totrans-82
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Python源代码：filter_design_tutorial.py`](../_downloads/5ff2f7762ef4d114b8d7b7a77e9e6967/filter_design_tutorial.py)'
 - en: '[`Download Jupyter notebook: filter_design_tutorial.ipynb`](../_downloads/842a84f824a58d554488a544749d2a2d/filter_design_tutorial.ipynb)'
+  id: totrans-83
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Jupyter笔记本：filter_design_tutorial.ipynb`](../_downloads/842a84f824a58d554488a544749d2a2d/filter_design_tutorial.ipynb)'
 - en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  id: totrans-84
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Sphinx-Gallery生成的画廊](https://sphinx-gallery.github.io)'

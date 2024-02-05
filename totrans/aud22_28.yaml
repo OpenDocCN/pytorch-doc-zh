@@ -1,357 +1,541 @@
 - en: Oscillator and ADSR envelope
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 振荡器和ADSR包络
 - en: 原文：[https://pytorch.org/audio/stable/tutorials/oscillator_tutorial.html](https://pytorch.org/audio/stable/tutorials/oscillator_tutorial.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/audio/stable/tutorials/oscillator_tutorial.html](https://pytorch.org/audio/stable/tutorials/oscillator_tutorial.html)
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-tutorials-oscillator-tutorial-py) to download
     the full example code
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[这里](#sphx-glr-download-tutorials-oscillator-tutorial-py)下载完整示例代码
 - en: '**Author**: [Moto Hira](mailto:moto%40meta.com)'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '**作者**：[Moto Hira](mailto:moto%40meta.com)'
 - en: This tutorial shows how to synthesize various waveforms using [`oscillator_bank()`](../generated/torchaudio.prototype.functional.oscillator_bank.html#torchaudio.prototype.functional.oscillator_bank
     "torchaudio.prototype.functional.oscillator_bank") and [`adsr_envelope()`](../generated/torchaudio.prototype.functional.adsr_envelope.html#torchaudio.prototype.functional.adsr_envelope
     "torchaudio.prototype.functional.adsr_envelope").
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程展示了如何使用 [`oscillator_bank()`](../generated/torchaudio.prototype.functional.oscillator_bank.html#torchaudio.prototype.functional.oscillator_bank)
+    和 [`adsr_envelope()`](../generated/torchaudio.prototype.functional.adsr_envelope.html#torchaudio.prototype.functional.adsr_envelope)
+    合成各种波形。
 - en: Warning
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: This tutorial requires prototype DSP features, which are available in nightly
     builds.
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程需要原型DSP功能，这些功能在夜间构建中可用。
 - en: Please refer to [https://pytorch.org/get-started/locally](https://pytorch.org/get-started/locally)
     for instructions for installing a nightly build.
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 请参考 [https://pytorch.org/get-started/locally](https://pytorch.org/get-started/locally)
+    以获取安装夜间构建的说明。
 - en: '[PRE0]'
+  id: totrans-9
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: '[PRE1]'
+  id: totrans-10
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: '[PRE2]'
+  id: totrans-11
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Oscillator Bank[](#oscillator-bank "Permalink to this heading")
+  id: totrans-12
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 振荡器银行
 - en: Sinusoidal oscillator generates sinusoidal waveforms from given amplitudes and
     frequencies.
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: 正弦振荡器从给定的振幅和频率生成正弦波形。
 - en: \[x_t = A_t \sin \theta_t\]
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: \[x_t = A_t \sin \theta_t\]
 - en: Where the phase \(\theta_t\) is found by integrating the instantaneous frequency
     \(f_t\).
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 其中相位 \(\theta_t\) 是通过积分瞬时频率 \(f_t\) 找到的。
 - en: \[\theta_t = \sum_{k=1}^{t} f_k\]
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: \[\theta_t = \sum_{k=1}^{t} f_k\]
 - en: Note
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Why integrate the frequencies? Instantaneous frequency represents the velocity
     of oscillation at given time. So integrating the instantaneous frequency gives
     the displacement of the phase of the oscillation, since the start. In discrete-time
     signal processing, integration becomes accumulation. In PyTorch, accumulation
     can be computed using [`torch.cumsum()`](https://pytorch.org/docs/stable/generated/torch.cumsum.html#torch.cumsum
     "(in PyTorch v2.1)").
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: 为什么要积分频率？瞬时频率表示给定时间的振荡速度。因此，积分瞬时频率给出了振荡相位的位移，自起始以来。在离散时间信号处理中，积分变为累积。在PyTorch中，可以使用
+    [`torch.cumsum()`](https://pytorch.org/docs/stable/generated/torch.cumsum.html#torch.cumsum)
+    计算累积。
 - en: '[`torchaudio.prototype.functional.oscillator_bank()`](../generated/torchaudio.prototype.functional.oscillator_bank.html#torchaudio.prototype.functional.oscillator_bank
     "torchaudio.prototype.functional.oscillator_bank") generates a bank of sinsuoidal
     waveforms from amplitude envelopes and instantaneous frequencies.'
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`torchaudio.prototype.functional.oscillator_bank()`](../generated/torchaudio.prototype.functional.oscillator_bank.html#torchaudio.prototype.functional.oscillator_bank)
+    从振幅包络和瞬时频率生成一组正弦波形。'
 - en: Simple Sine Wave[](#simple-sine-wave "Permalink to this heading")
+  id: totrans-20
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 简单正弦波
 - en: Let’s start with simple case.
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们从简单的情况开始。
 - en: First, we generate sinusoidal wave that has constant frequency and amplitude
     everywhere, that is, a regular sine wave.
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 首先，我们生成具有恒定频率和振幅的正弦波，即常规正弦波。
 - en: We define some constants and helper function that we use for the rest of the
     tutorial.
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们定义一些常量和帮助函数，这些将在本教程的其余部分中使用。
 - en: '[PRE3]'
+  id: totrans-24
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: '[PRE4]'
+  id: totrans-25
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: Now we synthesize the audio with constant frequency and amplitude
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们合成具有恒定频率和振幅的音频
 - en: '[PRE5]'
+  id: totrans-27
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: '![Oscillator bank (bank size: 1)](../Images/85cdb13ee98cbd3eb3cd714f3fbdc73b.png)'
+  id: totrans-28
   prefs: []
   type: TYPE_IMG
-- en: 
+  zh: '![振荡器银行（银行大小：1）](../Images/85cdb13ee98cbd3eb3cd714f3fbdc73b.png)'
+- en: null
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: Combining multiple sine waves[](#combining-multiple-sine-waves "Permalink to
     this heading")
+  id: totrans-31
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 组合多个正弦波
 - en: '[`oscillator_bank()`](../generated/torchaudio.prototype.functional.oscillator_bank.html#torchaudio.prototype.functional.oscillator_bank
     "torchaudio.prototype.functional.oscillator_bank") can combine an arbitrary number
     of sinusoids to generate a waveform.'
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`oscillator_bank()`](../generated/torchaudio.prototype.functional.oscillator_bank.html#torchaudio.prototype.functional.oscillator_bank)
+    可以组合任意数量的正弦波来生成波形。'
 - en: '[PRE6]'
+  id: totrans-33
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: '![Oscillator bank (bank size: 3)](../Images/cb9d8b5d8ac2ebcad500082adba8683c.png)'
+  id: totrans-34
   prefs: []
   type: TYPE_IMG
-- en: 
+  zh: '![振荡器银行（银行大小：3）](../Images/cb9d8b5d8ac2ebcad500082adba8683c.png)'
+- en: null
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: Changing Frequencies across time[](#changing-frequencies-across-time "Permalink
     to this heading")
+  id: totrans-37
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 随时间变化的频率
 - en: Let’s change the frequency over time. Here, we change the frequency from zero
     to the Nyquist frequency (half of the sample rate) in log-scale so that it is
     easy to see the change in waveform.
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们随时间改变频率。在这里，我们以对数尺度将频率从零变化到奈奎斯特频率（采样率的一半），以便更容易看到波形的变化。
 - en: '[PRE7]'
+  id: totrans-39
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: '![Oscillator bank (bank size: 1)](../Images/7533eae9ba1a1de4063506e20c82e055.png)'
+  id: totrans-40
   prefs: []
   type: TYPE_IMG
-- en: 
+  zh: '![振荡器银行（银行大小：1）](../Images/7533eae9ba1a1de4063506e20c82e055.png)'
+- en: null
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: We can also oscillate frequency.
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们也可以振荡频率。
 - en: '[PRE8]'
+  id: totrans-44
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: '![Oscillator bank (bank size: 1)](../Images/547b774a06d14d1224331f668583ea51.png)'
+  id: totrans-45
   prefs: []
   type: TYPE_IMG
-- en: 
+  zh: '![振荡器银行（银行大小：1）](../Images/547b774a06d14d1224331f668583ea51.png)'
+- en: null
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: ADSR Envelope[](#adsr-envelope "Permalink to this heading")
+  id: totrans-48
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: ADSR包络
 - en: Next, we change the amplitude over time. A common technique to model amplitude
     is ADSR Envelope.
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，我们随时间改变振幅。建模振幅的常见技术是ADSR包络。
 - en: ADSR stands for Attack, Decay, Sustain, and Release.
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: ADSR代表攻击、衰减、维持和释放。
 - en: Attack is the time it takes to reach from zero to the top level.
+  id: totrans-51
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 攻击是从零到最高水平所需的时间。
 - en: ''
+  id: totrans-52
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-53
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: Decay is the time it takes from the top to reach sustain level.
+  id: totrans-54
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 衰减是从顶部到达维持水平所需的时间。
 - en: ''
+  id: totrans-55
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-56
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: Sustain is the level at which the level stays constant.
+  id: totrans-57
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 维持是级别保持恒定的水平。
 - en: ''
+  id: totrans-58
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-59
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: Release is the time it takes to drop to zero from sustain level.
+  id: totrans-60
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 释放是从维持水平下降到零所需的时间。
 - en: There are many variants of ADSR model, additionally, some models have the following
     properties
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: ADSR模型有许多变体，此外，一些模型具有以下特性
 - en: 'Hold: The time the level stays at the top level after attack.'
+  id: totrans-62
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 保持：攻击后级别保持在顶级的时间。
 - en: ''
+  id: totrans-63
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-64
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: 'non-linear decay/release: The decay and release take non-linear change.'
+  id: totrans-65
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 非线性衰减/释放：衰减和释放发生非线性变化。
 - en: '[`adsr_envelope`](../generated/torchaudio.prototype.functional.adsr_envelope.html#torchaudio.prototype.functional.adsr_envelope
     "torchaudio.prototype.functional.adsr_envelope") supports hold and polynomial
     decay.'
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`adsr_envelope`](../generated/torchaudio.prototype.functional.adsr_envelope.html#torchaudio.prototype.functional.adsr_envelope
+    "torchaudio.prototype.functional.adsr_envelope")支持保持和多项式衰减。'
 - en: '[PRE9]'
+  id: totrans-67
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: '![Oscillator bank (bank size: 1)](../Images/4789085b178435e62eee0891d8078e2f.png)'
+  id: totrans-68
   prefs: []
   type: TYPE_IMG
-- en: 
+  zh: 振荡器组（组大小：1）
+- en: null
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-70
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: Now let’s look into some examples of how ADSR envelope can be used to create
     different sounds.
+  id: totrans-71
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在让我们看一些ADSR包络如何用于创建不同的声音的示例。
 - en: The following examples are inspired by [this article](https://www.edmprod.com/adsr-envelopes/).
+  id: totrans-72
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下示例受[此文章](https://www.edmprod.com/adsr-envelopes/)启发。
 - en: Drum Beats[](#drum-beats "Permalink to this heading")
+  id: totrans-73
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 鼓点
 - en: '[PRE10]'
+  id: totrans-74
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: '![Oscillator bank (bank size: 2)](../Images/7f44ab460db72c3cabb29d40a967b5ee.png)'
+  id: totrans-75
   prefs: []
   type: TYPE_IMG
-- en: 
+  zh: 振荡器组（组大小：2）
+- en: null
+  id: totrans-76
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-77
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: Pluck[](#pluck "Permalink to this heading")
+  id: totrans-78
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 拨弦
 - en: '[PRE11]'
+  id: totrans-79
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: '![Oscillator bank (bank size: 1)](../Images/f88d084896c58d7b6748c1cb0df85d15.png)'
+  id: totrans-80
   prefs: []
   type: TYPE_IMG
-- en: 
+  zh: 振荡器组（组大小：1）
+- en: null
+  id: totrans-81
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-82
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: Riser[](#riser "Permalink to this heading")
+  id: totrans-83
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 上升者
 - en: '[PRE12]'
+  id: totrans-84
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: '![Oscillator bank (bank size: 6)](../Images/4cfe895ddb84e32efc0c4926938d9fa3.png)'
+  id: totrans-85
   prefs: []
   type: TYPE_IMG
-- en: 
+  zh: 振荡器组（组大小：6）
+- en: null
+  id: totrans-86
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-87
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: References[](#references "Permalink to this heading")
+  id: totrans-88
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 参考资料
 - en: '[https://www.edmprod.com/adsr-envelopes/](https://www.edmprod.com/adsr-envelopes/)'
+  id: totrans-89
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[https://www.edmprod.com/adsr-envelopes/](https://www.edmprod.com/adsr-envelopes/)'
 - en: '[https://pages.mtu.edu/~suits/notefreq432.html](https://pages.mtu.edu/~suits/notefreq432.html)'
+  id: totrans-90
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[https://pages.mtu.edu/~suits/notefreq432.html](https://pages.mtu.edu/~suits/notefreq432.html)'
 - en: '[https://alijamieson.co.uk/2021/12/19/forgive-me-lord-for-i-have-synth-a-guide-to-subtractive-synthesis/](https://alijamieson.co.uk/2021/12/19/forgive-me-lord-for-i-have-synth-a-guide-to-subtractive-synthesis/)'
+  id: totrans-91
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[https://alijamieson.co.uk/2021/12/19/forgive-me-lord-for-i-have-synth-a-guide-to-subtractive-synthesis/](https://alijamieson.co.uk/2021/12/19/forgive-me-lord-for-i-have-synth-a-guide-to-subtractive-synthesis/)'
 - en: '**Total running time of the script:** ( 0 minutes 2.975 seconds)'
+  id: totrans-92
   prefs: []
   type: TYPE_NORMAL
+  zh: '**脚本的总运行时间：**（0分钟2.975秒）'
 - en: '[`Download Python source code: oscillator_tutorial.py`](../_downloads/5479a6afc671384df1c364f38943e580/oscillator_tutorial.py)'
+  id: totrans-93
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Python源代码：oscillator_tutorial.py`](../_downloads/5479a6afc671384df1c364f38943e580/oscillator_tutorial.py)'
 - en: '[`Download Jupyter notebook: oscillator_tutorial.ipynb`](../_downloads/c3b45fd5e3c80988ff7e06619382f4bb/oscillator_tutorial.ipynb)'
+  id: totrans-94
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Jupyter笔记本：oscillator_tutorial.ipynb`](../_downloads/c3b45fd5e3c80988ff7e06619382f4bb/oscillator_tutorial.ipynb)'
 - en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  id: totrans-95
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Sphinx-Gallery生成的画廊](https://sphinx-gallery.github.io)'

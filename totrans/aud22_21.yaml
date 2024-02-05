@@ -1,299 +1,465 @@
 - en: Accelerated video encoding with NVENC
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 使用NVENC进行加速视频编码
 - en: 原文：[https://pytorch.org/audio/stable/tutorials/nvenc_tutorial.html](https://pytorch.org/audio/stable/tutorials/nvenc_tutorial.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 请参考[https://pytorch.org/audio/stable/tutorials/nvenc_tutorial.html](https://pytorch.org/audio/stable/tutorials/nvenc_tutorial.html)
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-tutorials-nvenc-tutorial-py) to download the
     full example code
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[这里](#sphx-glr-download-tutorials-nvenc-tutorial-py)下载完整示例代码
 - en: '**Author**: [Moto Hira](mailto:moto%40meta.com)'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '**作者**：[Moto Hira](mailto:moto%40meta.com)'
 - en: This tutorial shows how to use NVIDIA’s hardware video encoder (NVENC) with
     TorchAudio, and how it improves the performance of video encoding.
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程展示了如何在TorchAudio中使用NVIDIA的硬件视频编码器（NVENC），以及它如何提高视频编码的性能。
 - en: Note
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: This tutorial requires FFmpeg libraries compiled with HW acceleration enabled.
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程要求使用启用了HW加速的FFmpeg库进行编译。
 - en: Please refer to [Enabling GPU video decoder/encoder](../build.ffmpeg.html#enabling-hw-decoder)
     for how to build FFmpeg with HW acceleration.
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 请参考[启用GPU视频解码器/编码器](../build.ffmpeg.html#enabling-hw-decoder)了解如何构建启用了HW加速的FFmpeg。
 - en: Note
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Most modern GPUs have both HW decoder and encoder, but some highend GPUs like
     A100 and H100 do not have HW encoder. Please refer to the following for the availability
     and format coverage. [https://developer.nvidia.com/video-encode-and-decode-gpu-support-matrix-new](https://developer.nvidia.com/video-encode-and-decode-gpu-support-matrix-new)
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 大多数现代GPU都具有HW解码器和编码器，但一些高端GPU如A100和H100没有HW编码器。请参考以下链接了解可用性和格式覆盖范围。[https://developer.nvidia.com/video-encode-and-decode-gpu-support-matrix-new](https://developer.nvidia.com/video-encode-and-decode-gpu-support-matrix-new)
 - en: Attempting to use HW encoder on these GPUs fails with an error message like
     `Generic error in an external library`. You can enable debug log with [`torchaudio.utils.ffmpeg_utils.set_log_level()`](../generated/torchaudio.utils.ffmpeg_utils.html#torchaudio.utils.ffmpeg_utils.set_log_level
     "torchaudio.utils.ffmpeg_utils.set_log_level") to see more detailed error messages
     issued along the way.
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 尝试在这些GPU上使用HW编码器会失败，并显示类似`Generic error in an external library`的错误消息。您可以使用[`torchaudio.utils.ffmpeg_utils.set_log_level()`](../generated/torchaudio.utils.ffmpeg_utils.html#torchaudio.utils.ffmpeg_utils.set_log_level
+    "torchaudio.utils.ffmpeg_utils.set_log_level")启用调试日志，以查看沿途发出的更详细的错误消息。
 - en: '[PRE0]'
+  id: totrans-12
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: '[PRE1]'
+  id: totrans-13
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Check the prerequisites[](#check-the-prerequisites "Permalink to this heading")
+  id: totrans-14
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 检查先决条件
 - en: First, we check that TorchAudio correctly detects FFmpeg libraries that support
     HW decoder/encoder.
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 首先，我们检查TorchAudio是否正确检测到支持HW解码器/编码器的FFmpeg库。
 - en: '[PRE2]'
+  id: totrans-16
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: '[PRE3]'
+  id: totrans-17
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: '[PRE4]'
+  id: totrans-18
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: '[PRE5]'
+  id: totrans-19
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: '[PRE6]'
+  id: totrans-20
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: '[PRE7]'
+  id: totrans-21
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: '[PRE8]'
+  id: totrans-22
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: We use the following helper function to generate test frame data. For the detail
     of synthetic video generation please refer to [StreamReader Advanced Usage](streamreader_advanced_tutorial.html#lavfi).
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们使用以下辅助函数生成测试帧数据。有关合成视频生成的详细信息，请参考[StreamReader Advanced Usage](streamreader_advanced_tutorial.html#lavfi)。
 - en: '[PRE9]'
+  id: totrans-24
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: Encoding videos with NVENC[](#encoding-videos-with-nvenc "Permalink to this
     heading")
+  id: totrans-25
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 使用NVENC对视频进行编码
 - en: To use HW video encoder, you need to specify the HW encoder when defining the
     output video stream by providing `encoder` option to `add_video_stream()`.
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 在定义输出视频流时，需要通过向`add_video_stream()`提供`encoder`选项来指定使用HW视频编码器。
 - en: '[PRE10]'
+  id: totrans-27
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: '[PRE11]'
+  id: totrans-28
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: Similar to the HW decoder, by default, the encoder expects the frame data to
     be on CPU memory. To send data from CUDA memory, you need to specify `hw_accel`
     option.
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 与HW解码器类似，默认情况下，编码器期望帧数据位于CPU内存中。要从CUDA内存发送数据，需要指定`hw_accel`选项。
 - en: '[PRE12]'
+  id: totrans-30
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: '[PRE13]'
+  id: totrans-31
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE13]'
+- en: null
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the video tag.
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持视频标签。
 - en: Benchmark NVENC with StreamWriter[](#benchmark-nvenc-with-streamwriter "Permalink
     to this heading")
+  id: totrans-34
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 使用StreamWriter对NVENC进行基准测试
 - en: Now we compare the performance of software encoder and hardware encoder.
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们比较软件编码器和硬件编码器的性能。
 - en: Similar to the benchmark in NVDEC, we process the videos of different resolution,
     and measure the time it takes to encode them.
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 与NVDEC中的基准测试类似，我们处理不同分辨率的视频，并测量编码所需的时间。
 - en: We also measure the size of resulting video file.
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们还测量生成的视频文件的大小。
 - en: The following function encodes the given frames and measure the time it takes
     to encode and the size of the resulting video data.
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下函数对给定帧进行编码，并测量编码所需的时间以及生成的视频数据的大小。
 - en: '[PRE14]'
+  id: totrans-39
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: We conduct the tests for the following configurations
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们对以下配置进行测试
 - en: Software encoder with the number of threads 1, 4, 8
+  id: totrans-41
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 软件编码器，线程数为1、4、8
 - en: Hardware encoder with and without `hw_accel` option.
+  id: totrans-42
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 硬件编码器使用和不使用`hw_accel`选项。
 - en: '[PRE15]'
+  id: totrans-43
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: And we change the resolution of videos to see how these measurement change.
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们改变视频的分辨率，看看这些测量值如何变化。
 - en: 360P[](#p "Permalink to this heading")
+  id: totrans-45
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 360P
 - en: '[PRE16]'
+  id: totrans-46
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: '[PRE17]'
+  id: totrans-47
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: 720P[](#id1 "Permalink to this heading")
+  id: totrans-48
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 720P
 - en: '[PRE18]'
+  id: totrans-49
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: '[PRE19]'
+  id: totrans-50
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE19]'
 - en: 1080P[](#id2 "Permalink to this heading")
+  id: totrans-51
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 1080P
 - en: '[PRE20]'
+  id: totrans-52
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE20]'
 - en: '[PRE21]'
+  id: totrans-53
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE21]'
 - en: Now we plot the result.
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们绘制结果。
 - en: '[PRE22]'
+  id: totrans-55
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE22]'
 - en: '![Time to encode videos with different resolutions, The size of encoded videos](../Images/376815bfe125a4d371e6b820662ee208.png)'
+  id: totrans-56
   prefs: []
   type: TYPE_IMG
+  zh: '![不同分辨率视频编码所需时间，编码视频的大小](../Images/376815bfe125a4d371e6b820662ee208.png)'
 - en: Result[](#result "Permalink to this heading")
+  id: totrans-57
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 结果
 - en: We observe couple of things;
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们观察到几点：
 - en: The time to encode video grows as the resolution becomes larger.
+  id: totrans-59
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 随着分辨率变大，编码视频所需的时间也会增加。
 - en: In the case of software encoding, increasing the number of threads helps reduce
     the decoding time.
+  id: totrans-60
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在软件编码的情况下，增加线程数量有助于减少解码时间。
 - en: The gain from extra threads diminishes around 8.
+  id: totrans-61
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 额外线程带来的收益在大约8个线程左右减少。
 - en: Hardware encoding is faster than software encoding in general.
+  id: totrans-62
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 总体而言，硬件编码比软件编码更快。
 - en: Using `hw_accel` does not improve the speed of encoding itself as much.
+  id: totrans-63
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 使用`hw_accel`并不会像提高编码速度本身那样有效。
 - en: The size of the resulting videos grow as the resolution becomes larger.
+  id: totrans-64
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 随着分辨率变大，生成的视频大小也会增加。
 - en: Hardware encoder produces smaller video file at larger resolution.
+  id: totrans-65
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 硬件编码器在较大分辨率下生成较小的视频文件。
 - en: The last point is somewhat strange to the author (who is not an expert in production
     of videos.) It is often said that hardware decoders produce larger video compared
     to software encoders. Some says that software encoders allow fine-grained control
     over encoding configuration, so the resulting video is more optimal. Meanwhile,
     hardware encoders are optimized for performance, thus does not provide as much
     control over quality and binary size.
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: 最后一点对作者来说有些奇怪（作者不是视频制作专家）。通常有人说硬件解码器产生的视频比软件编码器大。有人说软件编码器允许对编码配置进行精细控制，因此生成的视频更加优化。与此同时，硬件编码器针对性能进行了优化，因此在质量和二进制大小上提供的控制不如软件编码器多。
 - en: Quality Spotcheck[](#quality-spotcheck "Permalink to this heading")
+  id: totrans-67
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 质量检查[](#quality-spotcheck "此标题的永久链接")
 - en: So, how are the quality of videos produced with hardware encoders? A quick spot
     check of high resolution videos uncovers that they have more noticeable artifacts
     on higher resolution. Which might be an explanation of the smaller binary size.
     (meaning, it is not allocating enough bits to produce quality output.)
+  id: totrans-68
   prefs: []
   type: TYPE_NORMAL
+  zh: 那么，使用硬件编码器生成的视频质量如何？对高分辨率视频进行快速检查发现，它们在更高分辨率上有更明显的伪影。这可能解释了较小的二进制大小。（意思是，它没有分配足够的位来产生高质量输出。）
 - en: The following images are raw frames of videos encoded with hardware encoders.
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下图像是使用硬件编码器编码的视频的原始帧。
 - en: 360P[](#id3 "Permalink to this heading")
+  id: totrans-70
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 360P[](#id3 "此标题的永久链接")
 - en: '![NVENC sample 360P](../Images/0d390a20e0d981befe81d5b3393e1c1c.png)'
+  id: totrans-71
   prefs: []
   type: TYPE_IMG
+  zh: '![NVENC样本360P](../Images/0d390a20e0d981befe81d5b3393e1c1c.png)'
 - en: 720P[](#id4 "Permalink to this heading")
+  id: totrans-72
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 720P[](#id4 "此标题的永久链接")
 - en: '![NVENC sample 720P](../Images/a685497b060cb3b2ca5a611ae2d70a86.png)'
+  id: totrans-73
   prefs: []
   type: TYPE_IMG
+  zh: '![NVENC样本720P](../Images/a685497b060cb3b2ca5a611ae2d70a86.png)'
 - en: 1080P[](#id5 "Permalink to this heading")
+  id: totrans-74
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 1080P[](#id5 "此标题的永久链接")
 - en: '![NVENC sample 1080P](../Images/87dc3b5de645b4f546370eb194db054a.png)'
+  id: totrans-75
   prefs: []
   type: TYPE_IMG
+  zh: '![NVENC样本1080P](../Images/87dc3b5de645b4f546370eb194db054a.png)'
 - en: We can see that there are more artifacts at higher resolution, which are noticeable.
+  id: totrans-76
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们可以看到在更高分辨率下有更多的伪影，这是显而易见的。
 - en: Perhaps one might be able to reduce these using `encoder_options` arguments.
     We did not try, but if you try that and find a better quality setting, feel free
     to let us know. ;)
+  id: totrans-77
   prefs: []
   type: TYPE_NORMAL
+  zh: 也许可以使用`encoder_options`参数来减少这些问题。我们没有尝试，但如果您尝试并找到更好的质量设置，请随时告诉我们。 ;)
 - en: 'Tag: [`torchaudio.io`](../io.html#module-torchaudio.io "torchaudio.io")'
+  id: totrans-78
   prefs: []
   type: TYPE_NORMAL
+  zh: 标签：[`torchaudio.io`](../io.html#module-torchaudio.io "torchaudio.io")
 - en: '**Total running time of the script:** ( 0 minutes 21.517 seconds)'
+  id: totrans-79
   prefs: []
   type: TYPE_NORMAL
+  zh: '**脚本的总运行时间：**（0分钟21.517秒）'
 - en: '[`Download Python source code: nvenc_tutorial.py`](../_downloads/e3bf18fcd5249a6baebd826b65b5dbc8/nvenc_tutorial.py)'
+  id: totrans-80
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Python源代码：nvenc_tutorial.py`](../_downloads/e3bf18fcd5249a6baebd826b65b5dbc8/nvenc_tutorial.py)'
 - en: '[`Download Jupyter notebook: nvenc_tutorial.ipynb`](../_downloads/1d8405f279e33daa9dc3c74332e88711/nvenc_tutorial.ipynb)'
+  id: totrans-81
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Jupyter笔记本：nvenc_tutorial.ipynb`](../_downloads/1d8405f279e33daa9dc3c74332e88711/nvenc_tutorial.ipynb)'
 - en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  id: totrans-82
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Sphinx-Gallery生成的图库](https://sphinx-gallery.github.io)'

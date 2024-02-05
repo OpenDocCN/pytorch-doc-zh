@@ -1,362 +1,561 @@
 - en: Audio Resampling
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 音频重采样
 - en: 原文：[https://pytorch.org/audio/stable/tutorials/audio_resampling_tutorial.html](https://pytorch.org/audio/stable/tutorials/audio_resampling_tutorial.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/audio/stable/tutorials/audio_resampling_tutorial.html](https://pytorch.org/audio/stable/tutorials/audio_resampling_tutorial.html)
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-tutorials-audio-resampling-tutorial-py) to download
     the full example code
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[这里](#sphx-glr-download-tutorials-audio-resampling-tutorial-py)下载完整示例代码
 - en: '**Author**: [Caroline Chen](mailto:carolinechen%40meta.com), [Moto Hira](mailto:moto%40meta.com)'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '**作者**：[Caroline Chen](mailto:carolinechen%40meta.com), [Moto Hira](mailto:moto%40meta.com)'
 - en: This tutorial shows how to use torchaudio’s resampling API.
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程展示了如何使用torchaudio的重采样API。
 - en: '[PRE0]'
+  id: totrans-6
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: '[PRE1]'
+  id: totrans-7
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Preparation[](#preparation "Permalink to this heading")
+  id: totrans-8
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 准备工作[](#preparation "跳转到此标题的永久链接")
 - en: First, we import the modules and define the helper functions.
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 首先，我们导入模块并定义辅助函数。
 - en: '[PRE2]'
+  id: totrans-10
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: '[PRE3]'
+  id: totrans-11
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: Resampling Overview[](#resampling-overview "Permalink to this heading")
+  id: totrans-12
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 重采样概述[](#resampling-overview "跳转到此标题的永久链接")
 - en: To resample an audio waveform from one freqeuncy to another, you can use [`torchaudio.transforms.Resample`](../generated/torchaudio.transforms.Resample.html#torchaudio.transforms.Resample
     "torchaudio.transforms.Resample") or [`torchaudio.functional.resample()`](../generated/torchaudio.functional.resample.html#torchaudio.functional.resample
     "torchaudio.functional.resample"). `transforms.Resample` precomputes and caches
     the kernel used for resampling, while `functional.resample` computes it on the
     fly, so using `torchaudio.transforms.Resample` will result in a speedup when resampling
     multiple waveforms using the same parameters (see Benchmarking section).
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: 要将音频波形从一个频率重采样到另一个频率，您可以使用[`torchaudio.transforms.Resample`](../generated/torchaudio.transforms.Resample.html#torchaudio.transforms.Resample
+    "torchaudio.transforms.Resample")或[`torchaudio.functional.resample()`](../generated/torchaudio.functional.resample.html#torchaudio.functional.resample
+    "torchaudio.functional.resample")。`transforms.Resample`预先计算并缓存用于重采样的核，而`functional.resample`会动态计算，因此在使用相同参数重采样多个波形时，使用`torchaudio.transforms.Resample`会加快速度（请参见基准测试部分）。
 - en: Both resampling methods use [bandlimited sinc interpolation](https://ccrma.stanford.edu/~jos/resample/)
     to compute signal values at arbitrary time steps. The implementation involves
     convolution, so we can take advantage of GPU / multithreading for performance
     improvements.
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 两种重采样方法都使用[带限制的sinc插值](https://ccrma.stanford.edu/~jos/resample/)来计算任意时间步长的信号值。实现涉及卷积，因此我们可以利用GPU
+    / 多线程来提高性能。
 - en: Note
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: When using resampling in multiple subprocesses, such as data loading with multiple
     worker processes, your application might create more threads than your system
     can handle efficiently. Setting `torch.set_num_threads(1)` might help in this
     case.
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 在多个子进程中使用重采样，例如使用多个工作进程加载数据时，您的应用程序可能会创建比系统能够有效处理的线程更多。在这种情况下，设置`torch.set_num_threads(1)`可能会有所帮助。
 - en: Because a finite number of samples can only represent a finite number of frequencies,
     resampling does not produce perfect results, and a variety of parameters can be
     used to control for its quality and computational speed. We demonstrate these
     properties through resampling a logarithmic sine sweep, which is a sine wave that
     increases exponentially in frequency over time.
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 因为有限数量的样本只能表示有限数量的频率，所以重采样不会产生完美的结果，可以使用各种参数来控制其质量和计算速度。我们通过重采样对数正弦扫频来演示这些属性，这是一种随时间呈指数增长的正弦波。
 - en: The spectrograms below show the frequency representation of the signal, where
     the x-axis corresponds to the frequency of the original waveform (in log scale),
     y-axis the frequency of the plotted waveform, and color intensity the amplitude.
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: 下面的频谱图显示了信号的频率表示，其中x轴对应于原始波形的频率（对数刻度），y轴对应于绘制波形的频率，颜色强度表示振幅。
 - en: '[PRE4]'
+  id: totrans-19
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: '![Original Waveform (sample rate: 48000 Hz)](../Images/4829c2c24744b1e2f7d0630418713af0.png)'
+  id: totrans-20
   prefs: []
   type: TYPE_IMG
-- en: 
+  zh: '![原始波形（采样率：48000 Hz）](../Images/4829c2c24744b1e2f7d0630418713af0.png)'
+- en: null
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: Now we resample (downsample) it.
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们对其进行重采样（降采样）。
 - en: We see that in the spectrogram of the resampled waveform, there is an artifact,
     which was not present in the original waveform. This effect is called aliasing.
     [This page](https://music.arts.uci.edu/dobrian/digitalaudio.htm) has an explanation
     of how it happens, and why it looks like a reflection.
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们看到在重采样波形的频谱图中，存在一个在原始波形中不存在的伪影。这种效果称为混叠。[这个页面](https://music.arts.uci.edu/dobrian/digitalaudio.htm)解释了它是如何发生的，以及为什么看起来像一个反射。
 - en: '[PRE5]'
+  id: totrans-25
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: '![Resampled Waveform (sample rate: 32000 Hz)](../Images/530943db47ff518355ac0dbf53a165a2.png)'
+  id: totrans-26
   prefs: []
   type: TYPE_IMG
-- en: 
+  zh: '![重采样波形（采样率：32000 Hz）](../Images/530943db47ff518355ac0dbf53a165a2.png)'
+- en: null
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: Controling resampling quality with parameters[](#controling-resampling-quality-with-parameters
     "Permalink to this heading")
+  id: totrans-29
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 使用参数控制重采样质量[](#controling-resampling-quality-with-parameters "跳转到此标题的永久链接")
 - en: Lowpass filter width[](#lowpass-filter-width "Permalink to this heading")
+  id: totrans-30
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 低通滤波器宽度[](#lowpass-filter-width "跳转到此标题的永久链接")
 - en: Because the filter used for interpolation extends infinitely, the `lowpass_filter_width`
     parameter is used to control for the width of the filter to use to window the
     interpolation. It is also referred to as the number of zero crossings, since the
     interpolation passes through zero at every time unit. Using a larger `lowpass_filter_width`
     provides a sharper, more precise filter, but is more computationally expensive.
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于用于插值的滤波器延伸到无穷远，`lowpass_filter_width`参数用于控制用于窗口插值的滤波器的宽度。它也被称为零交叉的数量，因为插值在每个时间单位都通过零点。使用较大的`lowpass_filter_width`提供更尖锐、更精确的滤波器，但计算成本更高。
 - en: '[PRE6]'
+  id: totrans-32
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: '![lowpass_filter_width=6 (sample rate: 32000 Hz)](../Images/45dd750d7c3da97fc9051829c27fc7b2.png)'
+  id: totrans-33
   prefs: []
   type: TYPE_IMG
+  zh: '![lowpass_filter_width=6（采样率：32000 Hz）](../Images/45dd750d7c3da97fc9051829c27fc7b2.png)'
 - en: '[PRE7]'
+  id: totrans-34
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: '![lowpass_filter_width=128 (sample rate: 32000 Hz)](../Images/d5a180554f37f4ec48baa92d074209c3.png)'
+  id: totrans-35
   prefs: []
   type: TYPE_IMG
+  zh: '![lowpass_filter_width=128（采样率：32000 Hz）](../Images/d5a180554f37f4ec48baa92d074209c3.png)'
 - en: Rolloff[](#rolloff "Permalink to this heading")
+  id: totrans-36
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: Rolloff[](#rolloff "跳转到此标题的永久链接")
 - en: The `rolloff` parameter is represented as a fraction of the Nyquist frequency,
     which is the maximal frequency representable by a given finite sample rate. `rolloff`
     determines the lowpass filter cutoff and controls the degree of aliasing, which
     takes place when frequencies higher than the Nyquist are mapped to lower frequencies.
     A lower rolloff will therefore reduce the amount of aliasing, but it will also
     reduce some of the higher frequencies.
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: '`rolloff`参数表示为Nyquist频率的一个分数，Nyquist频率是由给定有限采样率表示的最大频率。`rolloff`确定了低通滤波器的截止频率，并控制了混叠的程度，当高于Nyquist的频率映射到较低频率时会发生混叠。因此，较低的rolloff将减少混叠的数量，但也会减少一些较高的频率。'
 - en: '[PRE8]'
+  id: totrans-38
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: '![rolloff=0.99 (sample rate: 32000 Hz)](../Images/73e6d2eda5bcb7c230394f27f7ca935b.png)'
+  id: totrans-39
   prefs: []
   type: TYPE_IMG
+  zh: '![rolloff=0.99（采样率：32000 Hz）](../Images/73e6d2eda5bcb7c230394f27f7ca935b.png)'
 - en: '[PRE9]'
+  id: totrans-40
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: '![rolloff=0.8 (sample rate: 32000 Hz)](../Images/b8b204173e6ec0cd89b161425597f3ba.png)'
+  id: totrans-41
   prefs: []
   type: TYPE_IMG
+  zh: '![rolloff=0.8（采样率：32000 Hz）](../Images/b8b204173e6ec0cd89b161425597f3ba.png)'
 - en: Window function[](#window-function "Permalink to this heading")
+  id: totrans-42
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 窗口函数[](#window-function "跳转到此标题的永久链接")
 - en: By default, `torchaudio`’s resample uses the Hann window filter, which is a
     weighted cosine function. It additionally supports the Kaiser window, which is
     a near optimal window function that contains an additional `beta` parameter that
     allows for the design of the smoothness of the filter and width of impulse. This
     can be controlled using the `resampling_method` parameter.
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: 默认情况下，`torchaudio`的重采样使用Hann窗口滤波器，这是一个加权余弦函数。它还支持Kaiser窗口，这是一个近似最优的窗口函数，包含一个额外的`beta`参数，允许设计滤波器的平滑度和脉冲宽度。这可以通过`resampling_method`参数来控制。
 - en: '[PRE10]'
+  id: totrans-44
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: '![Hann Window Default (sample rate: 32000 Hz)](../Images/7a9d3553f8406ae1412e1f3bfdae214d.png)'
+  id: totrans-45
   prefs: []
   type: TYPE_IMG
+  zh: '![Hann窗口默认（采样率：32000 Hz）](../Images/7a9d3553f8406ae1412e1f3bfdae214d.png)'
 - en: '[PRE11]'
+  id: totrans-46
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: '![Kaiser Window Default (sample rate: 32000 Hz)](../Images/b6d0170397a6b38a7da22e8d7ef25067.png)'
+  id: totrans-47
   prefs: []
   type: TYPE_IMG
+  zh: '![Kaiser窗口默认（采样率：32000 Hz）](../Images/b6d0170397a6b38a7da22e8d7ef25067.png)'
 - en: Comparison against librosa[](#comparison-against-librosa "Permalink to this
     heading")
+  id: totrans-48
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 与librosa的比较[](#comparison-against-librosa "跳转到此标题的永久链接")
 - en: '`torchaudio`’s resample function can be used to produce results similar to
     that of librosa (resampy)’s kaiser window resampling, with some noise'
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: '`torchaudio`的重采样函数可用于产生类似于librosa（resampy）的kaiser窗口重采样的结果，但会有一些噪音'
 - en: '[PRE12]'
+  id: totrans-50
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: kaiser_best[](#kaiser-best "Permalink to this heading")
+  id: totrans-51
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: kaiser_best[](#kaiser-best "跳转到此标题的永久链接")
 - en: '[PRE13]'
+  id: totrans-52
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: '![Kaiser Window Best (torchaudio) (sample rate: 32000 Hz)](../Images/8aec6830a317bb9c0309c2a84439aa5f.png)'
+  id: totrans-53
   prefs: []
   type: TYPE_IMG
+  zh: '![Kaiser窗口最佳（torchaudio）（采样率：32000 Hz）](../Images/8aec6830a317bb9c0309c2a84439aa5f.png)'
 - en: '[PRE14]'
+  id: totrans-54
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: '![Kaiser Window Best (librosa) (sample rate: 32000 Hz)](../Images/6949188dd67ae8061af503c94fe17f42.png)'
+  id: totrans-55
   prefs: []
   type: TYPE_IMG
+  zh: '![Kaiser窗口最佳（librosa）（采样率：32000 Hz）](../Images/6949188dd67ae8061af503c94fe17f42.png)'
 - en: '[PRE15]'
+  id: totrans-56
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: '[PRE16]'
+  id: totrans-57
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: kaiser_fast[](#kaiser-fast "Permalink to this heading")
+  id: totrans-58
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: kaiser_fast[](#kaiser-fast "跳转到此标题的永久链接")
 - en: '[PRE17]'
+  id: totrans-59
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: '![Kaiser Window Fast (torchaudio) (sample rate: 32000 Hz)](../Images/732d2de8a83ea6f82132dac9ed2ae3b4.png)'
+  id: totrans-60
   prefs: []
   type: TYPE_IMG
+  zh: '![Kaiser窗口快速（torchaudio）（采样率：32000 Hz）](../Images/732d2de8a83ea6f82132dac9ed2ae3b4.png)'
 - en: '[PRE18]'
+  id: totrans-61
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: '![Kaiser Window Fast (librosa) (sample rate: 32000 Hz)](../Images/e9cc3877c66512afbc416517b5fa8f93.png)'
+  id: totrans-62
   prefs: []
   type: TYPE_IMG
+  zh: '![Kaiser窗口快速（librosa）（采样率：32000 Hz）](../Images/e9cc3877c66512afbc416517b5fa8f93.png)'
 - en: '[PRE19]'
+  id: totrans-63
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE19]'
 - en: '[PRE20]'
+  id: totrans-64
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE20]'
 - en: Performance Benchmarking[](#performance-benchmarking "Permalink to this heading")
+  id: totrans-65
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 性能基准测试[](#performance-benchmarking "跳转到此标题的永久链接")
 - en: Below are benchmarks for downsampling and upsampling waveforms between two pairs
     of sampling rates. We demonstrate the performance implications that the `lowpass_filter_width`,
     window type, and sample rates can have. Additionally, we provide a comparison
     against `librosa`’s `kaiser_best` and `kaiser_fast` using their corresponding
     parameters in `torchaudio`.
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下是两对采样率之间波形的下采样和上采样的基准测试。我们展示了`lowpass_filter_width`、窗口类型和采样率可能产生的性能影响。此外，我们还提供了使用`torchaudio`中对应参数的`librosa`的`kaiser_best`和`kaiser_fast`的比较。
 - en: '[PRE21]'
+  id: totrans-67
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE21]'
 - en: '[PRE22]'
+  id: totrans-68
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE22]'
 - en: '[PRE23]'
+  id: totrans-69
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE23]'
 - en: '[PRE24]'
+  id: totrans-70
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE24]'
 - en: '[PRE25]'
+  id: totrans-71
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE25]'
 - en: '[PRE26]'
+  id: totrans-72
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE26]'
 - en: '[PRE27]'
+  id: totrans-73
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE27]'
 - en: Downsample (48 -> 44.1 kHz)[](#downsample-48-44-1-khz "Permalink to this heading")
+  id: totrans-74
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 下采样（48 -> 44.1 kHz）[](#downsample-48-44-1-khz "跳转到此标题的永久链接")
 - en: '[PRE28]'
+  id: totrans-75
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE28]'
 - en: '![audio resampling tutorial](../Images/b62690be19c44962e7aeb17c3db846a4.png)'
+  id: totrans-76
   prefs: []
   type: TYPE_IMG
+  zh: '![音频重采样教程](../Images/b62690be19c44962e7aeb17c3db846a4.png)'
 - en: '[PRE29]'
+  id: totrans-77
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE29]'
 - en: Downsample (16 -> 8 kHz)[](#downsample-16-8-khz "Permalink to this heading")
+  id: totrans-78
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 下采样（16 -> 8 kHz）[](#downsample-16-8-khz "跳转到此标题的永久链接")
 - en: '[PRE30]'
+  id: totrans-79
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE30]'
 - en: '![audio resampling tutorial](../Images/639cc35e0243f94f6360788351d67755.png)'
+  id: totrans-80
   prefs: []
   type: TYPE_IMG
+  zh: '![音频重采样教程](../Images/639cc35e0243f94f6360788351d67755.png)'
 - en: '[PRE31]'
+  id: totrans-81
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE31]'
 - en: Upsample (44.1 -> 48 kHz)[](#upsample-44-1-48-khz "Permalink to this heading")
+  id: totrans-82
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 上采样（44.1 -> 48 kHz）[](#upsample-44-1-48-khz "跳转到此标题的永久链接")
 - en: '[PRE32]'
+  id: totrans-83
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE32]'
 - en: '![audio resampling tutorial](../Images/2784a6f807f63ed8fe6b4e90711818fb.png)'
+  id: totrans-84
   prefs: []
   type: TYPE_IMG
+  zh: '![音频重采样教程](../Images/2784a6f807f63ed8fe6b4e90711818fb.png)'
 - en: '[PRE33]'
+  id: totrans-85
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE33]'
 - en: Upsample (8 -> 16 kHz)[](#upsample-8-16-khz "Permalink to this heading")
+  id: totrans-86
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 上采样（8 -> 16 kHz）[](#upsample-8-16-khz "跳转到此标题的永久链接")
 - en: '[PRE34]'
+  id: totrans-87
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE34]'
 - en: '![audio resampling tutorial](../Images/5755f0ab1026efd7389bd278a704ed34.png)'
+  id: totrans-88
   prefs: []
   type: TYPE_IMG
+  zh: '![音频重采样教程](../Images/5755f0ab1026efd7389bd278a704ed34.png)'
 - en: '[PRE35]'
+  id: totrans-89
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE35]'
 - en: Summary[](#summary "Permalink to this heading")
+  id: totrans-90
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 总结[](#summary "跳转到此标题的永久链接")
 - en: 'To elaborate on the results:'
+  id: totrans-91
   prefs: []
   type: TYPE_NORMAL
+  zh: 对结果进行详细说明：
 - en: a larger `lowpass_filter_width` results in a larger resampling kernel, and therefore
     increases computation time for both the kernel computation and convolution
+  id: totrans-92
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 较大的`lowpass_filter_width`会导致较大的重采样核，从而增加核计算和卷积的计算时间
 - en: using `sinc_interp_kaiser` results in longer computation times than the default
     `sinc_interp_hann` because it is more complex to compute the intermediate window
     values
+  id: totrans-93
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 使用`sinc_interp_kaiser`会导致比默认的`sinc_interp_hann`更长的计算时间，因为计算中间窗口值更复杂
 - en: a large GCD between the sample and resample rate will result in a simplification
     that allows for a smaller kernel and faster kernel computation.
+  id: totrans-94
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 样本和重采样率之间的较大最大公约数将导致简化，从而允许更小的核和更快的核计算。
 - en: '**Total running time of the script:** ( 0 minutes 3.300 seconds)'
+  id: totrans-95
   prefs: []
   type: TYPE_NORMAL
+  zh: '**脚本的总运行时间：**（0分钟3.300秒）'
 - en: '[`Download Python source code: audio_resampling_tutorial.py`](../_downloads/59ad7db3945dd23dbc0f8d9eef766370/audio_resampling_tutorial.py)'
+  id: totrans-96
   prefs: []
   type: TYPE_NORMAL
+  zh: '[下载Python源代码：audio_resampling_tutorial.py](../_downloads/59ad7db3945dd23dbc0f8d9eef766370/audio_resampling_tutorial.py)'
 - en: '[`Download Jupyter notebook: audio_resampling_tutorial.ipynb`](../_downloads/68fedf50687e692876b68727022ad06e/audio_resampling_tutorial.ipynb)'
+  id: totrans-97
   prefs: []
   type: TYPE_NORMAL
+  zh: '[下载Jupyter笔记本：audio_resampling_tutorial.ipynb](../_downloads/68fedf50687e692876b68727022ad06e/audio_resampling_tutorial.ipynb)'
 - en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  id: totrans-98
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Sphinx-Gallery生成的画廊](https://sphinx-gallery.github.io)'

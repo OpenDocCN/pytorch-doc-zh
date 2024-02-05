@@ -1,571 +1,896 @@
 - en: Accelerated video decoding with NVDEC
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 使用NVDEC进行加速视频解码
 - en: 原文：[https://pytorch.org/audio/stable/tutorials/nvdec_tutorial.html](https://pytorch.org/audio/stable/tutorials/nvdec_tutorial.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/audio/stable/tutorials/nvdec_tutorial.html](https://pytorch.org/audio/stable/tutorials/nvdec_tutorial.html)
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-tutorials-nvdec-tutorial-py) to download the
     full example code
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[这里](#sphx-glr-download-tutorials-nvdec-tutorial-py)下载完整示例代码
 - en: '**Author**: [Moto Hira](mailto:moto%40meta.com)'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '**作者**：[Moto Hira](mailto:moto%40meta.com)'
 - en: This tutorial shows how to use NVIDIA’s hardware video decoder (NVDEC) with
     TorchAudio, and how it improves the performance of video decoding.
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程展示了如何使用NVIDIA的硬件视频解码器（NVDEC）与TorchAudio，并且它如何提高视频解码的性能。
 - en: Note
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: This tutorial requires FFmpeg libraries compiled with HW acceleration enabled.
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程需要使用启用了HW加速的FFmpeg库进行编译。
 - en: Please refer to [Enabling GPU video decoder/encoder](../build.ffmpeg.html#enabling-hw-decoder)
     for how to build FFmpeg with HW acceleration.
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 请参考[启用GPU视频解码器/编码器](../build.ffmpeg.html#enabling-hw-decoder)以了解如何使用HW加速构建FFmpeg。
 - en: '[PRE0]'
+  id: totrans-9
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: '[PRE1]'
+  id: totrans-10
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: '[PRE2]'
+  id: totrans-11
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Check the prerequisites[](#check-the-prerequisites "Permalink to this heading")
+  id: totrans-12
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 检查先决条件[](#check-the-prerequisites "跳转到此标题的永久链接")
 - en: First, we check that TorchAudio correctly detects FFmpeg libraries that support
     HW decoder/encoder.
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: 首先，我们检查TorchAudio是否正确检测到支持HW解码器/编码器的FFmpeg库。
 - en: '[PRE3]'
+  id: totrans-14
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: '[PRE4]'
+  id: totrans-15
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: '[PRE5]'
+  id: totrans-16
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: '[PRE6]'
+  id: totrans-17
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: '[PRE7]'
+  id: totrans-18
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: '[PRE8]'
+  id: totrans-19
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: '[PRE9]'
+  id: totrans-20
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: We will use the following video which has the following properties;
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们将使用以下具有以下属性的视频；
 - en: 'Codec: H.264'
+  id: totrans-22
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 编解码器：H.264
 - en: 'Resolution: 960x540'
+  id: totrans-23
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 分辨率：960x540
 - en: 'FPS: 29.97'
+  id: totrans-24
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: FPS：29.97
 - en: 'Pixel format: YUV420P'
+  id: totrans-25
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 像素格式：YUV420P
 - en: <https://download.pytorch.org/torchaudio/tutorial-assets/stream-api/NASAs_Most_Scientifically_Complex_Space_Observatory_Requires_Precision-MP4_small.mp4>
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: <https://download.pytorch.org/torchaudio/tutorial-assets/stream-api/NASAs_Most_Scientifically_Complex_Space_Observatory_Requires_Precision-MP4_small.mp4>
 - en: '[PRE10]'
+  id: totrans-27
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: '[PRE11]'
+  id: totrans-28
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: Decoding videos with NVDEC[](#decoding-videos-with-nvdec "Permalink to this
     heading")
+  id: totrans-29
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 使用NVDEC解码视频[](#decoding-videos-with-nvdec "跳转到此标题的永久链接")
 - en: To use HW video decoder, you need to specify the HW decoder when defining the
     output video stream by passing `decoder` option to `add_video_stream()` method.
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 要使用HW视频解码器，需要在定义输出视频流时通过将`decoder`选项传递给`add_video_stream()`方法来指定HW解码器。
 - en: '[PRE12]'
+  id: totrans-31
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: The video frames are decoded and returned as tensor of NCHW format.
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 视频帧被解码并返回为NCHW格式的张量。
 - en: '[PRE13]'
+  id: totrans-33
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: '[PRE14]'
+  id: totrans-34
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: By default, the decoded frames are sent back to CPU memory, and CPU tensors
     are created.
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 默认情况下，解码的帧会发送回CPU内存，并创建CPU张量。
 - en: '[PRE15]'
+  id: totrans-36
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: '[PRE16]'
+  id: totrans-37
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: By specifying `hw_accel` option, you can convert the decoded frames to CUDA
     tensor. `hw_accel` option takes string values and pass it to [`torch.device`](https://pytorch.org/docs/stable/tensor_attributes.html#torch.device
     "(in PyTorch v2.1)").
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过指定`hw_accel`选项，您可以将解码的帧转换为CUDA张量。`hw_accel`选项接受字符串值并将其传递给[`torch.device`](https://pytorch.org/docs/stable/tensor_attributes.html#torch.device
+    "(在PyTorch v2.1中)").
 - en: Note
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Currently, `hw_accel` option and `add_basic_video_stream()` are not compatible.
     `add_basic_video_stream` adds post-decoding process, which is designed for frames
     in CPU memory. Please use `add_video_stream()`.
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: 目前，`hw_accel`选项和`add_basic_video_stream()`不兼容。`add_basic_video_stream`添加了解码后的处理过程，专为CPU内存中的帧设计。请使用`add_video_stream()`。
 - en: '[PRE17]'
+  id: totrans-41
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: '[PRE18]'
+  id: totrans-42
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: Note
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: When there are multiple of GPUs available, `StreamReader` by default uses the
     first GPU. You can change this by providing `"gpu"` option.
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 当有多个GPU可用时，默认情况下，`StreamReader`使用第一个GPU。您可以通过提供`"gpu"`选项来更改这一点。
 - en: '[PRE19]'
+  id: totrans-45
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE19]'
 - en: Note
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: '`"gpu"` option and `hw_accel` option can be specified independently. If they
     do not match, decoded frames are transfered to the device specified by `hw_accell`
     automatically.'
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: '`"gpu"`选项和`hw_accel`选项可以独立指定。如果它们不匹配，则解码帧会自动传输到由`hw_accell`指定的设备。'
 - en: '[PRE20]'
+  id: totrans-48
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE20]'
 - en: Visualization[](#visualization "Permalink to this heading")
+  id: totrans-49
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 可视化[](#visualization "跳转到此标题的永久链接")
 - en: Let’s look at the frames decoded by HW decoder and compare them against equivalent
     results from software decoders.
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们查看由HW解码器解码的帧，并将其与软件解码器的等效结果进行比较。
 - en: The following function seeks into the given timestamp and decode one frame with
     the specificed decoder.
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下函数会在给定时间戳处寻找并使用指定的解码器解码一帧。
 - en: '[PRE21]'
+  id: totrans-52
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE21]'
 - en: '[PRE22]'
+  id: totrans-53
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE22]'
 - en: Note
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Currently, HW decoder does not support colorspace conversion. Decoded frames
     are YUV format. The following function performs YUV to RGB covnersion (and axis
     shuffling for plotting).
+  id: totrans-55
   prefs: []
   type: TYPE_NORMAL
+  zh: 目前，HW解码器不支持色彩空间转换。解码帧为YUV格式。以下函数执行YUV到RGB的转换（以及用于绘图的轴重排）。
 - en: '[PRE23]'
+  id: totrans-56
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE23]'
 - en: Now we visualize the resutls.
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们来可视化结果。
 - en: '[PRE24]'
+  id: totrans-58
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE24]'
 - en: '![Software decoder, HW decoder](../Images/d4497ba54b0fd1a995bc0fbc8df5e736.png)'
+  id: totrans-59
   prefs: []
   type: TYPE_IMG
+  zh: '![软件解码器，HW解码器](../Images/d4497ba54b0fd1a995bc0fbc8df5e736.png)'
 - en: They are indistinguishable to the eyes of the author. Feel free to let us know
     if you spot something. :)
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于作者来说，它们在视觉上是无法区分的。如果您发现了什么，请随时告诉我们。 :)
 - en: HW resizing and cropping[](#hw-resizing-and-cropping "Permalink to this heading")
+  id: totrans-61
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: HW调整大小和裁剪[](#hw-resizing-and-cropping "跳转到此标题的永久链接")
 - en: You can use `decoder_option` argument to provide decoder-specific options.
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可以使用`decoder_option`参数提供特定于解码器的选项。
 - en: The following options are often relevant in preprocessing.
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下选项通常在预处理中很重要。
 - en: '`resize`: Resize the frame into `(width)x(height)`.'
+  id: totrans-64
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`resize`：将帧调整为`(width)x(height)`。'
 - en: '`crop`: Crop the frame `(top)x(bottom)x(left)x(right)`. Note that the specified
     values are the amount of rows/columns removed. The final image size is `(width
     - left - right)x(height - top -bottom)`. If `crop` and `resize` options are used
     together, `crop` is performed first.'
+  id: totrans-65
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`crop`：裁剪帧`(top)x(bottom)x(left)x(right)`。请注意，指定的值是要移除的行/列数。最终图像尺寸为`(width
+    - left - right)x(height - top -bottom)`。如果同时使用`crop`和`resize`选项，则首先执行`crop`。'
 - en: For other available options, please run `ffmpeg -h decoder=h264_cuvid`.
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: 有关其他可用选项，请运行`ffmpeg -h decoder=h264_cuvid`。
 - en: '[PRE25]'
+  id: totrans-67
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE25]'
 - en: '[PRE26]'
+  id: totrans-68
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE26]'
 - en: '[PRE27]'
+  id: totrans-69
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE27]'
 - en: '[PRE28]'
+  id: totrans-70
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE28]'
 - en: '![Original, Resized, Cropped, Cropped and resized](../Images/6284bf3cc57087b145e22cb725ef3aad.png)'
+  id: totrans-71
   prefs: []
   type: TYPE_IMG
+  zh: '![原始，调整大小，裁剪，裁剪和调整大小](../Images/6284bf3cc57087b145e22cb725ef3aad.png)'
 - en: '[PRE29]'
+  id: totrans-72
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE29]'
 - en: Comparing resizing methods[](#comparing-resizing-methods "Permalink to this
     heading")
+  id: totrans-73
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 比较调整大小方法[](#comparing-resizing-methods "跳转到此标题的永久链接")
 - en: Unlike software scaling, NVDEC does not provide an option to choose the scaling
     algorithm. In ML applicatoins, it is often necessary to construct a preprocessing
     pipeline with a similar numerical property. So here we compare the result of hardware
     resizing with software resizing of different algorithms.
+  id: totrans-74
   prefs: []
   type: TYPE_NORMAL
+  zh: 与软件缩放不同，NVDEC 不提供选择缩放算法的选项。在 ML 应用中，通常需要构建一个具有类似数值属性的预处理流水线。因此，我们比较不同算法的硬件调整大小与软件调整大小的结果。
 - en: We will use the following video, which contains the test pattern generated using
     the following command.
+  id: totrans-75
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们将使用以下视频，其中包含使用以下命令生成的测试模式。
 - en: '[PRE30]'
+  id: totrans-76
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE30]'
 - en: <https://download.pytorch.org/torchaudio/tutorial-assets/mptestsrc.mp4>
+  id: totrans-77
   prefs: []
   type: TYPE_NORMAL
+  zh: <https://download.pytorch.org/torchaudio/tutorial-assets/mptestsrc.mp4>
 - en: '[PRE31]'
+  id: totrans-78
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE31]'
 - en: '[PRE32]'
+  id: totrans-79
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE32]'
 - en: The following function decodes video and apply the specified scaling algorithm.
+  id: totrans-80
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下函数解码视频并应用指定的缩放算法。
 - en: '[PRE33]'
+  id: totrans-81
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE33]'
 - en: The following function uses HW decoder to decode video and resize.
+  id: totrans-82
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下函数使用 HW 解码器解码视频并调整大小。
 - en: '[PRE34]'
+  id: totrans-83
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE34]'
 - en: Now we execute them and visualize the resulting frames.
+  id: totrans-84
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们执行它们并可视化生成的帧。
 - en: '[PRE35]'
+  id: totrans-85
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE35]'
 - en: '[PRE36]'
+  id: totrans-86
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE36]'
 - en: '![Original, nearest neighbor, bilinear, bicubic, NVDEC, spline, lanczos(1),
     lanczos(3), lanczos(5)](../Images/a6d0810accb1b2526f8e2b161b00ff0d.png)'
+  id: totrans-87
   prefs: []
   type: TYPE_IMG
+  zh: '![原始、最近邻、双线性、双三次、NVDEC、样条、lanczos(1)、lanczos(3)、lanczos(5)](../Images/a6d0810accb1b2526f8e2b161b00ff0d.png)'
 - en: None of them is exactly the same. To the eyes of authors, lanczos(1) appears
     to be most similar to NVDEC. The bicubic looks close as well.
+  id: totrans-88
   prefs: []
   type: TYPE_NORMAL
+  zh: 它们中没有一个完全相同。在作者看来，lanczos(1) 看起来最接近 NVDEC。bicubic 看起来也很接近。
 - en: Benchmark NVDEC with StreamReader[](#benchmark-nvdec-with-streamreader "Permalink
     to this heading")
+  id: totrans-89
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 使用 StreamReader 对 NVDEC 进行基准测试[](#benchmark-nvdec-with-streamreader "跳转到此标题")
 - en: In this section, we compare the performace of software video decoding and HW
     video decoding.
+  id: totrans-90
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本节中，我们比较软件视频解码和硬件视频解码的性能。
 - en: Decode as CUDA frames[](#decode-as-cuda-frames "Permalink to this heading")
+  id: totrans-91
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 解码为 CUDA 帧[](#decode-as-cuda-frames "跳转到此标题")
 - en: First, we compare the time it takes for software decoder and hardware encoder
     to decode the same video. To make the result comparable, when using software decoder,
     we move the resulting tensor to CUDA.
+  id: totrans-92
   prefs: []
   type: TYPE_NORMAL
+  zh: 首先，我们比较软件解码器和硬件编码器解码相同视频所需的时间。为了使结果可比较，当使用软件解码器时，我们将生成的张量移动到 CUDA。
 - en: The procedures to test look like the following
+  id: totrans-93
   prefs: []
   type: TYPE_NORMAL
+  zh: 测试过程如下
 - en: Use hardware decoder and place data on CUDA directly
+  id: totrans-94
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 使用硬件解码器并直接将数据放在 CUDA 上
 - en: Use software decoder, generate CPU Tensors and move them to CUDA.
+  id: totrans-95
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 使用软件解码器，生成 CPU 张量并将其移动到 CUDA。
 - en: The following function implements the hardware decoder test case.
+  id: totrans-96
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下函数实现了硬件解码器测试用例。
 - en: '[PRE37]'
+  id: totrans-97
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE37]'
 - en: The following function implements the software decoder test case.
+  id: totrans-98
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下函数实现了软件解码器测试用例。
 - en: '[PRE38]'
+  id: totrans-99
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE38]'
 - en: For each resolution of video, we run multiple software decoder test cases with
     different number of threads.
+  id: totrans-100
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于每种视频分辨率，我们运行多个具有不同线程数的软件解码器测试用例。
 - en: '[PRE39]'
+  id: totrans-101
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE39]'
 - en: Now we run the tests with videos of different resolutions.
+  id: totrans-102
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们用不同分辨率的视频运行测试。
 - en: QVGA[](#qvga "Permalink to this heading")
+  id: totrans-103
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: QVGA[](#qvga "跳转到此标题")
 - en: '[PRE40]'
+  id: totrans-104
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE40]'
 - en: '[PRE41]'
+  id: totrans-105
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE41]'
 - en: VGA[](#vga "Permalink to this heading")
+  id: totrans-106
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: VGA[](#vga "跳转到此标题")
 - en: '[PRE42]'
+  id: totrans-107
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE42]'
 - en: '[PRE43]'
+  id: totrans-108
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE43]'
 - en: XGA[](#xga "Permalink to this heading")
+  id: totrans-109
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: XGA[](#xga "跳转到此标题")
 - en: '[PRE44]'
+  id: totrans-110
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE44]'
 - en: '[PRE45]'
+  id: totrans-111
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE45]'
 - en: Result[](#result "Permalink to this heading")
+  id: totrans-112
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 结果[](#result "跳转到此标题")
 - en: Now we plot the result.
+  id: totrans-113
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们绘制结果。
 - en: '[PRE46]'
+  id: totrans-114
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE46]'
 - en: '![Speed of processing video frames](../Images/46099bf459f9ae731c516d04c0f9ae02.png)'
+  id: totrans-115
   prefs: []
   type: TYPE_IMG
+  zh: '![视频帧处理速度](../Images/46099bf459f9ae731c516d04c0f9ae02.png)'
 - en: We observe couple of things
+  id: totrans-116
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们观察到几件事
 - en: Increasing the number of threads in software decoding makes the pipeline faster,
     but the performance saturates around 8 threads.
+  id: totrans-117
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 增加软件解码中的线程数可以加快流水线速度，但性能在大约 8 个线程时饱和。
 - en: The performance gain from using hardware decoder depends on the resolution of
     video.
+  id: totrans-118
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 使用硬件解码器的性能提升取决于视频的分辨率。
 - en: At lower resolutions like QVGA, hardware decoding is slower than software decoding
+  id: totrans-119
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在像 QVGA 这样的低分辨率下，硬件解码比软件解码慢
 - en: At higher resolutions like XGA, hardware decoding is faster than software decoding.
+  id: totrans-120
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在像 XGA 这样的高分辨率下，硬件解码比软件解码快。
 - en: It is worth noting that the performance gain also depends on the type of GPU.
     We observed that when decoding VGA videos using V100 or A100 GPUs, hardware decoders
     are slower than software decoders. But using A10 GPU hardware deocder is faster
     than software decodr.
+  id: totrans-121
   prefs: []
   type: TYPE_NORMAL
+  zh: 值得注意的是，性能提升还取决于 GPU 的类型。我们观察到，使用 V100 或 A100 GPU 解码 VGA 视频时，硬件解码器比软件解码器慢。但是使用
+    A10 GPU 时，硬件解码器比软件解码器快。
 - en: Decode and resize[](#decode-and-resize "Permalink to this heading")
+  id: totrans-122
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 解码和调整大小[](#decode-and-resize "跳转到此标题")
 - en: Next, we add resize operation to the pipeline. We will compare the following
     pipelines.
+  id: totrans-123
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，我们将调整大小操作添加到流水线中。我们将比较以下流水线。
 - en: Decode video using software decoder and read the frames as PyTorch Tensor. Resize
     the tensor using [`torch.nn.functional.interpolate()`](https://pytorch.org/docs/stable/generated/torch.nn.functional.interpolate.html#torch.nn.functional.interpolate
     "(in PyTorch v2.1)"), then send the resulting tensor to CUDA device.
+  id: totrans-124
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 使用软件解码器解码视频并将帧读取为 PyTorch 张量。使用 [`torch.nn.functional.interpolate()`](https://pytorch.org/docs/stable/generated/torch.nn.functional.interpolate.html#torch.nn.functional.interpolate
+    "(在 PyTorch v2.1 中)") 调整张量大小，然后将生成的张量发送到 CUDA 设备。
 - en: Decode video using software decoder, resize the frame with FFmpeg’s filter graph,
     read the resized frames as PyTorch tensor, then send it to CUDA device.
+  id: totrans-125
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 使用软件解码器解码视频，使用 FFmpeg 的滤镜图调整帧大小，将调整大小后的帧读取为 PyTorch 张量，然后发送到 CUDA 设备。
 - en: Decode and resize video simulaneously with HW decoder, read the resulting frames
     as CUDA tensor.
+  id: totrans-126
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 使用 HW 解码器同时解码和调整大小视频，将生成的帧读取为 CUDA 张量。
 - en: The pipeline 1 represents common video loading implementations.
+  id: totrans-127
   prefs: []
   type: TYPE_NORMAL
+  zh: 流水线 1 表示常见的视频加载实现。
 - en: The pipeline 2 uses FFmpeg’s filter graph, which allows to manipulate raw frames
     before converting them to Tensors.
+  id: totrans-128
   prefs: []
   type: TYPE_NORMAL
+  zh: 流水线 2 使用 FFmpeg 的滤镜图，允许在将原始帧转换为张量之前操作原始帧。
 - en: The pipeline 3 has the minimum amount of data transfer from CPU to CUDA, which
     significantly contribute to performant data loading.
+  id: totrans-129
   prefs: []
   type: TYPE_NORMAL
+  zh: 流水线 3 从 CPU 到 CUDA 的数据传输量最小，这对于高效的数据加载有很大帮助。
 - en: The following function implements the pipeline 1\. It uses PyTorch’s [`torch.nn.functional.interpolate()`](https://pytorch.org/docs/stable/generated/torch.nn.functional.interpolate.html#torch.nn.functional.interpolate
     "(in PyTorch v2.1)"). We use `bincubic` mode, as we saw that the resulting frames
     are closest to NVDEC resizing.
+  id: totrans-130
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下函数实现了管道1。它使用PyTorch的[`torch.nn.functional.interpolate()`](https://pytorch.org/docs/stable/generated/torch.nn.functional.interpolate.html#torch.nn.functional.interpolate
+    “（在PyTorch v2.1中）”)。我们使用`bincubic`模式，因为我们发现生成的帧最接近NVDEC调整大小。
 - en: '[PRE47]'
+  id: totrans-131
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE47]'
 - en: The following function implements the pipeline 2\. Frames are resized as part
     of decoding process, then sent to CUDA device.
+  id: totrans-132
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下函数实现了管道2。帧在解码过程中调整大小，然后发送到CUDA设备。
 - en: We use `bincubic` mode, to make the result comparable with PyTorch-based implementation
     above.
+  id: totrans-133
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们使用`bincubic`模式，以便将结果与上面基于PyTorch的实现进行比较。
 - en: '[PRE48]'
+  id: totrans-134
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE48]'
 - en: The following function implements the pipeline 3\. Resizing is performed by
     NVDEC and the resulting tensor is placed on CUDA memory.
+  id: totrans-135
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下函数实现了管道3。调整大小由NVDEC执行，并且生成的张量放置在CUDA内存中。
 - en: '[PRE49]'
+  id: totrans-136
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE49]'
 - en: The following function run the benchmark functions on given sources.
+  id: totrans-137
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下函数在给定源上运行基准函数。
 - en: '[PRE50]'
+  id: totrans-138
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE50]'
 - en: Now we run the tests.
+  id: totrans-139
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们运行测试。
 - en: QVGA[](#id1 "Permalink to this heading")
+  id: totrans-140
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: QVGA[](＃id1“到这个标题的永久链接”)
 - en: '[PRE51]'
+  id: totrans-141
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE51]'
 - en: '[PRE52]'
+  id: totrans-142
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE52]'
 - en: VGA[](#id2 "Permalink to this heading")
+  id: totrans-143
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: VGA[](＃id2“到这个标题的永久链接”)
 - en: '[PRE53]'
+  id: totrans-144
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE53]'
 - en: '[PRE54]'
+  id: totrans-145
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE54]'
 - en: XGA[](#id3 "Permalink to this heading")
+  id: totrans-146
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: XGA[](＃id3“到这个标题的永久链接”)
 - en: '[PRE55]'
+  id: totrans-147
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE55]'
 - en: '[PRE56]'
+  id: totrans-148
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE56]'
 - en: Result[](#id4 "Permalink to this heading")
+  id: totrans-149
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 结果[](＃id4“到这个标题的永久链接”)
 - en: Now we plot the result.
+  id: totrans-150
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们绘制结果。
 - en: '[PRE57]'
+  id: totrans-151
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE57]'
 - en: '![Speed of processing video frames](../Images/3cb5a15ee9fb4f589232f2fb59786df4.png)'
+  id: totrans-152
   prefs: []
   type: TYPE_IMG
+  zh: '![处理视频帧速度](../Images/3cb5a15ee9fb4f589232f2fb59786df4.png)'
 - en: Hardware deocder shows a similar trend as previous experiment. In fact, the
     performance is almost the same. Hardware resizing has almost zero overhead for
     scaling down the frames.
+  id: totrans-153
   prefs: []
   type: TYPE_NORMAL
+  zh: 硬件解码器显示了与先前实验类似的趋势。事实上，性能几乎相同。硬件调整大小几乎没有缩小帧的额外开销。
 - en: Software decoding also shows a similar trend. Performing resizing as part of
     decoding is faster. One possible explanation is that, video frames are internally
     stored as YUV420P, which has half the number of pixels compared to RGB24, or YUV444P.
     This means that if resizing before copying frame data to PyTorch tensor, the number
     of pixels manipulated and copied are smaller than the case where applying resizing
     after frames are converted to Tensor.
+  id: totrans-154
   prefs: []
   type: TYPE_NORMAL
+  zh: 软件解码也显示了类似的趋势。将调整大小作为解码的一部分进行比较快。一个可能的解释是，视频帧在内部存储为YUV420P，其像素数量是RGB24或YUV444P的一半。这意味着如果在将帧数据复制到PyTorch张量之前调整大小，则操作和复制的像素数量要比将调整大小应用于将帧转换为张量之后的情况要少。
 - en: 'Tag: [`torchaudio.io`](../io.html#module-torchaudio.io "torchaudio.io")'
+  id: totrans-155
   prefs: []
   type: TYPE_NORMAL
+  zh: 标签：[`torchaudio.io`](../io.html#module-torchaudio.io “torchaudio.io”)
 - en: '**Total running time of the script:** ( 0 minutes 31.285 seconds)'
+  id: totrans-156
   prefs: []
   type: TYPE_NORMAL
+  zh: '**脚本的总运行时间：**（0分钟31.285秒）'
 - en: '[`Download Python source code: nvdec_tutorial.py`](../_downloads/2c0cb1d7d79d5a5622253c098a75dbf0/nvdec_tutorial.py)'
+  id: totrans-157
   prefs: []
   type: TYPE_NORMAL
+  zh: 下载Python源代码：nvdec_tutorial.py
 - en: '[`Download Jupyter notebook: nvdec_tutorial.ipynb`](../_downloads/5e0b0b0d95c7f3b1cf924ca3dad58679/nvdec_tutorial.ipynb)'
+  id: totrans-158
   prefs: []
   type: TYPE_NORMAL
+  zh: '[下载Jupyter笔记本：nvdec_tutorial.ipynb](../_downloads/5e0b0b0d95c7f3b1cf924ca3dad58679/nvdec_tutorial.ipynb)'
 - en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  id: totrans-159
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Sphinx-Gallery生成的图库](https://sphinx-gallery.github.io)'
