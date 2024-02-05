@@ -1,21 +1,27 @@
 - en: Complex Numbers
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: '[https://pytorch.org/docs/stable/complex_numbers.html](https://pytorch.org/docs/stable/complex_numbers.html)'
 - en: 原文：[https://pytorch.org/docs/stable/complex_numbers.html](https://pytorch.org/docs/stable/complex_numbers.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
-- en: Complex numbers are numbers that can be expressed in the form $a + bj$a+bj, where
-    a and b are real numbers, and *j* is called the imaginary unit, which satisfies
-    the equation $j^2 = -1$j2=−1. Complex
-    numbers frequently occur in mathematics and engineering, especially in topics
-    like signal processing. Traditionally many users and libraries (e.g., TorchAudio)
-    have handled complex numbers by representing the data in float tensors with shape
-    $(..., 2)$(...,2)
-    where the last dimension contains the real and imaginary values.
+  zh: 复数
+- en: Complex numbers are numbers that can be expressed in the form $a + bj$a+bj,
+    where a and b are real numbers, and *j* is called the imaginary unit, which satisfies
+    the equation $j^2 = -1$j2=−1. Complex numbers frequently occur in mathematics
+    and engineering, especially in topics like signal processing. Traditionally many
+    users and libraries (e.g., TorchAudio) have handled complex numbers by representing
+    the data in float tensors with shape $(..., 2)$(...,2) where the last dimension
+    contains the real and imaginary values.
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 复数是可以用形式$a + bj$a+bj表示的数，其中a和b是实数，*j*称为虚数单位，满足方程$j^2 = -1$j2=−1。复数在数学和工程中经常出现，特别是在信号处理等主题中。传统上，许多用户和库（例如TorchAudio）通过使用形状为$(...,
+    2)$(...,2)的浮点张量来处理复数，其中最后一个维度包含实部和虚部值。
 - en: Tensors of complex dtypes provide a more natural user experience while working
     with complex numbers. Operations on complex tensors (e.g., [`torch.mv()`](generated/torch.mv.html#torch.mv
     "torch.mv"), [`torch.matmul()`](generated/torch.matmul.html#torch.matmul "torch.matmul"))
@@ -23,145 +29,223 @@
     mimicking them. Operations involving complex numbers in PyTorch are optimized
     to use vectorized assembly instructions and specialized kernels (e.g. LAPACK,
     cuBlas).
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 复数dtype的张量在处理复数时提供更自然的用户体验。对复数张量的操作（例如[`torch.mv()`](generated/torch.mv.html#torch.mv
+    "torch.mv")、[`torch.matmul()`](generated/torch.matmul.html#torch.matmul "torch.matmul")）可能比在模拟它们的浮点张量上的操作更快速、更节省内存。PyTorch中涉及复数的操作经过优化，使用矢量化汇编指令和专门的内核（例如LAPACK、cuBlas）。
 - en: Note
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Spectral operations in the [torch.fft module](https://pytorch.org/docs/stable/fft.html#torch-fft)
     support native complex tensors.
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 在[torch.fft模块](https://pytorch.org/docs/stable/fft.html#torch-fft)中的频谱操作支持本机复数张量。
 - en: Warning
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: Complex tensors is a beta feature and subject to change.
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 复数张量是一个测试功能，可能会发生变化。
 - en: Creating Complex Tensors
+  id: totrans-8
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 创建复数张量
 - en: 'We support two complex dtypes: torch.cfloat and torch.cdouble'
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们支持两种复数dtype：torch.cfloat和torch.cdouble
 - en: '[PRE0]'
+  id: totrans-10
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: Note
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: The default dtype for complex tensors is determined by the default floating
     point dtype. If the default floating point dtype is torch.float64 then complex
     numbers are inferred to have a dtype of torch.complex128, otherwise they are assumed
     to have a dtype of torch.complex64.
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: 复数张量的默认dtype由默认浮点dtype确定。如果默认浮点dtype是torch.float64，则推断复数的dtype为torch.complex128，否则假定为torch.complex64。
 - en: All factory functions apart from [`torch.linspace()`](generated/torch.linspace.html#torch.linspace
     "torch.linspace"), [`torch.logspace()`](generated/torch.logspace.html#torch.logspace
     "torch.logspace"), and [`torch.arange()`](generated/torch.arange.html#torch.arange
     "torch.arange") are supported for complex tensors.
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: 除了[`torch.linspace()`](generated/torch.linspace.html#torch.linspace "torch.linspace")、[`torch.logspace()`](generated/torch.logspace.html#torch.logspace
+    "torch.logspace")和[`torch.arange()`](generated/torch.arange.html#torch.arange
+    "torch.arange")之外的所有工厂函数都支持复数张量。
 - en: Transition from the old representation[](#transition-from-the-old-representation
     "Permalink to this heading")
+  id: totrans-14
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 从旧表示形式过渡[](#transition-from-the-old-representation "Permalink to this heading")
 - en: Users who currently worked around the lack of complex tensors with real tensors
-    of shape $(..., 2)$(...,2)
-    can easily to switch using the complex tensors in their code using [`torch.view_as_complex()`](generated/torch.view_as_complex.html#torch.view_as_complex
+    of shape $(..., 2)$(...,2) can easily to switch using the complex tensors in their
+    code using [`torch.view_as_complex()`](generated/torch.view_as_complex.html#torch.view_as_complex
     "torch.view_as_complex") and [`torch.view_as_real()`](generated/torch.view_as_real.html#torch.view_as_real
     "torch.view_as_real"). Note that these functions don’t perform any copy and return
     a view of the input tensor.
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 目前通过使用形状为$(..., 2)$(...,2)的实数张量绕过缺少复数张量的用户可以轻松地在其代码中使用复数张量切换，使用[`torch.view_as_complex()`](generated/torch.view_as_complex.html#torch.view_as_complex
+    "torch.view_as_complex")和[`torch.view_as_real()`](generated/torch.view_as_real.html#torch.view_as_real
+    "torch.view_as_real")。请注意，这些函数不执行任何复制操作，返回输入张量的视图。
 - en: '[PRE1]'
+  id: totrans-16
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Accessing real and imag
+  id: totrans-17
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 访问real和imag
 - en: The real and imaginary values of a complex tensor can be accessed using the
     `real` and `imag`.
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: 可以使用`real`和`imag`访问复数张量的实部和虚部值。
 - en: Note
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Accessing real and imag attributes doesn’t allocate any memory, and in-place
     updates on the real and imag tensors will update the original complex tensor.
     Also, the returned real and imag tensors are not contiguous.
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 访问real和imag属性不会分配任何内存，并且对real和imag张量的原位更新将更新原始复数张量。此外，返回的real和imag张量不是连续的。
 - en: '[PRE2]'
+  id: totrans-21
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Angle and abs
+  id: totrans-22
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 角度和绝对值
 - en: The angle and absolute values of a complex tensor can be computed using [`torch.angle()`](generated/torch.angle.html#torch.angle
     "torch.angle") and [`torch.abs()`](generated/torch.abs.html#torch.abs "torch.abs").
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 可以使用[`torch.angle()`](generated/torch.angle.html#torch.angle "torch.angle")和[`torch.abs()`](generated/torch.abs.html#torch.abs
+    "torch.abs")计算复数张量的角度和绝对值。
 - en: '[PRE3]'
+  id: totrans-24
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: Linear Algebra
+  id: totrans-25
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 线性代数
 - en: Many linear algebra operations, like [`torch.matmul()`](generated/torch.matmul.html#torch.matmul
     "torch.matmul"), [`torch.linalg.svd()`](generated/torch.linalg.svd.html#torch.linalg.svd
     "torch.linalg.svd"), [`torch.linalg.solve()`](generated/torch.linalg.solve.html#torch.linalg.solve
     "torch.linalg.solve") etc., support complex numbers. If you’d like to request
     an operation we don’t currently support, please [search](https://github.com/pytorch/pytorch/issues?q=is%3Aissue+is%3Aopen+complex)
     if an issue has already been filed and if not, [file one](https://github.com/pytorch/pytorch/issues/new/choose).
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 许多线性代数操作，如[`torch.matmul()`](generated/torch.matmul.html#torch.matmul "torch.matmul")、[`torch.linalg.svd()`](generated/torch.linalg.svd.html#torch.linalg.svd
+    "torch.linalg.svd")、[`torch.linalg.solve()`](generated/torch.linalg.solve.html#torch.linalg.solve
+    "torch.linalg.solve")等，支持复数。如果您想请求我们目前不支持的操作，请[搜索](https://github.com/pytorch/pytorch/issues?q=is%3Aissue+is%3Aopen+complex)是否已经提交了问题，如果没有，请[提交一个](https://github.com/pytorch/pytorch/issues/new/choose)。
 - en: Serialization
+  id: totrans-27
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 序列化
 - en: Complex tensors can be serialized, allowing data to be saved as complex values.
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: 复数张量可以被序列化，允许数据保存为复数值。
 - en: '[PRE4]'
+  id: totrans-29
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: Autograd
+  id: totrans-30
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 自动求导
 - en: PyTorch supports autograd for complex tensors. The gradient computed is the
     Conjugate Wirtinger derivative, the negative of which is precisely the direction
     of steepest descent used in Gradient Descent algorithm. Thus, all the existing
     optimizers work out of the box with complex parameters. For more details, check
     out the note [Autograd for Complex Numbers](notes/autograd.html#complex-autograd-doc).
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch支持复杂张量的自动求导。计算的梯度是共轭Wirtinger导数，其负值恰好是梯度下降算法中使用的最陡下降方向。因此，所有现有的优化器都可以直接与复杂参数一起使用。更多详情，请查看说明[复数的自动求导](notes/autograd.html#complex-autograd-doc)。
 - en: 'We do not fully support the following subsystems:'
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们不完全支持以下子系统：
 - en: Quantization
+  id: totrans-33
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 量化
 - en: JIT
+  id: totrans-34
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 即时编译
 - en: Sparse Tensors
+  id: totrans-35
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 稀疏张量
 - en: Distributed
+  id: totrans-36
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 分布式
 - en: If any of these would help your use case, please [search](https://github.com/pytorch/pytorch/issues?q=is%3Aissue+is%3Aopen+complex)
     if an issue has already been filed and if not, [file one](https://github.com/pytorch/pytorch/issues/new/choose).
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果其中任何一个对您的用例有帮助，请搜索是否已经提交了问题，如果没有，请提交一个。

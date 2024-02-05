@@ -1,95 +1,146 @@
 - en: torch.onnx
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: torch.onnx
 - en: 原文：[https://pytorch.org/docs/stable/onnx.html](https://pytorch.org/docs/stable/onnx.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/docs/stable/onnx.html](https://pytorch.org/docs/stable/onnx.html)
 - en: Overview
+  id: totrans-2
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 概述
 - en: '[Open Neural Network eXchange (ONNX)](https://onnx.ai/) is an open standard
     format for representing machine learning models. The `torch.onnx` module captures
     the computation graph from a native PyTorch [`torch.nn.Module`](generated/torch.nn.Module.html#torch.nn.Module
     "torch.nn.Module") model and converts it into an [ONNX graph](https://github.com/onnx/onnx/blob/main/docs/IR.md).'
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Open Neural Network eXchange (ONNX)](https://onnx.ai/) 是表示机器学习模型的开放标准格式。`torch.onnx`
+    模块从本机 PyTorch [`torch.nn.Module`](generated/torch.nn.Module.html#torch.nn.Module
+    "torch.nn.Module") 模型中捕获计算图，并将其转换为 [ONNX 图](https://github.com/onnx/onnx/blob/main/docs/IR.md)。'
 - en: The exported model can be consumed by any of the many [runtimes that support
     ONNX](https://onnx.ai/supported-tools.html#deployModel), including Microsoft’s
     [ONNX Runtime](https://www.onnxruntime.ai).
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 导出的模型可以被支持 ONNX 的许多 [运行时](https://onnx.ai/supported-tools.html#deployModel)
+    使用，包括微软的 [ONNX Runtime](https://www.onnxruntime.ai)。
 - en: '**There are two flavors of ONNX exporter API that you can use, as listed below:**'
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: '**您可以使用以下两种 ONNX 导出器 API：**'
 - en: TorchDynamo-based ONNX Exporter[](#torchdynamo-based-onnx-exporter "Permalink
     to this heading")
+  id: totrans-6
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 基于 TorchDynamo 的 ONNX 导出器[](#torchdynamo-based-onnx-exporter "跳转到此标题")
 - en: '*The TorchDynamo-based ONNX exporter is the newest (and Beta) exporter for
     PyTorch 2.0 and newer*'
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: '*基于 TorchDynamo 的 ONNX 导出器是 PyTorch 2.0 及更新版本的最新（Beta）导出器*'
 - en: TorchDynamo engine is leveraged to hook into Python’s frame evaluation API and
     dynamically rewrite its bytecode into an FX Graph. The resulting FX Graph is then
     polished before it is finally translated into an ONNX graph.
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: TorchDynamo 引擎被用来钩入 Python 的帧评估 API 并动态重写其字节码为 FX 图。然后，生成的 FX 图在最终转换为 ONNX 图之前被优化。
 - en: The main advantage of this approach is that the [FX graph](https://pytorch.org/docs/stable/fx.html)
     is captured using bytecode analysis that preserves the dynamic nature of the model
     instead of using traditional static tracing techniques.
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 这种方法的主要优势在于，[FX 图](https://pytorch.org/docs/stable/fx.html) 是通过保留模型的动态特性而不是使用传统的静态追踪技术来捕获的。
 - en: '[Learn more about the TorchDynamo-based ONNX Exporter](onnx_dynamo.html)'
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: '[了解基于 TorchDynamo 的 ONNX 导出器](onnx_dynamo.html)'
 - en: TorchScript-based ONNX Exporter[](#torchscript-based-onnx-exporter "Permalink
     to this heading")
+  id: totrans-11
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 基于 TorchScript 的 ONNX 导出器[](#torchscript-based-onnx-exporter "跳转到此标题")
 - en: '*The TorchScript-based ONNX exporter is available since PyTorch 1.2.0*'
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: '*基于 TorchScript 的 ONNX 导出器自 PyTorch 1.2.0 起可用*'
 - en: '[TorchScript](https://pytorch.org/docs/stable/jit.html) is leveraged to trace
     (through [`torch.jit.trace()`](generated/torch.jit.trace.html#torch.jit.trace
     "torch.jit.trace")) the model and capture a static computation graph.'
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: '[TorchScript](https://pytorch.org/docs/stable/jit.html) 被利用来追踪（通过 [`torch.jit.trace()`](generated/torch.jit.trace.html#torch.jit.trace
+    "torch.jit.trace")）模型并捕获静态计算图。'
 - en: 'As a consequence, the resulting graph has a couple limitations:'
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 因此，生成的图有一些限制：
 - en: It does not record any control-flow, like if-statements or loops;
+  id: totrans-15
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 它不记录任何控制流，比如 if 语句或循环；
 - en: Does not handle nuances between `training` and `eval` mode;
+  id: totrans-16
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 不处理 `training` 和 `eval` 模式之间的细微差别；
 - en: Does not truly handle dynamic inputs
+  id: totrans-17
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 不真正处理动态输入
 - en: As an attempt to support the static tracing limitations, the exporter also supports
     TorchScript scripting (through [`torch.jit.script()`](generated/torch.jit.script.html#torch.jit.script
     "torch.jit.script")), which adds support for data-dependent control-flow, for
     example. However, TorchScript itself is a subset of the Python language, so not
     all features in Python are supported, such as in-place operations.
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了支持静态追踪的限制，导出器还支持 TorchScript 脚本化（通过 [`torch.jit.script()`](generated/torch.jit.script.html#torch.jit.script
+    "torch.jit.script")），这增加了对数据相关控制流的支持，例如。然而，TorchScript 本身是 Python 语言的一个子集，因此并不支持
+    Python 中的所有功能，比如原地操作。
 - en: '[Learn more about the TorchScript-based ONNX Exporter](onnx_torchscript.html)'
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: '[了解基于 TorchScript 的 ONNX 导出器](onnx_torchscript.html)'
 - en: Contributing / Developing
+  id: totrans-20
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 贡献 / 开发
 - en: The ONNX exporter is a community project and we welcome contributions. We follow
     the [PyTorch guidelines for contributions](https://github.com/pytorch/pytorch/blob/main/CONTRIBUTING.md),
     but you might also be interested in reading our [development wiki](https://github.com/pytorch/pytorch/wiki/PyTorch-ONNX-exporter).
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: ONNX 导出器是一个社区项目，我们欢迎贡献。我们遵循 [PyTorch 的贡献指南](https://github.com/pytorch/pytorch/blob/main/CONTRIBUTING.md)，但您可能也对阅读我们的
+    [开发维基](https://github.com/pytorch/pytorch/wiki/PyTorch-ONNX-exporter)感兴趣。
