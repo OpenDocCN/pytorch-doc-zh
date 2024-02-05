@@ -1,136 +1,198 @@
 - en: Frequently Asked Questions
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 常见问题
 - en: 原文：[https://pytorch.org/docs/stable/notes/faq.html](https://pytorch.org/docs/stable/notes/faq.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/docs/stable/notes/faq.html](https://pytorch.org/docs/stable/notes/faq.html)
 - en: 'My model reports “cuda runtime error(2): out of memory”[](#my-model-reports-cuda-runtime-error-2-out-of-memory
     "Permalink to this heading")'
+  id: totrans-2
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 我的模型报告“cuda运行时错误(2)：内存不足”[](#my-model-reports-cuda-runtime-error-2-out-of-memory
+    "跳转到此标题的永久链接")
 - en: 'As the error message suggests, you have run out of memory on your GPU. Since
     we often deal with large amounts of data in PyTorch, small mistakes can rapidly
     cause your program to use up all of your GPU; fortunately, the fixes in these
     cases are often simple. Here are a few common things to check:'
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 正如错误消息所示，您的GPU上的内存已耗尽。由于我们在PyTorch中经常处理大量数据，小错误可能迅速导致程序使用完所有GPU的内存；幸运的是，在这些情况下修复通常很简单。以下是一些常见的检查事项：
 - en: '**Don’t accumulate history across your training loop.** By default, computations
     involving variables that require gradients will keep history. This means that
     you should avoid using such variables in computations which will live beyond your
     training loops, e.g., when tracking statistics. Instead, you should detach the
     variable or access its underlying data.'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '**不要在整个训练循环中积累历史。**默认情况下，涉及需要梯度的变量的计算将保留历史记录。这意味着您应该避免在超出训练循环的计算中使用这些变量，例如跟踪统计数据。相反，您应该分离变量或访问其基础数据。'
 - en: 'Sometimes, it can be non-obvious when differentiable variables can occur. Consider
     the following training loop (abridged from [source](https://discuss.pytorch.org/t/high-memory-usage-while-training/162)):'
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 有时，当可微变量出现时，可能并不明显。考虑以下训练循环（摘自[source](https://discuss.pytorch.org/t/high-memory-usage-while-training/162)）：
 - en: '[PRE0]'
+  id: totrans-6
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: Here, `total_loss` is accumulating history across your training loop, since
     `loss` is a differentiable variable with autograd history. You can fix this by
     writing total_loss += float(loss) instead.
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这里，`total_loss`在整个训练循环中积累历史，因为`loss`是一个具有自动求导历史的可微变量。您可以通过编写total_loss += float(loss)来修复这个问题。
 - en: 'Other instances of this problem: [1](https://discuss.pytorch.org/t/resolved-gpu-out-of-memory-error-with-batch-size-1/3719).'
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 此问题的其他实例：[1](https://discuss.pytorch.org/t/resolved-gpu-out-of-memory-error-with-batch-size-1/3719)。
 - en: '**Don’t hold onto tensors and variables you don’t need.** If you assign a Tensor
     or Variable to a local, Python will not deallocate until the local goes out of
     scope. You can free this reference by using `del x`. Similarly, if you assign
     a Tensor or Variable to a member variable of an object, it will not deallocate
     until the object goes out of scope. You will get the best memory usage if you
     don’t hold onto temporaries you don’t need.'
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: '**不要保留不需要的张量和变量。**如果将Tensor或Variable分配给本地变量，Python将不会释放，直到本地变量超出作用域。您可以通过使用`del
+    x`来释放此引用。同样，如果将Tensor或Variable分配给对象的成员变量，直到对象超出作用域，它将不会释放。如果不保留不需要的临时变量，您将获得最佳的内存使用情况。'
 - en: 'The scopes of locals can be larger than you expect. For example:'
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 本地变量的作用域可能比您预期的要大。例如：
 - en: '[PRE1]'
+  id: totrans-11
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Here, `intermediate` remains live even while `h` is executing, because its scope
     extrudes past the end of the loop. To free it earlier, you should `del intermediate`
     when you are done with it.
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这里，`intermediate`即使在`h`执行时仍然存在，因为其作用域延伸到循环结束之后。为了更早释放它，您应该在完成后`del intermediate`。
 - en: '**Avoid running RNNs on sequences that are too large.** The amount of memory
     required to backpropagate through an RNN scales linearly with the length of the
     RNN input; thus, you will run out of memory if you try to feed an RNN a sequence
     that is too long.'
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: '**避免在太大的序列上运行RNN。**通过RNN进行反向传播所需的内存量与RNN输入的长度成线性关系；因此，如果尝试向RNN提供太长的序列，将会耗尽内存。'
 - en: The technical term for this phenomenon is [backpropagation through time](https://en.wikipedia.org/wiki/Backpropagation_through_time),
     and there are plenty of references for how to implement truncated BPTT, including
     in the [word language model](https://github.com/pytorch/examples/tree/master/word_language_model)
     example; truncation is handled by the `repackage` function as described in [this
     forum post](https://discuss.pytorch.org/t/help-clarifying-repackage-hidden-in-word-language-model/226).
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 这种现象的技术术语是[时间反向传播](https://en.wikipedia.org/wiki/Backpropagation_through_time)，有很多关于如何实现截断BPTT的参考资料，包括在[word语言模型](https://github.com/pytorch/examples/tree/master/word_language_model)示例中；截断由`repackage`函数处理，如[this
+    forum post](https://discuss.pytorch.org/t/help-clarifying-repackage-hidden-in-word-language-model/226)中所述。
 - en: '**Don’t use linear layers that are too large.** A linear layer `nn.Linear(m,
-    n)` uses $O(nm)$O(nm)
-    memory: that is to say, the memory requirements of the weights scales quadratically
-    with the number of features. It is very easy to [blow through your memory](https://github.com/pytorch/pytorch/issues/958)
-    this way (and remember that you will need at least twice the size of the weights,
-    since you also need to store the gradients.)'
+    n)` uses $O(nm)$O(nm) memory: that is to say, the memory requirements of the weights
+    scales quadratically with the number of features. It is very easy to [blow through
+    your memory](https://github.com/pytorch/pytorch/issues/958) this way (and remember
+    that you will need at least twice the size of the weights, since you also need
+    to store the gradients.)'
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: '**不要使用太大的线性层。**线性层`nn.Linear(m, n)`使用$O(nm)$O(nm)内存：也就是说，权重的内存需求与特征数量呈二次比例。通过这种方式很容易[耗尽内存](https://github.com/pytorch/pytorch/issues/958)（请记住，您至少需要两倍于权重大小的内存，因为您还需要存储梯度）。'
 - en: '**Consider checkpointing.** You can trade-off memory for compute by using [checkpoint](https://pytorch.org/docs/stable/checkpoint.html).'
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: '**考虑使用检查点。**您可以通过使用[checkpoint](https://pytorch.org/docs/stable/checkpoint.html)来在内存和计算之间进行权衡。'
 - en: My GPU memory isn’t freed properly[](#my-gpu-memory-isn-t-freed-properly "Permalink
     to this heading")
+  id: totrans-17
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 我的GPU内存没有正确释放[](#my-gpu-memory-isn-t-freed-properly "跳转到此标题的永久链接")
 - en: PyTorch uses a caching memory allocator to speed up memory allocations. As a
     result, the values shown in `nvidia-smi` usually don’t reflect the true memory
     usage. See [Memory management](cuda.html#cuda-memory-management) for more details
     about GPU memory management.
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch使用缓存内存分配器来加速内存分配。因此，`nvidia-smi`中显示的值通常不反映真实的内存使用情况。有关GPU内存管理的更多详细信息，请参见[内存管理](cuda.html#cuda-memory-management)。
 - en: If your GPU memory isn’t freed even after Python quits, it is very likely that
     some Python subprocesses are still alive. You may find them via `ps -elf | grep
     python` and manually kill them with `kill -9 [pid]`.
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果即使在Python退出后GPU内存仍未释放，很可能仍有一些Python子进程在运行。您可以通过`ps -elf | grep python`找到它们，并使用`kill
+    -9 [pid]`手动杀死它们。
 - en: My out of memory exception handler can’t allocate memory[](#my-out-of-memory-exception-handler-can-t-allocate-memory
     "Permalink to this heading")
+  id: totrans-20
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 我的内存不足异常处理程序无法分配内存[](#my-out-of-memory-exception-handler-can-t-allocate-memory
+    "跳转到此标题")
 - en: You may have some code that tries to recover from out of memory errors.
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可能有一些代码尝试从内存不足错误中恢复。
 - en: '[PRE2]'
+  id: totrans-22
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: But find that when you do run out of memory, your recovery code can’t allocate
     either. That’s because the python exception object holds a reference to the stack
     frame where the error was raised. Which prevents the original tensor objects from
     being freed. The solution is to move you OOM recovery code outside of the `except`
     clause.
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 但是发现当内存不足时，您的恢复代码也无法分配。这是因为Python异常对象保留了引用到引发错误的堆栈帧。这会阻止原始张量对象被释放。解决方案是将OOM恢复代码移出`except`子句。
 - en: '[PRE3]'
+  id: totrans-24
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: '## My data loader workers return identical random numbers[](#my-data-loader-workers-return-identical-random-numbers
     "Permalink to this heading")'
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: '## 我的数据加载器工作程序返回相同的随机数[](#my-data-loader-workers-return-identical-random-numbers
+    "跳转到此标题")'
 - en: 'You are likely using other libraries to generate random numbers in the dataset
     and worker subprocesses are started via `fork`. See [`torch.utils.data.DataLoader`](../data.html#torch.utils.data.DataLoader
     "torch.utils.data.DataLoader")’s documentation for how to properly set up random
     seeds in workers with its `worker_init_fn` option.  ## My recurrent network doesn’t
     work with data parallelism[](#my-recurrent-network-doesn-t-work-with-data-parallelism
     "Permalink to this heading")'
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可能正在使用其他库在数据集中生成随机数，并且工作程序子进程是通过`fork`启动的。请查看[`torch.utils.data.DataLoader`](../data.html#torch.utils.data.DataLoader
+    "torch.utils.data.DataLoader")的文档，了解如何使用其`worker_init_fn`选项正确设置工作程序中的随机种子。## 我的循环网络无法与数据并行性一起工作[](#my-recurrent-network-doesn-t-work-with-data-parallelism
+    "跳转到此标题")
 - en: 'There is a subtlety in using the `pack sequence -> recurrent network -> unpack
     sequence` pattern in a [`Module`](../generated/torch.nn.Module.html#torch.nn.Module
     "torch.nn.Module") with [`DataParallel`](../generated/torch.nn.DataParallel.html#torch.nn.DataParallel
@@ -143,16 +205,28 @@
     of the `total_length` argument of [`pad_packed_sequence()`](../generated/torch.nn.utils.rnn.pad_packed_sequence.html#torch.nn.utils.rnn.pad_packed_sequence
     "torch.nn.utils.rnn.pad_packed_sequence") to make sure that the `forward()` calls
     return sequences of same length. For example, you can write:'
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 在使用[`Module`](../generated/torch.nn.Module.html#torch.nn.Module "torch.nn.Module")与[`DataParallel`](../generated/torch.nn.DataParallel.html#torch.nn.DataParallel
+    "torch.nn.DataParallel")或[`data_parallel()`](../nn.html#module-torch.nn.parallel.data_parallel
+    "torch.nn.parallel.data_parallel")时，使用`pack sequence -> recurrent network -> unpack
+    sequence`模式存在一个微妙之处。每个设备上的`forward()`的输入只会是整个输入的一部分。因为解包操作[`torch.nn.utils.rnn.pad_packed_sequence()`](../generated/torch.nn.utils.rnn.pad_packed_sequence.html#torch.nn.utils.rnn.pad_packed_sequence
+    "torch.nn.utils.rnn.pad_packed_sequence")默认只填充到它看到的最长输入，即该特定设备上的最长输入，当结果被收集在一起时会发生大小不匹配。因此，您可以利用[`pad_packed_sequence()`](../generated/torch.nn.utils.rnn.pad_packed_sequence.html#torch.nn.utils.rnn.pad_packed_sequence
+    "torch.nn.utils.rnn.pad_packed_sequence")的`total_length`参数，以确保`forward()`调用返回相同长度的序列。例如，您可以编写：
 - en: '[PRE4]'
+  id: totrans-28
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: Additionally, extra care needs to be taken when batch dimension is dim `1` (i.e.,
     `batch_first=False`) with data parallelism. In this case, the first argument of
     pack_padded_sequence `padding_input` will be of shape `[T x B x *]` and should
     be scattered along dim `1`, but the second argument `input_lengths` will be of
     shape `[B]` and should be scattered along dim `0`. Extra code to manipulate the
     tensor shapes will be needed.
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 此外，在批处理维度为`1`（即`batch_first=False`）时，需要特别小心处理数据并行性。在这种情况下，`pack_padded_sequence`的第一个参数`padding_input`的形状将为`[T
+    x B x *]`，应该沿着维度`1`进行分散，但第二个参数`input_lengths`的形状将为`[B]`，应该沿着维度`0`进行分散。需要额外的代码来操作张量形状。

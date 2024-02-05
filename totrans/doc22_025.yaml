@@ -1,131 +1,192 @@
 - en: Serialization semantics
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 序列化语义
 - en: 原文：[https://pytorch.org/docs/stable/notes/serialization.html](https://pytorch.org/docs/stable/notes/serialization.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/docs/stable/notes/serialization.html](https://pytorch.org/docs/stable/notes/serialization.html)
 - en: This note describes how you can save and load PyTorch tensors and module states
     in Python, and how to serialize Python modules so they can be loaded in C++.
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 本说明描述了如何在Python中保存和加载PyTorch张量和模块状态，以及如何序列化Python模块，以便它们可以在C++中加载。
 - en: Table of Contents
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 目录
 - en: '[Serialization semantics](#serialization-semantics)'
+  id: totrans-4
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[序列化语义](#serialization-semantics)'
 - en: '[Saving and loading tensors](#saving-and-loading-tensors)'
+  id: totrans-5
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[保存和加载张量](#saving-and-loading-tensors)'
 - en: '[Saving and loading tensors preserves views](#saving-and-loading-tensors-preserves-views)'
+  id: totrans-6
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[保存和加载张量保留视图](#saving-and-loading-tensors-preserves-views)'
 - en: '[Saving and loading torch.nn.Modules](#saving-and-loading-torch-nn-modules)'
+  id: totrans-7
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[保存和加载torch.nn.Modules](#saving-and-loading-torch-nn-modules)'
 - en: '[Serializing torch.nn.Modules and loading them in C++](#serializing-torch-nn-modules-and-loading-them-in-c)'
+  id: totrans-8
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[序列化torch.nn.Modules并在C++中加载它们](#serializing-torch-nn-modules-and-loading-them-in-c)'
 - en: '[Saving and loading ScriptModules across PyTorch versions](#saving-and-loading-scriptmodules-across-pytorch-versions)'
+  id: totrans-9
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[在不同PyTorch版本中保存和加载ScriptModules](#saving-and-loading-scriptmodules-across-pytorch-versions)'
 - en: '[torch.div performing integer division](#torch-div-performing-integer-division)'
+  id: totrans-10
   prefs:
   - PREF_IND
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[torch.div执行整数除法](#torch-div-performing-integer-division)'
 - en: '[torch.full always inferring a float dtype](#torch-full-always-inferring-a-float-dtype)'
+  id: totrans-11
   prefs:
   - PREF_IND
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[torch.full总是推断为浮点dtype](#torch-full-always-inferring-a-float-dtype)'
 - en: '[Utility functions](#utility-functions)'
+  id: totrans-12
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[实用函数](#utility-functions)'
 - en: '## [Saving and loading tensors](#id3)[](#saving-and-loading-tensors "Permalink
     to this heading")'
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: '## [保存和加载张量](#id3)[](#saving-and-loading-tensors "跳转到此标题")'
 - en: '[`torch.save()`](../generated/torch.save.html#torch.save "torch.save") and
     [`torch.load()`](../generated/torch.load.html#torch.load "torch.load") let you
     easily save and load tensors:'
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`torch.save()`](../generated/torch.save.html#torch.save "torch.save") 和 [`torch.load()`](../generated/torch.load.html#torch.load
+    "torch.load") 让您轻松保存和加载张量：'
 - en: '[PRE0]'
+  id: totrans-15
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: By convention, PyTorch files are typically written with a ‘.pt’ or ‘.pth’ extension.
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 按照惯例，PyTorch文件通常使用‘.pt’或‘.pth’扩展名编写。
 - en: '[`torch.save()`](../generated/torch.save.html#torch.save "torch.save") and
     [`torch.load()`](../generated/torch.load.html#torch.load "torch.load") use Python’s
     pickle by default, so you can also save multiple tensors as part of Python objects
     like tuples, lists, and dicts:'
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`torch.save()`](../generated/torch.save.html#torch.save "torch.save") 和 [`torch.load()`](../generated/torch.load.html#torch.load
+    "torch.load") 默认使用Python的pickle，因此您也可以将多个张量保存为Python对象的一部分，如元组、列表和字典：'
 - en: '[PRE1]'
+  id: totrans-18
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: 'Custom data structures that include PyTorch tensors can also be saved if the
     data structure is pickle-able.  ## [Saving and loading tensors preserves views](#id4)[](#saving-and-loading-tensors-preserves-views
     "Permalink to this heading")'
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果数据结构是可pickle的，那么包含PyTorch张量的自定义数据结构也可以保存。## [保存和加载张量保留视图](#id4)[](#saving-and-loading-tensors-preserves-views
+    "跳转到此标题")
 - en: 'Saving tensors preserves their view relationships:'
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 保存张量保留它们的视图关系：
 - en: '[PRE2]'
+  id: totrans-21
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Behind the scenes, these tensors share the same “storage.” See [Tensor Views](https://pytorch.org/docs/main/tensor_view.html)
     for more on views and storage.
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 在幕后，这些张量共享相同的“存储”。查看[Tensor Views](https://pytorch.org/docs/main/tensor_view.html)了解更多关于视图和存储的信息。
 - en: When PyTorch saves tensors it saves their storage objects and tensor metadata
     separately. This is an implementation detail that may change in the future, but
     it typically saves space and lets PyTorch easily reconstruct the view relationships
     between the loaded tensors. In the above snippet, for example, only a single storage
     is written to ‘tensors.pt’.
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 当PyTorch保存张量时，它会分别保存它们的存储对象和张量元数据。这是一个实现细节，可能会在将来发生变化，但通常可以节省空间，并让PyTorch轻松重建加载的张量之间的视图关系。例如，在上面的代码片段中，只有一个存储被写入到‘tensors.pt’中。
 - en: 'In some cases, however, saving the current storage objects may be unnecessary
     and create prohibitively large files. In the following snippet a storage much
     larger than the saved tensor is written to a file:'
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 然而，在某些情况下，保存当前存储对象可能是不必要的，并且会创建过大的文件。在下面的代码片段中，一个比保存的张量大得多的存储被写入到文件中：
 - en: '[PRE3]'
+  id: totrans-25
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: Instead of saving only the five values in the small tensor to ‘small.pt,’ the
     999 values in the storage it shares with large were saved and loaded.
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 与仅将小张量中的五个值保存到‘small.pt’不同，它与large共享的存储中的999个值被保存和加载。
 - en: 'When saving tensors with fewer elements than their storage objects, the size
     of the saved file can be reduced by first cloning the tensors. Cloning a tensor
     produces a new tensor with a new storage object containing only the values in
     the tensor:'
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 当保存具有比其存储对象更少元素的张量时，可以通过首先克隆张量来减小保存文件的大小。克隆张量会产生一个新的张量，其中包含张量中的值的新存储对象：
 - en: '[PRE4]'
+  id: totrans-28
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: 'Since the cloned tensors are independent of each other, however, they have
     none of the view relationships the original tensors did. If both file size and
     view relationships are important when saving tensors smaller than their storage
@@ -133,48 +194,75 @@
     of their storage objects but still have the desired view relationships before
     saving.  ## [Saving and loading torch.nn.Modules](#id5)[](#saving-and-loading-torch-nn-modules
     "Permalink to this heading")'
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 然而，由于克隆的张量彼此独立，它们没有原始张量的视图关系。如果在保存比其存储对象小的张量时，文件大小和视图关系都很重要，则必须小心构建新张量，以最小化其存储对象的大小，但仍具有所需的视图关系后再保存。##
+    [保存和加载torch.nn.Modules](#id5)[](#saving-and-loading-torch-nn-modules "跳转到此标题")
 - en: 'See also: [Tutorial: Saving and loading modules](https://pytorch.org/tutorials/beginner/saving_loading_models.html)'
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 参见：[教程：保存和加载模块](https://pytorch.org/tutorials/beginner/saving_loading_models.html)
 - en: 'In PyTorch, a module’s state is frequently serialized using a ‘state dict.’
     A module’s state dict contains all of its parameters and persistent buffers:'
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: 在PyTorch中，模块的状态经常使用‘state dict’进行序列化。模块的状态字典包含所有参数和持久缓冲区：
 - en: '[PRE5]'
+  id: totrans-32
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: 'Instead of saving a module directly, for compatibility reasons it is recommended
     to instead save only its state dict. Python modules even have a function, [`load_state_dict()`](../generated/torch.nn.Module.html#torch.nn.Module.load_state_dict
     "torch.nn.Module.load_state_dict"), to restore their states from a state dict:'
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了兼容性的原因，建议不直接保存模块，而是只保存其状态字典。Python模块甚至有一个函数[`load_state_dict()`](../generated/torch.nn.Module.html#torch.nn.Module.load_state_dict
+    "torch.nn.Module.load_state_dict")，可以从状态字典中恢复它们的状态：
 - en: '[PRE6]'
+  id: totrans-34
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: Note that the state dict is first loaded from its file with [`torch.load()`](../generated/torch.load.html#torch.load
     "torch.load") and the state then restored with [`load_state_dict()`](../generated/torch.nn.Module.html#torch.nn.Module.load_state_dict
     "torch.nn.Module.load_state_dict").
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，状态字典首先使用[`torch.load()`](../generated/torch.load.html#torch.load "torch.load")从文件中加载，然后使用[`load_state_dict()`](../generated/torch.nn.Module.html#torch.nn.Module.load_state_dict
+    "torch.nn.Module.load_state_dict")恢复状态。
 - en: 'Even custom modules and modules containing other modules have state dicts and
     can use this pattern:'
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 即使是自定义模块和包含其他模块的模块也有状态字典，并且可以使用这种模式：
 - en: '[PRE7]  ## [Serializing torch.nn.Modules and loading them in C++](#id6)[](#serializing-torch-nn-modules-and-loading-them-in-c
     "Permalink to this heading")'
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: '[PRE7]  ## [序列化torch.nn.Modules并在C++中加载它们](#id6)[](#serializing-torch-nn-modules-and-loading-them-in-c
+    "跳转到此标题")'
 - en: 'See also: [Tutorial: Loading a TorchScript Model in C++](https://pytorch.org/tutorials/advanced/cpp_export.html)'
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 另请参阅：[教程：在C++中加载TorchScript模型](https://pytorch.org/tutorials/advanced/cpp_export.html)
 - en: ScriptModules can be serialized as a TorchScript program and loaded using [`torch.jit.load()`](../generated/torch.jit.load.html#torch.jit.load
     "torch.jit.load"). This serialization encodes all the modules’ methods, submodules,
     parameters, and attributes, and it allows the serialized program to be loaded
     in C++ (i.e. without Python).
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: ScriptModules可以被序列化为TorchScript程序，并使用[`torch.jit.load()`](../generated/torch.jit.load.html#torch.jit.load
+    "torch.jit.load")加载。这种序列化编码了所有模块的方法、子模块、参数和属性，并允许在C++中加载序列化的程序（即不需要Python）。
 - en: The distinction between [`torch.jit.save()`](../generated/torch.jit.save.html#torch.jit.save
     "torch.jit.save") and [`torch.save()`](../generated/torch.save.html#torch.save
     "torch.save") may not be immediately clear. [`torch.save()`](../generated/torch.save.html#torch.save
@@ -184,41 +272,65 @@
     can be loaded in Python or C++. This is useful when saving and loading C++ modules
     or for running modules trained in Python with C++, a common practice when deploying
     PyTorch models.
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`torch.jit.save()`](../generated/torch.jit.save.html#torch.jit.save "torch.jit.save")和[`torch.save()`](../generated/torch.save.html#torch.save
+    "torch.save")之间的区别可能不是立即清楚的。[`torch.save()`](../generated/torch.save.html#torch.save
+    "torch.save")使用pickle保存Python对象。这对于原型设计、研究和训练特别有用。另一方面，[`torch.jit.save()`](../generated/torch.jit.save.html#torch.jit.save
+    "torch.jit.save")将ScriptModules序列化为可以在Python或C++中加载的格式。这在保存和加载C++模块或在C++中运行在Python中训练的模块时非常有用，这是部署PyTorch模型时的常见做法。'
 - en: 'To script, serialize and load a module in Python:'
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 要在Python中脚本化、序列化和加载模块：
 - en: '[PRE8]'
+  id: totrans-42
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: 'Traced modules can also be saved with [`torch.jit.save()`](../generated/torch.jit.save.html#torch.jit.save
     "torch.jit.save"), with the caveat that only the traced code path is serialized.
     The following example demonstrates this:'
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: 跟踪模块也可以使用[`torch.jit.save()`](../generated/torch.jit.save.html#torch.jit.save
+    "torch.jit.save")保存，但要注意只有跟踪的代码路径被序列化。以下示例演示了这一点：
 - en: '[PRE9]'
+  id: totrans-44
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: The above module has an if statement that is not triggered by the traced inputs,
     and so is not part of the traced module and not serialized with it. The scripted
     module, however, contains the if statement and is serialized with it. See the
     [TorchScript documentation](https://pytorch.org/docs/stable/jit.html) for more
     on scripting and tracing.
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: 上述模块有一个if语句，不会被跟踪的输入触发，因此不是跟踪的模块的一部分，也不会与之一起序列化。然而，脚本化模块包含if语句，并与之一起序列化。有关脚本化和跟踪的更多信息，请参阅[TorchScript文档](https://pytorch.org/docs/stable/jit.html)。
 - en: 'Finally, to load the module in C++:'
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 最后，在C++中加载模块：
 - en: '[PRE10]'
+  id: totrans-47
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: 'See the [PyTorch C++ API documentation](https://pytorch.org/cppdocs/) for details
     about how to use PyTorch modules in C++.  ## [Saving and loading ScriptModules
     across PyTorch versions](#id7)[](#saving-and-loading-scriptmodules-across-pytorch-versions
     "Permalink to this heading")'
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: 有关如何在C++中使用PyTorch模块的详细信息，请参阅[PyTorch C++ API文档](https://pytorch.org/cppdocs/)。##
+    [在PyTorch版本间保存和加载ScriptModules](#id7)[](#saving-and-loading-scriptmodules-across-pytorch-versions
+    "跳转到此标题")
 - en: The PyTorch Team recommends saving and loading modules with the same version
     of PyTorch. Older versions of PyTorch may not support newer modules, and newer
     versions may have removed or modified older behavior. These changes are explicitly
@@ -226,28 +338,42 @@
     and modules relying on functionality that has changed may need to be updated to
     continue working properly. In limited cases, detailed below, PyTorch will preserve
     the historic behavior of serialized ScriptModules so they do not require an update.
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch团队建议使用相同版本的PyTorch保存和加载模块。较旧版本的PyTorch可能不支持较新的模块，而较新版本可能已删除或修改了较旧的行为。这些更改在PyTorch的[发布说明](https://github.com/pytorch/pytorch/releases)中有明确描述，依赖已更改功能的模块可能需要更新才能继续正常工作。在有限的情况下，如下所述，PyTorch将保留序列化ScriptModules的历史行为，因此它们不需要更新。
 - en: '[torch.div performing integer division](#id8)[](#torch-div-performing-integer-division
     "Permalink to this heading")'
+  id: totrans-50
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: '[torch.div执行整数除法](#id8)[](#torch-div-performing-integer-division "跳转到此标题")'
 - en: 'In PyTorch 1.5 and earlier [`torch.div()`](../generated/torch.div.html#torch.div
     "torch.div") would perform floor division when given two integer inputs:'
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
+  zh: 在PyTorch 1.5及更早版本中，当给定两个整数输入时，[`torch.div()`](../generated/torch.div.html#torch.div
+    "torch.div")将执行地板除法：
 - en: '[PRE11]'
+  id: totrans-52
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: 'In PyTorch 1.7, however, [`torch.div()`](../generated/torch.div.html#torch.div
     "torch.div") will always perform a true division of its inputs, just like division
     in Python 3:'
+  id: totrans-53
   prefs: []
   type: TYPE_NORMAL
+  zh: 然而，在PyTorch 1.7中，[`torch.div()`](../generated/torch.div.html#torch.div "torch.div")将始终执行其输入的真除法，就像Python
+    3中的除法一样：
 - en: '[PRE12]'
+  id: totrans-54
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: The behavior of [`torch.div()`](../generated/torch.div.html#torch.div "torch.div")
     is preserved in serialized ScriptModules. That is, ScriptModules serialized with
     versions of PyTorch before 1.6 will continue to see [`torch.div()`](../generated/torch.div.html#torch.div
@@ -256,68 +382,104 @@
     "torch.div") and serialized on PyTorch 1.6 and later cannot be loaded in earlier
     versions of PyTorch, however, since those earlier versions do not understand the
     new behavior.
+  id: totrans-55
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`torch.div()`](../generated/torch.div.html#torch.div "torch.div")的行为在序列化的ScriptModules中得到保留。也就是说，使用PyTorch
+    1.6之前版本序列化的ScriptModules将继续看到当给定两个整数输入时，[`torch.div()`](../generated/torch.div.html#torch.div
+    "torch.div")执行地板除法，即使在较新版本的PyTorch中加载时也是如此。然而，使用[`torch.div()`](../generated/torch.div.html#torch.div
+    "torch.div")并在PyTorch 1.6及更高版本上序列化的ScriptModules无法在较早版本的PyTorch中加载，因为这些较早版本不理解新的行为。'
 - en: '[torch.full always inferring a float dtype](#id9)[](#torch-full-always-inferring-a-float-dtype
     "Permalink to this heading")'
+  id: totrans-56
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: '[torch.full总是推断浮点数据类型](#id9)[](#torch-full-always-inferring-a-float-dtype "跳转到此标题的永久链接")'
 - en: 'In PyTorch 1.5 and earlier [`torch.full()`](../generated/torch.full.html#torch.full
     "torch.full") always returned a float tensor, regardless of the fill value it’s
     given:'
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: 在PyTorch 1.5及更早版本中，[`torch.full()`](../generated/torch.full.html#torch.full
+    "torch.full")始终返回一个浮点张量，而不管给定的填充值是什么：
 - en: '[PRE13]'
+  id: totrans-58
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: 'In PyTorch 1.7, however, [`torch.full()`](../generated/torch.full.html#torch.full
     "torch.full") will infer the returned tensor’s dtype from the fill value:'
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: 然而，在PyTorch 1.7中，[`torch.full()`](../generated/torch.full.html#torch.full "torch.full")将从填充值推断返回的张量的数据类型：
 - en: '[PRE14]'
+  id: totrans-60
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: 'The behavior of [`torch.full()`](../generated/torch.full.html#torch.full "torch.full")
     is preserved in serialized ScriptModules. That is, ScriptModules serialized with
     versions of PyTorch before 1.6 will continue to see torch.full return float tensors
     by default, even when given bool or integer fill values. ScriptModules using [`torch.full()`](../generated/torch.full.html#torch.full
     "torch.full") and serialized on PyTorch 1.6 and later cannot be loaded in earlier
     versions of PyTorch, however, since those earlier versions do not understand the
-    new behavior.  ## [Utility functions](#id10)[](#utility-functions "Permalink
-    to this heading")'
+    new behavior.  ## [Utility functions](#id10)[](#utility-functions "Permalink to
+    this heading")'
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`torch.full()`](../generated/torch.full.html#torch.full "torch.full")的行为在序列化的ScriptModules中得到保留。也就是说，使用PyTorch
+    1.6之前版本序列化的ScriptModules将继续看到torch.full默认返回浮点张量，即使给定布尔或整数填充值。然而，使用[`torch.full()`](../generated/torch.full.html#torch.full
+    "torch.full")并在PyTorch 1.6及更高版本上序列化的ScriptModules无法在较早版本的PyTorch中加载，因为这些较早版本不理解新的行为。##
+    [实用函数](#id10)[](#utility-functions "跳转到此标题的永久链接")'
 - en: 'The following utility functions are related to serialization:'
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下实用函数与序列化相关：
 - en: '[PRE15]'
+  id: totrans-63
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: Registers callables for tagging and deserializing storage objects with an associated
     priority. Tagging associates a device with a storage object at save time while
     deserializing moves a storage object to an appropriate device at load time. `tagger`
     and `deserializer` are run in the order given by their `priority` until a tagger/deserializer
     returns a value that is not None.
+  id: totrans-64
   prefs: []
   type: TYPE_NORMAL
+  zh: 为标记和反序列化存储对象注册可调用对象，并附带优先级。标记在保存时将设备与存储对象关联，而在加载时反序列化将存储对象移动到适当的设备上。`tagger`和`deserializer`按照它们的`priority`给出的顺序运行，直到一个标记器/反序列化器返回一个不是None的值。
 - en: To override the deserialization behavior for a device in the global registry,
     one can register a tagger with a higher priority than the existing tagger.
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: 要覆盖全局注册表中设备的反序列化行为，可以注册一个优先级高于现有标记器的标记器。
 - en: This function can also be used to register a tagger and deserializer for new
     devices.
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: 此函数还可用于为新设备注册标记器和反序列化器。
 - en: Parameters
+  id: totrans-67
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**priority** ([*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")) – Indicates the priority associated with the tagger and
     deserializer, where a lower value indicates higher priority.'
+  id: totrans-68
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**priority**（[*int*](https://docs.python.org/3/library/functions.html#int "(在Python
+    v3.12)")）– 指示与标记器和反序列化器相关联的优先级，其中较低的值表示较高的优先级。'
 - en: '**tagger** ([*Callable*](https://docs.python.org/3/library/typing.html#typing.Callable
     "(in Python v3.12)")*[**[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
     "(in Python v3.12)")*[**Storage**,* [*TypedStorage*](../storage.html#torch.TypedStorage
@@ -326,9 +488,17 @@
     "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)")*]**]*) – Callable that takes in a storage object and returns
     its tagged device as a string or None.'
+  id: totrans-69
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**tagger**（[*Callable*](https://docs.python.org/3/library/typing.html#typing.Callable
+    "(在Python v3.12)")*[**[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(在Python v3.12)")*[**Storage**,* [*TypedStorage*](../storage.html#torch.TypedStorage
+    "torch.storage.TypedStorage")*,* [*UntypedStorage*](../storage.html#torch.UntypedStorage
+    "torch.storage.UntypedStorage")*]**]**,* [*Optional*](https://docs.python.org/3/library/typing.html#typing.Optional
+    "(在Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(在Python v3.12)")*]**]*) – 接受存储对象并返回其标记设备的可调用对象，返回字符串或None。'
 - en: '**deserializer** ([*Callable*](https://docs.python.org/3/library/typing.html#typing.Callable
     "(in Python v3.12)")*[**[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
     "(in Python v3.12)")*[**Storage**,* [*TypedStorage*](../storage.html#torch.TypedStorage
@@ -341,56 +511,91 @@
     "torch.storage.UntypedStorage")*]**]**]*) – Callable that takes in storage object
     and a device string and returns a storage object on the appropriate device or
     None.'
+  id: totrans-70
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: deserializer（Callable）[Union[Storage, TypedStorage, UntypedStorage], str] [Optional[Union[Storage,
+    TypedStorage, UntypedStorage]]] - 接受存储对象和设备字符串并返回适当设备上的存储对象或None的可调用函数。
 - en: Returns
+  id: totrans-71
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回
 - en: None
+  id: totrans-72
   prefs: []
   type: TYPE_NORMAL
+  zh: 无
 - en: Example
+  id: totrans-73
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例
 - en: '[PRE16]'
+  id: totrans-74
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: '[PRE17]'
+  id: totrans-75
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: Get fallback byte order for loading files
+  id: totrans-76
   prefs: []
   type: TYPE_NORMAL
+  zh: 获取用于加载文件的回退字节顺序
 - en: If byteorder mark is not present in saved checkpoint, this byte order is used
     as fallback. By default, it’s “native” byte order.
+  id: totrans-77
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果保存的检查点中不存在字节顺序标记，则将使用此字节顺序作为回退。默认情况下是“本机”字节顺序。
 - en: Returns
+  id: totrans-78
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回
 - en: Optional[LoadEndianness]
+  id: totrans-79
   prefs: []
   type: TYPE_NORMAL
+  zh: Optional[LoadEndianness]
 - en: Return type
+  id: totrans-80
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: default_load_endian
+  id: totrans-81
   prefs: []
   type: TYPE_NORMAL
+  zh: default_load_endian
 - en: '[PRE18]'
+  id: totrans-82
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: Set fallback byte order for loading files
+  id: totrans-83
   prefs: []
   type: TYPE_NORMAL
+  zh: 设置用于加载文件的回退字节顺序
 - en: If byteorder mark is not present in saved checkpoint, this byte order is used
     as fallback. By default, it’s “native” byte order.
+  id: totrans-84
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果保存的检查点中不存在字节顺序标记，则将使用此字节顺序作为回退。默认情况下是“本机”字节顺序。
 - en: Parameters
+  id: totrans-85
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**endianness** – the new fallback byte order'
+  id: totrans-86
   prefs: []
   type: TYPE_NORMAL
+  zh: endianness - 新的回退字节顺序

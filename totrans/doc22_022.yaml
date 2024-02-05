@@ -1,22 +1,33 @@
 - en: Multiprocessing best practices
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 多进程最佳实践
 - en: 原文：[https://pytorch.org/docs/stable/notes/multiprocessing.html](https://pytorch.org/docs/stable/notes/multiprocessing.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/docs/stable/notes/multiprocessing.html](https://pytorch.org/docs/stable/notes/multiprocessing.html)
 - en: '[`torch.multiprocessing`](../multiprocessing.html#module-torch.multiprocessing
     "torch.multiprocessing") is a drop in replacement for Python’s [`multiprocessing`](https://docs.python.org/3/library/multiprocessing.html#module-multiprocessing
     "(in Python v3.12)") module. It supports the exact same operations, but extends
     it, so that all tensors sent through a [`multiprocessing.Queue`](https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Queue
     "(in Python v3.12)"), will have their data moved into shared memory and will only
     send a handle to another process.'
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`torch.multiprocessing`](../multiprocessing.html#module-torch.multiprocessing
+    "torch.multiprocessing")是Python的[`multiprocessing`](https://docs.python.org/3/library/multiprocessing.html#module-multiprocessing
+    "(在Python v3.12中)")模块的一个替代品。它支持完全相同的操作，但扩展了它，使得通过[`multiprocessing.Queue`](https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Queue
+    "(在Python v3.12中)")发送的所有张量的数据都会移动到共享内存中，并且只会发送一个句柄给另一个进程。'
 - en: Note
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: When a [`Tensor`](../tensors.html#torch.Tensor "torch.Tensor") is sent to another
     process, the [`Tensor`](../tensors.html#torch.Tensor "torch.Tensor") data is shared.
     If [`torch.Tensor.grad`](../generated/torch.Tensor.grad.html#torch.Tensor.grad
@@ -26,26 +37,43 @@
     process-specific `.grad` [`Tensor`](../tensors.html#torch.Tensor "torch.Tensor")
     that is not automatically shared across all processes, unlike how the [`Tensor`](../tensors.html#torch.Tensor
     "torch.Tensor")’s data has been shared.
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 当一个[`Tensor`](../tensors.html#torch.Tensor "torch.Tensor")被发送到另一个进程时，[`Tensor`](../tensors.html#torch.Tensor
+    "torch.Tensor")的数据是共享的。如果[`torch.Tensor.grad`](../generated/torch.Tensor.grad.html#torch.Tensor.grad
+    "torch.Tensor.grad")不是`None`，它也是共享的。在将一个没有[`torch.Tensor.grad`](../generated/torch.Tensor.grad.html#torch.Tensor.grad
+    "torch.Tensor.grad")字段的[`Tensor`](../tensors.html#torch.Tensor "torch.Tensor")发送到另一个进程后，它会创建一个标准的进程特定的`.grad`
+    [`Tensor`](../tensors.html#torch.Tensor "torch.Tensor")，这个`.grad` [`Tensor`](../tensors.html#torch.Tensor
+    "torch.Tensor")不会自动在所有进程之间共享，不像[`Tensor`](../tensors.html#torch.Tensor "torch.Tensor")的数据已经被共享了。
 - en: This allows to implement various training methods, like Hogwild, A3C, or any
     others that require asynchronous operation.
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 这允许实现各种训练方法，如Hogwild、A3C或其他需要异步操作的方法。
 - en: '## CUDA in multiprocessing'
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: '## 多进程中的CUDA'
 - en: The CUDA runtime does not support the `fork` start method; either the `spawn`
     or `forkserver` start method are required to use CUDA in subprocesses.
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: CUDA运行时不支持`fork`启动方法；在子进程中使用CUDA需要`spawn`或`forkserver`启动方法。
 - en: Note
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: The start method can be set via either creating a context with `multiprocessing.get_context(...)`
     or directly using `multiprocessing.set_start_method(...)`.
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 启动方法可以通过创建一个上下文`multiprocessing.get_context(...)`或直接使用`multiprocessing.set_start_method(...)`来设置。
 - en: Unlike CPU tensors, the sending process is required to keep the original tensor
     as long as the receiving process retains a copy of the tensor. It is implemented
     under the hood but requires users to follow the best practices for the program
@@ -53,21 +81,29 @@
     the consumer process has references to the tensor, and the refcounting can not
     save you if the consumer process exits abnormally via a fatal signal. See [this
     section](../multiprocessing.html#multiprocessing-cuda-sharing-details).
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 与CPU张量不同，发送进程需要保留原始张量，只要接收进程保留了张量的副本。这是在底层实现的，但需要用户遵循程序正确运行的最佳实践。例如，发送进程必须保持活动状态，只要消费者进程引用了张量，如果消费者进程通过致命信号异常退出，引用计数无法帮助您。请参阅[此部分](../multiprocessing.html#multiprocessing-cuda-sharing-details)。
 - en: 'See also: [Use nn.parallel.DistributedDataParallel instead of multiprocessing
     or nn.DataParallel](cuda.html#cuda-nn-ddp-instead)'
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 另请参阅：[使用nn.parallel.DistributedDataParallel代替multiprocessing或nn.DataParallel](cuda.html#cuda-nn-ddp-instead)
 - en: Best practices and tips
+  id: totrans-12
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 最佳实践和提示
 - en: Avoiding and fighting deadlocks[](#avoiding-and-fighting-deadlocks "Permalink
     to this heading")
+  id: totrans-13
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 避免和解决死锁[](#avoiding-and-fighting-deadlocks "跳转到此标题")
 - en: There are a lot of things that can go wrong when a new process is spawned, with
     the most common cause of deadlocks being background threads. If there’s any thread
     that holds a lock or imports a module, and `fork` is called, it’s very likely
@@ -79,19 +115,28 @@
     used to serialize, send and receive objects, and they can cause aforementioned
     problems too. If you find yourself in such situation try using a `SimpleQueue`,
     that doesn’t use any additional threads.
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 当生成一个新进程时，有很多事情可能会出错，最常见的死锁原因是后台线程。如果有任何持有锁或导入模块的线程，并且调用了`fork`，那么子进程很可能处于损坏状态，并且会发生死锁或以不同方式失败。请注意，即使您没有，Python内置库也会
+    - 不需要查看比[`multiprocessing`](https://docs.python.org/3/library/multiprocessing.html#module-multiprocessing
+    "(在Python v3.12中)")更远的地方。[`multiprocessing.Queue`](https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Queue
+    "(在Python v3.12中)")实际上是一个非常复杂的类，它生成多个线程用于序列化、发送和接收对象，它们也可能引起上述问题。如果您发现自己处于这种情况，请尝试使用`SimpleQueue`，它不使用任何额外的线程。
 - en: We’re trying our best to make it easy for you and ensure these deadlocks don’t
     happen but some things are out of our control. If you have any issues you can’t
     cope with for a while, try reaching out on forums, and we’ll see if it’s an issue
     we can fix.
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们正在尽力让您轻松使用，并确保这些死锁不会发生，但有些事情超出我们的控制。如果您遇到无法解决的问题，请尝试在论坛上寻求帮助，我们会看看是否可以解决。
 - en: Reuse buffers passed through a Queue[](#reuse-buffers-passed-through-a-queue
     "Permalink to this heading")
+  id: totrans-16
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 通过队列传递的缓冲区[](#reuse-buffers-passed-through-a-queue "跳转到此标题")
 - en: Remember that each time you put a [`Tensor`](../tensors.html#torch.Tensor "torch.Tensor")
     into a [`multiprocessing.Queue`](https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Queue
     "(in Python v3.12)"), it has to be moved into shared memory. If it’s already shared,
@@ -99,133 +144,192 @@
     down the whole process. Even if you have a pool of processes sending data to a
     single one, make it send the buffers back - this is nearly free and will let you
     avoid a copy when sending next batch.
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 请记住，每次将[`Tensor`](../tensors.html#torch.Tensor "torch.Tensor")放入[`multiprocessing.Queue`](https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Queue
+    "(在Python v3.12中)")时，它必须被移动到共享内存中。如果已经是共享的，则不会执行任何操作，否则将产生额外的内存复制，可能会减慢整个过程的速度。即使您有一组进程向单个进程发送数据，也要让它发送缓冲区回来
+    - 这几乎是免费的，并且可以避免在发送下一批数据时进行复制。
 - en: Asynchronous multiprocess training (e.g. Hogwild)[](#asynchronous-multiprocess-training-e-g-hogwild
     "Permalink to this heading")
+  id: totrans-18
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 异步多进程训练（例如Hogwild）[](#asynchronous-multiprocess-training-e-g-hogwild "跳转到此标题")
 - en: Using [`torch.multiprocessing`](../multiprocessing.html#module-torch.multiprocessing
     "torch.multiprocessing"), it is possible to train a model asynchronously, with
     parameters either shared all the time, or being periodically synchronized. In
     the first case, we recommend sending over the whole model object, while in the
     latter, we advise to only send the [`state_dict()`](../generated/torch.nn.Module.html#torch.nn.Module.state_dict
     "torch.nn.Module.state_dict").
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用[`torch.multiprocessing`](../multiprocessing.html#module-torch.multiprocessing
+    "torch.multiprocessing")，可以异步训练模型，参数可以始终共享，或者定期同步。在第一种情况下，我们建议发送整个模型对象，而在后一种情况下，我们建议只发送[`state_dict()`](../generated/torch.nn.Module.html#torch.nn.Module.state_dict
+    "torch.nn.Module.state_dict")。
 - en: We recommend using [`multiprocessing.Queue`](https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Queue
     "(in Python v3.12)") for passing all kinds of PyTorch objects between processes.
     It is possible to e.g. inherit the tensors and storages already in shared memory,
     when using the `fork` start method, however it is very bug prone and should be
     used with care, and only by advanced users. Queues, even though they’re sometimes
     a less elegant solution, will work properly in all cases.
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们建议使用[`multiprocessing.Queue`](https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Queue
+    "(在Python v3.12中)")来在进程之间传递各种PyTorch对象。例如，当使用`fork`启动方法时，可以继承已经在共享内存中的张量和存储，但这很容易出错，应谨慎使用，仅供高级用户使用。队列，即使它们有时不够优雅，也会在所有情况下正常工作。
 - en: Warning
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: You should be careful about having global statements, that are not guarded with
     an `if __name__ == '__main__'`. If a different start method than `fork` is used,
     they will be executed in all subprocesses.
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 您应该注意全局语句，如果没有用`if __name__ == '__main__'`保护，它们将在所有子进程中执行。
 - en: Hogwild
+  id: totrans-23
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: Hogwild
 - en: 'A concrete Hogwild implementation can be found in the [examples repository](https://github.com/pytorch/examples/tree/master/mnist_hogwild),
     but to showcase the overall structure of the code, there’s also a minimal example
     below as well:'
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 在[示例存储库](https://github.com/pytorch/examples/tree/master/mnist_hogwild)中可以找到一个具体的Hogwild实现，但为了展示代码的整体结构，下面也有一个最小示例：
 - en: '[PRE0]'
+  id: totrans-25
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: CPU in multiprocessing
+  id: totrans-26
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 多进程中的CPU
 - en: Inappropriate multiprocessing can lead to CPU oversubscription, causing different
     processes to compete for CPU resources, resulting in low efficiency.
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 不当的多进程可能导致CPU过度订阅，导致不同进程竞争CPU资源，导致效率低下。
 - en: This tutorial will explain what CPU oversubscription is and how to avoid it.
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程将解释什么是CPU过度订阅以及如何避免它。
 - en: CPU oversubscription
+  id: totrans-29
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: CPU过度订阅
 - en: CPU oversubscription is a technical term that refers to a situation where the
     total number of vCPUs allocated to a system exceeds the total number of vCPUs
     available on the hardware.
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: CPU过度订阅是一个技术术语，指的是分配给系统的虚拟CPU总数超过硬件上可用的虚拟CPU总数的情况。
 - en: This leads to severe contention for CPU resources. In such cases, there is frequent
     switching between processes, which increases processes switching overhead and
     decreases overall system efficiency.
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: 这会导致CPU资源的严重争用。在这种情况下，进程之间频繁切换，增加了进程切换开销，降低了整个系统的效率。
 - en: See CPU oversubscription with the code examples in the Hogwild implementation
     found in the [example repository](https://github.com/pytorch/examples/tree/main/mnist_hogwild).
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 在[Hogwild实现](https://github.com/pytorch/examples/tree/main/mnist_hogwild)中的代码示例中查看CPU过度订阅。
 - en: 'When running the training example with the following command on CPU using 4
     processes:'
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: 在CPU上使用4个进程运行以下命令的训练示例：
 - en: '[PRE1]'
+  id: totrans-34
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Assuming there are N vCPUs available on the machine, executing the above command
     will generate 4 subprocesses. Each subprocess will allocate N vCPUs for itself,
     resulting in a requirement of 4*N vCPUs. However, the machine only has N vCPUs
     available. Consequently, the different processes will compete for resources, leading
     to frequent process switching.
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 假设机器上有N个虚拟CPU可用，执行上述命令将生成4个子进程。每个子进程将为自己分配N个虚拟CPU，导致需要4*N个虚拟CPU。然而，机器上只有N个虚拟CPU可用。因此，不同的进程将竞争资源，导致频繁的进程切换。
 - en: 'The following observations indicate the presence of CPU over subscription:'
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下观察结果表明存在CPU过度订阅：
 - en: 'High CPU Utilization: By using the `htop` command, you can observe that the
     CPU utilization is consistently high, often reaching or exceeding its maximum
     capacity. This indicates that the demand for CPU resources exceeds the available
     physical cores, causing contention and competition among processes for CPU time.'
+  id: totrans-37
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 高CPU利用率：通过使用`htop`命令，您可以观察到CPU利用率始终很高，经常达到或超过其最大容量。这表明对CPU资源的需求超过了可用的物理核心，导致进程之间的争用和竞争。
 - en: 'Frequent Context Switching with Low System Efficiency: In an oversubscribed
     CPU scenario, processes compete for CPU time, and the operating system needs to
     rapidly switch between different processes to allocate resources fairly. This
     frequent context switching adds overhead and reduces the overall system efficiency.'
+  id: totrans-38
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 低系统效率下的频繁上下文切换：在CPU过度订阅的情况下，进程竞争CPU时间，操作系统需要快速在不同进程之间切换以公平分配资源。这种频繁的上下文切换会增加开销并降低整个系统的效率。
 - en: Avoid CPU oversubscription[](#avoid-cpu-oversubscription "Permalink to this
     heading")
+  id: totrans-39
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 避免CPU过度订阅
 - en: A good way to avoid CPU oversubscription is proper resource allocation. Ensure
     that the number of processes or threads running concurrently does not exceed the
     available CPU resources.
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: 避免CPU过度订阅的一个好方法是适当的资源分配。确保同时运行的进程或线程数量不超过可用的CPU资源。
 - en: In this case, a solution would be to specify the appropriate number of threads
     in the subprocesses. This can be achieved by setting the number of threads for
     each process using the `torch.set_num_threads(int)` function in subprocess.
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这种情况下，一个解决方案是在子进程中指定适当数量的线程。这可以通过在子进程中使用`torch.set_num_threads(int)`函数为每个进程设置线程数来实现。
 - en: Assuming there are N vCPUs on the machine and M processes will be generated,
     the maximum `num_threads` value used by each process would be `floor(N/M)`. To
     avoid CPU oversubscription in the mnist_hogwild example, the following changes
     are needed for the file `train.py` in [example repository](https://github.com/pytorch/examples/tree/main/mnist_hogwild).
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 假设机器上有N个虚拟CPU，并且将生成M个进程，每个进程使用的最大`num_threads`值将为`floor(N/M)`。为了避免在mnist_hogwild示例中出现CPU过度订阅，需要对[示例存储库](https://github.com/pytorch/examples/tree/main/mnist_hogwild)中的`train.py`文件进行以下更改。
 - en: '[PRE2]'
+  id: totrans-43
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Set `num_thread` for each process using `torch.set_num_threads(floor(N/M))`.
     where you replace N with the number of vCPUs available and M with the chosen number
     of processes. The appropriate `num_thread` value will vary depending on the specific
@@ -233,5 +337,7 @@
     should be `floor(N/M)` to avoid CPU oversubscription. In the [mnist_hogwild](https://github.com/pytorch/examples/tree/main/mnist_hogwild)
     training example, after avoiding CPU over subscription, you can achieve a 30x
     performance boost.
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用`torch.set_num_threads(floor(N/M))`为每个进程设置`num_thread`。其中，将N替换为可用的虚拟CPU数量，将M替换为选择的进程数量。适当的`num_thread`值将根据手头的具体任务而变化。然而，作为一般准则，`num_thread`的最大值应为`floor(N/M)`，以避免CPU过度订阅。在[mnist_hogwild](https://github.com/pytorch/examples/tree/main/mnist_hogwild)训练示例中，在避免CPU过度订阅后，您可以实现30倍的性能提升。

@@ -1,11 +1,15 @@
 - en: Numerical accuracy
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 数值精度
 - en: 原文：[https://pytorch.org/docs/stable/notes/numerical_accuracy.html](https://pytorch.org/docs/stable/notes/numerical_accuracy.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/docs/stable/notes/numerical_accuracy.html](https://pytorch.org/docs/stable/notes/numerical_accuracy.html)
 - en: In modern computers, floating point numbers are represented using IEEE 754 standard.
     For more details on floating point arithmetics and IEEE 754 standard, please see
     [Floating point arithmetic](https://en.wikipedia.org/wiki/Floating-point_arithmetic)
@@ -19,13 +23,17 @@
     commits, or different platforms. In particular, CPU and GPU results can be different
     even for bitwise-identical inputs and even after controlling for the sources of
     randomness.
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 在现代计算机中，浮点数使用IEEE 754标准表示。有关浮点运算和IEEE 754标准的更多详细信息，请参见[浮点运算](https://en.wikipedia.org/wiki/Floating-point_arithmetic)。特别要注意的是，浮点提供有限的精度（单精度浮点数约为7位小数，双精度浮点数约为16位小数），浮点加法和乘法不是结合的，因此操作的顺序会影响结果。因此，PyTorch不能保证对于数学上相同的浮点计算产生按位相同的结果。同样，即使在控制随机源后，PyTorch发布、单个提交或不同平台之间也不能保证按位相同的结果。特别是，即使输入按位相同，CPU和GPU的结果也可能不同。
 - en: Batched computations or slice computations[](#batched-computations-or-slice-computations
     "Permalink to this heading")
+  id: totrans-3
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 批处理计算或切片计算[](#batched-computations-or-slice-computations "跳转到此标题")
 - en: Many operations in PyTorch support batched computation, where the same operation
     is performed for the elements of the batches of inputs. An example of this is
     [`torch.mm()`](../generated/torch.mm.html#torch.mm "torch.mm") and [`torch.bmm()`](../generated/torch.bmm.html#torch.bmm
@@ -39,52 +47,76 @@
     Then `(A@B)[0]` (the first element of the batched result) is not guaranteed to
     be bitwise identical to `A[0]@B[0]` (the matrix product of the first elements
     of the input batches) even though mathematically it’s an identical computation.
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch中的许多操作支持批处理计算，其中对输入批次的元素执行相同的操作。一个例子是[`torch.mm()`](../generated/torch.mm.html#torch.mm
+    "torch.mm")和[`torch.bmm()`](../generated/torch.bmm.html#torch.bmm "torch.bmm")。可以将批处理计算实现为对批处理元素的循环，并对各个批处理元素应用必要的数学操作，出于效率原因，我们没有这样做，通常对整个批次进行计算。在这种情况下，我们调用的数学库和PyTorch内部操作的实现可能与非批处理计算产生略有不同的结果。特别是，设`A`和`B`为适合批处理矩阵乘法的三维张量。那么`(A@B)[0]`（批处理结果的第一个元素）不能保证与`A[0]@B[0]`（输入批次的第一个元素的矩阵乘积）按位相同，尽管在数学上它是相同的计算。
 - en: Similarly, an operation applied to a tensor slice is not guaranteed to produce
     results that are identical to the slice of the result of the same operation applied
     to the full tensor. E.g. let `A` be a 2-dimensional tensor. `A.sum(-1)[0]` is
     not guaranteed to be bitwise equal to `A[:,0].sum()`.
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 类似地，对张量切片应用的操作不能保证产生与对完整张量应用相同操作的结果切片相同。例如，设`A`为一个二维张量。`A.sum(-1)[0]`不能保证与`A[:,0].sum()`按位相等。
 - en: Extremal values
+  id: totrans-6
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 极端值
 - en: 'When inputs contain large values such that intermediate results may overflow
     the range of the used datatype, the end result may overflow too, even though it
     is representable in the original datatype. E.g.:'
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 当输入包含大值，使得中间结果可能溢出所使用数据类型的范围时，最终结果也可能溢出，即使它在原始数据类型中是可表示的。例如：
 - en: '[PRE0]'
+  id: totrans-8
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: '## Linear algebra (`torch.linalg`)[](#linear-algebra-torch-linalg "Permalink
     to this heading")'
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: '## 线性代数（`torch.linalg`）[](#linear-algebra-torch-linalg "跳转到此标题")'
 - en: Non-finite values
+  id: totrans-10
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 非有限值
 - en: The external libraries (backends) that `torch.linalg` uses provide no guarantees
     on their behaviour when the inputs have non-finite values like `inf` or `NaN`.
     As such, neither does PyTorch. The operations may return a tensor with non-finite
     values, or raise an exception, or even segfault.
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: '`torch.linalg` 使用的外部库（后端）在输入具有非有限值（如`inf`或`NaN`）时不提供其行为的任何保证。因此，PyTorch 也不提供。这些操作可能返回一个带有非有限值的张量，或引发异常，甚至导致段错误。'
 - en: Consider using [`torch.isfinite()`](../generated/torch.isfinite.html#torch.isfinite
     "torch.isfinite") before calling these functions to detect this situation.
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: 在调用这些函数之前考虑使用[`torch.isfinite()`](../generated/torch.isfinite.html#torch.isfinite
+    "torch.isfinite")来检测这种情况。
 - en: Extremal values in linalg
+  id: totrans-13
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: linalg中的极端值
 - en: Functions within `torch.linalg` have more [Extremal Values](#extremal-values)
     than other PyTorch functions.
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: '`torch.linalg` 中的函数比其他PyTorch函数具有更多的[极端值](#extremal-values)。'
 - en: '[Solvers](../linalg.html#linalg-solvers) and [Inverses](../linalg.html#linalg-inverses)
     assume that the input matrix `A` is invertible. If it is close to being non-invertible
     (for example, if it has a very small singular value), then these algorithms may
@@ -92,26 +124,37 @@
     If provided with ill-conditioned inputs, the result of these functions they may
     vary when using the same inputs on different devices or when using different backends
     via the keyword `driver`.'
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: '[求解器](../linalg.html#linalg-solvers)和[逆矩阵](../linalg.html#linalg-inverses)假设输入矩阵`A`是可逆的。如果它接近不可逆（例如，如果它具有非常小的奇异值），那么这些算法可能会悄悄返回不正确的结果。这些矩阵被称为[病态矩阵](https://nhigham.com/2020/03/19/what-is-a-condition-number/)。如果提供了病态输入，这些函数的结果可能会因在不同设备上使用相同输入或通过关键字`driver`使用不同后端而有所不同。'
 - en: Spectral operations like `svd`, `eig`, and `eigh` may also return incorrect
     results (and their gradients may be infinite) when their inputs have singular
     values that are close to each other. This is because the algorithms used to compute
     these decompositions struggle to converge for these inputs.
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 像`svd`、`eig`和`eigh`这样的谱操作在它们的输入具有接近的奇异值时也可能返回不正确的结果（它们的梯度可能是无穷大的）。这是因为用于计算这些分解的算法在这些输入上很难收敛。
 - en: Running the computation in `float64` (as NumPy does by default) often helps,
     but it does not solve these issues in all cases. Analyzing the spectrum of the
     inputs via [`torch.linalg.svdvals()`](../generated/torch.linalg.svdvals.html#torch.linalg.svdvals
     "torch.linalg.svdvals") or their condition number via [`torch.linalg.cond()`](../generated/torch.linalg.cond.html#torch.linalg.cond
     "torch.linalg.cond") may help to detect these issues.
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 以`float64`（默认情况下NumPy所做的）运行计算通常有所帮助，但并不总是解决所有问题。通过[`torch.linalg.svdvals()`](../generated/torch.linalg.svdvals.html#torch.linalg.svdvals
+    "torch.linalg.svdvals")分析输入的频谱或通过[`torch.linalg.cond()`](../generated/torch.linalg.cond.html#torch.linalg.cond
+    "torch.linalg.cond")分析它们的条件数可能有助于检测这些问题。
 - en: TensorFloat-32(TF32) on Nvidia Ampere (and later) devices[](#tensorfloat-32-tf32-on-nvidia-ampere-and-later-devices
     "Permalink to this heading")
+  id: totrans-18
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: Nvidia Ampere（以及之后）设备上的TensorFloat-32（TF32）[](#tensorfloat-32-tf32-on-nvidia-ampere-and-later-devices
+    "跳转到此标题的永久链接")
 - en: On Ampere (and later) Nvidia GPUs, PyTorch can use TensorFloat32 (TF32) to speed
     up mathematically intensive operations, in particular matrix multiplications and
     convolutions. When an operation is performed using TF32 tensor cores, only the
@@ -125,16 +168,24 @@
     full float32 precision. If your network needs full float32 precision for both
     matrix multiplications and convolutions, then TF32 tensor cores can also be disabled
     for convolutions with `torch.backends.cudnn.allow_tf32 = False`.
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 在Ampere（以及之后）的Nvidia GPU上，PyTorch可以使用TensorFloat32（TF32）来加速数学密集型操作，特别是矩阵乘法和卷积。当使用TF32张量核心执行操作时，只读取输入尾数的前10位。这可能会降低精度并产生令人惊讶的结果（例如，将矩阵乘以单位矩阵可能会产生与输入不同的结果）。默认情况下，TF32张量核心在矩阵乘法中被禁用，并在卷积中启用，尽管大多数神经网络工作负载在使用TF32时具有与fp32相同的收敛行为。如果您的网络不需要完整的float32精度，我们建议通过`torch.backends.cuda.matmul.allow_tf32
+    = True`启用TF32张量核心进行矩阵乘法。如果您的网络在矩阵乘法和卷积中都需要完整的float32精度，则可以通过`torch.backends.cudnn.allow_tf32
+    = False`禁用卷积的TF32张量核心。
 - en: For more information see [TensorFloat32](cuda.html#tf32-on-ampere).
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 有关更多信息，请参阅[TensorFloat32](cuda.html#tf32-on-ampere)。
 - en: Reduced Precision Reduction for FP16 and BF16 GEMMs[](#reduced-precision-reduction-for-fp16-and-bf16-gemms
     "Permalink to this heading")
+  id: totrans-21
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: FP16和BF16 GEMM的降低精度[](#reduced-precision-reduction-for-fp16-and-bf16-gemms "跳转到此标题的永久链接")
 - en: Half-precision GEMM operations are typically done with intermediate accumulations
     (reduction) in single-precision for numerical accuracy and improved resilience
     to overflow. For performance, certain GPU architectures, especially more recent
@@ -144,38 +195,55 @@
     `inf` values when the final result should be be representable in half-precision).
     If reduced-precision reductions are problematic, they can be turned off with `torch.backends.cuda.matmul.allow_fp16_reduced_precision_reduction
     = False`
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 半精度GEMM操作通常使用单精度进行中间累积（降低）以提高数值精度和对溢出的抵抗力。为了性能，某些GPU架构，特别是较新的架构，允许将中间累积结果截断为降低精度（例如，半精度）。从模型收敛的角度来看，这种变化通常是良性的，尽管它可能导致意外的结果（例如，当最终结果应该在半精度中表示时出现`inf`值）。如果降低精度的降低造成问题，可以通过`torch.backends.cuda.matmul.allow_fp16_reduced_precision_reduction
+    = False`关闭。
 - en: A similar flag exists for BF16 GEMM operations and is turned on by default.
     If BF16 reduced-precision reductions are problematic, they can be turned off with
     `torch.backends.cuda.matmul.allow_bf16_reduced_precision_reduction = False`
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: BF16 GEMM操作也有类似的标志，默认情况下是打开的。如果BF16降低精度造成问题，可以通过`torch.backends.cuda.matmul.allow_bf16_reduced_precision_reduction
+    = False`关闭。
 - en: For more information see [allow_fp16_reduced_precision_reduction](cuda.html#fp16reducedprecision)
     and [allow_bf16_reduced_precision_reduction](cuda.html#bf16reducedprecision)
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 有关更多信息，请参阅[allow_fp16_reduced_precision_reduction](cuda.html#fp16reducedprecision)和[allow_bf16_reduced_precision_reduction](cuda.html#bf16reducedprecision)
 - en: '## Reduced Precision FP16 and BF16 GEMMs and Convolutions on AMD Instinct MI200
     devices[](#reduced-precision-fp16-and-bf16-gemms-and-convolutions-on-amd-instinct-mi200-devices
     "Permalink to this heading")'
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: '## 在AMD Instinct MI200设备上降低精度的FP16和BF16 GEMMs和卷积[](#reduced-precision-fp16-and-bf16-gemms-and-convolutions-on-amd-instinct-mi200-devices
+    "跳转到此标题的永久链接")'
 - en: On AMD Instinct MI200 GPUs, the FP16 and BF16 V_DOT2 and MFMA matrix instructions
     flush input and output denormal values to zero. FP32 and FP64 MFMA matrix instructions
     do not flush input and output denormal values to zero. The affected instructions
     are only used by rocBLAS (GEMM) and MIOpen (convolution) kernels; all other PyTorch
     operations will not encounter this behavior. All other supported AMD GPUs will
     not encounter this behavior.
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 在AMD Instinct MI200 GPU上，FP16和BF16 V_DOT2和MFMA矩阵指令会将输入和输出的非规范化值刷新为零。FP32和FP64
+    MFMA矩阵指令不会将输入和输出的非规范化值刷新为零。受影响的指令仅由rocBLAS（GEMM）和MIOpen（卷积）内核使用；所有其他PyTorch操作不会遇到这种行为。所有其他支持的AMD
+    GPU不会遇到这种行为。
 - en: rocBLAS and MIOpen provide alternate implementations for affected FP16 operations.
     Alternate implementations for BF16 operations are not provided; BF16 numbers have
     a larger dynamic range than FP16 numbers and are less likely to encounter denormal
     values. For the FP16 alternate implementations, FP16 input values are cast to
     an intermediate BF16 value and then cast back to FP16 output after the accumulate
     FP32 operations. In this way, the input and output types are unchanged.
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: rocBLAS和MIOpen为受影响的FP16操作提供了替代实现。不提供BF16操作的替代实现；BF16数字的动态范围比FP16数字大，不太可能遇到非规范化值。对于FP16替代实现，FP16输入值被转换为中间BF16值，然后在累积FP32操作后转换回FP16输出。通过这种方式，输入和输出类型保持不变。
 - en: 'When training using FP16 precision, some models may fail to converge with FP16
     denorms flushed to zero. Denormal values more frequently occur in the backward
     pass of training during gradient calculation. PyTorch by default will use the
@@ -183,109 +251,163 @@
     behavior can be overridden using environment variables, ROCBLAS_INTERNAL_FP16_ALT_IMPL
     and MIOPEN_DEBUG_CONVOLUTION_ATTRIB_FP16_ALT_IMPL. The behavior of these environment
     variables is as follows:'
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: 在使用FP16精度训练时，一些模型可能无法收敛，因为FP16 denorms被刷新为零。在训练的反向传播过程中，梯度计算过程中更频繁地出现非规范化值。PyTorch默认会在反向传播过程中使用rocBLAS和MIOpen的替代实现。可以使用环境变量ROCBLAS_INTERNAL_FP16_ALT_IMPL和MIOPEN_DEBUG_CONVOLUTION_ATTRIB_FP16_ALT_IMPL来覆盖默认行为。这些环境变量的行为如下：
 - en: '|  | forward | backward |'
+  id: totrans-29
   prefs: []
   type: TYPE_TB
+  zh: '|  | 前向 | 反向 |'
 - en: '| --- | --- | --- |'
+  id: totrans-30
   prefs: []
   type: TYPE_TB
+  zh: '| --- | --- | --- |'
 - en: '| Env unset | original | alternate |'
+  id: totrans-31
   prefs: []
   type: TYPE_TB
+  zh: '| 环境取消设置 | 原始 | 替代 |'
 - en: '| Env set to 1 | alternate | alternate |'
+  id: totrans-32
   prefs: []
   type: TYPE_TB
+  zh: '| 环境设置为1 | 替代 | 替代 |'
 - en: '| Env set to 0 | original | original |'
+  id: totrans-33
   prefs: []
   type: TYPE_TB
+  zh: '| 环境设置为0 | 原始 | 原始 |'
 - en: 'The following is the list of operations where rocBLAS may be used:'
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下是可能使用rocBLAS的操作列表：
 - en: torch.addbmm
+  id: totrans-35
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: torch.addbmm
 - en: torch.addmm
+  id: totrans-36
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: torch.addmm
 - en: torch.baddbmm
+  id: totrans-37
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: torch.baddbmm
 - en: torch.bmm
+  id: totrans-38
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: torch.bmm
 - en: torch.mm
+  id: totrans-39
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: torch.mm
 - en: torch.nn.GRUCell
+  id: totrans-40
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: torch.nn.GRUCell
 - en: torch.nn.LSTMCell
+  id: totrans-41
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: torch.nn.LSTMCell
 - en: torch.nn.Linear
+  id: totrans-42
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: torch.nn.Linear
 - en: torch.sparse.addmm
+  id: totrans-43
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: torch.sparse.addmm
 - en: 'the following torch._C._ConvBackend implementations:'
+  id: totrans-44
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 以下是torch._C._ConvBackend实现列表：
 - en: slowNd
+  id: totrans-45
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: slowNd
 - en: slowNd_transposed
+  id: totrans-46
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: slowNd_transposed
 - en: slowNd_dilated
+  id: totrans-47
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: slowNd_dilated
 - en: slowNd_dilated_transposed
+  id: totrans-48
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: slowNd_dilated_transposed
 - en: 'The following is the list of operations where MIOpen may be used:'
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下是可能使用MIOpen的操作列表：
 - en: torch.nn.Conv[Transpose]Nd
+  id: totrans-50
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: torch.nn.Conv[Transpose]Nd
 - en: 'the following torch._C._ConvBackend implementations:'
+  id: totrans-51
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 以下是torch._C._ConvBackend实现列表：
 - en: ConvBackend::Miopen
+  id: totrans-52
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: ConvBackend::Miopen
 - en: ConvBackend::MiopenDepthwise
+  id: totrans-53
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: ConvBackend::MiopenDepthwise
 - en: ConvBackend::MiopenTranspose
+  id: totrans-54
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: ConvBackend::MiopenTranspose

@@ -1,134 +1,166 @@
 - en: Gradcheck mechanics
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: Gradcheck机制
 - en: 原文：[https://pytorch.org/docs/stable/notes/gradcheck.html](https://pytorch.org/docs/stable/notes/gradcheck.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: '[https://pytorch.org/docs/stable/notes/gradcheck.html](https://pytorch.org/docs/stable/notes/gradcheck.html)'
 - en: This note presents an overview of how the [`gradcheck()`](../autograd.html#module-torch.autograd.gradcheck
     "torch.autograd.gradcheck") and `gradgradcheck()` functions work.
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 本说明概述了[`gradcheck()`](../autograd.html#module-torch.autograd.gradcheck)和`gradgradcheck()`函数的工作原理。
 - en: It will cover both forward and backward mode AD for both real and complex-valued
     functions as well as higher-order derivatives. This note also covers both the
     default behavior of gradcheck as well as the case where `fast_mode=True` argument
     is passed (referred to as fast gradcheck below).
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 它将涵盖实数和复数值函数的前向和反向模式AD，以及高阶导数。本说明还涵盖了gradcheck的默认行为以及传递`fast_mode=True`参数的情况（以下简称为快速gradcheck）。
 - en: '[Notations and background information](#notations-and-background-information)'
+  id: totrans-4
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[符号和背景信息]'
 - en: '[Default backward mode gradcheck behavior](#default-backward-mode-gradcheck-behavior)'
+  id: totrans-5
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[默认的反向模式gradcheck行为]'
 - en: '[Real-to-real functions](#real-to-real-functions)'
+  id: totrans-6
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[实数到实数函数]'
 - en: '[Complex-to-real functions](#complex-to-real-functions)'
+  id: totrans-7
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[复数到实数函数]'
 - en: '[Functions with complex outputs](#functions-with-complex-outputs)'
+  id: totrans-8
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[具有复数输出的函数]'
 - en: '[Fast backward mode gradcheck](#fast-backward-mode-gradcheck)'
+  id: totrans-9
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[快速反向模式gradcheck]'
 - en: '[Fast gradcheck for real-to-real functions](#fast-gradcheck-for-real-to-real-functions)'
+  id: totrans-10
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[实数到实数函数的快速gradcheck]'
 - en: '[Fast gradcheck for complex-to-real functions](#fast-gradcheck-for-complex-to-real-functions)'
+  id: totrans-11
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[复数到实数函数的快速gradcheck]'
 - en: '[Fast gradcheck for functions with complex outputs](#fast-gradcheck-for-functions-with-complex-outputs)'
+  id: totrans-12
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[具有复数输出的函数的快速gradcheck]'
 - en: '[Gradgradcheck implementation](#gradgradcheck-implementation)'
+  id: totrans-13
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[Gradgradcheck实现]'
 - en: '[Notations and background information](#id2)[](#notations-and-background-information
     "Permalink to this heading")'
+  id: totrans-14
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: '[符号和背景信息]'
 - en: 'Throughout this note, we will use the following convention:'
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
-- en: $x$x,
-    $y$y,
-    $a$a,
-    $b$b,
-    $v$v,
-    $u$u,
-    $ur$ur
-    and $ui$ui
-    are real-valued vectors and $z$z is a complex-valued
-    vector that can be rewritten in terms of two real-valued vectors as $z = a + i b$z=a+ib.
+  zh: 在本说明中，我们将使用以下约定：
+- en: $x$x, $y$y, $a$a, $b$b, $v$v, $u$u, $ur$ur and $ui$ui are real-valued vectors
+    and $z$z is a complex-valued vector that can be rewritten in terms of two real-valued
+    vectors as $z = a + i b$z=a+ib.
+  id: totrans-16
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
-- en: $N$N
-    and $M$M
-    are two integers that we will use for the dimension of the input and output space
-    respectively.
+  zh: $x$、$y$、$a$、$b$、$v$、$u$、$ur$和$ui$是实值向量，$z$是一个复值向量，可以用两个实值向量重新表示为$z = a + i b$。
+- en: $N$N and $M$M are two integers that we will use for the dimension of the input
+    and output space respectively.
+  id: totrans-17
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
-- en: '$f:
-    \mathcal{R}^N \to \mathcal{R}^M$f:RN→RM is our
-    basic real-to-real function such that $y = f(x)$y=f(x).'
+  zh: $N$和$M$是我们将用于输入和输出空间的维度的两个整数。
+- en: '$f: \mathcal{R}^N \to \mathcal{R}^M$f:RN→RM is our basic real-to-real function
+    such that $y = f(x)$y=f(x).'
+  id: totrans-18
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
-- en: '$g:
-    \mathcal{C}^N \to \mathcal{R}^M$g:CN→RM is our
-    basic complex-to-real function such that $y = g(z)$y=g(z).'
+  zh: '$f: \mathcal{R}^N \to \mathcal{R}^M$是我们的基本实数到实数函数，使得$y = f(x)$。'
+- en: '$g: \mathcal{C}^N \to \mathcal{R}^M$g:CN→RM is our basic complex-to-real function
+    such that $y = g(z)$y=g(z).'
+  id: totrans-19
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
-- en: For the simple real-to-real case, we write as $J_f$Jf​ the Jacobian
-    matrix associated with $f$f
-    of size $M \times N$M×N. This
-    matrix contains all the partial derivatives such that the entry at position $(i, j)$(i,j) contains
-    $\frac{\partial y_i}{\partial x_j}$∂xj​∂yi​​.
-    Backward mode AD is then computing, for a given vector $v$v of size $M$M, the quantity
-    $v^T J_f$vTJf​. Forward
-    mode AD on the other hand is computing, for a given vector $u$u of size $N$N, the quantity
-    $J_f u$Jf​u.
+  zh: '$g: \mathcal{C}^N \to \mathcal{R}^M$是我们的基本复数到实数函数，使得$y = g(z)$。'
+- en: For the simple real-to-real case, we write as $J_f$Jf​ the Jacobian matrix associated
+    with $f$f of size $M \times N$M×N. This matrix contains all the partial derivatives
+    such that the entry at position $(i, j)$(i,j) contains $\frac{\partial y_i}{\partial
+    x_j}$∂xj​∂yi​​. Backward mode AD is then computing, for a given vector $v$v of
+    size $M$M, the quantity $v^T J_f$vTJf​. Forward mode AD on the other hand is computing,
+    for a given vector $u$u of size $N$N, the quantity $J_f u$Jf​u.
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于简单的实数到实数情况，我们将与$f$相关的雅可比矩阵记为$J_f$，大小为$M \times N$。这个矩阵包含所有偏导数，使得位置$(i, j)$处的条目包含$\frac{\partial
+    y_i}{\partial x_j}$。然后，反向模式AD计算给定大小为$M$的向量$v$的数量$v^T J_f$。另一方面，前向模式AD计算给定大小为$N$的向量$u$的数量$J_f
+    u$。
 - en: For functions that contain complex values, the story is a lot more complex.
     We only provide the gist here and the full description can be found at [Autograd
     for Complex Numbers](autograd.html#complex-autograd-doc).
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于包含复数值的函数，情况要复杂得多。我们这里只提供概要，完整描述可以在[复数数值的Autograd](autograd.html#complex-autograd-doc)中找到。
 - en: The constraints to satisfy complex differentiability (Cauchy-Riemann equations)
     are too restrictive for all real-valued loss functions, so we instead opted to
     use Wirtinger calculus. In a basic setting of Wirtinger calculus, the chain rule
-    requires access to both the Wirtinger derivative (called $W$W below) and the
-    Conjugate Wirtinger derivative (called $CW$CW below). Both
-    $W$W
-    and $CW$CW
-    need to be propagated because in general, despite their name, one is not the complex
-    conjugate of the other.
+    requires access to both the Wirtinger derivative (called $W$W below) and the Conjugate
+    Wirtinger derivative (called $CW$CW below). Both $W$W and $CW$CW need to be propagated
+    because in general, despite their name, one is not the complex conjugate of the
+    other.
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 满足复数可微性（柯西-黎曼方程）的约束对于所有实值损失函数来说太过严格，因此我们选择使用Wirtinger微积分。在Wirtinger微积分的基本设置中，链式法则要求同时访问Wirtinger导数（以下称为$W$）和共轭Wirtinger导数（以下称为$CW$）。由于一般情况下，尽管它们的名称如此，但$W$和$CW$都需要传播，因为它们不是彼此的复共轭。
 - en: To avoid having to propagate both values, for backward mode AD, we always work
     under the assumption that the function whose derivative is being calculated is
     either a real-valued function or is part of a bigger real-valued function. This
@@ -136,361 +168,476 @@
     pass are also associated with real-valued functions. In practice, this assumption
     is not restrictive when doing optimization as such problem require real-valued
     objectives (as there is no natural ordering of the complex numbers).
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
-- en: Under this assumption, using $W$W and $CW$CW definitions,
-    we can show that $W = CW^*$W=CW∗ (we
-    use $*$∗
-    to denote complex conjugation here) and so only one of the two values actually
-    need to be “backwarded through the graph” as the other one can easily be recovered.
-    To simplify internal computations, PyTorch uses $2 * CW$2∗CW as the
-    value it backwards and returns when the user asks for gradients. Similarly to
-    the real case, when the output is actually in $\mathcal{R}^M$RM,
-    backward mode AD does not compute $2 * CW$2∗CW but only
-    $v^T (2
-    * CW)$vT(2∗CW) for a given vector $v
-    \in \mathcal{R}^M$v∈RM.
+  zh: 为了避免传播两个值，对于反向模式AD，我们总是假设正在计算导数的函数要么是实值函数，要么是更大的实值函数的一部分。这个假设意味着我们在反向传递过程中计算的所有中间梯度也与实值函数相关联。在实践中，当进行优化时，这个假设并不具限制性，因为这样的问题需要实值目标（复数之间没有自然的排序）。
+- en: Under this assumption, using $W$W and $CW$CW definitions, we can show that $W
+    = CW^*$W=CW∗ (we use $*$∗ to denote complex conjugation here) and so only one
+    of the two values actually need to be “backwarded through the graph” as the other
+    one can easily be recovered. To simplify internal computations, PyTorch uses $2
+    * CW$2∗CW as the value it backwards and returns when the user asks for gradients.
+    Similarly to the real case, when the output is actually in $\mathcal{R}^M$RM,
+    backward mode AD does not compute $2 * CW$2∗CW but only $v^T (2 * CW)$vT(2∗CW)
+    for a given vector $v \in \mathcal{R}^M$v∈RM.
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这种假设下，使用$W$和$CW$的定义，我们可以展示$W = CW^*$，因此只需要“通过图形向后传递”两个值中的一个，另一个可以轻松恢复。为了简化内部计算，PyTorch使用$2
+    * CW$作为向后传递和用户请求梯度时返回的值。类似于实数情况，当输出实际上在$\mathcal{R}^M$时，反向模式AD不会计算$2 * CW$，而只会计算$v^T
+    (2 * CW)$，其中$v \in \mathcal{R}^M$。
 - en: For forward mode AD, we use a similar logic, in this case, assuming that the
-    function is part of a larger function whose input is in $\mathcal{R}$R.
-    Under this assumption, we can make a similar claim that every intermediary result
-    corresponds to a function whose input is in $\mathcal{R}$R and
-    in this case, using $W$W
-    and $CW$CW
-    definitions, we can show that $W = CW$W=CW for the
-    intermediary functions. To make sure the forward and backward mode compute the
-    same quantities in the elementary case of a one dimensional function, the forward
-    mode also computes $2 * CW$2∗CW. Similarly
-    to the real case, when the input is actually in $\mathcal{R}^N$RN,
-    forward mode AD does not compute $2 * CW$2∗CW but only
-    $(2
-    * CW) u$(2∗CW)u for a given vector $u
-    \in \mathcal{R}^N$u∈RN.
+    function is part of a larger function whose input is in $\mathcal{R}$R. Under
+    this assumption, we can make a similar claim that every intermediary result corresponds
+    to a function whose input is in $\mathcal{R}$R and in this case, using $W$W and
+    $CW$CW definitions, we can show that $W = CW$W=CW for the intermediary functions.
+    To make sure the forward and backward mode compute the same quantities in the
+    elementary case of a one dimensional function, the forward mode also computes
+    $2 * CW$2∗CW. Similarly to the real case, when the input is actually in $\mathcal{R}^N$RN,
+    forward mode AD does not compute $2 * CW$2∗CW but only $(2 * CW) u$(2∗CW)u for
+    a given vector $u \in \mathcal{R}^N$u∈RN.
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于前向模式AD，我们使用类似的逻辑，假设函数是更大函数的一部分，其输入在$\mathcal{R}$中。在这种假设下，我们可以做出类似的声明，即每个中间结果对应于一个输入在$\mathcal{R}$中的函数，并且在这种情况下，使用$W$和$CW$的定义，我们可以展示中间函数的$W
+    = CW$。为了确保前向和后向模式在一维函数的基本情况下计算相同的量，前向模式还计算$2 * CW$。类似于实数情况，当输入实际上在$\mathcal{R}^N$时，前向模式AD不会计算$2
+    * CW$，而只会计算$(2 * CW) u$，其中$u \in \mathcal{R}^N$。
 - en: '[Default backward mode gradcheck behavior](#id3)[](#default-backward-mode-gradcheck-behavior
     "Permalink to this heading")'
+  id: totrans-26
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: '[默认反向模式gradcheck行为](#id3)'
 - en: '[Real-to-real functions](#id4)[](#real-to-real-functions "Permalink to this
     heading")'
+  id: totrans-27
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: '[实数到实数函数](#id4)'
 - en: 'To test a function $f: \mathcal{R}^N \to \mathcal{R}^M, x \to y$f:RN→RM,x→y,
-    we reconstruct the full Jacobian matrix $J_f$Jf​ of size $M \times N$M×N in
-    two ways: analytically and numerically. The analytical version uses our backward
-    mode AD while the numerical version uses finite difference. The two reconstructed
-    Jacobian matrices are then compared elementwise for equality.'
+    we reconstruct the full Jacobian matrix $J_f$Jf​ of size $M \times N$M×N in two
+    ways: analytically and numerically. The analytical version uses our backward mode
+    AD while the numerical version uses finite difference. The two reconstructed Jacobian
+    matrices are then compared elementwise for equality.'
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: '为了测试一个函数$f: \mathcal{R}^N \to \mathcal{R}^M, x \to y$，我们以两种方式重建大小为$M \times
+    N$的完整雅可比矩阵$J_f$：分析和数值。分析版本使用我们的反向模式AD，而数值版本使用有限差分。然后，逐个元素比较这两个重建的雅可比矩阵是否相等。'
 - en: Default real input numerical evaluation[](#default-real-input-numerical-evaluation
     "Permalink to this heading")
+  id: totrans-29
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
-- en: 'If we consider the elementary case of a one-dimensional function ($N = M = 1$N=M=1),
-    then we can use the basic finite difference formula from [the wikipedia article](https://en.wikipedia.org/wiki/Finite_difference).
-    We use the “central difference” for better numerical properties:'
+  zh: 默认实数输入数值评估
+- en: 'If we consider the elementary case of a one-dimensional function ($N = M =
+    1$N=M=1), then we can use the basic finite difference formula from [the wikipedia
+    article](https://en.wikipedia.org/wiki/Finite_difference). We use the “central
+    difference” for better numerical properties:'
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
-- en: $\frac{\partial y}{\partial x} \approx \frac{f(x +
-    eps) - f(x - eps)}{2 * eps}$ ∂x∂y​≈2∗epsf(x+eps)−f(x−eps)​
+  zh: 如果考虑一维函数的基本情况（$N = M = 1$），那么我们可以使用维基百科文章中的基本有限差分公式。我们使用“中心差分”以获得更好的数值性质。
+- en: $\frac{\partial y}{\partial x} \approx \frac{f(x + eps) - f(x - eps)}{2 * eps}$
+    ∂x∂y​≈2∗epsf(x+eps)−f(x−eps)​
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: $\frac{\partial y}{\partial x} \approx \frac{f(x + eps) - f(x - eps)}{2 * eps}$
 - en: This formula easily generalizes for multiple outputs ($M \gt 1$M>1) by having
-    $\frac{\partial
-    y}{\partial x}$∂x∂y​ be a column vector of size
-    $M
-    \times 1$M×1 like $f(x + eps)$f(x+eps).
-    In that case, the above formula can be re-used as-is and approximates the full
-    Jacobian matrix with only two evaluations of the user function (namely $f(x + eps)$f(x+eps)
-    and $f(x - eps)$f(x−eps)).
+    $\frac{\partial y}{\partial x}$∂x∂y​ be a column vector of size $M \times 1$M×1
+    like $f(x + eps)$f(x+eps). In that case, the above formula can be re-used as-is
+    and approximates the full Jacobian matrix with only two evaluations of the user
+    function (namely $f(x + eps)$f(x+eps) and $f(x - eps)$f(x−eps)).
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个公式很容易推广到具有多个输出（$M \gt 1$）的情况，通过将$\frac{\partial y}{\partial x}$作为大小为$M \times
+    1$的列向量，就像$f(x + eps)$一样。在这种情况下，上述公式可以直接重复使用，并且只需对用户函数进行两次评估（即$f(x + eps)$和$f(x
+    - eps)$）即可近似计算完整的雅可比矩阵。
 - en: It is more computationally expensive to handle the case with multiple inputs
-    ($N
-    \gt 1$N>1). In this scenario, we loop over all
-    the inputs one after the other and apply the $eps$eps perturbation
-    for each element of $x$x
-    one after the other. This allows us to reconstruct the $J_f$Jf​ matrix column
-    by column.
+    ($N \gt 1$N>1). In this scenario, we loop over all the inputs one after the other
+    and apply the $eps$eps perturbation for each element of $x$x one after the other.
+    This allows us to reconstruct the $J_f$Jf​ matrix column by column.
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: 处理具有多个输入（$N \gt 1$）的情况更加昂贵。在这种情况下，我们依次循环遍历所有输入，并为$x$的每个元素依次应用$eps$的扰动。这使我们能够逐列重建$J_f$矩阵。
 - en: Default real input analytical evaluation[](#default-real-input-analytical-evaluation
     "Permalink to this heading")
+  id: totrans-34
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 默认实数输入分析评估
 - en: For the analytical evaluation, we use the fact, as described above, that backward
-    mode AD computes $v^T J_f$vTJf​. For
-    functions with a single output, we simply use $v = 1$v=1 to recover
-    the full Jacobian matrix with a single backward pass.
+    mode AD computes $v^T J_f$vTJf​. For functions with a single output, we simply
+    use $v = 1$v=1 to recover the full Jacobian matrix with a single backward pass.
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于分析评估，我们使用如上所述的事实，即反向模式AD计算$v^T J_f$。对于具有单个输出的函数，我们简单地使用$v = 1$来通过单个反向传递恢复完整的雅可比矩阵。
 - en: For functions with more than one output, we resort to a for-loop which iterates
-    over the outputs where each $v$v is a one-hot vector
-    corresponding to each output one after the other. This allows to reconstruct the
-    $J_f$Jf​
-    matrix row by row.
+    over the outputs where each $v$v is a one-hot vector corresponding to each output
+    one after the other. This allows to reconstruct the $J_f$Jf​ matrix row by row.
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
-- en: '[Complex-to-real functions](#id5)[](#complex-to-real-functions "Permalink
-    to this heading")'
+  zh: 对于具有多个输出的函数，我们使用一个for循环，迭代输出，其中每个$v$是一个依次对应于每个输出的one-hot向量。这样可以逐行重建$J_f$矩阵。
+- en: '[Complex-to-real functions](#id5)[](#complex-to-real-functions "Permalink to
+    this heading")'
+  id: totrans-37
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: '[复数到实数函数](#id5)'
 - en: 'To test a function $g: \mathcal{C}^N \to \mathcal{R}^M, z \to y$g:CN→RM,z→y
-    with $z = a + i b$z=a+ib,
-    we reconstruct the (complex-valued) matrix that contains $2 * CW$2∗CW.'
+    with $z = a + i b$z=a+ib, we reconstruct the (complex-valued) matrix that contains
+    $2 * CW$2∗CW.'
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: '为了测试一个函数 $g: \mathcal{C}^N \to \mathcal{R}^M, z \to y$，其中 $z = a + i b$，我们重建包含
+    $2 * CW$ 的（复数值）矩阵。'
 - en: Default complex input numerical evaluation[](#default-complex-input-numerical-evaluation
     "Permalink to this heading")
+  id: totrans-39
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
-- en: 'Consider the elementary case where $N = M = 1$N=M=1 first.
-    We know from (chapter 3 of) [this research paper](https://arxiv.org/pdf/1701.00392.pdf)
-    that:'
+  zh: 默认复数输入数值评估
+- en: 'Consider the elementary case where $N = M = 1$N=M=1 first. We know from (chapter
+    3 of) [this research paper](https://arxiv.org/pdf/1701.00392.pdf) that:'
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
-- en: $CW := \frac{\partial
-    y}{\partial z^*} = \frac{1}{2} * (\frac{\partial y}{\partial a} + i \frac{\partial
-    y}{\partial b})$ CW:=∂z∗∂y​=21​∗(∂a∂y​+i∂b∂y​)
+  zh: 考虑首先 $N = M = 1$ 的基本情况。我们从[这篇研究论文](https://arxiv.org/pdf/1701.00392.pdf)中知道：
+- en: $CW := \frac{\partial y}{\partial z^*} = \frac{1}{2} * (\frac{\partial y}{\partial
+    a} + i \frac{\partial y}{\partial b})$ CW:=∂z∗∂y​=21​∗(∂a∂y​+i∂b∂y​)
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
-- en: Note that $\frac{\partial
-    y}{\partial a}$∂a∂y​ and $\frac{\partial y}{\partial b}$∂b∂y​,
-    in the above equation, are $\mathcal{R}
-    \to \mathcal{R}$R→R derivatives. To evaluate these
-    numerically, we use the method described above for the real-to-real case. This
-    allows us to compute the $CW$CW matrix and then
-    multiply it by $2$2.
+  zh: $CW := \frac{\partial y}{\partial z^*} = \frac{1}{2} * (\frac{\partial y}{\partial
+    a} + i \frac{\partial y}{\partial b})$
+- en: Note that $\frac{\partial y}{\partial a}$∂a∂y​ and $\frac{\partial y}{\partial
+    b}$∂b∂y​, in the above equation, are $\mathcal{R} \to \mathcal{R}$R→R derivatives.
+    To evaluate these numerically, we use the method described above for the real-to-real
+    case. This allows us to compute the $CW$CW matrix and then multiply it by $2$2.
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，上述方程中的 $\frac{\partial y}{\partial a}$ 和 $\frac{\partial y}{\partial b}$
+    是 $\mathcal{R} \to \mathcal{R}$ 的导数。为了对这些进行数值评估，我们使用了上述实数到实数情况的描述方法。这使我们能够计算 $CW$
+    矩阵，然后乘以 $2$。
 - en: 'Note that the code, as of time of writing, computes this value in a slightly
     convoluted way:'
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，截至撰写时，代码以稍微复杂的方式计算这个值：
 - en: '[PRE0]'
+  id: totrans-44
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: Default complex input analytical evaluation[](#default-complex-input-analytical-evaluation
     "Permalink to this heading")
+  id: totrans-45
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 默认复数输入解析评估
 - en: Since backward mode AD computes exactly twice the $CW$CW derivative already,
     we simply use the same trick as for the real-to-real case here and reconstruct
     the matrix row by row when there are multiple real outputs.
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于反向模式 AD 已经精确计算了两倍的 $CW$ 导数，因此我们在这里与实数到实数情况一样使用相同的技巧，并在有多个实数输出时逐行重建矩阵。
 - en: '[Functions with complex outputs](#id6)[](#functions-with-complex-outputs "Permalink
     to this heading")'
+  id: totrans-47
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: '[具有复数输出的函数](#id6)'
 - en: 'In this case, the user-provided function does not follow the assumption from
     the autograd that the function we compute backward AD for is real-valued. This
     means that using autograd directly on this function is not well defined. To solve
     this, we will replace the test of the function $h: \mathcal{P}^N \to \mathcal{C}^M$h:PN→CM
-    (where $\mathcal{P}$P can
-    be either $\mathcal{R}$R or $\mathcal{C}$C),
-    with two functions: $hr$hr and $hi$hi such that:'
+    (where $\mathcal{P}$P can be either $\mathcal{R}$R or $\mathcal{C}$C), with two
+    functions: $hr$hr and $hi$hi such that:'
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
-- en: $\begin{aligned}
-    hr(q) &:= real(f(q)) \\ hi(q) &:= imag(f(q)) \end{aligned}$
+  zh: '在这种情况下，用户提供的函数不符合自动微分的假设，即我们为其计算反向 AD 的函数是实值的。这意味着直接在这个函数上使用自动微分是不明确定义的。为了解决这个问题，我们将测试函数
+    $h: \mathcal{P}^N \to \mathcal{C}^M$（其中 $\mathcal{P}$ 可以是 $\mathcal{R}$ 或 $\mathcal{C}$）替换为两个函数：$hr$
+    和 $hi$，使得：'
+- en: $\begin{aligned} hr(q) &:= real(f(q)) \\ hi(q) &:= imag(f(q)) \end{aligned}$
     hr(q)hi(q)​:=real(f(q)):=imag(f(q))​
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
-- en: where $q \in \mathcal{P}$q∈P.
-    We then do a basic gradcheck for both $hr$hr and $hi$hi using either
-    the real-to-real or complex-to-real case described above, depending on $\mathcal{P}$P.
+  zh: $\begin{aligned} hr(q) &:= real(f(q)) \\ hi(q) &:= imag(f(q)) \end{aligned}$
+- en: where $q \in \mathcal{P}$q∈P. We then do a basic gradcheck for both $hr$hr and
+    $hi$hi using either the real-to-real or complex-to-real case described above,
+    depending on $\mathcal{P}$P.
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: 其中 $q \in \mathcal{P}$。然后我们对 $hr$ 和 $hi$ 进行基本的梯度检查，使用上述描述的实数到实数或复数到实数的情况，取决于
+    $\mathcal{P}$。
 - en: Note that, the code, as of time of writing, does not create these functions
     explicitly but perform the chain rule with the $real$real or $imag$imag functions
-    manually by passing the $\text{grad\_out}$grad_out
-    arguments to the different functions. When $\text{grad\_out} = 1$grad_out=1,
-    then we are considering $hr$hr. When $\text{grad\_out} = 1j$grad_out=1j,
-    then we are considering $hi$hi.
+    manually by passing the $\text{grad\_out}$grad_out arguments to the different
+    functions. When $\text{grad\_out} = 1$grad_out=1, then we are considering $hr$hr.
+    When $\text{grad\_out} = 1j$grad_out=1j, then we are considering $hi$hi.
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，截至撰写时，代码并没有显式创建这些函数，而是通过将 $\text{grad\_out}$ 参数传递给不同的函数，手动使用 $real$ 或 $imag$
+    函数执行链式规则。当 $\text{grad\_out} = 1$ 时，我们考虑 $hr$。当 $\text{grad\_out} = 1j$ 时，我们考虑
+    $hi$。
 - en: '[Fast backward mode gradcheck](#id7)[](#fast-backward-mode-gradcheck "Permalink
     to this heading")'
+  id: totrans-52
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: '[快速反向模式梯度检查](#id7)'
 - en: While the above formulation of gradcheck is great, both, to ensure correctness
     and debuggability, it is very slow because it reconstructs the full Jacobian matrices.
     This section presents a way to perform gradcheck in a faster way without affecting
     its correctness. The debuggability can be recovered by adding special logic when
     we detect an error. In that case, we can run the default version that reconstructs
     the full matrix to give full details to the user.
+  id: totrans-53
   prefs: []
   type: TYPE_NORMAL
+  zh: 尽管上述梯度检查的公式很好，为了确保正确性和可调试性，它非常慢，因为它重建了完整的雅可比矩阵。本节介绍了一种以更快的方式执行梯度检查的方法，而不影响其正确性。通过在检测到错误时添加特殊逻辑，可以恢复可调试性。在这种情况下，我们可以运行重建完整矩阵的默认版本，以向用户提供完整的细节。
 - en: The high level strategy here is to find a scalar quantity that can be computed
     efficiently by both the numerical and analytical methods and that represents the
     full matrix computed by the slow gradcheck well enough to ensure that it will
     catch any discrepancy in the Jacobians.
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: 这里的高级策略是找到一个标量量，可以通过数值和解析方法高效计算，并且能够很好地代表慢梯度检查计算的完整矩阵，以确保它能够捕捉雅可比矩阵中的任何差异。
 - en: '[Fast gradcheck for real-to-real functions](#id8)[](#fast-gradcheck-for-real-to-real-functions
     "Permalink to this heading")'
+  id: totrans-55
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
-- en: The scalar quantity that we want to compute here is $v^T J_f u$vTJf​u for
-    a given random vector $v \in \mathcal{R}^M$v∈RM
-    and a random unit norm vector $u
+  zh: '[实数到实数函数的快速梯度检查](#id8)'
+- en: The scalar quantity that we want to compute here is $v^T J_f u$vTJf​u for a
+    given random vector $v \in \mathcal{R}^M$v∈RM and a random unit norm vector $u
     \in \mathcal{R}^N$u∈RN.
+  id: totrans-56
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们想要计算的标量量是给定随机向量 $v \in \mathcal{R}^M$ 和随机单位范数向量 $u \in \mathcal{R}^N$ 时的 $v^T
+    J_f u$。
 - en: For the numerical evaluation, we can efficiently compute
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
-- en: $J_f
-    u \approx \frac{f(x + u * eps) - f(x - u * eps)}{2 * eps}.$
-    Jf​u≈2∗epsf(x+u∗eps)−f(x−u∗eps)​.
+  zh: 对于数值评估，我们可以高效地计算
+- en: $J_f u \approx \frac{f(x + u * eps) - f(x - u * eps)}{2 * eps}.$ Jf​u≈2∗epsf(x+u∗eps)−f(x−u∗eps)​.
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: $J_f u \approx \frac{f(x + u * eps) - f(x - u * eps)}{2 * eps}.$
 - en: We then perform the dot product between this vector and $v$v to get the scalar
     value of interest.
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
-- en: For the analytical version, we can use backward mode AD to compute $v^T J_f$vTJf​ directly.
-    We then perform the dot product with $u$u to get the expected
-    value.
+  zh: 然后我们执行这个向量与 $v$ 的点积，得到感兴趣的标量值。
+- en: For the analytical version, we can use backward mode AD to compute $v^T J_f$vTJf​
+    directly. We then perform the dot product with $u$u to get the expected value.
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于分析版本，我们可以使用反向模式自动微分来直接计算$v^T J_f$。然后执行与$u$的点积以获得期望值。
 - en: '[Fast gradcheck for complex-to-real functions](#id9)[](#fast-gradcheck-for-complex-to-real-functions
     "Permalink to this heading")'
+  id: totrans-61
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 快速复数输入分析评估
 - en: Similar to the real-to-real case, we want to perform a reduction of the full
-    matrix. But the $2 * CW$2∗CW matrix
-    is complex-valued and so in this case, we will compare to complex scalars.
+    matrix. But the $2 * CW$2∗CW matrix is complex-valued and so in this case, we
+    will compare to complex scalars.
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
+  zh: 类似于实数到实数的情况，我们希望对完整矩阵进行简化。但是$2 * CW$矩阵是复数值的，因此在这种情况下，我们将与复数标量进行比较。
 - en: 'Due to some constraints on what we can compute efficiently in the numerical
     case and to keep the number of numerical evaluations to a minimum, we compute
     the following (albeit surprising) scalar value:'
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
-- en: $s := 2
-    * v^T (real(CW) ur + i * imag(CW) ui)$ s:=2∗vT(real(CW)ur+i∗imag(CW)ui)
+  zh: 由于在数值情况下我们可以有效计算的一些约束以及为了将数值评估的数量保持最小，我们计算以下（尽管令人惊讶的）标量值：
+- en: $s := 2 * v^T (real(CW) ur + i * imag(CW) ui)$ s:=2∗vT(real(CW)ur+i∗imag(CW)ui)
+  id: totrans-64
   prefs: []
   type: TYPE_NORMAL
-- en: where $v \in \mathcal{R}^M$v∈RM,
-    $ur \in \mathcal{R}^N$ur∈RN
-    and $ui \in \mathcal{R}^N$ui∈RN.
+  zh: $s := 2 * v^T (real(CW) ur + i * imag(CW) ui)$
+- en: where $v \in \mathcal{R}^M$v∈RM, $ur \in \mathcal{R}^N$ur∈RN and $ui \in \mathcal{R}^N$ui∈RN.
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: $\begin{aligned} s &= 2 * v^T (real(CW) ur + i * imag(CW) ui) \\ &= v^T real(2
+    * CW) ur + i * v^T imag(2 * CW) ui) \\ &= real(v^T (2 * CW)) ur + i * imag(v^T
+    (2 * CW)) ui \end{aligned}$
 - en: Fast complex input numerical evaluation[](#fast-complex-input-numerical-evaluation
     "Permalink to this heading")
+  id: totrans-66
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
-- en: 'We first consider how to compute $s$s with a numerical
-    method. To do so, keeping in mind that we’re considering $g:
-    \mathcal{C}^N \to \mathcal{R}^M, z \to y$g:CN→RM,z→y
-    with $z = a + i b$z=a+ib,
-    and that $CW = \frac{1}{2}
-    * (\frac{\partial y}{\partial a} + i \frac{\partial y}{\partial b})$CW=21​∗(∂a∂y​+i∂b∂y​),
-    we rewrite it as follows:'
+  zh: 快速复数输入数值评估
+- en: 'We first consider how to compute $s$s with a numerical method. To do so, keeping
+    in mind that we’re considering $g: \mathcal{C}^N \to \mathcal{R}^M, z \to y$g:CN→RM,z→y
+    with $z = a + i b$z=a+ib, and that $CW = \frac{1}{2} * (\frac{\partial y}{\partial
+    a} + i \frac{\partial y}{\partial b})$CW=21​∗(∂a∂y​+i∂b∂y​), we rewrite it as
+    follows:'
+  id: totrans-67
   prefs: []
   type: TYPE_NORMAL
-- en: $\begin{aligned}
-    s &= 2 * v^T (real(CW) ur + i * imag(CW) ui) \\ &= 2 * v^T (\frac{1}{2} * \frac{\partial
-    y}{\partial a} ur + i * \frac{1}{2} * \frac{\partial y}{\partial b} ui) \\ &=
-    v^T (\frac{\partial y}{\partial a} ur + i * \frac{\partial y}{\partial b} ui)
-    \\ &= v^T ((\frac{\partial y}{\partial a} ur) + i * (\frac{\partial y}{\partial
-    b} ui)) \end{aligned}$ s​=2∗vT(real(CW)ur+i∗imag(CW)ui)=2∗vT(21​∗∂a∂y​ur+i∗21​∗∂b∂y​ui)=vT(∂a∂y​ur+i∗∂b∂y​ui)=vT((∂a∂y​ur)+i∗(∂b∂y​ui))​
+  zh: '我们首先考虑如何用数值方法计算$s$。为此，牢记我们考虑的是$g: \mathcal{C}^N \to \mathcal{R}^M, z \to y$，其中$z
+    = a + i b$，以及$CW = \frac{1}{2} * (\frac{\partial y}{\partial a} + i \frac{\partial
+    y}{\partial b})$，我们将其重写如下：'
+- en: $\begin{aligned} s &= 2 * v^T (real(CW) ur + i * imag(CW) ui) \\ &= 2 * v^T
+    (\frac{1}{2} * \frac{\partial y}{\partial a} ur + i * \frac{1}{2} * \frac{\partial
+    y}{\partial b} ui) \\ &= v^T (\frac{\partial y}{\partial a} ur + i * \frac{\partial
+    y}{\partial b} ui) \\ &= v^T ((\frac{\partial y}{\partial a} ur) + i * (\frac{\partial
+    y}{\partial b} ui)) \end{aligned}$ s​=2∗vT(real(CW)ur+i∗imag(CW)ui)=2∗vT(21​∗∂a∂y​ur+i∗21​∗∂b∂y​ui)=vT(∂a∂y​ur+i∗∂b∂y​ui)=vT((∂a∂y​ur)+i∗(∂b∂y​ui))​
+  id: totrans-68
   prefs: []
   type: TYPE_NORMAL
-- en: In this formula, we can see that $\frac{\partial y}{\partial a} ur$∂a∂y​ur
-    and $\frac{\partial y}{\partial b} ui$∂b∂y​ui
-    can be evaluated the same way as the fast version for the real-to-real case. Once
-    these real-valued quantities have been computed, we can reconstruct the complex
-    vector on the right side and do a dot product with the real-valued $v$v vector.
+  zh: $\begin{aligned} s &= 2 * v^T (real(CW) ur + i * imag(CW) ui) \\ &= 2 * v^T
+    (\frac{1}{2} * \frac{\partial y}{\partial a} ur + i * \frac{1}{2} * \frac{\partial
+    y}{\partial b} ui) \\ &= v^T (\frac{\partial y}{\partial a} ur + i * \frac{\partial
+    y}{\partial b} ui) \\ &= v^T ((\frac{\partial y}{\partial a} ur) + i * (\frac{\partial
+    y}{\partial b} ui)) \end{aligned}$
+- en: In this formula, we can see that $\frac{\partial y}{\partial a} ur$∂a∂y​ur and
+    $\frac{\partial y}{\partial b} ui$∂b∂y​ui can be evaluated the same way as the
+    fast version for the real-to-real case. Once these real-valued quantities have
+    been computed, we can reconstruct the complex vector on the right side and do
+    a dot product with the real-valued $v$v vector.
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这个公式中，我们可以看到$\frac{\partial y}{\partial a} ur$和$\frac{\partial y}{\partial
+    b} ui$可以像实数到实数情况的快速版本一样进行评估。一旦计算出这些实值量，我们可以在右侧重建复向量，并与实值$v$向量进行点积。
 - en: Fast complex input analytical evaluation[](#fast-complex-input-analytical-evaluation
     "Permalink to this heading")
+  id: totrans-70
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 此时，您可能会想知道为什么我们没有选择一个复数$u$并只执行简化$2 * v^T CW u'$。为了深入探讨这一点，在本段中，我们将使用$u' = ur'
+    + i ui'$的复数版本。使用这样的复数$u'$，问题在于在进行数值评估时，我们需要计算：
 - en: 'For the analytical case, things are simpler and we rewrite the formula as:'
+  id: totrans-71
   prefs: []
   type: TYPE_NORMAL
-- en: $\begin{aligned} s &= 2 * v^T (real(CW) ur + i * imag(CW)
-    ui) \\ &= v^T real(2 * CW) ur + i * v^T imag(2 * CW) ui) \\ &= real(v^T (2 * CW))
-    ur + i * imag(v^T (2 * CW)) ui \end{aligned}$ s​=2∗vT(real(CW)ur+i∗imag(CW)ui)=vTreal(2∗CW)ur+i∗vTimag(2∗CW)ui)=real(vT(2∗CW))ur+i∗imag(vT(2∗CW))ui​
+  zh: 对于分析情况，事情更简单，我们将公式重写为：
+- en: $\begin{aligned} s &= 2 * v^T (real(CW) ur + i * imag(CW) ui) \\ &= v^T real(2
+    * CW) ur + i * v^T imag(2 * CW) ui) \\ &= real(v^T (2 * CW)) ur + i * imag(v^T
+    (2 * CW)) ui \end{aligned}$ s​=2∗vT(real(CW)ur+i∗imag(CW)ui)=vTreal(2∗CW)ur+i∗vTimag(2∗CW)ui)=real(vT(2∗CW))ur+i∗imag(vT(2∗CW))ui​
+  id: totrans-72
   prefs: []
   type: TYPE_NORMAL
+  zh: '[复杂到实数函数的快速梯度检查](#id9)'
 - en: We can thus use the fact that the backward mode AD provides us with an efficient
-    way to compute $v^T (2
-    * CW)$vT(2∗CW) and then perform a dot product of
-    the real part with $ur$ur and the imaginary
-    part with $ui$ui
-    before reconstructing the final complex scalar $s$s.
+    way to compute $v^T (2 * CW)$vT(2∗CW) and then perform a dot product of the real
+    part with $ur$ur and the imaginary part with $ui$ui before reconstructing the
+    final complex scalar $s$s.
+  id: totrans-73
   prefs: []
   type: TYPE_NORMAL
-- en: Why not use a complex $u$u[](#why-not-use-a-complex-u
-    "Permalink to this heading")
+  zh: 因此，我们可以利用反向模式自动微分提供的有效方法来计算$v^T (2 * CW)$，然后在重建最终复数标量$s$之前，将实部与$ur$和虚部与$ui$进行点积。
+- en: Why not use a complex $u$u[](#why-not-use-a-complex-u "Permalink to this heading")
+  id: totrans-74
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
-- en: 'At this point, you might be wondering why we did not select a complex $u$u and just performed
-    the reduction $2 * v^T CW u''$2∗vTCWu′.
-    To dive into this, in this paragraph, we will use the complex version of $u$u noted $u'' = ur'' + i ui''$u′=ur′+iui′.
-    Using such complex $u''$u′,
-    the problem is that when doing the numerical evaluation, we would need to compute:'
+  zh: 为什么不使用复数$u$
+- en: 'At this point, you might be wondering why we did not select a complex $u$u
+    and just performed the reduction $2 * v^T CW u''$2∗vTCWu′. To dive into this,
+    in this paragraph, we will use the complex version of $u$u noted $u'' = ur'' +
+    i ui''$u′=ur′+iui′. Using such complex $u''$u′, the problem is that when doing
+    the numerical evaluation, we would need to compute:'
+  id: totrans-75
   prefs: []
   type: TYPE_NORMAL
-- en: $\begin{aligned} 2*CW u' &= (\frac{\partial y}{\partial
-    a} + i \frac{\partial y}{\partial b})(ur' + i ui') \\ &= \frac{\partial y}{\partial
-    a} ur' + i \frac{\partial y}{\partial a} ui' + i \frac{\partial y}{\partial b}
-    ur' - \frac{\partial y}{\partial b} ui' \end{aligned}$
-    2∗CWu′​=(∂a∂y​+i∂b∂y​)(ur′+iui′)=∂a∂y​ur′+i∂a∂y​ui′+i∂b∂y​ur′−∂b∂y​ui′​
+  zh: 其中$v \in \mathcal{R}^M$，$ur \in \mathcal{R}^N$，$ui \in \mathcal{R}^N$。
+- en: $\begin{aligned} 2*CW u' &= (\frac{\partial y}{\partial a} + i \frac{\partial
+    y}{\partial b})(ur' + i ui') \\ &= \frac{\partial y}{\partial a} ur' + i \frac{\partial
+    y}{\partial a} ui' + i \frac{\partial y}{\partial b} ur' - \frac{\partial y}{\partial
+    b} ui' \end{aligned}$ 2∗CWu′​=(∂a∂y​+i∂b∂y​)(ur′+iui′)=∂a∂y​ur′+i∂a∂y​ui′+i∂b∂y​ur′−∂b∂y​ui′​
+  id: totrans-76
   prefs: []
   type: TYPE_NORMAL
+  zh: $\begin{aligned} 2*CW u' &= (\frac{\partial y}{\partial a} + i \frac{\partial
+    y}{\partial b})(ur' + i ui') \\ &= \frac{\partial y}{\partial a} ur' + i \frac{\partial
+    y}{\partial a} ui' + i \frac{\partial y}{\partial b} ur' - \frac{\partial y}{\partial
+    b} ui' \end{aligned}$
 - en: Which would require four evaluations of real-to-real finite difference (twice
     as much compared to the approached proposed above). Since this approach does not
     have more degrees of freedom (same number of real valued variables) and we try
     to get the fastest possible evaluation here, we use the other formulation above.
+  id: totrans-77
   prefs: []
   type: TYPE_NORMAL
+  zh: 这将需要四次实数到实数有限差分的评估（与上述方法相比多两倍）。由于这种方法没有更多的自由度（相同数量的实值变量），我们尝试在这里获得最快的评估，因此使用上述的另一种公式。
 - en: '[Fast gradcheck for functions with complex outputs](#id10)[](#fast-gradcheck-for-functions-with-complex-outputs
     "Permalink to this heading")'
+  id: totrans-78
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: '[对于具有复杂输出的函数的快速 gradcheck](#id10)[](#fast-gradcheck-for-functions-with-complex-outputs
+    "跳转到本标题")'
 - en: Just like in the slow case, we consider two real-valued functions and use the
     appropriate rule from above for each function.
+  id: totrans-79
   prefs: []
   type: TYPE_NORMAL
+  zh: 就像在慢速情况下一样，我们考虑两个实值函数，并对每个函数使用上面的适当规则。
 - en: '[Gradgradcheck implementation](#id11)[](#gradgradcheck-implementation "Permalink
     to this heading")'
+  id: totrans-80
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: '[Gradgradcheck 实现](#id11)[](#gradgradcheck-implementation "跳转到本标题")'
 - en: PyTorch also provide a utility to verify second order gradients. The goal here
     is to make sure that the backward implementation is also properly differentiable
     and computes the right thing.
+  id: totrans-81
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch 还提供了一个工具来验证二阶梯度。这里的目标是确保反向实现也是正确可微的，并计算正确的结果。
 - en: 'This feature is implemented by considering the function $F: x, v \to v^T J_f$F:x,v→vTJf​
-    and use the gradcheck defined above on this function. Note that $v$v in this case is
-    just a random vector with the same type as $f(x)$f(x).'
+    and use the gradcheck defined above on this function. Note that $v$v in this case
+    is just a random vector with the same type as $f(x)$f(x).'
+  id: totrans-82
   prefs: []
   type: TYPE_NORMAL
+  zh: '这个特性是通过考虑函数 $F: x, v \to v^T J_f$F:x,v→vTJf​ 并在这个函数上使用上面定义的 gradcheck 来实现的。请注意，这种情况下的
+    $v$v 只是一个与 $f(x)$f(x) 相同类型的随机向量。'
 - en: The fast version of gradgradcheck is implemented by using the fast version of
     gradcheck on that same function $F$F.
+  id: totrans-83
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过在相同函数 $F$F 上使用快速版本的 gradcheck 来实现 gradgradcheck 的快速版本。

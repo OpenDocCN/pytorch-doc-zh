@@ -1,48 +1,68 @@
 - en: HIP (ROCm) semantics
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: HIP（ROCm）语义
 - en: 原文：[https://pytorch.org/docs/stable/notes/hip.html](https://pytorch.org/docs/stable/notes/hip.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/docs/stable/notes/hip.html](https://pytorch.org/docs/stable/notes/hip.html)
 - en: ROCm™ is AMD’s open source software platform for GPU-accelerated high performance
     computing and machine learning. HIP is ROCm’s C++ dialect designed to ease conversion
     of CUDA applications to portable C++ code. HIP is used when converting existing
     CUDA applications like PyTorch to portable C++ and for new projects that require
     portability between AMD and NVIDIA.
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: ROCm™是AMD的开源软件平台，用于GPU加速的高性能计算和机器学习。HIP是ROCm的C++方言，旨在简化将CUDA应用程序转换为可移植的C++代码。在将现有CUDA应用程序（如PyTorch）转换为可移植的C++以及需要在AMD和NVIDIA之间实现可移植性的新项目中使用HIP。
 - en: '## HIP Interfaces Reuse the CUDA Interfaces[](#hip-interfaces-reuse-the-cuda-interfaces
     "Permalink to this heading")'
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: '## HIP接口重用CUDA接口'
 - en: PyTorch for HIP intentionally reuses the existing [`torch.cuda`](../cuda.html#module-torch.cuda
     "torch.cuda") interfaces. This helps to accelerate the porting of existing PyTorch
     code and models because very few code changes are necessary, if any.
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch for HIP有意重用现有的[`torch.cuda`](../cuda.html#module-torch.cuda)接口。这有助于加速现有PyTorch代码和模型的移植，因为几乎不需要进行任何代码更改。
 - en: 'The example from [CUDA semantics](cuda.html#cuda-semantics) will work exactly
     the same for HIP:'
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 来自[CUDA语义](cuda.html#cuda-semantics)的示例将在HIP上完全相同：
 - en: '[PRE0]  ## Checking for HIP'
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: '[PRE0]## 检查HIP'
 - en: 'Whether you are using PyTorch for CUDA or HIP, the result of calling [`is_available()`](../generated/torch.cuda.is_available.html#torch.cuda.is_available
     "torch.cuda.is_available") will be the same. If you are using a PyTorch that has
     been built with GPU support, it will return True. If you must check which version
     of PyTorch you are using, refer to this example below:'
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 无论您是在CUDA还是HIP上使用PyTorch，调用[`is_available()`](../generated/torch.cuda.is_available.html#torch.cuda.is_available)的结果都将是相同的。如果您使用已构建有GPU支持的PyTorch，它将返回True。如果您必须检查正在使用的PyTorch版本，请参考下面的示例：
 - en: '[PRE1]  ## TensorFloat-32(TF32) on ROCm[](#tensorfloat-32-tf32-on-rocm "Permalink
     to this heading")'
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
-- en: 'TF32 is not supported on ROCm.  ## Memory management[](#memory-management
-    "Permalink to this heading")'
+  zh: '[PRE1]## ROCm上的TensorFloat-32(TF32)'
+- en: 'TF32 is not supported on ROCm.  ## Memory management[](#memory-management "Permalink
+    to this heading")'
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: ROCm上不支持TF32。## 内存管理
 - en: PyTorch uses a caching memory allocator to speed up memory allocations. This
     allows fast memory deallocation without device synchronizations. However, the
     unused memory managed by the allocator will still show as if used in `rocm-smi`.
@@ -57,86 +77,130 @@
     that those can be used by other GPU applications. However, the occupied GPU memory
     by tensors will not be freed so it can not increase the amount of GPU memory available
     for PyTorch.
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch使用缓存内存分配器来加速内存分配。这允许快速的内存释放而无需设备同步。然而，分配器管理的未使用内存仍会显示为在`rocm-smi`中使用。您可以使用[`memory_allocated()`](../generated/torch.cuda.memory_allocated.html#torch.cuda.memory_allocated)和[`max_memory_allocated()`](../generated/torch.cuda.max_memory_allocated.html#torch.cuda.max_memory_allocated)来监视张量占用的内存，并使用[`memory_reserved()`](../generated/torch.cuda.memory_reserved.html#torch.cuda.memory_reserved)和[`max_memory_reserved()`](../generated/torch.cuda.max_memory_reserved.html#torch.cuda.max_memory_reserved)来监视缓存分配器管理的总内存量。调用[`empty_cache()`](../generated/torch.cuda.empty_cache.html#torch.cuda.empty_cache)会释放PyTorch中所有**未使用**的缓存内存，以便其他GPU应用程序可以使用。然而，张量占用的GPU内存不会被释放，因此不能增加供PyTorch使用的GPU内存量。
 - en: For more advanced users, we offer more comprehensive memory benchmarking via
     [`memory_stats()`](../generated/torch.cuda.memory_stats.html#torch.cuda.memory_stats
     "torch.cuda.memory_stats"). We also offer the capability to capture a complete
     snapshot of the memory allocator state via [`memory_snapshot()`](../generated/torch.cuda.memory_snapshot.html#torch.cuda.memory_snapshot
     "torch.cuda.memory_snapshot"), which can help you understand the underlying allocation
     patterns produced by your code.
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于更高级的用户，我们通过[`memory_stats()`](../generated/torch.cuda.memory_stats.html#torch.cuda.memory_stats)提供更全面的内存基准测试。我们还提供通过[`memory_snapshot()`](../generated/torch.cuda.memory_snapshot.html#torch.cuda.memory_snapshot)捕获内存分配器状态的完整快照的能力，这可以帮助您了解代码产生的底层分配模式。
 - en: 'To debug memory errors, set `PYTORCH_NO_CUDA_MEMORY_CACHING=1` in your environment
-    to disable caching.  ## hipFFT/rocFFT plan cache[](#hipfft-rocfft-plan-cache
-    "Permalink to this heading")'
+    to disable caching.  ## hipFFT/rocFFT plan cache[](#hipfft-rocfft-plan-cache "Permalink
+    to this heading")'
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: 要调试内存错误，请在环境中设置`PYTORCH_NO_CUDA_MEMORY_CACHING=1`以禁用缓存。## hipFFT/rocFFT计划缓存
 - en: 'Setting the size of the cache for hipFFT/rocFFT plans is not supported.  ##
     torch.distributed backends'
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: 不支持设置hipFFT/rocFFT计划的缓存大小。## torch.distributed后端
 - en: 'Currently, only the “nccl” and “gloo” backends for torch.distributed are supported
     on ROCm.  ## CUDA API to HIP API mappings in C++[](#cuda-api-to-hip-api-mappings-in-c
     "Permalink to this heading")'
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 目前，仅支持“nccl”和“gloo”后端的torch.distributed在ROCm上。## C++中的CUDA API到HIP API映射
 - en: 'Please refer: [https://rocmdocs.amd.com/en/latest/Programming_Guides/HIP_API_Guide.html](https://rocmdocs.amd.com/en/latest/Programming_Guides/HIP_API_Guide.html)'
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 请参考：[https://rocmdocs.amd.com/en/latest/Programming_Guides/HIP_API_Guide.html](https://rocmdocs.amd.com/en/latest/Programming_Guides/HIP_API_Guide.html)
 - en: 'NOTE: The CUDA_VERSION macro, cudaRuntimeGetVersion and cudaDriverGetVersion
     APIs do not semantically map to the same values as HIP_VERSION macro, hipRuntimeGetVersion
     and hipDriverGetVersion APIs. Please do not use them interchangeably when doing
     version checks.'
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意：CUDA_VERSION 宏、cudaRuntimeGetVersion 和 cudaDriverGetVersion API 的语义映射与 HIP_VERSION
+    宏、hipRuntimeGetVersion 和 hipDriverGetVersion API 的值不同。在进行版本检查时，请不要混用它们。
 - en: 'For example: Instead of using'
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 例如：不要使用
 - en: '`#if defined(CUDA_VERSION) && CUDA_VERSION >= 11000` to implicitly exclude
     ROCm/HIP,'
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: '`#if defined(CUDA_VERSION) && CUDA_VERSION >= 11000` 以隐式排除 ROCm/HIP，'
 - en: 'use the following to not take the code path for ROCm/HIP:'
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用以下内容来避免进入 ROCm/HIP 的代码路径：
 - en: '`#if defined(CUDA_VERSION) && CUDA_VERSION >= 11000 && !defined(USE_ROCM)`'
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: '`#if defined(CUDA_VERSION) && CUDA_VERSION >= 11000 && !defined(USE_ROCM)`'
 - en: 'Alternatively, if it is desired to take the code path for ROCm/HIP:'
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 或者，如果希望进入 ROCm/HIP 的代码路径：
 - en: '`#if (defined(CUDA_VERSION) && CUDA_VERSION >= 11000) || defined(USE_ROCM)`'
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: '`#if (defined(CUDA_VERSION) && CUDA_VERSION >= 11000) || defined(USE_ROCM)`'
 - en: 'Or if it is desired to take the code path for ROCm/HIP only for specific HIP
     versions:'
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 或者如果只想针对特定的 HIP 版本进入 ROCm/HIP 的代码路径：
 - en: '`#if (defined(CUDA_VERSION) && CUDA_VERSION >= 11000) || (defined(USE_ROCM)
     && ROCM_VERSION >= 40300)`'
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: '`#if (defined(CUDA_VERSION) && CUDA_VERSION >= 11000) || (defined(USE_ROCM)
+    && ROCM_VERSION >= 40300)`'
 - en: Refer to CUDA Semantics doc[](#refer-to-cuda-semantics-doc "Permalink to this
     heading")
+  id: totrans-25
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 参考 CUDA 语义文档[](#refer-to-cuda-semantics-doc "跳转到此标题")
 - en: 'For any sections not listed here, please refer to the CUDA semantics doc: [CUDA
     semantics](cuda.html#cuda-semantics)'
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于此处未列出的任何部分，请参考 CUDA 语义文档：[CUDA 语义](cuda.html#cuda-semantics)
 - en: Enabling kernel asserts
+  id: totrans-27
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 启用内核断言
 - en: Kernel asserts are supported on ROCm, but they are disabled due to performance
     overhead. It can be enabled by recompiling the PyTorch from source.
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: ROCm 支持内核断言，但由于性能开销而被禁用。可以通过重新编译 PyTorch 源代码来启用它。
 - en: 'Please add below line as an argument to cmake command parameters:'
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 请将以下行作为参数添加到 cmake 命令参数中：
 - en: '[PRE2]'
+  id: totrans-30
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'

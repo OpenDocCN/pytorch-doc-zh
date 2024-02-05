@@ -1,65 +1,96 @@
 - en: Features for large-scale deployments
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 大规模部署的功能
 - en: 原文：[https://pytorch.org/docs/stable/notes/large_scale_deployments.html](https://pytorch.org/docs/stable/notes/large_scale_deployments.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/docs/stable/notes/large_scale_deployments.html](https://pytorch.org/docs/stable/notes/large_scale_deployments.html)
 - en: '[Fleet-wide operator profiling](#fleet-wide-operator-profiling)'
+  id: totrans-2
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[全局操作符分析](#fleet-wide-operator-profiling)'
 - en: '[API usage logging](#api-usage-logging)'
+  id: totrans-3
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[API 使用日志记录](#api-usage-logging)'
 - en: '[Attaching metadata to saved TorchScript models](#attaching-metadata-to-saved-torchscript-models)'
+  id: totrans-4
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[将元数据附加到保存的 TorchScript 模型](#attaching-metadata-to-saved-torchscript-models)'
 - en: '[Build environment considerations](#build-environment-considerations)'
+  id: totrans-5
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[构建环境注意事项](#build-environment-considerations)'
 - en: '[Common extension points](#common-extension-points)'
+  id: totrans-6
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[常见扩展点](#common-extension-points)'
 - en: This note talks about several extension points and tricks that might be useful
     when running PyTorch within a larger system or operating multiple systems using
     PyTorch in a larger organization.
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 本说明介绍了在更大系统中运行 PyTorch 或在更大组织中操作使用 PyTorch 的多个系统时可能有用的几个扩展点和技巧。
 - en: It doesn’t cover topics of deploying models to production. Check [`torch.jit`](../jit.html#module-torch.jit
     "torch.jit") or one of the corresponding tutorials.
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 这并不涵盖将模型部署到生产环境的主题。请查看 [`torch.jit`](../jit.html#module-torch.jit "torch.jit")
+    或其中一个相应的教程。
 - en: The note assumes that you either build PyTorch from source in your organization
     or have an ability to statically link additional code to be loaded when PyTorch
     is used. Therefore, many of the hooks are exposed as C++ APIs that can be triggered
     once in a centralized place, e.g. in static initialization code.
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 该说明假定您要么在组织中从源代码构建 PyTorch，要么具有在 PyTorch 使用时加载附加代码的静态链接能力。因此，许多钩子都公开为可以在集中位置触发一次的
+    C++ API，例如在静态初始化代码中。
 - en: '[Fleet-wide operator profiling](#id1)[](#fleet-wide-operator-profiling "Permalink
     to this heading")'
+  id: totrans-10
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: '[全局操作符分析](#id1)[](#fleet-wide-operator-profiling "跳转到此标题")'
 - en: PyTorch comes with [`torch.autograd.profiler`](../autograd.html#module-torch.autograd.profiler
     "torch.autograd.profiler") capable of measuring time taken by individual operators
     on demand. One can use the same mechanism to do “always ON” measurements for any
     process running PyTorch. It might be useful for gathering information about PyTorch
     workloads running in a given process or across the entire set of machines.
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch 自带 [`torch.autograd.profiler`](../autograd.html#module-torch.autograd.profiler
+    "torch.autograd.profiler")，能够按需测量各个操作符所花费的时间。可以使用相同的机制对运行 PyTorch 的任何进程进行“始终开启”测量。这对于收集在给定进程或整个机器集上运行的
+    PyTorch 工作负载信息可能很有用。
 - en: New callbacks for any operator invocation can be added with `torch::addGlobalCallback`.
     Hooks will be called with `torch::RecordFunction` struct that describes invocation
     context (e.g. name). If enabled, `RecordFunction::inputs()` contains arguments
     of the function represented as `torch::IValue` variant type. Note, that inputs
     logging is relatively expensive and thus has to be enabled explicitly.
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: 可以使用 `torch::addGlobalCallback` 为任何操作符调用添加新的回调。钩子将使用描述调用上下文（例如名称）的 `torch::RecordFunction`
+    结构进行调用。如果启用，`RecordFunction::inputs()` 包含作为 `torch::IValue` 变体类型表示的函数参数。请注意，输入日志记录相对昂贵，因此必须显式启用。
 - en: The operator callbacks also have access to `c10::ThreadLocalDebugInfo::get()`
     interface that returns a pointer to the struct holding the debug information.
     This debug information can be set earlier by using `at::DebugInfoGuard` object.
@@ -67,102 +98,154 @@
     and backward passes and can be useful for passing some extra information about
     execution environment (e.g. model id) from the higher layers of the application
     down to the operator callbacks.
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: 操作符回调还可以访问 `c10::ThreadLocalDebugInfo::get()` 接口，该接口返回一个持有调试信息的结构体指针。可以使用 `at::DebugInfoGuard`
+    对象提前设置调试信息。调试信息会通过前向（包括异步 `fork` 任务）和反向传递传播，并且对于从应用程序的更高层向操作符回调传递一些额外信息（例如模型 ID）可能很有用。
 - en: Invoking callbacks adds some overhead, so usually it’s useful to just randomly
     sample operator invocations. This can be enabled on per-callback basis with an
     optional sampling rate passed into `torch::addGlobalCallback`.
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 调用回调会增加一些开销，因此通常最好随机抽样操作符调用。可以通过将可选的抽样率传递给 `torch::addGlobalCallback` 来在每个回调基础上启用此功能。
 - en: Note, that `addGlobalCallback` is not thread-safe and can be called only when
     no PyTorch operator is running. Usually, it’s a good idea to call them once during
     initialization.
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，`addGlobalCallback` 不是线程安全的，只能在没有运行 PyTorch 操作符时调用。通常，在初始化期间调用它们一次是个好主意。
 - en: 'Here’s an example:'
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下是一个示例：
 - en: '[PRE0]'
+  id: totrans-17
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: '[API usage logging](#id2)'
+  id: totrans-18
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: '[API 使用日志记录](#id2)'
 - en: When running in a broader ecosystem, for example in managed job scheduler, it’s
     often useful to track which binaries invoke particular PyTorch APIs. There exists
     simple instrumentation injected at several important API points that triggers
     a given callback. Because usually PyTorch is invoked in one-off python scripts,
     the callback fires only once for a given process for each of the APIs.
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 在更广泛的生态系统中运行时，例如在托管作业调度程序中，跟踪调用特定 PyTorch API 的二进制文件通常很有用。在几个重要的 API 点注入了简单的仪器，触发给定的回调。因为通常
+    PyTorch 在一次性的 Python 脚本中被调用，所以对于每个 API，回调只会在给定进程中触发一次。
 - en: '`c10::SetAPIUsageHandler` can be used to register API usage instrumentation
     handler. Passed argument is going to be an “api key” identifying used point, for
     example `python.import` for PyTorch extension import or `torch.script.compile`
     if TorchScript compilation was triggered.'
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: '`c10::SetAPIUsageHandler` 可用于注册 API 使用仪器处理程序。传递的参数将是用于标识使用点的“api key”，例如 PyTorch
+    扩展导入的 `python.import` 或如果触发了 TorchScript 编译，则为 `torch.script.compile`。 '
 - en: '[PRE1]'
+  id: totrans-21
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: 'Note for developers: new API trigger points can be added in code with `C10_LOG_API_USAGE_ONCE("my_api")`
     in C++ or `torch._C._log_api_usage_once("my.api")` in Python.'
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 开发者注意：可以在 C++ 代码中使用 `C10_LOG_API_USAGE_ONCE("my_api")` 或在 Python 中使用 `torch._C._log_api_usage_once("my.api")`
+    来添加新的 API 触发点。
 - en: '[Attaching metadata to saved TorchScript models](#id3)[](#attaching-metadata-to-saved-torchscript-models
     "Permalink to this heading")'
+  id: totrans-23
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: '[将元数据附加到保存的TorchScript模型](#id3)[](#attaching-metadata-to-saved-torchscript-models
+    "跳转到此标题")'
 - en: TorchScript modules can be saved as an archive file that bundles serialized
     parameters and module code as TorchScript (see [`torch.jit.save()`](../generated/torch.jit.save.html#torch.jit.save
     "torch.jit.save")). It’s often convenient to bundle additional information together
     with the model, for example, description of model producer or auxiliary artifacts.
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: TorchScript模块可以保存为捆绑序列化参数和模块代码的存档文件，作为TorchScript（参见[`torch.jit.save()`](../generated/torch.jit.save.html#torch.jit.save
+    "torch.jit.save")）。通常方便将附加信息与模型一起捆绑，例如，模型生产者的描述或辅助工件。
 - en: It can be achieved by passing the `_extra_files` argument to [`torch.jit.save()`](../generated/torch.jit.save.html#torch.jit.save
     "torch.jit.save") and `torch::jit::load` to store and retrieve arbitrary binary
     blobs during saving process. Since TorchScript files are regular ZIP archives,
     extra information gets stored as regular files inside archive’s `extra/` directory.
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: 可以通过将`_extra_files`参数传递给[`torch.jit.save()`](../generated/torch.jit.save.html#torch.jit.save
+    "torch.jit.save")和`torch::jit::load`来在保存过程中存储和检索任意二进制数据块。由于TorchScript文件是常规ZIP存档，额外信息被存储为存档的`extra/`目录中的常规文件。
 - en: 'There’s also a global hook allowing to attach extra files to any TorchScript
     archive produced in the current process. It might be useful to tag models with
     producer metadata, akin to JPEG metadata produced by digital cameras. Example
     usage might look like:'
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 还有一个全局钩子，允许在当前进程中的任何TorchScript存档上附加额外文件。类似于数字相机生成的JPEG元数据，可能有助于使用生产者元数据标记模型。示例用法可能如下：
 - en: '[PRE2]'
+  id: totrans-27
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: '[Build environment considerations](#id4)[](#build-environment-considerations
     "Permalink to this heading")'
+  id: totrans-28
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: '[构建环境考虑](#id4)[](#build-environment-considerations "跳转到此标题")'
 - en: TorchScript’s compilation needs to have access to the original python files
     as it uses python’s `inspect.getsource` call. In certain production environments
     it might require explicitly deploying `.py` files along with precompiled `.pyc`.
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: TorchScript的编译需要访问原始的Python文件，因为它使用Python的`inspect.getsource`调用。在某些生产环境中，可能需要显式部署`.py`文件以及预编译的`.pyc`文件。
 - en: '[Common extension points](#id5)[](#common-extension-points "Permalink to this
     heading")'
+  id: totrans-30
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: '[常见扩展点](#id5)[](#common-extension-points "跳转到此标题")'
 - en: 'PyTorch APIs are generally loosely coupled and it’s easy to replace a component
     with specialized version. Common extension points include:'
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch的API通常松散耦合，很容易用专门版本替换组件。常见的扩展点包括：
 - en: Custom operators implemented in C++ - see [tutorial for more details](https://pytorch.org/tutorials/advanced/cpp_extension.html).
+  id: totrans-32
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在C++中实现的自定义运算符 - 详细信息请参阅[教程](https://pytorch.org/tutorials/advanced/cpp_extension.html)。
 - en: Custom data reading can be often integrated directly by invoking corresponding
     python library. Existing functionality of [`torch.utils.data`](../data.html#module-torch.utils.data
     "torch.utils.data") can be utilized by extending [`Dataset`](../data.html#torch.utils.data.Dataset
     "torch.utils.data.Dataset") or [`IterableDataset`](../data.html#torch.utils.data.IterableDataset
     "torch.utils.data.IterableDataset").
+  id: totrans-33
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 通常可以通过调用相应的Python库直接集成自定义数据读取。通过扩展[`Dataset`](../data.html#torch.utils.data.Dataset
+    "torch.utils.data.Dataset")或[`IterableDataset`](../data.html#torch.utils.data.IterableDataset
+    "torch.utils.data.IterableDataset")，可以利用[`torch.utils.data`](../data.html#module-torch.utils.data
+    "torch.utils.data")的现有功能。

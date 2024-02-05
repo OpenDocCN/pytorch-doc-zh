@@ -1,50 +1,71 @@
 - en: Reproducibility
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 可复制性
 - en: 原文：[https://pytorch.org/docs/stable/notes/randomness.html](https://pytorch.org/docs/stable/notes/randomness.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/docs/stable/notes/randomness.html](https://pytorch.org/docs/stable/notes/randomness.html)
 - en: Completely reproducible results are not guaranteed across PyTorch releases,
     individual commits, or different platforms. Furthermore, results may not be reproducible
     between CPU and GPU executions, even when using identical seeds.
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 在PyTorch发布、单个提交或不同平台之间不能保证完全可复制的结果。此外，即使使用相同的种子，在CPU和GPU执行之间的结果也可能无法复制。
 - en: However, there are some steps you can take to limit the number of sources of
     nondeterministic behavior for a specific platform, device, and PyTorch release.
     First, you can control sources of randomness that can cause multiple executions
     of your application to behave differently. Second, you can configure PyTorch to
     avoid using nondeterministic algorithms for some operations, so that multiple
     calls to those operations, given the same inputs, will produce the same result.
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 然而，您可以采取一些步骤来限制特定平台、设备和PyTorch发布的不确定行为源的数量。首先，您可以控制可能导致应用程序多次执行时行为不同的随机性源。其次，您可以配置PyTorch以避免对某些操作使用非确定性算法，以便对这些操作进行多次调用时，给定相同的输入，将产生相同的结果。
 - en: Warning
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: Deterministic operations are often slower than nondeterministic operations,
     so single-run performance may decrease for your model. However, determinism may
     save time in development by facilitating experimentation, debugging, and regression
     testing.
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 确定性操作通常比非确定性操作慢，因此您的模型的单次运行性能可能会降低。然而，确定性可能会通过促进实验、调试和回归测试来节省开发时间。
 - en: Controlling sources of randomness[](#controlling-sources-of-randomness "Permalink
     to this heading")
+  id: totrans-6
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 控制随机性源[](#controlling-sources-of-randomness "Permalink to this heading")
 - en: PyTorch random number generator[](#pytorch-random-number-generator "Permalink
     to this heading")
+  id: totrans-7
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: PyTorch随机数生成器[](#pytorch-random-number-generator "Permalink to this heading")
 - en: 'You can use [`torch.manual_seed()`](../generated/torch.manual_seed.html#torch.manual_seed
     "torch.manual_seed") to seed the RNG for all devices (both CPU and CUDA):'
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可以使用[`torch.manual_seed()`](../generated/torch.manual_seed.html#torch.manual_seed
+    "torch.manual_seed")为所有设备（CPU和CUDA）设置RNG的种子：
 - en: '[PRE0]'
+  id: totrans-9
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: Some PyTorch operations may use random numbers internally. [`torch.svd_lowrank()`](../generated/torch.svd_lowrank.html#torch.svd_lowrank
     "torch.svd_lowrank") does this, for instance. Consequently, calling it multiple
     times back-to-back with the same input arguments may give different results. However,
@@ -52,50 +73,76 @@
     "torch.manual_seed") is set to a constant at the beginning of an application and
     all other sources of nondeterminism have been eliminated, the same series of random
     numbers will be generated each time the application is run in the same environment.
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 一些PyTorch操作可能在内部使用随机数。例如，[`torch.svd_lowrank()`](../generated/torch.svd_lowrank.html#torch.svd_lowrank
+    "torch.svd_lowrank")就是这样。因此，连续多次使用相同的输入参数调用它可能会产生不同的结果。然而，只要在应用程序开头将[`torch.manual_seed()`](../generated/torch.manual_seed.html#torch.manual_seed
+    "torch.manual_seed")设置为常量，并且已经消除了所有其他不确定性源，每次在相同环境中运行应用程序时都会生成相同系列的随机数。
 - en: It is also possible to obtain identical results from an operation that uses
     random numbers by setting [`torch.manual_seed()`](../generated/torch.manual_seed.html#torch.manual_seed
     "torch.manual_seed") to the same value between subsequent calls.
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过在连续调用之间将[`torch.manual_seed()`](../generated/torch.manual_seed.html#torch.manual_seed
+    "torch.manual_seed")设置为相同的值，也可以从使用随机数的操作中获得相同的结果。
 - en: Python
+  id: totrans-12
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: Python
 - en: 'For custom operators, you might need to set python seed as well:'
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于自定义操作符，您可能还需要设置python种子：
 - en: '[PRE1]'
+  id: totrans-14
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Random number generators in other libraries[](#random-number-generators-in-other-libraries
     "Permalink to this heading")
+  id: totrans-15
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 其他库中的随机数生成器[](#random-number-generators-in-other-libraries "Permalink to this
+    heading")
 - en: 'If you or any of the libraries you are using rely on NumPy, you can seed the
     global NumPy RNG with:'
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您或您正在使用的任何库依赖于NumPy，您可以使用以下方法为全局NumPy RNG设置种子：
 - en: '[PRE2]'
+  id: totrans-17
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: However, some applications and libraries may use NumPy Random Generator objects,
     not the global RNG ([https://numpy.org/doc/stable/reference/random/generator.html](https://numpy.org/doc/stable/reference/random/generator.html)),
     and those will need to be seeded consistently as well.
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: 然而，一些应用程序和库可能使用NumPy随机生成器对象，而不是全局RNG ([https://numpy.org/doc/stable/reference/random/generator.html](https://numpy.org/doc/stable/reference/random/generator.html))，这些对象也需要一致地设置种子。
 - en: If you are using any other libraries that use random number generators, refer
     to the documentation for those libraries to see how to set consistent seeds for
     them.
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您正在使用任何其他使用随机数生成器的库，请参考这些库的文档，看看如何为它们设置一致的种子。
 - en: CUDA convolution benchmarking[](#cuda-convolution-benchmarking "Permalink to
     this heading")
+  id: totrans-20
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: CUDA卷积基准测试[](#cuda-convolution-benchmarking "Permalink to this heading")
 - en: The cuDNN library, used by CUDA convolution operations, can be a source of nondeterminism
     across multiple executions of an application. When a cuDNN convolution is called
     with a new set of size parameters, an optional feature can run multiple convolution
@@ -104,66 +151,96 @@
     set of size parameters. Due to benchmarking noise and different hardware, the
     benchmark may select different algorithms on subsequent runs, even on the same
     machine.
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 由CUDA卷积操作使用的cuDNN库可能是应用程序多次执行中的不确定性源。当使用新的大小参数集调用cuDNN卷积时，一个可选功能可以运行多个卷积算法，并对它们进行基准测试以找到最快的算法。然后，在接下来的过程中，将始终使用最快的算法来处理相应的大小参数集。由于基准测试噪声和不同的硬件，基准测试可能会在后续运行中选择不同的算法，即使在同一台机器上也是如此。
 - en: Disabling the benchmarking feature with `torch.backends.cudnn.benchmark = False`
     causes cuDNN to deterministically select an algorithm, possibly at the cost of
     reduced performance.
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过使用`torch.backends.cudnn.benchmark = False`禁用基准测试功能，可以使cuDNN确定性地选择算法，可能会以降低性能为代价。
 - en: However, if you do not need reproducibility across multiple executions of your
     application, then performance might improve if the benchmarking feature is enabled
     with `torch.backends.cudnn.benchmark = True`.
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 然而，如果您不需要在应用程序的多次执行之间实现可重现性，则启用基准测试功能可能会提高性能，方法是使用`torch.backends.cudnn.benchmark
+    = True`。
 - en: Note that this setting is different from the `torch.backends.cudnn.deterministic`
     setting discussed below.
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，此设置与下面讨论的`torch.backends.cudnn.deterministic`设置不同。
 - en: Avoiding nondeterministic algorithms[](#avoiding-nondeterministic-algorithms
     "Permalink to this heading")
+  id: totrans-25
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 避免非确定性算法[](#avoiding-nondeterministic-algorithms "跳转到此标题")
 - en: '[`torch.use_deterministic_algorithms()`](../generated/torch.use_deterministic_algorithms.html#torch.use_deterministic_algorithms
     "torch.use_deterministic_algorithms") lets you configure PyTorch to use deterministic
     algorithms instead of nondeterministic ones where available, and to throw an error
     if an operation is known to be nondeterministic (and without a deterministic alternative).'
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`torch.use_deterministic_algorithms()`](../generated/torch.use_deterministic_algorithms.html#torch.use_deterministic_algorithms
+    "torch.use_deterministic_algorithms")允许您配置PyTorch使用确定性算法，而不是非确定性算法（如果有的话），并且如果已知某个操作是非确定性的（且没有确定性替代方案），则会引发错误。'
 - en: 'Please check the documentation for [`torch.use_deterministic_algorithms()`](../generated/torch.use_deterministic_algorithms.html#torch.use_deterministic_algorithms
     "torch.use_deterministic_algorithms") for a full list of affected operations.
     If an operation does not act correctly according to the documentation, or if you
     need a deterministic implementation of an operation that does not have one, please
     submit an issue: [https://github.com/pytorch/pytorch/issues?q=label:%22module:%20determinism%22](https://github.com/pytorch/pytorch/issues?q=label:%22module:%20determinism%22)'
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 请查看[`torch.use_deterministic_algorithms()`](../generated/torch.use_deterministic_algorithms.html#torch.use_deterministic_algorithms
+    "torch.use_deterministic_algorithms")文档，获取受影响操作的完整列表。如果某个操作未按照文档正确执行，或者您需要一个没有确定性实现的操作的确定性实现，请提交一个问题：[https://github.com/pytorch/pytorch/issues?q=label:%22module:%20determinism%22](https://github.com/pytorch/pytorch/issues?q=label:%22module:%20determinism%22)
 - en: 'For example, running the nondeterministic CUDA implementation of [`torch.Tensor.index_add_()`](../generated/torch.Tensor.index_add_.html#torch.Tensor.index_add_
     "torch.Tensor.index_add_") will throw an error:'
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: 例如，运行[`torch.Tensor.index_add_()`](../generated/torch.Tensor.index_add_.html#torch.Tensor.index_add_
+    "torch.Tensor.index_add_")的非确定性CUDA实现将引发错误：
 - en: '[PRE3]'
+  id: totrans-29
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: 'When [`torch.bmm()`](../generated/torch.bmm.html#torch.bmm "torch.bmm") is
     called with sparse-dense CUDA tensors it typically uses a nondeterministic algorithm,
     but when the deterministic flag is turned on, its alternate deterministic implementation
     will be used:'
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 当使用稀疏-稠密CUDA张量调用[`torch.bmm()`](../generated/torch.bmm.html#torch.bmm "torch.bmm")时，通常会使用一个非确定性算法，但当打开确定性标志时，将使用其备用确定性实现：
 - en: '[PRE4]'
+  id: totrans-31
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: 'Furthermore, if you are using CUDA tensors, and your CUDA version is 10.2 or
     greater, you should set the environment variable CUBLAS_WORKSPACE_CONFIG according
     to CUDA documentation: [https://docs.nvidia.com/cuda/cublas/index.html#cublasApi_reproducibility](https://docs.nvidia.com/cuda/cublas/index.html#cublasApi_reproducibility)'
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
-- en: CUDA convolution determinism[](#cuda-convolution-determinism "Permalink to
-    this heading")
+  zh: 此外，如果您正在使用CUDA张量，并且CUDA版本为10.2或更高，则应根据CUDA文档设置环境变量CUBLAS_WORKSPACE_CONFIG：[https://docs.nvidia.com/cuda/cublas/index.html#cublasApi_reproducibility](https://docs.nvidia.com/cuda/cublas/index.html#cublasApi_reproducibility)
+- en: CUDA convolution determinism[](#cuda-convolution-determinism "Permalink to this
+    heading")
+  id: totrans-33
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: CUDA卷积确定性性[](#cuda-convolution-determinism "跳转到此标题")
 - en: While disabling CUDA convolution benchmarking (discussed above) ensures that
     CUDA selects the same algorithm each time an application is run, that algorithm
     itself may be nondeterministic, unless either `torch.use_deterministic_algorithms(True)`
@@ -171,23 +248,35 @@
     only this behavior, unlike [`torch.use_deterministic_algorithms()`](../generated/torch.use_deterministic_algorithms.html#torch.use_deterministic_algorithms
     "torch.use_deterministic_algorithms") which will make other PyTorch operations
     behave deterministically, too.
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 虽然禁用CUDA卷积基准测试（如上所述）确保CUDA每次运行应用程序时选择相同的算法，但该算法本身可能是非确定性的，除非设置`torch.use_deterministic_algorithms(True)`或`torch.backends.cudnn.deterministic
+    = True`。后者仅控制此行为，不像[`torch.use_deterministic_algorithms()`](../generated/torch.use_deterministic_algorithms.html#torch.use_deterministic_algorithms
+    "torch.use_deterministic_algorithms")会使其他PyTorch操作也表现出确定性。
 - en: CUDA RNN and LSTM
+  id: totrans-35
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: CUDA RNN和LSTM
 - en: In some versions of CUDA, RNNs and LSTM networks may have non-deterministic
     behavior. See [`torch.nn.RNN()`](../generated/torch.nn.RNN.html#torch.nn.RNN "torch.nn.RNN")
     and [`torch.nn.LSTM()`](../generated/torch.nn.LSTM.html#torch.nn.LSTM "torch.nn.LSTM")
     for details and workarounds.
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
-- en: Filling uninitialized memory[](#filling-uninitialized-memory "Permalink to
-    this heading")
+  zh: 在某些版本的CUDA中，RNN和LSTM网络可能具有非确定性行为。有关详细信息和解决方法，请参阅[`torch.nn.RNN()`](../generated/torch.nn.RNN.html#torch.nn.RNN
+    "torch.nn.RNN")和[`torch.nn.LSTM()`](../generated/torch.nn.LSTM.html#torch.nn.LSTM
+    "torch.nn.LSTM")。
+- en: Filling uninitialized memory[](#filling-uninitialized-memory "Permalink to this
+    heading")
+  id: totrans-37
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 填充未初始化内存[](#filling-uninitialized-memory "跳转到此标题")
 - en: Operations like [`torch.empty()`](../generated/torch.empty.html#torch.empty
     "torch.empty") and [`torch.Tensor.resize_()`](../generated/torch.Tensor.resize_.html#torch.Tensor.resize_
     "torch.Tensor.resize_") can return tensors with uninitialized memory that contain
@@ -199,22 +288,34 @@
     which will fill the uninitialized memory with a known value if `torch.use_deterministic_algorithms(True)`
     is set. This will to prevent the possibility of this kind of nondeterministic
     behavior.
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 像[`torch.empty()`](../generated/torch.empty.html#torch.empty "torch.empty")和[`torch.Tensor.resize_()`](../generated/torch.Tensor.resize_.html#torch.Tensor.resize_
+    "torch.Tensor.resize_")这样的操作可能返回具有未初始化内存的张量，其中包含未定义的值。如果需要确定性，将这样的张量用作另一个操作的输入是无效的，因为输出将是不确定的。但实际上没有任何东西可以阻止运行这种无效代码。因此，为了安全起见，默认情况下将[`torch.utils.deterministic.fill_uninitialized_memory`](../deterministic.html#torch.utils.deterministic.fill_uninitialized_memory
+    "torch.utils.deterministic.fill_uninitialized_memory")设置为`True`，如果设置了`torch.use_deterministic_algorithms(True)`，则会使用已知值填充未初始化的内存。这将防止这种非确定性行为的可能性。
 - en: However, filling uninitialized memory is detrimental to performance. So if your
     program is valid and does not use uninitialized memory as the input to an operation,
     then this setting can be turned off for better performance.
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 然而，填充未初始化内存对性能有害。因此，如果您的程序有效且不将未初始化内存用作操作的输入，则可以关闭此设置以获得更好的性能。
 - en: DataLoader
+  id: totrans-40
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: DataLoader
 - en: 'DataLoader will reseed workers following [Randomness in multi-process data
     loading](../data.html#data-loading-randomness) algorithm. Use `worker_init_fn()`
     and generator to preserve reproducibility:'
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: DataLoader将根据[多进程数据加载中的随机性](../data.html#data-loading-randomness)算法重新播种工作进程。使用`worker_init_fn()`和生成器来保持可重现性：
 - en: '[PRE5]'
+  id: totrans-42
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
