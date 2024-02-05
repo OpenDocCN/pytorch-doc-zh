@@ -1,11 +1,15 @@
 - en: Automatic Mixed Precision package - torch.amp
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 自动混合精度包 - torch.amp
 - en: 原文：[https://pytorch.org/docs/stable/amp.html](https://pytorch.org/docs/stable/amp.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/docs/stable/amp.html](https://pytorch.org/docs/stable/amp.html)
 - en: '[`torch.amp`](#module-torch.amp "torch.amp") provides convenience methods for
     mixed precision, where some operations use the `torch.float32` (`float`) datatype
     and other operations use lower precision floating point datatype (`lower_precision_fp`):
@@ -13,8 +17,13 @@
     convolutions, are much faster in `lower_precision_fp`. Other ops, like reductions,
     often require the dynamic range of `float32`. Mixed precision tries to match each
     op to its appropriate datatype.'
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`torch.amp`](#module-torch.amp "torch.amp") 提供了混合精度的便利方法，其中一些操作使用 `torch.float32`
+    (`float`) 数据类型，而其他操作使用较低精度的浮点数据类型 (`lower_precision_fp`)：`torch.float16` (`half`)
+    或 `torch.bfloat16`。一些操作，如线性层和卷积，使用 `lower_precision_fp` 更快。其他操作，如缩减操作，通常需要 `float32`
+    的动态范围。混合精度尝试将每个操作匹配到其适当的数据类型。'
 - en: Ordinarily, “automatic mixed precision training” with datatype of `torch.float16`
     uses [`torch.autocast`](#torch.autocast "torch.autocast") and [`torch.cuda.amp.GradScaler`](#torch.cuda.amp.GradScaler
     "torch.cuda.amp.GradScaler") together, as shown in the [CUDA Automatic Mixed Precision
@@ -25,291 +34,429 @@
     As shown in the CPU example section of [`torch.autocast`](#torch.autocast "torch.autocast"),
     “automatic mixed precision training/inference” on CPU with datatype of `torch.bfloat16`
     only uses [`torch.autocast`](#torch.autocast "torch.autocast").
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 通常，“使用 `torch.float16` 数据类型的自动混合精度训练”使用 [`torch.autocast`](#torch.autocast "torch.autocast")
+    和 [`torch.cuda.amp.GradScaler`](#torch.cuda.amp.GradScaler "torch.cuda.amp.GradScaler")
+    一起，如 [CUDA 自动混合精度示例](notes/amp_examples.html#amp-examples) 和 [CUDA 自动混合精度配方](https://pytorch.org/tutorials/recipes/recipes/amp_recipe.html)
+    中所示。但是，如果需要，[`torch.autocast`](#torch.autocast "torch.autocast") 和 [`torch.cuda.amp.GradScaler`](#torch.cuda.amp.GradScaler
+    "torch.cuda.amp.GradScaler") 是模块化的，可以分开使用。如 [`torch.autocast`](#torch.autocast
+    "torch.autocast") 的 CPU 示例部分所示，“使用 `torch.bfloat16` 数据类型的 CPU 上的自动混合精度训练/推理” 仅使用
+    [`torch.autocast`](#torch.autocast "torch.autocast")。
 - en: 'For CUDA and CPU, APIs are also provided separately:'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于 CUDA 和 CPU，还提供了单独的 API：
 - en: '`torch.autocast("cuda", args...)` is equivalent to `torch.cuda.amp.autocast(args...)`.'
+  id: totrans-5
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`torch.autocast("cuda", args...)` 等同于 `torch.cuda.amp.autocast(args...)`。'
 - en: '`torch.autocast("cpu", args...)` is equivalent to `torch.cpu.amp.autocast(args...)`.
     For CPU, only lower precision floating point datatype of `torch.bfloat16` is supported
     for now.'
+  id: totrans-6
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`torch.autocast("cpu", args...)` 等同于 `torch.cpu.amp.autocast(args...)`。目前，对于
+    CPU，仅支持 `torch.bfloat16` 的较低精度浮点数据类型。'
 - en: '[`torch.autocast`](#torch.autocast "torch.autocast") and [`torch.cpu.amp.autocast`](#torch.cpu.amp.autocast
     "torch.cpu.amp.autocast") are new in version 1.10.'
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`torch.autocast`](#torch.autocast "torch.autocast") 和 [`torch.cpu.amp.autocast`](#torch.cpu.amp.autocast
+    "torch.cpu.amp.autocast") 是 1.10 版本中的新功能。'
 - en: '[Autocasting](#autocasting)'
+  id: totrans-8
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[自动转换](#autocasting)'
 - en: '[Gradient Scaling](#gradient-scaling)'
+  id: totrans-9
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[梯度缩放](#gradient-scaling)'
 - en: '[Autocast Op Reference](#autocast-op-reference)'
+  id: totrans-10
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[Autocast Op 参考](#autocast-op-reference)'
 - en: '[Op Eligibility](#op-eligibility)'
+  id: totrans-11
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[Op Eligibility](#op-eligibility)'
 - en: '[CUDA Op-Specific Behavior](#cuda-op-specific-behavior)'
+  id: totrans-12
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[CUDA Op-Specific Behavior](#cuda-op-specific-behavior)'
 - en: '[CUDA Ops that can autocast to `float16`](#cuda-ops-that-can-autocast-to-float16)'
+  id: totrans-13
   prefs:
   - PREF_IND
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[CUDA Ops that can autocast to `float16`](#cuda-ops-that-can-autocast-to-float16)'
 - en: '[CUDA Ops that can autocast to `float32`](#cuda-ops-that-can-autocast-to-float32)'
+  id: totrans-14
   prefs:
   - PREF_IND
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[CUDA Ops that can autocast to `float32`](#cuda-ops-that-can-autocast-to-float32)'
 - en: '[CUDA Ops that promote to the widest input type](#cuda-ops-that-promote-to-the-widest-input-type)'
+  id: totrans-15
   prefs:
   - PREF_IND
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[CUDA Ops that promote to the widest input type](#cuda-ops-that-promote-to-the-widest-input-type)'
 - en: '[Prefer `binary_cross_entropy_with_logits` over `binary_cross_entropy`](#prefer-binary-cross-entropy-with-logits-over-binary-cross-entropy)'
+  id: totrans-16
   prefs:
   - PREF_IND
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[推荐使用 `binary_cross_entropy_with_logits` 而不是 `binary_cross_entropy`](#prefer-binary-cross-entropy-with-logits)'
 - en: '[CPU Op-Specific Behavior](#cpu-op-specific-behavior)'
+  id: totrans-17
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[CPU Op-Specific Behavior](#cpu-op-specific-behavior)'
 - en: '[CPU Ops that can autocast to `bfloat16`](#cpu-ops-that-can-autocast-to-bfloat16)'
+  id: totrans-18
   prefs:
   - PREF_IND
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[CPU Ops that can autocast to `bfloat16`](#cpu-ops-that-can-autocast-to-bfloat16)'
 - en: '[CPU Ops that can autocast to `float32`](#cpu-ops-that-can-autocast-to-float32)'
+  id: totrans-19
   prefs:
   - PREF_IND
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[CPU Ops that can autocast to `float32`](#cpu-ops-that-can-autocast-to-float32)'
 - en: '[CPU Ops that promote to the widest input type](#cpu-ops-that-promote-to-the-widest-input-type)'
+  id: totrans-20
   prefs:
   - PREF_IND
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[CPU Ops that promote to the widest input type](#cpu-ops-that-promote-to-the-widest-input-type)'
 - en: '## [Autocasting](#id4)'
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: '## [自动转换](#id4)'
 - en: '[PRE0]'
+  id: totrans-22
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: Instances of [`autocast`](#torch.autocast "torch.autocast") serve as context
     managers or decorators that allow regions of your script to run in mixed precision.
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`autocast`](#torch.autocast "torch.autocast") 的实例充当上下文管理器或装饰器，允许脚本的区域以混合精度运行。'
 - en: In these regions, ops run in an op-specific dtype chosen by autocast to improve
     performance while maintaining accuracy. See the [Autocast Op Reference](#autocast-op-reference)
     for details.
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这些区域中，操作以由 autocast 选择的 op-specific dtype 运行，以提高性能同时保持准确性。详细信息请参阅 [Autocast
+    Op 参考](#autocast-op-reference)。
 - en: When entering an autocast-enabled region, Tensors may be any type. You should
     not call `half()` or `bfloat16()` on your model(s) or inputs when using autocasting.
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: 进入启用 autocast 的区域时，张量可以是任何类型。在使用自动转换时，不应在模型或输入上调用 `half()` 或 `bfloat16()`。
 - en: '[`autocast`](#torch.autocast "torch.autocast") should wrap only the forward
     pass(es) of your network, including the loss computation(s). Backward passes under
     autocast are not recommended. Backward ops run in the same type that autocast
     used for corresponding forward ops.'
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`autocast`](#torch.autocast "torch.autocast") 应该仅包装网络的前向传递，包括损失计算。不建议在 autocast
+    下进行反向传递。反向操作以 autocast 用于相应前向操作的相同类型运行。'
 - en: 'Example for CUDA Devices:'
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: CUDA 设备示例：
 - en: '[PRE1]'
+  id: totrans-28
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: See the [CUDA Automatic Mixed Precision examples](notes/amp_examples.html#amp-examples)
     for usage (along with gradient scaling) in more complex scenarios (e.g., gradient
     penalty, multiple models/losses, custom autograd functions).
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 有关在更复杂的情况下（例如梯度惩罚、多个模型/损失、自定义自动求导函数）的用法（以及梯度缩放），请参阅[CUDA自动混合精度示例](notes/amp_examples.html#amp-examples)。
 - en: '[`autocast`](#torch.autocast "torch.autocast") can also be used as a decorator,
     e.g., on the `forward` method of your model:'
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`autocast`](#torch.autocast "torch.autocast")也可以用作装饰器，例如，用于模型的`forward`方法：'
 - en: '[PRE2]'
+  id: totrans-31
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: 'Floating-point Tensors produced in an autocast-enabled region may be `float16`.
     After returning to an autocast-disabled region, using them with floating-point
     Tensors of different dtypes may cause type mismatch errors. If so, cast the Tensor(s)
     produced in the autocast region back to `float32` (or other dtype if desired).
     If a Tensor from the autocast region is already `float32`, the cast is a no-op,
     and incurs no additional overhead. CUDA Example:'
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 在自动转换启用的区域中生成的浮点张量可能是`float16`。在返回到禁用自动转换的区域后，将其与不同dtype的浮点张量一起使用可能会导致类型不匹配错误。如果是这样，请将在自动转换区域中生成的张量重新转换为`float32`（或其他所需的dtype）。如果来自自动转换区域的张量已经是`float32`，则转换是一个空操作，并且不会产生额外的开销。CUDA示例：
 - en: '[PRE3]'
+  id: totrans-33
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: 'CPU Training Example:'
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: CPU训练示例：
 - en: '[PRE4]'
+  id: totrans-35
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: 'CPU Inference Example:'
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: CPU推理示例：
 - en: '[PRE5]'
+  id: totrans-37
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: 'CPU Inference Example with Jit Trace:'
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 具有Jit Trace的CPU推理示例：
 - en: '[PRE6]'
+  id: totrans-39
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: Type mismatch errors *in* an autocast-enabled region are a bug; if this is what
     you observe, please file an issue.
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: 自动转换启用的区域中的类型不匹配错误是一个错误；如果这是您观察到的情况，请提交问题。
 - en: '`autocast(enabled=False)` subregions can be nested in autocast-enabled regions.
     Locally disabling autocast can be useful, for example, if you want to force a
     subregion to run in a particular `dtype`. Disabling autocast gives you explicit
     control over the execution type. In the subregion, inputs from the surrounding
     region should be cast to `dtype` before use:'
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: '`autocast(enabled=False)`子区域可以嵌套在自动转换启用的区域中。局部禁用自动转换可能很有用，例如，如果您想要强制子区域以特定的`dtype`运行。禁用自动转换可以让您明确控制执行类型。在子区域中，应将来自周围区域的输入转换为`dtype`后再使用：'
 - en: '[PRE7]'
+  id: totrans-42
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: The autocast state is thread-local. If you want it enabled in a new thread,
     the context manager or decorator must be invoked in that thread. This affects
     [`torch.nn.DataParallel`](generated/torch.nn.DataParallel.html#torch.nn.DataParallel
     "torch.nn.DataParallel") and [`torch.nn.parallel.DistributedDataParallel`](generated/torch.nn.parallel.DistributedDataParallel.html#torch.nn.parallel.DistributedDataParallel
     "torch.nn.parallel.DistributedDataParallel") when used with more than one GPU
     per process (see [Working with Multiple GPUs](notes/amp_examples.html#amp-multigpu)).
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: 自动转换状态是线程本地的。如果要在新线程中启用它，则必须在该线程中调用上下文管理器或装饰器。这会影响当与一个进程中的多个GPU一起使用时的[`torch.nn.DataParallel`](generated/torch.nn.DataParallel.html#torch.nn.DataParallel
+    "torch.nn.DataParallel")和[`torch.nn.parallel.DistributedDataParallel`](generated/torch.nn.parallel.DistributedDataParallel.html#torch.nn.parallel.DistributedDataParallel
+    "torch.nn.parallel.DistributedDataParallel")（请参阅[使用多个GPU](notes/amp_examples.html#amp-multigpu)）。
 - en: Parameters
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**device_type** ([*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)")*,* *required*) – Device type to use. Possible values are:
     ‘cuda’, ‘cpu’, ‘xpu’ and ‘hpu’. The type is the same as the type attribute of
     a [`torch.device`](tensor_attributes.html#torch.device "torch.device"). Thus,
     you may obtain the device type of a tensor using Tensor.device.type.'
+  id: totrans-45
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**device_type**（*str*，*必需*）- 要使用的设备类型。可能的值为：''cuda''、''cpu''、''xpu''和''hpu''。该类型与[`torch.device`](tensor_attributes.html#torch.device
+    "torch.device")的类型属性相同。因此，您可以使用Tensor.device.type获取张量的设备类型。'
 - en: '**enabled** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")*,* *optional*) – Whether autocasting should be enabled in
     the region. Default: `True`'
+  id: totrans-46
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**enabled**（*bool*，*可选*）- 是否应在该区域启用自动转换。默认值：`True`'
 - en: '**dtype** (*torch_dtype**,* *optional*) – Whether to use torch.float16 or torch.bfloat16.'
+  id: totrans-47
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**dtype**（*torch_dtype**,* *可选*）- 是否使用torch.float16或torch.bfloat16。'
 - en: '**cache_enabled** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")*,* *optional*) – Whether the weight cache inside autocast
     should be enabled. Default: `True`'
+  id: totrans-48
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**cache_enabled**（*bool*，*可选*）- 是否启用自动转换内部的权重缓存。默认值：`True`'
 - en: '[PRE8]'
+  id: totrans-49
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: See [`torch.autocast`](#torch.autocast "torch.autocast").
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: 请参阅[`torch.autocast`](#torch.autocast "torch.autocast")。
 - en: '`torch.cuda.amp.autocast(args...)` is equivalent to `torch.autocast("cuda",
     args...)`'
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
+  zh: '`torch.cuda.amp.autocast(args...)`等同于`torch.autocast("cuda", args...)`'
 - en: '[PRE9]'
+  id: totrans-52
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: Create a helper decorator for `forward` methods of custom autograd functions.
+  id: totrans-53
   prefs: []
   type: TYPE_NORMAL
+  zh: 为自定义自动求导函数的`forward`方法创建一个辅助装饰器。
 - en: Autograd functions are subclasses of [`torch.autograd.Function`](autograd.html#torch.autograd.Function
     "torch.autograd.Function"). See the [example page](notes/amp_examples.html#amp-custom-examples)
     for more detail.
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: 自动求导函数是[`torch.autograd.Function`](autograd.html#torch.autograd.Function "torch.autograd.Function")的子类。有关更多详细信息，请参阅[示例页面](notes/amp_examples.html#amp-custom-examples)。
 - en: Parameters
+  id: totrans-55
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**cast_inputs** ([`torch.dtype`](tensor_attributes.html#torch.dtype "torch.dtype")
     or None, optional, default=None) – If not `None`, when `forward` runs in an autocast-enabled
     region, casts incoming floating-point CUDA Tensors to the target dtype (non-floating-point
     Tensors are not affected), then executes `forward` with autocast disabled. If
     `None`, `forward`’s internal ops execute with the current autocast state.'
+  id: totrans-56
   prefs: []
   type: TYPE_NORMAL
+  zh: '**cast_inputs**（[`torch.dtype`](tensor_attributes.html#torch.dtype "torch.dtype")或None，可选，默认为None）-
+    如果不是`None`，当`forward`在自动转换启用的区域运行时，将传入的浮点CUDA张量转换为目标dtype（非浮点张量不受影响），然后在禁用自动转换的情况下执行`forward`。如果为`None`，`forward`的内部操作将以当前自动转换状态执行。'
 - en: Note
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: If the decorated `forward` is called outside an autocast-enabled region, [`custom_fwd`](#torch.cuda.amp.custom_fwd
     "torch.cuda.amp.custom_fwd") is a no-op and `cast_inputs` has no effect.
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果装饰的`forward`在自动转换启用的区域之外被调用，则[`custom_fwd`](#torch.cuda.amp.custom_fwd "torch.cuda.amp.custom_fwd")是一个空操作，`cast_inputs`没有效果。
 - en: '[PRE10]'
+  id: totrans-59
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: Create a helper decorator for backward methods of custom autograd functions.
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: 为自定义自动求导函数的反向方法创建一个辅助装饰器。
 - en: Autograd functions are subclasses of [`torch.autograd.Function`](autograd.html#torch.autograd.Function
     "torch.autograd.Function"). Ensures that `backward` executes with the same autocast
     state as `forward`. See the [example page](notes/amp_examples.html#amp-custom-examples)
     for more detail.
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE11]'
+  id: totrans-62
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: 'See [`torch.autocast`](#torch.autocast "torch.autocast"). `torch.cpu.amp.autocast(args...)`
     is equivalent to `torch.autocast("cpu", args...)`  ## [Gradient Scaling](#id5)[](#gradient-scaling
     "Permalink to this heading")'
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
 - en: If the forward pass for a particular op has `float16` inputs, the backward pass
     for that op will produce `float16` gradients. Gradient values with small magnitudes
     may not be representable in `float16`. These values will flush to zero (“underflow”),
     so the update for the corresponding parameters will be lost.
+  id: totrans-64
   prefs: []
   type: TYPE_NORMAL
 - en: To prevent underflow, “gradient scaling” multiplies the network’s loss(es) by
     a scale factor and invokes a backward pass on the scaled loss(es). Gradients flowing
     backward through the network are then scaled by the same factor. In other words,
     gradient values have a larger magnitude, so they don’t flush to zero.
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
 - en: Each parameter’s gradient (`.grad` attribute) should be unscaled before the
     optimizer updates the parameters, so the scale factor does not interfere with
     the learning rate.
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
 - en: Note
+  id: totrans-67
   prefs: []
   type: TYPE_NORMAL
 - en: AMP/fp16 may not work for every model! For example, most bf16-pretrained models
@@ -319,38 +466,50 @@
     dynamic range. While one may expect the scale to always be above 1, our GradScaler
     does NOT make this guarantee to maintain performance. If you encounter NaNs in
     your loss or gradients when running with AMP/fp16, verify your model is compatible.
+  id: totrans-68
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE12]'
+  id: totrans-69
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: An instance `scaler` of [`GradScaler`](#torch.cuda.amp.GradScaler "torch.cuda.amp.GradScaler").
+  id: totrans-70
   prefs: []
   type: TYPE_NORMAL
 - en: Helps perform the steps of gradient scaling conveniently.
+  id: totrans-71
   prefs: []
   type: TYPE_NORMAL
 - en: '`scaler.scale(loss)` multiplies a given loss by `scaler`’s current scale factor.'
+  id: totrans-72
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '`scaler.step(optimizer)` safely unscales gradients and calls `optimizer.step()`.'
+  id: totrans-73
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '`scaler.update()` updates `scaler`’s scale factor.'
+  id: totrans-74
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: 'Example:'
+  id: totrans-75
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE13]'
+  id: totrans-76
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: See the [Automatic Mixed Precision examples](notes/amp_examples.html#amp-examples)
     for usage (along with autocasting) in more complex cases like gradient clipping,
     gradient accumulation, gradient penalty, and multiple losses/optimizers.
+  id: totrans-77
   prefs: []
   type: TYPE_NORMAL
 - en: '`scaler` dynamically estimates the scale factor each iteration. To minimize
@@ -361,17 +520,20 @@
     time by checking the gradients for infs and NaNs during every `scaler.step(optimizer)`
     (or optional separate `scaler.unscale_(optimizer)`, see [`unscale_()`](#torch.cuda.amp.GradScaler.unscale_
     "torch.cuda.amp.GradScaler.unscale_")).'
+  id: totrans-78
   prefs: []
   type: TYPE_NORMAL
 - en: If infs/NaNs are found, `scaler.step(optimizer)` skips the underlying `optimizer.step()`
     (so the params themselves remain uncorrupted) and `update()` multiplies the scale
     by `backoff_factor`.
+  id: totrans-79
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: If no infs/NaNs are found, `scaler.step(optimizer)` runs the underlying `optimizer.step()`
     as usual. If `growth_interval` unskipped iterations occur consecutively, `update()`
     multiplies the scale by `growth_factor`.
+  id: totrans-80
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
@@ -379,13 +541,16 @@
     few iterations as its value calibrates. `scaler.step` will skip the underlying
     `optimizer.step()` for these iterations. After that, step skipping should occur
     rarely (once every few hundred or thousand iterations).
+  id: totrans-81
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-82
   prefs: []
   type: TYPE_NORMAL
 - en: '**init_scale** ([*float*](https://docs.python.org/3/library/functions.html#float
     "(in Python v3.12)")*,* *optional**,* *default=2.**16*) – Initial scale factor.'
+  id: totrans-83
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
@@ -393,6 +558,7 @@
     "(in Python v3.12)")*,* *optional**,* *default=2.0*) – Factor by which the scale
     is multiplied during [`update()`](#torch.cuda.amp.GradScaler.update "torch.cuda.amp.GradScaler.update")
     if no inf/NaN gradients occur for `growth_interval` consecutive iterations.'
+  id: totrans-84
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
@@ -400,6 +566,7 @@
     "(in Python v3.12)")*,* *optional**,* *default=0.5*) – Factor by which the scale
     is multiplied during [`update()`](#torch.cuda.amp.GradScaler.update "torch.cuda.amp.GradScaler.update")
     if inf/NaN gradients occur in an iteration.'
+  id: totrans-85
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
@@ -407,6 +574,7 @@
     "(in Python v3.12)")*,* *optional**,* *default=2000*) – Number of consecutive
     iterations without inf/NaN gradients that must occur for the scale to be multiplied
     by `growth_factor`.'
+  id: totrans-86
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
@@ -414,312 +582,457 @@
     "(in Python v3.12)")*,* *optional*) – If `False`, disables gradient scaling. [`step()`](#torch.cuda.amp.GradScaler.step
     "torch.cuda.amp.GradScaler.step") simply invokes the underlying `optimizer.step()`,
     and other methods become no-ops. Default: `True`'
+  id: totrans-87
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '[PRE14]'
+  id: totrans-88
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: Return a Python float containing the scale backoff factor.
+  id: totrans-89
   prefs: []
   type: TYPE_NORMAL
 - en: Return type
+  id: totrans-90
   prefs: []
   type: TYPE_NORMAL
 - en: '[float](https://docs.python.org/3/library/functions.html#float "(in Python
     v3.12)")'
+  id: totrans-91
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE15]'
+  id: totrans-92
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: Return a Python float containing the scale growth factor.
+  id: totrans-93
   prefs: []
   type: TYPE_NORMAL
 - en: Return type
+  id: totrans-94
   prefs: []
   type: TYPE_NORMAL
 - en: '[float](https://docs.python.org/3/library/functions.html#float "(in Python
     v3.12)")'
+  id: totrans-95
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE16]'
+  id: totrans-96
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: Return a Python int containing the growth interval.
+  id: totrans-97
   prefs: []
   type: TYPE_NORMAL
 - en: Return type
+  id: totrans-98
   prefs: []
   type: TYPE_NORMAL
 - en: '[int](https://docs.python.org/3/library/functions.html#int "(in Python v3.12)")'
+  id: totrans-99
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE17]'
+  id: totrans-100
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: Return a Python float containing the current scale, or 1.0 if scaling is disabled.
+  id: totrans-101
   prefs: []
   type: TYPE_NORMAL
 - en: Warning
+  id: totrans-102
   prefs: []
   type: TYPE_NORMAL
 - en: '[`get_scale()`](#torch.cuda.amp.GradScaler.get_scale "torch.cuda.amp.GradScaler.get_scale")
     incurs a CPU-GPU sync.'
+  id: totrans-103
   prefs: []
   type: TYPE_NORMAL
 - en: Return type
+  id: totrans-104
   prefs: []
   type: TYPE_NORMAL
 - en: '[float](https://docs.python.org/3/library/functions.html#float "(in Python
     v3.12)")'
+  id: totrans-105
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE18]'
+  id: totrans-106
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: Return a bool indicating whether this instance is enabled.
+  id: totrans-107
   prefs: []
   type: TYPE_NORMAL
 - en: Return type
+  id: totrans-108
   prefs: []
   type: TYPE_NORMAL
 - en: '[bool](https://docs.python.org/3/library/functions.html#bool "(in Python v3.12)")'
+  id: totrans-109
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE19]'
+  id: totrans-110
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE19]'
 - en: Load the scaler state.
+  id: totrans-111
   prefs: []
   type: TYPE_NORMAL
 - en: If this instance is disabled, [`load_state_dict()`](#torch.cuda.amp.GradScaler.load_state_dict
     "torch.cuda.amp.GradScaler.load_state_dict") is a no-op.
+  id: totrans-112
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-113
   prefs: []
   type: TYPE_NORMAL
 - en: '**state_dict** ([*dict*](https://docs.python.org/3/library/stdtypes.html#dict
     "(in Python v3.12)")) – scaler state. Should be an object returned from a call
     to [`state_dict()`](#torch.cuda.amp.GradScaler.state_dict "torch.cuda.amp.GradScaler.state_dict").'
+  id: totrans-114
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE20]'
+  id: totrans-115
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE20]'
 - en: '[PRE21]'
+  id: totrans-116
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE21]'
 - en: '[PRE22]'
+  id: totrans-117
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE22]'
 - en: '[PRE23]'
+  id: totrans-118
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE23]'
 - en: Multiplies (‘scales’) a tensor or list of tensors by the scale factor.
+  id: totrans-119
   prefs: []
   type: TYPE_NORMAL
 - en: Returns scaled outputs. If this instance of [`GradScaler`](#torch.cuda.amp.GradScaler
     "torch.cuda.amp.GradScaler") is not enabled, outputs are returned unmodified.
+  id: totrans-120
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-121
   prefs: []
   type: TYPE_NORMAL
 - en: '**outputs** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor") *or* *iterable*
     *of* *Tensors*) – Outputs to scale.'
+  id: totrans-122
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE24]'
+  id: totrans-123
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE24]'
 - en: Set a new scale backoff factor.
+  id: totrans-124
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-125
   prefs: []
   type: TYPE_NORMAL
 - en: '**new_scale** ([*float*](https://docs.python.org/3/library/functions.html#float
     "(in Python v3.12)")) – Value to use as the new scale backoff factor.'
+  id: totrans-126
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE25]'
+  id: totrans-127
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE25]'
 - en: Set a new scale growth factor.
+  id: totrans-128
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-129
   prefs: []
   type: TYPE_NORMAL
 - en: '**new_scale** ([*float*](https://docs.python.org/3/library/functions.html#float
     "(in Python v3.12)")) – Value to use as the new scale growth factor.'
+  id: totrans-130
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE26]'
+  id: totrans-131
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE26]'
 - en: Set a new growth interval.
+  id: totrans-132
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-133
   prefs: []
   type: TYPE_NORMAL
 - en: '**new_interval** ([*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")) – Value to use as the new growth interval.'
+  id: totrans-134
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE27]'
+  id: totrans-135
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE27]'
 - en: Return the state of the scaler as a [`dict`](https://docs.python.org/3/library/stdtypes.html#dict
     "(in Python v3.12)").
+  id: totrans-136
   prefs: []
   type: TYPE_NORMAL
 - en: 'It contains five entries:'
+  id: totrans-137
   prefs: []
   type: TYPE_NORMAL
 - en: '`"scale"` - a Python float containing the current scale'
+  id: totrans-138
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '`"growth_factor"` - a Python float containing the current growth factor'
+  id: totrans-139
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '`"backoff_factor"` - a Python float containing the current backoff factor'
+  id: totrans-140
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '`"growth_interval"` - a Python int containing the current growth interval'
+  id: totrans-141
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '`"_growth_tracker"` - a Python int containing the number of recent consecutive
     unskipped steps.'
+  id: totrans-142
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`"_growth_tracker"` - 包含最近连续未跳过步骤的Python int。'
 - en: If this instance is not enabled, returns an empty dict.
+  id: totrans-143
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果此实例未启用，则返回空字典。
 - en: Note
+  id: totrans-144
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: If you wish to checkpoint the scaler’s state after a particular iteration, [`state_dict()`](#torch.cuda.amp.GradScaler.state_dict
     "torch.cuda.amp.GradScaler.state_dict") should be called after [`update()`](#torch.cuda.amp.GradScaler.update
     "torch.cuda.amp.GradScaler.update").
+  id: totrans-145
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您希望在特定迭代之后检查标量器的状态，应在[`update()`](#torch.cuda.amp.GradScaler.update "torch.cuda.amp.GradScaler.update")之后调用[`state_dict()`](#torch.cuda.amp.GradScaler.state_dict
+    "torch.cuda.amp.GradScaler.state_dict")。
 - en: Return type
+  id: totrans-146
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict "(in Python
     v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str "(in Python
     v3.12)"), [*Any*](https://docs.python.org/3/library/typing.html#typing.Any "(in
     Python v3.12)")]'
+  id: totrans-147
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict "(in Python
+    v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str "(in Python
+    v3.12)"), [*Any*](https://docs.python.org/3/library/typing.html#typing.Any "(in
+    Python v3.12)")]'
 - en: '[PRE28]'
+  id: totrans-148
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE28]'
 - en: Invoke `unscale_(optimizer)` followed by parameter update, if gradients are
     not infs/NaN.
+  id: totrans-149
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果梯度不是无穷大/NaN，则调用`unscale_(optimizer)`，然后进行参数更新。
 - en: '[`step()`](#torch.cuda.amp.GradScaler.step "torch.cuda.amp.GradScaler.step")
     carries out the following two operations:'
+  id: totrans-150
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`step()`](#torch.cuda.amp.GradScaler.step "torch.cuda.amp.GradScaler.step")执行以下两个操作：'
 - en: Internally invokes `unscale_(optimizer)` (unless [`unscale_()`](#torch.cuda.amp.GradScaler.unscale_
     "torch.cuda.amp.GradScaler.unscale_") was explicitly called for `optimizer` earlier
     in the iteration). As part of the [`unscale_()`](#torch.cuda.amp.GradScaler.unscale_
     "torch.cuda.amp.GradScaler.unscale_"), gradients are checked for infs/NaNs.
+  id: totrans-151
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 在迭代中未为`optimizer`显式调用[`unscale_()`](#torch.cuda.amp.GradScaler.unscale_ "torch.cuda.amp.GradScaler.unscale_")时，内部调用`unscale_(optimizer)`。作为[`unscale_()`](#torch.cuda.amp.GradScaler.unscale_
+    "torch.cuda.amp.GradScaler.unscale_")的一部分，梯度将被检查是否有无穷大/NaN。
 - en: If no inf/NaN gradients are found, invokes `optimizer.step()` using the unscaled
     gradients. Otherwise, `optimizer.step()` is skipped to avoid corrupting the params.
+  id: totrans-152
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 如果未发现无穷大/NaN梯度，则使用未缩放梯度调用`optimizer.step()`。否则，将跳过`optimizer.step()`以避免损坏参数。
 - en: '`*args` and `**kwargs` are forwarded to `optimizer.step()`.'
+  id: totrans-153
   prefs: []
   type: TYPE_NORMAL
+  zh: '`*args`和`**kwargs`将被转发到`optimizer.step()`。'
 - en: Returns the return value of `optimizer.step(*args, **kwargs)`.
+  id: totrans-154
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回`optimizer.step(*args, **kwargs)`的返回值。
 - en: Parameters
+  id: totrans-155
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**optimizer** ([*torch.optim.Optimizer*](optim.html#torch.optim.Optimizer "torch.optim.Optimizer"))
     – Optimizer that applies the gradients.'
+  id: totrans-156
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**optimizer** ([*torch.optim.Optimizer*](optim.html#torch.optim.Optimizer "torch.optim.Optimizer"))
+    – 应用梯度的优化器。'
 - en: '**args** ([*Any*](https://docs.python.org/3/library/typing.html#typing.Any
     "(in Python v3.12)")) – Any arguments.'
+  id: totrans-157
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**args** ([*Any*](https://docs.python.org/3/library/typing.html#typing.Any
+    "(in Python v3.12)")) – 任意参数。'
 - en: '**kwargs** ([*Any*](https://docs.python.org/3/library/typing.html#typing.Any
     "(in Python v3.12)")) – Any keyword arguments.'
+  id: totrans-158
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**kwargs** ([*Any*](https://docs.python.org/3/library/typing.html#typing.Any
+    "(in Python v3.12)")) – 任意关键字参数。'
 - en: Return type
+  id: totrans-159
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*Optional*](https://docs.python.org/3/library/typing.html#typing.Optional
     "(in Python v3.12)")[[float](https://docs.python.org/3/library/functions.html#float
     "(in Python v3.12)")]'
+  id: totrans-160
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*Optional*](https://docs.python.org/3/library/typing.html#typing.Optional
+    "(in Python v3.12)")[[float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")]'
 - en: Warning
+  id: totrans-161
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: Closure use is not currently supported.
+  id: totrans-162
   prefs: []
   type: TYPE_NORMAL
+  zh: 目前不支持闭包使用。
 - en: '[PRE29]'
+  id: totrans-163
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE29]'
 - en: Divides (“unscales”) the optimizer’s gradient tensors by the scale factor.
+  id: totrans-164
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过比例因子除（“取消缩放”）优化器的梯度张量。
 - en: '[`unscale_()`](#torch.cuda.amp.GradScaler.unscale_ "torch.cuda.amp.GradScaler.unscale_")
     is optional, serving cases where you need to [modify or inspect gradients](notes/amp_examples.html#working-with-unscaled-gradients)
     between the backward pass(es) and [`step()`](#torch.cuda.amp.GradScaler.step "torch.cuda.amp.GradScaler.step").
     If [`unscale_()`](#torch.cuda.amp.GradScaler.unscale_ "torch.cuda.amp.GradScaler.unscale_")
     is not called explicitly, gradients will be unscaled automatically during [`step()`](#torch.cuda.amp.GradScaler.step
     "torch.cuda.amp.GradScaler.step").'
+  id: totrans-165
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`unscale_()`](#torch.cuda.amp.GradScaler.unscale_ "torch.cuda.amp.GradScaler.unscale_")是可选的，用于需要在反向传播和[`step()`](#torch.cuda.amp.GradScaler.step
+    "torch.cuda.amp.GradScaler.step")之间修改或检查梯度的情况。如果未显式调用[`unscale_()`](#torch.cuda.amp.GradScaler.unscale_
+    "torch.cuda.amp.GradScaler.unscale_")，梯度将在[`step()`](#torch.cuda.amp.GradScaler.step
+    "torch.cuda.amp.GradScaler.step")期间自动取消缩放。'
 - en: 'Simple example, using [`unscale_()`](#torch.cuda.amp.GradScaler.unscale_ "torch.cuda.amp.GradScaler.unscale_")
     to enable clipping of unscaled gradients:'
+  id: totrans-166
   prefs: []
   type: TYPE_NORMAL
+  zh: 简单示例，使用[`unscale_()`](#torch.cuda.amp.GradScaler.unscale_ "torch.cuda.amp.GradScaler.unscale_")启用未缩放梯度的裁剪：
 - en: '[PRE30]'
+  id: totrans-167
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE30]'
 - en: Parameters
+  id: totrans-168
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**optimizer** ([*torch.optim.Optimizer*](optim.html#torch.optim.Optimizer "torch.optim.Optimizer"))
     – Optimizer that owns the gradients to be unscaled.'
+  id: totrans-169
   prefs: []
   type: TYPE_NORMAL
+  zh: '**optimizer** ([*torch.optim.Optimizer*](optim.html#torch.optim.Optimizer "torch.optim.Optimizer"))
+    – 拥有待取消缩放梯度的优化器。'
 - en: Note
+  id: totrans-170
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: '[`unscale_()`](#torch.cuda.amp.GradScaler.unscale_ "torch.cuda.amp.GradScaler.unscale_")
     does not incur a CPU-GPU sync.'
+  id: totrans-171
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`unscale_()`](#torch.cuda.amp.GradScaler.unscale_ "torch.cuda.amp.GradScaler.unscale_")不会导致CPU-GPU同步。'
 - en: Warning
+  id: totrans-172
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: '[`unscale_()`](#torch.cuda.amp.GradScaler.unscale_ "torch.cuda.amp.GradScaler.unscale_")
     should only be called once per optimizer per [`step()`](#torch.cuda.amp.GradScaler.step
     "torch.cuda.amp.GradScaler.step") call, and only after all gradients for that
@@ -727,111 +1040,173 @@
     "torch.cuda.amp.GradScaler.unscale_") twice for a given optimizer between each
     [`step()`](#torch.cuda.amp.GradScaler.step "torch.cuda.amp.GradScaler.step") triggers
     a RuntimeError.'
+  id: totrans-173
   prefs: []
   type: TYPE_NORMAL
+  zh: 每次调用[`step()`](#torch.cuda.amp.GradScaler.step "torch.cuda.amp.GradScaler.step")时，应仅对每个优化器调用一次[`unscale_()`](#torch.cuda.amp.GradScaler.unscale_
+    "torch.cuda.amp.GradScaler.unscale_")，并且仅在为该优化器分配的参数累积了所有梯度之后才调用。在每个[`step()`](#torch.cuda.amp.GradScaler.step
+    "torch.cuda.amp.GradScaler.step")之间两次为给定优化器调用[`unscale_()`](#torch.cuda.amp.GradScaler.unscale_
+    "torch.cuda.amp.GradScaler.unscale_")会触发运行时错误。
 - en: Warning
+  id: totrans-174
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: '[`unscale_()`](#torch.cuda.amp.GradScaler.unscale_ "torch.cuda.amp.GradScaler.unscale_")
     may unscale sparse gradients out of place, replacing the `.grad` attribute.'
+  id: totrans-175
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`unscale_()`](#torch.cuda.amp.GradScaler.unscale_ "torch.cuda.amp.GradScaler.unscale_")可能会在原地取消缩放稀疏梯度，替换`.grad`属性。'
 - en: '[PRE31]'
+  id: totrans-176
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE31]'
 - en: Update the scale factor.
+  id: totrans-177
   prefs: []
   type: TYPE_NORMAL
+  zh: 更新比例因子。
 - en: If any optimizer steps were skipped the scale is multiplied by `backoff_factor`
     to reduce it. If `growth_interval` unskipped iterations occurred consecutively,
     the scale is multiplied by `growth_factor` to increase it.
+  id: totrans-178
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果有任何优化器步骤被跳过，则将比例乘以 `backoff_factor` 以减小它。如果连续发生 `growth_interval` 个未跳过的迭代，则将比例乘以
+    `growth_factor` 以增加它。
 - en: Passing `new_scale` sets the new scale value manually. (`new_scale` is not used
     directly, it’s used to fill GradScaler’s internal scale tensor. So if `new_scale`
     was a tensor, later in-place changes to that tensor will not further affect the
     scale GradScaler uses internally.)
+  id: totrans-179
   prefs: []
   type: TYPE_NORMAL
+  zh: 传递 `new_scale` 可以手动设置新的比例值。(`new_scale` 不会直接使用，它用于填充 GradScaler 的内部比例张量。因此，如果
+    `new_scale` 是一个张量，则稍后对该张量的就地更改不会进一步影响 GradScaler 内部使用的比例。)
 - en: Parameters
+  id: totrans-180
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**new_scale** (float or `torch.cuda.FloatTensor`, optional, default=None) –
     New scale factor.'
+  id: totrans-181
   prefs: []
   type: TYPE_NORMAL
+  zh: '**new_scale** (float 或 `torch.cuda.FloatTensor`, 可选, 默认=None) – 新的比例因子。'
 - en: Warning
+  id: totrans-182
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: '[`update()`](#torch.cuda.amp.GradScaler.update "torch.cuda.amp.GradScaler.update")
     should only be called at the end of the iteration, after `scaler.step(optimizer)`
     has been invoked for all optimizers used this iteration.'
+  id: totrans-183
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`update()`](#torch.cuda.amp.GradScaler.update "torch.cuda.amp.GradScaler.update")
+    应该只在迭代结束后调用，在此迭代中已为所有使用的优化器调用了 `scaler.step(optimizer)`。'
 - en: Warning
+  id: totrans-184
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: 'For performance reasons, we do not check the scale factor value to avoid synchronizations,
     so the scale factor is not guaranteed to be above 1\. If the scale falls below
     1 and/or you are seeing NaNs in your gradients or loss, something is likely wrong.
     For example, bf16-pretrained models are often incompatible with AMP/fp16 due to
     differing dynamic ranges.  ## [Autocast Op Reference](#id6)[](#autocast-op-reference
     "Permalink to this heading")'
+  id: totrans-185
   prefs: []
   type: TYPE_NORMAL
+  zh: '出于性能原因，我们不检查比例因子的值以避免同步，因此不能保证比例因子大于 1。如果比例低于 1 和/或在梯度或损失中看到 NaN，则可能有问题。例如，由于动态范围不同，bf16
+    预训练模型通常与 AMP/fp16 不兼容。  ## [自动混合精度操作参考](#id6)[](#autocast-op-reference "跳转到此标题")'
 - en: '### [Op Eligibility](#id7)'
+  id: totrans-186
   prefs: []
   type: TYPE_NORMAL
+  zh: '### [操作资格](#id7)'
 - en: Ops that run in `float64` or non-floating-point dtypes are not eligible, and
     will run in these types whether or not autocast is enabled.
+  id: totrans-187
   prefs: []
   type: TYPE_NORMAL
+  zh: 在 `float64` 或非浮点数据类型中运行的操作不符合条件，无论是否启用了自动混合精度，它们都将以这些类型运行。
 - en: Only out-of-place ops and Tensor methods are eligible. In-place variants and
     calls that explicitly supply an `out=...` Tensor are allowed in autocast-enabled
     regions, but won’t go through autocasting. For example, in an autocast-enabled
     region `a.addmm(b, c)` can autocast, but `a.addmm_(b, c)` and `a.addmm(b, c, out=d)`
     cannot. For best performance and stability, prefer out-of-place ops in autocast-enabled
     regions.
+  id: totrans-188
   prefs: []
   type: TYPE_NORMAL
+  zh: 只有不改变原始数据的操作和张量方法才符合条件。在启用自动混合精度的区域中，可以使用就地变体和显式提供 `out=...` 张量的调用，但不会经过自动混合精度。例如，在启用自动混合精度的区域中，`a.addmm(b,
+    c)` 可以自动混合精度，但 `a.addmm_(b, c)` 和 `a.addmm(b, c, out=d)` 不能。为了获得最佳性能和稳定性，请在启用自动混合精度的区域中使用不改变原始数据的操作。
 - en: 'Ops called with an explicit `dtype=...` argument are not eligible, and will
     produce output that respects the `dtype` argument.  ### [CUDA Op-Specific Behavior](#id8)[](#cuda-op-specific-behavior
     "Permalink to this heading")'
+  id: totrans-189
   prefs: []
   type: TYPE_NORMAL
+  zh: '使用显式 `dtype=...` 参数调用的操作不符合条件，并将生成符合 `dtype` 参数的输出。  ### [CUDA 操作特定行为](#id8)[](#cuda-op-specific-behavior
+    "跳转到此标题")'
 - en: The following lists describe the behavior of eligible ops in autocast-enabled
     regions. These ops always go through autocasting whether they are invoked as part
     of a [`torch.nn.Module`](generated/torch.nn.Module.html#torch.nn.Module "torch.nn.Module"),
     as a function, or as a [`torch.Tensor`](tensors.html#torch.Tensor "torch.Tensor")
     method. If functions are exposed in multiple namespaces, they go through autocasting
     regardless of the namespace.
+  id: totrans-190
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下列表描述了在启用自动混合精度的区域中符合条件的操作的行为。这些操作总是经过自动混合精度，无论它们作为 [`torch.nn.Module`](generated/torch.nn.Module.html#torch.nn.Module
+    "torch.nn.Module") 的一部分调用，作为一个函数调用，还是作为 [`torch.Tensor`](tensors.html#torch.Tensor
+    "torch.Tensor") 方法调用。如果函数在多个命名空间中公开，无论命名空间如何，它们都会经过自动混合精度。
 - en: Ops not listed below do not go through autocasting. They run in the type defined
     by their inputs. However, autocasting may still change the type in which unlisted
     ops run if they’re downstream from autocasted ops.
+  id: totrans-191
   prefs: []
   type: TYPE_NORMAL
+  zh: 下面未列出的操作不会经过自动混合精度。它们以其输入定义的类型运行。但是，如果它们在自动混合精度操作的下游，则自动混合精度可能会改变未列出操作运行的类型。
 - en: If an op is unlisted, we assume it’s numerically stable in `float16`. If you
     believe an unlisted op is numerically unstable in `float16`, please file an issue.
+  id: totrans-192
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果某个操作未列出，我们会假定它在 `float16` 中是数值稳定的。如果您认为某个未列出的操作在 `float16` 中是数值不稳定的，请提交一个问题。
 - en: '[CUDA Ops that can autocast to `float16`](#id9)[](#cuda-ops-that-can-autocast-to-float16
     "Permalink to this heading")'
+  id: totrans-193
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: '[可以自动混合精度为 `float16` 的 CUDA 操作](#id9)[](#cuda-ops-that-can-autocast-to-float16
+    "跳转到此标题")'
 - en: '`__matmul__`, `addbmm`, `addmm`, `addmv`, `addr`, `baddbmm`, `bmm`, `chain_matmul`,
     `multi_dot`, `conv1d`, `conv2d`, `conv3d`, `conv_transpose1d`, `conv_transpose2d`,
     `conv_transpose3d`, `GRUCell`, `linear`, `LSTMCell`, `matmul`, `mm`, `mv`, `prelu`,
     `RNNCell`'
+  id: totrans-194
   prefs: []
   type: TYPE_NORMAL
+  zh: '`__matmul__`, `addbmm`, `addmm`, `addmv`, `addr`, `baddbmm`, `bmm`, `chain_matmul`,
+    `multi_dot`, `conv1d`, `conv2d`, `conv3d`, `conv_transpose1d`, `conv_transpose2d`,
+    `conv_transpose3d`, `GRUCell`, `linear`, `LSTMCell`, `matmul`, `mm`, `mv`, `prelu`,
+    `RNNCell`'
 - en: '[CUDA Ops that can autocast to `float32`](#id10)[](#cuda-ops-that-can-autocast-to-float32
     "Permalink to this heading")'
+  id: totrans-195
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: '[可以自动混合精度为 `float32` 的 CUDA 操作](#id10)[](#cuda-ops-that-can-autocast-to-float32
+    "跳转到此标题的永久链接")'
 - en: '`__pow__`, `__rdiv__`, `__rpow__`, `__rtruediv__`, `acos`, `asin`, `binary_cross_entropy_with_logits`,
     `cosh`, `cosine_embedding_loss`, `cdist`, `cosine_similarity`, `cross_entropy`,
     `cumprod`, `cumsum`, `dist`, `erfinv`, `exp`, `expm1`, `group_norm`, `hinge_embedding_loss`,
@@ -840,10 +1215,12 @@
     `nll_loss`, `norm`, `normalize`, `pdist`, `poisson_nll_loss`, `pow`, `prod`, `reciprocal`,
     `rsqrt`, `sinh`, `smooth_l1_loss`, `soft_margin_loss`, `softmax`, `softmin`, `softplus`,
     `sum`, `renorm`, `tan`, `triplet_margin_loss`'
+  id: totrans-196
   prefs: []
   type: TYPE_NORMAL
 - en: '[CUDA Ops that promote to the widest input type](#id11)[](#cuda-ops-that-promote-to-the-widest-input-type
     "Permalink to this heading")'
+  id: totrans-197
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
@@ -851,20 +1228,24 @@
     inputs and require that the inputs’ dtypes match. If all of the inputs are `float16`,
     the op runs in `float16`. If any of the inputs is `float32`, autocast casts all
     inputs to `float32` and runs the op in `float32`.
+  id: totrans-198
   prefs: []
   type: TYPE_NORMAL
 - en: '`addcdiv`, `addcmul`, `atan2`, `bilinear`, `cross`, `dot`, `grid_sample`, `index_put`,
     `scatter_add`, `tensordot`'
+  id: totrans-199
   prefs: []
   type: TYPE_NORMAL
 - en: Some ops not listed here (e.g., binary ops like `add`) natively promote inputs
     without autocasting’s intervention. If inputs are a mixture of `float16` and `float32`,
     these ops run in `float32` and produce `float32` output, regardless of whether
     autocast is enabled.
+  id: totrans-200
   prefs: []
   type: TYPE_NORMAL
 - en: '[Prefer `binary_cross_entropy_with_logits` over `binary_cross_entropy`](#id12)[](#prefer-binary-cross-entropy-with-logits-over-binary-cross-entropy
     "Permalink to this heading")'
+  id: totrans-201
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
@@ -876,6 +1257,7 @@
     `float16` forward inputs to `float32` doesn’t help, because that cast must be
     reversed in backward). Therefore, `binary_cross_entropy` and `BCELoss` raise an
     error in autocast-enabled regions.
+  id: totrans-202
   prefs: []
   type: TYPE_NORMAL
 - en: 'Many models use a sigmoid layer right before the binary cross entropy layer.
@@ -884,6 +1266,7 @@
     "torch.nn.BCEWithLogitsLoss"). `binary_cross_entropy_with_logits` and `BCEWithLogits`
     are safe to autocast.  ### [CPU Op-Specific Behavior](#id13)[](#cpu-op-specific-behavior
     "Permalink to this heading")'
+  id: totrans-203
   prefs: []
   type: TYPE_NORMAL
 - en: The following lists describe the behavior of eligible ops in autocast-enabled
@@ -892,31 +1275,39 @@
     as a function, or as a [`torch.Tensor`](tensors.html#torch.Tensor "torch.Tensor")
     method. If functions are exposed in multiple namespaces, they go through autocasting
     regardless of the namespace.
+  id: totrans-204
   prefs: []
   type: TYPE_NORMAL
 - en: Ops not listed below do not go through autocasting. They run in the type defined
     by their inputs. However, autocasting may still change the type in which unlisted
     ops run if they’re downstream from autocasted ops.
+  id: totrans-205
   prefs: []
   type: TYPE_NORMAL
 - en: If an op is unlisted, we assume it’s numerically stable in `bfloat16`. If you
     believe an unlisted op is numerically unstable in `bfloat16`, please file an issue.
+  id: totrans-206
   prefs: []
   type: TYPE_NORMAL
 - en: '[CPU Ops that can autocast to `bfloat16`](#id14)[](#cpu-ops-that-can-autocast-to-bfloat16
     "Permalink to this heading")'
+  id: totrans-207
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
 - en: '`conv1d`, `conv2d`, `conv3d`, `bmm`, `mm`, `baddbmm`, `addmm`, `addbmm`, `linear`,
     `matmul`, `_convolution`'
+  id: totrans-208
   prefs: []
   type: TYPE_NORMAL
+  zh: '`conv1d`，`conv2d`，`conv3d`，`bmm`，`mm`，`baddbmm`，`addmm`，`addbmm`，`linear`，`matmul`，`_convolution`'
 - en: '[CPU Ops that can autocast to `float32`](#id15)[](#cpu-ops-that-can-autocast-to-float32
     "Permalink to this heading")'
+  id: totrans-209
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: '[可以自动转换为`float32`的CPU操作](#id15)[](#cpu-ops-that-can-autocast-to-float32 "跳转到此标题的永久链接")'
 - en: '`conv_transpose1d`, `conv_transpose2d`, `conv_transpose3d`, `avg_pool3d`, `binary_cross_entropy`,
     `grid_sampler`, `grid_sampler_2d`, `_grid_sampler_2d_cpu_fallback`, `grid_sampler_3d`,
     `polar`, `prod`, `quantile`, `nanquantile`, `stft`, `cdist`, `trace`, `view_as_complex`,
@@ -933,25 +1324,36 @@
     `fractional_max_pool2d`, `fractional_max_pool3d`, `adaptive_max_pool3d`, `multilabel_margin_loss_forward`,
     `linalg_qr`, `linalg_cholesky_ex`, `linalg_svd`, `linalg_eig`, `linalg_eigh`,
     `linalg_lstsq`, `linalg_inv_ex`'
+  id: totrans-210
   prefs: []
   type: TYPE_NORMAL
+  zh: '`conv_transpose1d`，`conv_transpose2d`，`conv_transpose3d`，`avg_pool3d`，`binary_cross_entropy`，`grid_sampler`，`grid_sampler_2d`，`_grid_sampler_2d_cpu_fallback`，`grid_sampler_3d`，`polar`，`prod`，`quantile`，`nanquantile`，`stft`，`cdist`，`trace`，`view_as_complex`，`cholesky`，`cholesky_inverse`，`cholesky_solve`，`inverse`，`lu_solve`，`orgqr`，`inverse`，`ormqr`，`pinverse`，`max_pool3d`，`max_unpool2d`，`max_unpool3d`，`adaptive_avg_pool3d`，`reflection_pad1d`，`reflection_pad2d`，`replication_pad1d`，`replication_pad2d`，`replication_pad3d`，`mse_loss`，`ctc_loss`，`kl_div`，`multilabel_margin_loss`，`fft_fft`，`fft_ifft`，`fft_fft2`，`fft_ifft2`，`fft_fftn`，`fft_ifftn`，`fft_rfft`，`fft_irfft`，`fft_rfft2`，`fft_irfft2`，`fft_rfftn`，`fft_irfftn`，`fft_hfft`，`fft_ihfft`，`linalg_matrix_norm`，`linalg_cond`，`linalg_matrix_rank`，`linalg_solve`，`linalg_cholesky`，`linalg_svdvals`，`linalg_eigvals`，`linalg_eigvalsh`，`linalg_inv`，`linalg_householder_product`，`linalg_tensorinv`，`linalg_tensorsolve`，`fake_quantize_per_tensor_affine`，`eig`，`geqrf`，`lstsq`，`_lu_with_info`，`qr`，`solve`，`svd`，`symeig`，`triangular_solve`，`fractional_max_pool2d`，`fractional_max_pool3d`，`adaptive_max_pool3d`，`multilabel_margin_loss_forward`，`linalg_qr`，`linalg_cholesky_ex`，`linalg_svd`，`linalg_eig`，`linalg_eigh`，`linalg_lstsq`，`linalg_inv_ex`'
 - en: '[CPU Ops that promote to the widest input type](#id16)[](#cpu-ops-that-promote-to-the-widest-input-type
     "Permalink to this heading")'
+  id: totrans-211
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: '[将输入类型提升为最宽的CPU操作](#id16)[](#cpu-ops-that-promote-to-the-widest-input-type
+    "跳转到此标题的永久链接")'
 - en: These ops don’t require a particular dtype for stability, but take multiple
     inputs and require that the inputs’ dtypes match. If all of the inputs are `bfloat16`,
     the op runs in `bfloat16`. If any of the inputs is `float32`, autocast casts all
     inputs to `float32` and runs the op in `float32`.
+  id: totrans-212
   prefs: []
   type: TYPE_NORMAL
+  zh: 这些操作不需要特定的dtype来保持稳定性，但需要多个输入并要求输入的dtypes匹配。如果所有输入都是`bfloat16`，则该操作将在`bfloat16`中运行。如果任何输入是`float32`，自动转换将将所有输入转换为`float32`并在`float32`中运行该操作。
 - en: '`cat`, `stack`, `index_copy`'
+  id: totrans-213
   prefs: []
   type: TYPE_NORMAL
+  zh: '`cat`，`stack`，`index_copy`'
 - en: Some ops not listed here (e.g., binary ops like `add`) natively promote inputs
     without autocasting’s intervention. If inputs are a mixture of `bfloat16` and
     `float32`, these ops run in `float32` and produce `float32` output, regardless
     of whether autocast is enabled.
+  id: totrans-214
   prefs: []
   type: TYPE_NORMAL
+  zh: 这里未列出一些操作（例如，像`add`这样的二进制操作）会在没有自动转换干预的情况下本地提升输入。如果输入是`bfloat16`和`float32`的混合，这些操作将在`float32`中运行并产生`float32`输出，无论是否启用了自动转换。
