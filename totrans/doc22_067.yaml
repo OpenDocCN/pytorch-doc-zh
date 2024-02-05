@@ -1,66 +1,82 @@
 - en: torch.profiler
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
 - en: 原文：[https://pytorch.org/docs/stable/profiler.html](https://pytorch.org/docs/stable/profiler.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
 - en: '## Overview'
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
 - en: PyTorch Profiler is a tool that allows the collection of performance metrics
     during training and inference. Profiler’s context manager API can be used to better
     understand what model operators are the most expensive, examine their input shapes
     and stack traces, study device kernel activity and visualize the execution trace.
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
 - en: Note
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
 - en: An earlier version of the API in [`torch.autograd`](autograd.html#module-torch.autograd
     "torch.autograd") module is considered legacy and will be deprecated.
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
 - en: API Reference
+  id: totrans-6
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
 - en: '[PRE0]'
+  id: totrans-7
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: Low-level profiler wrap the autograd profile
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
 - en: '**activities** (*iterable*) – list of activity groups (CPU, CUDA) to use in
     profiling, supported values: `torch.profiler.ProfilerActivity.CPU`, `torch.profiler.ProfilerActivity.CUDA`.
     Default value: ProfilerActivity.CPU and (when available) ProfilerActivity.CUDA.'
+  id: totrans-10
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**record_shapes** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")) – save information about operator’s input shapes.'
+  id: totrans-11
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**profile_memory** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")) – track tensor memory allocation/deallocation (see `export_memory_timeline`
     for more details).'
+  id: totrans-12
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**with_stack** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")) – record source information (file and line number) for the
     ops.'
+  id: totrans-13
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**with_flops** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")) – use formula to estimate the FLOPS of specific operators
     (matrix multiplication and 2D convolution).'
+  id: totrans-14
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
@@ -70,63 +86,84 @@
     which contains an aten::add op, then aten::add’s module hierarchy is A.B Note
     that this support exist, at the moment, only for TorchScript models and not eager
     mode models.'
+  id: totrans-15
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**experimental_config** (*_ExperimentalConfig*) – A set of experimental options
     used by profiler libraries like Kineto. Note, backward compatibility is not guaranteed.'
+  id: totrans-16
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: Note
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
 - en: This API is experimental and subject to change in the future.
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
 - en: Enabling shape and stack tracing results in additional overhead. When record_shapes=True
     is specified, profiler will temporarily hold references to the tensors; that may
     further prevent certain optimizations that depend on the reference count and introduce
     extra tensor copies.
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE1]'
+  id: totrans-20
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Adds a user defined metadata with a string key and a string value into the trace
     file
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE2]'
+  id: totrans-22
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Adds a user defined metadata with a string key and a valid json value into the
     trace file
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE3]'
+  id: totrans-24
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: Returns the list of unaggregated profiler events, to be used in the trace callback
     or after the profiling is finished
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE4]'
+  id: totrans-26
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: Exports the collected trace in Chrome JSON format.
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE5]'
+  id: totrans-28
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: Export memory event information from the profiler collected tree for a given
     device, and export a timeline plot. There are 3 exportable files using `export_memory_timeline`,
     each controlled by the `path`’s suffix.
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
 - en: For an HTML compatible plot, use the suffix `.html`, and a memory timeline plot
     will be embedded as a PNG file in the HTML file.
+  id: totrans-30
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
@@ -134,6 +171,7 @@
     are timestamps and `sizes` are memory usage for each category. The memory timeline
     plot will be saved a JSON (`.json`) or gzipped JSON (`.json.gz`) depending on
     the suffix.
+  id: totrans-31
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
@@ -141,287 +179,443 @@
     will consist of `(timestamp, action, numbytes, category)`, where `action` is one
     of `[PREEXISTING, CREATE, INCREMENT_VERSION, DESTROY]`, and `category` is one
     of the enums from `torch.profiler._memory_profiler.Category`.
+  id: totrans-32
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: 'Output: Memory timeline written as gzipped JSON, JSON, or HTML.'
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE6]'
+  id: totrans-34
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: Save stack traces in a file in a format suitable for visualization.
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
 - en: '**path** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
     Python v3.12)")) – save stacks file to this location;'
+  id: totrans-37
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**path**（[*str*](https://docs.python.org/3/library/stdtypes.html#str "(在Python
+    v3.12中)")）- 将堆栈文件保存到此位置；'
 - en: '**metric** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
     Python v3.12)")) – metric to use: “self_cpu_time_total” or “self_cuda_time_total”'
+  id: totrans-38
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**metric**（[*str*](https://docs.python.org/3/library/stdtypes.html#str "(在Python
+    v3.12中)")）- 要使用的度量标准：“self_cpu_time_total”或“self_cuda_time_total”'
 - en: Note
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: 'Example of using FlameGraph tool:'
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用FlameGraph工具的示例：
 - en: git clone [https://github.com/brendangregg/FlameGraph](https://github.com/brendangregg/FlameGraph)
+  id: totrans-41
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: git clone [https://github.com/brendangregg/FlameGraph](https://github.com/brendangregg/FlameGraph)
 - en: cd FlameGraph
+  id: totrans-42
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: cd FlameGraph
 - en: ./flamegraph.pl –title “CPU time” –countname “us.” profiler.stacks > perf_viz.svg
+  id: totrans-43
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: ./flamegraph.pl –title “CPU time” –countname “us.” profiler.stacks > perf_viz.svg
 - en: '[PRE7]'
+  id: totrans-44
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: Averages events, grouping them by operator name and (optionally) input shapes
     and stack.
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过运算符名称和（可选）输入形状和堆栈对事件进行平均分组。
 - en: Note
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: To use shape/stack functionality make sure to set record_shapes/with_stack when
     creating profiler context manager.
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: 要使用形状/堆栈功能，请确保在创建分析器上下文管理器时设置record_shapes/with_stack。
 - en: '[PRE8]'
+  id: totrans-48
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: Profiler context manager.
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: 分析器上下文管理器。
 - en: Parameters
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**activities** (*iterable*) – list of activity groups (CPU, CUDA) to use in
     profiling, supported values: `torch.profiler.ProfilerActivity.CPU`, `torch.profiler.ProfilerActivity.CUDA`.
     Default value: ProfilerActivity.CPU and (when available) ProfilerActivity.CUDA.'
+  id: totrans-51
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**activities**（*iterable*）- 用于分析的活动组（CPU，CUDA）列表，支持的值：`torch.profiler.ProfilerActivity.CPU`，`torch.profiler.ProfilerActivity.CUDA`。默认值：ProfilerActivity.CPU和（如果可用）ProfilerActivity.CUDA。'
 - en: '**schedule** (*Callable*) – callable that takes step (int) as a single parameter
     and returns `ProfilerAction` value that specifies the profiler action to perform
     at each step.'
+  id: totrans-52
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**schedule**（*Callable*）- 接受步骤（int）作为单个参数并返回指定在每个步骤执行的分析器操作的`ProfilerAction`值的可调用对象。'
 - en: '**on_trace_ready** (*Callable*) – callable that is called at each step when
     `schedule` returns `ProfilerAction.RECORD_AND_SAVE` during the profiling.'
+  id: totrans-53
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**on_trace_ready**（*Callable*）- 在分析期间`schedule`返回`ProfilerAction.RECORD_AND_SAVE`时在每个步骤调用的可调用对象。'
 - en: '**record_shapes** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")) – save information about operator’s input shapes.'
+  id: totrans-54
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**record_shapes**（[*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(在Python v3.12中)")）- 保存有关运算符输入形状的信息。'
 - en: '**profile_memory** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")) – track tensor memory allocation/deallocation.'
+  id: totrans-55
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**profile_memory**（[*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(在Python v3.12中)")）- 跟踪张量内存分配/释放。'
 - en: '**with_stack** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")) – record source information (file and line number) for the
     ops.'
+  id: totrans-56
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**with_stack**（[*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(在Python v3.12中)")）- 记录操作的源信息（文件和行号）。'
 - en: '**with_flops** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")) – use formula to estimate the FLOPs (floating point operations)
     of specific operators (matrix multiplication and 2D convolution).'
+  id: totrans-57
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**with_flops**（[*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(在Python v3.12中)")）- 使用公式估算特定运算符（矩阵乘法和2D卷积）的FLOPs（浮点运算）。'
 - en: '**with_modules** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")) – record module hierarchy (including function names) corresponding
     to the callstack of the op. e.g. If module A’s forward call’s module B’s forward
     which contains an aten::add op, then aten::add’s module hierarchy is A.B Note
     that this support exist, at the moment, only for TorchScript models and not eager
     mode models.'
+  id: totrans-58
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**with_modules**（[*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(在Python v3.12中)")）- 记录与操作的调用堆栈对应的模块层次结构（包括函数名称）。例如，如果模块A的前向调用模块B的前向，其中包含一个aten::add操作，则aten::add的模块层次结构是A.B。请注意，此支持目前仅适用于TorchScript模型，而不适用于急切模式模型。'
 - en: '**experimental_config** (*_ExperimentalConfig*) – A set of experimental options
     used for Kineto library features. Note, backward compatibility is not guaranteed.'
+  id: totrans-59
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**experimental_config**（*_ExperimentalConfig*）- 用于Kineto库功能的一组实验选项。请注意，不保证向后兼容性。'
 - en: '**use_cuda** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")) –'
+  id: totrans-60
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**use_cuda**（[*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(在Python v3.12中)")）-'
 - en: 'Deprecated since version 1.8.1: use `activities` instead.'
+  id: totrans-61
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 自1.8.1版本起已弃用：请改用`activities`。
 - en: Note
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Use [`schedule()`](#torch.profiler.schedule "torch.profiler.schedule") to generate
     the callable schedule. Non-default schedules are useful when profiling long training
     jobs and allow the user to obtain multiple traces at the different iterations
     of the training process. The default schedule simply records all the events continuously
     for the duration of the context manager.
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用[`schedule()`](#torch.profiler.schedule "torch.profiler.schedule")生成可调度的调度。非默认调度在分析长时间训练作业时很有用，并允许用户在训练过程的不同迭代中获取多个跟踪。默认调度仅在上下文管理器的持续时间内连续记录所有事件。
 - en: Note
+  id: totrans-64
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: 'Use [`tensorboard_trace_handler()`](#torch.profiler.tensorboard_trace_handler
     "torch.profiler.tensorboard_trace_handler") to generate result files for TensorBoard:'
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用[`tensorboard_trace_handler()`](#torch.profiler.tensorboard_trace_handler
+    "torch.profiler.tensorboard_trace_handler")生成TensorBoard的结果文件：
 - en: '`on_trace_ready=torch.profiler.tensorboard_trace_handler(dir_name)`'
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: '`on_trace_ready=torch.profiler.tensorboard_trace_handler(dir_name)`'
 - en: 'After profiling, result files can be found in the specified directory. Use
     the command:'
+  id: totrans-67
   prefs: []
   type: TYPE_NORMAL
+  zh: 分析后，结果文件可以在指定目录中找到。使用命令：
 - en: '`tensorboard --logdir dir_name`'
+  id: totrans-68
   prefs: []
   type: TYPE_NORMAL
+  zh: '`tensorboard --logdir dir_name`'
 - en: to see the results in TensorBoard. For more information, see [PyTorch Profiler
     TensorBoard Plugin](https://github.com/pytorch/kineto/tree/master/tb_plugin)
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: 在TensorBoard中查看结果。有关更多信息，请参阅[PyTorch Profiler TensorBoard插件](https://github.com/pytorch/kineto/tree/master/tb_plugin)
 - en: Note
+  id: totrans-70
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Enabling shape and stack tracing results in additional overhead. When record_shapes=True
     is specified, profiler will temporarily hold references to the tensors; that may
     further prevent certain optimizations that depend on the reference count and introduce
     extra tensor copies.
+  id: totrans-71
   prefs: []
   type: TYPE_NORMAL
+  zh: 启用形状和堆栈跟踪会导致额外的开销。当指定record_shapes=True时，分析器将暂时保留对张量的引用；这可能进一步阻止依赖引用计数的某些优化，并引入额外的张量副本。
 - en: 'Examples:'
+  id: totrans-72
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例：
 - en: '[PRE9]'
+  id: totrans-73
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: 'Using the profiler’s `schedule`, `on_trace_ready` and `step` functions:'
+  id: totrans-74
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用分析器的`schedule`、`on_trace_ready`和`step`函数：
 - en: '[PRE10]'
+  id: totrans-75
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: '[PRE11]'
+  id: totrans-76
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: Signals the profiler that the next profiling step has started.
+  id: totrans-77
   prefs: []
   type: TYPE_NORMAL
+  zh: 信号分析器下一个分析步骤已经开始。
 - en: '[PRE12]'
+  id: totrans-78
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: Profiler actions that can be taken at the specified intervals
+  id: totrans-79
   prefs: []
   type: TYPE_NORMAL
+  zh: 在指定间隔可以执行的分析器操作
 - en: '[PRE13]'
+  id: totrans-80
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: 'Members:'
+  id: totrans-81
   prefs: []
   type: TYPE_NORMAL
+  zh: 成员：
 - en: CPU
+  id: totrans-82
   prefs: []
   type: TYPE_NORMAL
+  zh: CPU
 - en: XPU
+  id: totrans-83
   prefs: []
   type: TYPE_NORMAL
+  zh: XPU
 - en: MTIA
+  id: totrans-84
   prefs: []
   type: TYPE_NORMAL
+  zh: MTIA
 - en: CUDA
+  id: totrans-85
   prefs: []
   type: TYPE_NORMAL
+  zh: CUDA
 - en: '[PRE14]'
+  id: totrans-86
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: '[PRE15]'
+  id: totrans-87
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: Returns a callable that can be used as profiler `schedule` argument. The profiler
     will skip the first `skip_first` steps, then wait for `wait` steps, then do the
     warmup for the next `warmup` steps, then do the active recording for the next
     `active` steps and then repeat the cycle starting with `wait` steps. The optional
     number of cycles is specified with the `repeat` parameter, the zero value means
     that the cycles will continue until the profiling is finished.
+  id: totrans-88
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回一个可用作分析器`schedule`参数的可调用对象。分析器将跳过前`skip_first`步，然后等待`wait`步，然后为接下来的`warmup`步进行预热，然后为接下来的`active`步进行活动记录，然后重复以`wait`步开始的循环。循环的可选次数由`repeat`参数指定，零值表示循环将持续直到分析完成。
 - en: Return type
+  id: totrans-89
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*Callable*](https://docs.python.org/3/library/typing.html#typing.Callable
     "(in Python v3.12)")'
+  id: totrans-90
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*Callable*](https://docs.python.org/3/library/typing.html#typing.Callable
+    "(在 Python v3.12 中)")'
 - en: '[PRE16]'
+  id: totrans-91
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: Outputs tracing files to directory of `dir_name`, then that directory can be
     directly delivered to tensorboard as logdir. `worker_name` should be unique for
     each worker in distributed scenario, it will be set to ‘[hostname]_[pid]’ by default.
+  id: totrans-92
   prefs: []
   type: TYPE_NORMAL
+  zh: 将跟踪文件输出到`dir_name`目录，然后该目录可以直接作为logdir传递给tensorboard。在分布式场景中，`worker_name`应该对每个worker是唯一的，默认情况下将设置为‘[hostname]_[pid]’。
 - en: Intel Instrumentation and Tracing Technology APIs[](#intel-instrumentation-and-tracing-technology-apis
     "Permalink to this heading")
+  id: totrans-93
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 英特尔仪器和跟踪技术APIs[](#intel-instrumentation-and-tracing-technology-apis "跳转到此标题")
 - en: '[PRE17]'
+  id: totrans-94
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: Check if ITT feature is available or not
+  id: totrans-95
   prefs: []
   type: TYPE_NORMAL
+  zh: 检查ITT功能是否可用
 - en: '[PRE18]'
+  id: totrans-96
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: Describe an instantaneous event that occurred at some point.
+  id: totrans-97
   prefs: []
   type: TYPE_NORMAL
+  zh: 描述在某个时间点发生的瞬时事件。
 - en: Parameters
+  id: totrans-98
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**msg** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
     v3.12)")) – ASCII message to associate with the event.'
+  id: totrans-99
   prefs: []
   type: TYPE_NORMAL
+  zh: '**msg** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(在 Python
+    v3.12 中)")) – 与事件关联的ASCII消息。'
 - en: '[PRE19]'
+  id: totrans-100
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE19]'
 - en: Pushes a range onto a stack of nested range span. Returns zero-based depth of
     the range that is started.
+  id: totrans-101
   prefs: []
   type: TYPE_NORMAL
+  zh: 将范围推送到嵌套范围堆栈上。返回开始的范围的从零开始的深度。
 - en: Parameters
+  id: totrans-102
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**msg** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
     v3.12)")) – ASCII message to associate with range'
+  id: totrans-103
   prefs: []
   type: TYPE_NORMAL
+  zh: '**msg** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(在 Python
+    v3.12 中)")) – 与范围关联的ASCII消息'
 - en: '[PRE20]'
+  id: totrans-104
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE20]'
 - en: Pops a range off of a stack of nested range spans. Returns the zero-based depth
     of the range that is ended.
+  id: totrans-105
   prefs: []
   type: TYPE_NORMAL
+  zh: 从嵌套范围跨度堆栈中弹出一个范围。返回结束的范围的从零开始的深度。
