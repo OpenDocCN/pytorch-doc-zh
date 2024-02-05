@@ -1,205 +1,309 @@
 - en: Named Tensors
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 命名张量
 - en: 原文：[https://pytorch.org/docs/stable/named_tensor.html](https://pytorch.org/docs/stable/named_tensor.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/docs/stable/named_tensor.html](https://pytorch.org/docs/stable/named_tensor.html)
 - en: Named Tensors allow users to give explicit names to tensor dimensions. In most
     cases, operations that take dimension parameters will accept dimension names,
     avoiding the need to track dimensions by position. In addition, named tensors
     use names to automatically check that APIs are being used correctly at runtime,
     providing extra safety. Names can also be used to rearrange dimensions, for example,
     to support “broadcasting by name” rather than “broadcasting by position”.
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 命名张量允许用户为张量维度提供显式名称。在大多数情况下，接受维度参数的操作将接受维度名称，避免了按位置跟踪维度的需要。此外，命名张量使用名称在运行时自动检查API是否被正确使用，提供额外的安全性。名称还可以用于重新排列维度，例如，支持“按名称广播”而不是“按位置广播”。
 - en: Warning
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: The named tensor API is a prototype feature and subject to change.
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 命名张量API是一个原型功能，可能会发生变化。
 - en: Creating named tensors
+  id: totrans-5
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 创建命名张量
 - en: Factory functions now take a new `names` argument that associates a name with
     each dimension.
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 工厂函数现在接受一个新的`names`参数，将每个维度与一个名称关联起来。
 - en: '[PRE0]'
+  id: totrans-7
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: Named dimensions, like regular Tensor dimensions, are ordered. `tensor.names[i]`
     is the name of dimension `i` of `tensor`.
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 命名维度和常规张量维度一样是有序的。`tensor.names[i]`是`tensor`的维度`i`的名称。
 - en: 'The following factory functions support named tensors:'
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下工厂函数支持命名张量：
 - en: '[`torch.empty()`](generated/torch.empty.html#torch.empty "torch.empty")'
+  id: totrans-10
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[`torch.empty()`](generated/torch.empty.html#torch.empty "torch.empty")'
 - en: '[`torch.rand()`](generated/torch.rand.html#torch.rand "torch.rand")'
+  id: totrans-11
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[`torch.rand()`](generated/torch.rand.html#torch.rand "torch.rand")'
 - en: '[`torch.randn()`](generated/torch.randn.html#torch.randn "torch.randn")'
+  id: totrans-12
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[`torch.randn()`](generated/torch.randn.html#torch.randn "torch.randn")'
 - en: '[`torch.ones()`](generated/torch.ones.html#torch.ones "torch.ones")'
+  id: totrans-13
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[`torch.ones()`](generated/torch.ones.html#torch.ones "torch.ones")'
 - en: '[`torch.tensor()`](generated/torch.tensor.html#torch.tensor "torch.tensor")'
+  id: totrans-14
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[`torch.tensor()`](generated/torch.tensor.html#torch.tensor "torch.tensor")'
 - en: '[`torch.zeros()`](generated/torch.zeros.html#torch.zeros "torch.zeros")'
+  id: totrans-15
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[`torch.zeros()`](generated/torch.zeros.html#torch.zeros "torch.zeros")'
 - en: Named dimensions
+  id: totrans-16
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 命名维度
 - en: See [`names`](#torch.Tensor.names "torch.Tensor.names") for restrictions on
     tensor names.
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 请参阅[`names`](#torch.Tensor.names "torch.Tensor.names")以了解张量名称的限制。
 - en: Use [`names`](#torch.Tensor.names "torch.Tensor.names") to access the dimension
     names of a tensor and [`rename()`](#torch.Tensor.rename "torch.Tensor.rename")
     to rename named dimensions.
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用[`names`](#torch.Tensor.names "torch.Tensor.names")来访问张量的维度名称，使用[`rename()`](#torch.Tensor.rename
+    "torch.Tensor.rename")来重命名命名维度。
 - en: '[PRE1]'
+  id: totrans-19
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Named tensors can coexist with unnamed tensors; named tensors are instances
     of [`torch.Tensor`](tensors.html#torch.Tensor "torch.Tensor"). Unnamed tensors
     have `None`-named dimensions. Named tensors do not require all dimensions to be
     named.
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 命名张量可以与未命名张量共存；命名张量是[`torch.Tensor`](tensors.html#torch.Tensor "torch.Tensor")的实例。未命名张量具有`None`命名的维度。命名张量不要求所有维度都有名称。
 - en: '[PRE2]'
+  id: totrans-21
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Name propagation semantics[](#name-propagation-semantics "Permalink to this
     heading")
+  id: totrans-22
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 名称传播语义
 - en: 'Named tensors use names to automatically check that APIs are being called correctly
     at runtime. This occurs in a process called *name inference*. More formally, name
     inference consists of the following two steps:'
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 命名张量使用名称在运行时自动检查API是否被正确调用。这发生在一个称为*名称推断*的过程中。更正式地说，名称推断包括以下两个步骤：
 - en: '**Check names**: an operator may perform automatic checks at runtime that check
     that certain dimension names must match.'
+  id: totrans-24
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**检查名称**：运算符可能在运行时执行自动检查，检查某些维度名称必须匹配。'
 - en: '**Propagate names**: name inference propagates names to output tensors.'
+  id: totrans-25
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**传播名称**：名称推断将名称传播到输出张量。'
 - en: All operations that support named tensors propagate names.
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 所有支持命名张量的操作都会传播名称。
 - en: '[PRE3]'
+  id: totrans-27
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: '### match semantics'
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: '### 匹配语义'
 - en: Two names *match* if they are equal (string equality) or if at least one is
     `None`. Nones are essentially a special “wildcard” name.
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果两个名称相等（字符串相等）或至少一个为`None`，则两个名称*匹配*。`None`本质上是一个特殊的“通配符”名称。
 - en: '`unify(A, B)` determines which of the names `A` and `B` to propagate to the
     outputs. It returns the more *specific* of the two names, if they match. If the
     names do not match, then it errors.'
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: '`unify(A, B)`确定要传播到输出的名称`A`和`B`中的哪一个。如果它们匹配，则返回两个名称中更*具体*的名称。如果名称不匹配，则会出错。'
 - en: Note
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: In practice, when working with named tensors, one should avoid having unnamed
     dimensions because their handling can be complicated. It is recommended to lift
     all unnamed dimensions to be named dimensions by using [`refine_names()`](#torch.Tensor.refine_names
     "torch.Tensor.refine_names").
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 在实践中，当使用命名张量时，应避免具有未命名维度，因为它们的处理可能会变得复杂。建议使用[`refine_names()`](#torch.Tensor.refine_names
+    "torch.Tensor.refine_names")将所有未命名维度提升为命名维度。
 - en: Basic name inference rules[](#basic-name-inference-rules "Permalink to this
     heading")
+  id: totrans-33
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 基本名称推断规则
 - en: Let’s see how `match` and `unify` are used in name inference in the case of
     adding two one-dim tensors with no broadcasting.
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们看看在没有广播的情况下如何在名称推断中使用`match`和`unify`来添加两个一维张量。
 - en: '[PRE4]'
+  id: totrans-35
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: '**Check names**: check that the names of the two tensors *match*.'
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: '**检查名称**：检查两个张量的名称是否*匹配*。'
 - en: 'For the following examples:'
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于以下示例：
 - en: '[PRE5]'
+  id: totrans-38
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: '**Propagate names**: *unify* the names to select which one to propagate. In
     the case of `x + y`, `unify(''X'', None) = ''X''` because `''X''` is more specific
     than `None`.'
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: '**传播名称**：*统一*名称以选择要传播的名称。在`x + y`的情况下，`unify(''X'', None) = ''X''`，因为`''X''`比`None`更具体。'
 - en: '[PRE6]'
+  id: totrans-40
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: 'For a comprehensive list of name inference rules, see [Named Tensors operator
     coverage](name_inference.html#name-inference-reference-doc). Here are two common
     operations that may be useful to go over:'
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 有关名称推断规则的全面列表，请参见[命名张量运算符覆盖范围](name_inference.html#name-inference-reference-doc)。以下是可能有用的两个常见操作：
 - en: 'Binary arithmetic ops: [Unifies names from inputs](name_inference.html#unifies-names-from-inputs-doc)'
+  id: totrans-42
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 二进制算术运算：[统一输入的名称](name_inference.html#unifies-names-from-inputs-doc)
 - en: 'Matrix multiplication ops: [Contracts away dims](name_inference.html#contracts-away-dims-doc)'
+  id: totrans-43
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 矩阵乘法运算：[消除维度](name_inference.html#contracts-away-dims-doc)
 - en: Explicit alignment by names[](#explicit-alignment-by-names "Permalink to this
     heading")
+  id: totrans-44
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 通过名称进行显式对齐[](#explicit-alignment-by-names "跳转到此标题")
 - en: Use [`align_as()`](#torch.Tensor.align_as "torch.Tensor.align_as") or [`align_to()`](#torch.Tensor.align_to
     "torch.Tensor.align_to") to align tensor dimensions by name to a specified ordering.
     This is useful for performing “broadcasting by names”.
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用[`align_as()`](#torch.Tensor.align_as "torch.Tensor.align_as")或[`align_to()`](#torch.Tensor.align_to
+    "torch.Tensor.align_to")按名称对齐张量维度到指定的顺序。这对执行“按名称广播”很有用。
 - en: '[PRE7]'
+  id: totrans-46
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: Manipulating dimensions
+  id: totrans-47
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 操作维度
 - en: Use [`align_to()`](#torch.Tensor.align_to "torch.Tensor.align_to") to permute
     large amounts of dimensions without mentioning all of them as in required by [`permute()`](generated/torch.Tensor.permute.html#torch.Tensor.permute
     "torch.Tensor.permute").
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用[`align_to()`](#torch.Tensor.align_to "torch.Tensor.align_to")来对大量维度进行排列，而不需要像[`permute()`](generated/torch.Tensor.permute.html#torch.Tensor.permute
+    "torch.Tensor.permute")那样提及所有维度。
 - en: '[PRE8]'
+  id: totrans-49
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: Use [`flatten()`](generated/torch.Tensor.flatten.html#torch.Tensor.flatten "torch.Tensor.flatten")
     and [`unflatten()`](generated/torch.Tensor.unflatten.html#torch.Tensor.unflatten
     "torch.Tensor.unflatten") to flatten and unflatten dimensions, respectively. These
@@ -207,353 +311,552 @@
     "torch.Tensor.view") and [`reshape()`](generated/torch.Tensor.reshape.html#torch.Tensor.reshape
     "torch.Tensor.reshape"), but have more semantic meaning to someone reading the
     code.
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用[`flatten()`](generated/torch.Tensor.flatten.html#torch.Tensor.flatten "torch.Tensor.flatten")和[`unflatten()`](generated/torch.Tensor.unflatten.html#torch.Tensor.unflatten
+    "torch.Tensor.unflatten")分别对维度进行展平和展开。这些方法比[`view()`](generated/torch.Tensor.view.html#torch.Tensor.view
+    "torch.Tensor.view")和[`reshape()`](generated/torch.Tensor.reshape.html#torch.Tensor.reshape
+    "torch.Tensor.reshape")更冗长，但对于阅读代码的人来说具有更多的语义意义。
 - en: '[PRE9]'
+  id: totrans-51
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: '## Autograd support'
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
+  zh: '## 自动求导支持'
 - en: 'Autograd currently supports named tensors in a limited manner: autograd ignores
     names on all tensors. Gradient computation is still correct but we lose the safety
     that names give us.'
+  id: totrans-53
   prefs: []
   type: TYPE_NORMAL
+  zh: Autograd目前以有限的方式支持命名张量：autograd会忽略所有张量上的名称。梯度计算仍然是正确的，但我们失去了名称给我们带来的安全性。
 - en: '[PRE10]'
+  id: totrans-54
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: Currently supported operations and subsystems[](#currently-supported-operations-and-subsystems
     "Permalink to this heading")
+  id: totrans-55
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 当前支持的操作和子系统[](#currently-supported-operations-and-subsystems "跳转到此标题")
 - en: Operators
+  id: totrans-56
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 运算符
 - en: 'See [Named Tensors operator coverage](name_inference.html#name-inference-reference-doc)
     for a full list of the supported torch and tensor operations. We do not yet support
     the following that is not covered by the link:'
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: 查看[命名张量运算符覆盖](name_inference.html#name-inference-reference-doc)以获取支持的torch和张量操作的完整列表。我们尚不支持以下链接未涵盖的内容：
 - en: indexing, advanced indexing.
+  id: totrans-58
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 索引，高级索引。
 - en: 'For `torch.nn.functional` operators, we support the following:'
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于`torch.nn.functional`运算符，我们支持以下内容：
 - en: '[`torch.nn.functional.relu()`](generated/torch.nn.functional.relu.html#torch.nn.functional.relu
     "torch.nn.functional.relu")'
+  id: totrans-60
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[`torch.nn.functional.relu()`](generated/torch.nn.functional.relu.html#torch.nn.functional.relu
+    "torch.nn.functional.relu")'
 - en: '[`torch.nn.functional.softmax()`](generated/torch.nn.functional.softmax.html#torch.nn.functional.softmax
     "torch.nn.functional.softmax")'
+  id: totrans-61
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[`torch.nn.functional.softmax()`](generated/torch.nn.functional.softmax.html#torch.nn.functional.softmax
+    "torch.nn.functional.softmax")'
 - en: '[`torch.nn.functional.log_softmax()`](generated/torch.nn.functional.log_softmax.html#torch.nn.functional.log_softmax
     "torch.nn.functional.log_softmax")'
+  id: totrans-62
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[`torch.nn.functional.log_softmax()`](generated/torch.nn.functional.log_softmax.html#torch.nn.functional.log_softmax
+    "torch.nn.functional.log_softmax")'
 - en: '[`torch.nn.functional.tanh()`](generated/torch.nn.functional.tanh.html#torch.nn.functional.tanh
     "torch.nn.functional.tanh")'
+  id: totrans-63
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[`torch.nn.functional.tanh()`](generated/torch.nn.functional.tanh.html#torch.nn.functional.tanh
+    "torch.nn.functional.tanh")'
 - en: '[`torch.nn.functional.sigmoid()`](generated/torch.nn.functional.sigmoid.html#torch.nn.functional.sigmoid
     "torch.nn.functional.sigmoid")'
+  id: totrans-64
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[`torch.nn.functional.sigmoid()`](generated/torch.nn.functional.sigmoid.html#torch.nn.functional.sigmoid
+    "torch.nn.functional.sigmoid")'
 - en: '[`torch.nn.functional.dropout()`](generated/torch.nn.functional.dropout.html#torch.nn.functional.dropout
     "torch.nn.functional.dropout")'
+  id: totrans-65
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[`torch.nn.functional.dropout()`](generated/torch.nn.functional.dropout.html#torch.nn.functional.dropout
+    "torch.nn.functional.dropout")'
 - en: Subsystems
+  id: totrans-66
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 子系统
 - en: Autograd is supported, see [Autograd support](#named-tensors-autograd-doc).
     Because gradients are currently unnamed, optimizers may work but are untested.
+  id: totrans-67
   prefs: []
   type: TYPE_NORMAL
+  zh: 自动求导是支持的，请参见[自动求导支持](#named-tensors-autograd-doc)。因为梯度目前没有名称，优化器可能会工作，但尚未经过测试。
 - en: 'NN modules are currently unsupported. This can lead to the following when calling
     modules with named tensor inputs:'
+  id: totrans-68
   prefs: []
   type: TYPE_NORMAL
+  zh: NN模块目前不受支持。当使用具有命名张量输入的模块时，可能会导致以下情况：
 - en: NN module parameters are unnamed, so outputs may be partially named.
+  id: totrans-69
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: NN模块参数没有名称，因此输出可能部分具有名称。
 - en: NN module forward passes have code that don’t support named tensors and will
     error out appropriately.
+  id: totrans-70
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: NN模块的前向传递代码不支持命名张量，并将适当地报错。
 - en: 'We also do not support the following subsystems, though some may work out of
     the box:'
+  id: totrans-71
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们还不支持以下子系统，尽管其中一些可能可以直接使用：
 - en: distributions
+  id: totrans-72
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 分布
 - en: serialization ([`torch.load()`](generated/torch.load.html#torch.load "torch.load"),
     [`torch.save()`](generated/torch.save.html#torch.save "torch.save"))
+  id: totrans-73
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 序列化（[`torch.load()`](generated/torch.load.html#torch.load "torch.load"), [`torch.save()`](generated/torch.save.html#torch.save
+    "torch.save"))
 - en: multiprocessing
+  id: totrans-74
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 多进程
 - en: JIT
+  id: totrans-75
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: JIT
 - en: distributed
+  id: totrans-76
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 分布
 - en: ONNX
+  id: totrans-77
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: ONNX
 - en: If any of these would help your use case, please [search if an issue has already
     been filed](https://github.com/pytorch/pytorch/issues?q=is%3Aopen+is%3Aissue+label%3A%22module%3A+named+tensor%22)
     and if not, [file one](https://github.com/pytorch/pytorch/issues/new/choose).
+  id: totrans-78
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果其中任何一个对您的用例有帮助，请[搜索是否已经提交了问题](https://github.com/pytorch/pytorch/issues?q=is%3Aopen+is%3Aissue+label%3A%22module%3A+named+tensor%22)，如果没有，请[提交一个](https://github.com/pytorch/pytorch/issues/new/choose)。
 - en: Named tensor API reference[](#named-tensor-api-reference "Permalink to this
     heading")
+  id: totrans-79
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 命名张量API参考[](#named-tensor-api-reference "跳转到此标题")
 - en: In this section please find the documentation for named tensor specific APIs.
     For a comprehensive reference for how names are propagated through other PyTorch
     operators, see [Named Tensors operator coverage](name_inference.html#name-inference-reference-doc).
+  id: totrans-80
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本节中，请查找命名张量特定API的文档。有关如何通过其他PyTorch运算符传播名称的全面参考，请参见[命名张量运算符覆盖](name_inference.html#name-inference-reference-doc)。
 - en: '[PRE11]'
+  id: totrans-81
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: '[PRE12]'
+  id: totrans-82
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: Stores names for each of this tensor’s dimensions.
+  id: totrans-83
   prefs: []
   type: TYPE_NORMAL
+  zh: 为该张量的每个维度存储名称。
 - en: '`names[idx]` corresponds to the name of tensor dimension `idx`. Names are either
     a string if the dimension is named or `None` if the dimension is unnamed.'
+  id: totrans-84
   prefs: []
   type: TYPE_NORMAL
+  zh: '`names[idx]` 对应于张量维度`idx`的名称。名称是一个字符串，如果维度有名称，或者是`None`，如果维度没有名称。'
 - en: Dimension names may contain characters or underscore. Furthermore, a dimension
     name must be a valid Python variable name (i.e., does not start with underscore).
+  id: totrans-85
   prefs: []
   type: TYPE_NORMAL
+  zh: 维度名称可以包含字符或下划线。此外，维度名称必须是有效的Python变量名（即不以下划线开头）。
 - en: Tensors may not have two named dimensions with the same name.
+  id: totrans-86
   prefs: []
   type: TYPE_NORMAL
+  zh: 张量不能具有两个具有相同名称的命名维度。
 - en: Warning
+  id: totrans-87
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: The named tensor API is experimental and subject to change.
+  id: totrans-88
   prefs: []
   type: TYPE_NORMAL
+  zh: 命名张量API是实验性的，可能会发生变化。
 - en: '[PRE13]'
+  id: totrans-89
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: Renames dimension names of `self`.
+  id: totrans-90
   prefs: []
   type: TYPE_NORMAL
+  zh: 重命名`self`的维度名称。
 - en: 'There are two main usages:'
+  id: totrans-91
   prefs: []
   type: TYPE_NORMAL
+  zh: 有两种主要用法：
 - en: '`self.rename(**rename_map)` returns a view on tensor that has dims renamed
     as specified in the mapping `rename_map`.'
+  id: totrans-92
   prefs: []
   type: TYPE_NORMAL
+  zh: '`self.rename(**rename_map)` 返回一个张量视图，其维度按照映射`rename_map`中指定的方式重命名。'
 - en: '`self.rename(*names)` returns a view on tensor, renaming all dimensions positionally
     using [`names`](#torch.Tensor.names "torch.Tensor.names"). Use `self.rename(None)`
     to drop names on a tensor.'
+  id: totrans-93
   prefs: []
   type: TYPE_NORMAL
+  zh: '`self.rename(*names)` 返回一个张量视图，使用[`names`](#torch.Tensor.names "torch.Tensor.names")按位置重命名所有维度。使用`self.rename(None)`来删除张量上的名称。'
 - en: One cannot specify both positional args [`names`](#torch.Tensor.names "torch.Tensor.names")
     and keyword args `rename_map`.
+  id: totrans-94
   prefs: []
   type: TYPE_NORMAL
+  zh: 不能同时指定位置参数[`names`](#torch.Tensor.names "torch.Tensor.names")和关键字参数`rename_map`。
 - en: 'Examples:'
+  id: totrans-95
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例：
 - en: '[PRE14]'
+  id: totrans-96
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: Warning
+  id: totrans-97
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: The named tensor API is experimental and subject to change.
+  id: totrans-98
   prefs: []
   type: TYPE_NORMAL
+  zh: 命名张量API是实验性的，可能会发生变化。
 - en: '[PRE15]'
+  id: totrans-99
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: In-place version of [`rename()`](#torch.Tensor.rename "torch.Tensor.rename").
+  id: totrans-100
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`rename()`](#torch.Tensor.rename "torch.Tensor.rename")的原地版本。'
 - en: '[PRE16]'
+  id: totrans-101
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: Refines the dimension names of `self` according to [`names`](#torch.Tensor.names
     "torch.Tensor.names").
+  id: totrans-102
   prefs: []
   type: TYPE_NORMAL
+  zh: 根据[`names`](#torch.Tensor.names "torch.Tensor.names")细化`self`的维度名称。
 - en: Refining is a special case of renaming that “lifts” unnamed dimensions. A `None`
     dim can be refined to have any name; a named dim can only be refined to have the
     same name.
+  id: totrans-103
   prefs: []
   type: TYPE_NORMAL
+  zh: 细化是重命名的特殊情况，它“提升”了未命名的维度。`None`维度可以细化为任何名称；命名维度只能细化为相同的名称。
 - en: Because named tensors can coexist with unnamed tensors, refining names gives
     a nice way to write named-tensor-aware code that works with both named and unnamed
     tensors.
+  id: totrans-104
   prefs: []
   type: TYPE_NORMAL
+  zh: 因为命名张量可以与未命名张量共存，细化名称提供了一种很好的方法来编写能够同时处理命名和未命名张量的命名张量感知代码。
 - en: '[`names`](#torch.Tensor.names "torch.Tensor.names") may contain up to one Ellipsis
     (`...`). The Ellipsis is expanded greedily; it is expanded in-place to fill [`names`](#torch.Tensor.names
     "torch.Tensor.names") to the same length as `self.dim()` using names from the
     corresponding indices of `self.names`.'
+  id: totrans-105
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`names`](#torch.Tensor.names "torch.Tensor.names") 可以包含最多一个省略号 (`...`)。省略号会贪婪地扩展；它会就地扩展以填充[`names`](#torch.Tensor.names
+    "torch.Tensor.names")，使其与`self.dim()`的长度相同，使用来自`self.names`相应索引的名称。'
 - en: Python 2 does not support Ellipsis but one may use a string literal instead
     (`'...'`).
+  id: totrans-106
   prefs: []
   type: TYPE_NORMAL
+  zh: Python 2不支持省略号，但可以使用字符串文字代替（`'...'`）。
 - en: Parameters
+  id: totrans-107
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**names** (*iterable* *of* [*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)")) – The desired names of the output tensor. May contain up
     to one Ellipsis.'
+  id: totrans-108
   prefs: []
   type: TYPE_NORMAL
+  zh: '**names** (*iterable* *of* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")) – 输出张量的期望名称。可能包含最多一个省略号。'
 - en: 'Examples:'
+  id: totrans-109
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例：
 - en: '[PRE17]'
+  id: totrans-110
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: Warning
+  id: totrans-111
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: The named tensor API is experimental and subject to change.
+  id: totrans-112
   prefs: []
   type: TYPE_NORMAL
+  zh: 命名张量API是实验性的，可能会发生变化。
 - en: '[PRE18]'
+  id: totrans-113
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: Permutes the dimensions of the `self` tensor to match the dimension order in
     the `other` tensor, adding size-one dims for any new names.
+  id: totrans-114
   prefs: []
   type: TYPE_NORMAL
+  zh: 将`self`张量的维度重新排列以匹配`other`张量中的维度顺序，在任何新名称中添加大小为一的维度。
 - en: This operation is useful for explicit broadcasting by names (see examples).
+  id: totrans-115
   prefs: []
   type: TYPE_NORMAL
+  zh: 此操作对于通过名称进行显式广播很有用（请参见示例）。
 - en: All of the dims of `self` must be named in order to use this method. The resulting
     tensor is a view on the original tensor.
+  id: totrans-116
   prefs: []
   type: TYPE_NORMAL
+  zh: '`self`的所有维度必须按顺序命名才能使用此方法。结果张量是原始张量的视图。'
 - en: All dimension names of `self` must be present in `other.names`. `other` may
     contain named dimensions that are not in `self.names`; the output tensor has a
     size-one dimension for each of those new names.
+  id: totrans-117
   prefs: []
   type: TYPE_NORMAL
+  zh: '`self`的所有维度名称必须存在于`other.names`中。`other`可能包含未在`self.names`中的命名维度；输出张量对于每个新名称都有一个大小为一的维度。'
 - en: To align a tensor to a specific order, use [`align_to()`](#torch.Tensor.align_to
     "torch.Tensor.align_to").
+  id: totrans-118
   prefs: []
   type: TYPE_NORMAL
+  zh: 要将张量对齐到特定顺序，请使用[`align_to()`](#torch.Tensor.align_to "torch.Tensor.align_to")。
 - en: 'Examples:'
+  id: totrans-119
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例：
 - en: '[PRE19]'
+  id: totrans-120
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE19]'
 - en: Warning
+  id: totrans-121
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: The named tensor API is experimental and subject to change.
+  id: totrans-122
   prefs: []
   type: TYPE_NORMAL
+  zh: 命名张量API是实验性的，可能会发生变化。
 - en: '[PRE20]'
+  id: totrans-123
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE20]'
 - en: Permutes the dimensions of the `self` tensor to match the order specified in
     [`names`](#torch.Tensor.names "torch.Tensor.names"), adding size-one dims for
     any new names.
+  id: totrans-124
   prefs: []
   type: TYPE_NORMAL
+  zh: 重新排列`self`张量的维度，以匹配[`names`](#torch.Tensor.names "torch.Tensor.names")中指定的顺序，在任何新名称中添加大小为一的维度。
 - en: All of the dims of `self` must be named in order to use this method. The resulting
     tensor is a view on the original tensor.
+  id: totrans-125
   prefs: []
   type: TYPE_NORMAL
+  zh: '`self`的所有维度必须按顺序命名才能使用此方法。结果张量是原始张量的视图。'
 - en: All dimension names of `self` must be present in [`names`](#torch.Tensor.names
     "torch.Tensor.names"). [`names`](#torch.Tensor.names "torch.Tensor.names") may
     contain additional names that are not in `self.names`; the output tensor has a
     size-one dimension for each of those new names.
+  id: totrans-126
   prefs: []
   type: TYPE_NORMAL
+  zh: '`self`的所有维度名称必须存在于[`names`](#torch.Tensor.names "torch.Tensor.names")中。[`names`](#torch.Tensor.names
+    "torch.Tensor.names")可能包含未在`self.names`中的其他名称；输出张量对于每个新名称都有一个大小为一的维度。'
 - en: '[`names`](#torch.Tensor.names "torch.Tensor.names") may contain up to one Ellipsis
     (`...`). The Ellipsis is expanded to be equal to all dimension names of `self`
     that are not mentioned in [`names`](#torch.Tensor.names "torch.Tensor.names"),
     in the order that they appear in `self`.'
+  id: totrans-127
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`names`](#torch.Tensor.names "torch.Tensor.names") 可以包含最多一个省略号 (`...`)。省略号会扩展为`self`中未在[`names`](#torch.Tensor.names
+    "torch.Tensor.names")中提到的所有维度名称，按照它们在`self`中出现的顺序。'
 - en: Python 2 does not support Ellipsis but one may use a string literal instead
     (`'...'`).
+  id: totrans-128
   prefs: []
   type: TYPE_NORMAL
+  zh: Python 2不支持省略号，但可以使用字符串文字代替（`'...'`）。
 - en: Parameters
+  id: totrans-129
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**names** (*iterable* *of* [*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)")) – The desired dimension ordering of the output tensor. May
     contain up to one Ellipsis that is expanded to all unmentioned dim names of `self`.'
+  id: totrans-130
   prefs: []
   type: TYPE_NORMAL
+  zh: '**names**（*可迭代的* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(在Python v3.12中)")） - 输出张量的期望维度顺序。可能包含最多一个省略号，该省略号会扩展到`self`未提及的所有维度名称。'
 - en: 'Examples:'
+  id: totrans-131
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例：
 - en: '[PRE21]'
+  id: totrans-132
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE21]'
 - en: Warning
+  id: totrans-133
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: The named tensor API is experimental and subject to change.
+  id: totrans-134
   prefs: []
   type: TYPE_NORMAL
+  zh: 命名张量API是实验性的，可能会发生变化。
 - en: '[PRE22]'
+  id: totrans-135
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE22]'
 - en: Flattens `dims` into a single dimension with name `out_dim`.
+  id: totrans-136
   prefs: []
   type: TYPE_NORMAL
+  zh: 将`dims`展平为具有名称`out_dim`的单个维度。
 - en: All of dims must be consecutive in order in the `self` tensor, but not necessary
     contiguous in memory.
+  id: totrans-137
   prefs: []
   type: TYPE_NORMAL
+  zh: '`self`张量中的所有维度必须按顺序连续，但在内存中不一定连续。'
 - en: 'Examples:'
+  id: totrans-138
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例：
 - en: '[PRE23]'
+  id: totrans-139
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE23]'
 - en: Warning
+  id: totrans-140
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: The named tensor API is experimental and subject to change.
+  id: totrans-141
   prefs: []
   type: TYPE_NORMAL
+  zh: 命名张量API是实验性的，可能会发生变化。
