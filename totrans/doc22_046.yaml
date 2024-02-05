@@ -1,73 +1,95 @@
 - en: Distributed communication package - torch.distributed
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
 - en: 原文：[https://pytorch.org/docs/stable/distributed.html](https://pytorch.org/docs/stable/distributed.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
 - en: Please refer to [PyTorch Distributed Overview](https://pytorch.org/tutorials/beginner/dist_overview.html)
     for a brief introduction to all features related to distributed training.
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
 - en: '## Backends'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
 - en: '`torch.distributed` supports three built-in backends, each with different capabilities.
     The table below shows which functions are available for use with CPU / CUDA tensors.
     MPI supports CUDA only if the implementation used to build PyTorch supports it.'
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
 - en: '| Backend | `gloo` | `mpi` | `nccl` |'
+  id: totrans-6
   prefs: []
   type: TYPE_TB
 - en: '| --- | --- | --- | --- |'
+  id: totrans-7
   prefs: []
   type: TYPE_TB
 - en: '| Device | CPU | GPU | CPU | GPU | CPU | GPU |'
+  id: totrans-8
   prefs: []
   type: TYPE_TB
 - en: '| --- | --- | --- | --- | --- | --- | --- |'
+  id: totrans-9
   prefs: []
   type: TYPE_TB
 - en: '| send | ✓ | ✘ | ✓ | ? | ✘ | ✓ |'
+  id: totrans-10
   prefs: []
   type: TYPE_TB
 - en: '| recv | ✓ | ✘ | ✓ | ? | ✘ | ✓ |'
+  id: totrans-11
   prefs: []
   type: TYPE_TB
 - en: '| broadcast | ✓ | ✓ | ✓ | ? | ✘ | ✓ |'
+  id: totrans-12
   prefs: []
   type: TYPE_TB
 - en: '| all_reduce | ✓ | ✓ | ✓ | ? | ✘ | ✓ |'
+  id: totrans-13
   prefs: []
   type: TYPE_TB
 - en: '| reduce | ✓ | ✘ | ✓ | ? | ✘ | ✓ |'
+  id: totrans-14
   prefs: []
   type: TYPE_TB
 - en: '| all_gather | ✓ | ✘ | ✓ | ? | ✘ | ✓ |'
+  id: totrans-15
   prefs: []
   type: TYPE_TB
 - en: '| gather | ✓ | ✘ | ✓ | ? | ✘ | ✓ |'
+  id: totrans-16
   prefs: []
   type: TYPE_TB
 - en: '| scatter | ✓ | ✘ | ✓ | ? | ✘ | ✓ |'
+  id: totrans-17
   prefs: []
   type: TYPE_TB
 - en: '| reduce_scatter | ✘ | ✘ | ✘ | ✘ | ✘ | ✓ |'
+  id: totrans-18
   prefs: []
   type: TYPE_TB
 - en: '| all_to_all | ✘ | ✘ | ✓ | ? | ✘ | ✓ |'
+  id: totrans-19
   prefs: []
   type: TYPE_TB
 - en: '| barrier | ✓ | ✘ | ✓ | ? | ✘ | ✓ |'
+  id: totrans-20
   prefs: []
   type: TYPE_TB
 - en: Backends that come with PyTorch[](#backends-that-come-with-pytorch "Permalink
     to this heading")
+  id: totrans-21
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
@@ -76,61 +98,75 @@
     in PyTorch distributed (NCCL only when building with CUDA). MPI is an optional
     backend that can only be included if you build PyTorch from source. (e.g. building
     PyTorch on a host that has MPI installed.)
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
 - en: Note
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
 - en: 'As of PyTorch v1.8, Windows supports all collective communications backend
     but NCCL, If the init_method argument of [`init_process_group()`](#torch.distributed.init_process_group
     "torch.distributed.init_process_group") points to a file it must adhere to the
     following schema:'
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
 - en: Local file system, `init_method="file:///d:/tmp/some_file"`
+  id: totrans-25
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: Shared file system, `init_method="file://////{machine_name}/{share_folder_name}/some_file"`
+  id: totrans-26
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: Same as on Linux platform, you can enable TcpStore by setting environment variables,
     MASTER_ADDR and MASTER_PORT.
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
 - en: Which backend to use?
+  id: totrans-28
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
 - en: 'In the past, we were often asked: “which backend should I use?”.'
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
 - en: Rule of thumb
+  id: totrans-30
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: Use the NCCL backend for distributed **GPU** training
+  id: totrans-31
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
 - en: Use the Gloo backend for distributed **CPU** training.
+  id: totrans-32
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
 - en: GPU hosts with InfiniBand interconnect
+  id: totrans-33
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: Use NCCL, since it’s the only backend that currently supports InfiniBand and
     GPUDirect.
+  id: totrans-34
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
 - en: GPU hosts with Ethernet interconnect
+  id: totrans-35
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
@@ -138,36 +174,43 @@
     especially for multiprocess single-node or multi-node distributed training. If
     you encounter any problem with NCCL, use Gloo as the fallback option. (Note that
     Gloo currently runs slower than NCCL for GPUs.)
+  id: totrans-36
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
 - en: CPU hosts with InfiniBand interconnect
+  id: totrans-37
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: If your InfiniBand has enabled IP over IB, use Gloo, otherwise, use MPI instead.
     We are planning on adding InfiniBand support for Gloo in the upcoming releases.
+  id: totrans-38
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
 - en: CPU hosts with Ethernet interconnect
+  id: totrans-39
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: Use Gloo, unless you have specific reasons to use MPI.
+  id: totrans-40
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
-- en: Common environment variables[](#common-environment-variables "Permalink to
-    this heading")
+- en: Common environment variables[](#common-environment-variables "Permalink to this
+    heading")
+  id: totrans-41
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
 - en: Choosing the network interface to use[](#choosing-the-network-interface-to-use
     "Permalink to this heading")
+  id: totrans-42
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
@@ -175,13 +218,16 @@
     interface to use. If the automatically detected interface is not correct, you
     can override it using the following environment variables (applicable to the respective
     backend):'
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
 - en: '**NCCL_SOCKET_IFNAME**, for example `export NCCL_SOCKET_IFNAME=eth0`'
+  id: totrans-44
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**GLOO_SOCKET_IFNAME**, for example `export GLOO_SOCKET_IFNAME=eth0`'
+  id: totrans-45
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
@@ -190,15 +236,18 @@
     backend will dispatch operations in a round-robin fashion across these interfaces.
     It is imperative that all processes specify the same number of interfaces in this
     variable.'
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
 - en: Other NCCL environment variables[](#other-nccl-environment-variables "Permalink
     to this heading")
+  id: totrans-47
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
 - en: '**Debugging** - in case of NCCL failure, you can set `NCCL_DEBUG=INFO` to print
     an explicit warning message as well as basic NCCL initialization information.'
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
 - en: You may also use `NCCL_DEBUG_SUBSYS` to get more details about a specific aspect
@@ -207,6 +256,7 @@
     type or message size mismatch. In case of topology detection failure, it would
     be helpful to set `NCCL_DEBUG_SUBSYS=GRAPH` to inspect the detailed detection
     result and save as reference if further help from NCCL team is needed.
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
 - en: '**Performance tuning** - NCCL performs automatic tuning based on its topology
@@ -214,13 +264,16 @@
     still try tuning `NCCL_SOCKET_NTHREADS` and `NCCL_NSOCKS_PERTHREAD` to increase
     socket network bandwidth. These two environment variables have been pre-tuned
     by NCCL for some cloud providers, such as AWS or GCP.'
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
 - en: For a full list of NCCL environment variables, please refer to [NVIDIA NCCL’s
     official documentation](https://docs.nvidia.com/deeplearning/sdk/nccl-developer-guide/docs/env.html)
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
 - en: '## Basics'
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
 - en: The torch.distributed package provides PyTorch support and communication primitives
@@ -233,12 +286,14 @@
     "torch.nn.DataParallel") in that it supports multiple network-connected machines
     and in that the user must explicitly launch a separate copy of the main training
     script for each process.
+  id: totrans-53
   prefs: []
   type: TYPE_NORMAL
 - en: 'In the single-machine synchronous case, torch.distributed or the [`torch.nn.parallel.DistributedDataParallel()`](generated/torch.nn.parallel.DistributedDataParallel.html#torch.nn.parallel.DistributedDataParallel
     "torch.nn.parallel.DistributedDataParallel") wrapper may still have advantages
     over other approaches to data-parallelism, including [`torch.nn.DataParallel()`](generated/torch.nn.DataParallel.html#torch.nn.DataParallel
     "torch.nn.DataParallel"):'
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
 - en: Each process maintains its own optimizer and performs a complete optimization
@@ -246,6 +301,7 @@
     have already been gathered together and averaged across processes and are thus
     the same for every process, this means that no parameter broadcast step is needed,
     reducing time spent transferring tensors between nodes.
+  id: totrans-55
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
@@ -254,10 +310,12 @@
     threads, model replicas, or GPUs from a single Python process. This is especially
     important for models that make heavy use of the Python runtime, including models
     with recurrent layers or many small components.
+  id: totrans-56
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: Initialization
+  id: totrans-57
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
@@ -265,54 +323,84 @@
     "torch.distributed.init_process_group") or [`torch.distributed.device_mesh.init_device_mesh()`](#torch.distributed.device_mesh.init_device_mesh
     "torch.distributed.device_mesh.init_device_mesh") function before calling any
     other methods. Both block until all processes have joined.
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: 在调用任何其他方法之前，需要使用[`torch.distributed.init_process_group()`](#torch.distributed.init_process_group
+    "torch.distributed.init_process_group")或[`torch.distributed.device_mesh.init_device_mesh()`](#torch.distributed.device_mesh.init_device_mesh
+    "torch.distributed.device_mesh.init_device_mesh")函数初始化包。两者都会阻塞，直到所有进程都加入。
 - en: '[PRE0]'
+  id: totrans-59
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: Return `True` if the distributed package is available.
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果分布式包可用，则返回`True`。
 - en: Otherwise, `torch.distributed` does not expose any other APIs. Currently, `torch.distributed`
     is available on Linux, MacOS and Windows. Set `USE_DISTRIBUTED=1` to enable it
     when building PyTorch from source. Currently, the default value is `USE_DISTRIBUTED=1`
     for Linux and Windows, `USE_DISTRIBUTED=0` for MacOS.
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: 否则，`torch.distributed`不公开任何其他API。目前，`torch.distributed`在Linux、MacOS和Windows上可用。在构建PyTorch时，设置`USE_DISTRIBUTED=1`以启用它。目前，默认值为Linux和Windows为`USE_DISTRIBUTED=1`，MacOS为`USE_DISTRIBUTED=0`。
 - en: Return type
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[bool](https://docs.python.org/3/library/functions.html#bool "(in Python v3.12)")'
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: '[bool]'
 - en: '[PRE1]'
+  id: totrans-64
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Initialize the default distributed process group.
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: 初始化默认的分布式进程组。
 - en: This will also initialize the distributed package.
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: 这也将初始化分布式包。
 - en: 'There are 2 main ways to initialize a process group:'
+  id: totrans-67
   prefs: []
   type: TYPE_NORMAL
+  zh: 有两种主要初始化进程组的方法：
 - en: Specify `store`, `rank`, and `world_size` explicitly.
+  id: totrans-68
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 明确指定`store`、`rank`和`world_size`。
 - en: Specify `init_method` (a URL string) which indicates where/how to discover peers.
     Optionally specify `rank` and `world_size`, or encode all required parameters
     in the URL and omit them.
+  id: totrans-69
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 指定`init_method`（一个URL字符串），指示在哪里/如何发现对等体。可选地指定`rank`和`world_size`，或在URL中编码所有必需的参数并省略它们。
 - en: If neither is specified, `init_method` is assumed to be “env://”.
+  id: totrans-70
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果没有指定，则假定`init_method`为“env://”。
 - en: Parameters
+  id: totrans-71
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**backend** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
     Python v3.12)") *or* [*Backend*](#torch.distributed.Backend "torch.distributed.Backend")*,*
     *optional*) – The backend to use. Depending on build-time configurations, valid
@@ -324,34 +412,45 @@
     processes per machine with `nccl` backend, each process must have exclusive access
     to every GPU it uses, as sharing GPUs between processes can result in deadlocks.
     `ucc` backend is experimental.'
+  id: totrans-72
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**backend**（*str*或*Backend*，可选） - 要使用的后端。根据构建时的配置，有效值包括`mpi`、`gloo`、`nccl`和`ucc`。如果未提供后端，则将创建`gloo`和`nccl`后端，有关如何管理多个后端的说明，请参见下面的注释。此字段可以作为小写字符串（例如，`"gloo"`）给出，也可以通过[`Backend`](#torch.distributed.Backend
+    "torch.distributed.Backend")属性（例如，`Backend.GLOO`）访问。如果使用`nccl`后端的每个机器上的多个进程，每个进程必须独占使用它使用的每个GPU，因为在进程之间共享GPU可能导致死锁。`ucc`后端是实验性的。'
 - en: '**init_method** ([*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)")*,* *optional*) – URL specifying how to initialize the process
     group. Default is “env://” if no `init_method` or `store` is specified. Mutually
     exclusive with `store`.'
+  id: totrans-73
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**init_method**（*str*，可选） - 指定如何初始化进程组的URL。如果未指定`init_method`或`store`，则默认为“env://”。与`store`互斥。'
 - en: '**world_size** ([*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")*,* *optional*) – Number of processes participating in the
     job. Required if `store` is specified.'
+  id: totrans-74
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**world_size**（*int*，可选） - 参与作业的进程数。如果指定了`store`，则需要。'
 - en: '**rank** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
     Python v3.12)")*,* *optional*) – Rank of the current process (it should be a number
     between 0 and `world_size`-1). Required if `store` is specified.'
+  id: totrans-75
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**rank**（*int*，可选） - 当前进程的等级（应为0到`world_size`-1之间的数字）。如果指定了`store`，则需要。'
 - en: '**store** ([*Store*](#torch.distributed.Store "torch.distributed.Store")*,*
     *optional*) – Key/value store accessible to all workers, used to exchange connection/address
     information. Mutually exclusive with `init_method`.'
+  id: totrans-76
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**store**（*Store*，可选） - 所有工作进程都可以访问的键/值存储，用于交换连接/地址信息。与`init_method`互斥。'
 - en: '**timeout** (*timedelta**,* *optional*) – Timeout for operations executed against
     the process group. Default value is 10 minutes for NCCL and 30 minutes for other
     backends. This is the duration after which collectives will be aborted asynchronously
@@ -359,32 +458,40 @@
     is no longer safe to continue executing user code since failed async NCCL operations
     might result in subsequent CUDA operations running on corrupted data. When TORCH_NCCL_BLOCKING_WAIT
     is set, the process will block and wait for this timeout.'
+  id: totrans-77
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**timeout**（*timedelta*，可选） - 对执行的操作的超时时间。NCCL的默认值为10分钟，其他后端为30分钟。这是在此持续时间后异步中止集合，并且进程将崩溃。这是因为CUDA执行是异步的，不再安全继续执行用户代码，因为失败的异步NCCL操作可能导致后续CUDA操作在损坏的数据上运行。当设置TORCH_NCCL_BLOCKING_WAIT时，进程将阻塞并等待此超时。'
 - en: '**group_name** ([*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)")*,* *optional**,* *deprecated*) – Group name. This argument
     is ignored'
+  id: totrans-78
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**group_name**（*str*，可选，已弃用） - 组名。此参数将被忽略'
 - en: '**pg_options** (*ProcessGroupOptions**,* *optional*) – process group options
     specifying what additional options need to be passed in during the construction
     of specific process groups. As of now, the only options we support is `ProcessGroupNCCL.Options`
     for the `nccl` backend, `is_high_priority_stream` can be specified so that the
     nccl backend can pick up high priority cuda streams when there’re compute kernels
     waiting.'
+  id: totrans-79
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: Note
+  id: totrans-80
   prefs: []
   type: TYPE_NORMAL
 - en: To enable `backend == Backend.MPI`, PyTorch needs to be built from source on
     a system that supports MPI.
+  id: totrans-81
   prefs: []
   type: TYPE_NORMAL
 - en: Note
+  id: totrans-82
   prefs: []
   type: TYPE_NORMAL
 - en: Support for multiple backends is experimental. Currently when no backend is
@@ -393,48 +500,60 @@
     for collectives with CUDA tensors. A custom backend can be specified by passing
     in a string with format “<device_type>:<backend_name>,<device_type>:<backend_name>”,
     e.g. “cpu:gloo,cuda:custom_backend”.
+  id: totrans-83
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE2]'
+  id: totrans-84
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Initializes a DeviceMesh based on device_type, mesh_shape, and mesh_dim_names
     parameters.
+  id: totrans-85
   prefs: []
   type: TYPE_NORMAL
 - en: This creates a DeviceMesh with an n-dimensional array layout, where n is the
     length of mesh_shape. If mesh_dim_names is provided, each dimension is labeled
     as mesh_dim_names[i].
+  id: totrans-86
   prefs: []
   type: TYPE_NORMAL
 - en: Note
+  id: totrans-87
   prefs: []
   type: TYPE_NORMAL
 - en: init_device_mesh follows SPMD programming model, meaning the same PyTorch Python
     program runs on all processes/ranks in the cluster. Ensure mesh_shape (the dimensions
     of the nD array describing device layout) is identical across all ranks. Inconsistent
     mesh_shape may lead to hanging.
+  id: totrans-88
   prefs: []
   type: TYPE_NORMAL
 - en: Note
+  id: totrans-89
   prefs: []
   type: TYPE_NORMAL
 - en: If no process group is found, init_device_mesh will initialize distributed process
     group/groups required for distributed communications behind the scene.
+  id: totrans-90
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-91
   prefs: []
   type: TYPE_NORMAL
 - en: '**device_type** ([*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)")) – The device type of the mesh. Currently supports: “cpu”,
     “cuda/cuda-like”.'
+  id: totrans-92
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**mesh_shape** (*Tuple**[*[*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")*]*) – A tuple defining the dimensions of the multi-dimensional
     array describing the layout of devices.'
+  id: totrans-93
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
@@ -443,102 +562,139 @@
     to each dimension of the multi-dimensional array describing the layout of devices.
     Its length must match the length of mesh_shape. Each string in mesh_dim_names
     must be unique.'
+  id: totrans-94
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: Returns
+  id: totrans-95
   prefs: []
   type: TYPE_NORMAL
 - en: A [`DeviceMesh`](#torch.distributed.device_mesh.DeviceMesh "torch.distributed.device_mesh.DeviceMesh")
     object representing the device layout.
+  id: totrans-96
   prefs: []
   type: TYPE_NORMAL
 - en: Return type
+  id: totrans-97
   prefs: []
   type: TYPE_NORMAL
 - en: '[DeviceMesh](#torch.distributed.device_mesh.DeviceMesh "torch.distributed.device_mesh.DeviceMesh")'
+  id: totrans-98
   prefs: []
   type: TYPE_NORMAL
 - en: 'Example::'
+  id: totrans-99
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE3]'
+  id: totrans-100
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: '[PRE4]'
+  id: totrans-101
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: Check if the default process group has been initialized.
+  id: totrans-102
   prefs: []
   type: TYPE_NORMAL
 - en: Return type
+  id: totrans-103
   prefs: []
   type: TYPE_NORMAL
 - en: '[bool](https://docs.python.org/3/library/functions.html#bool "(in Python v3.12)")'
+  id: totrans-104
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE5]'
+  id: totrans-105
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: Check if the MPI backend is available.
+  id: totrans-106
   prefs: []
   type: TYPE_NORMAL
 - en: Return type
+  id: totrans-107
   prefs: []
   type: TYPE_NORMAL
 - en: '[bool](https://docs.python.org/3/library/functions.html#bool "(in Python v3.12)")'
+  id: totrans-108
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE6]'
+  id: totrans-109
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: Check if the NCCL backend is available.
+  id: totrans-110
   prefs: []
   type: TYPE_NORMAL
 - en: Return type
+  id: totrans-111
   prefs: []
   type: TYPE_NORMAL
 - en: '[bool](https://docs.python.org/3/library/functions.html#bool "(in Python v3.12)")'
+  id: totrans-112
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE7]'
+  id: totrans-113
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: Check if the Gloo backend is available.
+  id: totrans-114
   prefs: []
   type: TYPE_NORMAL
 - en: Return type
+  id: totrans-115
   prefs: []
   type: TYPE_NORMAL
 - en: '[bool](https://docs.python.org/3/library/functions.html#bool "(in Python v3.12)")'
+  id: totrans-116
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE8]'
+  id: totrans-117
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: Check whether this process was launched with `torch.distributed.elastic` (aka
     torchelastic).
+  id: totrans-118
   prefs: []
   type: TYPE_NORMAL
 - en: The existence of `TORCHELASTIC_RUN_ID` environment variable is used as a proxy
     to determine whether the current process was launched with torchelastic. This
     is a reasonable proxy since `TORCHELASTIC_RUN_ID` maps to the rendezvous id which
     is always a non-null value indicating the job id for peer discovery purposes..
+  id: totrans-119
   prefs: []
   type: TYPE_NORMAL
 - en: Return type
+  id: totrans-120
   prefs: []
   type: TYPE_NORMAL
 - en: '[bool](https://docs.python.org/3/library/functions.html#bool "(in Python v3.12)")'
+  id: totrans-121
   prefs: []
   type: TYPE_NORMAL
 - en: '* * *'
+  id: totrans-122
   prefs: []
   type: TYPE_NORMAL
 - en: 'Currently three initialization methods are supported:'
+  id: totrans-123
   prefs: []
   type: TYPE_NORMAL
 - en: TCP initialization
+  id: totrans-124
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
@@ -546,20 +702,28 @@
     reachable from all processes and a desired `world_size`. The first way requires
     specifying an address that belongs to the rank 0 process. This initialization
     method requires that all processes have manually specified ranks.
+  id: totrans-125
   prefs: []
   type: TYPE_NORMAL
+  zh: 有两种使用TCP进行初始化的方法，都需要一个所有进程都可以访问的网络地址和一个期望的`world_size`。第一种方法需要指定属于rank 0进程的地址。这种初始化方法要求所有进程都手动指定了rank。
 - en: Note that multicast address is not supported anymore in the latest distributed
     package. `group_name` is deprecated as well.
+  id: totrans-126
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，在最新的分布式包中不再支持多播地址。`group_name`也已被弃用。
 - en: '[PRE9]'
+  id: totrans-127
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: Shared file-system initialization[](#shared-file-system-initialization "Permalink
     to this heading")
+  id: totrans-128
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 共享文件系统初始化
 - en: Another initialization method makes use of a file system that is shared and
     visible from all machines in a group, along with a desired `world_size`. The URL
     should start with `file://` and contain a path to a non-existent file (in an existing
@@ -568,22 +732,32 @@
     it is your responsibility to make sure that the file is cleaned up before the
     next [`init_process_group()`](#torch.distributed.init_process_group "torch.distributed.init_process_group")
     call on the same file path/name.
+  id: totrans-129
   prefs: []
   type: TYPE_NORMAL
+  zh: 另一种初始化方法利用了一个共享的文件系统，该文件系统对所有机器可见，并且具有所需的`world_size`。URL应以`file://`开头，并包含指向共享文件系统上不存在文件（在现有目录中）的路径。文件系统初始化将自动创建该文件（如果不存在），但不会删除该文件。因此，在下次在相同文件路径/名称上调用`init_process_group()`之前，您有责任确保清理文件。
 - en: Note that automatic rank assignment is not supported anymore in the latest distributed
     package and `group_name` is deprecated as well.
+  id: totrans-130
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，在最新的分布式包中不再支持自动分配rank，`group_name`也已被弃用。
 - en: Warning
+  id: totrans-131
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: This method assumes that the file system supports locking using `fcntl` - most
     local systems and NFS support it.
+  id: totrans-132
   prefs: []
   type: TYPE_NORMAL
+  zh: 这种方法假定文件系统支持使用`fcntl`进行锁定 - 大多数本地系统和NFS都支持它。
 - en: Warning
+  id: totrans-133
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: This method will always create the file and try its best to clean up and remove
     the file at the end of the program. In other words, each initialization with the
     file init method will need a brand new empty file in order for the initialization
@@ -600,101 +774,142 @@
     The rule of thumb here is that, make sure that the file is non-existent or empty
     every time [`init_process_group()`](#torch.distributed.init_process_group "torch.distributed.init_process_group")
     is called.
+  id: totrans-134
   prefs: []
   type: TYPE_NORMAL
+  zh: 这种方法将始终创建文件，并尽力在程序结束时清理和删除文件。换句话说，每次使用文件初始化方法进行初始化时，都需要一个全新的空文件才能成功初始化。如果再次使用之前初始化时使用的相同文件（未被清理）则会导致意外行为，通常会导致死锁和失败。因此，即使这种方法会尽力清理文件，如果自动删除失败，您有责任确保在训练结束时删除文件，以防止下次再次重用相同的文件。如果您计划在相同的文件名上多次调用`init_process_group()`，这一点尤为重要。换句话说，如果文件未被删除/清理，并且您再次在该文件上调用`init_process_group()`，则可能会导致失败。这里的经验法则是，确保每次调用`init_process_group()`时文件不存在或为空。
 - en: '[PRE10]'
+  id: totrans-135
   prefs: []
   type: TYPE_PRE
-- en: Environment variable initialization[](#environment-variable-initialization
-    "Permalink to this heading")
+  zh: '[PRE10]'
+- en: Environment variable initialization[](#environment-variable-initialization "Permalink
+    to this heading")
+  id: totrans-136
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 环境变量初始化
 - en: 'This method will read the configuration from environment variables, allowing
     one to fully customize how the information is obtained. The variables to be set
     are:'
+  id: totrans-137
   prefs: []
   type: TYPE_NORMAL
+  zh: 这种方法将从环境变量中读取配置，允许完全自定义信息的获取方式。需要设置的变量包括：
 - en: '`MASTER_PORT` - required; has to be a free port on machine with rank 0'
+  id: totrans-138
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`MASTER_PORT` - 必需；必须是rank 0机器上的空闲端口'
 - en: '`MASTER_ADDR` - required (except for rank 0); address of rank 0 node'
+  id: totrans-139
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`MASTER_ADDR` - 必需（除了rank 0）；rank 0节点的地址'
 - en: '`WORLD_SIZE` - required; can be set either here, or in a call to init function'
+  id: totrans-140
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`WORLD_SIZE` - 必需；可以在这里设置，也可以在调用初始化函数时设置'
 - en: '`RANK` - required; can be set either here, or in a call to init function'
+  id: totrans-141
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`RANK` - 必需；可以在这里设置，也可以在调用初始化函数时设置'
 - en: The machine with rank 0 will be used to set up all connections.
+  id: totrans-142
   prefs: []
   type: TYPE_NORMAL
+  zh: rank 0的机器将用于建立所有连接。
 - en: This is the default method, meaning that `init_method` does not have to be specified
     (or can be `env://`).
+  id: totrans-143
   prefs: []
   type: TYPE_NORMAL
+  zh: 这是默认方法，意味着不必指定`init_method`（或者可以是`env://`）。
 - en: Post-Initialization
+  id: totrans-144
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 初始化后
 - en: Once [`torch.distributed.init_process_group()`](#torch.distributed.init_process_group
     "torch.distributed.init_process_group") was run, the following functions can be
     used. To check whether the process group has already been initialized use [`torch.distributed.is_initialized()`](#torch.distributed.is_initialized
     "torch.distributed.is_initialized").
+  id: totrans-145
   prefs: []
   type: TYPE_NORMAL
+  zh: 一旦运行了`torch.distributed.init_process_group()`，就可以使用以下函数。要检查进程组是否已经初始化，请使用`torch.distributed.is_initialized()`。
 - en: '[PRE11]'
+  id: totrans-146
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: An enum-like class for backends.
+  id: totrans-147
   prefs: []
   type: TYPE_NORMAL
+  zh: 用于后端的类似枚举的类。
 - en: 'Available backends: GLOO, NCCL, UCC, MPI, and other registered backends.'
+  id: totrans-148
   prefs: []
   type: TYPE_NORMAL
+  zh: 可用的后端：GLOO、NCCL、UCC、MPI和其他已注册的后端。
 - en: The values of this class are lowercase strings, e.g., `"gloo"`. They can be
     accessed as attributes, e.g., `Backend.NCCL`.
+  id: totrans-149
   prefs: []
   type: TYPE_NORMAL
 - en: This class can be directly called to parse the string, e.g., `Backend(backend_str)`
     will check if `backend_str` is valid, and return the parsed lowercase string if
     so. It also accepts uppercase strings, e.g., `Backend("GLOO")` returns `"gloo"`.
+  id: totrans-150
   prefs: []
   type: TYPE_NORMAL
 - en: Note
+  id: totrans-151
   prefs: []
   type: TYPE_NORMAL
 - en: The entry `Backend.UNDEFINED` is present but only used as initial value of some
     fields. Users should neither use it directly nor assume its existence.
+  id: totrans-152
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE12]'
+  id: totrans-153
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: Register a new backend with the given name and instantiating function.
+  id: totrans-154
   prefs: []
   type: TYPE_NORMAL
 - en: This class method is used by 3rd party `ProcessGroup` extension to register
     new backends.
+  id: totrans-155
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-156
   prefs: []
   type: TYPE_NORMAL
 - en: '**name** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
     Python v3.12)")) – Backend name of the `ProcessGroup` extension. It should match
     the one in `init_process_group()`.'
+  id: totrans-157
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**func** (*function*) – Function handler that instantiates the backend. The
     function should be implemented in the backend extension and takes four arguments,
     including `store`, `rank`, `world_size`, and `timeout`.'
+  id: totrans-158
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
@@ -703,6 +918,7 @@
     structure. Default: `False`. If set to `True`, the backend will get an instance
     of `c10d::DistributedBackendOptions`, and a process group options object as defined
     by the backend implementation.'
+  id: totrans-159
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
@@ -711,100 +927,133 @@
     "(in Python v3.12)") *of* [*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)")*,* *optional*) – device type this backend supports, e.g.
     “cpu”, “cuda”, etc. If None, assuming both “cpu” and “cuda”'
+  id: totrans-160
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: Note
+  id: totrans-161
   prefs: []
   type: TYPE_NORMAL
 - en: This support of 3rd party backend is experimental and subject to change.
+  id: totrans-162
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE13]'
+  id: totrans-163
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: Return the backend of the given process group.
+  id: totrans-164
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-165
   prefs: []
   type: TYPE_NORMAL
 - en: '**group** (*ProcessGroup**,* *optional*) – The process group to work on. The
     default is the general main process group. If another specific group is specified,
     the calling process must be part of `group`.'
+  id: totrans-166
   prefs: []
   type: TYPE_NORMAL
 - en: Returns
+  id: totrans-167
   prefs: []
   type: TYPE_NORMAL
 - en: The backend of the given process group as a lower case string.
+  id: totrans-168
   prefs: []
   type: TYPE_NORMAL
 - en: Return type
+  id: totrans-169
   prefs: []
   type: TYPE_NORMAL
 - en: '[str](https://docs.python.org/3/library/stdtypes.html#str "(in Python v3.12)")'
+  id: totrans-170
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE14]'
+  id: totrans-171
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: Return the rank of the current process in the provided `group`, default otherwise.
+  id: totrans-172
   prefs: []
   type: TYPE_NORMAL
 - en: Rank is a unique identifier assigned to each process within a distributed process
     group. They are always consecutive integers ranging from 0 to `world_size`.
+  id: totrans-173
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-174
   prefs: []
   type: TYPE_NORMAL
 - en: '**group** (*ProcessGroup**,* *optional*) – The process group to work on. If
     None, the default process group will be used.'
+  id: totrans-175
   prefs: []
   type: TYPE_NORMAL
 - en: Returns
+  id: totrans-176
   prefs: []
   type: TYPE_NORMAL
 - en: The rank of the process group -1, if not part of the group
+  id: totrans-177
   prefs: []
   type: TYPE_NORMAL
 - en: Return type
+  id: totrans-178
   prefs: []
   type: TYPE_NORMAL
 - en: '[int](https://docs.python.org/3/library/functions.html#int "(in Python v3.12)")'
+  id: totrans-179
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE15]'
+  id: totrans-180
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: Return the number of processes in the current process group.
+  id: totrans-181
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-182
   prefs: []
   type: TYPE_NORMAL
 - en: '**group** (*ProcessGroup**,* *optional*) – The process group to work on. If
     None, the default process group will be used.'
+  id: totrans-183
   prefs: []
   type: TYPE_NORMAL
 - en: Returns
+  id: totrans-184
   prefs: []
   type: TYPE_NORMAL
 - en: The world size of the process group -1, if not part of the group
+  id: totrans-185
   prefs: []
   type: TYPE_NORMAL
 - en: Return type
+  id: totrans-186
   prefs: []
   type: TYPE_NORMAL
 - en: '[int](https://docs.python.org/3/library/functions.html#int "(in Python v3.12)")'
+  id: totrans-187
   prefs: []
   type: TYPE_NORMAL
 - en: '* * *'
+  id: totrans-188
   prefs: []
   type: TYPE_NORMAL
 - en: Distributed Key-Value Store[](#distributed-key-value-store "Permalink to this
     heading")
+  id: totrans-189
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
@@ -816,39 +1065,49 @@
     [`TCPStore`](#torch.distributed.TCPStore "torch.distributed.TCPStore"), [`FileStore`](#torch.distributed.FileStore
     "torch.distributed.FileStore"), and [`HashStore`](#torch.distributed.HashStore
     "torch.distributed.HashStore").'
+  id: totrans-190
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE16]'
+  id: totrans-191
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: 'Base class for all store implementations, such as the 3 provided by PyTorch
     distributed: ([`TCPStore`](#torch.distributed.TCPStore "torch.distributed.TCPStore"),
     [`FileStore`](#torch.distributed.FileStore "torch.distributed.FileStore"), and
     [`HashStore`](#torch.distributed.HashStore "torch.distributed.HashStore")).'
+  id: totrans-192
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE17]'
+  id: totrans-193
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: A TCP-based distributed key-value store implementation. The server store holds
     the data, while the client stores can connect to the server store over TCP and
     perform actions such as `set()` to insert a key-value pair, `get()` to retrieve
     a key-value pair, etc. There should always be one server store initialized because
     the client store(s) will wait for the server to establish a connection.
+  id: totrans-194
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-195
   prefs: []
   type: TYPE_NORMAL
 - en: '**host_name** ([*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)")) – The hostname or IP Address the server store should run
     on.'
+  id: totrans-196
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**port** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
     Python v3.12)")) – The port on which the server store should listen for incoming
     requests.'
+  id: totrans-197
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
@@ -856,17 +1115,20 @@
     "(in Python v3.12)")*,* *optional*) – The total number of store users (number
     of clients + 1 for the server). Default is None (None indicates a non-fixed number
     of store users).'
+  id: totrans-198
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**is_master** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")*,* *optional*) – True when initializing the server store
     and False for client stores. Default is False.'
+  id: totrans-199
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**timeout** (*timedelta**,* *optional*) – Timeout used by the store during
     initialization and for methods such as `get()` and `wait()`. Default is timedelta(seconds=300)'
+  id: totrans-200
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
@@ -874,6 +1136,7 @@
     "(in Python v3.12)")*,* *optional*) – Whether to wait for all the workers to connect
     with the server store. This is only applicable when world_size is a fixed value.
     Default is True.'
+  id: totrans-201
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
@@ -881,6 +1144,7 @@
     "(in Python v3.12)")*,* *optional*) – If True, all `TCPStore` instances in the
     current process with the same host/port will use the same underlying `TCPServer`.
     Default is False.'
+  id: totrans-202
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
@@ -889,333 +1153,445 @@
     will listen on this file descriptor, which must be a socket already bound to `port`.
     Useful to avoid port assignment races in some scenarios. Default is None (meaning
     the server creates a new socket and attempts to bind it to `port`).'
+  id: totrans-203
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: 'Example::'
+  id: totrans-204
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE18]'
+  id: totrans-205
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: '[PRE19]'
+  id: totrans-206
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE19]'
 - en: A thread-safe store implementation based on an underlying hashmap. This store
     can be used within the same process (for example, by other threads), but cannot
     be used across processes.
+  id: totrans-207
   prefs: []
   type: TYPE_NORMAL
 - en: 'Example::'
+  id: totrans-208
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE20]'
+  id: totrans-209
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE20]'
 - en: '[PRE21]'
+  id: totrans-210
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE21]'
 - en: A store implementation that uses a file to store the underlying key-value pairs.
+  id: totrans-211
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-212
   prefs: []
   type: TYPE_NORMAL
 - en: '**file_name** ([*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)")) – path of the file in which to store the key-value pairs'
+  id: totrans-213
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**world_size** ([*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")*,* *optional*) – The total number of processes using the
     store. Default is -1 (a negative value indicates a non-fixed number of store users).'
+  id: totrans-214
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: 'Example::'
+  id: totrans-215
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE22]'
+  id: totrans-216
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE22]'
 - en: '[PRE23]'
+  id: totrans-217
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE23]'
 - en: A wrapper around any of the 3 key-value stores ([`TCPStore`](#torch.distributed.TCPStore
     "torch.distributed.TCPStore"), [`FileStore`](#torch.distributed.FileStore "torch.distributed.FileStore"),
     and [`HashStore`](#torch.distributed.HashStore "torch.distributed.HashStore"))
     that adds a prefix to each key inserted to the store.
+  id: totrans-218
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-219
   prefs: []
   type: TYPE_NORMAL
 - en: '**prefix** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
     Python v3.12)")) – The prefix string that is prepended to each key before being
     inserted into the store.'
+  id: totrans-220
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**store** (*torch.distributed.store*) – A store object that forms the underlying
     key-value store.'
+  id: totrans-221
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '[PRE24]'
+  id: totrans-222
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE24]'
 - en: Inserts the key-value pair into the store based on the supplied `key` and `value`.
     If `key` already exists in the store, it will overwrite the old value with the
     new supplied `value`.
+  id: totrans-223
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-224
   prefs: []
   type: TYPE_NORMAL
 - en: '**key** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
     v3.12)")) – The key to be added to the store.'
+  id: totrans-225
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**value** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
     Python v3.12)")) – The value associated with `key` to be added to the store.'
+  id: totrans-226
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: 'Example::'
+  id: totrans-227
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE25]'
+  id: totrans-228
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE25]'
 - en: '[PRE26]'
+  id: totrans-229
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE26]'
 - en: Retrieves the value associated with the given `key` in the store. If `key` is
     not present in the store, the function will wait for `timeout`, which is defined
     when initializing the store, before throwing an exception.
+  id: totrans-230
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-231
   prefs: []
   type: TYPE_NORMAL
 - en: '**key** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
     v3.12)")) – The function will return the value associated with this key.'
+  id: totrans-232
   prefs: []
   type: TYPE_NORMAL
 - en: Returns
+  id: totrans-233
   prefs: []
   type: TYPE_NORMAL
 - en: Value associated with `key` if `key` is in the store.
+  id: totrans-234
   prefs: []
   type: TYPE_NORMAL
 - en: 'Example::'
+  id: totrans-235
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE27]'
+  id: totrans-236
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE27]'
 - en: '[PRE28]'
+  id: totrans-237
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE28]'
 - en: The first call to add for a given `key` creates a counter associated with `key`
     in the store, initialized to `amount`. Subsequent calls to add with the same `key`
     increment the counter by the specified `amount`. Calling `add()` with a key that
     has already been set in the store by `set()` will result in an exception.
+  id: totrans-238
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-239
   prefs: []
   type: TYPE_NORMAL
 - en: '**key** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
     v3.12)")) – The key in the store whose counter will be incremented.'
+  id: totrans-240
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**amount** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
     Python v3.12)")) – The quantity by which the counter will be incremented.'
+  id: totrans-241
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: 'Example::'
+  id: totrans-242
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE29]'
+  id: totrans-243
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE29]'
 - en: '[PRE30]'
+  id: totrans-244
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE30]'
 - en: Inserts the key-value pair into the store based on the supplied `key` and performs
     comparison between `expected_value` and `desired_value` before inserting. `desired_value`
     will only be set if `expected_value` for the `key` already exists in the store
     or if `expected_value` is an empty string.
+  id: totrans-245
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-246
   prefs: []
   type: TYPE_NORMAL
 - en: '**key** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
     v3.12)")) – The key to be checked in the store.'
+  id: totrans-247
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**expected_value** ([*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)")) – The value associated with `key` to be checked before insertion.'
+  id: totrans-248
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**desired_value** ([*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)")) – The value associated with `key` to be added to the store.'
+  id: totrans-249
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: 'Example::'
+  id: totrans-250
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE31]'
+  id: totrans-251
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE31]'
 - en: '[PRE32]'
+  id: totrans-252
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE32]'
 - en: Overloaded function.
+  id: totrans-253
   prefs: []
   type: TYPE_NORMAL
 - en: 'wait(self: torch._C._distributed_c10d.Store, arg0: List[str]) -> None'
+  id: totrans-254
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
 - en: Waits for each key in `keys` to be added to the store. If not all keys are set
     before the `timeout` (set during store initialization), then `wait` will throw
     an exception.
+  id: totrans-255
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-256
   prefs: []
   type: TYPE_NORMAL
 - en: '**keys** ([*list*](https://docs.python.org/3/library/stdtypes.html#list "(in
     Python v3.12)")) – List of keys on which to wait until they are set in the store.'
+  id: totrans-257
   prefs: []
   type: TYPE_NORMAL
 - en: 'Example::'
+  id: totrans-258
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE33]'
+  id: totrans-259
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE33]'
 - en: 'wait(self: torch._C._distributed_c10d.Store, arg0: List[str], arg1: datetime.timedelta)
     -> None'
+  id: totrans-260
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
 - en: Waits for each key in `keys` to be added to the store, and throws an exception
     if the keys have not been set by the supplied `timeout`.
+  id: totrans-261
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-262
   prefs: []
   type: TYPE_NORMAL
 - en: '**keys** ([*list*](https://docs.python.org/3/library/stdtypes.html#list "(in
     Python v3.12)")) – List of keys on which to wait until they are set in the store.'
+  id: totrans-263
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**timeout** (*timedelta*) – Time to wait for the keys to be added before throwing
     an exception.'
+  id: totrans-264
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: 'Example::'
+  id: totrans-265
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE34]'
+  id: totrans-266
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE34]'
 - en: '[PRE35]'
+  id: totrans-267
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE35]'
 - en: Returns the number of keys set in the store. Note that this number will typically
     be one greater than the number of keys added by `set()` and `add()` since one
     key is used to coordinate all the workers using the store.
+  id: totrans-268
   prefs: []
   type: TYPE_NORMAL
 - en: Warning
+  id: totrans-269
   prefs: []
   type: TYPE_NORMAL
 - en: When used with the [`TCPStore`](#torch.distributed.TCPStore "torch.distributed.TCPStore"),
     `num_keys` returns the number of keys written to the underlying file. If the store
     is destructed and another store is created with the same file, the original keys
     will be retained.
+  id: totrans-270
   prefs: []
   type: TYPE_NORMAL
 - en: Returns
+  id: totrans-271
   prefs: []
   type: TYPE_NORMAL
 - en: The number of keys present in the store.
+  id: totrans-272
   prefs: []
   type: TYPE_NORMAL
 - en: 'Example::'
+  id: totrans-273
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE36]'
+  id: totrans-274
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE36]'
 - en: '[PRE37]'
+  id: totrans-275
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE37]'
 - en: Deletes the key-value pair associated with `key` from the store. Returns true
     if the key was successfully deleted, and false if it was not.
+  id: totrans-276
   prefs: []
   type: TYPE_NORMAL
 - en: Warning
+  id: totrans-277
   prefs: []
   type: TYPE_NORMAL
 - en: The `delete_key` API is only supported by the [`TCPStore`](#torch.distributed.TCPStore
     "torch.distributed.TCPStore") and [`HashStore`](#torch.distributed.HashStore "torch.distributed.HashStore").
     Using this API with the [`FileStore`](#torch.distributed.FileStore "torch.distributed.FileStore")
     will result in an exception.
+  id: totrans-278
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-279
   prefs: []
   type: TYPE_NORMAL
 - en: '**key** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
     v3.12)")) – The key to be deleted from the store'
+  id: totrans-280
   prefs: []
   type: TYPE_NORMAL
 - en: Returns
+  id: totrans-281
   prefs: []
   type: TYPE_NORMAL
 - en: True if `key` was deleted, otherwise False.
+  id: totrans-282
   prefs: []
   type: TYPE_NORMAL
 - en: 'Example::'
+  id: totrans-283
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE38]'
+  id: totrans-284
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE38]'
 - en: '[PRE39]'
+  id: totrans-285
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE39]'
 - en: Sets the store’s default timeout. This timeout is used during initialization
     and in `wait()` and `get()`.
+  id: totrans-286
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-287
   prefs: []
   type: TYPE_NORMAL
 - en: '**timeout** (*timedelta*) – timeout to be set in the store.'
+  id: totrans-288
   prefs: []
   type: TYPE_NORMAL
 - en: 'Example::'
+  id: totrans-289
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE40]'
+  id: totrans-290
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE40]'
 - en: Groups
+  id: totrans-291
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
@@ -1227,21 +1603,27 @@
     It returns an opaque group handle that can be given as a `group` argument to all
     collectives (collectives are distributed functions to exchange information in
     certain well-known programming patterns).
+  id: totrans-292
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE41]'
+  id: totrans-293
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE41]'
 - en: Create a new distributed group.
+  id: totrans-294
   prefs: []
   type: TYPE_NORMAL
 - en: This function requires that all processes in the main group (i.e. all processes
     that are part of the distributed job) enter this function, even if they are not
     going to be members of the group. Additionally, groups should be created in the
     same order in all processes.
+  id: totrans-295
   prefs: []
   type: TYPE_NORMAL
 - en: Warning
+  id: totrans-296
   prefs: []
   type: TYPE_NORMAL
 - en: Using multiple process groups with the `NCCL` backend concurrently is not safe
@@ -1251,20 +1633,24 @@
     execution is async) before collectives from another process group are enqueued.
     See [Using multiple NCCL communicators concurrently](https://docs.nvidia.com/deeplearning/nccl/user-guide/docs/usage/communicators.html#using-multiple-nccl-communicators-concurrently)
     for more details.
+  id: totrans-297
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-298
   prefs: []
   type: TYPE_NORMAL
 - en: '**ranks** ([*list*](https://docs.python.org/3/library/stdtypes.html#list "(in
     Python v3.12)")*[*[*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")*]*) – List of ranks of group members. If `None`, will be
     set to all ranks. Default is `None`.'
+  id: totrans-299
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**timeout** (*timedelta**,* *optional*) – see init_process_group for details
     and default value.'
+  id: totrans-300
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
@@ -1276,6 +1662,7 @@
     be accessed via [`Backend`](#torch.distributed.Backend "torch.distributed.Backend")
     attributes (e.g., `Backend.GLOO`). If `None` is passed in, the backend corresponding
     to the default process group will be used. Default is `None`.'
+  id: totrans-301
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
@@ -1283,6 +1670,7 @@
     specifying what additional options need to be passed in during the construction
     of specific process groups. i.e. for the `nccl` backend, `is_high_priority_stream`
     can be specified so that process group can pick up high priority cuda streams.'
+  id: totrans-302
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
@@ -1290,120 +1678,158 @@
     "(in Python v3.12)")*,* *optional*) – perform a group-local barrier at the end
     of the process group creation. This is different in that non-member ranks don’t
     need to call into API and don’t join the barrier.'
+  id: totrans-303
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: Returns
+  id: totrans-304
   prefs: []
   type: TYPE_NORMAL
 - en: A handle of distributed group that can be given to collective calls or None
     if the rank is not part of `ranks`.
+  id: totrans-305
   prefs: []
   type: TYPE_NORMAL
 - en: N.B. use_local_synchronization doesn’t work with MPI.
+  id: totrans-306
   prefs: []
   type: TYPE_NORMAL
 - en: N.B. While use_local_synchronization=True can be significantly faster with larger
     clusters and small process groups, care must be taken since it changes cluster
     behavior as non-member ranks don’t join the group barrier().
+  id: totrans-307
   prefs: []
   type: TYPE_NORMAL
 - en: N.B. use_local_synchronization=True can lead to deadlocks when each rank creates
     multiple overlaping process groups. To avoid that, make sure all ranks follow
     the same global creation order.
+  id: totrans-308
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE42]'
+  id: totrans-309
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE42]'
 - en: Translate a global rank into a group rank.
+  id: totrans-310
   prefs: []
   type: TYPE_NORMAL
 - en: '`global_rank` must be part of `group` otherwise this raises RuntimeError.'
+  id: totrans-311
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-312
   prefs: []
   type: TYPE_NORMAL
 - en: '**group** (*ProcessGroup*) – ProcessGroup to find the relative rank.'
+  id: totrans-313
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**global_rank** ([*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")) – Global rank to query.'
+  id: totrans-314
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: Returns
+  id: totrans-315
   prefs: []
   type: TYPE_NORMAL
 - en: Group rank of `global_rank` relative to `group`
+  id: totrans-316
   prefs: []
   type: TYPE_NORMAL
 - en: Return type
+  id: totrans-317
   prefs: []
   type: TYPE_NORMAL
 - en: '[int](https://docs.python.org/3/library/functions.html#int "(in Python v3.12)")'
+  id: totrans-318
   prefs: []
   type: TYPE_NORMAL
 - en: N.B. calling this function on the default process group returns identity
+  id: totrans-319
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE43]'
+  id: totrans-320
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE43]'
 - en: Translate a group rank into a global rank.
+  id: totrans-321
   prefs: []
   type: TYPE_NORMAL
 - en: '`group_rank` must be part of group otherwise this raises RuntimeError.'
+  id: totrans-322
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-323
   prefs: []
   type: TYPE_NORMAL
 - en: '**group** (*ProcessGroup*) – ProcessGroup to find the global rank from.'
+  id: totrans-324
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**group_rank** ([*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")) – Group rank to query.'
+  id: totrans-325
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: Returns
+  id: totrans-326
   prefs: []
   type: TYPE_NORMAL
 - en: Global rank of `group_rank` relative to `group`
+  id: totrans-327
   prefs: []
   type: TYPE_NORMAL
 - en: Return type
+  id: totrans-328
   prefs: []
   type: TYPE_NORMAL
 - en: '[int](https://docs.python.org/3/library/functions.html#int "(in Python v3.12)")'
+  id: totrans-329
   prefs: []
   type: TYPE_NORMAL
 - en: N.B. calling this function on the default process group returns identity
+  id: totrans-330
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE44]'
+  id: totrans-331
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE44]'
 - en: Get all ranks associated with `group`.
+  id: totrans-332
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-333
   prefs: []
   type: TYPE_NORMAL
 - en: '**group** (*ProcessGroup*) – ProcessGroup to get all ranks from.'
+  id: totrans-334
   prefs: []
   type: TYPE_NORMAL
 - en: Returns
+  id: totrans-335
   prefs: []
   type: TYPE_NORMAL
 - en: List of global ranks ordered by group rank.
+  id: totrans-336
   prefs: []
   type: TYPE_NORMAL
 - en: DeviceMesh
+  id: totrans-337
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
@@ -1414,301 +1840,387 @@
     [`init_device_mesh()`](#torch.distributed.device_mesh.init_device_mesh "torch.distributed.device_mesh.init_device_mesh")
     function can be used to create new DeviceMesh, with a mesh shape describing the
     device topology.
+  id: totrans-338
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE45]'
+  id: totrans-339
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE45]'
 - en: DeviceMesh represents a mesh of devices, where layout of devices could be represented
     as a n-d dimension array, and each value of the n-d dimensional array is the global
     id of the default process group ranks.
+  id: totrans-340
   prefs: []
   type: TYPE_NORMAL
 - en: DeviceMesh could be used to describe the layout of devices across the cluster,
     and serves as a proxy for communication among the device lists within the cluster.
+  id: totrans-341
   prefs: []
   type: TYPE_NORMAL
 - en: DeviceMesh can be used as a context manager.
+  id: totrans-342
   prefs: []
   type: TYPE_NORMAL
 - en: Note
+  id: totrans-343
   prefs: []
   type: TYPE_NORMAL
 - en: DeviceMesh follows SPMD programming model, which means the same PyTorch Python
     program is running on all processes/ranks in the cluster. Therefore, users need
     to make sure the mesh array (which describes the layout of devices) should be
     identical across all ranks. Inconsistent mesh will lead to silent hang.
+  id: totrans-344
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-345
   prefs: []
   type: TYPE_NORMAL
 - en: '**device_type** ([*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)")) – The device type of the mesh. Currently supports: “cpu”,
     “cuda/cuda-like”.'
+  id: totrans-346
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**mesh** (*ndarray*) – A multi-dimensional array or an integer tensor describing
     the layout of devices, where the IDs are global IDs of the default process group.'
+  id: totrans-347
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: Returns
+  id: totrans-348
   prefs: []
   type: TYPE_NORMAL
 - en: A [`DeviceMesh`](#torch.distributed.device_mesh.DeviceMesh "torch.distributed.device_mesh.DeviceMesh")
     object representing the device layout.
+  id: totrans-349
   prefs: []
   type: TYPE_NORMAL
 - en: Return type
+  id: totrans-350
   prefs: []
   type: TYPE_NORMAL
 - en: '[DeviceMesh](#torch.distributed.device_mesh.DeviceMesh "torch.distributed.device_mesh.DeviceMesh")'
+  id: totrans-351
   prefs: []
   type: TYPE_NORMAL
 - en: The following program runs on each process/rank in an SPMD manner. In this example,
     we have 2 hosts with 4 GPUs each. A reduction over the first dimension of mesh
     will reduce across columns (0, 4), .. and (3, 7), a reduction over the second
     dimension of mesh reduces across rows (0, 1, 2, 3) and (4, 5, 6, 7).
+  id: totrans-352
   prefs: []
   type: TYPE_NORMAL
 - en: 'Example::'
+  id: totrans-353
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE46]'
+  id: totrans-354
   prefs: []
   type: TYPE_PRE
-- en: Point-to-point communication[](#point-to-point-communication "Permalink to
-    this heading")
+  zh: '[PRE46]'
+- en: Point-to-point communication[](#point-to-point-communication "Permalink to this
+    heading")
+  id: totrans-355
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
 - en: '[PRE47]'
+  id: totrans-356
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE47]'
 - en: Send a tensor synchronously.
+  id: totrans-357
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-358
   prefs: []
   type: TYPE_NORMAL
 - en: '**tensor** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – Tensor
     to send.'
+  id: totrans-359
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**dst** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
     Python v3.12)")) – Destination rank. Destination rank should not be the same as
     the rank of the current process.'
+  id: totrans-360
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**group** (*ProcessGroup**,* *optional*) – The process group to work on. If
     None, the default process group will be used.'
+  id: totrans-361
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**tag** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
     Python v3.12)")*,* *optional*) – Tag to match send with remote recv'
+  id: totrans-362
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '[PRE48]'
+  id: totrans-363
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE48]'
 - en: Receives a tensor synchronously.
+  id: totrans-364
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-365
   prefs: []
   type: TYPE_NORMAL
 - en: '**tensor** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – Tensor
     to fill with received data.'
+  id: totrans-366
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**src** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
     Python v3.12)")*,* *optional*) – Source rank. Will receive from any process if
     unspecified.'
+  id: totrans-367
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**group** (*ProcessGroup**,* *optional*) – The process group to work on. If
     None, the default process group will be used.'
+  id: totrans-368
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**tag** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
     Python v3.12)")*,* *optional*) – Tag to match recv with remote send'
+  id: totrans-369
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: Returns
+  id: totrans-370
   prefs: []
   type: TYPE_NORMAL
 - en: Sender rank -1, if not part of the group
+  id: totrans-371
   prefs: []
   type: TYPE_NORMAL
 - en: Return type
+  id: totrans-372
   prefs: []
   type: TYPE_NORMAL
 - en: '[int](https://docs.python.org/3/library/functions.html#int "(in Python v3.12)")'
+  id: totrans-373
   prefs: []
   type: TYPE_NORMAL
 - en: '[`isend()`](#torch.distributed.isend "torch.distributed.isend") and [`irecv()`](#torch.distributed.irecv
     "torch.distributed.irecv") return distributed request objects when used. In general,
     the type of this object is unspecified as they should never be created manually,
     but they are guaranteed to support two methods:'
+  id: totrans-374
   prefs: []
   type: TYPE_NORMAL
 - en: '`is_completed()` - returns True if the operation has finished'
+  id: totrans-375
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '`wait()` - will block the process until the operation is finished. `is_completed()`
     is guaranteed to return True once it returns.'
+  id: totrans-376
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '[PRE49]'
+  id: totrans-377
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE49]'
 - en: Send a tensor asynchronously.
+  id: totrans-378
   prefs: []
   type: TYPE_NORMAL
 - en: Warning
+  id: totrans-379
   prefs: []
   type: TYPE_NORMAL
 - en: Modifying `tensor` before the request completes causes undefined behavior.
+  id: totrans-380
   prefs: []
   type: TYPE_NORMAL
 - en: Warning
+  id: totrans-381
   prefs: []
   type: TYPE_NORMAL
 - en: '`tag` is not supported with the NCCL backend.'
+  id: totrans-382
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-383
   prefs: []
   type: TYPE_NORMAL
 - en: '**tensor** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – Tensor
     to send.'
+  id: totrans-384
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**dst** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
     Python v3.12)")) – Destination rank.'
+  id: totrans-385
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**group** (*ProcessGroup**,* *optional*) – The process group to work on. If
     None, the default process group will be used.'
+  id: totrans-386
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**tag** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
     Python v3.12)")*,* *optional*) – Tag to match send with remote recv'
+  id: totrans-387
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: Returns
+  id: totrans-388
   prefs: []
   type: TYPE_NORMAL
 - en: A distributed request object. None, if not part of the group
+  id: totrans-389
   prefs: []
   type: TYPE_NORMAL
 - en: Return type
+  id: totrans-390
   prefs: []
   type: TYPE_NORMAL
 - en: '*Work*'
+  id: totrans-391
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE50]'
+  id: totrans-392
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE50]'
 - en: Receives a tensor asynchronously.
+  id: totrans-393
   prefs: []
   type: TYPE_NORMAL
 - en: Warning
+  id: totrans-394
   prefs: []
   type: TYPE_NORMAL
 - en: '`tag` is not supported with the NCCL backend.'
+  id: totrans-395
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-396
   prefs: []
   type: TYPE_NORMAL
 - en: '**tensor** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – Tensor
     to fill with received data.'
+  id: totrans-397
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**src** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
     Python v3.12)")*,* *optional*) – Source rank. Will receive from any process if
     unspecified.'
+  id: totrans-398
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**group** (*ProcessGroup**,* *optional*) – The process group to work on. If
     None, the default process group will be used.'
+  id: totrans-399
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**tag** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
     Python v3.12)")*,* *optional*) – Tag to match recv with remote send'
+  id: totrans-400
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: Returns
+  id: totrans-401
   prefs: []
   type: TYPE_NORMAL
 - en: A distributed request object. None, if not part of the group
+  id: totrans-402
   prefs: []
   type: TYPE_NORMAL
 - en: Return type
+  id: totrans-403
   prefs: []
   type: TYPE_NORMAL
 - en: '*Work*'
+  id: totrans-404
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE51]'
+  id: totrans-405
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE51]'
 - en: Send or Receive a batch of tensors asynchronously and return a list of requests.
+  id: totrans-406
   prefs: []
   type: TYPE_NORMAL
 - en: Process each of the operations in `p2p_op_list` and return the corresponding
     requests. NCCL, Gloo, and UCC backend are currently supported.
+  id: totrans-407
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-408
   prefs: []
   type: TYPE_NORMAL
 - en: '**p2p_op_list** – A list of point-to-point operations(type of each operator
     is `torch.distributed.P2POp`). The order of the isend/irecv in the list matters
     and it needs to match with corresponding isend/irecv on the remote end.'
+  id: totrans-409
   prefs: []
   type: TYPE_NORMAL
 - en: Returns
+  id: totrans-410
   prefs: []
   type: TYPE_NORMAL
 - en: A list of distributed request objects returned by calling the corresponding
     op in the op_list.
+  id: totrans-411
   prefs: []
   type: TYPE_NORMAL
 - en: Examples
+  id: totrans-412
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE52]'
+  id: totrans-413
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE52]'
 - en: Note
+  id: totrans-414
   prefs: []
   type: TYPE_NORMAL
 - en: Note that when this API is used with the NCCL PG backend, users must set the
     current GPU device with torch.cuda.set_device, otherwise it will lead to unexpected
     hang issues.
+  id: totrans-415
   prefs: []
   type: TYPE_NORMAL
 - en: In addition, if this API is the first collective call in the `group` passed
@@ -1716,54 +2228,67 @@
     the behavior is undefined. If this API call is not the first collective call in
     the `group`, batched P2P operations involving only a subset of ranks of the `group`
     are allowed.
+  id: totrans-416
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE53]'
+  id: totrans-417
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE53]'
 - en: A class to build point-to-point operations for `batch_isend_irecv`.
+  id: totrans-418
   prefs: []
   type: TYPE_NORMAL
 - en: This class builds the type of P2P operation, communication buffer, peer rank,
     Process Group, and tag. Instances of this class will be passed to `batch_isend_irecv`
     for point-to-point communications.
+  id: totrans-419
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-420
   prefs: []
   type: TYPE_NORMAL
 - en: '**op** (*Callable*) – A function to send data to or receive data from a peer
     process. The type of `op` is either `torch.distributed.isend` or `torch.distributed.irecv`.'
+  id: totrans-421
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**tensor** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – Tensor
     to send or receive.'
+  id: totrans-422
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**peer** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
     Python v3.12)")) – Destination or source rank.'
+  id: totrans-423
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**group** (*ProcessGroup**,* *optional*) – The process group to work on. If
     None, the default process group will be used.'
+  id: totrans-424
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**tag** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
     Python v3.12)")*,* *optional*) – Tag to match send with recv.'
+  id: totrans-425
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: Synchronous and asynchronous collective operations[](#synchronous-and-asynchronous-collective-operations
     "Permalink to this heading")
+  id: totrans-426
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
 - en: 'Every collective operation function supports the following two kinds of operations,
     depending on the setting of the `async_op` flag passed into the collective:'
+  id: totrans-427
   prefs: []
   type: TYPE_NORMAL
 - en: '**Synchronous operation** - the default mode, when `async_op` is set to `False`.
@@ -1777,17 +2302,20 @@
     synchronization, see [CUDA Semantics](https://pytorch.org/docs/stable/notes/cuda.html).
     See the below script to see examples of differences in these semantics for CPU
     and CUDA operations.'
+  id: totrans-428
   prefs: []
   type: TYPE_NORMAL
 - en: '**Asynchronous operation** - when `async_op` is set to True. The collective
     operation function returns a distributed request object. In general, you don’t
     need to create it manually and it is guaranteed to support two methods:'
+  id: totrans-429
   prefs: []
   type: TYPE_NORMAL
 - en: '`is_completed()` - in the case of CPU collectives, returns `True` if completed.
     In the case of CUDA operations, returns `True` if the operation has been successfully
     enqueued onto a CUDA stream and the output can be utilized on the default stream
     without further synchronization.'
+  id: totrans-430
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
@@ -1795,6 +2323,7 @@
     operation is completed. In the case of CUDA collectives, will block until the
     operation has been successfully enqueued onto a CUDA stream and the output can
     be utilized on the default stream without further synchronization.'
+  id: totrans-431
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
@@ -1802,135 +2331,170 @@
     supported for most operations on GLOO and MPI, except for peer to peer operations.
     Note: as we continue adopting Futures and merging APIs, `get_future()` call might
     become redundant.'
+  id: totrans-432
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**Example**'
+  id: totrans-433
   prefs: []
   type: TYPE_NORMAL
 - en: 'The following code can serve as a reference regarding semantics for CUDA operations
     when using distributed collectives. It shows the explicit need to synchronize
     when using collective outputs on different CUDA streams:'
+  id: totrans-434
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE54]'
+  id: totrans-435
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE54]'
 - en: Collective functions
+  id: totrans-436
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
 - en: '[PRE55]'
+  id: totrans-437
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE55]'
 - en: Broadcasts the tensor to the whole group.
+  id: totrans-438
   prefs: []
   type: TYPE_NORMAL
 - en: '`tensor` must have the same number of elements in all processes participating
     in the collective.'
+  id: totrans-439
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-440
   prefs: []
   type: TYPE_NORMAL
 - en: '**tensor** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – Data to
     be sent if `src` is the rank of current process, and tensor to be used to save
     received data otherwise.'
+  id: totrans-441
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**src** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
     Python v3.12)")) – Source rank.'
+  id: totrans-442
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**group** (*ProcessGroup**,* *optional*) – The process group to work on. If
     None, the default process group will be used.'
+  id: totrans-443
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**async_op** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")*,* *optional*) – Whether this op should be an async op'
+  id: totrans-444
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: Returns
+  id: totrans-445
   prefs: []
   type: TYPE_NORMAL
 - en: Async work handle, if async_op is set to True. None, if not async_op or if not
     part of the group
+  id: totrans-446
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE56]'
+  id: totrans-447
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE56]'
 - en: Broadcasts picklable objects in `object_list` to the whole group.
+  id: totrans-448
   prefs: []
   type: TYPE_NORMAL
 - en: Similar to [`broadcast()`](#torch.distributed.broadcast "torch.distributed.broadcast"),
     but Python objects can be passed in. Note that all objects in `object_list` must
     be picklable in order to be broadcasted.
+  id: totrans-449
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-450
   prefs: []
   type: TYPE_NORMAL
 - en: '**object_list** (*List**[**Any**]*) – List of input objects to broadcast. Each
     object must be picklable. Only objects on the `src` rank will be broadcast, but
     each rank must provide lists of equal sizes.'
+  id: totrans-451
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**src** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
     Python v3.12)")) – Source rank from which to broadcast `object_list`.'
+  id: totrans-452
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**group** – (ProcessGroup, optional): The process group to work on. If None,
     the default process group will be used. Default is `None`.'
+  id: totrans-453
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**device** (`torch.device`, optional) – If not None, the objects are serialized
     and converted to tensors which are moved to the `device` before broadcasting.
     Default is `None`.'
+  id: totrans-454
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: Returns
+  id: totrans-455
   prefs: []
   type: TYPE_NORMAL
 - en: '`None`. If rank is part of the group, `object_list` will contain the broadcasted
     objects from `src` rank.'
+  id: totrans-456
   prefs: []
   type: TYPE_NORMAL
 - en: Note
+  id: totrans-457
   prefs: []
   type: TYPE_NORMAL
 - en: For NCCL-based process groups, internal tensor representations of objects must
     be moved to the GPU device before communication takes place. In this case, the
     device used is given by `torch.cuda.current_device()` and it is the user’s responsibility
     to ensure that this is set so that each rank has an individual GPU, via `torch.cuda.set_device()`.
+  id: totrans-458
   prefs: []
   type: TYPE_NORMAL
 - en: Note
+  id: totrans-459
   prefs: []
   type: TYPE_NORMAL
 - en: Note that this API differs slightly from the [`all_gather()`](#torch.distributed.all_gather
     "torch.distributed.all_gather") collective since it does not provide an `async_op`
     handle and thus will be a blocking call.
+  id: totrans-460
   prefs: []
   type: TYPE_NORMAL
 - en: Warning
+  id: totrans-461
   prefs: []
   type: TYPE_NORMAL
 - en: '[`broadcast_object_list()`](#torch.distributed.broadcast_object_list "torch.distributed.broadcast_object_list")
     uses `pickle` module implicitly, which is known to be insecure. It is possible
     to construct malicious pickle data which will execute arbitrary code during unpickling.
     Only call this function with data you trust.'
+  id: totrans-462
   prefs: []
   type: TYPE_NORMAL
 - en: Warning
+  id: totrans-463
   prefs: []
   type: TYPE_NORMAL
 - en: Calling [`broadcast_object_list()`](#torch.distributed.broadcast_object_list
@@ -1938,167 +2502,220 @@
     and inefficient as it incurs GPU -> CPU transfer since tensors would be pickled.
     Please consider using [`broadcast()`](#torch.distributed.broadcast "torch.distributed.broadcast")
     instead.
+  id: totrans-464
   prefs: []
   type: TYPE_NORMAL
 - en: 'Example::'
+  id: totrans-465
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE57]'
+  id: totrans-466
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE57]'
 - en: '[PRE58]'
+  id: totrans-467
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE58]'
 - en: Reduces the tensor data across all machines in a way that all get the final
     result.
+  id: totrans-468
   prefs: []
   type: TYPE_NORMAL
 - en: After the call `tensor` is going to be bitwise identical in all processes.
+  id: totrans-469
   prefs: []
   type: TYPE_NORMAL
 - en: Complex tensors are supported.
+  id: totrans-470
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-471
   prefs: []
   type: TYPE_NORMAL
 - en: '**tensor** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – Input and
     output of the collective. The function operates in-place.'
+  id: totrans-472
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**op** (*optional*) – One of the values from `torch.distributed.ReduceOp` enum.
     Specifies an operation used for element-wise reductions.'
+  id: totrans-473
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**group** (*ProcessGroup**,* *optional*) – The process group to work on. If
     None, the default process group will be used.'
+  id: totrans-474
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**async_op** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")*,* *optional*) – Whether this op should be an async op'
+  id: totrans-475
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: Returns
+  id: totrans-476
   prefs: []
   type: TYPE_NORMAL
 - en: Async work handle, if async_op is set to True. None, if not async_op or if not
     part of the group
+  id: totrans-477
   prefs: []
   type: TYPE_NORMAL
 - en: Examples
+  id: totrans-478
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE59]'
+  id: totrans-479
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE59]'
 - en: '[PRE60]'
+  id: totrans-480
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE60]'
 - en: '[PRE61]'
+  id: totrans-481
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE61]'
 - en: Reduces the tensor data across all machines.
+  id: totrans-482
   prefs: []
   type: TYPE_NORMAL
 - en: Only the process with rank `dst` is going to receive the final result.
+  id: totrans-483
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-484
   prefs: []
   type: TYPE_NORMAL
 - en: '**tensor** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – Input and
     output of the collective. The function operates in-place.'
+  id: totrans-485
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**dst** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
     Python v3.12)")) – Destination rank'
+  id: totrans-486
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**op** (*optional*) – One of the values from `torch.distributed.ReduceOp` enum.
     Specifies an operation used for element-wise reductions.'
+  id: totrans-487
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**group** (*ProcessGroup**,* *optional*) – The process group to work on. If
     None, the default process group will be used.'
+  id: totrans-488
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**async_op** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")*,* *optional*) – Whether this op should be an async op'
+  id: totrans-489
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: Returns
+  id: totrans-490
   prefs: []
   type: TYPE_NORMAL
 - en: Async work handle, if async_op is set to True. None, if not async_op or if not
     part of the group
+  id: totrans-491
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE62]'
+  id: totrans-492
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE62]'
 - en: Gathers tensors from the whole group in a list.
+  id: totrans-493
   prefs: []
   type: TYPE_NORMAL
 - en: Complex tensors are supported.
+  id: totrans-494
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-495
   prefs: []
   type: TYPE_NORMAL
 - en: '**tensor_list** ([*list*](https://docs.python.org/3/library/stdtypes.html#list
     "(in Python v3.12)")*[*[*Tensor*](tensors.html#torch.Tensor "torch.Tensor")*]*)
     – Output list. It should contain correctly-sized tensors to be used for output
     of the collective.'
+  id: totrans-496
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**tensor** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – Tensor
     to be broadcast from current process.'
+  id: totrans-497
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**group** (*ProcessGroup**,* *optional*) – The process group to work on. If
     None, the default process group will be used.'
+  id: totrans-498
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**async_op** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")*,* *optional*) – Whether this op should be an async op'
+  id: totrans-499
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: Returns
+  id: totrans-500
   prefs: []
   type: TYPE_NORMAL
 - en: Async work handle, if async_op is set to True. None, if not async_op or if not
     part of the group
+  id: totrans-501
   prefs: []
   type: TYPE_NORMAL
 - en: Examples
+  id: totrans-502
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE63]'
+  id: totrans-503
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE63]'
 - en: '[PRE64]'
+  id: totrans-504
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE64]'
 - en: '[PRE65]'
+  id: totrans-505
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE65]'
 - en: Gather tensors from all ranks and put them in a single output tensor.
+  id: totrans-506
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-507
   prefs: []
   type: TYPE_NORMAL
 - en: '**output_tensor** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) –
@@ -2108,90 +2725,114 @@
     (ii) a stack of all the input tensors along the primary dimension; for definition
     of “stack”, see `torch.stack()`. Examples below may better explain the supported
     output forms.'
+  id: totrans-508
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**input_tensor** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – Tensor
     to be gathered from current rank. Different from the `all_gather` API, the input
     tensors in this API must have the same size across all ranks.'
+  id: totrans-509
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**group** (*ProcessGroup**,* *optional*) – The process group to work on. If
     None, the default process group will be used.'
+  id: totrans-510
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**async_op** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")*,* *optional*) – Whether this op should be an async op'
+  id: totrans-511
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: Returns
+  id: totrans-512
   prefs: []
   type: TYPE_NORMAL
 - en: Async work handle, if async_op is set to True. None, if not async_op or if not
     part of the group
+  id: totrans-513
   prefs: []
   type: TYPE_NORMAL
 - en: Examples
+  id: totrans-514
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE66]'
+  id: totrans-515
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE66]'
 - en: Warning
+  id: totrans-516
   prefs: []
   type: TYPE_NORMAL
 - en: The Gloo backend does not support this API.
+  id: totrans-517
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE67]'
+  id: totrans-518
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE67]'
 - en: Gathers picklable objects from the whole group into a list.
+  id: totrans-519
   prefs: []
   type: TYPE_NORMAL
 - en: Similar to [`all_gather()`](#torch.distributed.all_gather "torch.distributed.all_gather"),
     but Python objects can be passed in. Note that the object must be picklable in
     order to be gathered.
+  id: totrans-520
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-521
   prefs: []
   type: TYPE_NORMAL
 - en: '**object_list** ([*list*](https://docs.python.org/3/library/stdtypes.html#list
     "(in Python v3.12)")*[**Any**]*) – Output list. It should be correctly sized as
     the size of the group for this collective and will contain the output.'
+  id: totrans-522
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**obj** (*Any*) – Pickable Python object to be broadcast from current process.'
+  id: totrans-523
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**group** (*ProcessGroup**,* *optional*) – The process group to work on. If
     None, the default process group will be used. Default is `None`.'
+  id: totrans-524
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: Returns
+  id: totrans-525
   prefs: []
   type: TYPE_NORMAL
 - en: None. If the calling rank is part of this group, the output of the collective
     will be populated into the input `object_list`. If the calling rank is not part
     of the group, the passed in `object_list` will be unmodified.
+  id: totrans-526
   prefs: []
   type: TYPE_NORMAL
 - en: Note
+  id: totrans-527
   prefs: []
   type: TYPE_NORMAL
 - en: Note that this API differs slightly from the [`all_gather()`](#torch.distributed.all_gather
     "torch.distributed.all_gather") collective since it does not provide an `async_op`
     handle and thus will be a blocking call.
+  id: totrans-528
   prefs: []
   type: TYPE_NORMAL
 - en: Note
+  id: totrans-529
   prefs: []
   type: TYPE_NORMAL
 - en: For NCCL-based processed groups, internal tensor representations of objects
@@ -2199,42 +2840,55 @@
     the device used is given by `torch.cuda.current_device()` and it is the user’s
     responsiblity to ensure that this is set so that each rank has an individual GPU,
     via `torch.cuda.set_device()`.
+  id: totrans-530
   prefs: []
   type: TYPE_NORMAL
 - en: Warning
+  id: totrans-531
   prefs: []
   type: TYPE_NORMAL
 - en: '[`all_gather_object()`](#torch.distributed.all_gather_object "torch.distributed.all_gather_object")
     uses `pickle` module implicitly, which is known to be insecure. It is possible
     to construct malicious pickle data which will execute arbitrary code during unpickling.
     Only call this function with data you trust.'
+  id: totrans-532
   prefs: []
   type: TYPE_NORMAL
 - en: Warning
+  id: totrans-533
   prefs: []
   type: TYPE_NORMAL
 - en: Calling [`all_gather_object()`](#torch.distributed.all_gather_object "torch.distributed.all_gather_object")
     with GPU tensors is not well supported and inefficient as it incurs GPU -> CPU
     transfer since tensors would be pickled. Please consider using [`all_gather()`](#torch.distributed.all_gather
     "torch.distributed.all_gather") instead.
+  id: totrans-534
   prefs: []
   type: TYPE_NORMAL
 - en: 'Example::'
+  id: totrans-535
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE68]'
+  id: totrans-536
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE68]'
 - en: '[PRE69]'
+  id: totrans-537
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE69]'
 - en: Gathers a list of tensors in a single process.
+  id: totrans-538
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-539
   prefs: []
   type: TYPE_NORMAL
 - en: '**tensor** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – Input tensor.'
+  id: totrans-540
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
@@ -2242,46 +2896,58 @@
     "(in Python v3.12)")*[*[*Tensor*](tensors.html#torch.Tensor "torch.Tensor")*]**,*
     *optional*) – List of appropriately-sized tensors to use for gathered data (default
     is None, must be specified on the destination rank)'
+  id: totrans-541
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**dst** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
     Python v3.12)")*,* *optional*) – Destination rank (default is 0)'
+  id: totrans-542
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**group** (*ProcessGroup**,* *optional*) – The process group to work on. If
     None, the default process group will be used.'
+  id: totrans-543
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**async_op** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")*,* *optional*) – Whether this op should be an async op'
+  id: totrans-544
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: Returns
+  id: totrans-545
   prefs: []
   type: TYPE_NORMAL
 - en: Async work handle, if async_op is set to True. None, if not async_op or if not
     part of the group
+  id: totrans-546
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE70]'
+  id: totrans-547
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE70]'
 - en: Gathers picklable objects from the whole group in a single process.
+  id: totrans-548
   prefs: []
   type: TYPE_NORMAL
 - en: Similar to [`gather()`](#torch.distributed.gather "torch.distributed.gather"),
     but Python objects can be passed in. Note that the object must be picklable in
     order to be gathered.
+  id: totrans-549
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-550
   prefs: []
   type: TYPE_NORMAL
 - en: '**obj** (*Any*) – Input object. Must be picklable.'
+  id: totrans-551
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
@@ -2289,34 +2955,42 @@
     "(in Python v3.12)")*[**Any**]*) – Output list. On the `dst` rank, it should be
     correctly sized as the size of the group for this collective and will contain
     the output. Must be `None` on non-dst ranks. (default is `None`)'
+  id: totrans-552
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**dst** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
     Python v3.12)")*,* *optional*) – Destination rank. (default is 0)'
+  id: totrans-553
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**group** – (ProcessGroup, optional): The process group to work on. If None,
     the default process group will be used. Default is `None`.'
+  id: totrans-554
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: Returns
+  id: totrans-555
   prefs: []
   type: TYPE_NORMAL
 - en: None. On the `dst` rank, `object_gather_list` will contain the output of the
     collective.
+  id: totrans-556
   prefs: []
   type: TYPE_NORMAL
 - en: Note
+  id: totrans-557
   prefs: []
   type: TYPE_NORMAL
 - en: Note that this API differs slightly from the gather collective since it does
     not provide an async_op handle and thus will be a blocking call.
+  id: totrans-558
   prefs: []
   type: TYPE_NORMAL
 - en: Note
+  id: totrans-559
   prefs: []
   type: TYPE_NORMAL
 - en: For NCCL-based processed groups, internal tensor representations of objects
@@ -2324,50 +2998,65 @@
     the device used is given by `torch.cuda.current_device()` and it is the user’s
     responsiblity to ensure that this is set so that each rank has an individual GPU,
     via `torch.cuda.set_device()`.
+  id: totrans-560
   prefs: []
   type: TYPE_NORMAL
 - en: Warning
+  id: totrans-561
   prefs: []
   type: TYPE_NORMAL
 - en: '[`gather_object()`](#torch.distributed.gather_object "torch.distributed.gather_object")
     uses `pickle` module implicitly, which is known to be insecure. It is possible
     to construct malicious pickle data which will execute arbitrary code during unpickling.
     Only call this function with data you trust.'
+  id: totrans-562
   prefs: []
   type: TYPE_NORMAL
 - en: Warning
+  id: totrans-563
   prefs: []
   type: TYPE_NORMAL
 - en: Calling [`gather_object()`](#torch.distributed.gather_object "torch.distributed.gather_object")
     with GPU tensors is not well supported and inefficient as it incurs GPU -> CPU
     transfer since tensors would be pickled. Please consider using [`gather()`](#torch.distributed.gather
     "torch.distributed.gather") instead.
+  id: totrans-564
   prefs: []
   type: TYPE_NORMAL
 - en: 'Example::'
+  id: totrans-565
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE71]'
+  id: totrans-566
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE71]'
 - en: '[PRE72]'
+  id: totrans-567
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE72]'
 - en: Scatters a list of tensors to all processes in a group.
+  id: totrans-568
   prefs: []
   type: TYPE_NORMAL
 - en: Each process will receive exactly one tensor and store its data in the `tensor`
     argument.
+  id: totrans-569
   prefs: []
   type: TYPE_NORMAL
 - en: Complex tensors are supported.
+  id: totrans-570
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-571
   prefs: []
   type: TYPE_NORMAL
 - en: '**tensor** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – Output
     tensor.'
+  id: totrans-572
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
@@ -2375,170 +3064,217 @@
     "(in Python v3.12)")*[*[*Tensor*](tensors.html#torch.Tensor "torch.Tensor")*]*)
     – List of tensors to scatter (default is None, must be specified on the source
     rank)'
+  id: totrans-573
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**src** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
     Python v3.12)")) – Source rank (default is 0)'
+  id: totrans-574
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**group** (*ProcessGroup**,* *optional*) – The process group to work on. If
     None, the default process group will be used.'
+  id: totrans-575
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**async_op** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")*,* *optional*) – Whether this op should be an async op'
+  id: totrans-576
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: Returns
+  id: totrans-577
   prefs: []
   type: TYPE_NORMAL
 - en: Async work handle, if async_op is set to True. None, if not async_op or if not
     part of the group
+  id: totrans-578
   prefs: []
   type: TYPE_NORMAL
 - en: Note
+  id: totrans-579
   prefs: []
   type: TYPE_NORMAL
 - en: Note that all Tensors in scatter_list must have the same size.
+  id: totrans-580
   prefs: []
   type: TYPE_NORMAL
 - en: 'Example::'
+  id: totrans-581
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE73]'
+  id: totrans-582
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE73]'
 - en: '[PRE74]'
+  id: totrans-583
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE74]'
 - en: Scatters picklable objects in `scatter_object_input_list` to the whole group.
+  id: totrans-584
   prefs: []
   type: TYPE_NORMAL
 - en: Similar to [`scatter()`](#torch.distributed.scatter "torch.distributed.scatter"),
     but Python objects can be passed in. On each rank, the scattered object will be
     stored as the first element of `scatter_object_output_list`. Note that all objects
     in `scatter_object_input_list` must be picklable in order to be scattered.
+  id: totrans-585
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-586
   prefs: []
   type: TYPE_NORMAL
 - en: '**scatter_object_output_list** (*List**[**Any**]*) – Non-empty list whose first
     element will store the object scattered to this rank.'
+  id: totrans-587
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**scatter_object_input_list** (*List**[**Any**]*) – List of input objects to
     scatter. Each object must be picklable. Only objects on the `src` rank will be
     scattered, and the argument can be `None` for non-src ranks.'
+  id: totrans-588
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**src** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
     Python v3.12)")) – Source rank from which to scatter `scatter_object_input_list`.'
+  id: totrans-589
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**group** – (ProcessGroup, optional): The process group to work on. If None,
     the default process group will be used. Default is `None`.'
+  id: totrans-590
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: Returns
+  id: totrans-591
   prefs: []
   type: TYPE_NORMAL
 - en: '`None`. If rank is part of the group, `scatter_object_output_list` will have
     its first element set to the scattered object for this rank.'
+  id: totrans-592
   prefs: []
   type: TYPE_NORMAL
 - en: Note
+  id: totrans-593
   prefs: []
   type: TYPE_NORMAL
 - en: Note that this API differs slightly from the scatter collective since it does
     not provide an `async_op` handle and thus will be a blocking call.
+  id: totrans-594
   prefs: []
   type: TYPE_NORMAL
 - en: Warning
+  id: totrans-595
   prefs: []
   type: TYPE_NORMAL
 - en: '[`scatter_object_list()`](#torch.distributed.scatter_object_list "torch.distributed.scatter_object_list")
     uses `pickle` module implicitly, which is known to be insecure. It is possible
     to construct malicious pickle data which will execute arbitrary code during unpickling.
     Only call this function with data you trust.'
+  id: totrans-596
   prefs: []
   type: TYPE_NORMAL
 - en: Warning
+  id: totrans-597
   prefs: []
   type: TYPE_NORMAL
 - en: Calling [`scatter_object_list()`](#torch.distributed.scatter_object_list "torch.distributed.scatter_object_list")
     with GPU tensors is not well supported and inefficient as it incurs GPU -> CPU
     transfer since tensors would be pickled. Please consider using [`scatter()`](#torch.distributed.scatter
     "torch.distributed.scatter") instead.
+  id: totrans-598
   prefs: []
   type: TYPE_NORMAL
 - en: 'Example::'
+  id: totrans-599
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE75]'
+  id: totrans-600
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE75]'
 - en: '[PRE76]'
+  id: totrans-601
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE76]'
 - en: Reduces, then scatters a list of tensors to all processes in a group.
+  id: totrans-602
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-603
   prefs: []
   type: TYPE_NORMAL
 - en: '**output** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – Output
     tensor.'
+  id: totrans-604
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**input_list** ([*list*](https://docs.python.org/3/library/stdtypes.html#list
     "(in Python v3.12)")*[*[*Tensor*](tensors.html#torch.Tensor "torch.Tensor")*]*)
     – List of tensors to reduce and scatter.'
+  id: totrans-605
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**op** (*optional*) – One of the values from `torch.distributed.ReduceOp` enum.
     Specifies an operation used for element-wise reductions.'
+  id: totrans-606
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**group** (*ProcessGroup**,* *optional*) – The process group to work on. If
     None, the default process group will be used.'
+  id: totrans-607
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**async_op** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")*,* *optional*) – Whether this op should be an async op.'
+  id: totrans-608
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: Returns
+  id: totrans-609
   prefs: []
   type: TYPE_NORMAL
 - en: Async work handle, if async_op is set to True. None, if not async_op or if not
     part of the group.
+  id: totrans-610
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE77]'
+  id: totrans-611
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE77]'
 - en: Reduces, then scatters a tensor to all ranks in a group.
+  id: totrans-612
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-613
   prefs: []
   type: TYPE_NORMAL
 - en: '**output** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – Output
     tensor. It should have the same size across all ranks.'
+  id: totrans-614
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
@@ -2548,216 +3284,286 @@
     of the output tensors along the primary dimension, or (ii) a stack of the output
     tensors along the primary dimension. For definition of “concatenation”, see `torch.cat()`.
     For definition of “stack”, see `torch.stack()`.'
+  id: totrans-615
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**group** (*ProcessGroup**,* *optional*) – The process group to work on. If
     None, the default process group will be used.'
+  id: totrans-616
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**async_op** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")*,* *optional*) – Whether this op should be an async op.'
+  id: totrans-617
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: Returns
+  id: totrans-618
   prefs: []
   type: TYPE_NORMAL
 - en: Async work handle, if async_op is set to True. None, if not async_op or if not
     part of the group.
+  id: totrans-619
   prefs: []
   type: TYPE_NORMAL
 - en: Examples
+  id: totrans-620
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE78]'
+  id: totrans-621
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE78]'
 - en: Warning
+  id: totrans-622
   prefs: []
   type: TYPE_NORMAL
 - en: The Gloo backend does not support this API.
+  id: totrans-623
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE79]'
+  id: totrans-624
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE79]'
 - en: Split input tensor and then scatter the split list to all processes in a group.
+  id: totrans-625
   prefs: []
   type: TYPE_NORMAL
 - en: Later the received tensors are concatenated from all the processes in the group
     and returned as a single output tensor.
+  id: totrans-626
   prefs: []
   type: TYPE_NORMAL
 - en: Complex tensors are supported.
+  id: totrans-627
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-628
   prefs: []
   type: TYPE_NORMAL
 - en: '**output** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – Gathered
     concatenated output tensor.'
+  id: totrans-629
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**input** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – Input tensor
     to scatter.'
+  id: totrans-630
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**output_split_sizes** – (list[Int], optional): Output split sizes for dim
     0 if specified None or empty, dim 0 of `output` tensor must divide equally by
     `world_size`.'
+  id: totrans-631
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**input_split_sizes** – (list[Int], optional): Input split sizes for dim 0
     if specified None or empty, dim 0 of `input` tensor must divide equally by `world_size`.'
+  id: totrans-632
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**group** (*ProcessGroup**,* *optional*) – The process group to work on. If
     None, the default process group will be used.'
+  id: totrans-633
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**async_op** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")*,* *optional*) – Whether this op should be an async op.'
+  id: totrans-634
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: Returns
+  id: totrans-635
   prefs: []
   type: TYPE_NORMAL
 - en: Async work handle, if async_op is set to True. None, if not async_op or if not
     part of the group.
+  id: totrans-636
   prefs: []
   type: TYPE_NORMAL
 - en: Warning
+  id: totrans-637
   prefs: []
   type: TYPE_NORMAL
 - en: all_to_all_single is experimental and subject to change.
+  id: totrans-638
   prefs: []
   type: TYPE_NORMAL
 - en: Examples
+  id: totrans-639
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE80]'
+  id: totrans-640
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE80]'
 - en: '[PRE81]'
+  id: totrans-641
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE81]'
 - en: '[PRE82]'
+  id: totrans-642
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE82]'
 - en: '[PRE83]'
+  id: totrans-643
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE83]'
 - en: '[PRE84]'
+  id: totrans-644
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE84]'
 - en: Scatters list of input tensors to all processes in a group and return gathered
     list of tensors in output list.
+  id: totrans-645
   prefs: []
   type: TYPE_NORMAL
 - en: Complex tensors are supported.
+  id: totrans-646
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-647
   prefs: []
   type: TYPE_NORMAL
 - en: '**output_tensor_list** ([*list*](https://docs.python.org/3/library/stdtypes.html#list
     "(in Python v3.12)")*[*[*Tensor*](tensors.html#torch.Tensor "torch.Tensor")*]*)
     – List of tensors to be gathered one per rank.'
+  id: totrans-648
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**input_tensor_list** ([*list*](https://docs.python.org/3/library/stdtypes.html#list
     "(in Python v3.12)")*[*[*Tensor*](tensors.html#torch.Tensor "torch.Tensor")*]*)
     – List of tensors to scatter one per rank.'
+  id: totrans-649
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**group** (*ProcessGroup**,* *optional*) – The process group to work on. If
     None, the default process group will be used.'
+  id: totrans-650
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**async_op** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")*,* *optional*) – Whether this op should be an async op.'
+  id: totrans-651
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: Returns
+  id: totrans-652
   prefs: []
   type: TYPE_NORMAL
 - en: Async work handle, if async_op is set to True. None, if not async_op or if not
     part of the group.
+  id: totrans-653
   prefs: []
   type: TYPE_NORMAL
 - en: Warning
+  id: totrans-654
   prefs: []
   type: TYPE_NORMAL
 - en: all_to_all is experimental and subject to change.
+  id: totrans-655
   prefs: []
   type: TYPE_NORMAL
 - en: Examples
+  id: totrans-656
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE85]'
+  id: totrans-657
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE85]'
 - en: '[PRE86]'
+  id: totrans-658
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE86]'
 - en: '[PRE87]'
+  id: totrans-659
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE87]'
 - en: '[PRE88]'
+  id: totrans-660
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE88]'
 - en: '[PRE89]'
+  id: totrans-661
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE89]'
 - en: Synchronize all processes.
+  id: totrans-662
   prefs: []
   type: TYPE_NORMAL
 - en: This collective blocks processes until the whole group enters this function,
     if async_op is False, or if async work handle is called on wait().
+  id: totrans-663
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-664
   prefs: []
   type: TYPE_NORMAL
 - en: '**group** (*ProcessGroup**,* *optional*) – The process group to work on. If
     None, the default process group will be used.'
+  id: totrans-665
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**async_op** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")*,* *optional*) – Whether this op should be an async op'
+  id: totrans-666
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**device_ids** (*[*[*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")*]**,* *optional*) – List of device/GPU ids.'
+  id: totrans-667
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: Returns
+  id: totrans-668
   prefs: []
   type: TYPE_NORMAL
 - en: Async work handle, if async_op is set to True. None, if not async_op or if not
     part of the group
+  id: totrans-669
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE90]'
+  id: totrans-670
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE90]'
 - en: Synchronize processes similar to `torch.distributed.barrier`, but consider a
     configurable timeout.
+  id: totrans-671
   prefs: []
   type: TYPE_NORMAL
 - en: It is able to report ranks that did not pass this barrier within the provided
@@ -2766,6 +3572,7 @@
     and will report failures for ranks that failed to respond in time. Note that if
     one rank does not reach the monitored_barrier (for example due to a hang), all
     other ranks would fail in monitored_barrier.
+  id: totrans-672
   prefs: []
   type: TYPE_NORMAL
 - en: This collective will block all processes/ranks in the group, until the whole
@@ -2774,25 +3581,31 @@
     or scenarios that require full synchronization points on the host-side. For debugging
     purposes, this barrier can be inserted before the application’s collective calls
     to check if any ranks are desynchronized.
+  id: totrans-673
   prefs: []
   type: TYPE_NORMAL
 - en: Note
+  id: totrans-674
   prefs: []
   type: TYPE_NORMAL
 - en: Note that this collective is only supported with the GLOO backend.
+  id: totrans-675
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-676
   prefs: []
   type: TYPE_NORMAL
 - en: '**group** (*ProcessGroup**,* *optional*) – The process group to work on. If
     `None`, the default process group will be used.'
+  id: totrans-677
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**timeout** ([*datetime.timedelta*](https://docs.python.org/3/library/datetime.html#datetime.timedelta
     "(in Python v3.12)")*,* *optional*) – Timeout for monitored_barrier. If `None`,
     the default process group timeout will be used.'
+  id: totrans-678
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
@@ -2802,65 +3615,85 @@
     first failed rank it encounters in order to fail fast. By setting `wait_all_ranks=True`
     `monitored_barrier` will collect all failed ranks and throw an error containing
     information about all failed ranks.'
+  id: totrans-679
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: Returns
+  id: totrans-680
   prefs: []
   type: TYPE_NORMAL
 - en: '`None`.'
+  id: totrans-681
   prefs: []
   type: TYPE_NORMAL
 - en: 'Example::'
+  id: totrans-682
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE91]'
+  id: totrans-683
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE91]'
 - en: '[PRE92]'
+  id: totrans-684
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE92]'
 - en: 'An enum-like class for available reduction operations: `SUM`, `PRODUCT`, `MIN`,
     `MAX`, `BAND`, `BOR`, `BXOR`, and `PREMUL_SUM`.'
+  id: totrans-685
   prefs: []
   type: TYPE_NORMAL
 - en: '`BAND`, `BOR`, and `BXOR` reductions are not available when using the `NCCL`
     backend.'
+  id: totrans-686
   prefs: []
   type: TYPE_NORMAL
 - en: '`AVG` divides values by the world size before summing across ranks. `AVG` is
     only available with the `NCCL` backend, and only for NCCL versions 2.10 or later.'
+  id: totrans-687
   prefs: []
   type: TYPE_NORMAL
 - en: '`PREMUL_SUM` multiplies inputs by a given scalar locally before reduction.
     `PREMUL_SUM` is only available with the `NCCL` backend, and only available for
     NCCL versions 2.11 or later. Users are supposed to use `torch.distributed._make_nccl_premul_sum`.'
+  id: totrans-688
   prefs: []
   type: TYPE_NORMAL
 - en: Additionally, `MAX`, `MIN` and `PRODUCT` are not supported for complex tensors.
+  id: totrans-689
   prefs: []
   type: TYPE_NORMAL
 - en: The values of this class can be accessed as attributes, e.g., `ReduceOp.SUM`.
     They are used in specifying strategies for reduction collectives, e.g., [`reduce()`](#torch.distributed.reduce
     "torch.distributed.reduce").
+  id: totrans-690
   prefs: []
   type: TYPE_NORMAL
 - en: This class does not support `__members__` property.
+  id: totrans-691
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE93]'
+  id: totrans-692
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE93]'
 - en: 'Deprecated enum-like class for reduction operations: `SUM`, `PRODUCT`, `MIN`,
     and `MAX`.'
+  id: totrans-693
   prefs: []
   type: TYPE_NORMAL
 - en: '[`ReduceOp`](#torch.distributed.ReduceOp "torch.distributed.ReduceOp") is recommended
     to use instead.'
+  id: totrans-694
   prefs: []
   type: TYPE_NORMAL
 - en: Profiling Collective Communication[](#profiling-collective-communication "Permalink
     to this heading")
+  id: totrans-695
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
@@ -2870,21 +3703,27 @@
     `mpi`) are supported and collective communication usage will be rendered as expected
     in profiling output/traces. Profiling your code is the same as any regular torch
     operator:'
+  id: totrans-696
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE94]'
+  id: totrans-697
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE94]'
 - en: Please refer to the [profiler documentation](https://pytorch.org/docs/main/profiler.html)
     for a full overview of profiler features.
+  id: totrans-698
   prefs: []
   type: TYPE_NORMAL
 - en: Multi-GPU collective functions[](#multi-gpu-collective-functions "Permalink
     to this heading")
+  id: totrans-699
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
 - en: Warning
+  id: totrans-700
   prefs: []
   type: TYPE_NORMAL
 - en: The multi-GPU functions (which stand for multiple GPUs per CPU thread) are deprecated.
@@ -2892,9 +3731,11 @@
     thread, as exemplified by the APIs in this document. If you are a backend developer
     and want to support multiple devices per thread, please contact PyTorch Distributed’s
     maintainers.
+  id: totrans-701
   prefs: []
   type: TYPE_NORMAL
 - en: '## Third-party backends'
+  id: totrans-702
   prefs: []
   type: TYPE_NORMAL
 - en: Besides the builtin GLOO/MPI/NCCL backends, PyTorch distributed supports third-party
@@ -2903,44 +3744,55 @@
     C++ and CUDA Extensions](https://pytorch.org/tutorials/advanced/cpp_extension.html)
     and `test/cpp_extensions/cpp_c10d_extension.cpp`. The capability of third-party
     backends are decided by their own implementations.
+  id: totrans-703
   prefs: []
   type: TYPE_NORMAL
 - en: The new backend derives from `c10d::ProcessGroup` and registers the backend
     name and the instantiating interface through [`torch.distributed.Backend.register_backend()`](#torch.distributed.Backend.register_backend
     "torch.distributed.Backend.register_backend") when imported.
+  id: totrans-704
   prefs: []
   type: TYPE_NORMAL
 - en: When manually importing this backend and invoking [`torch.distributed.init_process_group()`](#torch.distributed.init_process_group
     "torch.distributed.init_process_group") with the corresponding backend name, the
     `torch.distributed` package runs on the new backend.
+  id: totrans-705
   prefs: []
   type: TYPE_NORMAL
 - en: Warning
+  id: totrans-706
   prefs: []
   type: TYPE_NORMAL
 - en: The support of third-party backend is experimental and subject to change.
+  id: totrans-707
   prefs: []
   type: TYPE_NORMAL
 - en: Launch utility
+  id: totrans-708
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
 - en: The torch.distributed package also provides a launch utility in torch.distributed.launch.
     This helper utility can be used to launch multiple processes per node for distributed
     training.
+  id: totrans-709
   prefs: []
   type: TYPE_NORMAL
 - en: Module `torch.distributed.launch`.
+  id: totrans-710
   prefs: []
   type: TYPE_NORMAL
 - en: '`torch.distributed.launch` is a module that spawns up multiple distributed
     training processes on each of the training nodes.'
+  id: totrans-711
   prefs: []
   type: TYPE_NORMAL
 - en: Warning
+  id: totrans-712
   prefs: []
   type: TYPE_NORMAL
 - en: This module is going to be deprecated in favor of [torchrun](elastic/run.html#launcher-api).
+  id: totrans-713
   prefs: []
   type: TYPE_NORMAL
 - en: The utility can be used for single-node distributed training, in which one or
@@ -2952,6 +3804,7 @@
     training performance as well. This will especially be beneficial for systems with
     multiple Infiniband interfaces that have direct-GPU support, since all of them
     can be utilized for aggregated communication bandwidth.
+  id: totrans-714
   prefs: []
   type: TYPE_NORMAL
 - en: In both cases of single-node distributed training or multi-node distributed
@@ -2959,97 +3812,131 @@
     If used for GPU training, this number needs to be less or equal to the number
     of GPUs on the current system (`nproc_per_node`), and each process will be operating
     on a single GPU from *GPU 0 to GPU (nproc_per_node - 1)*.
+  id: totrans-715
   prefs: []
   type: TYPE_NORMAL
 - en: '**How to use this module:**'
+  id: totrans-716
   prefs: []
   type: TYPE_NORMAL
 - en: Single-Node multi-process distributed training
+  id: totrans-717
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
 - en: '[PRE95]'
+  id: totrans-718
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE95]'
 - en: 'Multi-Node multi-process distributed training: (e.g. two nodes)'
+  id: totrans-719
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
 - en: 'Node 1: *(IP: 192.168.1.1, and has a free port: 1234)*'
+  id: totrans-720
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE96]'
+  id: totrans-721
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE96]'
 - en: 'Node 2:'
+  id: totrans-722
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE97]'
+  id: totrans-723
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE97]'
 - en: 'To look up what optional arguments this module offers:'
+  id: totrans-724
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
 - en: '[PRE98]'
+  id: totrans-725
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE98]'
 - en: '**Important Notices:**'
+  id: totrans-726
   prefs: []
   type: TYPE_NORMAL
 - en: 1\. This utility and multi-process distributed (single-node or multi-node) GPU
     training currently only achieves the best performance using the NCCL distributed
     backend. Thus NCCL backend is the recommended backend to use for GPU training.
+  id: totrans-727
   prefs: []
   type: TYPE_NORMAL
 - en: '2\. In your training program, you must parse the command-line argument: `--local-rank=LOCAL_PROCESS_RANK`,
     which will be provided by this module. If your training program uses GPUs, you
     should ensure that your code only runs on the GPU device of LOCAL_PROCESS_RANK.
     This can be done by:'
+  id: totrans-728
   prefs: []
   type: TYPE_NORMAL
 - en: Parsing the local_rank argument
+  id: totrans-729
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE99]'
+  id: totrans-730
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE99]'
 - en: Set your device to local rank using either
+  id: totrans-731
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE100]'
+  id: totrans-732
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE100]'
 - en: or
+  id: totrans-733
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE101]'
+  id: totrans-734
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE101]'
 - en: 3\. In your training program, you are supposed to call the following function
     at the beginning to start the distributed backend. It is strongly recommended
     that `init_method=env://`. Other init methods (e.g. `tcp://`) may work, but `env://`
     is the one that is officially supported by this module.
+  id: totrans-735
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE102]'
+  id: totrans-736
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE102]'
 - en: 4\. In your training program, you can either use regular distributed functions
     or use [`torch.nn.parallel.DistributedDataParallel()`](generated/torch.nn.parallel.DistributedDataParallel.html#torch.nn.parallel.DistributedDataParallel
     "torch.nn.parallel.DistributedDataParallel") module. If your training program
     uses GPUs for training and you would like to use [`torch.nn.parallel.DistributedDataParallel()`](generated/torch.nn.parallel.DistributedDataParallel.html#torch.nn.parallel.DistributedDataParallel
     "torch.nn.parallel.DistributedDataParallel") module, here is how to configure
     it.
+  id: totrans-737
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE103]'
+  id: totrans-738
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE103]'
 - en: Please ensure that `device_ids` argument is set to be the only GPU device id
     that your code will be operating on. This is generally the local rank of the process.
     In other words, the `device_ids` needs to be `[args.local_rank]`, and `output_device`
     needs to be `args.local_rank` in order to use this utility
+  id: totrans-739
   prefs: []
   type: TYPE_NORMAL
 - en: 5\. Another way to pass `local_rank` to the subprocesses via environment variable
@@ -3057,18 +3944,22 @@
     You must adjust the subprocess example above to replace `args.local_rank` with
     `os.environ['LOCAL_RANK']`; the launcher will not pass `--local-rank` when you
     specify this flag.
+  id: totrans-740
   prefs: []
   type: TYPE_NORMAL
 - en: Warning
+  id: totrans-741
   prefs: []
   type: TYPE_NORMAL
 - en: '`local_rank` is NOT globally unique: it is only unique per process on a machine.
     Thus, don’t use it to decide if you should, e.g., write to a networked filesystem.
     See [https://github.com/pytorch/pytorch/issues/12042](https://github.com/pytorch/pytorch/issues/12042)
     for an example of how things can go wrong if you don’t do this correctly.'
+  id: totrans-742
   prefs: []
   type: TYPE_NORMAL
 - en: Spawn utility
+  id: totrans-743
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
@@ -3078,26 +3969,32 @@
     processes. It works by passing in the function that you want to run and spawns
     N processes to run it. This can be used for multiprocess distributed training
     as well.
+  id: totrans-744
   prefs: []
   type: TYPE_NORMAL
 - en: For references on how to use it, please refer to [PyTorch example - ImageNet
     implementation](https://github.com/pytorch/examples/tree/master/imagenet)
+  id: totrans-745
   prefs: []
   type: TYPE_NORMAL
 - en: Note that this function requires Python 3.4 or higher.
+  id: totrans-746
   prefs: []
   type: TYPE_NORMAL
 - en: Debugging `torch.distributed` applications[](#debugging-torch-distributed-applications
     "Permalink to this heading")
+  id: totrans-747
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
 - en: 'Debugging distributed applications can be challenging due to hard to understand
     hangs, crashes, or inconsistent behavior across ranks. `torch.distributed` provides
     a suite of tools to help debug training applications in a self-serve fashion:'
+  id: totrans-748
   prefs: []
   type: TYPE_NORMAL
 - en: Monitored Barrier
+  id: totrans-749
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
@@ -3112,19 +4009,26 @@
     consider the following function where rank 1 fails to call into [`torch.distributed.monitored_barrier()`](#torch.distributed.monitored_barrier
     "torch.distributed.monitored_barrier") (in practice this could be due to an application
     bug or hang in a previous collective):'
+  id: totrans-750
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE104]'
+  id: totrans-751
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE104]'
 - en: 'The following error message is produced on rank 0, allowing the user to determine
     which rank(s) may be faulty and investigate further:'
+  id: totrans-752
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE105]'
+  id: totrans-753
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE105]'
 - en: '`TORCH_DISTRIBUTED_DEBUG`'
+  id: totrans-754
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
@@ -3134,6 +4038,7 @@
     can be set to either `OFF` (default), `INFO`, or `DETAIL` depending on the debugging
     level required. Please note that the most verbose option, `DETAIL` may impact
     the application performance and thus should only be used when debugging issues.
+  id: totrans-755
   prefs: []
   type: TYPE_NORMAL
 - en: 'Setting `TORCH_DISTRIBUTED_DEBUG=INFO` will result in additional debug logging
@@ -3142,24 +4047,33 @@
     will additionally log runtime performance statistics a select number of iterations.
     These runtime statistics include data such as forward time, backward time, gradient
     communication time, etc. As an example, given the following application:'
+  id: totrans-756
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE106]'
+  id: totrans-757
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE106]'
 - en: 'The following logs are rendered at initialization time:'
+  id: totrans-758
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE107]'
+  id: totrans-759
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE107]'
 - en: 'The following logs are rendered during runtime (when `TORCH_DISTRIBUTED_DEBUG=DETAIL`
     is set):'
+  id: totrans-760
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE108]'
+  id: totrans-761
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE108]'
 - en: 'In addition, `TORCH_DISTRIBUTED_DEBUG=INFO` enhances crash logging in [`torch.nn.parallel.DistributedDataParallel()`](generated/torch.nn.parallel.DistributedDataParallel.html#torch.nn.parallel.DistributedDataParallel
     "torch.nn.parallel.DistributedDataParallel") due to unused parameters in the model.
     Currently, `find_unused_parameters=True` must be passed into [`torch.nn.parallel.DistributedDataParallel()`](generated/torch.nn.parallel.DistributedDataParallel.html#torch.nn.parallel.DistributedDataParallel
@@ -3175,11 +4089,14 @@
     does not receive a gradient in the backwards pass, and thus results in `DDP` failing.
     On a crash, the user is passed information about parameters which went unused,
     which may be challenging to manually find for large models:'
+  id: totrans-762
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE109]'
+  id: totrans-763
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE109]'
 - en: 'Setting `TORCH_DISTRIBUTED_DEBUG=DETAIL` will trigger additional consistency
     and synchronization checks on every collective call issued by the user either
     directly or indirectly (such as DDP `allreduce`). This is done by creating a wrapper
@@ -3197,26 +4114,34 @@
     error message. As an example, consider the following function which has mismatched
     input shapes into [`torch.distributed.all_reduce()`](#torch.distributed.all_reduce
     "torch.distributed.all_reduce"):'
+  id: totrans-764
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE110]'
+  id: totrans-765
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE110]'
 - en: 'With the `NCCL` backend, such an application would likely result in a hang
     which can be challenging to root-cause in nontrivial scenarios. If the user enables
     `TORCH_DISTRIBUTED_DEBUG=DETAIL` and reruns the application, the following error
     message reveals the root cause:'
+  id: totrans-766
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE111]'
+  id: totrans-767
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE111]'
 - en: Note
+  id: totrans-768
   prefs: []
   type: TYPE_NORMAL
 - en: For fine-grained control of the debug level during runtime the functions `torch.distributed.set_debug_level()`,
     `torch.distributed.set_debug_level_from_env()`, and `torch.distributed.get_debug_level()`
     can also be used.
+  id: totrans-769
   prefs: []
   type: TYPE_NORMAL
 - en: In addition, TORCH_DISTRIBUTED_DEBUG=DETAIL can be used in conjunction with
@@ -3225,9 +4150,11 @@
     that use `c10d` collective calls backed by process groups created with the [`torch.distributed.init_process_group()`](#torch.distributed.init_process_group
     "torch.distributed.init_process_group") and [`torch.distributed.new_group()`](#torch.distributed.new_group
     "torch.distributed.new_group") APIs.
+  id: totrans-770
   prefs: []
   type: TYPE_NORMAL
 - en: Logging
+  id: totrans-771
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
@@ -3238,93 +4165,124 @@
     training job and to troubleshoot problems such as network connection failures.
     The following matrix shows how the log level can be adjusted via the combination
     of `TORCH_CPP_LOG_LEVEL` and `TORCH_DISTRIBUTED_DEBUG` environment variables.
+  id: totrans-772
   prefs: []
   type: TYPE_NORMAL
 - en: '| `TORCH_CPP_LOG_LEVEL` | `TORCH_DISTRIBUTED_DEBUG` | Effective Log Level |'
+  id: totrans-773
   prefs: []
   type: TYPE_TB
 - en: '| --- | --- | --- |'
+  id: totrans-774
   prefs: []
   type: TYPE_TB
 - en: '| `ERROR` | ignored | Error |'
+  id: totrans-775
   prefs: []
   type: TYPE_TB
 - en: '| `WARNING` | ignored | Warning |'
+  id: totrans-776
   prefs: []
   type: TYPE_TB
 - en: '| `INFO` | ignored | Info |'
+  id: totrans-777
   prefs: []
   type: TYPE_TB
 - en: '| `INFO` | `INFO` | Debug |'
+  id: totrans-778
   prefs: []
   type: TYPE_TB
 - en: '| `INFO` | `DETAIL` | Trace (a.k.a. All) |'
+  id: totrans-779
   prefs: []
   type: TYPE_TB
 - en: 'Distributed components raise custom Exception types derived from RuntimeError:'
+  id: totrans-780
   prefs: []
   type: TYPE_NORMAL
 - en: 'torch.distributed.DistError: This is the base type of all distributed exceptions.'
+  id: totrans-781
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: 'torch.distributed.DistBackendError: This exception is thrown when a backend-specific
     error occurs. For example, if the NCCL backend is used and the user attempts to
     use a GPU that is not available to the NCCL library.'
+  id: totrans-782
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: 'torch.distributed.DistNetworkError: This exception is thrown when networking
     libraries encounter errors (ex: Connection reset by peer)'
+  id: totrans-783
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: 'torch.distributed.DistStoreError: This exception is thrown when the Store encounters
     an error (ex: TCPStore timeout)'
+  id: totrans-784
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '[PRE112]'
+  id: totrans-785
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE112]'
 - en: Exception raised when an error occurs in the distributed library
+  id: totrans-786
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE113]'
+  id: totrans-787
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE113]'
 - en: Exception raised when a backend error occurs in distributed
+  id: totrans-788
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE114]'
+  id: totrans-789
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE114]'
 - en: Exception raised when a network error occurs in distributed
+  id: totrans-790
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE115]'
+  id: totrans-791
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE115]'
 - en: Exception raised when an error occurs in the distributed store
+  id: totrans-792
   prefs: []
   type: TYPE_NORMAL
 - en: 'If you are running single node training, it may be convenient to interactively
     breakpoint your script. We offer a way to conveniently breakpoint a single rank:'
+  id: totrans-793
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE116]'
+  id: totrans-794
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE116]'
 - en: Set a breakpoint, but only on a single rank. All other ranks will wait for you
     to be done with the breakpoint before continuing. This calls `breakpoint()` under
     the hood, so you can customize it using the normal facilities, e.g., `PYTHONBREAKPOINT`
     environment variable.
+  id: totrans-795
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-796
   prefs: []
   type: TYPE_NORMAL
 - en: '**rank** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
     Python v3.12)")) – Which rank to break on. Default: `0`'
+  id: totrans-797
   prefs: []
   type: TYPE_NORMAL

@@ -1,101 +1,149 @@
 - en: torch.export
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: torch.export
 - en: 原文：[https://pytorch.org/docs/stable/export.html](https://pytorch.org/docs/stable/export.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/docs/stable/export.html](https://pytorch.org/docs/stable/export.html)
 - en: Warning
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: This feature is a prototype under active development and there WILL BE BREAKING
     CHANGES in the future.
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个功能是一个正在积极开发的原型，未来将会有重大变化。
 - en: Overview
+  id: totrans-4
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 概述
 - en: '[`torch.export.export()`](#torch.export.export "torch.export.export") takes
     an arbitrary Python callable (a [`torch.nn.Module`](generated/torch.nn.Module.html#torch.nn.Module
     "torch.nn.Module"), a function or a method) and produces a traced graph representing
     only the Tensor computation of the function in an Ahead-of-Time (AOT) fashion,
     which can subsequently be executed with different outputs or serialized.'
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`torch.export.export()`](#torch.export.export "torch.export.export") 接受一个任意的
+    Python 可调用对象（一个 [`torch.nn.Module`](generated/torch.nn.Module.html#torch.nn.Module
+    "torch.nn.Module")、一个函数或一个方法），并以 Ahead-of-Time (AOT) 方式生成一个表示函数的张量计算的追踪图，随后可以用不同的输出或序列化执行。'
 - en: '[PRE0]'
+  id: totrans-6
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: '[PRE1]'
+  id: totrans-7
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: '`torch.export` produces a clean intermediate representation (IR) with the following
     invariants. More specifications about the IR can be found [here](export.ir_spec.html#export-ir-spec).'
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: '`torch.export` 生成一个干净的中间表示（IR），具有以下不变性。关于 IR 的更多规范可以在[这里](export.ir_spec.html#export-ir-spec)找到。'
 - en: '**Soundness**: It is guaranteed to be a sound representation of the original
     program, and maintains the same calling conventions of the original program.'
+  id: totrans-9
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**正确性**：它保证是原始程序的正确表示，并保持原始程序的相同调用约定。'
 - en: '**Normalized**: There are no Python semantics within the graph. Submodules
     from the original programs are inlined to form one fully flattened computational
     graph.'
+  id: totrans-10
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**标准化**：图中没有 Python 语义。原始程序中的子模块被内联以形成一个完全扁平化的计算图。'
 - en: '**Defined Operator Set**: The graph produced contains only a small defined
     [Core ATen IR](torch.compiler_ir.html#torch-compiler-ir) opset and registered
     custom operators.'
+  id: totrans-11
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**定义的操作集**：生成的图仅包含一个小的定义的 [Core ATen IR](torch.compiler_ir.html#torch-compiler-ir)
+    操作集和注册的自定义操作符。'
 - en: '**Graph properties**: The graph is purely functional, meaning it does not contain
     operations with side effects such as mutations or aliasing. It does not mutate
     any intermediate values, parameters, or buffers.'
+  id: totrans-12
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**图属性**：图是纯函数的，意味着它不包含具有副作用的操作，比如突变或别名。它不会改变任何中间值、参数或缓冲区。'
 - en: '**Metadata**: The graph contains metadata captured during tracing, such as
     a stacktrace from user’s code.'
+  id: totrans-13
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**元数据**：图中包含在追踪过程中捕获的元数据，比如用户代码的堆栈跟踪。'
 - en: 'Under the hood, `torch.export` leverages the following latest technologies:'
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 在幕后，`torch.export` 利用以下最新技术：
 - en: '**TorchDynamo (torch._dynamo)** is an internal API that uses a CPython feature
     called the Frame Evaluation API to safely trace PyTorch graphs. This provides
     a massively improved graph capturing experience, with much fewer rewrites needed
     in order to fully trace the PyTorch code.'
+  id: totrans-15
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**TorchDynamo (torch._dynamo)** 是一个内部 API，使用了一个名为 Frame Evaluation API 的 CPython
+    特性来安全地追踪 PyTorch 图。这提供了一个大大改进的图捕获体验，几乎不需要进行大量重写以完全追踪 PyTorch 代码。'
 - en: '**AOT Autograd** provides a functionalized PyTorch graph and ensures the graph
     is decomposed/lowered to the small defined Core ATen operator set.'
+  id: totrans-16
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**AOT Autograd** 提供了一个功能化的 PyTorch 图，并确保图被分解/降低到小定义的 Core ATen 操作符集。'
 - en: '**Torch FX (torch.fx)** is the underlying representation of the graph, allowing
     flexible Python-based transformations.'
+  id: totrans-17
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**Torch FX (torch.fx)** 是图的基础表示，允许灵活的基于 Python 的转换。'
 - en: Existing frameworks
+  id: totrans-18
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 现有框架
 - en: '[`torch.compile()`](generated/torch.compile.html#torch.compile "torch.compile")
     also utilizes the same PT2 stack as `torch.export`, but is slightly different:'
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`torch.compile()`](generated/torch.compile.html#torch.compile "torch.compile")
+    也利用与 `torch.export` 相同的 PT2 栈，但略有不同：'
 - en: '**JIT vs. AOT**: [`torch.compile()`](generated/torch.compile.html#torch.compile
     "torch.compile") is a JIT compiler whereas which is not intended to be used to
     produce compiled artifacts outside of deployment.'
+  id: totrans-20
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**JIT vs. AOT**: [`torch.compile()`](generated/torch.compile.html#torch.compile
+    "torch.compile") 是一个 JIT 编译器，而不是用来生成部署外编译成果的。'
 - en: '**Partial vs. Full Graph Capture**: When [`torch.compile()`](generated/torch.compile.html#torch.compile
     "torch.compile") runs into an untraceable part of a model, it will “graph break”
     and fall back to running the program in the eager Python runtime. In comparison,
@@ -103,16 +151,23 @@
     it will error out when something untraceable is reached. Since `torch.export`
     produces a full graph disjoint from any Python features or runtime, this graph
     can then be saved, loaded, and run in different environments and languages.'
+  id: totrans-21
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**部分 vs. 完整图捕获**：当 [`torch.compile()`](generated/torch.compile.html#torch.compile
+    "torch.compile") 遇到模型中无法追踪的部分时，它将“图断裂”，并回退到在急切的 Python 运行时中运行程序。相比之下，`torch.export`
+    旨在获得 PyTorch 模型的完整图表示，因此当达到无法追踪的内容时会报错。由于 `torch.export` 生成的完整图与任何 Python 特性或运行时无关，因此该图可以保存、加载并在不同环境和语言中运行。'
 - en: '**Usability tradeoff**: Since [`torch.compile()`](generated/torch.compile.html#torch.compile
     "torch.compile") is able to fallback to the Python runtime whenever it reaches
     something untraceable, it is a lot more flexible. `torch.export` will instead
     require users to provide more information or rewrite their code to make it traceable.'
+  id: totrans-22
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**可用性权衡**：由于 [`torch.compile()`](generated/torch.compile.html#torch.compile
+    "torch.compile") 能够在遇到无法追踪的内容时回退到 Python 运行时，因此它更加灵活。相反，`torch.export` 将要求用户提供更多信息或重写他们的代码以使其可追踪。'
 - en: Compared to [`torch.fx.symbolic_trace()`](fx.html#torch.fx.symbolic_trace "torch.fx.symbolic_trace"),
     `torch.export` traces using TorchDynamo which operates at the Python bytecode
     level, giving it the ability to trace arbitrary Python constructs not limited
@@ -122,167 +177,242 @@
     more user programs, and produce lower-level graphs (at the `torch.ops.aten` operator
     level). Note that users can still use [`torch.fx.symbolic_trace()`](fx.html#torch.fx.symbolic_trace
     "torch.fx.symbolic_trace") as a preprocessing step before `torch.export`.
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 与[`torch.fx.symbolic_trace()`](fx.html#torch.fx.symbolic_trace "torch.fx.symbolic_trace")相比，`torch.export`使用TorchDynamo进行跟踪，它在Python字节码级别操作，使其能够跟踪任意Python构造，不受Python运算符重载支持的限制。此外，`torch.export`精细跟踪张量元数据，因此对于像张量形状这样的条件语句不会导致跟踪失败。总的来说，预计`torch.export`能够处理更多用户程序，并生成更低级别的图（在`torch.ops.aten`运算符级别）。请注意，用户仍然可以在`torch.export`之前使用[`torch.fx.symbolic_trace()`](fx.html#torch.fx.symbolic_trace
+    "torch.fx.symbolic_trace")作为预处理步骤。
 - en: Compared to [`torch.jit.script()`](generated/torch.jit.script.html#torch.jit.script
     "torch.jit.script"), `torch.export` does not capture Python control flow or data
     structures, but it supports more Python language features than TorchScript (as
     it is easier to have comprehensive coverage over Python bytecodes). The resulting
     graphs are simpler and only have straight line control flow (except for explicit
     control flow operators).
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 与[`torch.jit.script()`](generated/torch.jit.script.html#torch.jit.script "torch.jit.script")相比，`torch.export`不捕获Python控制流或数据结构，但支持比TorchScript更多的Python语言特性（因为更容易对Python字节码进行全面覆盖）。生成的图更简单，只有直线控制流（除了显式控制流操作）。
 - en: 'Compared to [`torch.jit.trace()`](generated/torch.jit.trace.html#torch.jit.trace
     "torch.jit.trace"), `torch.export` is sound: it is able to trace code that performs
     integer computation on sizes and records all of the side-conditions necessary
     to show that a particular trace is valid for other inputs.'
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: 与[`torch.jit.trace()`](generated/torch.jit.trace.html#torch.jit.trace "torch.jit.trace")相比，`torch.export`是可靠的：它能够跟踪对大小进行整数计算的代码，并记录所有必要的副条件，以表明特定跟踪对其他输入是有效的。
 - en: Exporting a PyTorch Model
+  id: totrans-26
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 导出PyTorch模型
 - en: An Example
+  id: totrans-27
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 一个例子
 - en: 'The main entrypoint is through [`torch.export.export()`](#torch.export.export
     "torch.export.export"), which takes a callable ([`torch.nn.Module`](generated/torch.nn.Module.html#torch.nn.Module
     "torch.nn.Module"), function, or method) and sample inputs, and captures the computation
     graph into an [`torch.export.ExportedProgram`](#torch.export.ExportedProgram "torch.export.ExportedProgram").
     An example:'
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: 主要入口点是通过[`torch.export.export()`](#torch.export.export "torch.export.export")，它接受一个可调用对象（[`torch.nn.Module`](generated/torch.nn.Module.html#torch.nn.Module
+    "torch.nn.Module")、函数或方法）和示例输入，并将计算图捕获到一个[`torch.export.ExportedProgram`](#torch.export.ExportedProgram
+    "torch.export.ExportedProgram")中。一个例子：
 - en: '[PRE2]'
+  id: totrans-29
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: '[PRE3]'
+  id: totrans-30
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: 'Inspecting the `ExportedProgram`, we can note the following:'
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: 检查`ExportedProgram`，我们可以注意到以下内容：
 - en: The [`torch.fx.Graph`](fx.html#torch.fx.Graph "torch.fx.Graph") contains the
     computation graph of the original program, along with records of the original
     code for easy debugging.
+  id: totrans-32
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[`torch.fx.Graph`](fx.html#torch.fx.Graph "torch.fx.Graph")包含原始程序的计算图，以及原始代码的记录，便于调试。'
 - en: The graph contains only `torch.ops.aten` operators found in the [Core ATen IR](torch.compiler_ir.html#torch-compiler-ir)
     opset and custom operators, and is fully functional, without any inplace operators
     such as `torch.add_`.
+  id: totrans-33
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 图中只包含在[Core ATen IR](torch.compiler_ir.html#torch-compiler-ir) opset中找到的`torch.ops.aten`运算符和自定义运算符，是完全功能的，没有任何像`torch.add_`这样的原位运算符。
 - en: The parameters (weight and bias to conv) are lifted as inputs to the graph,
     resulting in no `get_attr` nodes in the graph, which previously existed in the
     result of [`torch.fx.symbolic_trace()`](fx.html#torch.fx.symbolic_trace "torch.fx.symbolic_trace").
+  id: totrans-34
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 参数（权重和卷积偏置）被提升为图的输入，导致图中没有`get_attr`节点，这在[`torch.fx.symbolic_trace()`](fx.html#torch.fx.symbolic_trace
+    "torch.fx.symbolic_trace")的结果中以前存在。
 - en: The [`torch.export.ExportGraphSignature`](#torch.export.ExportGraphSignature
     "torch.export.ExportGraphSignature") models the input and output signature, along
     with specifying which inputs are parameters.
+  id: totrans-35
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[`torch.export.ExportGraphSignature`](#torch.export.ExportGraphSignature "torch.export.ExportGraphSignature")模型化了输入和输出签名，并指定了哪些输入是参数。'
 - en: The resulting shape and dtype of tensors produced by each node in the graph
     is noted. For example, the `convolution` node will result in a tensor of dtype
     `torch.float32` and shape (1, 16, 256, 256).
+  id: totrans-36
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 图中每个节点产生的张量的形状和数据类型都有记录。例如，`卷积`节点将产生一个数据类型为`torch.float32`，形状为（1, 16, 256, 256）的张量。
 - en: Expressing Dynamism
+  id: totrans-37
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 表达动态性
 - en: 'By default `torch.export` will trace the program assuming all input shapes
     are **static**, and specializing the exported program to those dimensions. However,
     some dimensions, such as a batch dimension, can be dynamic and vary from run to
     run. Such dimensions must be specified by using the [`torch.export.Dim()`](#torch.export.Dim
     "torch.export.Dim") API to create them and by passing them into [`torch.export.export()`](#torch.export.export
     "torch.export.export") through the `dynamic_shapes` argument. An example:'
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 默认情况下，`torch.export`将跟踪程序，假设所有输入形状都是**静态**的，并将导出的程序专门化到这些维度。然而，一些维度，如批处理维度，可以是动态的，并且在每次运行时会有所变化。这些维度必须通过使用[`torch.export.Dim()`](#torch.export.Dim
+    "torch.export.Dim") API来指定，并通过将它们传递给[`torch.export.export()`](#torch.export.export
+    "torch.export.export")的`dynamic_shapes`参数来创建它们。例如：
 - en: '[PRE4]'
+  id: totrans-39
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: '[PRE5]'
+  id: totrans-40
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: 'Some additional things to note:'
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 一些额外需要注意的事项：
 - en: Through the [`torch.export.Dim()`](#torch.export.Dim "torch.export.Dim") API
     and the `dynamic_shapes` argument, we specified the first dimension of each input
     to be dynamic. Looking at the inputs `arg5_1` and `arg6_1`, they have a symbolic
     shape of (s0, 64) and (s0, 128), instead of the (32, 64) and (32, 128) shaped
     tensors that we passed in as example inputs. `s0` is a symbol representing that
     this dimension can be a range of values.
+  id: totrans-42
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 通过[`torch.export.Dim()`](#torch.export.Dim "torch.export.Dim") API和`dynamic_shapes`参数，我们指定了每个输入的第一个维度为动态。查看输入`arg5_1`和`arg6_1`，它们具有符号形状（s0，64）和（s0，128），而不是我们传入的示例输入的形状为（32，64）和（32，128）的张量。`s0`是一个表示这个维度可以是一系列值的符号。
 - en: '`exported_program.range_constraints` describes the ranges of each symbol appearing
     in the graph. In this case, we see that `s0` has the range [2, inf]. For technical
     reasons that are difficult to explain here, they are assumed to be not 0 or 1\.
     This is not a bug, and does not necessarily mean that the exported program will
     not work for dimensions 0 or 1\. See [The 0/1 Specialization Problem](https://docs.google.com/document/d/16VPOa3d-Liikf48teAOmxLc92rgvJdfosIy-yoT38Io/edit?fbclid=IwAR3HNwmmexcitV0pbZm_x1a4ykdXZ9th_eJWK-3hBtVgKnrkmemz6Pm5jRQ#heading=h.ez923tomjvyk)
     for an in-depth discussion of this topic.'
+  id: totrans-43
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`exported_program.range_constraints`描述了图中每个符号的范围。在这种情况下，我们看到`s0`的范围为[2，inf]。由于在这里很难解释的技术原因，它们被假定不是0或1。这不是一个错误，并不一定意味着导出的程序不适用于维度0或1。请参阅[0/1专门化问题](https://docs.google.com/document/d/16VPOa3d-Liikf48teAOmxLc92rgvJdfosIy-yoT38Io/edit?fbclid=IwAR3HNwmmexcitV0pbZm_x1a4ykdXZ9th_eJWK-3hBtVgKnrkmemz6Pm5jRQ#heading=h.ez923tomjvyk)以深入讨论这个主题。'
 - en: '`exported_program.equality_constraints` describes which dimensions are required
     to be equal. Since we specified in the constraints that the first dimension of
     each argument is equivalent, (`dynamic_dim(example_args[0], 0) == dynamic_dim(example_args[1],
     0)`), we see in the equality constraints the tuple specifying that `arg5_1` dimension
     0 and `arg6_1` dimension 0 are equal.'
+  id: totrans-44
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`exported_program.equality_constraints`描述了哪些维度需要相等。由于我们在约束中指定了每个参数的第一个维度是等价的（`dynamic_dim(example_args[0],
+    0) == dynamic_dim(example_args[1], 0)`），我们在等式约束中看到了指定`arg5_1`维度0和`arg6_1`维度0相等的元组。'
 - en: (A legacy mechanism for specifying dynamic shapes involves marking and constraining
     dynamic dimensions with the [`torch.export.dynamic_dim()`](#torch.export.dynamic_dim
     "torch.export.dynamic_dim") API and passing them into [`torch.export.export()`](#torch.export.export
     "torch.export.export") through the `constraints` argument. That mechanism is now
     **deprecated** and will not be supported in the future.)
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: （一种用于指定动态形状的传统机制涉及使用[`torch.export.dynamic_dim()`](#torch.export.dynamic_dim
+    "torch.export.dynamic_dim")API标记和约束动态维度，并通过`constraints`参数将它们传递给[`torch.export.export()`](#torch.export.export
+    "torch.export.export")。该机制现在已经**弃用**，并且将来不会得到支持。）
 - en: Serialization
+  id: totrans-46
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 序列化
 - en: To save the `ExportedProgram`, users can use the [`torch.export.save()`](#torch.export.save
     "torch.export.save") and [`torch.export.load()`](#torch.export.load "torch.export.load")
     APIs. A convention is to save the `ExportedProgram` using a `.pt2` file extension.
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了保存`ExportedProgram`，用户可以使用[`torch.export.save()`](#torch.export.save "torch.export.save")和[`torch.export.load()`](#torch.export.load
+    "torch.export.load")API。一个惯例是使用`.pt2`文件扩展名保存`ExportedProgram`。
 - en: 'An example:'
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个例子：
 - en: '[PRE6]'
+  id: totrans-49
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: Specialization
+  id: totrans-50
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 专门化
 - en: Input shapes
+  id: totrans-51
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 输入形状
 - en: 'As mentioned before, by default, `torch.export` will trace the program specializing
     on the input tensors’ shapes, unless a dimension is specified as dynamic via the
     [`torch.export.dynamic_dim()`](#torch.export.dynamic_dim "torch.export.dynamic_dim")
     API. This means that if there exists shape-dependent control flow, `torch.export`
     will specialize on the branch that is being taken with the given sample inputs.
     For example:'
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
+  zh: 如前所述，默认情况下，`torch.export`将跟踪程序，专门化输入张量的形状，除非通过[`torch.export.dynamic_dim()`](#torch.export.dynamic_dim
+    "torch.export.dynamic_dim")API指定了一个维度为动态。这意味着如果存在形状相关的控制流，`torch.export`将专门化采取给定示例输入的分支。例如：
 - en: '[PRE7]'
+  id: totrans-53
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: '[PRE8]'
+  id: totrans-54
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: The conditional of (`x.shape[0] > 5`) does not appear in the `ExportedProgram`
     because the example inputs have the static shape of (10, 2). Since `torch.export`
     specializes on the inputs’ static shapes, the else branch (`x - 1`) will never
@@ -291,43 +421,63 @@
     "torch.export.dynamic_dim") will need to be used to specify the dimension of the
     input tensor (`x.shape[0]`) to be dynamic, and the source code will need to be
     [rewritten](#data-shape-dependent-control-flow).
+  id: totrans-55
   prefs: []
   type: TYPE_NORMAL
+  zh: （`x.shape[0] > 5`）的条件不会出现在`ExportedProgram`中，因为示例输入具有静态形状（10，2）。由于`torch.export`专门针对输入的静态形状，否则分支（`x
+    - 1`）永远不会被执行。为了保留基于张量形状的动态分支行为，需要使用[`torch.export.dynamic_dim()`](#torch.export.dynamic_dim
+    "torch.export.dynamic_dim")来指定输入张量（`x.shape[0]`）的维度为动态，并且源代码需要被[重写](#data-shape-dependent-control-flow)。
 - en: Non-tensor inputs
+  id: totrans-56
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 非张量输入
 - en: '`torch.export` also specializes the traced graph based on the values of inputs
     that are not `torch.Tensor`, such as `int`, `float`, `bool`, and `str`. However,
     we will likely change this in the near future to not specialize on inputs of primitive
     types.'
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: '`torch.export`还根据不是`torch.Tensor`的输入值（如`int`、`float`、`bool`和`str`）专门化跟踪图。然而，我们可能会在不久的将来更改这一点，不再专门化基本类型的输入。'
 - en: 'For example:'
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: 例如：
 - en: '[PRE9]'
+  id: totrans-59
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: '[PRE10]'
+  id: totrans-60
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: Because integers are specialized, the `torch.ops.aten.add.Tensor` operations
     are all computed with the inlined constant `1`, rather than `arg1_1`. Additionally,
     the `times` iterator used in the `for` loop is also “inlined” in the graph through
     the 3 repeated `torch.ops.aten.add.Tensor` calls, and the input `arg2_1` is never
     used.
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于整数是专门化的，`torch.ops.aten.add.Tensor`操作都是使用内联常量`1`计算的，而不是`arg1_1`。此外，在`for`循环中使用的`times`迭代器也通过3个重复的`torch.ops.aten.add.Tensor`调用“内联”在图中，并且输入`arg2_1`从未被使用。
 - en: Limitations of torch.export[](#limitations-of-torch-export "Permalink to this
     heading")
+  id: totrans-62
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: torch.export[](#limitations-of-torch-export "此标题的永久链接")的限制
 - en: Graph Breaks
+  id: totrans-63
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 图中断
 - en: As `torch.export` is a one-shot process for capturing a computation graph from
     a PyTorch program, it might ultimately run into untraceable parts of programs
     as it is nearly impossible to support tracing all PyTorch and Python features.
@@ -337,94 +487,138 @@
     parts of their code to make it traceable. As the tracing is based on TorchDynamo,
     which evaluates at the Python bytecode level, there will be significantly fewer
     rewrites required compared to previous tracing frameworks.
+  id: totrans-64
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于`torch.export`是从PyTorch程序中捕获计算图的一次性过程，因此最终可能会遇到程序的无法追踪部分，因为几乎不可能支持追踪所有PyTorch和Python功能。在`torch.compile`的情况下，不支持的操作将导致“图中断”，并且不支持的操作将使用默认的Python评估运行。相比之下，`torch.export`将要求用户提供额外信息或重写部分代码以使其可追踪。由于追踪基于TorchDynamo，在Python字节码级别进行评估，相比以前的追踪框架，需要进行的重写将大大减少。
 - en: When a graph break is encountered, [ExportDB](generated/exportdb/index.html#torch-export-db)
     is a great resource for learning about the kinds of programs that are supported
     and unsupported, along with ways to rewrite programs to make them traceable.
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: 当遇到图形中断时，[ExportDB](generated/exportdb/index.html#torch-export-db)是一个很好的资源，可以了解支持和不支持的程序类型，以及重写程序使其可追踪的方法。
 - en: '### Data/Shape-Dependent Control Flow[](#data-shape-dependent-control-flow
     "Permalink to this heading")'
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: '### 数据/形状相关的控制流[](#data-shape-dependent-control-flow "跳转到此标题")'
 - en: Graph breaks can also be encountered on data-dependent control flow (`if x.shape[0]
     > 2`) when shapes are not being specialized, as a tracing compiler cannot possibly
     deal with without generating code for a combinatorially exploding number of paths.
     In such cases, users will need to rewrite their code using special control flow
     operators. Currently, we support [torch.cond](cond.html#cond) to express if-else
     like control flow (more coming soon!).
+  id: totrans-67
   prefs: []
   type: TYPE_NORMAL
+  zh: 当遇到数据相关的控制流（`if x.shape[0] > 2`）时，也可能出现图形中断，因为在没有专门化形状的情况下，追踪编译器无法处理生成代码的组合爆炸路径。在这种情况下，用户需要使用特殊的控制流操作符重写他们的代码。目前，我们支持[torch.cond](cond.html#cond)来表达类似if-else的控制流（更多功能即将推出！）。
 - en: Missing Meta Kernels for Operators[](#missing-meta-kernels-for-operators "Permalink
     to this heading")
+  id: totrans-68
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 操作符缺失的元内核[](#missing-meta-kernels-for-operators "跳转到此标题")
 - en: When tracing, a META implementation (or “meta kernel”) is required for all operators.
     This is used to reason about the input/output shapes for this operator.
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: 在追踪时，所有操作符都需要一个META实现（或“元内核”）来推断该操作符的输入/输出形状。
 - en: To register a meta kernel for a C++ Custom Operator, please refer to [this documentation](https://docs.google.com/document/d/1_W62p8WJOQQUzPsJYa7s701JXt0qf2OfLub2sbkHOaU/edit#heading=h.ahugy69p2jmz).
+  id: totrans-70
   prefs: []
   type: TYPE_NORMAL
+  zh: 要为C++自定义操作符注册一个元内核，请参考[此文档](https://docs.google.com/document/d/1_W62p8WJOQQUzPsJYa7s701JXt0qf2OfLub2sbkHOaU/edit#heading=h.ahugy69p2jmz)。
 - en: The official API for registering custom meta kernels for custom ops implemented
     in python is currently undergoing development. While the final API is being refined,
     you can refer to the documentation [here](https://docs.google.com/document/d/1GgvOe7C8_NVOMLOCwDaYV1mXXyHMXY7ExoewHqooxrs/edit#heading=h.64r4npvq0w0).
+  id: totrans-71
   prefs: []
   type: TYPE_NORMAL
+  zh: 目前正在开发用于在Python中实现自定义操作符的自定义元内核的官方API。在最终API得到完善之前，您可以参考[此文档](https://docs.google.com/document/d/1GgvOe7C8_NVOMLOCwDaYV1mXXyHMXY7ExoewHqooxrs/edit#heading=h.64r4npvq0w0)。
 - en: In the unfortunate case where your model uses an ATen operator that is does
     not have a meta kernel implementation yet, please file an issue.
+  id: totrans-72
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您的模型使用了尚未具有元内核实现的ATen操作符，请提交问题。
 - en: Read More
+  id: totrans-73
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 阅读更多
 - en: Additional Links for Export Users
+  id: totrans-74
   prefs: []
   type: TYPE_NORMAL
+  zh: Export用户的其他链接
 - en: '[torch.export IR Specification](export.ir_spec.html)'
+  id: totrans-75
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[torch.export IR规范](export.ir_spec.html)'
 - en: '[Writing Graph Transformations on ATen IR](torch.compiler_transformations.html)'
+  id: totrans-76
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[在ATen IR上编写图形转换](torch.compiler_transformations.html)'
 - en: '[IRs](torch.compiler_ir.html)'
+  id: totrans-77
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[IRs](torch.compiler_ir.html)'
 - en: '[ExportDB](generated/exportdb/index.html)'
+  id: totrans-78
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[ExportDB](generated/exportdb/index.html)'
 - en: '[Control Flow - Cond](cond.html)'
+  id: totrans-79
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[控制流 - Cond](cond.html)'
 - en: Deep Dive for PyTorch Developers
+  id: totrans-80
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch开发者深入了解
 - en: '[TorchDynamo Deep Dive](torch.compiler_deepdive.html)'
+  id: totrans-81
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[TorchDynamo深入了解](torch.compiler_deepdive.html)'
 - en: '[Dynamic shapes](torch.compiler_dynamic_shapes.html)'
+  id: totrans-82
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[动态形状](torch.compiler_dynamic_shapes.html)'
 - en: '[Fake tensor](torch.compiler_fake_tensor.html)'
+  id: totrans-83
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[虚假张量](torch.compiler_fake_tensor.html)'
 - en: '## API Reference'
+  id: totrans-84
   prefs: []
   type: TYPE_NORMAL
+  zh: '## API参考'
 - en: '[PRE11]'
+  id: totrans-85
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: '[`export()`](#torch.export.export "torch.export.export") takes an arbitrary
     Python callable (an nn.Module, a function or a method) along with example inputs,
     and produces a traced graph representing only the Tensor computation of the function
@@ -434,75 +628,111 @@
     (2) has eliminated all Python control flow and data structures (with certain exceptions),
     and (3) records the set of shape constraints needed to show that this normalization
     and control-flow elimination is sound for future inputs.'
+  id: totrans-86
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`export()`](#torch.export.export "torch.export.export")接受任意的Python可调用对象（nn.Module、函数或方法）以及示例输入，并以Ahead-of-Time（AOT）方式生成表示函数的张量计算的追踪图，随后可以使用不同的输入或序列化执行。追踪图（1）生成功能性ATen操作符集中的标准化操作符（以及任何用户指定的自定义操作符），（2）消除了所有Python控制流和数据结构（某些例外情况除外），（3）记录了为了证明这种标准化和控制流消除对未来输入是有效的所需的形状约束集。'
 - en: '**Soundness Guarantee**'
+  id: totrans-87
   prefs: []
   type: TYPE_NORMAL
+  zh: '**正确性保证**'
 - en: While tracing, [`export()`](#torch.export.export "torch.export.export") takes
     note of shape-related assumptions made by the user program and the underlying
     PyTorch operator kernels. The output [`ExportedProgram`](#torch.export.ExportedProgram
     "torch.export.ExportedProgram") is considered valid only when these assumptions
     hold true.
+  id: totrans-88
   prefs: []
   type: TYPE_NORMAL
+  zh: 在追踪过程中，[`export()`](#torch.export.export "torch.export.export")会注意用户程序和底层PyTorch操作符内核所做的与形状相关的假设。只有当这些假设成立时，输出的[`ExportedProgram`](#torch.export.ExportedProgram
+    "torch.export.ExportedProgram")才被认为有效。
 - en: 'Tracing makes assumptions on the shapes (not values) of input tensors. Such
     assumptions must be validated at graph capture time for [`export()`](#torch.export.export
     "torch.export.export") to succeed. Specifically:'
+  id: totrans-89
   prefs: []
   type: TYPE_NORMAL
+  zh: 追踪对输入张量的形状（而不是值）做出假设。这些假设必须在图捕获时验证，以便[`export()`](#torch.export.export "torch.export.export")成功。具体来说：
 - en: Assumptions on static shapes of input tensors are automatically validated without
     additional effort.
+  id: totrans-90
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 对输入张量的静态形状的假设将自动验证，无需额外努力。
 - en: Assumptions on dynamic shape of input tensors require explicit specification
     by using the [`Dim()`](#torch.export.Dim "torch.export.Dim") API to construct
     dynamic dimensions and by associating them with example inputs through the `dynamic_shapes`
     argument.
+  id: totrans-91
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 对输入张量的动态形状的假设需要通过使用[`Dim()`](#torch.export.Dim "torch.export.Dim") API显式指定，并通过将其与示例输入关联到`dynamic_shapes`参数中。
 - en: 'If any assumption can not be validated, a fatal error will be raised. When
     that happens, the error message will include suggested fixes to the specification
     that are needed to validate the assumptions. For example [`export()`](#torch.export.export
     "torch.export.export") might suggest the following fix to the definition of a
     dynamic dimension `dim0_x`, say appearing in the shape associated with input `x`,
     that was previously defined as `Dim("dim0_x")`:'
+  id: totrans-92
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果任何假设无法验证，将引发致命错误。当发生这种情况时，错误消息将包含建议的修复，以验证假设所需的规范。例如，[`export()`](#torch.export.export
+    "torch.export.export")可能会建议以下修复动态维度`dim0_x`的定义，例如出现在与输入`x`相关联的形状中，先前定义为`Dim("dim0_x")`：
 - en: '[PRE12]'
+  id: totrans-93
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: This example means the generated code requires dimension 0 of input `x` to be
     less than or equal to 5 to be valid. You can inspect the suggested fixes to dynamic
     dimension definitions and then copy them verbatim into your code without needing
     to change the `dynamic_shapes` argument to your [`export()`](#torch.export.export
     "torch.export.export") call.
+  id: totrans-94
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个示例表示生成的代码要求输入`x`的维度0小于或等于5才有效。您可以检查动态维度定义的建议修复，并将其逐字复制到您的代码中，而无需更改对[`export()`](#torch.export.export
+    "torch.export.export")的调用中的`dynamic_shapes`参数。
 - en: Parameters
+  id: totrans-95
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**f** ([*Callable*](https://docs.python.org/3/library/typing.html#typing.Callable
     "(in Python v3.12)")) – The callable to trace.'
+  id: totrans-96
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**f**（[*Callable*](https://docs.python.org/3/library/typing.html#typing.Callable
+    "(在Python v3.12版本)")）– 要追踪的可调用函数。'
 - en: '**args** ([*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
     "(in Python v3.12)")*[*[*Any*](https://docs.python.org/3/library/typing.html#typing.Any
     "(in Python v3.12)")*,* *...**]*) – Example positional inputs.'
+  id: totrans-97
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**args**（[*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(在Python v3.12版本)")*[*[*Any*](https://docs.python.org/3/library/typing.html#typing.Any
+    "(在Python v3.12版本)")*,* *...**]*) – 示例位置输入。'
 - en: '**kwargs** ([*Optional*](https://docs.python.org/3/library/typing.html#typing.Optional
     "(in Python v3.12)")*[*[*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
     "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)")*,* [*Any*](https://docs.python.org/3/library/typing.html#typing.Any
     "(in Python v3.12)")*]**]*) – Optional example keyword inputs.'
+  id: totrans-98
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**kwargs**（[*可选*](https://docs.python.org/3/library/typing.html#typing.Optional
+    "(在Python v3.12版本)")*[*[*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(在Python v3.12版本)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(在Python v3.12版本)")*,* [*Any*](https://docs.python.org/3/library/typing.html#typing.Any
+    "(在Python v3.12版本)")*]**]*) – 可选的示例关键字输入。'
 - en: '**constraints** ([*Optional*](https://docs.python.org/3/library/typing.html#typing.Optional
     "(in Python v3.12)")*[*[*List*](https://docs.python.org/3/library/typing.html#typing.List
     "(in Python v3.12)")*[*[*Constraint*](#torch.export.Constraint "torch.export.Constraint")*]**]*)
@@ -514,9 +744,16 @@
     "torch.export.Constraint") objects that specify the dynamics and the possible
     range of shapes. See [`dynamic_dim()`](#torch.export.dynamic_dim "torch.export.dynamic_dim")
     docstring for examples on how to use it.'
+  id: totrans-99
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**constraints**（[*可选*](https://docs.python.org/3/library/typing.html#typing.Optional
+    "(在Python v3.12版本)")*[*[*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(在Python v3.12版本)")*[*[*Constraint*](#torch.export.Constraint "torch.export.Constraint")*]**]*)
+    – [已弃用：请改用`dynamic_shapes`，请参见下文] 动态参数的约束条件列表，指定它们可能的形状范围。默认情况下，假定输入torch.Tensors的形状是静态的。如果预期输入torch.Tensor具有动态形状，请使用[`dynamic_dim()`](#torch.export.dynamic_dim
+    "torch.export.dynamic_dim")来定义[`Constraint`](#torch.export.Constraint "torch.export.Constraint")对象，指定动态性和可能的形状范围。查看[`dynamic_dim()`](#torch.export.dynamic_dim
+    "torch.export.dynamic_dim")文档字符串，了解如何使用的示例。'
 - en: '**dynamic_shapes** ([*Optional*](https://docs.python.org/3/library/typing.html#typing.Optional
     "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
     "(in Python v3.12)")*[*[*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
@@ -525,16 +762,27 @@
     "(in Python v3.12)")*]**,* [*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
     "(in Python v3.12)")*[*[*Any*](https://docs.python.org/3/library/typing.html#typing.Any
     "(in Python v3.12)")*]**]**]*) –'
+  id: totrans-100
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**dynamic_shapes**（[*可选*](https://docs.python.org/3/library/typing.html#typing.Optional
+    "(在Python v3.12版本)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(在Python v3.12版本)")*[*[*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(在Python v3.12版本)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(在Python v3.12版本)")*,* [*Any*](https://docs.python.org/3/library/typing.html#typing.Any
+    "(在Python v3.12版本)")*]**,* [*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(在Python v3.12版本)")*[*[*Any*](https://docs.python.org/3/library/typing.html#typing.Any
+    "(在Python v3.12版本)")*]**]**]*) –'
 - en: 'Should either be: 1) a dict from argument names of `f` to their dynamic shape
     specifications, 2) a tuple that specifies dynamic shape specifications for each
     input in original order. If you are specifying dynamism on keyword args, you will
     need to pass them in the order that is defined in the original function signature.'
+  id: totrans-101
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 应为：1）从`f`的参数名称到其动态形状规范的字典，2）指定原始顺序中每个输入的动态形状规范的元组。如果您在关键字参数上指定动态性，您需要按照原始函数签名中定义的顺序传递它们。
 - en: The dynamic shape of a tensor argument can be specified as either (1) a dict
     from dynamic dimension indices to [`Dim()`](#torch.export.Dim "torch.export.Dim")
     types, where it is not required to include static dimension indices in this dict,
@@ -543,9 +791,12 @@
     types correspond to dynamic dimensions, and static dimensions are denoted by None.
     Arguments that are dicts or tuples / lists of tensors are recursively specified
     by using mappings or sequences of contained specifications.
+  id: totrans-102
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 张量参数的动态形状可以指定为（1）从动态维度索引到[`Dim()`](#torch.export.Dim "torch.export.Dim")类型的字典，其中在此字典中不需要包含静态维度索引，但当包含时，应将其映射到None；或（2）[`Dim()`](#torch.export.Dim
+    "torch.export.Dim")类型或None的元组/列表，其中[`Dim()`](#torch.export.Dim "torch.export.Dim")类型对应于动态维度，静态维度用None表示。通过使用包含规范的映射或序列，递归指定为字典或张量的元组/列表的参数。
 - en: '**strict** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")) – When enabled (default), the export function will trace
     the program through TorchDynamo which will ensure the soundness of the resulting
@@ -556,533 +807,855 @@
     this does not affect the resulting IR spec to be different and the model will
     be serialized in the same way regardless of what value is passed here. WARNING:
     This option is experimental and use this at your own risk.'
+  id: totrans-103
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**strict**（[*bool*](https://docs.python.org/3/library/functions.html#bool "(in
+    Python v3.12)")） - 启用时（默认），导出函数将通过TorchDynamo跟踪程序，确保生成的图的完整性。否则，导出的程序将不验证嵌入到图中的隐含假设，可能导致原始模型和导出模型之间的行为分歧。当用户需要解决跟踪器中的错误或希望逐步在其模型中启用安全性时，这是有用的。请注意，这不会影响生成的IR规范不同，无论传递什么值，模型都将以相同的方式序列化。警告：此选项是实验性的，请自行承担风险使用。'
 - en: Returns
+  id: totrans-104
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回
 - en: An [`ExportedProgram`](#torch.export.ExportedProgram "torch.export.ExportedProgram")
     containing the traced callable.
+  id: totrans-105
   prefs: []
   type: TYPE_NORMAL
+  zh: 包含跟踪可调用程序的[`ExportedProgram`](#torch.export.ExportedProgram "torch.export.ExportedProgram")。
 - en: Return type
+  id: totrans-106
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*ExportedProgram*](#torch.export.ExportedProgram "torch.export.exported_program.ExportedProgram")'
+  id: totrans-107
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*ExportedProgram*](#torch.export.ExportedProgram "torch.export.exported_program.ExportedProgram")'
 - en: '**Acceptable input/output types**'
+  id: totrans-108
   prefs: []
   type: TYPE_NORMAL
+  zh: '**可接受的输入/输出类型**'
 - en: 'Acceptable types of inputs (for `args` and `kwargs`) and outputs include:'
+  id: totrans-109
   prefs: []
   type: TYPE_NORMAL
+  zh: 可接受的输入（对于`args`和`kwargs`）和输出类型包括：
 - en: Primitive types, i.e. `torch.Tensor`, `int`, `float`, `bool` and `str`.
+  id: totrans-110
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 原始类型，即`torch.Tensor`、`int`、`float`、`bool`和`str`。
 - en: Dataclasses, but they must be registered by calling [`register_dataclass()`](#torch.export.register_dataclass
     "torch.export.register_dataclass") first.
+  id: totrans-111
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 数据类，但必须通过调用[`register_dataclass()`](#torch.export.register_dataclass "torch.export.register_dataclass")进行注册。
 - en: (Nested) Data structures comprising of `dict`, `list`, `tuple`, `namedtuple`
     and `OrderedDict` containing all above types.
+  id: totrans-112
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 包含所有上述类型的`dict`、`list`、`tuple`、`namedtuple`和`OrderedDict`组成的（嵌套）数据结构。
 - en: '[PRE13]'
+  id: totrans-113
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: Warning
+  id: totrans-114
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: (This feature is DEPRECATED. See [`Dim()`](#torch.export.Dim "torch.export.Dim")
     instead.)
+  id: totrans-115
   prefs: []
   type: TYPE_NORMAL
+  zh: （此功能已弃用。请改用[`Dim()`](#torch.export.Dim "torch.export.Dim")。）
 - en: '[`dynamic_dim()`](#torch.export.dynamic_dim "torch.export.dynamic_dim") constructs
     a [`Constraint`](#torch.export.Constraint "torch.export.Constraint") object that
     describes the dynamism of a dimension `index` of tensor `t`. [`Constraint`](#torch.export.Constraint
     "torch.export.Constraint") objects should be passed to `constraints` argument
     of [`export()`](#torch.export.export "torch.export.export").'
+  id: totrans-116
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`dynamic_dim()`](#torch.export.dynamic_dim "torch.export.dynamic_dim")构造一个描述张量`t`的维度`index`的动态性的[`Constraint`](#torch.export.Constraint
+    "torch.export.Constraint")对象。应将[`Constraint`](#torch.export.Constraint "torch.export.Constraint")对象传递给[`export()`](#torch.export.export
+    "torch.export.export")的`constraints`参数。'
 - en: Parameters
+  id: totrans-117
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**t** ([*torch.Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – Example
     input tensor that have dynamic dimension size(s)'
+  id: totrans-118
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**t**（[*torch.Tensor*](tensors.html#torch.Tensor "torch.Tensor")） - 具有动态维度大小的示例输入张量'
 - en: '**index** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
     Python v3.12)")) – Index of dynamic dimension'
+  id: totrans-119
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**index**（[*int*](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)")） - 动态维度的索引'
 - en: Returns
+  id: totrans-120
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回
 - en: A [`Constraint`](#torch.export.Constraint "torch.export.Constraint") object
     that describes shape dynamism. It can be passed to [`export()`](#torch.export.export
     "torch.export.export") so that [`export()`](#torch.export.export "torch.export.export")
     does not assume static size of specified tensor, i.e. keeping it dynamic as a
     symbolic size rather than specializing according to size of example tracing input.
+  id: totrans-121
   prefs: []
   type: TYPE_NORMAL
+  zh: 描述形状动态性的[`Constraint`](#torch.export.Constraint "torch.export.Constraint")对象。它可以传递给[`export()`](#torch.export.export
+    "torch.export.export")，以便[`export()`](#torch.export.export "torch.export.export")不会假定指定张量的静态大小，即保持其动态作为符号大小，而不是根据示例跟踪输入的大小进行特化。
 - en: Specifically [`dynamic_dim()`](#torch.export.dynamic_dim "torch.export.dynamic_dim")
     can be used to express following types of dynamism.
+  id: totrans-122
   prefs: []
   type: TYPE_NORMAL
+  zh: 具体来说，[`dynamic_dim()`](#torch.export.dynamic_dim "torch.export.dynamic_dim")可用于表示以下类型的动态性。
 - en: 'Size of a dimension is dynamic and unbounded:'
+  id: totrans-123
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 维度大小是动态且无限制的：
 - en: '[PRE14]'
+  id: totrans-124
   prefs:
   - PREF_IND
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: 'Size of a dimension is dynamic with a lower bound:'
+  id: totrans-125
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 维度大小是动态的，有一个下限：
 - en: '[PRE15]'
+  id: totrans-126
   prefs:
   - PREF_IND
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: 'Size of a dimension is dynamic with an upper bound:'
+  id: totrans-127
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 维度大小是动态的，有一个上限：
 - en: '[PRE16]'
+  id: totrans-128
   prefs:
   - PREF_IND
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: 'Size of a dimension is dynamic and it is always equal to size of another dynamic
     dimension:'
+  id: totrans-129
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 维度的大小是动态的，它始终等于另一个动态维度的大小：
 - en: '[PRE17]'
+  id: totrans-130
   prefs:
   - PREF_IND
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: Mix and match all types above as long as they do not express conflicting requirements
+  id: totrans-131
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 可以混合匹配上述所有类型，只要它们不表达冲突的要求
 - en: '[PRE18]'
+  id: totrans-132
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: Warning
+  id: totrans-133
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: Under active development, saved files may not be usable in newer versions of
     PyTorch.
+  id: totrans-134
   prefs: []
   type: TYPE_NORMAL
+  zh: 正在积极开发中，保存的文件可能无法在较新版本的PyTorch中使用。
 - en: Saves an [`ExportedProgram`](#torch.export.ExportedProgram "torch.export.ExportedProgram")
     to a file-like object. It can then be loaded using the Python API [`torch.export.load`](#torch.export.load
     "torch.export.load").
+  id: totrans-135
   prefs: []
   type: TYPE_NORMAL
+  zh: 将[`ExportedProgram`](#torch.export.ExportedProgram "torch.export.ExportedProgram")保存到类似文件的对象中。然后可以使用Python
+    API [`torch.export.load`](#torch.export.load "torch.export.load")加载它。
 - en: Parameters
+  id: totrans-136
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**ep** ([*ExportedProgram*](#torch.export.ExportedProgram "torch.export.ExportedProgram"))
     – The exported program to save.'
+  id: totrans-137
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**ep** ([*ExportedProgram*](#torch.export.ExportedProgram "torch.export.ExportedProgram"))
+    – 要保存的导出程序。'
 - en: '**f** (*Union**[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)")*,* [*pathlib.Path*](https://docs.python.org/3/library/pathlib.html#pathlib.Path
     "(in Python v3.12)")*,* [*io.BytesIO*](https://docs.python.org/3/library/io.html#io.BytesIO
     "(in Python v3.12)")) – A file-like object (has to implement write and flush)
     or a string containing a file name.'
+  id: totrans-138
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**f** (*Union**[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*pathlib.Path*](https://docs.python.org/3/library/pathlib.html#pathlib.Path
+    "(in Python v3.12)")*,* [*io.BytesIO*](https://docs.python.org/3/library/io.html#io.BytesIO
+    "(in Python v3.12)")) – 类似文件的对象（必须实现write和flush）或包含文件名的字符串。'
 - en: '**extra_files** (*Optional**[**Dict**[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)")*,* *Any**]**]*) – Map from filename to contents which will
     be stored as part of f.'
+  id: totrans-139
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**extra_files** (*Optional**[**Dict**[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* *Any**]**]*) – 从文件名到内容的映射，这些内容将作为f的一部分存储。'
 - en: '**opset_version** (*Optional**[**Dict**[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)")*,* [*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")*]**]*) – A map of opset names to the version of this opset'
+  id: totrans-140
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**opset_version** (*Optional**[**Dict**[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*]**]*) – opset名称与此opset版本的映射'
 - en: 'Example:'
+  id: totrans-141
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例：
 - en: '[PRE19]'
+  id: totrans-142
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE19]'
 - en: '[PRE20]'
+  id: totrans-143
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE20]'
 - en: Warning
+  id: totrans-144
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: Under active development, saved files may not be usable in newer versions of
     PyTorch.
+  id: totrans-145
   prefs: []
   type: TYPE_NORMAL
+  zh: 正在积极开发中，保存的文件可能无法在较新版本的PyTorch中使用。
 - en: Loads an [`ExportedProgram`](#torch.export.ExportedProgram "torch.export.ExportedProgram")
     previously saved with [`torch.export.save`](#torch.export.save "torch.export.save").
+  id: totrans-146
   prefs: []
   type: TYPE_NORMAL
+  zh: 加载以前使用[`torch.export.save`](#torch.export.save "torch.export.save")保存的[`ExportedProgram`](#torch.export.ExportedProgram
+    "torch.export.ExportedProgram")。
 - en: Parameters
+  id: totrans-147
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**ep** ([*ExportedProgram*](#torch.export.ExportedProgram "torch.export.ExportedProgram"))
     – The exported program to save.'
+  id: totrans-148
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**ep** ([*ExportedProgram*](#torch.export.ExportedProgram "torch.export.ExportedProgram"))
+    – 要保存的导出程序。'
 - en: '**f** (*Union**[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)")*,* [*pathlib.Path*](https://docs.python.org/3/library/pathlib.html#pathlib.Path
     "(in Python v3.12)")*,* [*io.BytesIO*](https://docs.python.org/3/library/io.html#io.BytesIO
     "(in Python v3.12)")) – A file-like object (has to implement write and flush)
     or a string containing a file name.'
+  id: totrans-149
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**f** (*Union**[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*pathlib.Path*](https://docs.python.org/3/library/pathlib.html#pathlib.Path
+    "(in Python v3.12)")*,* [*io.BytesIO*](https://docs.python.org/3/library/io.html#io.BytesIO
+    "(in Python v3.12)")) – 类似文件的对象（必须实现write和flush）或包含文件名的字符串。'
 - en: '**extra_files** (*Optional**[**Dict**[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)")*,* *Any**]**]*) – The extra filenames given in this map would
     be loaded and their content would be stored in the provided map.'
+  id: totrans-150
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**extra_files** (*Optional**[**Dict**[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* *Any**]**]*) – 此映射中提供的额外文件名将被加载，其内容将存储在提供的映射中。'
 - en: '**expected_opset_version** (*Optional**[**Dict**[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)")*,* [*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")*]**]*) – A map of opset names to expected opset versions'
+  id: totrans-151
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**expected_opset_version** (*Optional**[**Dict**[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*]**]*) – opset名称到预期opset版本的映射'
 - en: Returns
+  id: totrans-152
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回
 - en: An [`ExportedProgram`](#torch.export.ExportedProgram "torch.export.ExportedProgram")
     object
+  id: totrans-153
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个[`ExportedProgram`](#torch.export.ExportedProgram "torch.export.ExportedProgram")对象
 - en: Return type
+  id: totrans-154
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*ExportedProgram*](#torch.export.ExportedProgram "torch.export.exported_program.ExportedProgram")'
+  id: totrans-155
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*ExportedProgram*](#torch.export.ExportedProgram "torch.export.exported_program.ExportedProgram")'
 - en: 'Example:'
+  id: totrans-156
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例：
 - en: '[PRE21]'
+  id: totrans-157
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE21]'
 - en: '[PRE22]'
+  id: totrans-158
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE22]'
 - en: Registers a dataclass as a valid input/output type for [`torch.export.export()`](#torch.export.export
     "torch.export.export").
+  id: totrans-159
   prefs: []
   type: TYPE_NORMAL
+  zh: 将数据类注册为[`torch.export.export()`](#torch.export.export "torch.export.export")的有效输入/输出类型。
 - en: Parameters
+  id: totrans-160
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**cls** ([*Type*](https://docs.python.org/3/library/typing.html#typing.Type
     "(in Python v3.12)")*[*[*Any*](https://docs.python.org/3/library/typing.html#typing.Any
     "(in Python v3.12)")*]*) – the dataclass type to register'
+  id: totrans-161
   prefs: []
   type: TYPE_NORMAL
+  zh: '**cls** ([*Type*](https://docs.python.org/3/library/typing.html#typing.Type
+    "(in Python v3.12)")*[*[*Any*](https://docs.python.org/3/library/typing.html#typing.Any
+    "(in Python v3.12)")*]*) – 要注册的数据类类型'
 - en: 'Example:'
+  id: totrans-162
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例：
 - en: '[PRE23]'
+  id: totrans-163
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE23]'
 - en: '[PRE24]'
+  id: totrans-164
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE24]'
 - en: '[`Dim()`](#torch.export.Dim "torch.export.Dim") constructs a type analogous
     to a named symbolic integer with a range. It can be used to describe multiple
     possible values of a dynamic tensor dimension. Note that different dynamic dimensions
     of the same tensor, or of different tensors, can be described by the same type.'
+  id: totrans-165
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`Dim()`](#torch.export.Dim "torch.export.Dim")构造类似于具有范围的命名符号整数的类型。它可用于描述动态张量维度的多个可能值。请注意，同一张量的不同动态维度，或不同张量的动态维度，可以由相同类型描述。'
 - en: Parameters
+  id: totrans-166
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**name** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
     Python v3.12)")) – Human-readable name for debugging.'
+  id: totrans-167
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**name** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
+    Python v3.12)")) – 用于调试的人类可读名称。'
 - en: '**min** (*Optional**[*[*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")*]*) – Minimum possible value of given symbol (inclusive)'
+  id: totrans-168
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**min** (*可选**[*[*整数*](https://docs.python.org/3/library/functions.html#int
+    "(在Python v3.12中)")*]*) – 给定符号的最小可能值（包括）'
 - en: '**max** (*Optional**[*[*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")*]*) – Maximum possible value of given symbol (inclusive)'
+  id: totrans-169
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**max** (*可选**[*[*整数*](https://docs.python.org/3/library/functions.html#int
+    "(在Python v3.12中)")*]*) – 给定符号的最大可能值（包括）'
 - en: Returns
+  id: totrans-170
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回
 - en: A type that can be used in dynamic shape specifications for tensors.
+  id: totrans-171
   prefs: []
   type: TYPE_NORMAL
+  zh: 可以在张量的动态形状规范中使用的类型。
 - en: '[PRE25]'
+  id: totrans-172
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE25]'
 - en: Util to create multiple [`Dim()`](#torch.export.Dim "torch.export.Dim") types.
+  id: totrans-173
   prefs: []
   type: TYPE_NORMAL
+  zh: 用于创建多个[`Dim()`](#torch.export.Dim "torch.export.Dim")类型的工具。
 - en: '[PRE26]'
+  id: totrans-174
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE26]'
 - en: Warning
+  id: totrans-175
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: Do not construct [`Constraint`](#torch.export.Constraint "torch.export.Constraint")
     directly, use [`dynamic_dim()`](#torch.export.dynamic_dim "torch.export.dynamic_dim")
     instead.
+  id: totrans-176
   prefs: []
   type: TYPE_NORMAL
+  zh: 不要直接构造[`Constraint`](#torch.export.Constraint "torch.export.Constraint")，而是使用[`dynamic_dim()`](#torch.export.dynamic_dim
+    "torch.export.dynamic_dim")。
 - en: This represents constraints on input tensor dimensions, e.g., requiring them
     to be fully polymorphic or within some range.
+  id: totrans-177
   prefs: []
   type: TYPE_NORMAL
+  zh: 这代表了对输入张量维度的约束，例如，要求它们是完全多态的或在某个范围内。
 - en: '[PRE27]'
+  id: totrans-178
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE27]'
 - en: Package of a program from [`export()`](#torch.export.export "torch.export.export").
     It contains an [`torch.fx.Graph`](fx.html#torch.fx.Graph "torch.fx.Graph") that
     represents Tensor computation, a state_dict containing tensor values of all lifted
     parameters and buffers, and various metadata.
+  id: totrans-179
   prefs: []
   type: TYPE_NORMAL
+  zh: 从[`export()`](#torch.export.export "torch.export.export")导出的程序的包。它包含一个表示张量计算的torch.fx.Graph，一个包含所有提升参数和缓冲区的张量值的state_dict，以及各种元数据。
 - en: You can call an ExportedProgram like the original callable traced by [`export()`](#torch.export.export
     "torch.export.export") with the same calling convention.
+  id: totrans-180
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可以像使用[`export()`](#torch.export.export "torch.export.export")跟踪的原始可调用对象一样调用ExportedProgram，使用相同的调用约定。
 - en: To perform transformations on the graph, use `.module` property to access an
     [`torch.fx.GraphModule`](fx.html#torch.fx.GraphModule "torch.fx.GraphModule").
     You can then use [FX transformation](https://pytorch.org/docs/stable/fx.html#writing-transformations)
     to rewrite the graph. Afterwards, you can simply use [`export()`](#torch.export.export
     "torch.export.export") again to construct a correct ExportedProgram.
+  id: totrans-181
   prefs: []
   type: TYPE_NORMAL
+  zh: 要对图进行转换，请使用`.module`属性来访问[`torch.fx.GraphModule`](fx.html#torch.fx.GraphModule
+    "torch.fx.GraphModule")。然后，您可以使用[FX转换](https://pytorch.org/docs/stable/fx.html#writing-transformations)来重写图。之后，您可以简单地再次使用[`export()`](#torch.export.export
+    "torch.export.export")来构建一个正确的ExportedProgram。
 - en: '[PRE28]'
+  id: totrans-182
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE28]'
 - en: Returns a self contained GraphModule with all the parameters/buffers inlined.
+  id: totrans-183
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回一个包含所有参数/缓冲区的自包含GraphModule。
 - en: Return type
+  id: totrans-184
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*Module*](generated/torch.nn.Module.html#torch.nn.Module "torch.nn.modules.module.Module")'
+  id: totrans-185
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*模块*](generated/torch.nn.Module.html#torch.nn.Module "torch.nn.modules.module.Module")'
 - en: '[PRE29]'
+  id: totrans-186
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE29]'
 - en: Returns an iterator over original module buffers.
+  id: totrans-187
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回一个迭代器，遍历原始模块缓冲区。
 - en: Warning
+  id: totrans-188
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: This API is experimental and is *NOT* backward-compatible.
+  id: totrans-189
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个API是实验性的，*不*向后兼容。
 - en: Return type
+  id: totrans-190
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*Iterator*](https://docs.python.org/3/library/typing.html#typing.Iterator
     "(in Python v3.12)")[[*Tensor*](tensors.html#torch.Tensor "torch.Tensor")]'
+  id: totrans-191
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*迭代器*](https://docs.python.org/3/library/typing.html#typing.Iterator "(在Python
+    v3.12中)")[[*张量*](tensors.html#torch.Tensor "torch.Tensor")]'
 - en: '[PRE30]'
+  id: totrans-192
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE30]'
 - en: Returns an iterator over original module buffers, yielding both the name of
     the buffer as well as the buffer itself.
+  id: totrans-193
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回一个迭代器，遍历原始模块缓冲区，同时产生缓冲区的名称和缓冲区本身。
 - en: Warning
+  id: totrans-194
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: This API is experimental and is *NOT* backward-compatible.
+  id: totrans-195
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个API是实验性的，*不*向后兼容。
 - en: Return type
+  id: totrans-196
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*Iterator*](https://docs.python.org/3/library/typing.html#typing.Iterator
     "(in Python v3.12)")[[*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
     "(in Python v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)"), [*Tensor*](tensors.html#torch.Tensor "torch.Tensor")]]'
+  id: totrans-197
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*迭代器*](https://docs.python.org/3/library/typing.html#typing.Iterator "(在Python
+    v3.12中)")[[*元组*](https://docs.python.org/3/library/typing.html#typing.Tuple "(在Python
+    v3.12中)")[[str](https://docs.python.org/3/library/stdtypes.html#str "(在Python
+    v3.12中)"), [*张量*](tensors.html#torch.Tensor "torch.Tensor")]]'
 - en: '[PRE31]'
+  id: totrans-198
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE31]'
 - en: Returns an iterator over original module’s parameters.
+  id: totrans-199
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回一个迭代器，遍历原始模块的参数。
 - en: Warning
+  id: totrans-200
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: This API is experimental and is *NOT* backward-compatible.
+  id: totrans-201
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个API是实验性的，*不*向后兼容。
 - en: Return type
+  id: totrans-202
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*Iterator*](https://docs.python.org/3/library/typing.html#typing.Iterator
     "(in Python v3.12)")[[*Parameter*](generated/torch.nn.parameter.Parameter.html#torch.nn.parameter.Parameter
     "torch.nn.parameter.Parameter")]'
+  id: totrans-203
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*迭代器*](https://docs.python.org/3/library/typing.html#typing.Iterator "(在Python
+    v3.12中)")[[*参数*](generated/torch.nn.parameter.Parameter.html#torch.nn.parameter.Parameter
+    "torch.nn.parameter.Parameter")]'
 - en: '[PRE32]'
+  id: totrans-204
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE32]'
 - en: Returns an iterator over original module parameters, yielding both the name
     of the parameter as well as the parameter itself.
+  id: totrans-205
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回一个迭代器，遍历原始模块参数，同时产生参数的名称和参数本身。
 - en: Warning
+  id: totrans-206
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: This API is experimental and is *NOT* backward-compatible.
+  id: totrans-207
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个API是实验性的，*不*向后兼容。
 - en: Return type
+  id: totrans-208
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*Iterator*](https://docs.python.org/3/library/typing.html#typing.Iterator
     "(in Python v3.12)")[[*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
     "(in Python v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)"), [*Parameter*](generated/torch.nn.parameter.Parameter.html#torch.nn.parameter.Parameter
     "torch.nn.parameter.Parameter")]]'
+  id: totrans-209
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*迭代器*](https://docs.python.org/3/library/typing.html#typing.Iterator "(在Python
+    v3.12中)")[[*元组*](https://docs.python.org/3/library/typing.html#typing.Tuple "(在Python
+    v3.12中)")[[str](https://docs.python.org/3/library/stdtypes.html#str "(在Python
+    v3.12中)"), [*参数*](generated/torch.nn.parameter.Parameter.html#torch.nn.parameter.Parameter
+    "torch.nn.parameter.Parameter")]]'
 - en: '[PRE33]'
+  id: totrans-210
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE33]'
 - en: '[PRE34]'
+  id: totrans-211
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE34]'
 - en: '[`ExportGraphSignature`](#torch.export.ExportGraphSignature "torch.export.ExportGraphSignature")
     models the input/output signature of Export Graph, which is a fx.Graph with stronger
     invariants gurantees.'
+  id: totrans-212
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`ExportGraphSignature`](#torch.export.ExportGraphSignature "torch.export.ExportGraphSignature")
+    模型化导出图的输入/输出签名，这是一个具有更强不变性保证的fx.Graph。'
 - en: Export Graph is functional and does not access “states” like parameters or buffers
     within the graph via `getattr` nodes. Instead, [`export()`](#torch.export.export
     "torch.export.export") gurantees that parameters, buffers, and constant tensors
     are lifted out of the graph as inputs. Similarly, any mutations to buffers are
     not included in the graph either, instead the updated values of mutated buffers
     are modeled as additional outputs of Export Graph.
+  id: totrans-213
   prefs: []
   type: TYPE_NORMAL
+  zh: 导出图是功能性的，不会通过`getattr`节点访问图中的“状态”（如参数或缓冲区）。相反，[`export()`](#torch.export.export
+    "torch.export.export")保证参数、缓冲区和常量张量被提取出图形作为输入。同样，对缓冲区的任何突变也不包括在图中，而是将突变缓冲区的更新值建模为导出图的附加输出。
 - en: 'The ordering of all inputs and outputs are:'
+  id: totrans-214
   prefs: []
   type: TYPE_NORMAL
+  zh: 所有输入和输出的顺序是：
 - en: '[PRE35]'
+  id: totrans-215
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE35]'
 - en: 'e.g. If following module is exported:'
+  id: totrans-216
   prefs: []
   type: TYPE_NORMAL
+  zh: 例如，如果以下模块被导出：
 - en: '[PRE36]'
+  id: totrans-217
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE36]'
 - en: 'Resulting Graph would be:'
+  id: totrans-218
   prefs: []
   type: TYPE_NORMAL
+  zh: 生成的图将是：
 - en: '[PRE37]'
+  id: totrans-219
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE37]'
 - en: 'Resulting ExportGraphSignature would be:'
+  id: totrans-220
   prefs: []
   type: TYPE_NORMAL
+  zh: 生成的ExportGraphSignature将是：
 - en: '[PRE38]'
+  id: totrans-221
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE38]'
 - en: '[PRE39]'
+  id: totrans-222
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE39]'
 - en: '[PRE40]'
+  id: totrans-223
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE40]'
 - en: '[PRE41]'
+  id: totrans-224
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE41]'
 - en: An enumeration.
+  id: totrans-225
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个枚举。
 - en: '[PRE42]'
+  id: totrans-226
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE42]'
 - en: '[PRE43]'
+  id: totrans-227
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE43]'
 - en: An enumeration.
+  id: totrans-228
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个枚举。
 - en: '[PRE44]'
+  id: totrans-229
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE44]'
 - en: '[PRE45]'
+  id: totrans-230
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE45]'
 - en: '[`ExportGraphSignature`](#torch.export.graph_signature.ExportGraphSignature
     "torch.export.graph_signature.ExportGraphSignature") models the input/output signature
     of Export Graph, which is a fx.Graph with stronger invariants gurantees.'
+  id: totrans-231
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`ExportGraphSignature`](#torch.export.graph_signature.ExportGraphSignature
+    "torch.export.graph_signature.ExportGraphSignature")模拟了导出图的输入/输出签名，这是一个具有更强不变性保证的fx.Graph。'
 - en: Export Graph is functional and does not access “states” like parameters or buffers
     within the graph via `getattr` nodes. Instead, `export()` gurantees that parameters,
     buffers, and constant tensors are lifted out of the graph as inputs. Similarly,
     any mutations to buffers are not included in the graph either, instead the updated
     values of mutated buffers are modeled as additional outputs of Export Graph.
+  id: totrans-232
   prefs: []
   type: TYPE_NORMAL
+  zh: 导出图是功能性的，不会通过`getattr`节点访问图中的“状态”（如参数或缓冲区）。相反，`export()`保证参数、缓冲区和常量张量被提取出图形作为输入。同样，对缓冲区的任何突变也不包括在图中，而是将突变缓冲区的更新值建模为导出图的附加输出。
 - en: 'The ordering of all inputs and outputs are:'
+  id: totrans-233
   prefs: []
   type: TYPE_NORMAL
+  zh: 所有输入和输出的顺序是：
 - en: '[PRE46]'
+  id: totrans-234
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE46]'
 - en: 'e.g. If following module is exported:'
+  id: totrans-235
   prefs: []
   type: TYPE_NORMAL
+  zh: 例如，如果以下模块被导出：
 - en: '[PRE47]'
+  id: totrans-236
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE47]'
 - en: 'Resulting Graph would be:'
+  id: totrans-237
   prefs: []
   type: TYPE_NORMAL
+  zh: 生成的图将是：
 - en: '[PRE48]'
+  id: totrans-238
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE48]'
 - en: 'Resulting ExportGraphSignature would be:'
+  id: totrans-239
   prefs: []
   type: TYPE_NORMAL
+  zh: 生成的ExportGraphSignature将是：
 - en: '[PRE49]'
+  id: totrans-240
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE49]'
 - en: '[PRE50]'
+  id: totrans-241
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE50]'
 - en: Replace all uses of the old name with new name in the signature.
+  id: totrans-242
   prefs: []
   type: TYPE_NORMAL
+  zh: 在签名中用新名称替换所有旧名称的用法。

@@ -424,6 +424,7 @@
   id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: 自动求导函数是`torch.autograd.Function`的子类。确保`backward`以与`forward`相同的自动转换状态执行。更多细节请参见[示例页面](notes/amp_examples.html#amp-custom-examples)。
 - en: '[PRE11]'
   id: totrans-62
   prefs: []
@@ -435,6 +436,8 @@
   id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: '请参见`torch.autocast`。`torch.cpu.amp.autocast(args...)`等同于`torch.autocast("cpu",
+    args...)`  ## [梯度缩放](#id5)[](#gradient-scaling "跳转到此标题")'
 - en: If the forward pass for a particular op has `float16` inputs, the backward pass
     for that op will produce `float16` gradients. Gradient values with small magnitudes
     may not be representable in `float16`. These values will flush to zero (“underflow”),
@@ -442,6 +445,7 @@
   id: totrans-64
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果特定操作的前向传递具有`float16`输入，则该操作的反向传递将产生`float16`梯度。具有较小幅度的梯度值可能无法在`float16`中表示。这些值将刷新为零（“下溢”），因此相应参数的更新将丢失。
 - en: To prevent underflow, “gradient scaling” multiplies the network’s loss(es) by
     a scale factor and invokes a backward pass on the scaled loss(es). Gradients flowing
     backward through the network are then scaled by the same factor. In other words,
@@ -449,16 +453,19 @@
   id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了防止下溢，“梯度缩放”会将网络的损失乘以一个比例因子，并对缩放后的损失进行反向传播。通过网络向后传播的梯度然后会乘以相同的因子进行缩放。换句话说，梯度值具有更大的幅度，因此它们不会刷新为零。
 - en: Each parameter’s gradient (`.grad` attribute) should be unscaled before the
     optimizer updates the parameters, so the scale factor does not interfere with
     the learning rate.
   id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: 每个参数的梯度（`.grad`属性）在优化器更新参数之前应该是未缩放的，以便比例因子不会影响学习率。
 - en: Note
   id: totrans-67
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: AMP/fp16 may not work for every model! For example, most bf16-pretrained models
     cannot operate in the fp16 numerical range of max 65504 and will cause gradients
     to overflow instead of underflow. In this case, the scale factor may decrease
@@ -469,6 +476,7 @@
   id: totrans-68
   prefs: []
   type: TYPE_NORMAL
+  zh: AMP/fp16可能并不适用于每个模型！例如，大多数bf16预训练模型无法在最大65504的fp16数值范围内运行，会导致梯度溢出而不是下溢。在这种情况下，比例因子可能会减少到1以下，以尝试将梯度带到fp16动态范围内可表示的数字。虽然人们可能期望比例始终大于1，但我们的GradScaler并不保证这一点以保持性能。如果在使用AMP/fp16时遇到损失或梯度中的NaN，请验证您的模型是否兼容。
 - en: '[PRE12]'
   id: totrans-69
   prefs: []
@@ -478,29 +486,35 @@
   id: totrans-70
   prefs: []
   type: TYPE_NORMAL
+  zh: '`GradScaler`的一个实例`scaler`。'
 - en: Helps perform the steps of gradient scaling conveniently.
   id: totrans-71
   prefs: []
   type: TYPE_NORMAL
+  zh: 帮助方便地执行梯度缩放的步骤。
 - en: '`scaler.scale(loss)` multiplies a given loss by `scaler`’s current scale factor.'
   id: totrans-72
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`scaler.scale(loss)`会将给定的损失乘以`scaler`当前的比例因子。'
 - en: '`scaler.step(optimizer)` safely unscales gradients and calls `optimizer.step()`.'
   id: totrans-73
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`scaler.step(optimizer)`会安全地取消梯度缩放并调用`optimizer.step()`。'
 - en: '`scaler.update()` updates `scaler`’s scale factor.'
   id: totrans-74
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`scaler.update()`会更新`scaler`的比例因子。'
 - en: 'Example:'
   id: totrans-75
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例：
 - en: '[PRE13]'
   id: totrans-76
   prefs: []
@@ -512,6 +526,7 @@
   id: totrans-77
   prefs: []
   type: TYPE_NORMAL
+  zh: 查看[自动混合精度示例](notes/amp_examples.html#amp-examples)以获取更复杂情况下（包括自动转换）的用法，如梯度裁剪、梯度累积、梯度惩罚和多个损失/优化器。
 - en: '`scaler` dynamically estimates the scale factor each iteration. To minimize
     gradient underflow, a large scale factor should be used. However, `float16` values
     can “overflow” (become inf or NaN) if the scale factor is too large. Therefore,
@@ -523,6 +538,7 @@
   id: totrans-78
   prefs: []
   type: TYPE_NORMAL
+  zh: '`scaler`会动态估计每次迭代的比例因子。为了最小化梯度下溢，应该使用一个较大的比例因子。但是，如果比例因子太大，`float16`值可能会“溢出”（变为无穷大或NaN）。因此，最佳比例因子是可以在不产生无穷大或NaN梯度值的情况下使用的最大因子。`scaler`通过在每次`scaler.step(optimizer)`（或可选的单独`scaler.unscale_(optimizer)`，参见`unscale_()`）期间检查梯度中的无穷大和NaN来随时间近似最佳比例因子。'
 - en: If infs/NaNs are found, `scaler.step(optimizer)` skips the underlying `optimizer.step()`
     (so the params themselves remain uncorrupted) and `update()` multiplies the scale
     by `backoff_factor`.
@@ -530,6 +546,7 @@
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 如果发现无穷大/NaN，`scaler.step(optimizer)`会跳过底层的`optimizer.step()`（因此参数本身保持不受损坏），`update()`会将比例乘以`backoff_factor`。
 - en: If no infs/NaNs are found, `scaler.step(optimizer)` runs the underlying `optimizer.step()`
     as usual. If `growth_interval` unskipped iterations occur consecutively, `update()`
     multiplies the scale by `growth_factor`.
@@ -537,6 +554,7 @@
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 如果没有发现无穷大/NaN，`scaler.step(optimizer)`会像往常一样运行底层的`optimizer.step()`。如果连续发生`growth_interval`个未跳过的迭代，`update()`会将比例乘以`growth_factor`。
 - en: The scale factor often causes infs/NaNs to appear in gradients for the first
     few iterations as its value calibrates. `scaler.step` will skip the underlying
     `optimizer.step()` for these iterations. After that, step skipping should occur
@@ -544,16 +562,19 @@
   id: totrans-81
   prefs: []
   type: TYPE_NORMAL
+  zh: 比例因子通常会导致在前几次迭代中梯度中出现无穷大/NaN，因为其值在校准。对于这些迭代，`scaler.step`会跳过底层的`optimizer.step()`。之后，跳过步骤应该很少发生（每几百或几千次迭代一次）。
 - en: Parameters
   id: totrans-82
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**init_scale** ([*float*](https://docs.python.org/3/library/functions.html#float
     "(in Python v3.12)")*,* *optional**,* *default=2.**16*) – Initial scale factor.'
   id: totrans-83
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**init_scale**（*float*，*可选*，*默认=2.**16*）- 初始比例因子。'
 - en: '**growth_factor** ([*float*](https://docs.python.org/3/library/functions.html#float
     "(in Python v3.12)")*,* *optional**,* *default=2.0*) – Factor by which the scale
     is multiplied during [`update()`](#torch.cuda.amp.GradScaler.update "torch.cuda.amp.GradScaler.update")
@@ -562,6 +583,9 @@
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**growth_factor** ([*float*](https://docs.python.org/3/library/functions.html#float
+    "(在Python v3.12中)")*,* *可选**,* *默认=2.0*) – 如果在`growth_interval`连续迭代中没有inf/NaN梯度，则在[`update()`](#torch.cuda.amp.GradScaler.update
+    "torch.cuda.amp.GradScaler.update")期间将缩放乘以的因子。'
 - en: '**backoff_factor** ([*float*](https://docs.python.org/3/library/functions.html#float
     "(in Python v3.12)")*,* *optional**,* *default=0.5*) – Factor by which the scale
     is multiplied during [`update()`](#torch.cuda.amp.GradScaler.update "torch.cuda.amp.GradScaler.update")
@@ -570,6 +594,9 @@
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**backoff_factor** ([*float*](https://docs.python.org/3/library/functions.html#float
+    "(在Python v3.12中)")*,* *可选**,* *默认=0.5*) – 如果在迭代中出现inf/NaN梯度，则在[`update()`](#torch.cuda.amp.GradScaler.update
+    "torch.cuda.amp.GradScaler.update")期间将缩放乘以的因子。'
 - en: '**growth_interval** ([*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")*,* *optional**,* *default=2000*) – Number of consecutive
     iterations without inf/NaN gradients that must occur for the scale to be multiplied
@@ -578,6 +605,8 @@
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**growth_interval** ([*int*](https://docs.python.org/3/library/functions.html#int
+    "(在Python v3.12中)")*,* *可选**,* *默认=2000*) – 必须在没有inf/NaN梯度的连续迭代中发生的次数，以便将比例乘以`growth_factor`。'
 - en: '**enabled** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")*,* *optional*) – If `False`, disables gradient scaling. [`step()`](#torch.cuda.amp.GradScaler.step
     "torch.cuda.amp.GradScaler.step") simply invokes the underlying `optimizer.step()`,
@@ -586,6 +615,9 @@
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**enabled** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(在Python v3.12中)")*,* *可选*) – 如果为`False`，则禁用梯度缩放。[`step()`](#torch.cuda.amp.GradScaler.step
+    "torch.cuda.amp.GradScaler.step")只会调用底层的`optimizer.step()`，其他方法将变为无操作。默认值：`True`'
 - en: '[PRE14]'
   id: totrans-88
   prefs: []
@@ -595,15 +627,18 @@
   id: totrans-89
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回一个包含缩放退避因子的Python浮点数。
 - en: Return type
   id: totrans-90
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[float](https://docs.python.org/3/library/functions.html#float "(in Python
     v3.12)")'
   id: totrans-91
   prefs: []
   type: TYPE_NORMAL
+  zh: '[float](https://docs.python.org/3/library/functions.html#float "(在Python v3.12中)")'
 - en: '[PRE15]'
   id: totrans-92
   prefs: []
@@ -613,15 +648,18 @@
   id: totrans-93
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回一个包含增长因子的Python浮点数。
 - en: Return type
   id: totrans-94
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[float](https://docs.python.org/3/library/functions.html#float "(in Python
     v3.12)")'
   id: totrans-95
   prefs: []
   type: TYPE_NORMAL
+  zh: '[float](https://docs.python.org/3/library/functions.html#float "(在Python v3.12中)")'
 - en: '[PRE16]'
   id: totrans-96
   prefs: []
@@ -631,14 +669,17 @@
   id: totrans-97
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回一个包含增长间隔的Python整数。
 - en: Return type
   id: totrans-98
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[int](https://docs.python.org/3/library/functions.html#int "(in Python v3.12)")'
   id: totrans-99
   prefs: []
   type: TYPE_NORMAL
+  zh: '[int](https://docs.python.org/3/library/functions.html#int "(在Python v3.12中)")'
 - en: '[PRE17]'
   id: totrans-100
   prefs: []
@@ -648,24 +689,30 @@
   id: totrans-101
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回一个包含当前比例的Python浮点数，如果禁用了缩放，则返回1.0。
 - en: Warning
   id: totrans-102
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: '[`get_scale()`](#torch.cuda.amp.GradScaler.get_scale "torch.cuda.amp.GradScaler.get_scale")
     incurs a CPU-GPU sync.'
   id: totrans-103
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`get_scale()`](#torch.cuda.amp.GradScaler.get_scale "torch.cuda.amp.GradScaler.get_scale")
+    会导致CPU-GPU同步。'
 - en: Return type
   id: totrans-104
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[float](https://docs.python.org/3/library/functions.html#float "(in Python
     v3.12)")'
   id: totrans-105
   prefs: []
   type: TYPE_NORMAL
+  zh: '[float](https://docs.python.org/3/library/functions.html#float "(在Python v3.12中)")'
 - en: '[PRE18]'
   id: totrans-106
   prefs: []
@@ -675,14 +722,17 @@
   id: totrans-107
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回一个指示此实例是否已启用的布尔值。
 - en: Return type
   id: totrans-108
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[bool](https://docs.python.org/3/library/functions.html#bool "(in Python v3.12)")'
   id: totrans-109
   prefs: []
   type: TYPE_NORMAL
+  zh: '[bool](https://docs.python.org/3/library/functions.html#bool "(在Python v3.12中)")'
 - en: '[PRE19]'
   id: totrans-110
   prefs: []
@@ -692,21 +742,27 @@
   id: totrans-111
   prefs: []
   type: TYPE_NORMAL
+  zh: 加载缩放器状态。
 - en: If this instance is disabled, [`load_state_dict()`](#torch.cuda.amp.GradScaler.load_state_dict
     "torch.cuda.amp.GradScaler.load_state_dict") is a no-op.
   id: totrans-112
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果此实例已禁用，则[`load_state_dict()`](#torch.cuda.amp.GradScaler.load_state_dict "torch.cuda.amp.GradScaler.load_state_dict")将不执行任何操作。
 - en: Parameters
   id: totrans-113
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**state_dict** ([*dict*](https://docs.python.org/3/library/stdtypes.html#dict
     "(in Python v3.12)")) – scaler state. Should be an object returned from a call
     to [`state_dict()`](#torch.cuda.amp.GradScaler.state_dict "torch.cuda.amp.GradScaler.state_dict").'
   id: totrans-114
   prefs: []
   type: TYPE_NORMAL
+  zh: '**state_dict** ([*dict*](https://docs.python.org/3/library/stdtypes.html#dict
+    "(在Python v3.12中)")) – 缩放器状态。应该是从调用[`state_dict()`](#torch.cuda.amp.GradScaler.state_dict
+    "torch.cuda.amp.GradScaler.state_dict")返回的对象。'
 - en: '[PRE20]'
   id: totrans-115
   prefs: []
@@ -731,20 +787,25 @@
   id: totrans-119
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过比例因子将张量或张量列表进行乘法（“缩放”）。
 - en: Returns scaled outputs. If this instance of [`GradScaler`](#torch.cuda.amp.GradScaler
     "torch.cuda.amp.GradScaler") is not enabled, outputs are returned unmodified.
   id: totrans-120
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回缩放后的输出。如果此[`GradScaler`](#torch.cuda.amp.GradScaler "torch.cuda.amp.GradScaler")实例未启用，则输出将保持不变。
 - en: Parameters
   id: totrans-121
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**outputs** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor") *or* *iterable*
     *of* *Tensors*) – Outputs to scale.'
   id: totrans-122
   prefs: []
   type: TYPE_NORMAL
+  zh: '**outputs** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor") *或* *可迭代*
+    *的* *Tensors*) – 要缩放的输出。'
 - en: '[PRE24]'
   id: totrans-123
   prefs: []
@@ -754,15 +815,19 @@
   id: totrans-124
   prefs: []
   type: TYPE_NORMAL
+  zh: 设置一个新的退避因子。
 - en: Parameters
   id: totrans-125
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**new_scale** ([*float*](https://docs.python.org/3/library/functions.html#float
     "(in Python v3.12)")) – Value to use as the new scale backoff factor.'
   id: totrans-126
   prefs: []
   type: TYPE_NORMAL
+  zh: '**new_scale** ([*float*](https://docs.python.org/3/library/functions.html#float
+    "(在Python v3.12中)")) – 用作新的缩放退避因子的值。'
 - en: '[PRE25]'
   id: totrans-127
   prefs: []
@@ -772,15 +837,19 @@
   id: totrans-128
   prefs: []
   type: TYPE_NORMAL
+  zh: 设置一个新的增长因子。
 - en: Parameters
   id: totrans-129
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**new_scale** ([*float*](https://docs.python.org/3/library/functions.html#float
     "(in Python v3.12)")) – Value to use as the new scale growth factor.'
   id: totrans-130
   prefs: []
   type: TYPE_NORMAL
+  zh: '**new_scale** ([*float*](https://docs.python.org/3/library/functions.html#float
+    "(在Python v3.12中)")) – 用作新的增长因子的值。'
 - en: '[PRE26]'
   id: totrans-131
   prefs: []
@@ -790,15 +859,19 @@
   id: totrans-132
   prefs: []
   type: TYPE_NORMAL
+  zh: 设置一个新的增长间隔。
 - en: Parameters
   id: totrans-133
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**new_interval** ([*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")) – Value to use as the new growth interval.'
   id: totrans-134
   prefs: []
   type: TYPE_NORMAL
+  zh: '**new_interval** ([*int*](https://docs.python.org/3/library/functions.html#int
+    "(在Python v3.12中)")) – 用作新增长间隔的值。'
 - en: '[PRE27]'
   id: totrans-135
   prefs: []
@@ -809,30 +882,37 @@
   id: totrans-136
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回一个[`dict`](https://docs.python.org/3/library/stdtypes.html#dict "(在Python
+    v3.12中)")形式的缩放器状态。
 - en: 'It contains five entries:'
   id: totrans-137
   prefs: []
   type: TYPE_NORMAL
+  zh: 它包含五个条目：
 - en: '`"scale"` - a Python float containing the current scale'
   id: totrans-138
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`"scale"` - 包含当前比例的Python浮点数'
 - en: '`"growth_factor"` - a Python float containing the current growth factor'
   id: totrans-139
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`"growth_factor"` - 包含当前增长因子的Python浮点数'
 - en: '`"backoff_factor"` - a Python float containing the current backoff factor'
   id: totrans-140
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`"backoff_factor"` - 包含当前退避因子的Python浮点数'
 - en: '`"growth_interval"` - a Python int containing the current growth interval'
   id: totrans-141
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`"growth_interval"` - 包含当前增长间隔的Python整数'
 - en: '`"_growth_tracker"` - a Python int containing the number of recent consecutive
     unskipped steps.'
   id: totrans-142
@@ -1218,12 +1298,22 @@
   id: totrans-196
   prefs: []
   type: TYPE_NORMAL
+  zh: '`__pow__`, `__rdiv__`, `__rpow__`, `__rtruediv__`, `acos`, `asin`, `binary_cross_entropy_with_logits`,
+    `cosh`, `cosine_embedding_loss`, `cdist`, `cosine_similarity`, `cross_entropy`,
+    `cumprod`, `cumsum`, `dist`, `erfinv`, `exp`, `expm1`, `group_norm`, `hinge_embedding_loss`,
+    `kl_div`, `l1_loss`, `layer_norm`, `log`, `log_softmax`, `log10`, `log1p`, `log2`,
+    `margin_ranking_loss`, `mse_loss`, `multilabel_margin_loss`, `multi_margin_loss`,
+    `nll_loss`, `norm`, `normalize`, `pdist`, `poisson_nll_loss`, `pow`, `prod`, `reciprocal`,
+    `rsqrt`, `sinh`, `smooth_l1_loss`, `soft_margin_loss`, `softmax`, `softmin`, `softplus`,
+    `sum`, `renorm`, `tan`, `triplet_margin_loss`'
 - en: '[CUDA Ops that promote to the widest input type](#id11)[](#cuda-ops-that-promote-to-the-widest-input-type
     "Permalink to this heading")'
   id: totrans-197
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: '[CUDA操作会将输入类型提升为最宽的类型](#id11)[](#cuda-ops-that-promote-to-the-widest-input-type
+    "跳转到此标题")'
 - en: These ops don’t require a particular dtype for stability, but take multiple
     inputs and require that the inputs’ dtypes match. If all of the inputs are `float16`,
     the op runs in `float16`. If any of the inputs is `float32`, autocast casts all
@@ -1231,11 +1321,14 @@
   id: totrans-198
   prefs: []
   type: TYPE_NORMAL
+  zh: 这些操作不需要特定的dtype来保持稳定性，但需要多个输入并要求输入的dtype匹配。如果所有输入都是`float16`，则操作将在`float16`中运行。如果任何输入是`float32`，自动转换将所有输入转换为`float32`并在`float32`中运行操作。
 - en: '`addcdiv`, `addcmul`, `atan2`, `bilinear`, `cross`, `dot`, `grid_sample`, `index_put`,
     `scatter_add`, `tensordot`'
   id: totrans-199
   prefs: []
   type: TYPE_NORMAL
+  zh: '`addcdiv`, `addcmul`, `atan2`, `bilinear`, `cross`, `dot`, `grid_sample`, `index_put`,
+    `scatter_add`, `tensordot`'
 - en: Some ops not listed here (e.g., binary ops like `add`) natively promote inputs
     without autocasting’s intervention. If inputs are a mixture of `float16` and `float32`,
     these ops run in `float32` and produce `float32` output, regardless of whether
@@ -1243,12 +1336,15 @@
   id: totrans-200
   prefs: []
   type: TYPE_NORMAL
+  zh: 这里未列出的一些操作（例如，`add`等二元操作）会在没有自动转换干预的情况下自然提升输入。如果输入是`float16`和`float32`的混合，这些操作将在`float32`中运行并产生`float32`输出，无论自动转换是否启用。
 - en: '[Prefer `binary_cross_entropy_with_logits` over `binary_cross_entropy`](#id12)[](#prefer-binary-cross-entropy-with-logits-over-binary-cross-entropy
     "Permalink to this heading")'
   id: totrans-201
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: '[优先使用`binary_cross_entropy_with_logits`而不是`binary_cross_entropy`](#id12)[](#prefer-binary-cross-entropy-with-logits-over-binary-cross-entropy
+    "跳转到此标题")'
 - en: The backward passes of [`torch.nn.functional.binary_cross_entropy()`](generated/torch.nn.functional.binary_cross_entropy.html#torch.nn.functional.binary_cross_entropy
     "torch.nn.functional.binary_cross_entropy") (and [`torch.nn.BCELoss`](generated/torch.nn.BCELoss.html#torch.nn.BCELoss
     "torch.nn.BCELoss"), which wraps it) can produce gradients that aren’t representable
@@ -1260,6 +1356,9 @@
   id: totrans-202
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`torch.nn.functional.binary_cross_entropy()`](generated/torch.nn.functional.binary_cross_entropy.html#torch.nn.functional.binary_cross_entropy
+    "torch.nn.functional.binary_cross_entropy")的反向传播（以及包装它的[`torch.nn.BCELoss`](generated/torch.nn.BCELoss.html#torch.nn.BCELoss
+    "torch.nn.BCELoss")）可能会产生在`float16`中无法表示的梯度。在启用自动转换的区域中，前向输入可能是`float16`，这意味着反向梯度必须在`float16`中表示（将`float16`前向输入自动转换为`float32`是没有帮助的，因为这种转换在反向传播中必须被逆转）。因此，在启用自动转换的区域中，`binary_cross_entropy`和`BCELoss`会引发错误。'
 - en: 'Many models use a sigmoid layer right before the binary cross entropy layer.
     In this case, combine the two layers using [`torch.nn.functional.binary_cross_entropy_with_logits()`](generated/torch.nn.functional.binary_cross_entropy_with_logits.html#torch.nn.functional.binary_cross_entropy_with_logits
     "torch.nn.functional.binary_cross_entropy_with_logits") or [`torch.nn.BCEWithLogitsLoss`](generated/torch.nn.BCEWithLogitsLoss.html#torch.nn.BCEWithLogitsLoss
@@ -1269,6 +1368,10 @@
   id: totrans-203
   prefs: []
   type: TYPE_NORMAL
+  zh: '许多模型在二元交叉熵层之前使用一个sigmoid层。在这种情况下，使用[`torch.nn.functional.binary_cross_entropy_with_logits()`](generated/torch.nn.functional.binary_cross_entropy_with_logits.html#torch.nn.functional.binary_cross_entropy_with_logits
+    "torch.nn.functional.binary_cross_entropy_with_logits")或[`torch.nn.BCEWithLogitsLoss`](generated/torch.nn.BCEWithLogitsLoss.html#torch.nn.BCEWithLogitsLoss
+    "torch.nn.BCEWithLogitsLoss")结合这两个层。`binary_cross_entropy_with_logits`和`BCEWithLogits`可以安全地进行自动转换。  ###
+    [CPU操作特定行为](#id13)[](#cpu-op-specific-behavior "跳转到此标题")'
 - en: The following lists describe the behavior of eligible ops in autocast-enabled
     regions. These ops always go through autocasting whether they are invoked as part
     of a [`torch.nn.Module`](generated/torch.nn.Module.html#torch.nn.Module "torch.nn.Module"),
@@ -1278,23 +1381,28 @@
   id: totrans-204
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下列表描述了在启用自动转换的区域中合格操作的行为。这些操作始终经过自动转换，无论它们是作为[`torch.nn.Module`](generated/torch.nn.Module.html#torch.nn.Module
+    "torch.nn.Module")的一部分、作为函数还是作为[`torch.Tensor`](tensors.html#torch.Tensor "torch.Tensor")方法调用。如果函数在多个命名空间中公开，无论命名空间如何，它们都会经过自动转换。
 - en: Ops not listed below do not go through autocasting. They run in the type defined
     by their inputs. However, autocasting may still change the type in which unlisted
     ops run if they’re downstream from autocasted ops.
   id: totrans-205
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下未列出的操作不会经过自动转换。它们以其输入定义的类型运行。但是，如果它们在自动转换的操作之后，自动转换仍可能更改未列出操作运行的类型。
 - en: If an op is unlisted, we assume it’s numerically stable in `bfloat16`. If you
     believe an unlisted op is numerically unstable in `bfloat16`, please file an issue.
   id: totrans-206
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果一个操作未列出，我们假定它在`bfloat16`中是数值稳定的。如果您认为未列出的操作在`bfloat16`中是数值不稳定的，请提交一个问题。
 - en: '[CPU Ops that can autocast to `bfloat16`](#id14)[](#cpu-ops-that-can-autocast-to-bfloat16
     "Permalink to this heading")'
   id: totrans-207
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: '[CPU操作可以自动转换为`bfloat16`](#id14)[](#cpu-ops-that-can-autocast-to-bfloat16 "跳转到此标题")'
 - en: '`conv1d`, `conv2d`, `conv3d`, `bmm`, `mm`, `baddbmm`, `addmm`, `addbmm`, `linear`,
     `matmul`, `_convolution`'
   id: totrans-208
