@@ -3,33 +3,39 @@
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: torch.sparse
 - en: 原文：[https://pytorch.org/docs/stable/sparse.html](https://pytorch.org/docs/stable/sparse.html)
   id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/docs/stable/sparse.html](https://pytorch.org/docs/stable/sparse.html)
 - en: Warning
   id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: The PyTorch API of sparse tensors is in beta and may change in the near future.
     We highly welcome feature requests, bug reports and general suggestions as GitHub
     issues.
   id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch稀疏张量的API处于测试阶段，可能会在不久的将来发生变化。我们非常欢迎功能请求、错误报告和一般建议作为GitHub问题。
 - en: Why and when to use sparsity[](#why-and-when-to-use-sparsity "Permalink to this
     heading")
   id: totrans-4
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 何时以及为什么使用稀疏性[](#why-and-when-to-use-sparsity "跳转到此标题的永久链接")
 - en: By default PyTorch stores [`torch.Tensor`](tensors.html#torch.Tensor "torch.Tensor")
     stores elements contiguously physical memory. This leads to efficient implementations
     of various array processing algorithms that require fast access to elements.
   id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 默认情况下，PyTorch将[`torch.Tensor`](张量.html#torch.Tensor "torch.Tensor")元素存储在连续的物理内存中。这导致了对需要快速访问元素的各种数组处理算法的高效实现。
 - en: Now, some users might decide to represent data such as graph adjacency matrices,
     pruned weights or points clouds by Tensors whose *elements are mostly zero valued*.
     We recognize these are important applications and aim to provide performance optimizations
@@ -37,6 +43,7 @@
   id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，一些用户可能决定通过*元素大部分为零值*的张量来表示数据，如图邻接矩阵、修剪权重或点云。我们认识到这些是重要的应用程序，并旨在通过稀疏存储格式为这些用例提供性能优化。
 - en: Various sparse storage formats such as COO, CSR/CSC, semi-structured, LIL, etc.
     have been developed over the years. While they differ in exact layouts, they all
     compress data through efficient representation of zero valued elements. We call
@@ -44,6 +51,7 @@
   id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 多种稀疏存储格式，如COO、CSR/CSC、半结构、LIL等，多年来已经被开发出来。虽然它们在确切的布局上有所不同，但它们都通过高效表示零值元素来压缩数据。我们称未压缩的值为*指定*，与*未指定*、压缩元素相对。
 - en: By compressing repeat zeros sparse storage formats aim to save memory and computational
     resources on various CPUs and GPUs. Especially for high degrees of sparsity or
     highly structured sparsity this can have significant performance implications.
@@ -51,39 +59,46 @@
   id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过压缩重复的零值，稀疏存储格式旨在节省各种CPU和GPU上的内存和计算资源。特别是对于高度稀疏或高度结构化的稀疏，这可能会对性能产生重大影响。因此，稀疏存储格式可以被视为性能优化。
 - en: Like many other performance optimization sparse storage formats are not always
     advantageous. When trying sparse formats for your use case you might find your
     execution time to increase rather than decrease.
   id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 像许多其他性能优化稀疏存储格式并不总是有利的。当尝试为您的用例使用稀疏格式时，您可能会发现执行时间增加而不是减少。
 - en: Please feel encouraged to open a GitHub issue if you analytically expected to
     see a stark increase in performance but measured a degradation instead. This helps
     us prioritize the implementation of efficient kernels and wider performance optimizations.
   id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您在分析中预期性能会显著提高，但实际上却出现了降级，请随时打开一个GitHub问题。这有助于我们优先实现高效的内核和更广泛的性能优化。
 - en: We make it easy to try different sparsity layouts, and convert between them,
     without being opinionated on what’s best for your particular application.
   id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们使尝试不同的稀疏布局并在它们之间转换变得容易，而不对您特定应用程序的最佳选择发表意见。
 - en: Functionality overview
   id: totrans-12
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 功能概述
 - en: We want it to be straightforward to construct a sparse Tensor from a given dense
     Tensor by providing conversion routines for each layout.
   id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们希望通过为每种布局提供转换例程，从给定的稠密张量构造稀疏张量变得简单。
 - en: In the next example we convert a 2D Tensor with default dense (strided) layout
     to a 2D Tensor backed by the COO memory layout. Only values and indices of non-zero
     elements are stored in this case.
   id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 在下一个示例中，我们将一个具有默认稠密（分布式）布局的2D张量转换为由COO内存布局支持的2D张量。在这种情况下，仅存储非零元素的值和索引。
 - en: '[PRE0]'
   id: totrans-15
   prefs: []
@@ -94,20 +109,24 @@
   id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch目前支持[COO](#sparse-coo-docs)、[CSR](#sparse-csr-docs)、[CSC](#sparse-csc-docs)、[BSR](#sparse-bsr-docs)和[BSC](#sparse-bsc-docs)。
 - en: 'We also have a prototype implementation to support :ref: semi-structured sparsity<sparse-semi-structured-docs>.
     Please see the references for more details.'
   id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们还有一个原型实现来支持：半结构稀疏<稀疏半结构文档>。更多细节请参考参考资料。
 - en: Note that we provide slight generalizations of these formats.
   id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，我们提供了这些格式的轻微概括。
 - en: 'Batching: Devices such as GPUs require batching for optimal performance and
     thus we support batch dimensions.'
   id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 批处理：诸如GPU之类的设备需要批处理以获得最佳性能，因此我们支持批处理维度。
 - en: We currently offer a very simple version of batching where each component of
     a sparse format itself is batched. This also requires the same number of specified
     elements per batch entry. In this example we construct a 3D (batched) CSR Tensor
@@ -115,6 +134,7 @@
   id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们目前提供了一个非常简单的批处理版本，其中稀疏格式的每个组件本身都被批处理。这也需要每个批次条目相同数量的指定元素。在这个示例中，我们从一个3D稠密张量构造一个3D（批处理）CSR张量。
 - en: '[PRE1]'
   id: totrans-21
   prefs: []
@@ -125,6 +145,7 @@
   id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 稠密维度：另一方面，一些数据，如图嵌入，可能更适合被视为稀疏的向量集合，而不是标量。
 - en: In this example we create a 3D Hybrid COO Tensor with 2 sparse and 1 dense dimension
     from a 3D strided Tensor. If an entire row in the 3D strided Tensor is zero, it
     is not stored. If however any of the values in the row are non-zero, they are
@@ -135,6 +156,7 @@
   id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这个示例中，我们从一个3D分布式张量创建一个具有2个稀疏维度和1个稠密维度的3D混合COO张量。如果3D分布式张量中的整行都是零，则不会存储。但是，如果行中的任何值都是非零的，则整行都会被存储。这减少了索引的数量，因为我们只需要每行一个索引而不是每个元素一个索引。但它也增加了值的存储量。因为只有*完全*为零的行才能被发出，任何非零值元素的存在都会导致整行被存储。
 - en: '[PRE2]'
   id: totrans-24
   prefs: []
