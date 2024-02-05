@@ -1,1440 +1,2440 @@
 - en: Models and pre-trained weights
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 模型和预训练权重
 - en: 原文：[https://pytorch.org/vision/stable/models.html](https://pytorch.org/vision/stable/models.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/vision/stable/models.html](https://pytorch.org/vision/stable/models.html)
 - en: 'The `torchvision.models` subpackage contains definitions of models for addressing
     different tasks, including: image classification, pixelwise semantic segmentation,
     object detection, instance segmentation, person keypoint detection, video classification,
     and optical flow.'
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: '`torchvision.models`子包含有用于解决不同任务的模型的定义，包括：图像分类、像素级语义分割、目标检测、实例分割、人体关键点检测、视频分类和光流。'
 - en: General information on pre-trained weights[](#general-information-on-pre-trained-weights
     "Permalink to this heading")
+  id: totrans-3
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 有关预训练权重的一般信息[](#general-information-on-pre-trained-weights "此标题的永久链接")
 - en: TorchVision offers pre-trained weights for every provided architecture, using
     the PyTorch [`torch.hub`](https://pytorch.org/docs/stable/hub.html#module-torch.hub
     "(in PyTorch v2.2)"). Instancing a pre-trained model will download its weights
     to a cache directory. This directory can be set using the TORCH_HOME environment
     variable. See [`torch.hub.load_state_dict_from_url()`](https://pytorch.org/docs/stable/hub.html#torch.hub.load_state_dict_from_url
     "(in PyTorch v2.2)") for details.
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: TorchVision为每个提供的架构提供了预训练权重，使用PyTorch [`torch.hub`](https://pytorch.org/docs/stable/hub.html#module-torch.hub
+    "(在PyTorch v2.2中)")。实例化预训练模型将下载其权重到缓存目录。可以使用TORCH_HOME环境变量设置此目录。有关详细信息，请参阅[`torch.hub.load_state_dict_from_url()`](https://pytorch.org/docs/stable/hub.html#torch.hub.load_state_dict_from_url
+    "(在PyTorch v2.2中)")。
 - en: Note
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: The pre-trained models provided in this library may have their own licenses
     or terms and conditions derived from the dataset used for training. It is your
     responsibility to determine whether you have permission to use the models for
     your use case.
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 此库中提供的预训练模型可能具有根据用于训练的数据集派生的自己的许可证或条款。您有责任确定是否有权限将这些模型用于您的用例。
 - en: Note
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Backward compatibility is guaranteed for loading a serialized `state_dict` to
     the model created using old PyTorch version. On the contrary, loading entire saved
     models or serialized `ScriptModules` (serialized using older versions of PyTorch)
     may not preserve the historic behaviour. Refer to the following [documentation](https://pytorch.org/docs/stable/notes/serialization.html#id6)
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于将序列化的`state_dict`加载到使用旧版本PyTorch创建的模型，向后兼容性是有保证的。相反，加载整个保存的模型或序列化的`ScriptModules`（使用旧版本PyTorch序列化）可能不会保留历史行为。请参考以下[文档](https://pytorch.org/docs/stable/notes/serialization.html#id6)
 - en: Initializing pre-trained models[](#initializing-pre-trained-models "Permalink
     to this heading")
+  id: totrans-9
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 初始化预训练模型[](#initializing-pre-trained-models "此标题的永久链接")
 - en: 'As of v0.13, TorchVision offers a new [Multi-weight support API](https://pytorch.org/blog/introducing-torchvision-new-multi-weight-support-api/)
     for loading different weights to the existing model builder methods:'
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 从v0.13开始，TorchVision提供了一个新的[多权重支持API](https://pytorch.org/blog/introducing-torchvision-new-multi-weight-support-api/)，用于将不同权重加载到现有的模型构建器方法中：
 - en: '[PRE0]'
+  id: totrans-11
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: 'Migrating to the new API is very straightforward. The following method calls
     between the 2 APIs are all equivalent:'
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: 迁移到新API非常简单。在这两个API之间的以下方法调用是等效的：
 - en: '[PRE1]'
+  id: totrans-13
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Note that the `pretrained` parameter is now deprecated, using it will emit warnings
     and will be removed on v0.15.
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
-- en: Using the pre-trained models[](#using-the-pre-trained-models "Permalink to
-    this heading")
+  zh: 请注意，`pretrained`参数现在已弃用，使用它将发出警告，并将在v0.15中删除。
+- en: Using the pre-trained models[](#using-the-pre-trained-models "Permalink to this
+    heading")
+  id: totrans-15
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 使用预训练模型[](#using-the-pre-trained-models "此标题的永久链接")
 - en: Before using the pre-trained models, one must preprocess the image (resize with
     right resolution/interpolation, apply inference transforms, rescale the values
     etc). There is no standard way to do this as it depends on how a given model was
     trained. It can vary across model families, variants or even weight versions.
     Using the correct preprocessing method is critical and failing to do so may lead
     to decreased accuracy or incorrect outputs.
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 在使用预训练模型之前，必须对图像进行预处理（调整大小以获得正确的分辨率/插值，应用推理变换，重新缩放值等）。没有标准的方法可以做到这一点，因为它取决于给定模型的训练方式。它可能会因模型系列、变体甚至权重版本而有所不同。使用正确的预处理方法至关重要，否则可能导致准确性降低或输出不正确。
 - en: 'All the necessary information for the inference transforms of each pre-trained
     model is provided on its weights documentation. To simplify inference, TorchVision
     bundles the necessary preprocessing transforms into each model weight. These are
     accessible via the `weight.transforms` attribute:'
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 每个预训练模型的推理变换的所有必要信息都在其权重文档中提供。为了简化推理，TorchVision将必要的预处理变换捆绑到每个模型权重中。这些可以通过`weight.transforms`属性访问：
 - en: '[PRE2]'
+  id: totrans-18
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Some models use modules which have different training and evaluation behavior,
     such as batch normalization. To switch between these modes, use `model.train()`
     or `model.eval()` as appropriate. See [`train()`](https://pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module.train
     "(in PyTorch v2.2)") or [`eval()`](https://pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module.eval
     "(in PyTorch v2.2)") for details.
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 有些模型使用具有不同训练和评估行为的模块，例如批量归一化。要在这些模式之间切换，请适当使用`model.train()`或`model.eval()`。有关详细信息，请参阅[`train()`](https://pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module.train
+    "(在PyTorch v2.2中)")或[`eval()`](https://pytorch.org/docs/stable/generated/torch.nn.Module.html#torch.nn.Module.eval
+    "(在PyTorch v2.2中)")。
 - en: '[PRE3]'
+  id: totrans-20
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: Listing and retrieving available models[](#listing-and-retrieving-available-models
     "Permalink to this heading")
+  id: totrans-21
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 列出和检索可用模型[](#listing-and-retrieving-available-models "此标题的永久链接")
 - en: 'As of v0.14, TorchVision offers a new mechanism which allows listing and retrieving
     models and weights by their names. Here are a few examples on how to use them:'
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 从v0.14开始，TorchVision提供了一种新机制，允许按名称列出和检索模型和权重。以下是如何使用它们的几个示例：
 - en: '[PRE4]'
+  id: totrans-23
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: 'Here are the available public functions to retrieve models and their corresponding
     weights:'
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下是可用的公共函数，用于检索模型及其对应的权重：
 - en: '| [`get_model`](generated/torchvision.models.get_model.html#torchvision.models.get_model
     "torchvision.models.get_model")(name, **config) | Gets the model name and configuration
     and returns an instantiated model. |'
+  id: totrans-25
   prefs: []
   type: TYPE_TB
+  zh: '| [`get_model`](generated/torchvision.models.get_model.html#torchvision.models.get_model
+    "torchvision.models.get_model")(name, **config) | 获取模型名称和配置，并返回一个实例化的模型。 |'
 - en: '| [`get_model_weights`](generated/torchvision.models.get_model_weights.html#torchvision.models.get_model_weights
     "torchvision.models.get_model_weights")(name) | Returns the weights enum class
     associated to the given model. |'
+  id: totrans-26
   prefs: []
   type: TYPE_TB
+  zh: '| [`get_model_weights`](generated/torchvision.models.get_model_weights.html#torchvision.models.get_model_weights
+    "torchvision.models.get_model_weights")(name) | 返回与给定模型关联的权重枚举类。 |'
 - en: '| [`get_weight`](generated/torchvision.models.get_weight.html#torchvision.models.get_weight
     "torchvision.models.get_weight")(name) | Gets the weights enum value by its full
     name. |'
+  id: totrans-27
   prefs: []
   type: TYPE_TB
+  zh: '| [`get_weight`](generated/torchvision.models.get_weight.html#torchvision.models.get_weight
+    "torchvision.models.get_weight")(name) | 通过完整名称获取权重枚举值。 |'
 - en: '| [`list_models`](generated/torchvision.models.list_models.html#torchvision.models.list_models
     "torchvision.models.list_models")([module, include, exclude]) | Returns a list
     with the names of registered models. |'
+  id: totrans-28
   prefs: []
   type: TYPE_TB
+  zh: '| [`list_models`](generated/torchvision.models.list_models.html#torchvision.models.list_models
+    "torchvision.models.list_models")([module, include, exclude]) | 返回已注册模型名称的列表。
+    |'
 - en: Using models from Hub[](#using-models-from-hub "Permalink to this heading")
+  id: totrans-29
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 使用 Hub 中的模型[](#using-models-from-hub "跳转到此标题")
 - en: 'Most pre-trained models can be accessed directly via PyTorch Hub without having
     TorchVision installed:'
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 大多数预训练模型可以直接通过 PyTorch Hub 访问，无需安装 TorchVision：
 - en: '[PRE5]'
+  id: totrans-31
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: 'You can also retrieve all the available weights of a specific model via PyTorch
     Hub by doing:'
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 您还可以通过 PyTorch Hub 检索特定模型的所有可用权重：
 - en: '[PRE6]'
+  id: totrans-33
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: The only exception to the above are the detection models included on `torchvision.models.detection`.
     These models require TorchVision to be installed because they depend on custom
     C++ operators.
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 上述唯一的例外是包含在 `torchvision.models.detection` 中的检测模型。这些模型需要安装 TorchVision，因为它们依赖于自定义的
+    C++ 运算符。
 - en: Classification[](#classification "Permalink to this heading")
+  id: totrans-35
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 分类[](#classification "跳转到此标题")
 - en: 'The following classification models are available, with or without pre-trained
     weights:'
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下分类模型可用，带有或不带有预训练权重：
 - en: '[AlexNet](models/alexnet.html)'
+  id: totrans-37
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[AlexNet](models/alexnet.html)'
 - en: '[ConvNeXt](models/convnext.html)'
+  id: totrans-38
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[ConvNeXt](models/convnext.html)'
 - en: '[DenseNet](models/densenet.html)'
+  id: totrans-39
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[DenseNet](models/densenet.html)'
 - en: '[EfficientNet](models/efficientnet.html)'
+  id: totrans-40
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[EfficientNet](models/efficientnet.html)'
 - en: '[EfficientNetV2](models/efficientnetv2.html)'
+  id: totrans-41
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[EfficientNetV2](models/efficientnetv2.html)'
 - en: '[GoogLeNet](models/googlenet.html)'
+  id: totrans-42
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[GoogLeNet](models/googlenet.html)'
 - en: '[Inception V3](models/inception.html)'
+  id: totrans-43
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[Inception V3](models/inception.html)'
 - en: '[MaxVit](models/maxvit.html)'
+  id: totrans-44
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[MaxVit](models/maxvit.html)'
 - en: '[MNASNet](models/mnasnet.html)'
+  id: totrans-45
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[MNASNet](models/mnasnet.html)'
 - en: '[MobileNet V2](models/mobilenetv2.html)'
+  id: totrans-46
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[MobileNet V2](models/mobilenetv2.html)'
 - en: '[MobileNet V3](models/mobilenetv3.html)'
+  id: totrans-47
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[MobileNet V3](models/mobilenetv3.html)'
 - en: '[RegNet](models/regnet.html)'
+  id: totrans-48
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[RegNet](models/regnet.html)'
 - en: '[ResNet](models/resnet.html)'
+  id: totrans-49
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[ResNet](models/resnet.html)'
 - en: '[ResNeXt](models/resnext.html)'
+  id: totrans-50
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[ResNeXt](models/resnext.html)'
 - en: '[ShuffleNet V2](models/shufflenetv2.html)'
+  id: totrans-51
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[ShuffleNet V2](models/shufflenetv2.html)'
 - en: '[SqueezeNet](models/squeezenet.html)'
+  id: totrans-52
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[SqueezeNet](models/squeezenet.html)'
 - en: '[SwinTransformer](models/swin_transformer.html)'
+  id: totrans-53
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[SwinTransformer](models/swin_transformer.html)'
 - en: '[VGG](models/vgg.html)'
+  id: totrans-54
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[VGG](models/vgg.html)'
 - en: '[VisionTransformer](models/vision_transformer.html)'
+  id: totrans-55
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[VisionTransformer](models/vision_transformer.html)'
 - en: '[Wide ResNet](models/wide_resnet.html)'
+  id: totrans-56
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[Wide ResNet](models/wide_resnet.html)'
 - en: 'Here is an example of how to use the pre-trained image classification models:'
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下是如何使用预训练图像分类模型的示例：
 - en: '[PRE7]'
+  id: totrans-58
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: The classes of the pre-trained model outputs can be found at `weights.meta["categories"]`.
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: 预训练模型输出的类别可以在 `weights.meta["categories"]` 中找到。
 - en: Table of all available classification weights[](#table-of-all-available-classification-weights
     "Permalink to this heading")
+  id: totrans-60
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 所有可用分类权重的表格[](#table-of-all-available-classification-weights "跳转到此标题")
 - en: 'Accuracies are reported on ImageNet-1K using single crops:'
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: 在 ImageNet-1K 上使用单个裁剪报告准确性：
 - en: '| **Weight** | **Acc@1** | **Acc@5** | **Params** | **GFLOPS** | **Recipe**
     |'
+  id: totrans-62
   prefs: []
   type: TYPE_TB
+  zh: '| **权重** | **Acc@1** | **Acc@5** | **参数** | **GFLOPS** | **Recipe** |'
 - en: '| --- | --- | --- | --- | --- | --- |'
+  id: totrans-63
   prefs: []
   type: TYPE_TB
+  zh: '| --- | --- | --- | --- | --- | --- |'
 - en: '| [`AlexNet_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.alexnet.html#torchvision.models.AlexNet_Weights
     "torchvision.models.AlexNet_Weights") | 56.522 | 79.066 | 61.1M | 0.71 | [link](https://github.com/pytorch/vision/tree/main/references/classification#alexnet-and-vgg)
     |'
+  id: totrans-64
   prefs: []
   type: TYPE_TB
+  zh: '| [`AlexNet_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.alexnet.html#torchvision.models.AlexNet_Weights
+    "torchvision.models.AlexNet_Weights") | 56.522 | 79.066 | 61.1M | 0.71 | [链接](https://github.com/pytorch/vision/tree/main/references/classification#alexnet-and-vgg)
+    |'
 - en: '| [`ConvNeXt_Base_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.convnext_base.html#torchvision.models.ConvNeXt_Base_Weights
     "torchvision.models.ConvNeXt_Base_Weights") | 84.062 | 96.87 | 88.6M | 15.36 |
     [link](https://github.com/pytorch/vision/tree/main/references/classification#convnext)
     |'
+  id: totrans-65
   prefs: []
   type: TYPE_TB
+  zh: '| [`ConvNeXt_Base_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.convnext_base.html#torchvision.models.ConvNeXt_Base_Weights
+    "torchvision.models.ConvNeXt_Base_Weights") | 84.062 | 96.87 | 88.6M | 15.36 |
+    [链接](https://github.com/pytorch/vision/tree/main/references/classification#convnext)
+    |'
 - en: '| [`ConvNeXt_Large_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.convnext_large.html#torchvision.models.ConvNeXt_Large_Weights
     "torchvision.models.ConvNeXt_Large_Weights") | 84.414 | 96.976 | 197.8M | 34.36
     | [link](https://github.com/pytorch/vision/tree/main/references/classification#convnext)
     |'
+  id: totrans-66
   prefs: []
   type: TYPE_TB
+  zh: '| [`ConvNeXt_Large_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.convnext_large.html#torchvision.models.ConvNeXt_Large_Weights
+    "torchvision.models.ConvNeXt_Large_Weights") | 84.414 | 96.976 | 197.8M | 34.36
+    | [链接](https://github.com/pytorch/vision/tree/main/references/classification#convnext)
+    |'
 - en: '| [`ConvNeXt_Small_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.convnext_small.html#torchvision.models.ConvNeXt_Small_Weights
     "torchvision.models.ConvNeXt_Small_Weights") | 83.616 | 96.65 | 50.2M | 8.68 |
     [link](https://github.com/pytorch/vision/tree/main/references/classification#convnext)
     |'
+  id: totrans-67
   prefs: []
   type: TYPE_TB
+  zh: '| [`ConvNeXt_Small_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.convnext_small.html#torchvision.models.ConvNeXt_Small_Weights
+    "torchvision.models.ConvNeXt_Small_Weights") | 83.616 | 96.65 | 50.2M | 8.68 |
+    [链接](https://github.com/pytorch/vision/tree/main/references/classification#convnext)
+    |'
 - en: '| [`ConvNeXt_Tiny_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.convnext_tiny.html#torchvision.models.ConvNeXt_Tiny_Weights
     "torchvision.models.ConvNeXt_Tiny_Weights") | 82.52 | 96.146 | 28.6M | 4.46 |
     [link](https://github.com/pytorch/vision/tree/main/references/classification#convnext)
     |'
+  id: totrans-68
   prefs: []
   type: TYPE_TB
+  zh: '| [`ConvNeXt_Tiny_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.convnext_tiny.html#torchvision.models.ConvNeXt_Tiny_Weights
+    "torchvision.models.ConvNeXt_Tiny_Weights") | 82.52 | 96.146 | 28.6M | 4.46 |
+    [链接](https://github.com/pytorch/vision/tree/main/references/classification#convnext)
+    |'
 - en: '| [`DenseNet121_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.densenet121.html#torchvision.models.DenseNet121_Weights
     "torchvision.models.DenseNet121_Weights") | 74.434 | 91.972 | 8.0M | 2.83 | [link](https://github.com/pytorch/vision/pull/116)
     |'
+  id: totrans-69
   prefs: []
   type: TYPE_TB
+  zh: '| [`DenseNet121_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.densenet121.html#torchvision.models.DenseNet121_Weights
+    "torchvision.models.DenseNet121_Weights") | 74.434 | 91.972 | 8.0M | 2.83 | [链接](https://github.com/pytorch/vision/pull/116)
+    |'
 - en: '| [`DenseNet161_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.densenet161.html#torchvision.models.DenseNet161_Weights
     "torchvision.models.DenseNet161_Weights") | 77.138 | 93.56 | 28.7M | 7.73 | [link](https://github.com/pytorch/vision/pull/116)
     |'
+  id: totrans-70
   prefs: []
   type: TYPE_TB
+  zh: '| [`DenseNet161_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.densenet161.html#torchvision.models.DenseNet161_Weights
+    "torchvision.models.DenseNet161_Weights") | 77.138 | 93.56 | 28.7M | 7.73 | [链接](https://github.com/pytorch/vision/pull/116)
+    |'
 - en: '| [`DenseNet169_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.densenet169.html#torchvision.models.DenseNet169_Weights
     "torchvision.models.DenseNet169_Weights") | 75.6 | 92.806 | 14.1M | 3.36 | [link](https://github.com/pytorch/vision/pull/116)
     |'
+  id: totrans-71
   prefs: []
   type: TYPE_TB
+  zh: '| [`DenseNet169_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.densenet169.html#torchvision.models.DenseNet169_Weights
+    "torchvision.models.DenseNet169_Weights") | 75.6 | 92.806 | 14.1M | 3.36 | [链接](https://github.com/pytorch/vision/pull/116)
+    |'
 - en: '| [`DenseNet201_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.densenet201.html#torchvision.models.DenseNet201_Weights
     "torchvision.models.DenseNet201_Weights") | 76.896 | 93.37 | 20.0M | 4.29 | [link](https://github.com/pytorch/vision/pull/116)
     |'
+  id: totrans-72
   prefs: []
   type: TYPE_TB
+  zh: '| [`DenseNet201_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.densenet201.html#torchvision.models.DenseNet201_Weights
+    "torchvision.models.DenseNet201_Weights") | 76.896 | 93.37 | 20.0M | 4.29 | [链接](https://github.com/pytorch/vision/pull/116)
+    |'
 - en: '| [`EfficientNet_B0_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.efficientnet_b0.html#torchvision.models.EfficientNet_B0_Weights
     "torchvision.models.EfficientNet_B0_Weights") | 77.692 | 93.532 | 5.3M | 0.39
     | [link](https://github.com/pytorch/vision/tree/main/references/classification#efficientnet-v1)
     |'
+  id: totrans-73
   prefs: []
   type: TYPE_TB
+  zh: '| [`EfficientNet_B0_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.efficientnet_b0.html#torchvision.models.EfficientNet_B0_Weights
+    "torchvision.models.EfficientNet_B0_Weights") | 77.692 | 93.532 | 5.3M | 0.39
+    | [链接](https://github.com/pytorch/vision/tree/main/references/classification#efficientnet-v1)
+    |'
 - en: '| [`EfficientNet_B1_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.efficientnet_b1.html#torchvision.models.EfficientNet_B1_Weights
     "torchvision.models.EfficientNet_B1_Weights") | 78.642 | 94.186 | 7.8M | 0.69
     | [link](https://github.com/pytorch/vision/tree/main/references/classification#efficientnet-v1)
     |'
+  id: totrans-74
   prefs: []
   type: TYPE_TB
+  zh: '| [`EfficientNet_B1_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.efficientnet_b1.html#torchvision.models.EfficientNet_B1_Weights
+    "torchvision.models.EfficientNet_B1_Weights") | 78.642 | 94.186 | 7.8M | 0.69
+    | [链接](https://github.com/pytorch/vision/tree/main/references/classification#efficientnet-v1)
+    |'
 - en: '| [`EfficientNet_B1_Weights.IMAGENET1K_V2`](models/generated/torchvision.models.efficientnet_b1.html#torchvision.models.EfficientNet_B1_Weights
     "torchvision.models.EfficientNet_B1_Weights") | 79.838 | 94.934 | 7.8M | 0.69
     | [link](https://github.com/pytorch/vision/issues/3995#new-recipe-with-lr-wd-crop-tuning)
     |'
+  id: totrans-75
   prefs: []
   type: TYPE_TB
+  zh: '| [`EfficientNet_B1_Weights.IMAGENET1K_V2`](models/generated/torchvision.models.efficientnet_b1.html#torchvision.models.EfficientNet_B1_Weights
+    "torchvision.models.EfficientNet_B1_Weights") | 79.838 | 94.934 | 7.8M | 0.69
+    | [链接](https://github.com/pytorch/vision/issues/3995#new-recipe-with-lr-wd-crop-tuning)
+    |'
 - en: '| [`EfficientNet_B2_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.efficientnet_b2.html#torchvision.models.EfficientNet_B2_Weights
     "torchvision.models.EfficientNet_B2_Weights") | 80.608 | 95.31 | 9.1M | 1.09 |
     [link](https://github.com/pytorch/vision/tree/main/references/classification#efficientnet-v1)
     |'
+  id: totrans-76
   prefs: []
   type: TYPE_TB
+  zh: '| [`EfficientNet_B2_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.efficientnet_b2.html#torchvision.models.EfficientNet_B2_Weights
+    "torchvision.models.EfficientNet_B2_Weights") | 80.608 | 95.31 | 9.1M | 1.09 |
+    [链接](https://github.com/pytorch/vision/tree/main/references/classification#efficientnet-v1)
+    |'
 - en: '| [`EfficientNet_B3_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.efficientnet_b3.html#torchvision.models.EfficientNet_B3_Weights
     "torchvision.models.EfficientNet_B3_Weights") | 82.008 | 96.054 | 12.2M | 1.83
     | [link](https://github.com/pytorch/vision/tree/main/references/classification#efficientnet-v1)
     |'
+  id: totrans-77
   prefs: []
   type: TYPE_TB
+  zh: '| [`EfficientNet_B3_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.efficientnet_b3.html#torchvision.models.EfficientNet_B3_Weights
+    "torchvision.models.EfficientNet_B3_Weights") | 82.008 | 96.054 | 12.2M | 1.83
+    | [链接](https://github.com/pytorch/vision/tree/main/references/classification#efficientnet-v1)
+    |'
 - en: '| [`EfficientNet_B4_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.efficientnet_b4.html#torchvision.models.EfficientNet_B4_Weights
     "torchvision.models.EfficientNet_B4_Weights") | 83.384 | 96.594 | 19.3M | 4.39
     | [link](https://github.com/pytorch/vision/tree/main/references/classification#efficientnet-v1)
     |'
+  id: totrans-78
   prefs: []
   type: TYPE_TB
+  zh: '| [`EfficientNet_B4_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.efficientnet_b4.html#torchvision.models.EfficientNet_B4_Weights
+    "torchvision.models.EfficientNet_B4_Weights") | 83.384 | 96.594 | 19.3M | 4.39
+    | [链接](https://github.com/pytorch/vision/tree/main/references/classification#efficientnet-v1)
+    |'
 - en: '| [`EfficientNet_B5_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.efficientnet_b5.html#torchvision.models.EfficientNet_B5_Weights
     "torchvision.models.EfficientNet_B5_Weights") | 83.444 | 96.628 | 30.4M | 10.27
     | [link](https://github.com/pytorch/vision/tree/main/references/classification#efficientnet-v1)
     |'
+  id: totrans-79
   prefs: []
   type: TYPE_TB
+  zh: '| [`EfficientNet_B5_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.efficientnet_b5.html#torchvision.models.EfficientNet_B5_Weights
+    "torchvision.models.EfficientNet_B5_Weights") | 83.444 | 96.628 | 30.4M | 10.27
+    | [链接](https://github.com/pytorch/vision/tree/main/references/classification#efficientnet-v1)
+    |'
 - en: '| [`EfficientNet_B6_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.efficientnet_b6.html#torchvision.models.EfficientNet_B6_Weights
     "torchvision.models.EfficientNet_B6_Weights") | 84.008 | 96.916 | 43.0M | 19.07
     | [link](https://github.com/pytorch/vision/tree/main/references/classification#efficientnet-v1)
     |'
+  id: totrans-80
   prefs: []
   type: TYPE_TB
+  zh: '| [`EfficientNet_B6_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.efficientnet_b6.html#torchvision.models.EfficientNet_B6_Weights
+    "torchvision.models.EfficientNet_B6_Weights") | 84.008 | 96.916 | 43.0M | 19.07
+    | [链接](https://github.com/pytorch/vision/tree/main/references/classification#efficientnet-v1)
+    |'
 - en: '| [`EfficientNet_B7_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.efficientnet_b7.html#torchvision.models.EfficientNet_B7_Weights
     "torchvision.models.EfficientNet_B7_Weights") | 84.122 | 96.908 | 66.3M | 37.75
     | [link](https://github.com/pytorch/vision/tree/main/references/classification#efficientnet-v1)
     |'
+  id: totrans-81
   prefs: []
   type: TYPE_TB
+  zh: '| [`EfficientNet_B7_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.efficientnet_b7.html#torchvision.models.EfficientNet_B7_Weights
+    "torchvision.models.EfficientNet_B7_Weights") | 84.122 | 96.908 | 66.3M | 37.75
+    | [link](https://github.com/pytorch/vision/tree/main/references/classification#efficientnet-v1)
+    |'
 - en: '| [`EfficientNet_V2_L_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.efficientnet_v2_l.html#torchvision.models.EfficientNet_V2_L_Weights
     "torchvision.models.EfficientNet_V2_L_Weights") | 85.808 | 97.788 | 118.5M | 56.08
     | [link](https://github.com/pytorch/vision/tree/main/references/classification#efficientnet-v2)
     |'
+  id: totrans-82
   prefs: []
   type: TYPE_TB
+  zh: '| [`EfficientNet_V2_L_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.efficientnet_v2_l.html#torchvision.models.EfficientNet_V2_L_Weights
+    "torchvision.models.EfficientNet_V2_L_Weights") | 85.808 | 97.788 | 118.5M | 56.08
+    | [link](https://github.com/pytorch/vision/tree/main/references/classification#efficientnet-v2)
+    |'
 - en: '| [`EfficientNet_V2_M_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.efficientnet_v2_m.html#torchvision.models.EfficientNet_V2_M_Weights
     "torchvision.models.EfficientNet_V2_M_Weights") | 85.112 | 97.156 | 54.1M | 24.58
     | [link](https://github.com/pytorch/vision/tree/main/references/classification#efficientnet-v2)
     |'
+  id: totrans-83
   prefs: []
   type: TYPE_TB
+  zh: '| [`EfficientNet_V2_M_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.efficientnet_v2_m.html#torchvision.models.EfficientNet_V2_M_Weights
+    "torchvision.models.EfficientNet_V2_M_Weights") | 85.112 | 97.156 | 54.1M | 24.58
+    | [link](https://github.com/pytorch/vision/tree/main/references/classification#efficientnet-v2)
+    |'
 - en: '| [`EfficientNet_V2_S_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.efficientnet_v2_s.html#torchvision.models.EfficientNet_V2_S_Weights
     "torchvision.models.EfficientNet_V2_S_Weights") | 84.228 | 96.878 | 21.5M | 8.37
     | [link](https://github.com/pytorch/vision/tree/main/references/classification#efficientnet-v2)
     |'
+  id: totrans-84
   prefs: []
   type: TYPE_TB
+  zh: '| [`EfficientNet_V2_S_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.efficientnet_v2_s.html#torchvision.models.EfficientNet_V2_S_Weights
+    "torchvision.models.EfficientNet_V2_S_Weights") | 84.228 | 96.878 | 21.5M | 8.37
+    | [link](https://github.com/pytorch/vision/tree/main/references/classification#efficientnet-v2)
+    |'
 - en: '| [`GoogLeNet_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.googlenet.html#torchvision.models.GoogLeNet_Weights
     "torchvision.models.GoogLeNet_Weights") | 69.778 | 89.53 | 6.6M | 1.5 | [link](https://github.com/pytorch/vision/tree/main/references/classification#googlenet)
     |'
+  id: totrans-85
   prefs: []
   type: TYPE_TB
+  zh: '| [`GoogLeNet_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.googlenet.html#torchvision.models.GoogLeNet_Weights
+    "torchvision.models.GoogLeNet_Weights") | 69.778 | 89.53 | 6.6M | 1.5 | [link](https://github.com/pytorch/vision/tree/main/references/classification#googlenet)
+    |'
 - en: '| [`Inception_V3_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.inception_v3.html#torchvision.models.Inception_V3_Weights
     "torchvision.models.Inception_V3_Weights") | 77.294 | 93.45 | 27.2M | 5.71 | [link](https://github.com/pytorch/vision/tree/main/references/classification#inception-v3)
     |'
+  id: totrans-86
   prefs: []
   type: TYPE_TB
+  zh: '| [`Inception_V3_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.inception_v3.html#torchvision.models.Inception_V3_Weights
+    "torchvision.models.Inception_V3_Weights") | 77.294 | 93.45 | 27.2M | 5.71 | [link](https://github.com/pytorch/vision/tree/main/references/classification#inception-v3)
+    |'
 - en: '| [`MNASNet0_5_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.mnasnet0_5.html#torchvision.models.MNASNet0_5_Weights
     "torchvision.models.MNASNet0_5_Weights") | 67.734 | 87.49 | 2.2M | 0.1 | [link](https://github.com/1e100/mnasnet_trainer)
     |'
+  id: totrans-87
   prefs: []
   type: TYPE_TB
+  zh: '| [`MNASNet0_5_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.mnasnet0_5.html#torchvision.models.MNASNet0_5_Weights
+    "torchvision.models.MNASNet0_5_Weights") | 67.734 | 87.49 | 2.2M | 0.1 | [link](https://github.com/1e100/mnasnet_trainer)
+    |'
 - en: '| [`MNASNet0_75_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.mnasnet0_75.html#torchvision.models.MNASNet0_75_Weights
     "torchvision.models.MNASNet0_75_Weights") | 71.18 | 90.496 | 3.2M | 0.21 | [link](https://github.com/pytorch/vision/pull/6019)
     |'
+  id: totrans-88
   prefs: []
   type: TYPE_TB
+  zh: '| [`MNASNet0_75_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.mnasnet0_75.html#torchvision.models.MNASNet0_75_Weights
+    "torchvision.models.MNASNet0_75_Weights") | 71.18 | 90.496 | 3.2M | 0.21 | [link](https://github.com/pytorch/vision/pull/6019)
+    |'
 - en: '| [`MNASNet1_0_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.mnasnet1_0.html#torchvision.models.MNASNet1_0_Weights
     "torchvision.models.MNASNet1_0_Weights") | 73.456 | 91.51 | 4.4M | 0.31 | [link](https://github.com/1e100/mnasnet_trainer)
     |'
+  id: totrans-89
   prefs: []
   type: TYPE_TB
+  zh: '| [`MNASNet1_0_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.mnasnet1_0.html#torchvision.models.MNASNet1_0_Weights
+    "torchvision.models.MNASNet1_0_Weights") | 73.456 | 91.51 | 4.4M | 0.31 | [link](https://github.com/1e100/mnasnet_trainer)
+    |'
 - en: '| [`MNASNet1_3_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.mnasnet1_3.html#torchvision.models.MNASNet1_3_Weights
     "torchvision.models.MNASNet1_3_Weights") | 76.506 | 93.522 | 6.3M | 0.53 | [link](https://github.com/pytorch/vision/pull/6019)
     |'
+  id: totrans-90
   prefs: []
   type: TYPE_TB
+  zh: '| [`MNASNet1_3_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.mnasnet1_3.html#torchvision.models.MNASNet1_3_Weights
+    "torchvision.models.MNASNet1_3_Weights") | 76.506 | 93.522 | 6.3M | 0.53 | [link](https://github.com/pytorch/vision/pull/6019)
+    |'
 - en: '| [`MaxVit_T_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.maxvit_t.html#torchvision.models.MaxVit_T_Weights
     "torchvision.models.MaxVit_T_Weights") | 83.7 | 96.722 | 30.9M | 5.56 | [link](https://github.com/pytorch/vision/tree/main/references/classification#maxvit)
     |'
+  id: totrans-91
   prefs: []
   type: TYPE_TB
+  zh: '| [`MaxVit_T_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.maxvit_t.html#torchvision.models.MaxVit_T_Weights
+    "torchvision.models.MaxVit_T_Weights") | 83.7 | 96.722 | 30.9M | 5.56 | [link](https://github.com/pytorch/vision/tree/main/references/classification#maxvit)
+    |'
 - en: '| [`MobileNet_V2_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.mobilenet_v2.html#torchvision.models.MobileNet_V2_Weights
     "torchvision.models.MobileNet_V2_Weights") | 71.878 | 90.286 | 3.5M | 0.3 | [link](https://github.com/pytorch/vision/tree/main/references/classification#mobilenetv2)
     |'
+  id: totrans-92
   prefs: []
   type: TYPE_TB
+  zh: '| [`MobileNet_V2_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.mobilenet_v2.html#torchvision.models.MobileNet_V2_Weights
+    "torchvision.models.MobileNet_V2_Weights") | 71.878 | 90.286 | 3.5M | 0.3 | [link](https://github.com/pytorch/vision/tree/main/references/classification#mobilenetv2)
+    |'
 - en: '| [`MobileNet_V2_Weights.IMAGENET1K_V2`](models/generated/torchvision.models.mobilenet_v2.html#torchvision.models.MobileNet_V2_Weights
     "torchvision.models.MobileNet_V2_Weights") | 72.154 | 90.822 | 3.5M | 0.3 | [link](https://github.com/pytorch/vision/issues/3995#new-recipe-with-reg-tuning)
     |'
+  id: totrans-93
   prefs: []
   type: TYPE_TB
+  zh: '| [`MobileNet_V2_Weights.IMAGENET1K_V2`](models/generated/torchvision.models.mobilenet_v2.html#torchvision.models.MobileNet_V2_Weights
+    "torchvision.models.MobileNet_V2_Weights") | 72.154 | 90.822 | 3.5M | 0.3 | [link](https://github.com/pytorch/vision/issues/3995#new-recipe-with-reg-tuning)
+    |'
 - en: '| [`MobileNet_V3_Large_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.mobilenet_v3_large.html#torchvision.models.MobileNet_V3_Large_Weights
     "torchvision.models.MobileNet_V3_Large_Weights") | 74.042 | 91.34 | 5.5M | 0.22
     | [link](https://github.com/pytorch/vision/tree/main/references/classification#mobilenetv3-large--small)
     |'
+  id: totrans-94
   prefs: []
   type: TYPE_TB
+  zh: '| [`MobileNet_V3_Large_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.mobilenet_v3_large.html#torchvision.models.MobileNet_V3_Large_Weights
+    "torchvision.models.MobileNet_V3_Large_Weights") | 74.042 | 91.34 | 5.5M | 0.22
+    | [链接](https://github.com/pytorch/vision/tree/main/references/classification#mobilenetv3-large--small)
+    |'
 - en: '| [`MobileNet_V3_Large_Weights.IMAGENET1K_V2`](models/generated/torchvision.models.mobilenet_v3_large.html#torchvision.models.MobileNet_V3_Large_Weights
     "torchvision.models.MobileNet_V3_Large_Weights") | 75.274 | 92.566 | 5.5M | 0.22
     | [link](https://github.com/pytorch/vision/issues/3995#new-recipe-with-reg-tuning)
     |'
+  id: totrans-95
   prefs: []
   type: TYPE_TB
+  zh: '| [`MobileNet_V3_Large_Weights.IMAGENET1K_V2`](models/generated/torchvision.models.mobilenet_v3_large.html#torchvision.models.MobileNet_V3_Large_Weights
+    "torchvision.models.MobileNet_V3_Large_Weights") | 75.274 | 92.566 | 5.5M | 0.22
+    | [链接](https://github.com/pytorch/vision/issues/3995#new-recipe-with-reg-tuning)
+    |'
 - en: '| [`MobileNet_V3_Small_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.mobilenet_v3_small.html#torchvision.models.MobileNet_V3_Small_Weights
     "torchvision.models.MobileNet_V3_Small_Weights") | 67.668 | 87.402 | 2.5M | 0.06
     | [link](https://github.com/pytorch/vision/tree/main/references/classification#mobilenetv3-large--small)
     |'
+  id: totrans-96
   prefs: []
   type: TYPE_TB
+  zh: '| [`MobileNet_V3_Small_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.mobilenet_v3_small.html#torchvision.models.MobileNet_V3_Small_Weights
+    "torchvision.models.MobileNet_V3_Small_Weights") | 67.668 | 87.402 | 2.5M | 0.06
+    | [链接](https://github.com/pytorch/vision/tree/main/references/classification#mobilenetv3-large--small)
+    |'
 - en: '| [`RegNet_X_16GF_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.regnet_x_16gf.html#torchvision.models.RegNet_X_16GF_Weights
     "torchvision.models.RegNet_X_16GF_Weights") | 80.058 | 94.944 | 54.3M | 15.94
     | [link](https://github.com/pytorch/vision/tree/main/references/classification#medium-models)
     |'
+  id: totrans-97
   prefs: []
   type: TYPE_TB
+  zh: '| [`RegNet_X_16GF_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.regnet_x_16gf.html#torchvision.models.RegNet_X_16GF_Weights
+    "torchvision.models.RegNet_X_16GF_Weights") | 80.058 | 94.944 | 54.3M | 15.94
+    | [链接](https://github.com/pytorch/vision/tree/main/references/classification#medium-models)
+    |'
 - en: '| [`RegNet_X_16GF_Weights.IMAGENET1K_V2`](models/generated/torchvision.models.regnet_x_16gf.html#torchvision.models.RegNet_X_16GF_Weights
     "torchvision.models.RegNet_X_16GF_Weights") | 82.716 | 96.196 | 54.3M | 15.94
     | [link](https://github.com/pytorch/vision/issues/3995#new-recipe) |'
+  id: totrans-98
   prefs: []
   type: TYPE_TB
+  zh: '| [`RegNet_X_16GF_Weights.IMAGENET1K_V2`](models/generated/torchvision.models.regnet_x_16gf.html#torchvision.models.RegNet_X_16GF_Weights
+    "torchvision.models.RegNet_X_16GF_Weights") | 82.716 | 96.196 | 54.3M | 15.94
+    | [链接](https://github.com/pytorch/vision/issues/3995#new-recipe) |'
 - en: '| [`RegNet_X_1_6GF_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.regnet_x_1_6gf.html#torchvision.models.RegNet_X_1_6GF_Weights
     "torchvision.models.RegNet_X_1_6GF_Weights") | 77.04 | 93.44 | 9.2M | 1.6 | [link](https://github.com/pytorch/vision/tree/main/references/classification#small-models)
     |'
+  id: totrans-99
   prefs: []
   type: TYPE_TB
+  zh: '| [`RegNet_X_1_6GF_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.regnet_x_1_6gf.html#torchvision.models.RegNet_X_1_6GF_Weights
+    "torchvision.models.RegNet_X_1_6GF_Weights") | 77.04 | 93.44 | 9.2M | 1.6 | [链接](https://github.com/pytorch/vision/tree/main/references/classification#small-models)
+    |'
 - en: '| [`RegNet_X_1_6GF_Weights.IMAGENET1K_V2`](models/generated/torchvision.models.regnet_x_1_6gf.html#torchvision.models.RegNet_X_1_6GF_Weights
     "torchvision.models.RegNet_X_1_6GF_Weights") | 79.668 | 94.922 | 9.2M | 1.6 |
     [link](https://github.com/pytorch/vision/issues/3995#new-recipe-with-fixres) |'
+  id: totrans-100
   prefs: []
   type: TYPE_TB
+  zh: '| [`RegNet_X_1_6GF_Weights.IMAGENET1K_V2`](models/generated/torchvision.models.regnet_x_1_6gf.html#torchvision.models.RegNet_X_1_6GF_Weights
+    "torchvision.models.RegNet_X_1_6GF_Weights") | 79.668 | 94.922 | 9.2M | 1.6 |
+    [链接](https://github.com/pytorch/vision/issues/3995#new-recipe-with-fixres) |'
 - en: '| [`RegNet_X_32GF_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.regnet_x_32gf.html#torchvision.models.RegNet_X_32GF_Weights
     "torchvision.models.RegNet_X_32GF_Weights") | 80.622 | 95.248 | 107.8M | 31.74
     | [link](https://github.com/pytorch/vision/tree/main/references/classification#large-models)
     |'
+  id: totrans-101
   prefs: []
   type: TYPE_TB
+  zh: '| [`RegNet_X_32GF_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.regnet_x_32gf.html#torchvision.models.RegNet_X_32GF_Weights
+    "torchvision.models.RegNet_X_32GF_Weights") | 80.622 | 95.248 | 107.8M | 31.74
+    | [链接](https://github.com/pytorch/vision/tree/main/references/classification#large-models)
+    |'
 - en: '| [`RegNet_X_32GF_Weights.IMAGENET1K_V2`](models/generated/torchvision.models.regnet_x_32gf.html#torchvision.models.RegNet_X_32GF_Weights
     "torchvision.models.RegNet_X_32GF_Weights") | 83.014 | 96.288 | 107.8M | 31.74
     | [link](https://github.com/pytorch/vision/issues/3995#new-recipe) |'
+  id: totrans-102
   prefs: []
   type: TYPE_TB
+  zh: '| [`RegNet_X_32GF_Weights.IMAGENET1K_V2`](models/generated/torchvision.models.regnet_x_32gf.html#torchvision.models.RegNet_X_32GF_Weights
+    "torchvision.models.RegNet_X_32GF_Weights") | 83.014 | 96.288 | 107.8M | 31.74
+    | [链接](https://github.com/pytorch/vision/issues/3995#new-recipe) |'
 - en: '| [`RegNet_X_3_2GF_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.regnet_x_3_2gf.html#torchvision.models.RegNet_X_3_2GF_Weights
     "torchvision.models.RegNet_X_3_2GF_Weights") | 78.364 | 93.992 | 15.3M | 3.18
     | [link](https://github.com/pytorch/vision/tree/main/references/classification#medium-models)
     |'
+  id: totrans-103
   prefs: []
   type: TYPE_TB
+  zh: '| [`RegNet_X_3_2GF_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.regnet_x_3_2gf.html#torchvision.models.RegNet_X_3_2GF_Weights
+    "torchvision.models.RegNet_X_3_2GF_Weights") | 78.364 | 93.992 | 15.3M | 3.18
+    | [链接](https://github.com/pytorch/vision/tree/main/references/classification#medium-models)
+    |'
 - en: '| [`RegNet_X_3_2GF_Weights.IMAGENET1K_V2`](models/generated/torchvision.models.regnet_x_3_2gf.html#torchvision.models.RegNet_X_3_2GF_Weights
     "torchvision.models.RegNet_X_3_2GF_Weights") | 81.196 | 95.43 | 15.3M | 3.18 |
     [link](https://github.com/pytorch/vision/issues/3995#new-recipe) |'
+  id: totrans-104
   prefs: []
   type: TYPE_TB
+  zh: '| [`RegNet_X_3_2GF_Weights.IMAGENET1K_V2`](models/generated/torchvision.models.regnet_x_3_2gf.html#torchvision.models.RegNet_X_3_2GF_Weights
+    "torchvision.models.RegNet_X_3_2GF_Weights") | 81.196 | 95.43 | 15.3M | 3.18 |
+    [链接](https://github.com/pytorch/vision/issues/3995#new-recipe) |'
 - en: '| [`RegNet_X_400MF_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.regnet_x_400mf.html#torchvision.models.RegNet_X_400MF_Weights
     "torchvision.models.RegNet_X_400MF_Weights") | 72.834 | 90.95 | 5.5M | 0.41 |
     [link](https://github.com/pytorch/vision/tree/main/references/classification#small-models)
     |'
+  id: totrans-105
   prefs: []
   type: TYPE_TB
+  zh: '| [`RegNet_X_400MF_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.regnet_x_400mf.html#torchvision.models.RegNet_X_400MF_Weights
+    "torchvision.models.RegNet_X_400MF_Weights") | 72.834 | 90.95 | 5.5M | 0.41 |
+    [链接](https://github.com/pytorch/vision/tree/main/references/classification#small-models)
+    |'
 - en: '| [`RegNet_X_400MF_Weights.IMAGENET1K_V2`](models/generated/torchvision.models.regnet_x_400mf.html#torchvision.models.RegNet_X_400MF_Weights
     "torchvision.models.RegNet_X_400MF_Weights") | 74.864 | 92.322 | 5.5M | 0.41 |
     [link](https://github.com/pytorch/vision/issues/3995#new-recipe-with-fixres) |'
+  id: totrans-106
   prefs: []
   type: TYPE_TB
+  zh: '| [`RegNet_X_400MF_Weights.IMAGENET1K_V2`](models/generated/torchvision.models.regnet_x_400mf.html#torchvision.models.RegNet_X_400MF_Weights
+    "torchvision.models.RegNet_X_400MF_Weights") | 74.864 | 92.322 | 5.5M | 0.41 |
+    [link](https://github.com/pytorch/vision/issues/3995#new-recipe-with-fixres) |'
 - en: '| [`RegNet_X_800MF_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.regnet_x_800mf.html#torchvision.models.RegNet_X_800MF_Weights
     "torchvision.models.RegNet_X_800MF_Weights") | 75.212 | 92.348 | 7.3M | 0.8 |
     [link](https://github.com/pytorch/vision/tree/main/references/classification#small-models)
     |'
+  id: totrans-107
   prefs: []
   type: TYPE_TB
+  zh: '| [`RegNet_X_800MF_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.regnet_x_800mf.html#torchvision.models.RegNet_X_800MF_Weights
+    "torchvision.models.RegNet_X_800MF_Weights") | 75.212 | 92.348 | 7.3M | 0.8 |
+    [link](https://github.com/pytorch/vision/tree/main/references/classification#small-models)
+    |'
 - en: '| [`RegNet_X_800MF_Weights.IMAGENET1K_V2`](models/generated/torchvision.models.regnet_x_800mf.html#torchvision.models.RegNet_X_800MF_Weights
     "torchvision.models.RegNet_X_800MF_Weights") | 77.522 | 93.826 | 7.3M | 0.8 |
     [link](https://github.com/pytorch/vision/issues/3995#new-recipe-with-fixres) |'
+  id: totrans-108
   prefs: []
   type: TYPE_TB
+  zh: '| [`RegNet_X_800MF_Weights.IMAGENET1K_V2`](models/generated/torchvision.models.regnet_x_800mf.html#torchvision.models.RegNet_X_800MF_Weights
+    "torchvision.models.RegNet_X_800MF_Weights") | 77.522 | 93.826 | 7.3M | 0.8 |
+    [link](https://github.com/pytorch/vision/issues/3995#new-recipe-with-fixres) |'
 - en: '| [`RegNet_X_8GF_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.regnet_x_8gf.html#torchvision.models.RegNet_X_8GF_Weights
     "torchvision.models.RegNet_X_8GF_Weights") | 79.344 | 94.686 | 39.6M | 8 | [link](https://github.com/pytorch/vision/tree/main/references/classification#medium-models)
     |'
+  id: totrans-109
   prefs: []
   type: TYPE_TB
+  zh: '| [`RegNet_X_8GF_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.regnet_x_8gf.html#torchvision.models.RegNet_X_8GF_Weights
+    "torchvision.models.RegNet_X_8GF_Weights") | 79.344 | 94.686 | 39.6M | 8 | [link](https://github.com/pytorch/vision/tree/main/references/classification#medium-models)
+    |'
 - en: '| [`RegNet_X_8GF_Weights.IMAGENET1K_V2`](models/generated/torchvision.models.regnet_x_8gf.html#torchvision.models.RegNet_X_8GF_Weights
     "torchvision.models.RegNet_X_8GF_Weights") | 81.682 | 95.678 | 39.6M | 8 | [link](https://github.com/pytorch/vision/issues/3995#new-recipe)
     |'
+  id: totrans-110
   prefs: []
   type: TYPE_TB
+  zh: '| [`RegNet_X_8GF_Weights.IMAGENET1K_V2`](models/generated/torchvision.models.regnet_x_8gf.html#torchvision.models.RegNet_X_8GF_Weights
+    "torchvision.models.RegNet_X_8GF_Weights") | 81.682 | 95.678 | 39.6M | 8 | [link](https://github.com/pytorch/vision/issues/3995#new-recipe)
+    |'
 - en: '| [`RegNet_Y_128GF_Weights.IMAGENET1K_SWAG_E2E_V1`](models/generated/torchvision.models.regnet_y_128gf.html#torchvision.models.RegNet_Y_128GF_Weights
     "torchvision.models.RegNet_Y_128GF_Weights") | 88.228 | 98.682 | 644.8M | 374.57
     | [link](https://github.com/facebookresearch/SWAG) |'
+  id: totrans-111
   prefs: []
   type: TYPE_TB
+  zh: '| [`RegNet_Y_128GF_Weights.IMAGENET1K_SWAG_E2E_V1`](models/generated/torchvision.models.regnet_y_128gf.html#torchvision.models.RegNet_Y_128GF_Weights
+    "torchvision.models.RegNet_Y_128GF_Weights") | 88.228 | 98.682 | 644.8M | 374.57
+    | [link](https://github.com/facebookresearch/SWAG) |'
 - en: '| [`RegNet_Y_128GF_Weights.IMAGENET1K_SWAG_LINEAR_V1`](models/generated/torchvision.models.regnet_y_128gf.html#torchvision.models.RegNet_Y_128GF_Weights
     "torchvision.models.RegNet_Y_128GF_Weights") | 86.068 | 97.844 | 644.8M | 127.52
     | [link](https://github.com/pytorch/vision/pull/5793) |'
+  id: totrans-112
   prefs: []
   type: TYPE_TB
+  zh: '| [`RegNet_Y_128GF_Weights.IMAGENET1K_SWAG_LINEAR_V1`](models/generated/torchvision.models.regnet_y_128gf.html#torchvision.models.RegNet_Y_128GF_Weights
+    "torchvision.models.RegNet_Y_128GF_Weights") | 86.068 | 97.844 | 644.8M | 127.52
+    | [link](https://github.com/pytorch/vision/pull/5793) |'
 - en: '| [`RegNet_Y_16GF_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.regnet_y_16gf.html#torchvision.models.RegNet_Y_16GF_Weights
     "torchvision.models.RegNet_Y_16GF_Weights") | 80.424 | 95.24 | 83.6M | 15.91 |
     [link](https://github.com/pytorch/vision/tree/main/references/classification#large-models)
     |'
+  id: totrans-113
   prefs: []
   type: TYPE_TB
+  zh: '| [`RegNet_Y_16GF_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.regnet_y_16gf.html#torchvision.models.RegNet_Y_16GF_Weights
+    "torchvision.models.RegNet_Y_16GF_Weights") | 80.424 | 95.24 | 83.6M | 15.91 |
+    [link](https://github.com/pytorch/vision/tree/main/references/classification#large-models)
+    |'
 - en: '| [`RegNet_Y_16GF_Weights.IMAGENET1K_V2`](models/generated/torchvision.models.regnet_y_16gf.html#torchvision.models.RegNet_Y_16GF_Weights
     "torchvision.models.RegNet_Y_16GF_Weights") | 82.886 | 96.328 | 83.6M | 15.91
     | [link](https://github.com/pytorch/vision/issues/3995#new-recipe) |'
+  id: totrans-114
   prefs: []
   type: TYPE_TB
+  zh: '| [`RegNet_Y_16GF_Weights.IMAGENET1K_V2`](models/generated/torchvision.models.regnet_y_16gf.html#torchvision.models.RegNet_Y_16GF_Weights
+    "torchvision.models.RegNet_Y_16GF_Weights") | 82.886 | 96.328 | 83.6M | 15.91
+    | [link](https://github.com/pytorch/vision/issues/3995#new-recipe) |'
 - en: '| [`RegNet_Y_16GF_Weights.IMAGENET1K_SWAG_E2E_V1`](models/generated/torchvision.models.regnet_y_16gf.html#torchvision.models.RegNet_Y_16GF_Weights
     "torchvision.models.RegNet_Y_16GF_Weights") | 86.012 | 98.054 | 83.6M | 46.73
     | [link](https://github.com/facebookresearch/SWAG) |'
+  id: totrans-115
   prefs: []
   type: TYPE_TB
+  zh: '| [`RegNet_Y_16GF_Weights.IMAGENET1K_SWAG_E2E_V1`](models/generated/torchvision.models.regnet_y_16gf.html#torchvision.models.RegNet_Y_16GF_Weights
+    "torchvision.models.RegNet_Y_16GF_Weights") | 86.012 | 98.054 | 83.6M | 46.73
+    | [link](https://github.com/facebookresearch/SWAG) |'
 - en: '| [`RegNet_Y_16GF_Weights.IMAGENET1K_SWAG_LINEAR_V1`](models/generated/torchvision.models.regnet_y_16gf.html#torchvision.models.RegNet_Y_16GF_Weights
     "torchvision.models.RegNet_Y_16GF_Weights") | 83.976 | 97.244 | 83.6M | 15.91
     | [link](https://github.com/pytorch/vision/pull/5793) |'
+  id: totrans-116
   prefs: []
   type: TYPE_TB
+  zh: '| [`RegNet_Y_16GF_Weights.IMAGENET1K_SWAG_LINEAR_V1`](models/generated/torchvision.models.regnet_y_16gf.html#torchvision.models.RegNet_Y_16GF_Weights
+    "torchvision.models.RegNet_Y_16GF_Weights") | 83.976 | 97.244 | 83.6M | 15.91
+    | [link](https://github.com/pytorch/vision/pull/5793) |'
 - en: '| [`RegNet_Y_1_6GF_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.regnet_y_1_6gf.html#torchvision.models.RegNet_Y_1_6GF_Weights
     "torchvision.models.RegNet_Y_1_6GF_Weights") | 77.95 | 93.966 | 11.2M | 1.61 |
     [link](https://github.com/pytorch/vision/tree/main/references/classification#small-models)
     |'
+  id: totrans-117
   prefs: []
   type: TYPE_TB
+  zh: '| [`RegNet_Y_1_6GF_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.regnet_y_1_6gf.html#torchvision.models.RegNet_Y_1_6GF_Weights
+    "torchvision.models.RegNet_Y_1_6GF_Weights") | 77.95 | 93.966 | 11.2M | 1.61 |
+    [link](https://github.com/pytorch/vision/tree/main/references/classification#small-models)
+    |'
 - en: '| [`RegNet_Y_1_6GF_Weights.IMAGENET1K_V2`](models/generated/torchvision.models.regnet_y_1_6gf.html#torchvision.models.RegNet_Y_1_6GF_Weights
     "torchvision.models.RegNet_Y_1_6GF_Weights") | 80.876 | 95.444 | 11.2M | 1.61
     | [link](https://github.com/pytorch/vision/issues/3995#new-recipe) |'
+  id: totrans-118
   prefs: []
   type: TYPE_TB
+  zh: '| [`RegNet_Y_1_6GF_Weights.IMAGENET1K_V2`](models/generated/torchvision.models.regnet_y_1_6gf.html#torchvision.models.RegNet_Y_1_6GF_Weights
+    "torchvision.models.RegNet_Y_1_6GF_Weights") | 80.876 | 95.444 | 11.2M | 1.61
+    | [link](https://github.com/pytorch/vision/issues/3995#new-recipe) |'
 - en: '| [`RegNet_Y_32GF_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.regnet_y_32gf.html#torchvision.models.RegNet_Y_32GF_Weights
     "torchvision.models.RegNet_Y_32GF_Weights") | 80.878 | 95.34 | 145.0M | 32.28
     | [link](https://github.com/pytorch/vision/tree/main/references/classification#large-models)
     |'
+  id: totrans-119
   prefs: []
   type: TYPE_TB
+  zh: '| [`RegNet_Y_32GF_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.regnet_y_32gf.html#torchvision.models.RegNet_Y_32GF_Weights
+    "torchvision.models.RegNet_Y_32GF_Weights") | 80.878 | 95.34 | 145.0M | 32.28
+    | [链接](https://github.com/pytorch/vision/tree/main/references/classification#large-models)
+    |'
 - en: '| [`RegNet_Y_32GF_Weights.IMAGENET1K_V2`](models/generated/torchvision.models.regnet_y_32gf.html#torchvision.models.RegNet_Y_32GF_Weights
     "torchvision.models.RegNet_Y_32GF_Weights") | 83.368 | 96.498 | 145.0M | 32.28
     | [link](https://github.com/pytorch/vision/issues/3995#new-recipe) |'
+  id: totrans-120
   prefs: []
   type: TYPE_TB
+  zh: '| [`RegNet_Y_32GF_Weights.IMAGENET1K_V2`](models/generated/torchvision.models.regnet_y_32gf.html#torchvision.models.RegNet_Y_32GF_Weights
+    "torchvision.models.RegNet_Y_32GF_Weights") | 83.368 | 96.498 | 145.0M | 32.28
+    | [链接](https://github.com/pytorch/vision/issues/3995#new-recipe) |'
 - en: '| [`RegNet_Y_32GF_Weights.IMAGENET1K_SWAG_E2E_V1`](models/generated/torchvision.models.regnet_y_32gf.html#torchvision.models.RegNet_Y_32GF_Weights
     "torchvision.models.RegNet_Y_32GF_Weights") | 86.838 | 98.362 | 145.0M | 94.83
     | [link](https://github.com/facebookresearch/SWAG) |'
+  id: totrans-121
   prefs: []
   type: TYPE_TB
+  zh: '| [`RegNet_Y_32GF_Weights.IMAGENET1K_SWAG_E2E_V1`](models/generated/torchvision.models.regnet_y_32gf.html#torchvision.models.RegNet_Y_32GF_Weights
+    "torchvision.models.RegNet_Y_32GF_Weights") | 86.838 | 98.362 | 145.0M | 94.83
+    | [链接](https://github.com/facebookresearch/SWAG) |'
 - en: '| [`RegNet_Y_32GF_Weights.IMAGENET1K_SWAG_LINEAR_V1`](models/generated/torchvision.models.regnet_y_32gf.html#torchvision.models.RegNet_Y_32GF_Weights
     "torchvision.models.RegNet_Y_32GF_Weights") | 84.622 | 97.48 | 145.0M | 32.28
     | [link](https://github.com/pytorch/vision/pull/5793) |'
+  id: totrans-122
   prefs: []
   type: TYPE_TB
+  zh: '| [`RegNet_Y_32GF_Weights.IMAGENET1K_SWAG_LINEAR_V1`](models/generated/torchvision.models.regnet_y_32gf.html#torchvision.models.RegNet_Y_32GF_Weights
+    "torchvision.models.RegNet_Y_32GF_Weights") | 84.622 | 97.48 | 145.0M | 32.28
+    | [链接](https://github.com/pytorch/vision/pull/5793) |'
 - en: '| [`RegNet_Y_3_2GF_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.regnet_y_3_2gf.html#torchvision.models.RegNet_Y_3_2GF_Weights
     "torchvision.models.RegNet_Y_3_2GF_Weights") | 78.948 | 94.576 | 19.4M | 3.18
     | [link](https://github.com/pytorch/vision/tree/main/references/classification#medium-models)
     |'
+  id: totrans-123
   prefs: []
   type: TYPE_TB
+  zh: '| [`RegNet_Y_3_2GF_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.regnet_y_3_2gf.html#torchvision.models.RegNet_Y_3_2GF_Weights
+    "torchvision.models.RegNet_Y_3_2GF_Weights") | 78.948 | 94.576 | 19.4M | 3.18
+    | [链接](https://github.com/pytorch/vision/tree/main/references/classification#medium-models)
+    |'
 - en: '| [`RegNet_Y_3_2GF_Weights.IMAGENET1K_V2`](models/generated/torchvision.models.regnet_y_3_2gf.html#torchvision.models.RegNet_Y_3_2GF_Weights
     "torchvision.models.RegNet_Y_3_2GF_Weights") | 81.982 | 95.972 | 19.4M | 3.18
     | [link](https://github.com/pytorch/vision/issues/3995#new-recipe) |'
+  id: totrans-124
   prefs: []
   type: TYPE_TB
+  zh: '| [`RegNet_Y_3_2GF_Weights.IMAGENET1K_V2`](models/generated/torchvision.models.regnet_y_3_2gf.html#torchvision.models.RegNet_Y_3_2GF_Weights
+    "torchvision.models.RegNet_Y_3_2GF_Weights") | 81.982 | 95.972 | 19.4M | 3.18
+    | [链接](https://github.com/pytorch/vision/issues/3995#new-recipe) |'
 - en: '| [`RegNet_Y_400MF_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.regnet_y_400mf.html#torchvision.models.RegNet_Y_400MF_Weights
     "torchvision.models.RegNet_Y_400MF_Weights") | 74.046 | 91.716 | 4.3M | 0.4 |
     [link](https://github.com/pytorch/vision/tree/main/references/classification#small-models)
     |'
+  id: totrans-125
   prefs: []
   type: TYPE_TB
+  zh: '| [`RegNet_Y_400MF_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.regnet_y_400mf.html#torchvision.models.RegNet_Y_400MF_Weights
+    "torchvision.models.RegNet_Y_400MF_Weights") | 74.046 | 91.716 | 4.3M | 0.4 |
+    [链接](https://github.com/pytorch/vision/tree/main/references/classification#small-models)
+    |'
 - en: '| [`RegNet_Y_400MF_Weights.IMAGENET1K_V2`](models/generated/torchvision.models.regnet_y_400mf.html#torchvision.models.RegNet_Y_400MF_Weights
     "torchvision.models.RegNet_Y_400MF_Weights") | 75.804 | 92.742 | 4.3M | 0.4 |
     [link](https://github.com/pytorch/vision/issues/3995#new-recipe) |'
+  id: totrans-126
   prefs: []
   type: TYPE_TB
+  zh: '| [`RegNet_Y_400MF_Weights.IMAGENET1K_V2`](models/generated/torchvision.models.regnet_y_400mf.html#torchvision.models.RegNet_Y_400MF_Weights
+    "torchvision.models.RegNet_Y_400MF_Weights") | 75.804 | 92.742 | 4.3M | 0.4 |
+    [链接](https://github.com/pytorch/vision/issues/3995#new-recipe) |'
 - en: '| [`RegNet_Y_800MF_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.regnet_y_800mf.html#torchvision.models.RegNet_Y_800MF_Weights
     "torchvision.models.RegNet_Y_800MF_Weights") | 76.42 | 93.136 | 6.4M | 0.83 |
     [link](https://github.com/pytorch/vision/tree/main/references/classification#small-models)
     |'
+  id: totrans-127
   prefs: []
   type: TYPE_TB
+  zh: '| [`RegNet_Y_800MF_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.regnet_y_800mf.html#torchvision.models.RegNet_Y_800MF_Weights
+    "torchvision.models.RegNet_Y_800MF_Weights") | 76.42 | 93.136 | 6.4M | 0.83 |
+    [链接](https://github.com/pytorch/vision/tree/main/references/classification#small-models)
+    |'
 - en: '| [`RegNet_Y_800MF_Weights.IMAGENET1K_V2`](models/generated/torchvision.models.regnet_y_800mf.html#torchvision.models.RegNet_Y_800MF_Weights
     "torchvision.models.RegNet_Y_800MF_Weights") | 78.828 | 94.502 | 6.4M | 0.83 |
     [link](https://github.com/pytorch/vision/issues/3995#new-recipe) |'
+  id: totrans-128
   prefs: []
   type: TYPE_TB
+  zh: '| [`RegNet_Y_800MF_Weights.IMAGENET1K_V2`](models/generated/torchvision.models.regnet_y_800mf.html#torchvision.models.RegNet_Y_800MF_Weights
+    "torchvision.models.RegNet_Y_800MF_Weights") | 78.828 | 94.502 | 6.4M | 0.83 |
+    [链接](https://github.com/pytorch/vision/issues/3995#new-recipe) |'
 - en: '| [`RegNet_Y_8GF_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.regnet_y_8gf.html#torchvision.models.RegNet_Y_8GF_Weights
     "torchvision.models.RegNet_Y_8GF_Weights") | 80.032 | 95.048 | 39.4M | 8.47 |
     [link](https://github.com/pytorch/vision/tree/main/references/classification#medium-models)
     |'
+  id: totrans-129
   prefs: []
   type: TYPE_TB
+  zh: '| [`RegNet_Y_8GF_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.regnet_y_8gf.html#torchvision.models.RegNet_Y_8GF_Weights
+    "torchvision.models.RegNet_Y_8GF_Weights") | 80.032 | 95.048 | 39.4M | 8.47 |
+    [链接](https://github.com/pytorch/vision/tree/main/references/classification#medium-models)
+    |'
 - en: '| [`RegNet_Y_8GF_Weights.IMAGENET1K_V2`](models/generated/torchvision.models.regnet_y_8gf.html#torchvision.models.RegNet_Y_8GF_Weights
     "torchvision.models.RegNet_Y_8GF_Weights") | 82.828 | 96.33 | 39.4M | 8.47 | [link](https://github.com/pytorch/vision/issues/3995#new-recipe)
     |'
+  id: totrans-130
   prefs: []
   type: TYPE_TB
+  zh: '| [`RegNet_Y_8GF_Weights.IMAGENET1K_V2`](models/generated/torchvision.models.regnet_y_8gf.html#torchvision.models.RegNet_Y_8GF_Weights
+    "torchvision.models.RegNet_Y_8GF_Weights") | 82.828 | 96.33 | 39.4M | 8.47 | [链接](https://github.com/pytorch/vision/issues/3995#new-recipe)
+    |'
 - en: '| [`ResNeXt101_32X8D_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.resnext101_32x8d.html#torchvision.models.ResNeXt101_32X8D_Weights
     "torchvision.models.ResNeXt101_32X8D_Weights") | 79.312 | 94.526 | 88.8M | 16.41
     | [link](https://github.com/pytorch/vision/tree/main/references/classification#resnext)
     |'
+  id: totrans-131
   prefs: []
   type: TYPE_TB
+  zh: '| [`ResNeXt101_32X8D_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.resnext101_32x8d.html#torchvision.models.ResNeXt101_32X8D_Weights
+    "torchvision.models.ResNeXt101_32X8D_Weights") | 79.312 | 94.526 | 88.8M | 16.41
+    | [链接](https://github.com/pytorch/vision/tree/main/references/classification#resnext)
+    |'
 - en: '| [`ResNeXt101_32X8D_Weights.IMAGENET1K_V2`](models/generated/torchvision.models.resnext101_32x8d.html#torchvision.models.ResNeXt101_32X8D_Weights
     "torchvision.models.ResNeXt101_32X8D_Weights") | 82.834 | 96.228 | 88.8M | 16.41
     | [link](https://github.com/pytorch/vision/issues/3995#new-recipe-with-fixres)
     |'
+  id: totrans-132
   prefs: []
   type: TYPE_TB
+  zh: '| [`ResNeXt101_32X8D_Weights.IMAGENET1K_V2`](models/generated/torchvision.models.resnext101_32x8d.html#torchvision.models.ResNeXt101_32X8D_Weights
+    "torchvision.models.ResNeXt101_32X8D_Weights") | 82.834 | 96.228 | 88.8M | 16.41
+    | [链接](https://github.com/pytorch/vision/issues/3995#new-recipe-with-fixres) |'
 - en: '| [`ResNeXt101_64X4D_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.resnext101_64x4d.html#torchvision.models.ResNeXt101_64X4D_Weights
     "torchvision.models.ResNeXt101_64X4D_Weights") | 83.246 | 96.454 | 83.5M | 15.46
     | [link](https://github.com/pytorch/vision/pull/5935) |'
+  id: totrans-133
   prefs: []
   type: TYPE_TB
+  zh: '| [`ResNeXt101_64X4D_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.resnext101_64x4d.html#torchvision.models.ResNeXt101_64X4D_Weights
+    "torchvision.models.ResNeXt101_64X4D_Weights") | 83.246 | 96.454 | 83.5M | 15.46
+    | [链接](https://github.com/pytorch/vision/pull/5935) |'
 - en: '| [`ResNeXt50_32X4D_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.resnext50_32x4d.html#torchvision.models.ResNeXt50_32X4D_Weights
     "torchvision.models.ResNeXt50_32X4D_Weights") | 77.618 | 93.698 | 25.0M | 4.23
     | [link](https://github.com/pytorch/vision/tree/main/references/classification#resnext)
     |'
+  id: totrans-134
   prefs: []
   type: TYPE_TB
+  zh: '| [`ResNeXt50_32X4D_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.resnext50_32x4d.html#torchvision.models.ResNeXt50_32X4D_Weights
+    "torchvision.models.ResNeXt50_32X4D_Weights") | 77.618 | 93.698 | 25.0M | 4.23
+    | [链接](https://github.com/pytorch/vision/tree/main/references/classification#resnext)
+    |'
 - en: '| [`ResNeXt50_32X4D_Weights.IMAGENET1K_V2`](models/generated/torchvision.models.resnext50_32x4d.html#torchvision.models.ResNeXt50_32X4D_Weights
     "torchvision.models.ResNeXt50_32X4D_Weights") | 81.198 | 95.34 | 25.0M | 4.23
     | [link](https://github.com/pytorch/vision/issues/3995#new-recipe) |'
+  id: totrans-135
   prefs: []
   type: TYPE_TB
+  zh: '| [`ResNeXt50_32X4D_Weights.IMAGENET1K_V2`](models/generated/torchvision.models.resnext50_32x4d.html#torchvision.models.ResNeXt50_32X4D_Weights
+    "torchvision.models.ResNeXt50_32X4D_Weights") | 81.198 | 95.34 | 25.0M | 4.23
+    | [链接](https://github.com/pytorch/vision/issues/3995#new-recipe) |'
 - en: '| [`ResNet101_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.resnet101.html#torchvision.models.ResNet101_Weights
     "torchvision.models.ResNet101_Weights") | 77.374 | 93.546 | 44.5M | 7.8 | [link](https://github.com/pytorch/vision/tree/main/references/classification#resnet)
     |'
+  id: totrans-136
   prefs: []
   type: TYPE_TB
+  zh: '| [`ResNet101_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.resnet101.html#torchvision.models.ResNet101_Weights
+    "torchvision.models.ResNet101_Weights") | 77.374 | 93.546 | 44.5M | 7.8 | [链接](https://github.com/pytorch/vision/tree/main/references/classification#resnet)
+    |'
 - en: '| [`ResNet101_Weights.IMAGENET1K_V2`](models/generated/torchvision.models.resnet101.html#torchvision.models.ResNet101_Weights
     "torchvision.models.ResNet101_Weights") | 81.886 | 95.78 | 44.5M | 7.8 | [link](https://github.com/pytorch/vision/issues/3995#new-recipe)
     |'
+  id: totrans-137
   prefs: []
   type: TYPE_TB
+  zh: '| [`ResNet101_Weights.IMAGENET1K_V2`](models/generated/torchvision.models.resnet101.html#torchvision.models.ResNet101_Weights
+    "torchvision.models.ResNet101_Weights") | 81.886 | 95.78 | 44.5M | 7.8 | [链接](https://github.com/pytorch/vision/issues/3995#new-recipe)
+    |'
 - en: '| [`ResNet152_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.resnet152.html#torchvision.models.ResNet152_Weights
     "torchvision.models.ResNet152_Weights") | 78.312 | 94.046 | 60.2M | 11.51 | [link](https://github.com/pytorch/vision/tree/main/references/classification#resnet)
     |'
+  id: totrans-138
   prefs: []
   type: TYPE_TB
+  zh: '| [`ResNet152_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.resnet152.html#torchvision.models.ResNet152_Weights
+    "torchvision.models.ResNet152_Weights") | 78.312 | 94.046 | 60.2M | 11.51 | [链接](https://github.com/pytorch/vision/tree/main/references/classification#resnet)
+    |'
 - en: '| [`ResNet152_Weights.IMAGENET1K_V2`](models/generated/torchvision.models.resnet152.html#torchvision.models.ResNet152_Weights
     "torchvision.models.ResNet152_Weights") | 82.284 | 96.002 | 60.2M | 11.51 | [link](https://github.com/pytorch/vision/issues/3995#new-recipe)
     |'
+  id: totrans-139
   prefs: []
   type: TYPE_TB
+  zh: '| [`ResNet152_Weights.IMAGENET1K_V2`](models/generated/torchvision.models.resnet152.html#torchvision.models.ResNet152_Weights
+    "torchvision.models.ResNet152_Weights") | 82.284 | 96.002 | 60.2M | 11.51 | [链接](https://github.com/pytorch/vision/issues/3995#new-recipe)
+    |'
 - en: '| [`ResNet18_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.resnet18.html#torchvision.models.ResNet18_Weights
     "torchvision.models.ResNet18_Weights") | 69.758 | 89.078 | 11.7M | 1.81 | [link](https://github.com/pytorch/vision/tree/main/references/classification#resnet)
     |'
+  id: totrans-140
   prefs: []
   type: TYPE_TB
+  zh: '| [`ResNet18_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.resnet18.html#torchvision.models.ResNet18_Weights
+    "torchvision.models.ResNet18_Weights") | 69.758 | 89.078 | 11.7M | 1.81 | [链接](https://github.com/pytorch/vision/tree/main/references/classification#resnet)
+    |'
 - en: '| [`ResNet34_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.resnet34.html#torchvision.models.ResNet34_Weights
     "torchvision.models.ResNet34_Weights") | 73.314 | 91.42 | 21.8M | 3.66 | [link](https://github.com/pytorch/vision/tree/main/references/classification#resnet)
     |'
+  id: totrans-141
   prefs: []
   type: TYPE_TB
+  zh: '| [`ResNet34_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.resnet34.html#torchvision.models.ResNet34_Weights
+    "torchvision.models.ResNet34_Weights") | 73.314 | 91.42 | 21.8M | 3.66 | [链接](https://github.com/pytorch/vision/tree/main/references/classification#resnet)
+    |'
 - en: '| [`ResNet50_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.resnet50.html#torchvision.models.ResNet50_Weights
     "torchvision.models.ResNet50_Weights") | 76.13 | 92.862 | 25.6M | 4.09 | [link](https://github.com/pytorch/vision/tree/main/references/classification#resnet)
     |'
+  id: totrans-142
   prefs: []
   type: TYPE_TB
+  zh: '| [`ResNet50_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.resnet50.html#torchvision.models.ResNet50_Weights
+    "torchvision.models.ResNet50_Weights") | 76.13 | 92.862 | 25.6M | 4.09 | [链接](https://github.com/pytorch/vision/tree/main/references/classification#resnet)
+    |'
 - en: '| [`ResNet50_Weights.IMAGENET1K_V2`](models/generated/torchvision.models.resnet50.html#torchvision.models.ResNet50_Weights
     "torchvision.models.ResNet50_Weights") | 80.858 | 95.434 | 25.6M | 4.09 | [link](https://github.com/pytorch/vision/issues/3995#issuecomment-1013906621)
     |'
+  id: totrans-143
   prefs: []
   type: TYPE_TB
+  zh: '| [`ResNet50_Weights.IMAGENET1K_V2`](models/generated/torchvision.models.resnet50.html#torchvision.models.ResNet50_Weights
+    "torchvision.models.ResNet50_Weights") | 80.858 | 95.434 | 25.6M | 4.09 | [链接](https://github.com/pytorch/vision/issues/3995#issuecomment-1013906621)
+    |'
 - en: '| [`ShuffleNet_V2_X0_5_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.shufflenet_v2_x0_5.html#torchvision.models.ShuffleNet_V2_X0_5_Weights
     "torchvision.models.ShuffleNet_V2_X0_5_Weights") | 60.552 | 81.746 | 1.4M | 0.04
     | [link](https://github.com/ericsun99/Shufflenet-v2-Pytorch) |'
+  id: totrans-144
   prefs: []
   type: TYPE_TB
+  zh: '| [`ShuffleNet_V2_X0_5_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.shufflenet_v2_x0_5.html#torchvision.models.ShuffleNet_V2_X0_5_Weights
+    "torchvision.models.ShuffleNet_V2_X0_5_Weights") | 60.552 | 81.746 | 1.4M | 0.04
+    | [链接](https://github.com/ericsun99/Shufflenet-v2-Pytorch) |'
 - en: '| [`ShuffleNet_V2_X1_0_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.shufflenet_v2_x1_0.html#torchvision.models.ShuffleNet_V2_X1_0_Weights
     "torchvision.models.ShuffleNet_V2_X1_0_Weights") | 69.362 | 88.316 | 2.3M | 0.14
     | [link](https://github.com/ericsun99/Shufflenet-v2-Pytorch) |'
+  id: totrans-145
   prefs: []
   type: TYPE_TB
+  zh: '| [`ShuffleNet_V2_X1_0_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.shufflenet_v2_x1_0.html#torchvision.models.ShuffleNet_V2_X1_0_Weights
+    "torchvision.models.ShuffleNet_V2_X1_0_Weights") | 69.362 | 88.316 | 2.3M | 0.14
+    | [链接](https://github.com/ericsun99/Shufflenet-v2-Pytorch) |'
 - en: '| [`ShuffleNet_V2_X1_5_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.shufflenet_v2_x1_5.html#torchvision.models.ShuffleNet_V2_X1_5_Weights
     "torchvision.models.ShuffleNet_V2_X1_5_Weights") | 72.996 | 91.086 | 3.5M | 0.3
     | [link](https://github.com/pytorch/vision/pull/5906) |'
+  id: totrans-146
   prefs: []
   type: TYPE_TB
+  zh: '| [`ShuffleNet_V2_X1_5_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.shufflenet_v2_x1_5.html#torchvision.models.ShuffleNet_V2_X1_5_Weights
+    "torchvision.models.ShuffleNet_V2_X1_5_Weights") | 72.996 | 91.086 | 3.5M | 0.3
+    | [链接](https://github.com/pytorch/vision/pull/5906) |'
 - en: '| [`ShuffleNet_V2_X2_0_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.shufflenet_v2_x2_0.html#torchvision.models.ShuffleNet_V2_X2_0_Weights
     "torchvision.models.ShuffleNet_V2_X2_0_Weights") | 76.23 | 93.006 | 7.4M | 0.58
     | [link](https://github.com/pytorch/vision/pull/5906) |'
+  id: totrans-147
   prefs: []
   type: TYPE_TB
+  zh: '| [`ShuffleNet_V2_X2_0_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.shufflenet_v2_x2_0.html#torchvision.models.ShuffleNet_V2_X2_0_Weights
+    "torchvision.models.ShuffleNet_V2_X2_0_Weights") | 76.23 | 93.006 | 7.4M | 0.58
+    | [链接](https://github.com/pytorch/vision/pull/5906) |'
 - en: '| [`SqueezeNet1_0_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.squeezenet1_0.html#torchvision.models.SqueezeNet1_0_Weights
     "torchvision.models.SqueezeNet1_0_Weights") | 58.092 | 80.42 | 1.2M | 0.82 | [link](https://github.com/pytorch/vision/pull/49#issuecomment-277560717)
     |'
+  id: totrans-148
   prefs: []
   type: TYPE_TB
+  zh: '| [`SqueezeNet1_0_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.squeezenet1_0.html#torchvision.models.SqueezeNet1_0_Weights
+    "torchvision.models.SqueezeNet1_0_Weights") | 58.092 | 80.42 | 1.2M | 0.82 | [链接](https://github.com/pytorch/vision/pull/49#issuecomment-277560717)
+    |'
 - en: '| [`SqueezeNet1_1_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.squeezenet1_1.html#torchvision.models.SqueezeNet1_1_Weights
     "torchvision.models.SqueezeNet1_1_Weights") | 58.178 | 80.624 | 1.2M | 0.35 |
     [link](https://github.com/pytorch/vision/pull/49#issuecomment-277560717) |'
+  id: totrans-149
   prefs: []
   type: TYPE_TB
+  zh: '| [`SqueezeNet1_1_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.squeezenet1_1.html#torchvision.models.SqueezeNet1_1_Weights
+    "torchvision.models.SqueezeNet1_1_Weights") | 58.178 | 80.624 | 1.2M | 0.35 |
+    [链接](https://github.com/pytorch/vision/pull/49#issuecomment-277560717) |'
 - en: '| [`Swin_B_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.swin_b.html#torchvision.models.Swin_B_Weights
     "torchvision.models.Swin_B_Weights") | 83.582 | 96.64 | 87.8M | 15.43 | [link](https://github.com/pytorch/vision/tree/main/references/classification#swintransformer)
     |'
+  id: totrans-150
   prefs: []
   type: TYPE_TB
+  zh: '| [`Swin_B_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.swin_b.html#torchvision.models.Swin_B_Weights
+    "torchvision.models.Swin_B_Weights") | 83.582 | 96.64 | 87.8M | 15.43 | [链接](https://github.com/pytorch/vision/tree/main/references/classification#swintransformer)
+    |'
 - en: '| [`Swin_S_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.swin_s.html#torchvision.models.Swin_S_Weights
     "torchvision.models.Swin_S_Weights") | 83.196 | 96.36 | 49.6M | 8.74 | [link](https://github.com/pytorch/vision/tree/main/references/classification#swintransformer)
     |'
+  id: totrans-151
   prefs: []
   type: TYPE_TB
+  zh: '| [`Swin_S_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.swin_s.html#torchvision.models.Swin_S_Weights
+    "torchvision.models.Swin_S_Weights") | 83.196 | 96.36 | 49.6M | 8.74 | [链接](https://github.com/pytorch/vision/tree/main/references/classification#swintransformer)
+    |'
 - en: '| [`Swin_T_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.swin_t.html#torchvision.models.Swin_T_Weights
     "torchvision.models.Swin_T_Weights") | 81.474 | 95.776 | 28.3M | 4.49 | [link](https://github.com/pytorch/vision/tree/main/references/classification#swintransformer)
     |'
+  id: totrans-152
   prefs: []
   type: TYPE_TB
+  zh: '| [`Swin_T_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.swin_t.html#torchvision.models.Swin_T_Weights
+    "torchvision.models.Swin_T_Weights") | 81.474 | 95.776 | 28.3M | 4.49 | [链接](https://github.com/pytorch/vision/tree/main/references/classification#swintransformer)
+    |'
 - en: '| [`Swin_V2_B_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.swin_v2_b.html#torchvision.models.Swin_V2_B_Weights
     "torchvision.models.Swin_V2_B_Weights") | 84.112 | 96.864 | 87.9M | 20.32 | [link](https://github.com/pytorch/vision/tree/main/references/classification#swintransformer-v2)
     |'
+  id: totrans-153
   prefs: []
   type: TYPE_TB
+  zh: '| [`Swin_V2_B_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.swin_v2_b.html#torchvision.models.Swin_V2_B_Weights
+    "torchvision.models.Swin_V2_B_Weights") | 84.112 | 96.864 | 87.9M | 20.32 | [链接](https://github.com/pytorch/vision/tree/main/references/classification#swintransformer-v2)
+    |'
 - en: '| [`Swin_V2_S_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.swin_v2_s.html#torchvision.models.Swin_V2_S_Weights
     "torchvision.models.Swin_V2_S_Weights") | 83.712 | 96.816 | 49.7M | 11.55 | [link](https://github.com/pytorch/vision/tree/main/references/classification#swintransformer-v2)
     |'
+  id: totrans-154
   prefs: []
   type: TYPE_TB
+  zh: '| [`Swin_V2_S_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.swin_v2_s.html#torchvision.models.Swin_V2_S_Weights
+    "torchvision.models.Swin_V2_S_Weights") | 83.712 | 96.816 | 49.7M | 11.55 | [链接](https://github.com/pytorch/vision/tree/main/references/classification#swintransformer-v2)
+    |'
 - en: '| [`Swin_V2_T_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.swin_v2_t.html#torchvision.models.Swin_V2_T_Weights
     "torchvision.models.Swin_V2_T_Weights") | 82.072 | 96.132 | 28.4M | 5.94 | [link](https://github.com/pytorch/vision/tree/main/references/classification#swintransformer-v2)
     |'
+  id: totrans-155
   prefs: []
   type: TYPE_TB
+  zh: '| [`Swin_V2_T_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.swin_v2_t.html#torchvision.models.Swin_V2_T_Weights
+    "torchvision.models.Swin_V2_T_Weights") | 82.072 | 96.132 | 28.4M | 5.94 | [链接](https://github.com/pytorch/vision/tree/main/references/classification#swintransformer-v2)
+    |'
 - en: '| [`VGG11_BN_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.vgg11_bn.html#torchvision.models.VGG11_BN_Weights
     "torchvision.models.VGG11_BN_Weights") | 70.37 | 89.81 | 132.9M | 7.61 | [link](https://github.com/pytorch/vision/tree/main/references/classification#alexnet-and-vgg)
     |'
+  id: totrans-156
   prefs: []
   type: TYPE_TB
+  zh: '| [`VGG11_BN_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.vgg11_bn.html#torchvision.models.VGG11_BN_Weights
+    "torchvision.models.VGG11_BN_Weights") | 70.37 | 89.81 | 132.9M | 7.61 | [链接](https://github.com/pytorch/vision/tree/main/references/classification#alexnet-and-vgg)
+    |'
 - en: '| [`VGG11_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.vgg11.html#torchvision.models.VGG11_Weights
     "torchvision.models.VGG11_Weights") | 69.02 | 88.628 | 132.9M | 7.61 | [link](https://github.com/pytorch/vision/tree/main/references/classification#alexnet-and-vgg)
     |'
+  id: totrans-157
   prefs: []
   type: TYPE_TB
+  zh: '| [`VGG11_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.vgg11.html#torchvision.models.VGG11_Weights
+    "torchvision.models.VGG11_Weights") | 69.02 | 88.628 | 132.9M | 7.61 | [链接](https://github.com/pytorch/vision/tree/main/references/classification#alexnet-and-vgg)
+    |'
 - en: '| [`VGG13_BN_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.vgg13_bn.html#torchvision.models.VGG13_BN_Weights
     "torchvision.models.VGG13_BN_Weights") | 71.586 | 90.374 | 133.1M | 11.31 | [link](https://github.com/pytorch/vision/tree/main/references/classification#alexnet-and-vgg)
     |'
+  id: totrans-158
   prefs: []
   type: TYPE_TB
+  zh: '| [`VGG13_BN_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.vgg13_bn.html#torchvision.models.VGG13_BN_Weights
+    "torchvision.models.VGG13_BN_Weights") | 71.586 | 90.374 | 133.1M | 11.31 | [链接](https://github.com/pytorch/vision/tree/main/references/classification#alexnet-and-vgg)
+    |'
 - en: '| [`VGG13_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.vgg13.html#torchvision.models.VGG13_Weights
     "torchvision.models.VGG13_Weights") | 69.928 | 89.246 | 133.0M | 11.31 | [link](https://github.com/pytorch/vision/tree/main/references/classification#alexnet-and-vgg)
     |'
+  id: totrans-159
   prefs: []
   type: TYPE_TB
+  zh: '| [`VGG13_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.vgg13.html#torchvision.models.VGG13_Weights
+    "torchvision.models.VGG13_Weights") | 69.928 | 89.246 | 133.0M | 11.31 | [链接](https://github.com/pytorch/vision/tree/main/references/classification#alexnet-and-vgg)
+    |'
 - en: '| [`VGG16_BN_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.vgg16_bn.html#torchvision.models.VGG16_BN_Weights
     "torchvision.models.VGG16_BN_Weights") | 73.36 | 91.516 | 138.4M | 15.47 | [link](https://github.com/pytorch/vision/tree/main/references/classification#alexnet-and-vgg)
     |'
+  id: totrans-160
   prefs: []
   type: TYPE_TB
+  zh: '| [`VGG16_BN_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.vgg16_bn.html#torchvision.models.VGG16_BN_Weights
+    "torchvision.models.VGG16_BN_Weights") | 73.36 | 91.516 | 138.4M | 15.47 | [链接](https://github.com/pytorch/vision/tree/main/references/classification#alexnet-and-vgg)
+    |'
 - en: '| [`VGG16_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.vgg16.html#torchvision.models.VGG16_Weights
     "torchvision.models.VGG16_Weights") | 71.592 | 90.382 | 138.4M | 15.47 | [link](https://github.com/pytorch/vision/tree/main/references/classification#alexnet-and-vgg)
     |'
+  id: totrans-161
   prefs: []
   type: TYPE_TB
+  zh: '| [`VGG16_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.vgg16.html#torchvision.models.VGG16_Weights
+    "torchvision.models.VGG16_Weights") | 71.592 | 90.382 | 138.4M | 15.47 | [链接](https://github.com/pytorch/vision/tree/main/references/classification#alexnet-and-vgg)
+    |'
 - en: '| [`VGG16_Weights.IMAGENET1K_FEATURES`](models/generated/torchvision.models.vgg16.html#torchvision.models.VGG16_Weights
     "torchvision.models.VGG16_Weights") | nan | nan | 138.4M | 15.47 | [link](https://github.com/amdegroot/ssd.pytorch#training-ssd)
     |'
+  id: totrans-162
   prefs: []
   type: TYPE_TB
+  zh: '| [`VGG16_Weights.IMAGENET1K_FEATURES`](models/generated/torchvision.models.vgg16.html#torchvision.models.VGG16_Weights
+    "torchvision.models.VGG16_Weights") | nan | nan | 138.4M | 15.47 | [链接](https://github.com/amdegroot/ssd.pytorch#training-ssd)
+    |'
 - en: '| [`VGG19_BN_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.vgg19_bn.html#torchvision.models.VGG19_BN_Weights
     "torchvision.models.VGG19_BN_Weights") | 74.218 | 91.842 | 143.7M | 19.63 | [link](https://github.com/pytorch/vision/tree/main/references/classification#alexnet-and-vgg)
     |'
+  id: totrans-163
   prefs: []
   type: TYPE_TB
+  zh: '| [`VGG19_BN_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.vgg19_bn.html#torchvision.models.VGG19_BN_Weights
+    "torchvision.models.VGG19_BN_Weights") | 74.218 | 91.842 | 143.7M | 19.63 | [链接](https://github.com/pytorch/vision/tree/main/references/classification#alexnet-and-vgg)
+    |'
 - en: '| [`VGG19_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.vgg19.html#torchvision.models.VGG19_Weights
     "torchvision.models.VGG19_Weights") | 72.376 | 90.876 | 143.7M | 19.63 | [link](https://github.com/pytorch/vision/tree/main/references/classification#alexnet-and-vgg)
     |'
+  id: totrans-164
   prefs: []
   type: TYPE_TB
+  zh: '| [`VGG19_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.vgg19.html#torchvision.models.VGG19_Weights
+    "torchvision.models.VGG19_Weights") | 72.376 | 90.876 | 143.7M | 19.63 | [链接](https://github.com/pytorch/vision/tree/main/references/classification#alexnet-and-vgg)
+    |'
 - en: '| [`ViT_B_16_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.vit_b_16.html#torchvision.models.ViT_B_16_Weights
     "torchvision.models.ViT_B_16_Weights") | 81.072 | 95.318 | 86.6M | 17.56 | [link](https://github.com/pytorch/vision/tree/main/references/classification#vit_b_16)
     |'
+  id: totrans-165
   prefs: []
   type: TYPE_TB
+  zh: '| [`ViT_B_16_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.vit_b_16.html#torchvision.models.ViT_B_16_Weights
+    "torchvision.models.ViT_B_16_Weights") | 81.072 | 95.318 | 86.6M | 17.56 | [链接](https://github.com/pytorch/vision/tree/main/references/classification#vit_b_16)
+    |'
 - en: '| [`ViT_B_16_Weights.IMAGENET1K_SWAG_E2E_V1`](models/generated/torchvision.models.vit_b_16.html#torchvision.models.ViT_B_16_Weights
     "torchvision.models.ViT_B_16_Weights") | 85.304 | 97.65 | 86.9M | 55.48 | [link](https://github.com/facebookresearch/SWAG)
     |'
+  id: totrans-166
   prefs: []
   type: TYPE_TB
+  zh: '| [`ViT_B_16_Weights.IMAGENET1K_SWAG_E2E_V1`](models/generated/torchvision.models.vit_b_16.html#torchvision.models.ViT_B_16_Weights
+    "torchvision.models.ViT_B_16_Weights") | 85.304 | 97.65 | 86.9M | 55.48 | [链接](https://github.com/facebookresearch/SWAG)
+    |'
 - en: '| [`ViT_B_16_Weights.IMAGENET1K_SWAG_LINEAR_V1`](models/generated/torchvision.models.vit_b_16.html#torchvision.models.ViT_B_16_Weights
     "torchvision.models.ViT_B_16_Weights") | 81.886 | 96.18 | 86.6M | 17.56 | [link](https://github.com/pytorch/vision/pull/5793)
     |'
+  id: totrans-167
   prefs: []
   type: TYPE_TB
+  zh: '| [`ViT_B_16_Weights.IMAGENET1K_SWAG_LINEAR_V1`](models/generated/torchvision.models.vit_b_16.html#torchvision.models.ViT_B_16_Weights
+    "torchvision.models.ViT_B_16_Weights") | 81.886 | 96.18 | 86.6M | 17.56 | [链接](https://github.com/pytorch/vision/pull/5793)
+    |'
 - en: '| [`ViT_B_32_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.vit_b_32.html#torchvision.models.ViT_B_32_Weights
     "torchvision.models.ViT_B_32_Weights") | 75.912 | 92.466 | 88.2M | 4.41 | [link](https://github.com/pytorch/vision/tree/main/references/classification#vit_b_32)
     |'
+  id: totrans-168
   prefs: []
   type: TYPE_TB
+  zh: '| [`ViT_B_32_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.vit_b_32.html#torchvision.models.ViT_B_32_Weights
+    "torchvision.models.ViT_B_32_Weights") | 75.912 | 92.466 | 88.2M | 4.41 | [链接](https://github.com/pytorch/vision/tree/main/references/classification#vit_b_32)
+    |'
 - en: '| [`ViT_H_14_Weights.IMAGENET1K_SWAG_E2E_V1`](models/generated/torchvision.models.vit_h_14.html#torchvision.models.ViT_H_14_Weights
     "torchvision.models.ViT_H_14_Weights") | 88.552 | 98.694 | 633.5M | 1016.72 |
     [link](https://github.com/facebookresearch/SWAG) |'
+  id: totrans-169
   prefs: []
   type: TYPE_TB
+  zh: '| [`ViT_H_14_Weights.IMAGENET1K_SWAG_E2E_V1`](models/generated/torchvision.models.vit_h_14.html#torchvision.models.ViT_H_14_Weights
+    "torchvision.models.ViT_H_14_Weights") | 88.552 | 98.694 | 633.5M | 1016.72 |
+    [链接](https://github.com/facebookresearch/SWAG) |'
 - en: '| [`ViT_H_14_Weights.IMAGENET1K_SWAG_LINEAR_V1`](models/generated/torchvision.models.vit_h_14.html#torchvision.models.ViT_H_14_Weights
     "torchvision.models.ViT_H_14_Weights") | 85.708 | 97.73 | 632.0M | 167.29 | [link](https://github.com/pytorch/vision/pull/5793)
     |'
+  id: totrans-170
   prefs: []
   type: TYPE_TB
+  zh: '| [`ViT_H_14_Weights.IMAGENET1K_SWAG_LINEAR_V1`](models/generated/torchvision.models.vit_h_14.html#torchvision.models.ViT_H_14_Weights
+    "torchvision.models.ViT_H_14_Weights") | 85.708 | 97.73 | 632.0M | 167.29 | [链接](https://github.com/pytorch/vision/pull/5793)
+    |'
 - en: '| [`ViT_L_16_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.vit_l_16.html#torchvision.models.ViT_L_16_Weights
     "torchvision.models.ViT_L_16_Weights") | 79.662 | 94.638 | 304.3M | 61.55 | [link](https://github.com/pytorch/vision/tree/main/references/classification#vit_l_16)
     |'
+  id: totrans-171
   prefs: []
   type: TYPE_TB
+  zh: '| [`ViT_L_16_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.vit_l_16.html#torchvision.models.ViT_L_16_Weights
+    "torchvision.models.ViT_L_16_Weights") | 79.662 | 94.638 | 304.3M | 61.55 | [链接](https://github.com/pytorch/vision/tree/main/references/classification#vit_l_16)
+    |'
 - en: '| [`ViT_L_16_Weights.IMAGENET1K_SWAG_E2E_V1`](models/generated/torchvision.models.vit_l_16.html#torchvision.models.ViT_L_16_Weights
     "torchvision.models.ViT_L_16_Weights") | 88.064 | 98.512 | 305.2M | 361.99 | [link](https://github.com/facebookresearch/SWAG)
     |'
+  id: totrans-172
   prefs: []
   type: TYPE_TB
+  zh: '| [`ViT_L_16_Weights.IMAGENET1K_SWAG_E2E_V1`](models/generated/torchvision.models.vit_l_16.html#torchvision.models.ViT_L_16_Weights
+    "torchvision.models.ViT_L_16_Weights") | 88.064 | 98.512 | 305.2M | 361.99 | [链接](https://github.com/facebookresearch/SWAG)
+    |'
 - en: '| [`ViT_L_16_Weights.IMAGENET1K_SWAG_LINEAR_V1`](models/generated/torchvision.models.vit_l_16.html#torchvision.models.ViT_L_16_Weights
     "torchvision.models.ViT_L_16_Weights") | 85.146 | 97.422 | 304.3M | 61.55 | [link](https://github.com/pytorch/vision/pull/5793)
     |'
+  id: totrans-173
   prefs: []
   type: TYPE_TB
+  zh: '| [`ViT_L_16_Weights.IMAGENET1K_SWAG_LINEAR_V1`](models/generated/torchvision.models.vit_l_16.html#torchvision.models.ViT_L_16_Weights
+    "torchvision.models.ViT_L_16_Weights") | 85.146 | 97.422 | 304.3M | 61.55 | [链接](https://github.com/pytorch/vision/pull/5793)
+    |'
 - en: '| [`ViT_L_32_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.vit_l_32.html#torchvision.models.ViT_L_32_Weights
     "torchvision.models.ViT_L_32_Weights") | 76.972 | 93.07 | 306.5M | 15.38 | [link](https://github.com/pytorch/vision/tree/main/references/classification#vit_l_32)
     |'
+  id: totrans-174
   prefs: []
   type: TYPE_TB
+  zh: '| [`ViT_L_32_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.vit_l_32.html#torchvision.models.ViT_L_32_Weights
+    "torchvision.models.ViT_L_32_Weights") | 76.972 | 93.07 | 306.5M | 15.38 | [链接](https://github.com/pytorch/vision/tree/main/references/classification#vit_l_32)
+    |'
 - en: '| [`Wide_ResNet101_2_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.wide_resnet101_2.html#torchvision.models.Wide_ResNet101_2_Weights
     "torchvision.models.Wide_ResNet101_2_Weights") | 78.848 | 94.284 | 126.9M | 22.75
     | [link](https://github.com/pytorch/vision/pull/912#issue-445437439) |'
+  id: totrans-175
   prefs: []
   type: TYPE_TB
+  zh: '| [`Wide_ResNet101_2_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.wide_resnet101_2.html#torchvision.models.Wide_ResNet101_2_Weights
+    "torchvision.models.Wide_ResNet101_2_Weights") | 78.848 | 94.284 | 126.9M | 22.75
+    | [链接](https://github.com/pytorch/vision/pull/912#issue-445437439) |'
 - en: '| [`Wide_ResNet101_2_Weights.IMAGENET1K_V2`](models/generated/torchvision.models.wide_resnet101_2.html#torchvision.models.Wide_ResNet101_2_Weights
     "torchvision.models.Wide_ResNet101_2_Weights") | 82.51 | 96.02 | 126.9M | 22.75
     | [link](https://github.com/pytorch/vision/issues/3995#new-recipe) |'
+  id: totrans-176
   prefs: []
   type: TYPE_TB
+  zh: '| [`Wide_ResNet101_2_Weights.IMAGENET1K_V2`](models/generated/torchvision.models.wide_resnet101_2.html#torchvision.models.Wide_ResNet101_2_Weights
+    "torchvision.models.Wide_ResNet101_2_Weights") | 82.51 | 96.02 | 126.9M | 22.75
+    | [链接](https://github.com/pytorch/vision/issues/3995#new-recipe) |'
 - en: '| [`Wide_ResNet50_2_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.wide_resnet50_2.html#torchvision.models.Wide_ResNet50_2_Weights
     "torchvision.models.Wide_ResNet50_2_Weights") | 78.468 | 94.086 | 68.9M | 11.4
     | [link](https://github.com/pytorch/vision/pull/912#issue-445437439) |'
+  id: totrans-177
   prefs: []
   type: TYPE_TB
+  zh: '| [`Wide_ResNet50_2_Weights.IMAGENET1K_V1`](models/generated/torchvision.models.wide_resnet50_2.html#torchvision.models.Wide_ResNet50_2_Weights
+    "torchvision.models.Wide_ResNet50_2_Weights") | 78.468 | 94.086 | 68.9M | 11.4
+    | [链接](https://github.com/pytorch/vision/pull/912#issue-445437439) |'
 - en: '| [`Wide_ResNet50_2_Weights.IMAGENET1K_V2`](models/generated/torchvision.models.wide_resnet50_2.html#torchvision.models.Wide_ResNet50_2_Weights
     "torchvision.models.Wide_ResNet50_2_Weights") | 81.602 | 95.758 | 68.9M | 11.4
     | [link](https://github.com/pytorch/vision/issues/3995#new-recipe-with-fixres)
     |'
+  id: totrans-178
   prefs: []
   type: TYPE_TB
+  zh: '| [`Wide_ResNet50_2_Weights.IMAGENET1K_V2`](models/generated/torchvision.models.wide_resnet50_2.html#torchvision.models.Wide_ResNet50_2_Weights
+    "torchvision.models.Wide_ResNet50_2_Weights") | 81.602 | 95.758 | 68.9M | 11.4
+    | [链接](https://github.com/pytorch/vision/issues/3995#new-recipe-with-fixres) |'
 - en: Quantized models[](#quantized-models "Permalink to this heading")
+  id: totrans-179
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 量化模型[](#quantized-models "跳转到此标题")
 - en: 'The following architectures provide support for INT8 quantized models, with
     or without pre-trained weights:'
+  id: totrans-180
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下架构支持带有或不带预训练权重的INT8量化模型：
 - en: '[Quantized GoogLeNet](models/googlenet_quant.html)'
+  id: totrans-181
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[量化的GoogLeNet](models/googlenet_quant.html)'
 - en: '[Quantized InceptionV3](models/inception_quant.html)'
+  id: totrans-182
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[量化的InceptionV3](models/inception_quant.html)'
 - en: '[Quantized MobileNet V2](models/mobilenetv2_quant.html)'
+  id: totrans-183
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[量化的MobileNet V2](models/mobilenetv2_quant.html)'
 - en: '[Quantized MobileNet V3](models/mobilenetv3_quant.html)'
+  id: totrans-184
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[量化的MobileNet V3](models/mobilenetv3_quant.html)'
 - en: '[Quantized ResNet](models/resnet_quant.html)'
+  id: totrans-185
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[量化的ResNet](models/resnet_quant.html)'
 - en: '[Quantized ResNeXt](models/resnext_quant.html)'
+  id: totrans-186
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[量化的ResNeXt](models/resnext_quant.html)'
 - en: '[Quantized ShuffleNet V2](models/shufflenetv2_quant.html)'
+  id: totrans-187
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[量化的ShuffleNet V2](models/shufflenetv2_quant.html)'
 - en: 'Here is an example of how to use the pre-trained quantized image classification
     models:'
+  id: totrans-188
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下是如何使用预训练的量化图像分类模型的示例：
 - en: '[PRE8]'
+  id: totrans-189
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: The classes of the pre-trained model outputs can be found at `weights.meta["categories"]`.
+  id: totrans-190
   prefs: []
   type: TYPE_NORMAL
+  zh: 预训练模型输出的类别可以在`weights.meta["categories"]`中找到。
 - en: Table of all available quantized classification weights[](#table-of-all-available-quantized-classification-weights
     "Permalink to this heading")
+  id: totrans-191
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 所有可用的量化分类权重表[](#table-of-all-available-quantized-classification-weights "跳转到此标题")
 - en: 'Accuracies are reported on ImageNet-1K using single crops:'
+  id: totrans-192
   prefs: []
   type: TYPE_NORMAL
+  zh: 准确率是在ImageNet-1K上使用单个裁剪报告的：
 - en: '| **Weight** | **Acc@1** | **Acc@5** | **Params** | **GIPS** | **Recipe** |'
+  id: totrans-193
   prefs: []
   type: TYPE_TB
+  zh: '| **权重** | **准确率@1** | **准确率@5** | **参数** | **GIPS** | **配方** |'
 - en: '| --- | --- | --- | --- | --- | --- |'
+  id: totrans-194
   prefs: []
   type: TYPE_TB
+  zh: '| --- | --- | --- | --- | --- | --- |'
 - en: '| [`GoogLeNet_QuantizedWeights.IMAGENET1K_FBGEMM_V1`](models/generated/torchvision.models.quantization.googlenet.html#torchvision.models.quantization.GoogLeNet_QuantizedWeights
     "torchvision.models.quantization.GoogLeNet_QuantizedWeights") | 69.826 | 89.404
     | 6.6M | 1.5 | [link](https://github.com/pytorch/vision/tree/main/references/classification#post-training-quantized-models)
     |'
+  id: totrans-195
   prefs: []
   type: TYPE_TB
+  zh: '| [`GoogLeNet_QuantizedWeights.IMAGENET1K_FBGEMM_V1`](models/generated/torchvision.models.quantization.googlenet.html#torchvision.models.quantization.GoogLeNet_QuantizedWeights
+    "torchvision.models.quantization.GoogLeNet_QuantizedWeights") | 69.826 | 89.404
+    | 6.6M | 1.5 | [链接](https://github.com/pytorch/vision/tree/main/references/classification#post-training-quantized-models)
+    |'
 - en: '| [`Inception_V3_QuantizedWeights.IMAGENET1K_FBGEMM_V1`](models/generated/torchvision.models.quantization.inception_v3.html#torchvision.models.quantization.Inception_V3_QuantizedWeights
     "torchvision.models.quantization.Inception_V3_QuantizedWeights") | 77.176 | 93.354
     | 27.2M | 5.71 | [link](https://github.com/pytorch/vision/tree/main/references/classification#post-training-quantized-models)
     |'
+  id: totrans-196
   prefs: []
   type: TYPE_TB
+  zh: '| [`Inception_V3_QuantizedWeights.IMAGENET1K_FBGEMM_V1`](models/generated/torchvision.models.quantization.inception_v3.html#torchvision.models.quantization.Inception_V3_QuantizedWeights
+    "torchvision.models.quantization.Inception_V3_QuantizedWeights") | 77.176 | 93.354
+    | 27.2M | 5.71 | [链接](https://github.com/pytorch/vision/tree/main/references/classification#post-training-quantized-models)
+    |'
 - en: '| [`MobileNet_V2_QuantizedWeights.IMAGENET1K_QNNPACK_V1`](models/generated/torchvision.models.quantization.mobilenet_v2.html#torchvision.models.quantization.MobileNet_V2_QuantizedWeights
     "torchvision.models.quantization.MobileNet_V2_QuantizedWeights") | 71.658 | 90.15
     | 3.5M | 0.3 | [link](https://github.com/pytorch/vision/tree/main/references/classification#qat-mobilenetv2)
     |'
+  id: totrans-197
   prefs: []
   type: TYPE_TB
+  zh: '| [`MobileNet_V2_QuantizedWeights.IMAGENET1K_QNNPACK_V1`](models/generated/torchvision.models.quantization.mobilenet_v2.html#torchvision.models.quantization.MobileNet_V2_QuantizedWeights
+    "torchvision.models.quantization.MobileNet_V2_QuantizedWeights") | 71.658 | 90.15
+    | 3.5M | 0.3 | [链接](https://github.com/pytorch/vision/tree/main/references/classification#qat-mobilenetv2)
+    |'
 - en: '| [`MobileNet_V3_Large_QuantizedWeights.IMAGENET1K_QNNPACK_V1`](models/generated/torchvision.models.quantization.mobilenet_v3_large.html#torchvision.models.quantization.MobileNet_V3_Large_QuantizedWeights
     "torchvision.models.quantization.MobileNet_V3_Large_QuantizedWeights") | 73.004
     | 90.858 | 5.5M | 0.22 | [link](https://github.com/pytorch/vision/tree/main/references/classification#qat-mobilenetv3)
     |'
+  id: totrans-198
   prefs: []
   type: TYPE_TB
+  zh: '| [`MobileNet_V3_Large_QuantizedWeights.IMAGENET1K_QNNPACK_V1`](models/generated/torchvision.models.quantization.mobilenet_v3_large.html#torchvision.models.quantization.MobileNet_V3_Large_QuantizedWeights
+    "torchvision.models.quantization.MobileNet_V3_Large_QuantizedWeights") | 73.004
+    | 90.858 | 5.5M | 0.22 | [链接](https://github.com/pytorch/vision/tree/main/references/classification#qat-mobilenetv3)
+    |'
 - en: '| [`ResNeXt101_32X8D_QuantizedWeights.IMAGENET1K_FBGEMM_V1`](models/generated/torchvision.models.quantization.resnext101_32x8d.html#torchvision.models.quantization.ResNeXt101_32X8D_QuantizedWeights
     "torchvision.models.quantization.ResNeXt101_32X8D_QuantizedWeights") | 78.986
     | 94.48 | 88.8M | 16.41 | [link](https://github.com/pytorch/vision/tree/main/references/classification#post-training-quantized-models)
     |'
+  id: totrans-199
   prefs: []
   type: TYPE_TB
+  zh: '| [`ResNeXt101_32X8D_QuantizedWeights.IMAGENET1K_FBGEMM_V1`](models/generated/torchvision.models.quantization.resnext101_32x8d.html#torchvision.models.quantization.ResNeXt101_32X8D_QuantizedWeights
+    "torchvision.models.quantization.ResNeXt101_32X8D_QuantizedWeights") | 78.986
+    | 94.48 | 88.8M | 16.41 | [链接](https://github.com/pytorch/vision/tree/main/references/classification#post-training-quantized-models)
+    |'
 - en: '| [`ResNeXt101_32X8D_QuantizedWeights.IMAGENET1K_FBGEMM_V2`](models/generated/torchvision.models.quantization.resnext101_32x8d.html#torchvision.models.quantization.ResNeXt101_32X8D_QuantizedWeights
     "torchvision.models.quantization.ResNeXt101_32X8D_QuantizedWeights") | 82.574
     | 96.132 | 88.8M | 16.41 | [link](https://github.com/pytorch/vision/tree/main/references/classification#post-training-quantized-models)
     |'
+  id: totrans-200
   prefs: []
   type: TYPE_TB
+  zh: '| [`ResNeXt101_32X8D_QuantizedWeights.IMAGENET1K_FBGEMM_V2`](models/generated/torchvision.models.quantization.resnext101_32x8d.html#torchvision.models.quantization.ResNeXt101_32X8D_QuantizedWeights
+    "torchvision.models.quantization.ResNeXt101_32X8D_QuantizedWeights") | 82.574
+    | 96.132 | 88.8M | 16.41 | [链接](https://github.com/pytorch/vision/tree/main/references/classification#post-training-quantized-models)
+    |'
 - en: '| [`ResNeXt101_64X4D_QuantizedWeights.IMAGENET1K_FBGEMM_V1`](models/generated/torchvision.models.quantization.resnext101_64x4d.html#torchvision.models.quantization.ResNeXt101_64X4D_QuantizedWeights
     "torchvision.models.quantization.ResNeXt101_64X4D_QuantizedWeights") | 82.898
     | 96.326 | 83.5M | 15.46 | [link](https://github.com/pytorch/vision/pull/5935)
     |'
+  id: totrans-201
   prefs: []
   type: TYPE_TB
+  zh: '| [`ResNeXt101_64X4D_QuantizedWeights.IMAGENET1K_FBGEMM_V1`](models/generated/torchvision.models.quantization.resnext101_64x4d.html#torchvision.models.quantization.ResNeXt101_64X4D_QuantizedWeights
+    "torchvision.models.quantization.ResNeXt101_64X4D_QuantizedWeights") | 82.898
+    | 96.326 | 83.5M | 15.46 | [链接](https://github.com/pytorch/vision/pull/5935) |'
 - en: '| [`ResNet18_QuantizedWeights.IMAGENET1K_FBGEMM_V1`](models/generated/torchvision.models.quantization.resnet18.html#torchvision.models.quantization.ResNet18_QuantizedWeights
     "torchvision.models.quantization.ResNet18_QuantizedWeights") | 69.494 | 88.882
     | 11.7M | 1.81 | [link](https://github.com/pytorch/vision/tree/main/references/classification#post-training-quantized-models)
     |'
+  id: totrans-202
   prefs: []
   type: TYPE_TB
+  zh: '| [`ResNet18_QuantizedWeights.IMAGENET1K_FBGEMM_V1`](models/generated/torchvision.models.quantization.resnet18.html#torchvision.models.quantization.ResNet18_QuantizedWeights
+    "torchvision.models.quantization.ResNet18_QuantizedWeights") | 69.494 | 88.882
+    | 11.7M | 1.81 | [链接](https://github.com/pytorch/vision/tree/main/references/classification#post-training-quantized-models)
+    |'
 - en: '| [`ResNet50_QuantizedWeights.IMAGENET1K_FBGEMM_V1`](models/generated/torchvision.models.quantization.resnet50.html#torchvision.models.quantization.ResNet50_QuantizedWeights
     "torchvision.models.quantization.ResNet50_QuantizedWeights") | 75.92 | 92.814
     | 25.6M | 4.09 | [link](https://github.com/pytorch/vision/tree/main/references/classification#post-training-quantized-models)
     |'
+  id: totrans-203
   prefs: []
   type: TYPE_TB
+  zh: '| [`ResNet50_QuantizedWeights.IMAGENET1K_FBGEMM_V1`](models/generated/torchvision.models.quantization.resnet50.html#torchvision.models.quantization.ResNet50_QuantizedWeights
+    "torchvision.models.quantization.ResNet50_QuantizedWeights") | 75.92 | 92.814
+    | 25.6M | 4.09 | [链接](https://github.com/pytorch/vision/tree/main/references/classification#post-training-quantized-models)
+    |'
 - en: '| [`ResNet50_QuantizedWeights.IMAGENET1K_FBGEMM_V2`](models/generated/torchvision.models.quantization.resnet50.html#torchvision.models.quantization.ResNet50_QuantizedWeights
     "torchvision.models.quantization.ResNet50_QuantizedWeights") | 80.282 | 94.976
     | 25.6M | 4.09 | [link](https://github.com/pytorch/vision/tree/main/references/classification#post-training-quantized-models)
     |'
+  id: totrans-204
   prefs: []
   type: TYPE_TB
+  zh: '| [`ResNet50_QuantizedWeights.IMAGENET1K_FBGEMM_V2`](models/generated/torchvision.models.quantization.resnet50.html#torchvision.models.quantization.ResNet50_QuantizedWeights
+    "torchvision.models.quantization.ResNet50_QuantizedWeights") | 80.282 | 94.976
+    | 25.6M | 4.09 | [链接](https://github.com/pytorch/vision/tree/main/references/classification#post-training-quantized-models)
+    |'
 - en: '| [`ShuffleNet_V2_X0_5_QuantizedWeights.IMAGENET1K_FBGEMM_V1`](models/generated/torchvision.models.quantization.shufflenet_v2_x0_5.html#torchvision.models.quantization.ShuffleNet_V2_X0_5_QuantizedWeights
     "torchvision.models.quantization.ShuffleNet_V2_X0_5_QuantizedWeights") | 57.972
     | 79.78 | 1.4M | 0.04 | [link](https://github.com/pytorch/vision/tree/main/references/classification#post-training-quantized-models)
     |'
+  id: totrans-205
   prefs: []
   type: TYPE_TB
+  zh: '| [`ShuffleNet_V2_X0_5_QuantizedWeights.IMAGENET1K_FBGEMM_V1`](models/generated/torchvision.models.quantization.shufflenet_v2_x0_5.html#torchvision.models.quantization.ShuffleNet_V2_X0_5_QuantizedWeights
+    "torchvision.models.quantization.ShuffleNet_V2_X0_5_QuantizedWeights") | 57.972
+    | 79.78 | 1.4M | 0.04 | [链接](https://github.com/pytorch/vision/tree/main/references/classification#post-training-quantized-models)
+    |'
 - en: '| [`ShuffleNet_V2_X1_0_QuantizedWeights.IMAGENET1K_FBGEMM_V1`](models/generated/torchvision.models.quantization.shufflenet_v2_x1_0.html#torchvision.models.quantization.ShuffleNet_V2_X1_0_QuantizedWeights
     "torchvision.models.quantization.ShuffleNet_V2_X1_0_QuantizedWeights") | 68.36
     | 87.582 | 2.3M | 0.14 | [link](https://github.com/pytorch/vision/tree/main/references/classification#post-training-quantized-models)
     |'
+  id: totrans-206
   prefs: []
   type: TYPE_TB
+  zh: '| [`ShuffleNet_V2_X1_0_QuantizedWeights.IMAGENET1K_FBGEMM_V1`](models/generated/torchvision.models.quantization.shufflenet_v2_x1_0.html#torchvision.models.quantization.ShuffleNet_V2_X1_0_QuantizedWeights
+    "torchvision.models.quantization.ShuffleNet_V2_X1_0_QuantizedWeights") | 68.36
+    | 87.582 | 2.3M | 0.14 | [链接](https://github.com/pytorch/vision/tree/main/references/classification#post-training-quantized-models)
+    |'
 - en: '| [`ShuffleNet_V2_X1_5_QuantizedWeights.IMAGENET1K_FBGEMM_V1`](models/generated/torchvision.models.quantization.shufflenet_v2_x1_5.html#torchvision.models.quantization.ShuffleNet_V2_X1_5_QuantizedWeights
     "torchvision.models.quantization.ShuffleNet_V2_X1_5_QuantizedWeights") | 72.052
     | 90.7 | 3.5M | 0.3 | [link](https://github.com/pytorch/vision/pull/5906) |'
+  id: totrans-207
   prefs: []
   type: TYPE_TB
+  zh: '| [`ShuffleNet_V2_X1_5_QuantizedWeights.IMAGENET1K_FBGEMM_V1`](models/generated/torchvision.models.quantization.shufflenet_v2_x1_5.html#torchvision.models.quantization.ShuffleNet_V2_X1_5_QuantizedWeights
+    "torchvision.models.quantization.ShuffleNet_V2_X1_5_QuantizedWeights") | 72.052
+    | 90.7 | 3.5M | 0.3 | [链接](https://github.com/pytorch/vision/pull/5906) |'
 - en: '| [`ShuffleNet_V2_X2_0_QuantizedWeights.IMAGENET1K_FBGEMM_V1`](models/generated/torchvision.models.quantization.shufflenet_v2_x2_0.html#torchvision.models.quantization.ShuffleNet_V2_X2_0_QuantizedWeights
     "torchvision.models.quantization.ShuffleNet_V2_X2_0_QuantizedWeights") | 75.354
     | 92.488 | 7.4M | 0.58 | [link](https://github.com/pytorch/vision/pull/5906) |'
+  id: totrans-208
   prefs: []
   type: TYPE_TB
+  zh: '| [`ShuffleNet_V2_X2_0_QuantizedWeights.IMAGENET1K_FBGEMM_V1`](models/generated/torchvision.models.quantization.shufflenet_v2_x2_0.html#torchvision.models.quantization.ShuffleNet_V2_X2_0_QuantizedWeights
+    "torchvision.models.quantization.ShuffleNet_V2_X2_0_QuantizedWeights") | 75.354
+    | 92.488 | 7.4M | 0.58 | [链接](https://github.com/pytorch/vision/pull/5906) |'
 - en: Semantic Segmentation[](#semantic-segmentation "Permalink to this heading")
+  id: totrans-209
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 语义分割[](#semantic-segmentation "跳转到此标题")
 - en: Warning
+  id: totrans-210
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: The segmentation module is in Beta stage, and backward compatibility is not
     guaranteed.
+  id: totrans-211
   prefs: []
   type: TYPE_NORMAL
+  zh: 分割模块处于Beta阶段，不保证向后兼容性。
 - en: 'The following semantic segmentation models are available, with or without pre-trained
     weights:'
+  id: totrans-212
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下语义分割模型可用，带或不带预训练权重：
 - en: '[DeepLabV3](models/deeplabv3.html)'
+  id: totrans-213
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[DeepLabV3](models/deeplabv3.html)'
 - en: '[FCN](models/fcn.html)'
+  id: totrans-214
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[FCN](models/fcn.html)'
 - en: '[LRASPP](models/lraspp.html)'
+  id: totrans-215
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[LRASPP](models/lraspp.html)'
 - en: 'Here is an example of how to use the pre-trained semantic segmentation models:'
+  id: totrans-216
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下是如何使用预训练语义分割模型的示例：
 - en: '[PRE9]'
+  id: totrans-217
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: The classes of the pre-trained model outputs can be found at `weights.meta["categories"]`.
     The output format of the models is illustrated in [Semantic segmentation models](auto_examples/others/plot_visualization_utils.html#semantic-seg-output).
+  id: totrans-218
   prefs: []
   type: TYPE_NORMAL
+  zh: 预训练模型输出的类别可以在 `weights.meta["categories"]` 中找到。模型的输出格式在[语义分割模型](auto_examples/others/plot_visualization_utils.html#semantic-seg-output)中有说明。
 - en: Table of all available semantic segmentation weights[](#table-of-all-available-semantic-segmentation-weights
     "Permalink to this heading")
+  id: totrans-219
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 所有可用语义分割权重的表格[](#table-of-all-available-semantic-segmentation-weights "跳转到此标题")
 - en: 'All models are evaluated a subset of COCO val2017, on the 20 categories that
     are present in the Pascal VOC dataset:'
+  id: totrans-220
   prefs: []
   type: TYPE_NORMAL
+  zh: 所有模型都是在COCO val2017的子集上评估的，涵盖了Pascal VOC数据集中存在的20个类别：
 - en: '| **Weight** | **Mean IoU** | **pixelwise Acc** | **Params** | **GFLOPS** |
     **Recipe** |'
+  id: totrans-221
   prefs: []
   type: TYPE_TB
+  zh: '| **权重** | **平均IoU** | **像素准确率** | **参数** | **GFLOPS** | **配置** |'
 - en: '| --- | --- | --- | --- | --- | --- |'
+  id: totrans-222
   prefs: []
   type: TYPE_TB
+  zh: '| --- | --- | --- | --- | --- | --- |'
 - en: '| [`DeepLabV3_MobileNet_V3_Large_Weights.COCO_WITH_VOC_LABELS_V1`](models/generated/torchvision.models.segmentation.deeplabv3_mobilenet_v3_large.html#torchvision.models.segmentation.DeepLabV3_MobileNet_V3_Large_Weights
     "torchvision.models.segmentation.DeepLabV3_MobileNet_V3_Large_Weights") | 60.3
     | 91.2 | 11.0M | 10.45 | [link](https://github.com/pytorch/vision/tree/main/references/segmentation#deeplabv3_mobilenet_v3_large)
     |'
+  id: totrans-223
   prefs: []
   type: TYPE_TB
+  zh: '| [`DeepLabV3_MobileNet_V3_Large_Weights.COCO_WITH_VOC_LABELS_V1`](models/generated/torchvision.models.segmentation.deeplabv3_mobilenet_v3_large.html#torchvision.models.segmentation.DeepLabV3_MobileNet_V3_Large_Weights
+    "torchvision.models.segmentation.DeepLabV3_MobileNet_V3_Large_Weights") | 60.3
+    | 91.2 | 11.0M | 10.45 | [链接](https://github.com/pytorch/vision/tree/main/references/segmentation#deeplabv3_mobilenet_v3_large)
+    |'
 - en: '| [`DeepLabV3_ResNet101_Weights.COCO_WITH_VOC_LABELS_V1`](models/generated/torchvision.models.segmentation.deeplabv3_resnet101.html#torchvision.models.segmentation.DeepLabV3_ResNet101_Weights
     "torchvision.models.segmentation.DeepLabV3_ResNet101_Weights") | 67.4 | 92.4 |
     61.0M | 258.74 | [link](https://github.com/pytorch/vision/tree/main/references/segmentation#fcn_resnet101)
     |'
+  id: totrans-224
   prefs: []
   type: TYPE_TB
+  zh: '| [`DeepLabV3_ResNet101_Weights.COCO_WITH_VOC_LABELS_V1`](models/generated/torchvision.models.segmentation.deeplabv3_resnet101.html#torchvision.models.segmentation.DeepLabV3_ResNet101_Weights
+    "torchvision.models.segmentation.DeepLabV3_ResNet101_Weights") | 67.4 | 92.4 |
+    61.0M | 258.74 | [链接](https://github.com/pytorch/vision/tree/main/references/segmentation#fcn_resnet101)
+    |'
 - en: '| [`DeepLabV3_ResNet50_Weights.COCO_WITH_VOC_LABELS_V1`](models/generated/torchvision.models.segmentation.deeplabv3_resnet50.html#torchvision.models.segmentation.DeepLabV3_ResNet50_Weights
     "torchvision.models.segmentation.DeepLabV3_ResNet50_Weights") | 66.4 | 92.4 |
     42.0M | 178.72 | [link](https://github.com/pytorch/vision/tree/main/references/segmentation#deeplabv3_resnet50)
     |'
+  id: totrans-225
   prefs: []
   type: TYPE_TB
+  zh: '| [`DeepLabV3_ResNet50_Weights.COCO_WITH_VOC_LABELS_V1`](models/generated/torchvision.models.segmentation.deeplabv3_resnet50.html#torchvision.models.segmentation.DeepLabV3_ResNet50_Weights
+    "torchvision.models.segmentation.DeepLabV3_ResNet50_Weights") | 66.4 | 92.4 |
+    42.0M | 178.72 | [链接](https://github.com/pytorch/vision/tree/main/references/segmentation#deeplabv3_resnet50)
+    |'
 - en: '| [`FCN_ResNet101_Weights.COCO_WITH_VOC_LABELS_V1`](models/generated/torchvision.models.segmentation.fcn_resnet101.html#torchvision.models.segmentation.FCN_ResNet101_Weights
     "torchvision.models.segmentation.FCN_ResNet101_Weights") | 63.7 | 91.9 | 54.3M
     | 232.74 | [link](https://github.com/pytorch/vision/tree/main/references/segmentation#deeplabv3_resnet101)
     |'
+  id: totrans-226
   prefs: []
   type: TYPE_TB
+  zh: '| [`FCN_ResNet101_Weights.COCO_WITH_VOC_LABELS_V1`](models/generated/torchvision.models.segmentation.fcn_resnet101.html#torchvision.models.segmentation.FCN_ResNet101_Weights
+    "torchvision.models.segmentation.FCN_ResNet101_Weights") | 63.7 | 91.9 | 54.3M
+    | 232.74 | [链接](https://github.com/pytorch/vision/tree/main/references/segmentation#deeplabv3_resnet101)
+    |'
 - en: '| [`FCN_ResNet50_Weights.COCO_WITH_VOC_LABELS_V1`](models/generated/torchvision.models.segmentation.fcn_resnet50.html#torchvision.models.segmentation.FCN_ResNet50_Weights
     "torchvision.models.segmentation.FCN_ResNet50_Weights") | 60.5 | 91.4 | 35.3M
     | 152.72 | [link](https://github.com/pytorch/vision/tree/main/references/segmentation#fcn_resnet50)
     |'
+  id: totrans-227
   prefs: []
   type: TYPE_TB
+  zh: '| [`FCN_ResNet50_Weights.COCO_WITH_VOC_LABELS_V1`](models/generated/torchvision.models.segmentation.fcn_resnet50.html#torchvision.models.segmentation.FCN_ResNet50_Weights
+    "torchvision.models.segmentation.FCN_ResNet50_Weights") | 60.5 | 91.4 | 35.3M
+    | 152.72 | [链接](https://github.com/pytorch/vision/tree/main/references/segmentation#fcn_resnet50)
+    |'
 - en: '| [`LRASPP_MobileNet_V3_Large_Weights.COCO_WITH_VOC_LABELS_V1`](models/generated/torchvision.models.segmentation.lraspp_mobilenet_v3_large.html#torchvision.models.segmentation.LRASPP_MobileNet_V3_Large_Weights
     "torchvision.models.segmentation.LRASPP_MobileNet_V3_Large_Weights") | 57.9 |
     91.2 | 3.2M | 2.09 | [link](https://github.com/pytorch/vision/tree/main/references/segmentation#lraspp_mobilenet_v3_large)
     |'
+  id: totrans-228
   prefs: []
   type: TYPE_TB
+  zh: '| [`LRASPP_MobileNet_V3_Large_Weights.COCO_WITH_VOC_LABELS_V1`](models/generated/torchvision.models.segmentation.lraspp_mobilenet_v3_large.html#torchvision.models.segmentation.LRASPP_MobileNet_V3_Large_Weights
+    "torchvision.models.segmentation.LRASPP_MobileNet_V3_Large_Weights") | 57.9 |
+    91.2 | 3.2M | 2.09 | [链接](https://github.com/pytorch/vision/tree/main/references/segmentation#lraspp_mobilenet_v3_large)
+    |'
 - en: '## Object Detection, Instance Segmentation and Person Keypoint Detection[](#object-detection-instance-segmentation-and-person-keypoint-detection
     "Permalink to this heading")'
+  id: totrans-229
   prefs: []
   type: TYPE_NORMAL
+  zh: '## 目标检测、实例分割和人体关键点检测[](#object-detection-instance-segmentation-and-person-keypoint-detection
+    "跳转到此标题")'
 - en: The pre-trained models for detection, instance segmentation and keypoint detection
     are initialized with the classification models in torchvision. The models expect
     a list of `Tensor[C, H, W]`. Check the constructor of the models for more information.
+  id: totrans-230
   prefs: []
   type: TYPE_NORMAL
+  zh: 检测、实例分割和关键点检测的预训练模型是使用torchvision中的分类模型初始化的。这些模型期望一个`Tensor[C, H, W]`列表。查看模型的构造函数以获取更多信息。
 - en: Warning
+  id: totrans-231
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: The detection module is in Beta stage, and backward compatibility is not guaranteed.
+  id: totrans-232
   prefs: []
   type: TYPE_NORMAL
+  zh: 检测模块处于Beta阶段，不保证向后兼容性。
 - en: Object Detection[](#object-detection "Permalink to this heading")
+  id: totrans-233
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 目标检测[](#object-detection "跳转到此标题")
 - en: 'The following object detection models are available, with or without pre-trained
     weights:'
+  id: totrans-234
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下目标检测模型可用，有或没有预训练权重：
 - en: '[Faster R-CNN](models/faster_rcnn.html)'
+  id: totrans-235
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[Faster R-CNN](models/faster_rcnn.html)'
 - en: '[FCOS](models/fcos.html)'
+  id: totrans-236
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[FCOS](models/fcos.html)'
 - en: '[RetinaNet](models/retinanet.html)'
+  id: totrans-237
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[RetinaNet](models/retinanet.html)'
 - en: '[SSD](models/ssd.html)'
+  id: totrans-238
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[SSD](models/ssd.html)'
 - en: '[SSDlite](models/ssdlite.html)'
+  id: totrans-239
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[SSDlite](models/ssdlite.html)'
 - en: 'Here is an example of how to use the pre-trained object detection models:'
+  id: totrans-240
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下是如何使用预训练目标检测模型的示例：
 - en: '[PRE10]'
+  id: totrans-241
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: The classes of the pre-trained model outputs can be found at `weights.meta["categories"]`.
     For details on how to plot the bounding boxes of the models, you may refer to
     [Instance segmentation models](auto_examples/others/plot_visualization_utils.html#instance-seg-output).
+  id: totrans-242
   prefs: []
   type: TYPE_NORMAL
+  zh: 预训练模型输出的类别可以在`weights.meta["categories"]`中找到。有关如何绘制模型边界框的详细信息，您可以参考[实例分割模型](auto_examples/others/plot_visualization_utils.html#instance-seg-output)。
 - en: Table of all available Object detection weights[](#table-of-all-available-object-detection-weights
     "Permalink to this heading")
+  id: totrans-243
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 所有可用的目标检测权重表[](#table-of-all-available-object-detection-weights "跳转到此标题")
 - en: 'Box MAPs are reported on COCO val2017:'
+  id: totrans-244
   prefs: []
   type: TYPE_NORMAL
+  zh: 在COCO val2017上报告了Box MAPs：
 - en: '| **Weight** | **Box MAP** | **Params** | **GFLOPS** | **Recipe** |'
+  id: totrans-245
   prefs: []
   type: TYPE_TB
+  zh: '| **权重** | **Box MAP** | **参数** | **GFLOPS** | **Recipe** |'
 - en: '| --- | --- | --- | --- | --- |'
+  id: totrans-246
   prefs: []
   type: TYPE_TB
+  zh: '| --- | --- | --- | --- | --- |'
 - en: '| [`FCOS_ResNet50_FPN_Weights.COCO_V1`](models/generated/torchvision.models.detection.fcos_resnet50_fpn.html#torchvision.models.detection.FCOS_ResNet50_FPN_Weights
     "torchvision.models.detection.FCOS_ResNet50_FPN_Weights") | 39.2 | 32.3M | 128.21
     | [link](https://github.com/pytorch/vision/tree/main/references/detection#fcos-resnet-50-fpn)
     |'
+  id: totrans-247
   prefs: []
   type: TYPE_TB
+  zh: '| [`FCOS_ResNet50_FPN_Weights.COCO_V1`](models/generated/torchvision.models.detection.fcos_resnet50_fpn.html#torchvision.models.detection.FCOS_ResNet50_FPN_Weights
+    "torchvision.models.detection.FCOS_ResNet50_FPN_Weights") | 39.2 | 32.3M | 128.21
+    | [链接](https://github.com/pytorch/vision/tree/main/references/detection#fcos-resnet-50-fpn)
+    |'
 - en: '| [`FasterRCNN_MobileNet_V3_Large_320_FPN_Weights.COCO_V1`](models/generated/torchvision.models.detection.fasterrcnn_mobilenet_v3_large_320_fpn.html#torchvision.models.detection.FasterRCNN_MobileNet_V3_Large_320_FPN_Weights
     "torchvision.models.detection.FasterRCNN_MobileNet_V3_Large_320_FPN_Weights")
     | 22.8 | 19.4M | 0.72 | [link](https://github.com/pytorch/vision/tree/main/references/detection#faster-r-cnn-mobilenetv3-large-320-fpn)
     |'
+  id: totrans-248
   prefs: []
   type: TYPE_TB
+  zh: '| [`FasterRCNN_MobileNet_V3_Large_320_FPN_Weights.COCO_V1`](models/generated/torchvision.models.detection.fasterrcnn_mobilenet_v3_large_320_fpn.html#torchvision.models.detection.FasterRCNN_MobileNet_V3_Large_320_FPN_Weights
+    "torchvision.models.detection.FasterRCNN_MobileNet_V3_Large_320_FPN_Weights")
+    | 22.8 | 19.4M | 0.72 | [链接](https://github.com/pytorch/vision/tree/main/references/detection#faster-r-cnn-mobilenetv3-large-320-fpn)
+    |'
 - en: '| [`FasterRCNN_MobileNet_V3_Large_FPN_Weights.COCO_V1`](models/generated/torchvision.models.detection.fasterrcnn_mobilenet_v3_large_fpn.html#torchvision.models.detection.FasterRCNN_MobileNet_V3_Large_FPN_Weights
     "torchvision.models.detection.FasterRCNN_MobileNet_V3_Large_FPN_Weights") | 32.8
     | 19.4M | 4.49 | [link](https://github.com/pytorch/vision/tree/main/references/detection#faster-r-cnn-mobilenetv3-large-fpn)
     |'
+  id: totrans-249
   prefs: []
   type: TYPE_TB
+  zh: '| [`FasterRCNN_MobileNet_V3_Large_FPN_Weights.COCO_V1`](models/generated/torchvision.models.detection.fasterrcnn_mobilenet_v3_large_fpn.html#torchvision.models.detection.FasterRCNN_MobileNet_V3_Large_FPN_Weights
+    "torchvision.models.detection.FasterRCNN_MobileNet_V3_Large_FPN_Weights") | 32.8
+    | 19.4M | 4.49 | [链接](https://github.com/pytorch/vision/tree/main/references/detection#faster-r-cnn-mobilenetv3-large-fpn)
+    |'
 - en: '| [`FasterRCNN_ResNet50_FPN_V2_Weights.COCO_V1`](models/generated/torchvision.models.detection.fasterrcnn_resnet50_fpn_v2.html#torchvision.models.detection.FasterRCNN_ResNet50_FPN_V2_Weights
     "torchvision.models.detection.FasterRCNN_ResNet50_FPN_V2_Weights") | 46.7 | 43.7M
     | 280.37 | [link](https://github.com/pytorch/vision/pull/5763) |'
+  id: totrans-250
   prefs: []
   type: TYPE_TB
+  zh: '| [`FasterRCNN_ResNet50_FPN_V2_Weights.COCO_V1`](models/generated/torchvision.models.detection.fasterrcnn_resnet50_fpn_v2.html#torchvision.models.detection.FasterRCNN_ResNet50_FPN_V2_Weights
+    "torchvision.models.detection.FasterRCNN_ResNet50_FPN_V2_Weights") | 46.7 | 43.7M
+    | 280.37 | [链接](https://github.com/pytorch/vision/pull/5763) |'
 - en: '| [`FasterRCNN_ResNet50_FPN_Weights.COCO_V1`](models/generated/torchvision.models.detection.fasterrcnn_resnet50_fpn.html#torchvision.models.detection.FasterRCNN_ResNet50_FPN_Weights
     "torchvision.models.detection.FasterRCNN_ResNet50_FPN_Weights") | 37 | 41.8M |
     134.38 | [link](https://github.com/pytorch/vision/tree/main/references/detection#faster-r-cnn-resnet-50-fpn)
     |'
+  id: totrans-251
   prefs: []
   type: TYPE_TB
+  zh: '| [`FasterRCNN_ResNet50_FPN_Weights.COCO_V1`](models/generated/torchvision.models.detection.fasterrcnn_resnet50_fpn.html#torchvision.models.detection.FasterRCNN_ResNet50_FPN_Weights
+    "torchvision.models.detection.FasterRCNN_ResNet50_FPN_Weights") | 37 | 41.8M |
+    134.38 | [链接](https://github.com/pytorch/vision/tree/main/references/detection#faster-r-cnn-resnet-50-fpn)
+    |'
 - en: '| [`RetinaNet_ResNet50_FPN_V2_Weights.COCO_V1`](models/generated/torchvision.models.detection.retinanet_resnet50_fpn_v2.html#torchvision.models.detection.RetinaNet_ResNet50_FPN_V2_Weights
     "torchvision.models.detection.RetinaNet_ResNet50_FPN_V2_Weights") | 41.5 | 38.2M
     | 152.24 | [link](https://github.com/pytorch/vision/pull/5756) |'
+  id: totrans-252
   prefs: []
   type: TYPE_TB
+  zh: '| [`RetinaNet_ResNet50_FPN_V2_Weights.COCO_V1`](models/generated/torchvision.models.detection.retinanet_resnet50_fpn_v2.html#torchvision.models.detection.RetinaNet_ResNet50_FPN_V2_Weights
+    "torchvision.models.detection.RetinaNet_ResNet50_FPN_V2_Weights") | 41.5 | 38.2M
+    | 152.24 | [link](https://github.com/pytorch/vision/pull/5756) |'
 - en: '| [`RetinaNet_ResNet50_FPN_Weights.COCO_V1`](models/generated/torchvision.models.detection.retinanet_resnet50_fpn.html#torchvision.models.detection.RetinaNet_ResNet50_FPN_Weights
     "torchvision.models.detection.RetinaNet_ResNet50_FPN_Weights") | 36.4 | 34.0M
     | 151.54 | [link](https://github.com/pytorch/vision/tree/main/references/detection#retinanet)
     |'
+  id: totrans-253
   prefs: []
   type: TYPE_TB
+  zh: '| [`RetinaNet_ResNet50_FPN_Weights.COCO_V1`](models/generated/torchvision.models.detection.retinanet_resnet50_fpn.html#torchvision.models.detection.RetinaNet_ResNet50_FPN_Weights
+    "torchvision.models.detection.RetinaNet_ResNet50_FPN_Weights") | 36.4 | 34.0M
+    | 151.54 | [link](https://github.com/pytorch/vision/tree/main/references/detection#retinanet)
+    |'
 - en: '| [`SSD300_VGG16_Weights.COCO_V1`](models/generated/torchvision.models.detection.ssd300_vgg16.html#torchvision.models.detection.SSD300_VGG16_Weights
     "torchvision.models.detection.SSD300_VGG16_Weights") | 25.1 | 35.6M | 34.86 |
     [link](https://github.com/pytorch/vision/tree/main/references/detection#ssd300-vgg16)
     |'
+  id: totrans-254
   prefs: []
   type: TYPE_TB
+  zh: '| [`SSD300_VGG16_Weights.COCO_V1`](models/generated/torchvision.models.detection.ssd300_vgg16.html#torchvision.models.detection.SSD300_VGG16_Weights
+    "torchvision.models.detection.SSD300_VGG16_Weights") | 25.1 | 35.6M | 34.86 |
+    [link](https://github.com/pytorch/vision/tree/main/references/detection#ssd300-vgg16)
+    |'
 - en: '| [`SSDLite320_MobileNet_V3_Large_Weights.COCO_V1`](models/generated/torchvision.models.detection.ssdlite320_mobilenet_v3_large.html#torchvision.models.detection.SSDLite320_MobileNet_V3_Large_Weights
     "torchvision.models.detection.SSDLite320_MobileNet_V3_Large_Weights") | 21.3 |
     3.4M | 0.58 | [link](https://github.com/pytorch/vision/tree/main/references/detection#ssdlite320-mobilenetv3-large)
     |'
+  id: totrans-255
   prefs: []
   type: TYPE_TB
+  zh: '| [`SSDLite320_MobileNet_V3_Large_Weights.COCO_V1`](models/generated/torchvision.models.detection.ssdlite320_mobilenet_v3_large.html#torchvision.models.detection.SSDLite320_MobileNet_V3_Large_Weights
+    "torchvision.models.detection.SSDLite320_MobileNet_V3_Large_Weights") | 21.3 |
+    3.4M | 0.58 | [link](https://github.com/pytorch/vision/tree/main/references/detection#ssdlite320-mobilenetv3-large)
+    |'
 - en: Instance Segmentation[](#instance-segmentation "Permalink to this heading")
+  id: totrans-256
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 实例分割[](#instance-segmentation "跳转到此标题")
 - en: 'The following instance segmentation models are available, with or without pre-trained
     weights:'
+  id: totrans-257
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下是可用的实例分割模型，带或不带预训练权重：
 - en: '[Mask R-CNN](models/mask_rcnn.html)'
+  id: totrans-258
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[Mask R-CNN](models/mask_rcnn.html)'
 - en: For details on how to plot the masks of the models, you may refer to [Instance
     segmentation models](auto_examples/others/plot_visualization_utils.html#instance-seg-output).
+  id: totrans-259
   prefs: []
   type: TYPE_NORMAL
+  zh: 有关如何绘制模型的蒙版的详细信息，您可以参考[实例分割模型](auto_examples/others/plot_visualization_utils.html#instance-seg-output)。
 - en: Table of all available Instance segmentation weights[](#table-of-all-available-instance-segmentation-weights
     "Permalink to this heading")
+  id: totrans-260
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 所有可用实例分割权重的表格[](#table-of-all-available-instance-segmentation-weights "跳转到此标题")
 - en: 'Box and Mask MAPs are reported on COCO val2017:'
+  id: totrans-261
   prefs: []
   type: TYPE_NORMAL
+  zh: 在COCO val2017上报告了框和蒙版MAPs：
 - en: '| **Weight** | **Box MAP** | **Mask MAP** | **Params** | **GFLOPS** | **Recipe**
     |'
+  id: totrans-262
   prefs: []
   type: TYPE_TB
+  zh: '| **权重** | **框MAP** | **蒙版MAP** | **参数** | **GFLOPS** | **链接** |'
 - en: '| --- | --- | --- | --- | --- | --- |'
+  id: totrans-263
   prefs: []
   type: TYPE_TB
+  zh: '| --- | --- | --- | --- | --- | --- |'
 - en: '| [`MaskRCNN_ResNet50_FPN_V2_Weights.COCO_V1`](models/generated/torchvision.models.detection.maskrcnn_resnet50_fpn_v2.html#torchvision.models.detection.MaskRCNN_ResNet50_FPN_V2_Weights
     "torchvision.models.detection.MaskRCNN_ResNet50_FPN_V2_Weights") | 47.4 | 41.8
     | 46.4M | 333.58 | [link](https://github.com/pytorch/vision/pull/5773) |'
+  id: totrans-264
   prefs: []
   type: TYPE_TB
+  zh: '| [`MaskRCNN_ResNet50_FPN_V2_Weights.COCO_V1`](models/generated/torchvision.models.detection.maskrcnn_resnet50_fpn_v2.html#torchvision.models.detection.MaskRCNN_ResNet50_FPN_V2_Weights
+    "torchvision.models.detection.MaskRCNN_ResNet50_FPN_V2_Weights") | 47.4 | 41.8
+    | 46.4M | 333.58 | [link](https://github.com/pytorch/vision/pull/5773) |'
 - en: '| [`MaskRCNN_ResNet50_FPN_Weights.COCO_V1`](models/generated/torchvision.models.detection.maskrcnn_resnet50_fpn.html#torchvision.models.detection.MaskRCNN_ResNet50_FPN_Weights
     "torchvision.models.detection.MaskRCNN_ResNet50_FPN_Weights") | 37.9 | 34.6 |
     44.4M | 134.38 | [link](https://github.com/pytorch/vision/tree/main/references/detection#mask-r-cnn)
     |'
+  id: totrans-265
   prefs: []
   type: TYPE_TB
+  zh: '| [`MaskRCNN_ResNet50_FPN_Weights.COCO_V1`](models/generated/torchvision.models.detection.maskrcnn_resnet50_fpn.html#torchvision.models.detection.MaskRCNN_ResNet50_FPN_Weights
+    "torchvision.models.detection.MaskRCNN_ResNet50_FPN_Weights") | 37.9 | 34.6 |
+    44.4M | 134.38 | [link](https://github.com/pytorch/vision/tree/main/references/detection#mask-r-cnn)
+    |'
 - en: Keypoint Detection[](#keypoint-detection "Permalink to this heading")
+  id: totrans-266
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 关键点检测[](#keypoint-detection "跳转到此标题")
 - en: 'The following person keypoint detection models are available, with or without
     pre-trained weights:'
+  id: totrans-267
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下是可用的人体关键点检测模型，带或不带预训练权重：
 - en: '[Keypoint R-CNN](models/keypoint_rcnn.html)'
+  id: totrans-268
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[Keypoint R-CNN](models/keypoint_rcnn.html)'
 - en: The classes of the pre-trained model outputs can be found at `weights.meta["keypoint_names"]`.
     For details on how to plot the bounding boxes of the models, you may refer to
     [Visualizing keypoints](auto_examples/others/plot_visualization_utils.html#keypoint-output).
+  id: totrans-269
   prefs: []
   type: TYPE_NORMAL
+  zh: 预训练模型输出的类别可以在`weights.meta["keypoint_names"]`中找到。有关如何绘制模型的边界框的详细信息，您可以参考[可视化关键点](auto_examples/others/plot_visualization_utils.html#keypoint-output)。
 - en: Table of all available Keypoint detection weights[](#table-of-all-available-keypoint-detection-weights
     "Permalink to this heading")
+  id: totrans-270
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 所有可用关键点检测权重的表格[](#table-of-all-available-keypoint-detection-weights "跳转到此标题")
 - en: 'Box and Keypoint MAPs are reported on COCO val2017:'
+  id: totrans-271
   prefs: []
   type: TYPE_NORMAL
+  zh: 在COCO val2017上报告了框和关键点MAPs：
 - en: '| **Weight** | **Box MAP** | **Keypoint MAP** | **Params** | **GFLOPS** | **Recipe**
     |'
+  id: totrans-272
   prefs: []
   type: TYPE_TB
+  zh: '| **权重** | **框MAP** | **关键点MAP** | **参数** | **GFLOPS** | **链接** |'
 - en: '| --- | --- | --- | --- | --- | --- |'
+  id: totrans-273
   prefs: []
   type: TYPE_TB
+  zh: '| --- | --- | --- | --- | --- | --- |'
 - en: '| [`KeypointRCNN_ResNet50_FPN_Weights.COCO_LEGACY`](models/generated/torchvision.models.detection.keypointrcnn_resnet50_fpn.html#torchvision.models.detection.KeypointRCNN_ResNet50_FPN_Weights
     "torchvision.models.detection.KeypointRCNN_ResNet50_FPN_Weights") | 50.6 | 61.1
     | 59.1M | 133.92 | [link](https://github.com/pytorch/vision/issues/1606) |'
+  id: totrans-274
   prefs: []
   type: TYPE_TB
+  zh: '| [`KeypointRCNN_ResNet50_FPN_Weights.COCO_LEGACY`](models/generated/torchvision.models.detection.keypointrcnn_resnet50_fpn.html#torchvision.models.detection.KeypointRCNN_ResNet50_FPN_Weights
+    "torchvision.models.detection.KeypointRCNN_ResNet50_FPN_Weights") | 50.6 | 61.1
+    | 59.1M | 133.92 | [link](https://github.com/pytorch/vision/issues/1606) |'
 - en: '| [`KeypointRCNN_ResNet50_FPN_Weights.COCO_V1`](models/generated/torchvision.models.detection.keypointrcnn_resnet50_fpn.html#torchvision.models.detection.KeypointRCNN_ResNet50_FPN_Weights
     "torchvision.models.detection.KeypointRCNN_ResNet50_FPN_Weights") | 54.6 | 65
     | 59.1M | 137.42 | [link](https://github.com/pytorch/vision/tree/main/references/detection#keypoint-r-cnn)
     |'
+  id: totrans-275
   prefs: []
   type: TYPE_TB
+  zh: '| [`KeypointRCNN_ResNet50_FPN_Weights.COCO_V1`](models/generated/torchvision.models.detection.keypointrcnn_resnet50_fpn.html#torchvision.models.detection.KeypointRCNN_ResNet50_FPN_Weights
+    "torchvision.models.detection.KeypointRCNN_ResNet50_FPN_Weights") | 54.6 | 65
+    | 59.1M | 137.42 | [链接](https://github.com/pytorch/vision/tree/main/references/detection#keypoint-r-cnn)
+    |'
 - en: Video Classification[](#video-classification "Permalink to this heading")
+  id: totrans-276
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 视频分类[](#video-classification "跳转到此标题的永久链接")
 - en: Warning
+  id: totrans-277
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: The video module is in Beta stage, and backward compatibility is not guaranteed.
+  id: totrans-278
   prefs: []
   type: TYPE_NORMAL
+  zh: 视频模块处于Beta阶段，不保证向后兼容性。
 - en: 'The following video classification models are available, with or without pre-trained
     weights:'
+  id: totrans-279
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下视频分类模型可用，带有或不带有预训练权重：
 - en: '[Video MViT](models/video_mvit.html)'
+  id: totrans-280
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[视频MViT](models/video_mvit.html)'
 - en: '[Video ResNet](models/video_resnet.html)'
+  id: totrans-281
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[视频ResNet](models/video_resnet.html)'
 - en: '[Video S3D](models/video_s3d.html)'
+  id: totrans-282
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[视频S3D](models/video_s3d.html)'
 - en: '[Video SwinTransformer](models/video_swin_transformer.html)'
+  id: totrans-283
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[视频SwinTransformer](models/video_swin_transformer.html)'
 - en: 'Here is an example of how to use the pre-trained video classification models:'
+  id: totrans-284
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下是如何使用预训练视频分类模型的示例：
 - en: '[PRE11]'
+  id: totrans-285
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: The classes of the pre-trained model outputs can be found at `weights.meta["categories"]`.
+  id: totrans-286
   prefs: []
   type: TYPE_NORMAL
+  zh: 预训练模型输出的类别可以在`weights.meta["categories"]`中找到。
 - en: Table of all available video classification weights[](#table-of-all-available-video-classification-weights
     "Permalink to this heading")
+  id: totrans-287
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 所有可用视频分类权重的表格[](#table-of-all-available-video-classification-weights "跳转到此标题的永久链接")
 - en: 'Accuracies are reported on Kinetics-400 using single crops for clip length
     16:'
+  id: totrans-288
   prefs: []
   type: TYPE_NORMAL
+  zh: 准确率是使用单个裁剪在剪辑长度为16的Kinetics-400上报告的：
 - en: '| **Weight** | **Acc@1** | **Acc@5** | **Params** | **GFLOPS** | **Recipe**
     |'
+  id: totrans-289
   prefs: []
   type: TYPE_TB
+  zh: '| **权重** | **准确率@1** | **准确率@5** | **参数** | **GFLOPS** | **配置** |'
 - en: '| --- | --- | --- | --- | --- | --- |'
+  id: totrans-290
   prefs: []
   type: TYPE_TB
+  zh: '| --- | --- | --- | --- | --- | --- |'
 - en: '| [`MC3_18_Weights.KINETICS400_V1`](models/generated/torchvision.models.video.mc3_18.html#torchvision.models.video.MC3_18_Weights
     "torchvision.models.video.MC3_18_Weights") | 63.96 | 84.13 | 11.7M | 43.34 | [link](https://github.com/pytorch/vision/tree/main/references/video_classification)
     |'
+  id: totrans-291
   prefs: []
   type: TYPE_TB
+  zh: '| [`MC3_18_Weights.KINETICS400_V1`](models/generated/torchvision.models.video.mc3_18.html#torchvision.models.video.MC3_18_Weights
+    "torchvision.models.video.MC3_18_Weights") | 63.96 | 84.13 | 11.7M | 43.34 | [链接](https://github.com/pytorch/vision/tree/main/references/video_classification)
+    |'
 - en: '| [`MViT_V1_B_Weights.KINETICS400_V1`](models/generated/torchvision.models.video.mvit_v1_b.html#torchvision.models.video.MViT_V1_B_Weights
     "torchvision.models.video.MViT_V1_B_Weights") | 78.477 | 93.582 | 36.6M | 70.6
     | [link](https://github.com/facebookresearch/pytorchvideo/blob/main/docs/source/model_zoo.md)
     |'
+  id: totrans-292
   prefs: []
   type: TYPE_TB
+  zh: '| [`MViT_V1_B_Weights.KINETICS400_V1`](models/generated/torchvision.models.video.mvit_v1_b.html#torchvision.models.video.MViT_V1_B_Weights
+    "torchvision.models.video.MViT_V1_B_Weights") | 78.477 | 93.582 | 36.6M | 70.6
+    | [链接](https://github.com/facebookresearch/pytorchvideo/blob/main/docs/source/model_zoo.md)
+    |'
 - en: '| [`MViT_V2_S_Weights.KINETICS400_V1`](models/generated/torchvision.models.video.mvit_v2_s.html#torchvision.models.video.MViT_V2_S_Weights
     "torchvision.models.video.MViT_V2_S_Weights") | 80.757 | 94.665 | 34.5M | 64.22
     | [link](https://github.com/facebookresearch/SlowFast/blob/main/MODEL_ZOO.md)
     |'
+  id: totrans-293
   prefs: []
   type: TYPE_TB
+  zh: '| [`MViT_V2_S_Weights.KINETICS400_V1`](models/generated/torchvision.models.video.mvit_v2_s.html#torchvision.models.video.MViT_V2_S_Weights
+    "torchvision.models.video.MViT_V2_S_Weights") | 80.757 | 94.665 | 34.5M | 64.22
+    | [链接](https://github.com/facebookresearch/SlowFast/blob/main/MODEL_ZOO.md) |'
 - en: '| [`R2Plus1D_18_Weights.KINETICS400_V1`](models/generated/torchvision.models.video.r2plus1d_18.html#torchvision.models.video.R2Plus1D_18_Weights
     "torchvision.models.video.R2Plus1D_18_Weights") | 67.463 | 86.175 | 31.5M | 40.52
     | [link](https://github.com/pytorch/vision/tree/main/references/video_classification)
     |'
+  id: totrans-294
   prefs: []
   type: TYPE_TB
+  zh: '| [`R2Plus1D_18_Weights.KINETICS400_V1`](models/generated/torchvision.models.video.r2plus1d_18.html#torchvision.models.video.R2Plus1D_18_Weights
+    "torchvision.models.video.R2Plus1D_18_Weights") | 67.463 | 86.175 | 31.5M | 40.52
+    | [链接](https://github.com/pytorch/vision/tree/main/references/video_classification)
+    |'
 - en: '| [`R3D_18_Weights.KINETICS400_V1`](models/generated/torchvision.models.video.r3d_18.html#torchvision.models.video.R3D_18_Weights
     "torchvision.models.video.R3D_18_Weights") | 63.2 | 83.479 | 33.4M | 40.7 | [link](https://github.com/pytorch/vision/tree/main/references/video_classification)
     |'
+  id: totrans-295
   prefs: []
   type: TYPE_TB
+  zh: '| [`R3D_18_Weights.KINETICS400_V1`](models/generated/torchvision.models.video.r3d_18.html#torchvision.models.video.R3D_18_Weights
+    "torchvision.models.video.R3D_18_Weights") | 63.2 | 83.479 | 33.4M | 40.7 | [链接](https://github.com/pytorch/vision/tree/main/references/video_classification)
+    |'
 - en: '| [`S3D_Weights.KINETICS400_V1`](models/generated/torchvision.models.video.s3d.html#torchvision.models.video.S3D_Weights
     "torchvision.models.video.S3D_Weights") | 68.368 | 88.05 | 8.3M | 17.98 | [link](https://github.com/pytorch/vision/tree/main/references/video_classification#s3d)
     |'
+  id: totrans-296
   prefs: []
   type: TYPE_TB
+  zh: '| [`S3D_Weights.KINETICS400_V1`](models/generated/torchvision.models.video.s3d.html#torchvision.models.video.S3D_Weights
+    "torchvision.models.video.S3D_Weights") | 68.368 | 88.05 | 8.3M | 17.98 | [链接](https://github.com/pytorch/vision/tree/main/references/video_classification#s3d)
+    |'
 - en: '| [`Swin3D_B_Weights.KINETICS400_V1`](models/generated/torchvision.models.video.swin3d_b.html#torchvision.models.video.Swin3D_B_Weights
     "torchvision.models.video.Swin3D_B_Weights") | 79.427 | 94.386 | 88.0M | 140.67
     | [link](https://github.com/SwinTransformer/Video-Swin-Transformer#kinetics-400)
     |'
+  id: totrans-297
   prefs: []
   type: TYPE_TB
+  zh: '| [`Swin3D_B_Weights.KINETICS400_V1`](models/generated/torchvision.models.video.swin3d_b.html#torchvision.models.video.Swin3D_B_Weights
+    "torchvision.models.video.Swin3D_B_Weights") | 79.427 | 94.386 | 88.0M | 140.67
+    | [链接](https://github.com/SwinTransformer/Video-Swin-Transformer#kinetics-400)
+    |'
 - en: '| [`Swin3D_B_Weights.KINETICS400_IMAGENET22K_V1`](models/generated/torchvision.models.video.swin3d_b.html#torchvision.models.video.Swin3D_B_Weights
     "torchvision.models.video.Swin3D_B_Weights") | 81.643 | 95.574 | 88.0M | 140.67
     | [link](https://github.com/SwinTransformer/Video-Swin-Transformer#kinetics-400)
     |'
+  id: totrans-298
   prefs: []
   type: TYPE_TB
+  zh: '| [`Swin3D_B_Weights.KINETICS400_IMAGENET22K_V1`](models/generated/torchvision.models.video.swin3d_b.html#torchvision.models.video.Swin3D_B_Weights
+    "torchvision.models.video.Swin3D_B_Weights") | 81.643 | 95.574 | 88.0M | 140.67
+    | [链接](https://github.com/SwinTransformer/Video-Swin-Transformer#kinetics-400)
+    |'
 - en: '| [`Swin3D_S_Weights.KINETICS400_V1`](models/generated/torchvision.models.video.swin3d_s.html#torchvision.models.video.Swin3D_S_Weights
     "torchvision.models.video.Swin3D_S_Weights") | 79.521 | 94.158 | 49.8M | 82.84
     | [link](https://github.com/SwinTransformer/Video-Swin-Transformer#kinetics-400)
     |'
+  id: totrans-299
   prefs: []
   type: TYPE_TB
+  zh: '| [`Swin3D_S_Weights.KINETICS400_V1`](models/generated/torchvision.models.video.swin3d_s.html#torchvision.models.video.Swin3D_S_Weights
+    "torchvision.models.video.Swin3D_S_Weights") | 79.521 | 94.158 | 49.8M | 82.84
+    | [链接](https://github.com/SwinTransformer/Video-Swin-Transformer#kinetics-400)
+    |'
 - en: '| [`Swin3D_T_Weights.KINETICS400_V1`](models/generated/torchvision.models.video.swin3d_t.html#torchvision.models.video.Swin3D_T_Weights
     "torchvision.models.video.Swin3D_T_Weights") | 77.715 | 93.519 | 28.2M | 43.88
     | [link](https://github.com/SwinTransformer/Video-Swin-Transformer#kinetics-400)
     |'
+  id: totrans-300
   prefs: []
   type: TYPE_TB
+  zh: '| [`Swin3D_T_Weights.KINETICS400_V1`](models/generated/torchvision.models.video.swin3d_t.html#torchvision.models.video.Swin3D_T_Weights
+    "torchvision.models.video.Swin3D_T_Weights") | 77.715 | 93.519 | 28.2M | 43.88
+    | [链接](https://github.com/SwinTransformer/Video-Swin-Transformer#kinetics-400)
+    |'
 - en: Optical Flow[](#optical-flow "Permalink to this heading")
+  id: totrans-301
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 光流
 - en: The following Optical Flow models are available, with or without pre-trained
+  id: totrans-302
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下光流模型可用，带有或不带有预训练
 - en: '[RAFT](models/raft.html)'
+  id: totrans-303
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[RAFT](models/raft.html)'

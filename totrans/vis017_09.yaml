@@ -1,63 +1,90 @@
 - en: Feature extraction for model inspection
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 模型检查的特征提取
 - en: 原文：[https://pytorch.org/vision/stable/feature_extraction.html](https://pytorch.org/vision/stable/feature_extraction.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/vision/stable/feature_extraction.html](https://pytorch.org/vision/stable/feature_extraction.html)
 - en: 'The `torchvision.models.feature_extraction` package contains feature extraction
     utilities that let us tap into our models to access intermediate transformations
     of our inputs. This could be useful for a variety of applications in computer
     vision. Just a few examples are:'
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: '`torchvision.models.feature_extraction`包含特征提取工具，让我们可以访问模型对输入的中间转换。这对计算机视觉中的各种应用可能很有用。只是一些例子包括：'
 - en: Visualizing feature maps.
+  id: totrans-3
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 可视化特征图。
 - en: Extracting features to compute image descriptors for tasks like facial recognition,
     copy-detection, or image retrieval.
+  id: totrans-4
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 提取特征以计算图像描述符，用于面部识别、复制检测或图像检索等任务。
 - en: Passing selected features to downstream sub-networks for end-to-end training
     with a specific task in mind. For example, passing a hierarchy of features to
     a Feature Pyramid Network with object detection heads.
+  id: totrans-5
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 将选定的特征传递给下游子网络，以便根据特定任务进行端到端训练。例如，将特征的层次结构传递给具有目标检测头的特征金字塔网络。
 - en: 'Torchvision provides [`create_feature_extractor()`](generated/torchvision.models.feature_extraction.create_feature_extractor.html#torchvision.models.feature_extraction.create_feature_extractor
     "torchvision.models.feature_extraction.create_feature_extractor") for this purpose.
     It works by following roughly these steps:'
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: Torchvision提供了[`create_feature_extractor()`](generated/torchvision.models.feature_extraction.create_feature_extractor.html#torchvision.models.feature_extraction.create_feature_extractor
+    "torchvision.models.feature_extraction.create_feature_extractor")用于此目的。它大致按照以下步骤进行：
 - en: Symbolically tracing the model to get a graphical representation of how it transforms
     the input, step by step.
+  id: totrans-7
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 符号跟踪模型，以逐步获取其如何转换输入的图形表示。
 - en: Setting the user-selected graph nodes as outputs.
+  id: totrans-8
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 将用户选择的图节点设置为输出。
 - en: Removing all redundant nodes (anything downstream of the output nodes).
+  id: totrans-9
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 删除所有冗余节点（输出节点之后的所有节点）。
 - en: Generating python code from the resulting graph and bundling that into a PyTorch
     module together with the graph itself.
+  id: totrans-10
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 从生成的图形中生成Python代码，并将其与图形一起捆绑到PyTorch模块中。
 - en: The [torch.fx documentation](https://pytorch.org/docs/stable/fx.html) provides
     a more general and detailed explanation of the above procedure and the inner workings
     of the symbolic tracing.
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: '[torch.fx文档](https://pytorch.org/docs/stable/fx.html)提供了对上述过程和符号跟踪内部工作的更一般和详细的解释。'
 - en: '**About Node Names**'
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: '**关于节点名称**'
 - en: 'In order to specify which nodes should be output nodes for extracted features,
     one should be familiar with the node naming convention used here (which differs
     slightly from that used in `torch.fx`). A node name is specified as a `.` separated
@@ -65,8 +92,10 @@
     or leaf module. For instance `"layer4.2.relu"` in ResNet-50 represents the output
     of the ReLU of the 2nd block of the 4th layer of the `ResNet` module. Here are
     some finer points to keep in mind:'
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了指定应该作为提取特征的输出节点的节点，应该熟悉此处使用的节点命名约定（与`torch.fx`中使用的略有不同）。节点名称被指定为一个以`.`分隔的路径，从顶层模块向下遍历模块层次结构，直到叶操作或叶模块。例如，在ResNet-50中，`"layer4.2.relu"`代表`ResNet`模块第4层第2个块的ReLU的输出。以下是一些需要注意的细节：
 - en: When specifying node names for [`create_feature_extractor()`](generated/torchvision.models.feature_extraction.create_feature_extractor.html#torchvision.models.feature_extraction.create_feature_extractor
     "torchvision.models.feature_extraction.create_feature_extractor"), you may provide
     a truncated version of a node name as a shortcut. To see how this works, try creating
@@ -74,9 +103,13 @@
     print(train_nodes)` and observe that the last node pertaining to `layer4` is `"layer4.2.relu_2"`.
     One may specify `"layer4.2.relu_2"` as the return node, or just `"layer4"` as
     this, by convention, refers to the last node (in order of execution) of `layer4`.
+  id: totrans-14
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在为[`create_feature_extractor()`](generated/torchvision.models.feature_extraction.create_feature_extractor.html#torchvision.models.feature_extraction.create_feature_extractor
+    "torchvision.models.feature_extraction.create_feature_extractor")指定节点名称时，您可以提供节点名称的缩写版本作为快捷方式。要查看其工作原理，请尝试创建一个ResNet-50模型，并使用`train_nodes,
+    _ = get_graph_node_names(model) print(train_nodes)`打印节点名称，观察与`layer4`相关的最后一个节点是`"layer4.2.relu_2"`。可以将`"layer4.2.relu_2"`指定为返回节点，或者只指定`"layer4"`，因为按照惯例，这指的是`layer4`的最后一个节点（按执行顺序）。
 - en: If a certain module or operation is repeated more than once, node names get
     an additional `_{int}` postfix to disambiguate. For instance, maybe the addition
     (`+`) operation is used three times in the same `forward` method. Then there would
@@ -84,31 +117,49 @@
     The counter is maintained within the scope of the direct parent. So in ResNet-50
     there is a `"layer4.1.add"` and a `"layer4.2.add"`. Because the addition operations
     reside in different blocks, there is no need for a postfix to disambiguate.
+  id: totrans-15
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 如果某个模块或操作重复多次，则节点名称会附加`_{int}`后缀以消除歧义。例如，也许加法（`+`）操作在同一个`forward`方法中使用了三次。那么会有`"path.to.module.add"`，`"path.to.module.add_1"`，`"path.to.module.add_2"`。计数器在直接父级的范围内维护。因此，在ResNet-50中有一个`"layer4.1.add"`和一个`"layer4.2.add"`。因为加法操作位于不同的块中，所以不需要后缀来消除歧义。
 - en: '**An Example**'
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: '**一个示例**'
 - en: 'Here is an example of how we might extract features for MaskRCNN:'
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 这里有一个我们可能为MaskRCNN提取特征的示例：
 - en: '[PRE0]'
+  id: totrans-18
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: API Reference[](#api-reference "Permalink to this heading")
+  id: totrans-19
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: API参考[](#api-reference "Permalink to this heading")
 - en: '| [`create_feature_extractor`](generated/torchvision.models.feature_extraction.create_feature_extractor.html#torchvision.models.feature_extraction.create_feature_extractor
     "torchvision.models.feature_extraction.create_feature_extractor")(model[, ...])
     | Creates a new graph module that returns intermediate nodes from a given model
     as dictionary with user specified keys as strings, and the requested outputs as
     values. |'
+  id: totrans-20
   prefs: []
   type: TYPE_TB
+  zh: '| [`create_feature_extractor`](generated/torchvision.models.feature_extraction.create_feature_extractor.html#torchvision.models.feature_extraction.create_feature_extractor
+    "torchvision.models.feature_extraction.create_feature_extractor")(model[, ...])
+    | 创建一个新的图模块，将给定模型的中间节点作为字典返回，用户可以指定键作为字符串，请求的输出作为值。 |'
 - en: '| [`get_graph_node_names`](generated/torchvision.models.feature_extraction.get_graph_node_names.html#torchvision.models.feature_extraction.get_graph_node_names
     "torchvision.models.feature_extraction.get_graph_node_names")(model[, tracer_kwargs, ...])
     | Dev utility to return node names in order of execution. |'
+  id: totrans-21
   prefs: []
   type: TYPE_TB
+  zh: '| [`get_graph_node_names`](generated/torchvision.models.feature_extraction.get_graph_node_names.html#torchvision.models.feature_extraction.get_graph_node_names
+    "torchvision.models.feature_extraction.get_graph_node_names")(model[, tracer_kwargs, ...])
+    | 开发工具，按执行顺序返回节点名称。 |'
