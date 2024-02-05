@@ -1,279 +1,426 @@
 - en: Enabling GPU video decoder/encoder
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 启用GPU视频解码器/编码器
 - en: 原文：[https://pytorch.org/audio/stable/build.ffmpeg.html](https://pytorch.org/audio/stable/build.ffmpeg.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/audio/stable/build.ffmpeg.html](https://pytorch.org/audio/stable/build.ffmpeg.html)
 - en: TorchAudio can make use of hardware-based video decoding and encoding supported
     by underlying FFmpeg libraries that are linked at runtime.
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: TorchAudio可以利用底层FFmpeg库支持的硬件解码和编码功能。
 - en: Using NVIDIA’s GPU decoder and encoder, it is also possible to pass around CUDA
     Tensor directly, that is decode video into CUDA tensor or encode video from CUDA
     tensor, without moving data from/to CPU.
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用NVIDIA的GPU解码器和编码器，还可以直接传递CUDA Tensor，即将视频解码为CUDA张量或从CUDA张量编码视频，而无需在CPU之间移动数据。
 - en: This improves the video throughput significantly. However, please note that
     not all the video formats are supported by hardware acceleration.
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 这将显著提高视频吞吐量。但请注意，并非所有视频格式都支持硬件加速。
 - en: This page goes through how to build FFmpeg with hardware acceleration. For the
     detail on the performance of GPU decoder and encoder please see [NVDEC tutoial](tutorials/nvdec_tutorial.html#nvdec-tutorial)
     and [NVENC tutorial](tutorials/nvenc_tutorial.html#nvenc-tutorial).
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 本页介绍了如何使用硬件加速构建FFmpeg。有关GPU解码器和编码器性能的详细信息，请参阅[NVDEC教程](tutorials/nvdec_tutorial.html#nvdec-tutorial)和[NVENC教程](tutorials/nvenc_tutorial.html#nvenc-tutorial)。
 - en: Overview[](#overview "Permalink to this heading")
+  id: totrans-6
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 概述[](#overview "跳转到此标题")
 - en: Using them in TorchAduio requires additional FFmpeg configuration.
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 在TorchAudio中使用它们需要额外的FFmpeg配置。
 - en: In the following, we look into how to enable GPU video decoding with [NVIDIA’s
     Video codec SDK](https://developer.nvidia.com/nvidia-video-codec-sdk). To use
     NVENC/NVDEC with TorchAudio, the following items are required.
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，我们将研究如何使用[NVIDIA的视频编解码SDK](https://developer.nvidia.com/nvidia-video-codec-sdk)启用GPU视频解码。要在TorchAudio中使用NVENC/NVDEC，需要以下项目。
 - en: NVIDIA GPU with hardware video decoder/encoder.
+  id: totrans-9
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 具有硬件视频解码器/编码器的NVIDIA GPU。
 - en: FFmpeg libraries compiled with NVDEC/NVENC support. †
+  id: totrans-10
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 使用已编译具有NVDEC/NVENC支持的FFmpeg库。†
 - en: PyTorch / TorchAudio with CUDA support.
+  id: totrans-11
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 带有CUDA支持的PyTorch / TorchAudio。
 - en: TorchAudio’s official binary distributions are compiled to work with FFmpeg
     libraries, and they contain the logic to use hardware decoding/encoding.
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: TorchAudio的官方二进制发行版已经编译为与FFmpeg库配合使用，并包含使用硬件解码/编码的逻辑。
 - en: In the following, we build FFmpeg 4 libraries with NVDEC/NVENC support. You
     can also use FFmpeg 5 or 6.
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，我们使用NVDEC/NVENC支持构建FFmpeg 4库。您也可以使用FFmpeg 5或6。
 - en: The following procedure was tested on Ubuntu.
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下过程在Ubuntu上进行了测试。
 - en: † For details on NVDEC/NVENC and FFmpeg, please refer to the following articles.
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: †有关NVDEC/NVENC和FFmpeg的详细信息，请参考以下文章。
 - en: '[https://docs.nvidia.com/video-technologies/video-codec-sdk/11.1/nvdec-video-decoder-api-prog-guide/](https://docs.nvidia.com/video-technologies/video-codec-sdk/11.1/nvdec-video-decoder-api-prog-guide/)'
+  id: totrans-16
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[https://docs.nvidia.com/video-technologies/video-codec-sdk/11.1/nvdec-video-decoder-api-prog-guide/](https://docs.nvidia.com/video-technologies/video-codec-sdk/11.1/nvdec-video-decoder-api-prog-guide/)'
 - en: '[https://docs.nvidia.com/video-technologies/video-codec-sdk/11.1/ffmpeg-with-nvidia-gpu/index.html#compiling-ffmpeg](https://docs.nvidia.com/video-technologies/video-codec-sdk/11.1/ffmpeg-with-nvidia-gpu/index.html#compiling-ffmpeg)'
+  id: totrans-17
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[https://docs.nvidia.com/video-technologies/video-codec-sdk/11.1/ffmpeg-with-nvidia-gpu/index.html#compiling-ffmpeg](https://docs.nvidia.com/video-technologies/video-codec-sdk/11.1/ffmpeg-with-nvidia-gpu/index.html#compiling-ffmpeg)'
 - en: '[https://developer.nvidia.com/blog/nvidia-ffmpeg-transcoding-guide/](https://developer.nvidia.com/blog/nvidia-ffmpeg-transcoding-guide/)'
+  id: totrans-18
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[https://developer.nvidia.com/blog/nvidia-ffmpeg-transcoding-guide/](https://developer.nvidia.com/blog/nvidia-ffmpeg-transcoding-guide/)'
 - en: Check the GPU and CUDA version[](#check-the-gpu-and-cuda-version "Permalink
     to this heading")
+  id: totrans-19
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 检查GPU和CUDA版本[](#check-the-gpu-and-cuda-version "跳转到此标题")
 - en: First, check the available GPU. Here, we have Tesla T4 with CUDA Toolkit 11.2
     installed.
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 首先，检查可用的GPU。这里，我们有安装了CUDA Toolkit 11.2的Tesla T4。
 - en: '[PRE0]'
+  id: totrans-21
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: Checking the compute capability[](#checking-the-compute-capability "Permalink
     to this heading")
+  id: totrans-22
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 检查计算能力[](#checking-the-compute-capability "跳转到此标题")
 - en: Later, we need the version of compute capability supported by this GPU. The
     following page lists the GPUs and corresponding compute capabilities. The compute
     capability of T4 is `7.5`.
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 稍后，我们需要此GPU支持的计算能力版本。以下页面列出了GPU及其对应的计算能力。T4的计算能力为`7.5`。
 - en: '[https://developer.nvidia.com/cuda-gpus](https://developer.nvidia.com/cuda-gpus)'
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: '[https://developer.nvidia.com/cuda-gpus](https://developer.nvidia.com/cuda-gpus)'
 - en: Install NVIDIA Video Codec Headers[](#install-nvidia-video-codec-headers "Permalink
     to this heading")
+  id: totrans-25
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 安装NVIDIA视频编解码头文件[](#install-nvidia-video-codec-headers "跳转到此标题")
 - en: To build FFmpeg with NVDEC/NVENC, we first need to install the headers that
     FFmpeg uses to interact with Video Codec SDK.
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 要构建具有NVDEC/NVENC的FFmpeg，我们首先需要安装FFmpeg用于与视频编解码SDK交互的头文件。
 - en: Since we have CUDA 11 working in the system, we use one of `n11` tag.
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于系统中已经安装了CUDA 11，我们使用了`n11`标签之一。
 - en: '[PRE1]'
+  id: totrans-28
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: The location of installation can be changed with `make PREFIX=<DESIRED_DIRECTORY>
     install`.
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 安装位置可以使用`make PREFIX=<DESIRED_DIRECTORY> install`进行更改。
 - en: '[PRE2]'
+  id: totrans-30
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Install FFmpeg dependencies[](#install-ffmpeg-dependencies "Permalink to this
     heading")
+  id: totrans-31
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 安装FFmpeg依赖项[](#install-ffmpeg-dependencies "跳转到此标题")
 - en: Next, we install tools and libraries required during the FFmpeg build. The minimum
     requirement is [Yasm](https://yasm.tortall.net/). Here we additionally install
     H264 video codec and HTTPS protocol, which we use later for verifying the installation.
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，我们安装在FFmpeg构建过程中所需的工具和库。最低要求是[Yasm](https://yasm.tortall.net/)。在这里，我们还安装了H264视频编解码器和HTTPS协议，稍后我们将用于验证安装。
 - en: '[PRE3]'
+  id: totrans-33
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: '[PRE4]'
+  id: totrans-34
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: Build FFmpeg with NVDEC/NVENC support[](#build-ffmpeg-with-nvdec-nvenc-support
     "Permalink to this heading")
+  id: totrans-35
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 构建具有NVDEC/NVENC支持的FFmpeg[](#build-ffmpeg-with-nvdec-nvenc-support "跳转到此标题")
 - en: Next we download the source code of FFmpeg 4\. We use 4.4.2 here.
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，我们下载FFmpeg 4的源代码。这里我们使用的是4.4.2版本。
 - en: '[PRE5]'
+  id: totrans-37
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: 'Next we configure FFmpeg build. Note the following:'
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来我们配置FFmpeg构建。请注意以下内容：
 - en: We provide flags like `-I/usr/local/cuda/include`, `-L/usr/local/cuda/lib64`
     to let the build process know where the CUDA libraries are found.
+  id: totrans-39
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 我们提供像`-I/usr/local/cuda/include`、`-L/usr/local/cuda/lib64`这样的标志，让构建过程知道CUDA库的位置。
 - en: We provide flags like `--enable-nvdec` and `--enable-nvenc` to enable NVDEC/NVENC.
+  id: totrans-40
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 我们提供像`--enable-nvdec`和`--enable-nvenc`这样的标志来启用NVDEC/NVENC。
 - en: We also provide NVCC flags with compute capability `75`, which corresponds to
     `7.5` of T4\. †
+  id: totrans-41
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 我们还提供了带有计算能力`75`的NVCC标志，对应于T4的`7.5`。
 - en: We install the library in `/usr/lib/`.
+  id: totrans-42
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 我们将库安装在`/usr/lib/`中。
 - en: Note
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: † The configuration script verifies NVCC by compiling a sample code. By default
     it uses old compute capability such as `30`, which is no longer supported by CUDA
     11\. So it is required to set a correct compute capability.
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: †配置脚本通过编译示例代码来验证NVCC。默认情况下，它使用旧的计算能力，例如`30`，这在CUDA 11中不再受支持。因此，需要设置正确的计算能力。
 - en: '[PRE6]'
+  id: totrans-45
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: '[PRE7]'
+  id: totrans-46
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: Now we build and install
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们构建并安装
 - en: '[PRE8]'
+  id: totrans-48
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: '[PRE9]'
+  id: totrans-49
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: Checking the intallation[](#checking-the-intallation "Permalink to this heading")
+  id: totrans-50
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 检查安装
 - en: To verify that the FFmpeg we built have CUDA support, we can check the list
     of available decoders and encoders.
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
+  zh: 要验证我们构建的FFmpeg是否支持CUDA，我们可以检查可用解码器和编码器的列表。
 - en: '[PRE10]'
+  id: totrans-52
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: '[PRE11]'
+  id: totrans-53
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: '[PRE12]'
+  id: totrans-54
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: '[PRE13]'
+  id: totrans-55
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: The following command fetches video from remote server, decode with NVDEC (cuvid)
     and re-encode with NVENC. If this command does not work, then there is an issue
     with FFmpeg installation, and TorchAudio would not be able to use them either.
+  id: totrans-56
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下命令从远程服务器获取视频，使用NVDEC（cuvid）解码，然后使用NVENC重新编码。如果此命令不起作用，则说明FFmpeg安装存在问题，TorchAudio也无法使用它们。
 - en: '[PRE14]'
+  id: totrans-57
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: 'Note that there is `Stream #0:0 -> #0:0 (h264 (h264_cuvid) -> h264 (h264_nvenc))`,
     which means that video is decoded with `h264_cuvid` decoder and `h264_nvenc` encoder.'
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: '请注意，存在`Stream #0:0 -> #0:0 (h264 (h264_cuvid) -> h264 (h264_nvenc))`，这意味着视频使用`h264_cuvid`解码器和`h264_nvenc`编码器进行解码。'
 - en: '[PRE15]'
+  id: totrans-59
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: Using the GPU decoder/encoder from TorchAudio[](#using-the-gpu-decoder-encoder-from-torchaudio
     "Permalink to this heading")
+  id: totrans-60
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 使用TorchAudio的GPU解码器/编码器
 - en: Checking the installation[](#checking-the-installation "Permalink to this heading")
+  id: totrans-61
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 检查安装
 - en: Once the FFmpeg is properly working with hardware acceleration, we need to check
     if TorchAudio can pick it up correctly.
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
+  zh: 一旦FFmpeg正确使用硬件加速，我们需要检查TorchAudio是否能够正确识别它。
 - en: There are utility functions to query the capability of FFmpeg in [`torchaudio.utils.ffmpeg_utils`](generated/torchaudio.utils.ffmpeg_utils.html#module-torchaudio.utils.ffmpeg_utils
     "torchaudio.utils.ffmpeg_utils").
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: 在[`torchaudio.utils.ffmpeg_utils`](generated/torchaudio.utils.ffmpeg_utils.html#module-torchaudio.utils.ffmpeg_utils
+    "torchaudio.utils.ffmpeg_utils")中有用于查询FFmpeg功能的实用函数。
 - en: You can first use [`get_video_decoders()`](generated/torchaudio.utils.ffmpeg_utils.html#torchaudio.utils.ffmpeg_utils.get_video_decoders
     "torchaudio.utils.ffmpeg_utils.get_video_decoders") and [`get_video_encoders()`](generated/torchaudio.utils.ffmpeg_utils.html#torchaudio.utils.ffmpeg_utils.get_video_encoders
     "torchaudio.utils.ffmpeg_utils.get_video_encoders") to check if GPU decoders and
     encoders (such as `h264_cuvid` and `h264_nvenc`) are listed.
+  id: totrans-64
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可以首先使用[`get_video_decoders()`](generated/torchaudio.utils.ffmpeg_utils.html#torchaudio.utils.ffmpeg_utils.get_video_decoders
+    "torchaudio.utils.ffmpeg_utils.get_video_decoders")和[`get_video_encoders()`](generated/torchaudio.utils.ffmpeg_utils.html#torchaudio.utils.ffmpeg_utils.get_video_encoders
+    "torchaudio.utils.ffmpeg_utils.get_video_encoders")来检查GPU解码器和编码器（如`h264_cuvid`和`h264_nvenc`）是否已列出。
 - en: It is often the case where there are multiple FFmpeg installations in the system,
     and TorchAudio is loading one different than expected. In such cases, use of `ffmpeg`
     to check the installation does not help. You can use functions like [`get_build_config()`](generated/torchaudio.utils.ffmpeg_utils.html#torchaudio.utils.ffmpeg_utils.get_build_config
     "torchaudio.utils.ffmpeg_utils.get_build_config") and [`get_versions()`](generated/torchaudio.utils.ffmpeg_utils.html#torchaudio.utils.ffmpeg_utils.get_versions
     "torchaudio.utils.ffmpeg_utils.get_versions") to get information about FFmpeg
     libraries TorchAudio loaded.
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: 通常情况下，系统中存在多个FFmpeg安装，TorchAudio加载的可能与预期不同。在这种情况下，使用`ffmpeg`检查安装是无济于事的。您可以使用[`get_build_config()`](generated/torchaudio.utils.ffmpeg_utils.html#torchaudio.utils.ffmpeg_utils.get_build_config
+    "torchaudio.utils.ffmpeg_utils.get_build_config")和[`get_versions()`](generated/torchaudio.utils.ffmpeg_utils.html#torchaudio.utils.ffmpeg_utils.get_versions
+    "torchaudio.utils.ffmpeg_utils.get_versions")等函数来获取有关TorchAudio加载的FFmpeg库的信息。
 - en: '[PRE16]'
+  id: totrans-66
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: '[PRE17]'
+  id: totrans-67
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: Using the hardware decoder and encoder[](#using-the-hardware-decoder-and-encoder
     "Permalink to this heading")
+  id: totrans-68
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 使用硬件解码器和编码器
 - en: Once the installation and the runtime linking work fine, then you can test the
     GPU decoding with the following.
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: 一旦安装和运行时链接正常，您可以使用以下内容测试GPU解码。
 - en: For the detail on the performance of GPU decoder and encoder please see [NVDEC
     tutoial](tutorials/nvdec_tutorial.html#nvdec-tutorial) and [NVENC tutorial](tutorials/nvenc_tutorial.html#nvenc-tutorial).
+  id: totrans-70
   prefs: []
   type: TYPE_NORMAL
+  zh: 有关GPU解码器和编码器性能的详细信息，请参阅[NVDEC教程](tutorials/nvdec_tutorial.html#nvdec-tutorial)和[NVENC教程](tutorials/nvenc_tutorial.html#nvenc-tutorial)。
