@@ -1,109 +1,153 @@
 - en: PyTorch Design Philosophy
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: PyTorch设计哲学
 - en: 原文：[https://pytorch.org/docs/stable/community/design.html](https://pytorch.org/docs/stable/community/design.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/docs/stable/community/design.html](https://pytorch.org/docs/stable/community/design.html)
 - en: This document is designed to help contributors and module maintainers understand
     the high-level design principles that have developed over time in PyTorch. These
     are not meant to be hard-and-fast rules, but to serve as a guide to help trade
     off different concerns and to resolve disagreements that may come up while developing
     PyTorch. For more information on contributing, module maintainership, and how
     to escalate a disagreement to the Core Maintainers, please see [PyTorch Governance](https://pytorch.org/docs/main/community/governance.html).
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 本文旨在帮助贡献者和模块维护者了解PyTorch中随着时间发展而形成的高层设计原则。这些并不是硬性规则，而是作为指导，帮助权衡不同的考虑因素，并解决在开发PyTorch过程中可能出现的分歧。有关更多贡献信息，模块维护和如何将分歧升级到核心维护者，请参阅[PyTorch
+    Governance](https://pytorch.org/docs/main/community/governance.html)。
 - en: Design Principles
+  id: totrans-3
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 设计原则
 - en: 'Principle 1: Usability over Performance[](#principle-1-usability-over-performance
     "Permalink to this heading")'
+  id: totrans-4
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 原则1：可用性优于性能
 - en: 'This principle may be surprising! As one Hacker News poster wrote: *PyTorch
     is amazing! […] Although I’m confused. How can a ML framework be not obsessed
     with speed/performance?* See [Hacker News discussion on PyTorch](https://news.ycombinator.com/item?id=28066093).'
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个原则可能会让人感到惊讶！正如一位Hacker News的作者写道：*PyTorch太棒了！[…]尽管我感到困惑。一个机器学习框架怎么可能不痴迷于速度/性能？*参见[Hacker
+    News关于PyTorch的讨论](https://news.ycombinator.com/item?id=28066093)。
 - en: 'Soumith’s blog post on [Growing the PyTorch Community](https://soumith.ch/posts/2021/02/growing-opensource/?fbclid=IwAR1bvN_xZ8avGvu14ODJzS8Zp7jX1BOyfuGUf-zoRawpyL-s95Vjxf88W7s)
     goes into this in some depth, but at a high-level:'
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: Soumith在[Growing the PyTorch Community](https://soumith.ch/posts/2021/02/growing-opensource/?fbclid=IwAR1bvN_xZ8avGvu14ODJzS8Zp7jX1BOyfuGUf-zoRawpyL-s95Vjxf88W7s)的博客文章中深入探讨了这一点，但在高层次上：
 - en: PyTorch’s primary goal is usability
+  id: totrans-7
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: PyTorch的主要目标是可用性
 - en: A secondary goal is to have *reasonable* performance
+  id: totrans-8
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 一个次要目标是具有*合理*的性能
 - en: We believe the ability to maintain our flexibility to support researchers who
     are building on top of our abstractions remains critical. We can’t see what the
     future of what workloads will be, but we know we want them to be built first on
     PyTorch and that requires flexibility.
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们相信保持灵活性以支持在我们的抽象之上构建的研究人员的能力仍然至关重要。我们无法预见工作负载的未来会是什么样子，但我们知道我们希望它们首先建立在PyTorch上，这需要灵活性。
 - en: 'In more concrete terms, we operate in a *usability-first* manner and try to
     avoid jumping to *restriction-first* regimes (for example, static shapes, graph-mode
     only) without a clear-eyed view of the tradeoffs. Often there is a temptation
     to impose strict user restrictions upfront because it can simplify implementation,
     but this comes with risks:'
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 更具体地说，我们以*可用性为先*的方式运作，并尝试避免在没有清晰看法的情况下跳到*限制为先*的制度（例如，静态形状，仅图模式）。通常会有一种诱惑，即在一开始就对用户施加严格的限制，因为这样可以简化实现，但这也带来了风险：
 - en: The performance may not be worth the user friction, either because the performance
     benefit is not compelling enough or it only applies to a relatively narrow set
     of subproblems.
+  id: totrans-11
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 性能可能不值得用户摩擦，要么是因为性能优势不够引人注目，要么仅适用于相对狭窄的一组子问题。
 - en: Even if the performance benefit is compelling, the restrictions can fragment
     the ecosystem into different sets of limitations that can quickly become incomprehensible
     to users.
+  id: totrans-12
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 即使性能优势引人注目，限制也可能将生态系统分割成不同的限制集，这些限制集很快就会变得令用户难以理解。
 - en: We want users to be able to seamlessly move their PyTorch code to different
     hardware and software platforms, to interoperate with different libraries and
     frameworks, and to experience the full richness of the PyTorch user experience,
     not a least common denominator subset.
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们希望用户能够无缝地将他们的PyTorch代码移植到不同的硬件和软件平台，与不同的库和框架进行互操作，并体验PyTorch用户体验的全部丰富性，而不是最低公共分母子集。
 - en: 'Principle 2: Simple Over Easy[](#principle-2-simple-over-easy "Permalink to
     this heading")'
+  id: totrans-14
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 原则2：简单胜于容易
 - en: 'Here, we borrow from [The Zen of Python](https://peps.python.org/pep-0020/):'
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这里，我们借鉴了[Python之禅](https://peps.python.org/pep-0020/)：
 - en: '*Explicit is better than implicit*'
+  id: totrans-16
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '*显式胜于隐式*'
 - en: '*Simple is better than complex*'
+  id: totrans-17
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '*简单胜于复杂*'
 - en: 'A more concise way of describing these two goals is [Simple Over Easy](https://www.infoq.com/presentations/Simple-Made-Easy/).
     Let’s start with an example because *simple* and *easy* are often used interchangeably
     in everyday English. Consider how one may model [devices](https://pytorch.org/docs/main/tensor_attributes.html#torch.device)
     in PyTorch:'
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: 描述这两个目标的更简洁方式是[Simple Over Easy](https://www.infoq.com/presentations/Simple-Made-Easy/)。让我们从一个例子开始，因为*简单*和*容易*在日常英语中经常被互换使用。考虑如何在PyTorch中建模[设备](https://pytorch.org/docs/main/tensor_attributes.html#torch.device)：
 - en: '**Simple / Explicit (to understand, debug):** every tensor is associated with
     a device. The user explicitly specifies tensor device movement. Operations that
     require cross-device movement result in an error.'
+  id: totrans-19
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**简单/显式（易于理解，调试）：**每个张量都与一个设备相关联。用户明确指定张量设备移动。需要跨设备移动的操作会导致错误。'
 - en: '**Easy / Implicit (to use):** the user does not have to worry about devices;
     the system figures out the globally optimal device placement.'
+  id: totrans-20
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**容易/隐式（使用）：**用户不必担心设备；系统会找出全局最佳设备放置。'
 - en: 'In this specific case, and as a general design philosophy, PyTorch favors exposing
     simple and explicit building blocks rather than APIs that are easy-to-use by practitioners.
     The simple version is immediately understandable and debuggable by a new PyTorch
@@ -112,8 +156,10 @@
     may let a new user move faster initially, but debugging such a system can be complex:
     How did the system make its determination? What is the API for plugging into such
     a system and how are objects represented in its IR?'
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这种特定情况下，以及作为一种一般的设计哲学，PyTorch更倾向于暴露简单和明确的构建块，而不是易于使用的API。简单版本对新的PyTorch用户来说是立即可理解和可调试的：如果在程序中调用需要跨设备移动的操作符，您会在操作符实际调用的地方得到清晰的错误。简单的解决方案可能让新用户最初移动得更快，但调试这样的系统可能会很复杂：系统是如何做出决定的？如何插入这样一个系统的API以及对象在其IR中是如何表示的？
 - en: 'Some classic arguments in favor of this sort of design come from [A Note on
     Distributed Computation](https://dl.acm.org/doi/book/10.5555/974938) (TLDR: Do
     not model resources with very different performance characteristics uniformly,
@@ -123,8 +169,11 @@
     For example, we could build operator-level or global device movement rules, but
     the precise choices aren’t obvious and building an extensible mechanism has unavoidable
     complexity and latency costs.'
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 这种设计的一些经典论点来自于[A Note on Distributed Computation](https://dl.acm.org/doi/book/10.5555/974938)（TLDR：不要用非常不同性能特征的资源统一建模，细节会泄漏）和[End-to-End
+    Principle](http://web.mit.edu/Saltzer/www/publications/endtoend/endtoend.pdf)（TLDR：在堆栈的较低层构建智能可以防止在堆栈的较高层构建高性能功能，并且通常也不起作用）。例如，我们可以构建操作级别或全局设备移动规则，但具体选择并不明显，构建一个可扩展的机制会带来不可避免的复杂性和延迟成本。
 - en: A caveat here is that this does not mean that higher-level “easy” APIs are not
     valuable; certainly there is a value in, for example, higher-levels in the stack
     to support efficient tensor computations across heterogeneous compute in a large
@@ -135,16 +184,22 @@
     library, but ultimately benefit from, as evidenced by our [rich ecosystem](https://pytorch.org/ecosystem/).
     In other words, not automating at the start allows us to potentially reach levels
     of good automation faster.
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 这里的一个警告是，这并不意味着更高级的“易用”API没有价值；当然，例如，在堆栈的更高层支持在大型集群中跨异构计算进行有效的张量计算是有价值的。相反，我们的意思是专注于简单的低级构建块有助于指导易用API，同时在用户需要离开常规路径时仍保持良好的体验。这也为创新和更具观点的工具的增长提供了空间，这是我们在PyTorch核心库中无法支持的速度，但最终会受益于我们的[丰富生态系统](https://pytorch.org/ecosystem/)。换句话说，不在开始自动化可以让我们更快地达到良好自动化水平的可能性。
 - en: 'Principle 3: Python First with Best In Class Language Interoperability[](#principle-3-python-first-with-best-in-class-language-interoperability
     "Permalink to this heading")'
+  id: totrans-24
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 原则3：Python First with Best In Class Language Interoperability（Python优先，具有最佳类语言互操作性）
 - en: 'This principle began as **Python First**:'
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个原则始于**Python First**：
 - en: PyTorch is not a Python binding into a monolithic C++ framework. It is built
     to be deeply integrated into Python. You can use it naturally like you would use
     [NumPy](https://www.numpy.org/), [SciPy](https://www.scipy.org/), [scikit-learn]((https://scikit-learn.org/),
@@ -152,40 +207,55 @@
     itself, using your favorite libraries and use packages such as [Cython](https://cython.org/)
     and [Numba](http://numba.pydata.org/). Our goal is to not reinvent the wheel where
     appropriate.
+  id: totrans-26
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: PyTorch不是Python绑定到一个单片C++框架。它被构建为与Python深度集成。您可以像使用[NumPy](https://www.numpy.org/)、[SciPy](https://www.scipy.org/)、[scikit-learn]((https://scikit-learn.org/)或其他Python库一样自然地使用它。您可以在Python中编写您自己的新神经网络层，使用您喜欢的库，并使用诸如[Cython](https://cython.org/)和[Numba](http://numba.pydata.org/)等包。我们的目标是在适当的情况下不重新发明轮子。
 - en: 'One thing PyTorch has needed to deal with over the years is Python overhead:
     we first rewrote the autograd engine in C++, then the majority of operator definitions,
     then developed TorchScript and the C++ frontend.'
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 多年来PyTorch需要处理的一个问题是Python开销：我们首先用C++重写了自动求导引擎，然后是大部分操作符定义，然后开发了TorchScript和C++前端。
 - en: 'Still, working in Python provides easily the best experience for our users:
     it is flexible, familiar, and perhaps most importantly, has a huge ecosystem of
     scientific computing libraries and extensions available for use. This fact motivates
     a few of our most recent contributions, which attempt to hit a Pareto optimal
     point close to the Python usability end of the curve:'
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: 然而，在Python中工作为我们的用户提供了最好的体验：它灵活、熟悉，也许最重要的是，有一个巨大的科学计算库和扩展生态系统可供使用。这个事实激励了我们最近一些贡献，试图在接近Python可用性端的Pareto最优点上达到一个平衡点：
 - en: '[TorchDynamo](https://dev-discuss.pytorch.org/t/torchdynamo-an-experiment-in-dynamic-python-bytecode-transformation/361),
     a Python frame evaluation tool capable of speeding up existing eager-mode PyTorch
     programs with minimal user intervention.'
+  id: totrans-29
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[TorchDynamo](https://dev-discuss.pytorch.org/t/torchdynamo-an-experiment-in-dynamic-python-bytecode-transformation/361)，这是一个Python帧评估工具，能够在最小程度用户干预的情况下加速现有的急切模式PyTorch程序。'
 - en: '[torch_function](https://pytorch.org/docs/main/notes/extending.html#extending-torch)
     and [torch_dispatch](https://dev-discuss.pytorch.org/t/what-and-why-is-torch-dispatch/557)
     extension points, which have enabled Python-first functionality to be built on-top
     of C++ internals, such as the [torch.fx tracer](https://pytorch.org/docs/stable/fx.html)
     and [functorch](https://github.com/pytorch/functorch) respectively.'
+  id: totrans-30
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[torch_function](https://pytorch.org/docs/main/notes/extending.html#extending-torch)
+    和 [torch_dispatch](https://dev-discuss.pytorch.org/t/what-and-why-is-torch-dispatch/557)
+    扩展点，使得可以在 C++ 内部构建基于 Python 的功能，例如 [torch.fx tracer](https://pytorch.org/docs/stable/fx.html)
+    和 [functorch](https://github.com/pytorch/functorch)。'
 - en: These design principles are not hard-and-fast rules, but hard won choices and
     anchor how we built PyTorch to be the debuggable, hackable and flexible framework
     it is today. As we have more contributors and maintainers, we look forward to
     applying these core principles with you across our libraries and ecosystem. We
     are also open to evolving them as we learn new things and the AI space evolves,
     as we know it will.
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: 这些设计原则并非硬性规则，而是经过艰苦选择的决定，是我们构建 PyTorch 为今天这样易于调试、可修改和灵活的框架的基石。随着我们有了更多的贡献者和维护者，我们期待与您一起在我们的库和生态系统中应用这些核心原则。我们也愿意在学习新知识和人工智能领域发展的过程中不断演进这些原则，因为我们知道它将会发生变化。

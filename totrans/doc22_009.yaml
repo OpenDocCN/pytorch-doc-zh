@@ -1,28 +1,38 @@
 - en: Autograd mechanics
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 自动求导机制
 - en: 原文：[https://pytorch.org/docs/stable/notes/autograd.html](https://pytorch.org/docs/stable/notes/autograd.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 您可以使用[保存张量的钩子](#saved-tensors-hooks-doc)来控制PyTorch如何进行打包/解包。
 - en: This note will present an overview of how autograd works and records the operations.
     It’s not strictly necessary to understand all this, but we recommend getting familiar
     with it, as it will help you write more efficient, cleaner programs, and can aid
     you in debugging.
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个笔记将介绍自动求导的工作原理以及记录操作的概述。虽然不是严格必要理解所有这些，但我们建议熟悉它，因为这将帮助您编写更高效、更清洁的程序，并可以帮助您调试。
 - en: '## How autograd encodes the history[](#how-autograd-encodes-the-history "Permalink
     to this heading")'
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: '## 自动求导如何编码历史[](#how-autograd-encodes-the-history "跳转到此标题")'
 - en: Autograd is a reverse automatic differentiation system. Conceptually, autograd
     records a graph recording all of the operations that created the data as you execute
     operations, giving you a directed acyclic graph whose leaves are the input tensors
     and roots are the output tensors. By tracing this graph from roots to leaves,
     you can automatically compute the gradients using the chain rule.
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 自动求导是一个反向自动微分系统。概念上，autograd在执行操作时记录创建数据的所有操作的图，为您提供一个有向无环图，其叶子是输入张量，根是输出张量。通过从根到叶子跟踪这个图，您可以使用链式法则自动计算梯度。
 - en: Internally, autograd represents this graph as a graph of `Function` objects
     (really expressions), which can be `apply()` ed to compute the result of evaluating
     the graph. When computing the forward pass, autograd simultaneously performs the
@@ -30,138 +40,194 @@
     the gradient (the `.grad_fn` attribute of each [`torch.Tensor`](../tensors.html#torch.Tensor
     "torch.Tensor") is an entry point into this graph). When the forward pass is completed,
     we evaluate this graph in the backwards pass to compute the gradients.
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 在内部，autograd将这个图表示为`Function`对象（实际上是表达式）的图，可以`apply()`来计算评估图的结果。在计算前向传播时，autograd同时执行请求的计算并构建一个表示计算梯度的函数的图（每个[`torch.Tensor`](../tensors.html#torch.Tensor
+    "torch.Tensor")的`.grad_fn`属性是这个图的入口点）。完成前向传播后，我们在反向传播中评估这个图以计算梯度。
 - en: An important thing to note is that the graph is recreated from scratch at every
     iteration, and this is exactly what allows for using arbitrary Python control
     flow statements, that can change the overall shape and size of the graph at every
     iteration. You don’t have to encode all possible paths before you launch the training
     - what you run is what you differentiate.
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 需要注意的一点是，在每次迭代中，图形都是从头开始重新创建的，这正是允许使用任意Python控制流语句的原因，这些语句可以在每次迭代中改变图形的整体形状和大小。您不必在启动训练之前编码所有可能的路径
+    - 您运行的就是您要求导数的内容。
 - en: '### Saved tensors'
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: '### 已保存的张量'
 - en: Some operations need intermediary results to be saved during the forward pass
     in order to execute the backward pass. For example, the function <math><semantics><mrow><mi>x</mi><mo>↦</mo><msup><mi>x</mi><mn>2</mn></msup></mrow><annotation
     encoding="application/x-tex">x\mapsto x^2</annotation></semantics></math>x↦x2
     saves the input <math><semantics><mrow><mi>x</mi></mrow><annotation encoding="application/x-tex">x</annotation></semantics></math>x
     to compute the gradient.
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 一些操作需要在前向传播期间保存中间结果，以便执行反向传播。例如，函数<math><semantics><mrow><mi>x</mi><mo>↦</mo><msup><mi>x</mi><mn>2</mn></msup></mrow><annotation
+    encoding="application/x-tex">x\mapsto x^2</annotation></semantics></math>x↦x2
+    保存输入<math><semantics><mrow><mi>x</mi></mrow><annotation encoding="application/x-tex">x</annotation></semantics></math>x
+    来计算梯度。
 - en: When defining a custom Python [`Function`](../autograd.html#torch.autograd.Function
     "torch.autograd.Function"), you can use `save_for_backward()` to save tensors
     during the forward pass and `saved_tensors` to retrieve them during the backward
     pass. See [Extending PyTorch](extending.html) for more information.
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 当定义自定义Python [`Function`](../autograd.html#torch.autograd.Function "torch.autograd.Function")时，您可以使用`save_for_backward()`在前向传播期间保存张量，并使用`saved_tensors`在反向传播期间检索它们。有关更多信息，请参阅[扩展PyTorch](extending.html)。
 - en: For operations that PyTorch defines (e.g. [`torch.pow()`](../generated/torch.pow.html#torch.pow
     "torch.pow")), tensors are automatically saved as needed. You can explore (for
     educational or debugging purposes) which tensors are saved by a certain `grad_fn`
     by looking for its attributes starting with the prefix `_saved`.
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于PyTorch定义的操作（例如[`torch.pow()`](../generated/torch.pow.html#torch.pow "torch.pow")），张量会根据需要自动保存。您可以探索（用于教育或调试目的）通过查找以前缀`_saved`开头的属性来了解某个`grad_fn`保存了哪些张量。
 - en: '[PRE0]'
+  id: totrans-11
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: 'In the previous code, `y.grad_fn._saved_self` refers to the same Tensor object
     as x. But that may not always be the case. For instance:'
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: 在前面的代码中，`y.grad_fn._saved_self`指的是与x相同的张量对象。但这并不总是这样。例如：
 - en: '[PRE1]'
+  id: totrans-13
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Under the hood, to prevent reference cycles, PyTorch has *packed* the tensor
     upon saving and *unpacked* it into a different tensor for reading. Here, the tensor
     you get from accessing `y.grad_fn._saved_result` is a different tensor object
     than `y` (but they still share the same storage).
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 在内部，为了防止引用循环，PyTorch在保存时*打包*张量，并在读取时*解包*为不同的张量。在这里，通过访问`y.grad_fn._saved_result`获得的张量对象与`y`是不同的张量对象（但它们仍然共享相同的存储）。
 - en: Whether a tensor will be packed into a different tensor object depends on whether
     it is an output of its own grad_fn, which is an implementation detail subject
     to change and that users should not rely on.
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 张量是否会打包为不同的张量对象取决于它是否是其自己`grad_fn`的输出，这是一个实现细节，可能会发生变化，用户不应依赖于此。
 - en: 'You can control how PyTorch does packing / unpacking with [Hooks for saved
     tensors](#saved-tensors-hooks-doc).  ## Gradients for non-differentiable functions[](#gradients-for-non-differentiable-functions
     "Permalink to this heading")'
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: '## 不可微函数的梯度[](#gradients-for-non-differentiable-functions "跳转到此标题")'
 - en: 'The gradient computation using Automatic Differentiation is only valid when
     each elementary function being used is differentiable. Unfortunately many of the
     functions we use in practice do not have this property (`relu` or `sqrt` at `0`,
     for example). To try and reduce the impact of functions that are non-differentiable,
     we define the gradients of the elementary operations by applying the following
     rules in order:'
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用自动微分进行梯度计算仅在每个使用的基本函数可微时有效。不幸的是，我们在实践中使用的许多函数都没有这个性质（例如在`0`处的`relu`或`sqrt`）。为了尝试减少不可微函数的影响，我们通过按照以下规则定义基本操作的梯度来实现：
 - en: If the function is differentiable and thus a gradient exists at the current
     point, use it.
+  id: totrans-18
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 如果函数是可微的，因此在当前点存在梯度，请使用它。
 - en: If the function is convex (at least locally), use the sub-gradient of minimum
     norm (it is the steepest descent direction).
+  id: totrans-19
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 如果函数是凸的（至少在局部），请使用最小范数的次梯度（这是最陡下降方向）。
 - en: If the function is concave (at least locally), use the super-gradient of minimum
     norm (consider -f(x) and apply the previous point).
+  id: totrans-20
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 如果函数是凹的（至少在局部），则使用最小范数的超梯度（考虑-f(x)并应用前面的点）。
 - en: If the function is defined, define the gradient at the current point by continuity
     (note that `inf` is possible here, for example for `sqrt(0)`). If multiple values
     are possible, pick one arbitrarily.
+  id: totrans-21
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 如果函数已定义，请通过连续性在当前点定义梯度（请注意，这里可能是`inf`，例如对于`sqrt(0)`）。如果可能有多个值，请任意选择一个。
 - en: If the function is not defined (`sqrt(-1)`, `log(-1)` or most functions when
     the input is `NaN`, for example) then the value used as the gradient is arbitrary
     (we might also raise an error but that is not guaranteed). Most functions will
     use `NaN` as the gradient, but for performance reasons, some functions will use
     other values (`log(-1)`, for example).
+  id: totrans-22
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 如果函数未定义（例如`sqrt(-1)`，`log(-1)`或大多数函数在输入为`NaN`时），则用作梯度的值是任意的（我们也可能引发错误，但不能保证）。大多数函数将使用`NaN`作为梯度，但出于性能原因，某些函数将使用其他值（例如`log(-1)`）。
 - en: 'If the function is not a deterministic mapping (i.e. it is not a [mathematical
     function](https://en.wikipedia.org/wiki/Function_(mathematics))), it will be marked
     as non-differentiable. This will make it error out in the backward if used on
     tensors that require grad outside of a `no_grad` environment.  ## Locally disabling
-    gradient computation[](#locally-disabling-gradient-computation "Permalink to
-    this heading")'
+    gradient computation[](#locally-disabling-gradient-computation "Permalink to this
+    heading")'
+  id: totrans-23
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 如果函数不是确定性映射（即不是[数学函数](https://en.wikipedia.org/wiki/Function_(mathematics))），它将被标记为不可微。如果在`no_grad`环境之外使用需要梯度的张量，则在反向传播中将出现错误。##局部禁用梯度计算[](#locally-disabling-gradient-computation
+    "跳转到此标题的永久链接")
 - en: 'There are several mechanisms available from Python to locally disable gradient
     computation:'
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 有几种机制可用于在Python中局部禁用梯度计算：
 - en: To disable gradients across entire blocks of code, there are context managers
     like no-grad mode and inference mode. For more fine-grained exclusion of subgraphs
     from gradient computation, there is setting the `requires_grad` field of a tensor.
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: 要在整个代码块中禁用梯度，有像无梯度模式和推断模式这样的上下文管理器。为了更细粒度地排除梯度计算中的子图，可以设置张量的`requires_grad`字段。
 - en: Below, in addition to discussing the mechanisms above, we also describe evaluation
     mode (`nn.Module.eval()`), a method that is not used to disable gradient computation
     but, because of its name, is often mixed up with the three.
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 除了讨论上述机制之外，我们还描述了评估模式（`nn.Module.eval()`），这是一种不用于禁用梯度计算的方法，但由于其名称，经常与这三种方法混淆。
 - en: Setting `requires_grad`
+  id: totrans-27
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 设置`requires_grad`
 - en: '`requires_grad` is a flag, defaulting to false *unless wrapped in a* `nn.Parameter`,
     that allows for fine-grained exclusion of subgraphs from gradient computation.
     It takes effect in both the forward and backward passes:'
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: '`requires_grad`是一个标志，默认为false，*除非包装在* `nn.Parameter`中，允许对梯度计算中的子图进行细粒度排除。它在前向和反向传播中都生效：'
 - en: During the forward pass, an operation is only recorded in the backward graph
     if at least one of its input tensors require grad. During the backward pass (`.backward()`),
     only leaf tensors with `requires_grad=True` will have gradients accumulated into
     their `.grad` fields.
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 在前向传播期间，只有在其输入张量中至少有一个需要梯度的情况下，操作才会记录在反向图中。在反向传播（`.backward()`）期间，只有`requires_grad=True`的叶子张量才会将梯度累积到其`.grad`字段中。
 - en: It is important to note that even though every tensor has this flag, *setting*
     it only makes sense for leaf tensors (tensors that do not have a `grad_fn`, e.g.,
     a `nn.Module`’s parameters). Non-leaf tensors (tensors that do have `grad_fn`)
@@ -169,111 +235,155 @@
     will be needed as an intermediary result to compute the gradient for a leaf tensor
     that requires grad. From this definition, it is clear that all non-leaf tensors
     will automatically have `require_grad=True`.
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 重要的是要注意，即使每个张量都有这个标志，*设置*它只对叶子张量（没有`grad_fn`的张量，例如`nn.Module`的参数）有意义。非叶子张量（具有`grad_fn`的张量）是具有与之关联的反向图的张量。因此，它们的梯度将作为计算需要梯度的叶子张量的梯度的中间结果。从这个定义可以清楚地看出，所有非叶子张量将自动具有`require_grad=True`。
 - en: Setting `requires_grad` should be the main way you control which parts of the
     model are part of the gradient computation, for example, if you need to freeze
     parts of your pretrained model during model fine-tuning.
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: 设置`requires_grad`应该是您控制模型哪些部分参与梯度计算的主要方式，例如，如果您需要在模型微调期间冻结部分预训练模型。
 - en: To freeze parts of your model, simply apply `.requires_grad_(False)` to the
     parameters that you don’t want updated. And as described above, since computations
     that use these parameters as inputs would not be recorded in the forward pass,
     they won’t have their `.grad` fields updated in the backward pass because they
     won’t be part of the backward graph in the first place, as desired.
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 要冻结模型的部分，只需将`.requires_grad_(False)`应用于您不希望更新的参数。正如上面所述，由于使用这些参数作为输入的计算不会在前向传播中记录，因此它们在反向传播中不会更新其`.grad`字段，因为它们本来就不会成为反向图的一部分，这正是所期望的。
 - en: Because this is such a common pattern, `requires_grad` can also be set at the
     module level with `nn.Module.requires_grad_()`. When applied to a module, `.requires_grad_()`
     takes effect on all of the module’s parameters (which have `requires_grad=True`
     by default).
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于这是一个常见模式，`requires_grad`也可以在模块级别使用`nn.Module.requires_grad_()`进行设置。当应用于模块时，`.requires_grad_()`会对模块的所有参数（默认情况下具有`requires_grad=True`）生效。
 - en: Grad Modes
+  id: totrans-34
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: Grad模式
 - en: 'Apart from setting `requires_grad` there are also three grad modes that can
     be selected from Python that can affect how computations in PyTorch are processed
     by autograd internally: default mode (grad mode), no-grad mode, and inference
     mode, all of which can be togglable via context managers and decorators.'
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 除了设置`requires_grad`外，还有三种可以从Python中选择的grad模式，可以影响PyTorch中autograd内部处理计算的方式：默认模式（grad模式）、无梯度模式和推理模式，所有这些模式都可以通过上下文管理器和装饰器进行切换。
 - en: '| Mode | Excludes operations from being recorded in backward graph | Skips
     additional autograd tracking overhead | Tensors created while the mode is enabled
     can be used in grad-mode later | Examples |'
+  id: totrans-36
   prefs: []
   type: TYPE_TB
+  zh: '| 模式 | 排除在反向图中记录的操作 | 跳过额外的autograd跟踪开销 | 在启用模式时创建的张量可以在grad模式中使用 | 示例 |'
 - en: '| --- | --- | --- | --- | --- |'
+  id: totrans-37
   prefs: []
   type: TYPE_TB
+  zh: '| --- | --- | --- | --- | --- |'
 - en: '| default |  |  | ✓ | Forward pass |'
+  id: totrans-38
   prefs: []
   type: TYPE_TB
+  zh: '| 默认 |  |  | ✓ | 前向传递 |'
 - en: '| no-grad | ✓ |  | ✓ | Optimizer updates |'
+  id: totrans-39
   prefs: []
   type: TYPE_TB
+  zh: '| 无梯度 | ✓ |  | ✓ | 优化器更新 |'
 - en: '| inference | ✓ | ✓ |  | Data processing, model evaluation |'
+  id: totrans-40
   prefs: []
   type: TYPE_TB
+  zh: '| 推理 | ✓ | ✓ |  | 数据处理，模型评估 |'
 - en: Default Mode (Grad Mode)
+  id: totrans-41
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 默认模式（grad模式）
 - en: The “default mode” is the mode we are implicitly in when no other modes like
     no-grad and inference mode are enabled. To be contrasted with “no-grad mode” the
     default mode is also sometimes called “grad mode”.
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: “默认模式”是我们在没有启用其他模式（如无梯度模式和推理模式）时隐式处于的模式。与“无梯度模式”相对应，“默认模式”有时也被称为“grad模式”。
 - en: The most important thing to know about the default mode is that it is the only
     mode in which `requires_grad` takes effect. `requires_grad` is always overridden
     to be `False` in both the two other modes.
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: 关于默认模式最重要的一点是它是唯一一个`requires_grad`生效的模式。在另外两种模式中，`requires_grad`总是被覆盖为`False`。
 - en: No-grad Mode
+  id: totrans-44
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 无梯度模式
 - en: Computations in no-grad mode behave as if none of the inputs require grad. In
     other words, computations in no-grad mode are never recorded in the backward graph
     even if there are inputs that have `require_grad=True`.
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: 在无梯度模式下的计算行为就好像没有任何输入需要梯度一样。换句话说，在无梯度模式下的计算永远不会被记录在反向图中，即使有`require_grad=True`的输入也是如此。
 - en: Enable no-grad mode when you need to perform operations that should not be recorded
     by autograd, but you’d still like to use the outputs of these computations in
     grad mode later. This context manager makes it convenient to disable gradients
     for a block of code or function without having to temporarily set tensors to have
     `requires_grad=False`, and then back to `True`.
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 当您需要执行不应被autograd记录的操作，但仍希望稍后在grad模式中使用这些计算的输出时，请启用无梯度模式。这个上下文管理器使得在不必临时将张量设置为`requires_grad=False`，然后再设置为`True`的情况下，方便地禁用一段代码或函数的梯度。
 - en: 'For example, no-grad mode might be useful when writing an optimizer: when performing
     the training update you’d like to update parameters in-place without the update
     being recorded by autograd. You also intend to use the updated parameters for
     computations in grad mode in the next forward pass.'
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: 例如，当编写优化器时，无梯度模式可能很有用：在执行训练更新时，您希望在不被autograd记录的情况下就地更新参数。您还打算在下一个前向传递中使用更新后的参数进行计算。
 - en: The implementations in [torch.nn.init](../nn.init.html#nn-init-doc) also rely
     on no-grad mode when initializing the parameters as to avoid autograd tracking
     when updating the initialized parameters in-place.
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: 在初始化参数时，[torch.nn.init](../nn.init.html#nn-init-doc)中的实现也依赖于无梯度模式，以避免在就地更新初始化参数时进行autograd跟踪。
 - en: Inference Mode
+  id: totrans-49
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 推理模式
 - en: 'Inference mode is the extreme version of no-grad mode. Just like in no-grad
     mode, computations in inference mode are not recorded in the backward graph, but
     enabling inference mode will allow PyTorch to speed up your model even more. This
     better runtime comes with a drawback: tensors created in inference mode will not
     be able to be used in computations to be recorded by autograd after exiting inference
     mode.'
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: 推理模式是无梯度模式的极端版本。就像在无梯度模式中一样，在推理模式中的计算不会被记录在反向图中，但启用推理模式将使PyTorch加速您的模型。这种更好的运行时性能伴随着一个缺点：在推理模式中创建的张量将无法在退出推理模式后用于由autograd记录的计算。
 - en: Enable inference mode when you are performing computations that don’t need to
     be recorded in the backward graph, AND you don’t plan on using the tensors created
     in inference mode in any computation that is to be recorded by autograd later.
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
+  zh: 当您执行不需要在反向图中记录的计算，并且您不打算在稍后由autograd记录的任何计算中使用在推理模式中创建的张量时，请启用推理模式。
 - en: It is recommended that you try out inference mode in the parts of your code
     that do not require autograd tracking (e.g., data processing and model evaluation).
     If it works out of the box for your use case it’s a free performance win. If you
@@ -281,62 +391,88 @@
     created in inference mode in computations that are recorded by autograd after
     exiting inference mode. If you cannot avoid such use in your case, you can always
     switch back to no-grad mode.
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
+  zh: 建议您在代码中不需要autograd跟踪的部分尝试推理模式（例如数据处理和模型评估）。如果它适用于您的用例，那么这是一个免费的性能提升。如果在启用推理模式后遇到错误，请检查您是否在退出推理模式后使用了在推理模式中创建的张量进行autograd记录的计算。如果您无法避免在您的情况下使用这种用法，您可以随时切换回无梯度模式。
 - en: For details on inference mode please see [Inference Mode](https://pytorch.org/cppdocs/notes/inference_mode.html).
+  id: totrans-53
   prefs: []
   type: TYPE_NORMAL
+  zh: 有关推理模式的详细信息，请参见[推理模式](https://pytorch.org/cppdocs/notes/inference_mode.html)。
 - en: For implementation details of inference mode see [RFC-0011-InferenceMode](https://github.com/pytorch/rfcs/pull/17).
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: 有关推理模式的实现细节，请参阅[RFC-0011-InferenceMode](https://github.com/pytorch/rfcs/pull/17)。
 - en: Evaluation Mode (`nn.Module.eval()`)[](#evaluation-mode-nn-module-eval "Permalink
     to this heading")
+  id: totrans-55
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 评估模式（`nn.Module.eval()`）
 - en: Evaluation mode is not a mechanism to locally disable gradient computation.
     It is included here anyway because it is sometimes confused to be such a mechanism.
+  id: totrans-56
   prefs: []
   type: TYPE_NORMAL
+  zh: 评估模式不是一种本地禁用梯度计算的机制。它在这里包含是因为有时会被误解为这样的机制。
 - en: Functionally, `module.eval()` (or equivalently `module.train(False)`) are completely
     orthogonal to no-grad mode and inference mode. How `model.eval()` affects your
     model depends entirely on the specific modules used in your model and whether
     they define any training-mode specific behavior.
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: 从功能上讲，`module.eval()`（或等效地`module.train(False)`）与无梯度模式和推断模式完全无关。`model.eval()`如何影响您的模型完全取决于您的模型中使用的特定模块以及它们是否定义了任何特定于训练模式的行为。
 - en: You are responsible for calling `model.eval()` and `model.train()` if your model
     relies on modules such as [`torch.nn.Dropout`](../generated/torch.nn.Dropout.html#torch.nn.Dropout
     "torch.nn.Dropout") and [`torch.nn.BatchNorm2d`](../generated/torch.nn.BatchNorm2d.html#torch.nn.BatchNorm2d
     "torch.nn.BatchNorm2d") that may behave differently depending on training mode,
     for example, to avoid updating your BatchNorm running statistics on validation
     data.
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您的模型依赖于诸如[`torch.nn.Dropout`](../generated/torch.nn.Dropout.html#torch.nn.Dropout
+    "torch.nn.Dropout")和[`torch.nn.BatchNorm2d`](../generated/torch.nn.BatchNorm2d.html#torch.nn.BatchNorm2d
+    "torch.nn.BatchNorm2d")等模块，这些模块可能会根据训练模式的不同而表现不同，例如，为了避免在验证数据上更新您的BatchNorm运行统计数据，您需要调用`model.eval()`和`model.train()`。
 - en: It is recommended that you always use `model.train()` when training and `model.eval()`
     when evaluating your model (validation/testing) even if you aren’t sure your model
     has training-mode specific behavior, because a module you are using might be updated
     to behave differently in training and eval modes.
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: 建议在训练时始终使用`model.train()`，在评估模型（验证/测试）时使用`model.eval()`，即使您不确定您的模型是否具有特定于训练模式的行为，因为您使用的模块可能会更新以在训练和评估模式下表现不同。
 - en: In-place operations with autograd[](#in-place-operations-with-autograd "Permalink
     to this heading")
+  id: totrans-60
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 使用autograd的原地操作
 - en: Supporting in-place operations in autograd is a hard matter, and we discourage
     their use in most cases. Autograd’s aggressive buffer freeing and reuse makes
     it very efficient and there are very few occasions when in-place operations lower
     memory usage by any significant amount. Unless you’re operating under heavy memory
     pressure, you might never need to use them.
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: 在自动求导中支持原地操作是一件困难的事情，我们不鼓励在大多数情况下使用它们。自动求导的积极缓冲区释放和重用使其非常高效，只有在极度内存压力下，原地操作才会显著降低内存使用量。除非您在极度内存压力下操作，否则您可能永远不需要使用它们。
 - en: 'There are two main reasons that limit the applicability of in-place operations:'
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
+  zh: 有两个主要原因限制了原地操作的适用性：
 - en: In-place operations can potentially overwrite values required to compute gradients.
+  id: totrans-63
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 原地操作可能会覆盖计算梯度所需的值。
 - en: Every in-place operation requires the implementation to rewrite the computational
     graph. Out-of-place versions simply allocate new objects and keep references to
     the old graph, while in-place operations, require changing the creator of all
@@ -344,78 +480,111 @@
     if there are many Tensors that reference the same storage (e.g. created by indexing
     or transposing), and in-place functions will raise an error if the storage of
     modified inputs is referenced by any other `Tensor`.
+  id: totrans-64
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 每个原地操作都需要实现重写计算图。非原地版本只是分配新对象并保留对旧图的引用，而原地操作需要将所有输入的创建者更改为代表此操作的`Function`。这可能会很棘手，特别是如果有许多Tensor引用相同的存储（例如通过索引或转置创建），并且如果修改后的输入的存储被任何其他`Tensor`引用，原地函数将引发错误。
 - en: In-place correctness checks[](#in-place-correctness-checks "Permalink to this
     heading")
+  id: totrans-65
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 原地正确性检查
 - en: Every tensor keeps a version counter, that is incremented every time it is marked
     dirty in any operation. When a Function saves any tensors for backward, a version
     counter of their containing Tensor is saved as well. Once you access `self.saved_tensors`
     it is checked, and if it is greater than the saved value an error is raised. This
     ensures that if you’re using in-place functions and not seeing any errors, you
     can be sure that the computed gradients are correct.
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: 每个张量都保留一个版本计数器，每次在任何操作中标记为脏时都会递增。当一个Function保存任何张量用于反向传播时，它们包含的Tensor的版本计数器也会被保存。一旦访问`self.saved_tensors`，它就会被检查，如果大于保存的值，则会引发错误。这确保了如果您使用原地函数而没有看到任何错误，您可以确信计算的梯度是正确的。
 - en: Multithreaded Autograd
+  id: totrans-67
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 多线程自动求导
 - en: The autograd engine is responsible for running all the backward operations necessary
     to compute the backward pass. This section will describe all the details that
     can help you make the best use of it in a multithreaded environment. (This is
     relevant only for PyTorch 1.6+ as the behavior in previous version was different.)
+  id: totrans-68
   prefs: []
   type: TYPE_NORMAL
+  zh: 自动求导引擎负责运行计算反向传播所需的所有反向操作。本节将描述所有细节，以帮助您在多线程环境中充分利用它。（这仅适用于PyTorch 1.6+，因为之前版本的行为不同。）
 - en: 'User could train their model with multithreading code (e.g. Hogwild training),
     and does not block on the concurrent backward computations, example code could
     be:'
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: 用户可以使用多线程代码训练他们的模型（例如，Hogwild训练），并且不会在并发反向计算上阻塞，示例代码可能是：
 - en: '[PRE2]'
+  id: totrans-70
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: 'Note that some behaviors that user should be aware of:'
+  id: totrans-71
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意用户应该注意的一些行为：
 - en: Concurrency on CPU
+  id: totrans-72
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: CPU上的并发
 - en: When you run `backward()` or `grad()` via python or C++ API in multiple threads
     on CPU, you are expecting to see extra concurrency instead of serializing all
     the backward calls in a specific order during execution (behavior before PyTorch
     1.6).
+  id: totrans-73
   prefs: []
   type: TYPE_NORMAL
+  zh: 当您在CPU上通过Python或C++ API在多个线程上运行`backward()`或`grad()`时，您期望看到额外的并发，而不是在执行期间按特定顺序序列化所有的反向调用（PyTorch
+    1.6之前的行为）。
 - en: Non-determinism
+  id: totrans-74
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 非确定性
 - en: If you are calling `backward()` from multiple threads concurrently and have
     shared inputs (i.e. Hogwild CPU training), then non-determinism should be expected.
     This can occur because parameters are automatically shared across threads, as
     such, multiple threads may access and try to accumulate the same `.grad` attribute
     during gradient accumulation. This is technically not safe, and it might result
     in race condition and the result might be invalid to use.
+  id: totrans-75
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您从多个线程同时调用 `backward()` 并且具有共享输入（即 Hogwild CPU 训练），则应该期望非确定性。这可能是因为参数会自动在线程之间共享，因此多个线程可能会访问并尝试在梯度累积期间累积相同的
+    `.grad` 属性。这在技术上是不安全的，可能会导致竞争条件，结果可能无效。
 - en: Users developing multithreaded models featuring shared parameters should have
     the threading model in mind and should understand the issues described above.
+  id: totrans-76
   prefs: []
   type: TYPE_NORMAL
+  zh: 开发具有共享参数的多线程模型的用户应该考虑线程模型，并应理解上述问题。
 - en: The functional API [`torch.autograd.grad()`](../generated/torch.autograd.grad.html#torch.autograd.grad
     "torch.autograd.grad") may be used to calculate the gradients instead of `backward()`
     to avoid non-determinism.
+  id: totrans-77
   prefs: []
   type: TYPE_NORMAL
+  zh: 可以使用函数式 API [`torch.autograd.grad()`](../generated/torch.autograd.grad.html#torch.autograd.grad)
+    来计算梯度，而不是使用 `backward()` 来避免非确定性。
 - en: Graph retaining
+  id: totrans-78
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 保留图
 - en: If part of the autograd graph is shared between threads, i.e. run first part
     of forward single thread, then run second part in multiple threads, then the first
     part of graph is shared. In this case different threads execute `grad()` or `backward()`
@@ -423,41 +592,61 @@
     and the other thread will crash in this case. Autograd will error out to the user
     similar to what call `backward()` twice with out `retain_graph=True`, and let
     the user know they should use `retain_graph=True`.
+  id: totrans-79
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果 autograd 图的一部分在多个线程之间共享，即在单个线程中运行前半部分的前向，然后在多个线程中运行第二部分，那么图的第一部分是共享的。在这种情况下，不同的线程在相同的图上执行
+    `grad()` 或 `backward()` 可能会出现破坏图的问题，其中一个线程会在飞行中破坏图，而另一个线程将在这种情况下崩溃。Autograd 将向用户报告类似于两次调用
+    `backward()` 而没有 `retain_graph=True`，并告知用户应该使用 `retain_graph=True`。
 - en: Thread Safety on Autograd Node[](#thread-safety-on-autograd-node "Permalink
     to this heading")
+  id: totrans-80
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: Autograd 节点上的线程安全
 - en: Since Autograd allows the caller thread to drive its backward execution for
     potential parallelism, it’s important that we ensure thread safety on CPU with
     parallel `backward()` calls that share part/whole of the GraphTask.
+  id: totrans-81
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于 Autograd 允许调用者线程驱动其向后执行以实现潜在的并行性，因此我们需要确保在 CPU 上使用并行 `backward()` 调用时的线程安全，这些调用共享
+    GraphTask 的部分/全部。
 - en: Custom Python `autograd.Function`s are automatically thread safe because of
     GIL. For built-in C++ Autograd Nodes (e.g. AccumulateGrad, CopySlices) and custom
     `autograd::Function`s, the Autograd Engine uses thread mutex locking to ensure
     thread safety on autograd Nodes that might have state write/read.
+  id: totrans-82
   prefs: []
   type: TYPE_NORMAL
-- en: No thread safety on C++ hooks[](#no-thread-safety-on-c-hooks "Permalink to
-    this heading")
+  zh: 自定义 Python `autograd.Function` 由于 GIL 的存在自动线程安全。对于内置的 C++ Autograd 节点（例如 AccumulateGrad、CopySlices）和自定义
+    `autograd::Function`，Autograd 引擎使用线程互斥锁定来确保对可能具有状态写入/读取的 autograd 节点的线程安全。
+- en: No thread safety on C++ hooks[](#no-thread-safety-on-c-hooks "Permalink to this
+    heading")
+  id: totrans-83
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: C++ 钩子上没有线程安全性
 - en: Autograd relies on the user to write thread safe C++ hooks. If you want the
     hook to be correctly applied in multithreading environment, you will need to write
     proper thread locking code to ensure the hooks are thread safe.
+  id: totrans-84
   prefs: []
   type: TYPE_NORMAL
+  zh: Autograd 依赖用户编写线程安全的 C++ 钩子。如果要在多线程环境中正确应用钩子，您需要编写适当的线程锁定代码以确保钩子是线程安全的。
 - en: '## Autograd for Complex Numbers[](#autograd-for-complex-numbers "Permalink
     to this heading")'
+  id: totrans-85
   prefs: []
   type: TYPE_NORMAL
+  zh: '## 复数的自动微分'
 - en: 'The short version:'
+  id: totrans-86
   prefs: []
   type: TYPE_NORMAL
+  zh: 简短版本：
 - en: When you use PyTorch to differentiate any function <math><semantics><mrow><mi>f</mi><mo
     stretchy="false">(</mo><mi>z</mi><mo stretchy="false">)</mo></mrow><annotation
     encoding="application/x-tex">f(z)</annotation></semantics></math>f(z) with complex
@@ -471,57 +660,76 @@
     (note the conjugation of z), the negative of which is precisely the direction
     of steepest descent used in Gradient Descent algorithm. Thus, all the existing
     optimizers work out of the box with complex parameters.
+  id: totrans-87
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 当您使用 PyTorch 对具有复数域和/或共域的任何函数 f(z) 进行微分时，梯度是在假设该函数是更大的实值损失函数 g(input)=L 的一部分的情况下计算的。计算的梯度是
+    ∂L/∂z*（注意 z 的共轭），其负值恰好是梯度下降算法中使用的最陡下降方向。因此，所有现有的优化器都可以直接与复数参数一起使用。
 - en: This convention matches TensorFlow’s convention for complex differentiation,
     but is different from JAX (which computes <math><semantics><mrow><mfrac><mrow><mi
     mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><mi>z</mi></mrow></mfrac></mrow><annotation
     encoding="application/x-tex">\frac{\partial L}{\partial z}</annotation></semantics></math>∂z∂L​).
+  id: totrans-88
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 这个约定与 TensorFlow 对复杂微分的约定相匹配，但与 JAX 不同（它计算 ∂L/∂z）。
 - en: 'If you have a real-to-real function which internally uses complex operations,
     the convention here doesn’t matter: you will always get the same result that you
     would have gotten if it had been implemented with only real operations.'
+  id: totrans-89
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 如果你有一个内部使用复杂运算的实到实函数，这里的约定并不重要：你总是会得到与仅使用实数运算实现时相同的结果。
 - en: If you are curious about the mathematical details, or want to know how to define
     complex derivatives in PyTorch, read on.
+  id: totrans-90
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果你对数学细节感兴趣，或者想知道如何在PyTorch中定义复杂导数，继续阅读。
 - en: What are complex derivatives?[](#what-are-complex-derivatives "Permalink to
     this heading")
+  id: totrans-91
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 什么是复杂导数？
 - en: 'The mathematical definition of complex-differentiability takes the limit definition
     of a derivative and generalizes it to operate on complex numbers. Consider a function
     <math><semantics><mrow><mi>f</mi><mo>:</mo><mi mathvariant="normal">C</mi><mo>→</mo><mi
     mathvariant="normal">C</mi></mrow><annotation encoding="application/x-tex">f:
     ℂ → ℂ</annotation></semantics></math>f:C→C,'
+  id: totrans-92
   prefs: []
   type: TYPE_NORMAL
+  zh: '复杂可微函数的数学定义将导数的极限定义推广到复数上。考虑一个函数<f:f: ℂ → ℂ>'
 - en: <math display="block"><semantics><mrow><mi>f</mi><mo stretchy="false">(</mo><mi>z</mi><mo>=</mo><mi>x</mi><mo>+</mo><mi>y</mi><mi>j</mi><mo
     stretchy="false">)</mo><mo>=</mo><mi>u</mi><mo stretchy="false">(</mo><mi>x</mi><mo
     separator="true">,</mo><mi>y</mi><mo stretchy="false">)</mo><mo>+</mo><mi>v</mi><mo
     stretchy="false">(</mo><mi>x</mi><mo separator="true">,</mo><mi>y</mi><mo stretchy="false">)</mo><mi>j</mi></mrow><annotation
     encoding="application/x-tex">f(z=x+yj) = u(x, y) + v(x, y)j</annotation></semantics></math>
     f(z=x+yj)=u(x,y)+v(x,y)j
+  id: totrans-93
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: <f(z=x+yj) = u(x, y) + v(x, y)j>
 - en: where <math><semantics><mrow><mi>u</mi></mrow><annotation encoding="application/x-tex">u</annotation></semantics></math>u
     and <math><semantics><mrow><mi>v</mi></mrow><annotation encoding="application/x-tex">v</annotation></semantics></math>v
     are two variable real valued functions and <math><semantics><mrow><mi>j</mi></mrow><annotation
     encoding="application/x-tex">j</annotation></semantics></math>j is the imaginary
     unit.
+  id: totrans-94
   prefs: []
   type: TYPE_NORMAL
+  zh: 其中<u>u和v</u>是两个变量的实值函数，<j>j是虚数单位。
 - en: 'Using the derivative definition, we can write:'
+  id: totrans-95
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用导数定义，我们可以写成：
 - en: <math display="block"><semantics><mrow><msup><mi>f</mi><mo mathvariant="normal"
     lspace="0em" rspace="0em">′</mo></msup><mo stretchy="false">(</mo><mi>z</mi><mo
     stretchy="false">)</mo><mo>=</mo><munder><mrow><mi>lim</mi><mo>⁡</mo></mrow><mrow><mi>h</mi><mo>→</mo><mn>0</mn><mo
@@ -530,9 +738,11 @@
     stretchy="false">(</mo><mi>z</mi><mo stretchy="false">)</mo></mrow><mi>h</mi></mfrac></mrow><annotation
     encoding="application/x-tex">f'(z) = \lim_{h \to 0, h \in C} \frac{f(z+h) - f(z)}{h}</annotation></semantics></math>
     f′(z)=h→0,h∈Clim​hf(z+h)−f(z)​
+  id: totrans-96
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: <f'(z) = lim_(h → 0, h ∈ C) (f(z+h) - f(z))/h>
 - en: 'In order for this limit to exist, not only must <math><semantics><mrow><mi>u</mi></mrow><annotation
     encoding="application/x-tex">u</annotation></semantics></math>u and <math><semantics><mrow><mi>v</mi></mrow><annotation
     encoding="application/x-tex">v</annotation></semantics></math>v must be real differentiable,
@@ -541,26 +751,34 @@
     In other words: the limit computed for real and imaginary steps (<math><semantics><mrow><mi>h</mi></mrow><annotation
     encoding="application/x-tex">h</annotation></semantics></math>h) must be equal.
     This is a more restrictive condition.'
+  id: totrans-97
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了使这个极限存在，不仅必须<u>u和v</u>是实可微的，而且<f>f也必须满足柯西-黎曼方程。换句话说：为实部和虚部步长计算的极限（h）必须相等。这是一个更严格的条件。
 - en: The complex differentiable functions are commonly known as holomorphic functions.
     They are well behaved, have all the nice properties that you’ve seen from real
     differentiable functions, but are practically of no use in the optimization world.
     For optimization problems, only real valued objective functions are used in the
     research community since complex numbers are not part of any ordered field and
     so having complex valued loss does not make much sense.
+  id: totrans-98
   prefs: []
   type: TYPE_NORMAL
+  zh: 复杂可微函数通常被称为全纯函数。它们表现良好，具有你从实可微函数中看到的所有好的性质，但在优化领域实际上没有什么用。在优化问题中，研究社区只使用实值目标函数，因为复数不属于任何有序域，因此具有复值损失并没有太多意义。
 - en: It also turns out that no interesting real-valued objective fulfill the Cauchy-Riemann
     equations. So the theory with homomorphic function cannot be used for optimization
     and most people therefore use the Wirtinger calculus.
+  id: totrans-99
   prefs: []
   type: TYPE_NORMAL
+  zh: Im(z) = (z - z*) / 2j
 - en: Wirtinger Calculus comes into the picture …[](#wirtinger-calculus-comes-into-the-picture
     "Permalink to this heading")
+  id: totrans-100
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 同时，没有有趣的实值目标满足柯西-黎曼方程。因此，全纯函数的理论不能用于优化，大多数人因此使用威廉格微积分。威廉格微积分进入画面...
 - en: 'So, we have this great theory of complex differentiability and holomorphic
     functions, and we can’t use any of it at all, because many of the commonly used
     functions are not holomorphic. What’s a poor mathematician to do? Well, Wirtinger
@@ -574,8 +792,11 @@
     can be expressed in terms of <math><semantics><mrow><mi>z</mi></mrow><annotation
     encoding="application/x-tex">z</annotation></semantics></math>z and <math><semantics><mrow><msup><mi>z</mi><mo>∗</mo></msup></mrow><annotation
     encoding="application/x-tex">z^*</annotation></semantics></math>z∗ as:'
+  id: totrans-101
   prefs: []
   type: TYPE_NORMAL
+  zh: 所以，我们有这个复可微和全纯函数的伟大理论，但我们根本无法使用它，因为许多常用函数都不是全纯的。一个可怜的数学家该怎么办呢？威廉格观察到，即使f(z)不是全纯的，也可以将其重写为一个两个变量的函数f(z,
+    z*)，这个函数总是全纯的。这是因为z的实部和虚部可以用z和z*来表示：
 - en: <math display="block"><semantics><mtable rowspacing="0.25em" columnalign="right
     left" columnspacing="0em"><mtr><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow><mrow><mi
     mathvariant="normal">R</mi><mi mathvariant="normal">e</mi></mrow><mo stretchy="false">(</mo><mi>z</mi><mo
@@ -586,9 +807,11 @@
     encoding="application/x-tex">\begin{aligned} \mathrm{Re}(z) &= \frac {z + z^*}{2}
     \\ \mathrm{Im}(z) &= \frac {z - z^*}{2j} \end{aligned}</annotation></semantics></math>
     Re(z)Im(z)​=2z+z∗​=2jz−z∗​​
+  id: totrans-102
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: Re(z) = (z + z*) / 2
 - en: Wirtinger calculus suggests to study <math><semantics><mrow><mi>f</mi><mo stretchy="false">(</mo><mi>z</mi><mo
     separator="true">,</mo><msup><mi>z</mi><mo>∗</mo></msup><mo stretchy="false">)</mo></mrow><annotation
     encoding="application/x-tex">f(z, z^*)</annotation></semantics></math>f(z,z∗)
@@ -608,8 +831,10 @@
     a relationship between these partial derivatives and the partial derivatives w.r.t.,
     the real and imaginary components of <math><semantics><mrow><mi>z</mi></mrow><annotation
     encoding="application/x-tex">z</annotation></semantics></math>z.
+  id: totrans-103
   prefs: []
   type: TYPE_NORMAL
+  zh: Wirtinger微积分建议研究f(z, z*)，如果f是实可微的，则保证是全纯的（另一种思考方式是将坐标系从f(x, y)变换为f(z, z*)）。这个函数有偏导数∂z∂和∂z*∂。我们可以使用链式法则建立这些偏导数与z的实部和虚部的偏导数之间的关系。
 - en: <math display="block"><semantics><mtable rowspacing="0.25em" columnalign="right
     left" columnspacing="0em"><mtr><mtd><mstyle scriptlevel="0" displaystyle="true"><mfrac><mi
     mathvariant="normal">∂</mi><mrow><mi mathvariant="normal">∂</mi><mi>x</mi></mrow></mfrac></mstyle></mtd><mtd><mstyle
@@ -639,10 +864,12 @@
     + \frac{\partial z^*}{\partial y} * \frac{\partial }{\partial z^*} \\ &= 1j *
     \left(\frac{\partial }{\partial z} - \frac{\partial }{\partial z^*}\right) \end{aligned}</annotation></semantics></math>
     ∂x∂​∂y∂​​=∂x∂z​∗∂z∂​+∂x∂z∗​∗∂z∗∂​=∂z∂​+∂z∗∂​=∂y∂z​∗∂z∂​+∂y∂z∗​∗∂z∗∂​=1j∗(∂z∂​−∂z∗∂​)​
+  id: totrans-104
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
 - en: 'From the above equations, we get:'
+  id: totrans-105
   prefs: []
   type: TYPE_NORMAL
 - en: <math display="block"><semantics><mtable rowspacing="0.25em" columnalign="right
@@ -661,16 +888,37 @@
     * \frac{\partial }{\partial y}\right) \\ \frac{\partial }{\partial z^*} &= 1/2
     * \left(\frac{\partial }{\partial x} + 1j * \frac{\partial }{\partial y}\right)
     \end{aligned}</annotation></semantics></math> ∂z∂​∂z∗∂​​=1/2∗(∂x∂​−1j∗∂y∂​)=1/2∗(∂x∂​+1j∗∂y∂​)​
+  id: totrans-106
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: <math display="block"><semantics><mtable rowspacing="0.25em" columnalign="right
+    left" columnspacing="0em"><mtr><mtd><mstyle scriptlevel="0" displaystyle="true"><mfrac><mi
+    mathvariant="normal">∂</mi><mrow><mi mathvariant="normal">∂</mi><mi>z</mi></mrow></mfrac></mstyle></mtd><mtd><mstyle
+    scriptlevel="0" displaystyle="true"><mrow><mo>=</mo><mn>1</mn><mi mathvariant="normal">/</mi><mn>2</mn><mo>∗</mo><mrow><mo
+    fence="true">(</mo><mfrac><mi mathvariant="normal">∂</mi><mrow><mi mathvariant="normal">∂</mi><mi>x</mi></mrow></mfrac><mo>−</mo><mn>1</mn><mi>j</mi><mo>∗</mo><mfrac><mi
+    mathvariant="normal">∂</mi><mrow><mi mathvariant="normal">∂</mi><mi>y</mi></mrow></mfrac><mo
+    fence="true">)</mo></mrow></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle scriptlevel="0"
+    displaystyle="true"><mfrac><mi mathvariant="normal">∂</mi><mrow><mi mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac></mstyle></mtd><mtd><mstyle
+    scriptlevel="0" displaystyle="true"><mrow><mo>=</mo><mn>1</mn><mi mathvariant="normal">/</mi><mn>2</mn><mo>∗</mo><mrow><mo
+    fence="true">(</mo><mfrac><mi mathvariant="normal">∂</mi><mrow><mi mathvariant="normal">∂</mi><mi>x</mi></mrow></mfrac><mo>+</mo><mn>1</mn><mi>j</mi><mo>∗</mo><mfrac><mi
+    mathvariant="normal">∂</mi><mrow><mi mathvariant="normal">∂</mi><mi>y</mi></mrow></mfrac><mo
+    fence="true">)</mo></mrow></mrow></mstyle></mtd></mtr></mtable><annotation encoding="application/x-tex">\begin{aligned}
+    \frac{\partial }{\partial z} &= 1/2 * \left(\frac{\partial }{\partial x} - 1j
+    * \frac{\partial }{\partial y}\right) \\ \frac{\partial }{\partial z^*} &= 1/2
+    * \left(\frac{\partial }{\partial x} + 1j * \frac{\partial }{\partial y}\right)
+    \end{aligned}</annotation></semantics></math> ∂z∂​∂z∗∂​​=1/2∗(∂x∂​−1j∗∂y∂​)=1/2∗(∂x∂​+1j∗∂y∂​)​
 - en: which is the classic definition of Wirtinger calculus that you would find on
     [Wikipedia](https://en.wikipedia.org/wiki/Wirtinger_derivatives).
+  id: totrans-107
   prefs: []
   type: TYPE_NORMAL
+  zh: 这是您在[Wikipedia](https://en.wikipedia.org/wiki/Wirtinger_derivatives)上找到的Wirtinger微积分的经典定义。
 - en: There are a lot of beautiful consequences of this change.
+  id: totrans-108
   prefs: []
   type: TYPE_NORMAL
+  zh: 这种变化有很多美好的结果。
 - en: For one, the Cauchy-Riemann equations translate into simply saying that <math><semantics><mrow><mfrac><mrow><mi
     mathvariant="normal">∂</mi><mi>f</mi></mrow><mrow><mi mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac><mo>=</mo><mn>0</mn></mrow><annotation
     encoding="application/x-tex">\frac{\partial f}{\partial z^*} = 0</annotation></semantics></math>∂z∗∂f​=0
@@ -679,9 +927,16 @@
     entirely in terms of <math><semantics><mrow><mi>z</mi></mrow><annotation encoding="application/x-tex">z</annotation></semantics></math>z,
     without making reference to <math><semantics><mrow><msup><mi>z</mi><mo>∗</mo></msup></mrow><annotation
     encoding="application/x-tex">z^*</annotation></semantics></math>z∗).
+  id: totrans-109
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 首先，柯西-黎曼方程简单地表明<math><semantics><mrow><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>f</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac><mo>=</mo><mn>0</mn></mrow><annotation
+    encoding="application/x-tex">\frac{\partial f}{\partial z^*} = 0</annotation></semantics></math>∂z∗∂f​=0（也就是说，函数<math><semantics><mrow><mi>f</mi></mrow><annotation
+    encoding="application/x-tex">f</annotation></semantics></math>f可以完全用<math><semantics><mrow><mi>z</mi></mrow><annotation
+    encoding="application/x-tex">z</annotation></semantics></math>z来表示，而不涉及<math><semantics><mrow><msup><mi>z</mi><mo>∗</mo></msup></mrow><annotation
+    encoding="application/x-tex">z^*</annotation></semantics></math>z∗）。
 - en: Another important (and somewhat counterintuitive) result, as we’ll see later,
     is that when we do optimization on a real-valued loss, the step we should take
     while making variable update is given by <math><semantics><mrow><mfrac><mrow><mi
@@ -691,17 +946,30 @@
     (not <math><semantics><mrow><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi><mi>o</mi><mi>s</mi><mi>s</mi></mrow><mrow><mi
     mathvariant="normal">∂</mi><mi>z</mi></mrow></mfrac></mrow><annotation encoding="application/x-tex">\frac{\partial
     Loss}{\partial z}</annotation></semantics></math>∂z∂Loss​).
+  id: totrans-110
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 另一个重要的（有些违反直觉的）结果是，当我们在实值损失上进行优化时，进行变量更新时应该采取的步骤由<math><semantics><mrow><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>L</mi><mi>o</mi><mi>s</mi><mi>s</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac></mrow><annotation
+    encoding="application/x-tex">\frac{\partial Loss}{\partial z^*}</annotation></semantics></math>∂z∗∂Loss​给出（而不是<math><semantics><mrow><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>L</mi><mi>o</mi><mi>s</mi><mi>s</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><mi>z</mi></mrow></mfrac></mrow><annotation encoding="application/x-tex">\frac{\partial
+    Loss}{\partial z}</annotation></semantics></math>∂z∂Loss​）。
 - en: 'For more reading, check out: [https://arxiv.org/pdf/0906.4835.pdf](https://arxiv.org/pdf/0906.4835.pdf)'
+  id: totrans-111
   prefs: []
   type: TYPE_NORMAL
+  zh: 更多阅读，请查看：[https://arxiv.org/pdf/0906.4835.pdf](https://arxiv.org/pdf/0906.4835.pdf)
 - en: How is Wirtinger Calculus useful in optimization?[](#how-is-wirtinger-calculus-useful-in-optimization
     "Permalink to this heading")
+  id: totrans-112
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: Wirtinger微积分在优化中有什么用处？[](#how-is-wirtinger-calculus-useful-in-optimization "Permalink
+    to this heading")
 - en: 'Researchers in audio and other fields, more commonly, use gradient descent
     to optimize real valued loss functions with complex variables. Typically, these
     people treat the real and imaginary values as separate channels that can be updated.
@@ -710,8 +978,14 @@
     <math><semantics><mrow><mi>L</mi></mrow><annotation encoding="application/x-tex">L</annotation></semantics></math>L,
     we can write the following equations in <math><semantics><mrow><msup><mi mathvariant="normal">R</mi><mn>2</mn></msup></mrow><annotation
     encoding="application/x-tex">ℝ^2</annotation></semantics></math>R2:'
+  id: totrans-113
   prefs: []
   type: TYPE_NORMAL
+  zh: 研究人员在音频和其他领域更常见地使用梯度下降来优化具有复杂变量的实值损失函数。通常，这些人将实部和虚部视为可以更新的独立通道。对于步长 <math><semantics><mrow><mi>α</mi><mi
+    mathvariant="normal">/</mi><mn>2</mn></mrow><annotation encoding="application/x-tex">\alpha/2</annotation></semantics></math>α/2
+    和损失 <math><semantics><mrow><mi>L</mi></mrow><annotation encoding="application/x-tex">L</annotation></semantics></math>L，我们可以在
+    <math><semantics><mrow><msup><mi mathvariant="normal">R</mi><mn>2</mn></msup></mrow><annotation
+    encoding="application/x-tex">ℝ^2</annotation></semantics></math>R2 中写出以下方程：
 - en: <math display="block"><semantics><mtable rowspacing="0.25em" columnalign="right
     left" columnspacing="0em"><mtr><mtd><mstyle scriptlevel="0" displaystyle="true"><msub><mi>x</mi><mrow><mi>n</mi><mo>+</mo><mn>1</mn></mrow></msub></mstyle></mtd><mtd><mstyle
     scriptlevel="0" displaystyle="true"><mrow><mo>=</mo><msub><mi>x</mi><mi>n</mi></msub><mo>−</mo><mo
@@ -726,13 +1000,31 @@
     encoding="application/x-tex">\begin{aligned} x_{n+1} &= x_n - (\alpha/2) * \frac{\partial
     L}{\partial x} \\ y_{n+1} &= y_n - (\alpha/2) * \frac{\partial L}{\partial y}
     \end{aligned}</annotation></semantics></math> xn+1​yn+1​​=xn​−(α/2)∗∂x∂L​=yn​−(α/2)∗∂y∂L​​
+  id: totrans-114
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: <math display="block"><semantics><mtable rowspacing="0.25em" columnalign="right
+    left" columnspacing="0em"><mtr><mtd><mstyle scriptlevel="0" displaystyle="true"><msub><mi>x</mi><mrow><mi>n</mi><mo>+</mo><mn>1</mn></mrow></msub></mstyle></mtd><mtd><mstyle
+    scriptlevel="0" displaystyle="true"><mrow><mo>=</mo><msub><mi>x</mi><mi>n</mi></msub><mo>−</mo><mo
+    stretchy="false">(</mo><mi>α</mi><mi mathvariant="normal">/</mi><mn>2</mn><mo
+    stretchy="false">)</mo><mo>∗</mo><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><mi>x</mi></mrow></mfrac></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle
+    scriptlevel="0" displaystyle="true"><msub><mi>y</mi><mrow><mi>n</mi><mo>+</mo><mn>1</mn></mrow></msub></mstyle></mtd><mtd><mstyle
+    scriptlevel="0" displaystyle="true"><mrow><mo>=</mo><msub><mi>y</mi><mi>n</mi></msub><mo>−</mo><mo
+    stretchy="false">(</mo><mi>α</mi><mi mathvariant="normal">/</mi><mn>2</mn><mo
+    stretchy="false">)</mo><mo>∗</mo><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><mi>y</mi></mrow></mfrac></mrow></mstyle></mtd></mtr></mtable><annotation
+    encoding="application/x-tex">\begin{aligned} x_{n+1} &= x_n - (\alpha/2) * \frac{\partial
+    L}{\partial x} \\ y_{n+1} &= y_n - (\alpha/2) * \frac{\partial L}{\partial y}
+    \end{aligned}</annotation></semantics></math> xn+1​=xn​−(α/2)∗∂x∂L​yn+1​=yn​−(α/2)∗∂y∂L​​
 - en: How do these equations translate into complex space <math><semantics><mrow><mi
     mathvariant="normal">C</mi></mrow><annotation encoding="application/x-tex">ℂ</annotation></semantics></math>C?
+  id: totrans-115
   prefs: []
   type: TYPE_NORMAL
+  zh: 这些方程如何转化为复数空间 <math><semantics><mrow><mi mathvariant="normal">C</mi></mrow><annotation
+    encoding="application/x-tex">ℂ</annotation></semantics></math>C？
 - en: <math display="block"><semantics><mtable rowspacing="0.25em" columnalign="right
     left" columnspacing="0em"><mtr><mtd><mstyle scriptlevel="0" displaystyle="true"><msub><mi>z</mi><mrow><mi>n</mi><mo>+</mo><mn>1</mn></mrow></msub></mstyle></mtd><mtd><mstyle
     scriptlevel="0" displaystyle="true"><mrow><mo>=</mo><msub><mi>x</mi><mi>n</mi></msub><mo>−</mo><mo
@@ -755,27 +1047,59 @@
     z_n - \alpha * 1/2 * \left(\frac{\partial L}{\partial x} + j \frac{\partial L}{\partial
     y}\right) \\ &= z_n - \alpha * \frac{\partial L}{\partial z^*} \end{aligned}</annotation></semantics></math>
     zn+1​​=xn​−(α/2)∗∂x∂L​+1j∗(yn​−(α/2)∗∂y∂L​)=zn​−α∗1/2∗(∂x∂L​+j∂y∂L​)=zn​−α∗∂z∗∂L​​
+  id: totrans-116
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: <math display="block"><semantics><mtable rowspacing="0.25em" columnalign="right
+    left" columnspacing="0em"><mtr><mtd><mstyle scriptlevel="0" displaystyle="true"><msub><mi>z</mi><mrow><mi>n</mi><mo>+</mo><mn>1</mn></mrow></msub></mstyle></mtd><mtd><mstyle
+    scriptlevel="0" displaystyle="true"><mrow><mo>=</mo><msub><mi>x</mi><mi>n</mi></msub><mo>−</mo><mo
+    stretchy="false">(</mo><mi>α</mi><mi mathvariant="normal">/</mi><mn>2</mn><mo
+    stretchy="false">)</mo><mo>∗</mo><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi></row><mrow><mi
+    mathvariant="normal">∂</mi><mi>x</mi></mrow></mfrac><mo>+</mo><mn>1</mn><mi>j</mi><mo>∗</mo><mo
+    stretchy="false">(</mo><msub><mi>y</mi><mi>n</mi></mrow><mo>−</mo><mo stretchy="false">(</mo><mi>α</mi><mi
+    mathvariant="normal">/</mi><mn>2</mn><mo stretchy="false">)</mo><mo>∗</mo><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><mi>y</mi></mrow></mfrac><mo
+    stretchy="false">)</mo></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle scriptlevel="0"
+    displaystyle="true"><mrow><mo>=</mo><msub><mi>z</mi><mi>n</mi></mrow><mo>−</mo><mi>α</mi><mo>∗</mo><mn>1</mn><mi
+    mathvariant="normal">/</mi><mn>2</mn><mo>∗</mo><mrow><mo fence="true">(</mo><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><mi>x</mi></mrow></mfrac><mo>+</mo><mi>j</mi><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><mi>y</mi></mrow></mfrac><mo
+    fence="true">)</mo></mrow></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle scriptlevel="0"
+    displaystyle="true"><mrow><mo>=</mo><msub><mi>z</mi><mi>n</mi></mrow><mo>−</mo><mi>α</mi><mo>∗</mo><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></mrow></mfrac></mrow></mstyle></mtd></mtr></mtable><annotation
+    encoding="application/x-tex">\begin{aligned} z_{n+1} &= x_n - (\alpha/2) * \frac{\partial
+    L}{\partial x} + 1j * (y_n - (\alpha/2) * \frac{\partial L}{\partial y}) \\ &=
+    z_n - \alpha * 1/2 * \left(\frac{\partial L}{\partial x} + j \frac{\partial L}{\partial
+    y}\right) \\ &= z_n - \alpha * \frac{\partial L}{\partial z^*} \end{aligned}</annotation></semantics></math>
+    zn+1​​=xn​−(α/2)∗∂x∂L​+1j∗(yn​−(α/2)∗∂y∂L​)=zn​−α∗1/2∗(∂x∂L​+j∂y∂L​)=zn​−α∗∂z∗∂L​​
 - en: 'Something very interesting has happened: Wirtinger calculus tells us that we
     can simplify the complex variable update formula above to only refer to the conjugate
     Wirtinger derivative <math><semantics><mrow><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi
     mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac></mrow><annotation
     encoding="application/x-tex">\frac{\partial L}{\partial z^*}</annotation></semantics></math>∂z∗∂L​,
     giving us exactly the step we take in optimization.'
+  id: totrans-117
   prefs: []
   type: TYPE_NORMAL
+  zh: 发生了一件非常有趣的事情：Wirtinger微积分告诉我们，我们可以将上面的复变量更新公式简化为只涉及共轭Wirtinger导数<math><semantics><mrow><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac></mrow><annotation
+    encoding="application/x-tex">\frac{\partial L}{\partial z^*}</annotation></semantics></math>∂z∗∂L​，这样我们就得到了优化中所采取的确切步骤。
 - en: Because the conjugate Wirtinger derivative gives us exactly the correct step
     for a real valued loss function, PyTorch gives you this derivative when you differentiate
     a function with a real valued loss.
+  id: totrans-118
   prefs: []
   type: TYPE_NORMAL
+  zh: 因为共轭Wirtinger导数给出了实值损失函数的正确步骤，所以当您对具有实值损失的函数进行微分时，PyTorch会给出这个导数。
 - en: How does PyTorch compute the conjugate Wirtinger derivative?[](#how-does-pytorch-compute-the-conjugate-wirtinger-derivative
     "Permalink to this heading")
+  id: totrans-119
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: PyTorch如何计算共轭Wirtinger导数？[](#how-does-pytorch-compute-the-conjugate-wirtinger-derivative
+    "Permalink to this heading")
 - en: Typically, our derivative formulas take in grad_output as an input, representing
     the incoming Vector-Jacobian product that we’ve already computed, aka, <math><semantics><mrow><mfrac><mrow><mi
     mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><msup><mi>s</mi><mo>∗</mo></msup></mrow></mfrac></mrow><annotation
@@ -796,8 +1120,10 @@
     encoding="application/x-tex">\frac{\partial L}{\partial s}</annotation></semantics></math>∂s∂L​.
     If you want to skip this derivation, look at the last equation in this section
     and then skip to the next section.
+  id: totrans-120
   prefs: []
   type: TYPE_NORMAL
+  zh: 通常，我们的导数公式将grad_output作为输入，表示我们已经计算过的传入向量雅可比乘积，即，∂s∗∂L​，其中L是整个计算的损失（产生实际损失），s是我们函数的输出。这里的目标是计算∂z∗∂L​，其中z是函数的输入。事实证明，在实际损失的情况下，我们可以仅仅计算∂s∗∂L​，即使链式法则暗示我们也需要访问∂s∂L​。如果您想跳过这个推导，请查看本节中的最后一个方程，然后跳到下一节。
 - en: 'Let’s continue working with <math><semantics><mrow><mi>f</mi><mo>:</mo><mi
     mathvariant="normal">C</mi><mo>→</mo><mi mathvariant="normal">C</mi></mrow><annotation
     encoding="application/x-tex">f: ℂ → ℂ</annotation></semantics></math>f:C→C defined
@@ -812,10 +1138,12 @@
     real valued loss function <math><semantics><mrow><mi>g</mi></mrow><annotation
     encoding="application/x-tex">g</annotation></semantics></math>g. Using chain rule,
     we can write:'
+  id: totrans-121
   prefs: []
   type: TYPE_NORMAL
-- en: (1)<math display="block"><semantics><mrow><mfrac><mrow><mi
-    mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac><mo>=</mo><mfrac><mrow><mi
+  zh: 让我们继续使用f:C→C定义为f(z)=f(x+yj)=u(x,y)+v(x,y)j。如上所述，autograd的梯度约定围绕着针对实值损失函数的优化，因此让我们假设f是更大的实值损失函数g的一部分。使用链式法则，我们可以写成：
+- en: (1)<math display="block"><semantics><mrow><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac><mo>=</mo><mfrac><mrow><mi
     mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><mi>u</mi></mrow></mfrac><mo>∗</mo><mfrac><mrow><mi
     mathvariant="normal">∂</mi><mi>u</mi></mrow><mrow><mi mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac><mo>+</mo><mfrac><mrow><mi
     mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><mi>v</mi></mrow></mfrac><mo>∗</mo><mfrac><mrow><mi
@@ -823,12 +1151,16 @@
     encoding="application/x-tex">\frac{\partial L}{\partial z^*} = \frac{\partial
     L}{\partial u} * \frac{\partial u}{\partial z^*} + \frac{\partial L}{\partial
     v} * \frac{\partial v}{\partial z^*}</annotation></semantics></math> ∂z∗∂L​=∂u∂L​∗∂z∗∂u​+∂v∂L​∗∂z∗∂v​
+  id: totrans-122
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: ∂z∗∂L​=∂u∂L​∗∂z∗∂u​+∂v∂L​∗∂z∗∂v​
 - en: 'Now using Wirtinger derivative definition, we can write:'
+  id: totrans-123
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在使用Wirtinger导数定义，我们可以写成：
 - en: <math display="block"><semantics><mtable rowspacing="0.25em" columnalign="right"
     columnspacing=""><mtr><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow><mfrac><mrow><mi
     mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><mi>s</mi></mrow></mfrac><mo>=</mo><mn>1</mn><mi
@@ -846,9 +1178,11 @@
     L}{\partial v} j\right) \\ \frac{\partial L}{\partial s^*} = 1/2 * \left(\frac{\partial
     L}{\partial u} + \frac{\partial L}{\partial v} j\right) \end{aligned}</annotation></semantics></math>
     ∂s∂L​=1/2∗(∂u∂L​−∂v∂L​j)∂s∗∂L​=1/2∗(∂u∂L​+∂v∂L​j)​
+  id: totrans-124
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: （1）
 - en: 'It should be noted here that since <math><semantics><mrow><mi>u</mi></mrow><annotation
     encoding="application/x-tex">u</annotation></semantics></math>u and <math><semantics><mrow><mi>v</mi></mrow><annotation
     encoding="application/x-tex">v</annotation></semantics></math>v are real functions,
@@ -856,36 +1190,56 @@
     is real by our assumption that <math><semantics><mrow><mi>f</mi></mrow><annotation
     encoding="application/x-tex">f</annotation></semantics></math>f is a part of a
     real valued function, we have:'
+  id: totrans-125
   prefs: []
   type: TYPE_NORMAL
-- en: (2)<math display="block"><semantics><mrow><msup><mrow><mo
-    fence="true">(</mo><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi
-    mathvariant="normal">∂</mi><mi>s</mi></mrow></mfrac><mo fence="true">)</mo></mrow><mo>∗</mo></msup><mo>=</mo><mfrac><mrow><mi
-    mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><msup><mi>s</mi><mo>∗</mo></msup></mrow></mfrac></mrow><annotation
+  zh: 这里需要注意，由于u和v是实函数，而L根据我们假设f是实值函数的一部分，我们有：
+- en: (2)<math display="block"><semantics><mrow><msup><mrow><mo fence="true">(</mo><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><mi>s</mi></mrow></mfrac><mo
+    fence="true">)</mo></mrow><mo>∗</mo></msup><mo>=</mo><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><msup><mi>s</mi><mo>∗</mo></msup></mrow></mfrac></mrow><annotation
     encoding="application/x-tex">\left( \frac{\partial L}{\partial s} \right)^* =
     \frac{\partial L}{\partial s^*}</annotation></semantics></math> (∂s∂L​)∗=∂s∗∂L​
+  id: totrans-126
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: (2)<math display="block"><semantics><mrow><msup><mrow><mo fence="true">(</mo><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><mi>s</mi></mrow></mfrac><mo
+    fence="true">)</mo></mrow><mo>∗</mo></msup><mo>=</mo><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><msup><mi>s</mi><mo>∗</mo></msup></mrow></mfrac></mrow><annotation
+    encoding="application/x-tex">\left( \frac{\partial L}{\partial s} \right)^* =
+    \frac{\partial L}{\partial s^*}</annotation></semantics></math> (∂s∂L​)∗=∂s∗∂L​
 - en: i.e., <math><semantics><mrow><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi
     mathvariant="normal">∂</mi><mi>s</mi></mrow></mfrac></mrow><annotation encoding="application/x-tex">\frac{\partial
     L}{\partial s}</annotation></semantics></math>∂s∂L​ equals to <math><semantics><mrow><mi>g</mi><mi>r</mi><mi>a</mi><mi>d</mi><mi
     mathvariant="normal">_</mi><mi>o</mi><mi>u</mi><mi>t</mi><mi>p</mi><mi>u</mi><msup><mi>t</mi><mo>∗</mo></msup></mrow><annotation
     encoding="application/x-tex">grad\_output^*</annotation></semantics></math>grad_output∗.
+  id: totrans-127
   prefs: []
   type: TYPE_NORMAL
+  zh: 即，<math><semantics><mrow><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><mi>s</mi></mrow></mfrac></mrow><annotation encoding="application/x-tex">\frac{\partial
+    L}{\partial s}</annotation></semantics></math>等于<math><semantics><mrow><mi>g</mi><mi>r</mi><mi>a</mi><mi>d</mi><mi
+    mathvariant="normal">_</mi><mi>o</mi><mi>u</mi><mi>t</mi><mi>p</mi><mi>u</mi><msup><mi>t</mi><mo>∗</mo></msup></mrow><annotation
+    encoding="application/x-tex">grad\_output^*</annotation></semantics></math>。
 - en: 'Solving the above equations for <math><semantics><mrow><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi
     mathvariant="normal">∂</mi><mi>u</mi></mrow></mfrac></mrow><annotation encoding="application/x-tex">\frac{\partial
     L}{\partial u}</annotation></semantics></math>∂u∂L​ and <math><semantics><mrow><mfrac><mrow><mi
     mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><mi>v</mi></mrow></mfrac></mrow><annotation
     encoding="application/x-tex">\frac{\partial L}{\partial v}</annotation></semantics></math>∂v∂L​,
     we get:'
+  id: totrans-128
   prefs: []
   type: TYPE_NORMAL
-- en: (3)<math display="block"><semantics><mtable
-    rowspacing="0.25em" columnalign="right" columnspacing=""><mtr><mtd><mstyle scriptlevel="0"
-    displaystyle="true"><mrow><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi
-    mathvariant="normal">∂</mi><mi>u</mi></mrow></mfrac><mo>=</mo><mfrac><mrow><mi
+  zh: 解上述方程得到<math><semantics><mrow><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><mi>u</mi></mrow></mfrac></mrow><annotation encoding="application/x-tex">\frac{\partial
+    L}{\partial u}</annotation></semantics></math>和<math><semantics><mrow><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><mi>v</mi></mrow></mfrac></mrow><annotation
+    encoding="application/x-tex">\frac{\partial L}{\partial v}</annotation></semantics></math>：
+- en: (3)<math display="block"><semantics><mtable rowspacing="0.25em" columnalign="right"
+    columnspacing=""><mtr><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><mi>u</mi></mrow></mfrac><mo>=</mo><mfrac><mrow><mi
     mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><mi>s</mi></mrow></mfrac><mo>+</mo><mfrac><mrow><mi
     mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><msup><mi>s</mi><mo>∗</mo></msup></mrow></mfrac></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle
     scriptlevel="0" displaystyle="true"><mrow><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi
@@ -898,12 +1252,30 @@
     L}{\partial s^*} \\ \frac{\partial L}{\partial v} = -1j * \left(\frac{\partial
     L}{\partial s} - \frac{\partial L}{\partial s^*}\right) \end{aligned}</annotation></semantics></math>
     ∂u∂L​=∂s∂L​+∂s∗∂L​∂v∂L​=−1j∗(∂s∂L​−∂s∗∂L​)​
+  id: totrans-129
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: (3)<math display="block"><semantics><mtable rowspacing="0.25em" columnalign="right"
+    columnspacing=""><mtr><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><mi>u</mi></mrow></mfrac><mo>=</mo><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><mi>s</mi></mrow></mfrac><mo>+</mo><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><msup><mi>s</mi><mo>∗</mo></msup></mrow></mfrac></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle
+    scriptlevel="0" displaystyle="true"><mrow><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><mi>v</mi></mrow></mfrac><mo>=</mo><mo>−</mo><mn>1</mn><mi>j</mi><mo>∗</mo><mrow><mo
+    fence="true">(</mo><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><mi>s</mi></mrow></mfrac><mo>−</mo><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><msup><mi>s</mi><mo>∗</mo></msup></mrow></mfrac><mo
+    fence="true">)</mo></mrow></mrow></mstyle></mtd></mtr></mtable><annotation encoding="application/x-tex">\begin{aligned}
+    \frac{\partial L}{\partial u} = \frac{\partial L}{\partial s} + \frac{\partial
+    L}{\partial s^*} \\ \frac{\partial L}{\partial v} = -1j * \left(\frac{\partial
+    L}{\partial s} - \frac{\partial L}{\partial s^*}\right) \end{aligned}</annotation></semantics></math>
+    ∂u∂L​=∂s∂L​+∂s∗∂L​∂v∂L​=−1j∗(∂s∂L​−∂s∗∂L​)​
 - en: 'Substituting [(3)](#equation-3) in [(1)](#equation-1), we get:'
+  id: totrans-130
   prefs: []
   type: TYPE_NORMAL
+  zh: 将[(3)](#equation-3)代入[(1)](#equation-1)，我们得到：
 - en: <math display="block"><semantics><mtable rowspacing="0.25em" columnalign="right
     left" columnspacing="0em"><mtr><mtd><mstyle scriptlevel="0" displaystyle="true"><mfrac><mrow><mi
     mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac></mstyle></mtd><mtd><mstyle
@@ -950,16 +1322,19 @@
     * \frac{\partial (u + vj)^*}{\partial z^*} \\ &= \frac{\partial L}{\partial s}
     * \frac{\partial s}{\partial z^*} + \frac{\partial L}{\partial s^*} * \frac{\partial
     s^*}{\partial z^*} \\ \end{aligned}</annotation></semantics></math> ∂z∗∂L​​=(∂s∂L​+∂s∗∂L​)∗∂z∗∂u​−1j∗(∂s∂L​−∂s∗∂L​)∗∂z∗∂v​=∂s∂L​∗(∂z∗∂u​+∂z∗∂v​j)+∂s∗∂L​∗(∂z∗∂u​−∂z∗∂v​j)=∂s∗∂L​∗∂z∗∂(u+vj)​+∂s∂L​∗∂z∗∂(u+vj)∗​=∂s∂L​∗∂z∗∂s​+∂s∗∂L​∗∂z∗∂s∗​​
+  id: totrans-131
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: ∂z∗∂L​​=(∂s∂L​+∂s∗∂L​)∗∂z∗∂u​−1j∗(∂s∂L​−∂s∗∂L​)∗∂z∗∂v​=∂s∂L​∗(∂z∗∂u​+∂z∗∂v​j)+∂s∗∂L​∗(∂z∗∂u​−∂z∗∂v​j)=∂s∗∂L​∗∂z∗∂(u+vj)​+∂s∂L​∗∂z∗∂(u+vj)∗​=∂s∂L​∗∂z∗∂s​+∂s∗∂L​∗∂z∗∂s∗​​
 - en: 'Using [(2)](#equation-2), we get:'
+  id: totrans-132
   prefs: []
   type: TYPE_NORMAL
-- en: (4)<math display="block"><semantics><mtable
-    rowspacing="0.25em" columnalign="right left" columnspacing="0em"><mtr><mtd><mstyle
-    scriptlevel="0" displaystyle="true"><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi
-    mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac></mstyle></mtd><mtd><mstyle
+  zh: 使用[(2)](#equation-2)，我们得到：
+- en: (4)<math display="block"><semantics><mtable rowspacing="0.25em" columnalign="right
+    left" columnspacing="0em"><mtr><mtd><mstyle scriptlevel="0" displaystyle="true"><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac></mstyle></mtd><mtd><mstyle
     scriptlevel="0" displaystyle="true"><mrow><mo>=</mo><msup><mrow><mo fence="true">(</mo><mfrac><mrow><mi
     mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><msup><mi>s</mi><mo>∗</mo></msup></mrow></mfrac><mo
     fence="true">)</mo></mrow><mo>∗</mo></msup><mo>∗</mo><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>s</mi></mrow><mrow><mi
@@ -982,19 +1357,25 @@
     \\ &= \boxed{ (grad\_output)^* * \frac{\partial s}{\partial z^*} + grad\_output
     * \left(\frac{\partial s}{\partial z}\right)^* } \\ \end{aligned}</annotation></semantics></math>
     ∂z∗∂L​​=(∂s∗∂L​)∗∗∂z∗∂s​+∂s∗∂L​∗(∂z∂s​)∗=(grad_output)∗∗∂z∗∂s​+grad_output∗(∂z∂s​)∗​​
+  id: totrans-133
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: ∂z∗∂L​​=(∂s∗∂L​)∗∗∂z∗∂s​+∂s∗∂L​∗(∂z∂s​)∗=(grad_output)∗∗∂z∗∂s​+grad_output∗(∂z∂s​)∗​​
 - en: This last equation is the important one for writing your own gradients, as it
     decomposes our derivative formula into a simpler one that is easy to compute by
     hand.
+  id: totrans-134
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个最后的方程式是编写自己的梯度的重要方程式，因为它将我们的导数公式分解为一个更简单的公式，容易手工计算。
 - en: How can I write my own derivative formula for a complex function?[](#how-can-i-write-my-own-derivative-formula-for-a-complex-function
     "Permalink to this heading")
+  id: totrans-135
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 如何为复杂函数编写自己的导数公式？
 - en: 'The above boxed equation gives us the general formula for all derivatives on
     complex functions. However, we still need to compute <math><semantics><mrow><mfrac><mrow><mi
     mathvariant="normal">∂</mi><mi>s</mi></mrow><mrow><mi mathvariant="normal">∂</mi><mi>z</mi></mrow></mfrac></mrow><annotation
@@ -1003,8 +1384,10 @@
     mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac></mrow><annotation
     encoding="application/x-tex">\frac{\partial s}{\partial z^*}</annotation></semantics></math>∂z∗∂s​.
     There are two ways you could do this:'
+  id: totrans-136
   prefs: []
   type: TYPE_NORMAL
+  zh: 上面的方框方程式给出了复杂函数所有导数的一般公式。然而，我们仍然需要计算∂s∂z​和∂s∗∂z​。你可以通过两种方式来做到这一点：
 - en: The first way is to just use the definition of Wirtinger derivatives directly
     and calculate <math><semantics><mrow><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>s</mi></mrow><mrow><mi
     mathvariant="normal">∂</mi><mi>z</mi></mrow></mfrac></mrow><annotation encoding="application/x-tex">\frac{\partial
@@ -1017,16 +1400,20 @@
     mathvariant="normal">∂</mi><mi>s</mi></mrow><mrow><mi mathvariant="normal">∂</mi><mi>y</mi></mrow></mfrac></mrow><annotation
     encoding="application/x-tex">\frac{\partial s}{\partial y}</annotation></semantics></math>∂y∂s​
     (which you can compute in the normal way).
+  id: totrans-137
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 第一种方法是直接使用Wirtinger导数的定义，并通过使用∂x∂s和∂y∂s（可以以正常方式计算）来计算∂z∂s和∂z∗∂s。
 - en: ''
+  id: totrans-138
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-139
   prefs:
   - PREF_BQ
   - PREF_IND
@@ -1046,21 +1433,27 @@
     mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac></mrow><annotation
     encoding="application/x-tex">\frac{\partial s}{\partial z^*}</annotation></semantics></math>∂z∗∂s​
     will be zero).
+  id: totrans-140
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 第二种方法是使用变量变换技巧，将f(z)重写为一个两个变量的函数f(z, z*)，并通过将z和z*视为独立变量来计算共轭Wirtinger导数。这通常更容易；例如，如果所讨论的函数是全纯的，只会使用z（而∂z∗∂s将为零）。
 - en: Let’s consider the function <math><semantics><mrow><mi>f</mi><mo stretchy="false">(</mo><mi>z</mi><mo>=</mo><mi>x</mi><mo>+</mo><mi>y</mi><mi>j</mi><mo
     stretchy="false">)</mo><mo>=</mo><mi>c</mi><mo>∗</mo><mi>z</mi><mo>=</mo><mi>c</mi><mo>∗</mo><mo
     stretchy="false">(</mo><mi>x</mi><mo>+</mo><mi>y</mi><mi>j</mi><mo stretchy="false">)</mo></mrow><annotation
     encoding="application/x-tex">f(z = x + yj) = c * z = c * (x+yj)</annotation></semantics></math>f(z=x+yj)=c∗z=c∗(x+yj)
     as an example, where <math><semantics><mrow><mi>c</mi><mo>∈</mo><mi mathvariant="normal">R</mi></mrow><annotation
     encoding="application/x-tex">c \in ℝ</annotation></semantics></math>c∈R.
+  id: totrans-141
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们以一个例子来考虑函数f(z=x+yj)=c*z=c*(x+yj)，其中c∈R。
 - en: Using the first way to compute the Wirtinger derivatives, we have.
+  id: totrans-142
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用第一种方法计算Wirtinger导数，我们有。
 - en: <math display="block"><semantics><mtable rowspacing="0.25em" columnalign="right
     left" columnspacing="0em"><mtr><mtd><mstyle scriptlevel="0" displaystyle="true"><mfrac><mrow><mi
     mathvariant="normal">∂</mi><mi>s</mi></mrow><mrow><mi mathvariant="normal">∂</mi><mi>z</mi></mrow></mfrac></mstyle></mtd><mtd><mstyle
@@ -1090,23 +1483,31 @@
     &= 1/2 * \left(\frac{\partial s}{\partial x} + \frac{\partial s}{\partial y} j\right)
     \\ &= 1/2 * (c + (c * 1j) * 1j) \\ &= 0 \\ \end{aligned}</annotation></semantics></math>
     ∂z∂s​∂z∗∂s​​=1/2∗(∂x∂s​−∂y∂s​j)=1/2∗(c−(c∗1j)∗1j)=c=1/2∗(∂x∂s​+∂y∂s​j)=1/2∗(c+(c∗1j)∗1j)=0​
+  id: totrans-143
   prefs: []
   type: TYPE_NORMAL
+  zh: ∂s∂z∗​=1/2∗(∂s∂x​+∂s∂y​j)=1/2∗(c+(c∗1j)∗1j)=0
 - en: 'Using [(4)](#equation-4), and grad_output = 1.0 (which is the default grad
     output value used when `backward()` is called on a scalar output in PyTorch),
     we get:'
+  id: totrans-144
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用第二种计算Wirtinger导数的方法，我们直接得到：
 - en: <math display="block"><semantics><mrow><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi
     mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac><mo>=</mo><mn>1</mn><mo>∗</mo><mn>0</mn><mo>+</mo><mn>1</mn><mo>∗</mo><mi>c</mi><mo>=</mo><mi>c</mi></mrow><annotation
     encoding="application/x-tex">\frac{\partial L}{\partial z^*} = 1 * 0 + 1 * c =
     c</annotation></semantics></math> ∂z∗∂L​=1∗0+1∗c=c
+  id: totrans-145
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 使用[(4)](#equation-4)，并且grad_output = 1.0（这是在PyTorch中对标量输出调用`backward()`时使用的默认梯度输出值），我们得到：
 - en: 'Using the second way to compute Wirtinger derivatives, we directly get:'
+  id: totrans-146
   prefs: []
   type: TYPE_NORMAL
+  zh: ∂s∂z​=1/2∗(∂s∂x​−∂s∂y​j)=1/2∗(c−(c∗1j)∗1j)=c
 - en: <math display="block"><semantics><mtable rowspacing="0.25em" columnalign="right
     left" columnspacing="0em"><mtr><mtd><mstyle scriptlevel="0" displaystyle="true"><mfrac><mrow><mi
     mathvariant="normal">∂</mi><mi>s</mi></mrow><mrow><mi mathvariant="normal">∂</mi><mi>z</mi></mrow></mfrac></mstyle></mtd><mtd><mstyle
@@ -1124,44 +1525,76 @@
     \frac{\partial (c*z)}{\partial z} \\ &= c \\ \frac{\partial s}{\partial z^*} &=
     \frac{\partial (c*z)}{\partial z^*} \\ &= 0 \end{aligned}</annotation></semantics></math>
     ∂z∂s​∂z∗∂s​​=∂z∂(c∗z)​=c=∂z∗∂(c∗z)​=0​
+  id: totrans-147
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: <math display="block"><semantics><mtable rowspacing="0.25em" columnalign="right
+    left" columnspacing="0em"><mtr><mtd><mstyle scriptlevel="0" displaystyle="true"><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>s</mi></mrow><mrow><mi mathvariant="normal">∂</mi><mi>z</mi></mrow></mfrac></mstyle></mtd><mtd><mstyle
+    scriptlevel="0" displaystyle="true"><mrow><mo>=</mo><mfrac><mrow><mi mathvariant="normal">∂</mi><mo
+    stretchy="false">(</mo><mi>c</mi><mo>∗</mo><mi>z</mi><mo stretchy="false">)</mo></mrow><mrow><mi
+    mathvariant="normal">∂</mi><mi>z</mi></mrow></mfrac></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle
+    scriptlevel="0" displaystyle="true"><mrow><mo>=</mo><mi>c</mi></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle
+    scriptlevel="0" displaystyle="true"><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>s</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac></mstyle></mtd><mtd><mstyle
+    scriptlevel="0" displaystyle="true"><mrow><mo>=</mo><mfrac><mrow><mi mathvariant="normal">∂</mi><mo
+    stretchy="false">(</mo><mi>c</mi><mo>∗</mo><mi>z</mi><mo stretchy="false">)</mo></mrow><mrow><mi
+    mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle
+    scriptlevel="0" displaystyle="true"><mrow><mo>=</mo><mn>0</mn></mrow></mstyle></mtd></mtr></mtable><annotation
+    encoding="application/x-tex">\begin{aligned} \frac{\partial s}{\partial z} &=
+    \frac{\partial (c*z)}{\partial z} \\ &= c \\ \frac{\partial s}{\partial z^*} &=
+    \frac{\partial (c*z)}{\partial z^*} \\ &= 0 \end{aligned}</annotation></semantics></math>∂z∂s​∂z∗∂s​​=∂z∂(c∗z)​=c=∂z∗∂(c∗z)​=0​
 - en: And using [(4)](#equation-4) again, we get <math><semantics><mrow><mfrac><mrow><mi
     mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac><mo>=</mo><mi>c</mi></mrow><annotation
     encoding="application/x-tex">\frac{\partial L}{\partial z^*} = c</annotation></semantics></math>∂z∗∂L​=c.
     As you can see, the second way involves lesser calculations, and comes in more
     handy for faster calculations.
+  id: totrans-148
   prefs: []
   type: TYPE_NORMAL
+  zh: 再次使用[(4)](#equation-4)，我们得到<math><semantics><mrow><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac><mo>=</mo><mi>c</mi></mrow><annotation
+    encoding="application/x-tex">\frac{\partial L}{\partial z^*} = c</annotation></semantics></math>∂z∗∂L​=c。如您所见，第二种方法涉及更少的计算，并且更适用于更快的计算。
 - en: What about cross-domain functions?[](#what-about-cross-domain-functions "Permalink
     to this heading")
+  id: totrans-149
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 跨域函数呢？[](#what-about-cross-domain-functions "Permalink to this heading")
 - en: 'Some functions map from complex inputs to real outputs, or vice versa. These
     functions form a special case of [(4)](#equation-4), which we can derive using
     the chain rule:'
+  id: totrans-150
   prefs: []
   type: TYPE_NORMAL
+  zh: 一些函数从复杂输入映射到实数输出，或者反之亦然。这些函数形成了[(4)](#equation-4)的一个特殊情况，我们可以使用链式法则推导出来：
 - en: 'For <math><semantics><mrow><mi>f</mi><mo>:</mo><mi mathvariant="normal">C</mi><mo>→</mo><mi
     mathvariant="normal">R</mi></mrow><annotation encoding="application/x-tex">f:
     ℂ → ℝ</annotation></semantics></math>f:C→R, we get:'
+  id: totrans-151
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '对于<math><semantics><mrow><mi>f</mi><mo>:</mo><mi mathvariant="normal">C</mi><mo>→</mo><mi
+    mathvariant="normal">R</mi></mrow><annotation encoding="application/x-tex">f:
+    ℂ → ℝ</annotation></semantics></math>f:C→R，我们得到：'
 - en: ''
+  id: totrans-152
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-153
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-154
   prefs:
   - PREF_BQ
   - PREF_IND
@@ -1173,17 +1606,26 @@
     lspace="0em" rspace="0em">∗</mo></msup></mrow></mfrac></mrow><annotation encoding="application/x-tex">\frac{\partial
     L}{\partial z^*} = 2 * grad\_output * \frac{\partial s}{\partial z^{*}}</annotation></semantics></math>
     ∂z∗∂L​=2∗grad_output∗∂z∗∂s​
+  id: totrans-155
   prefs:
   - PREF_BQ
   - PREF_IND
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: <math display="block"><semantics><mrow><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac><mo>=</mo><mn>2</mn><mo>∗</mo><mi>g</mi><mi>r</mi><mi>a</mi><mi>d</mi><mi
+    mathvariant="normal">_</mi><mi>o</mi><mi>u</mi><mi>t</mi><mi>p</mi><mi>u</mi><mi>t</mi><mo>∗</mo><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>s</mi></mrow><mrow><mi mathvariant="normal">∂</mi><msup><mi>z</mi><mo
+    lspace="0em" rspace="0em">∗</mo></msup></mrow></mfrac></mrow><annotation encoding="application/x-tex">\frac{\partial
+    L}{\partial z^*} = 2 * grad\_output * \frac{\partial s}{\partial z^{*}}</annotation></semantics></math>∂z∗∂L​=2∗grad_output∗∂z∗∂s​
 - en: ''
+  id: totrans-156
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-157
   prefs:
   - PREF_BQ
   - PREF_IND
@@ -1191,21 +1633,28 @@
 - en: 'For <math><semantics><mrow><mi>f</mi><mo>:</mo><mi mathvariant="normal">R</mi><mo>→</mo><mi
     mathvariant="normal">C</mi></mrow><annotation encoding="application/x-tex">f:
     ℝ → ℂ</annotation></semantics></math>f:R→C, we get:'
+  id: totrans-158
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '对于<math><semantics><mrow><mi>f</mi><mo>:</mo><mi mathvariant="normal">R</mi><mo>→</mo><mi
+    mathvariant="normal">C</mi></mrow><annotation encoding="application/x-tex">f:
+    ℝ → ℂ</annotation></semantics></math>f:R→C，我们得到：'
 - en: ''
+  id: totrans-159
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-160
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-161
   prefs:
   - PREF_BQ
   - PREF_IND
@@ -1219,11 +1668,21 @@
     encoding="application/x-tex">\frac{\partial L}{\partial z^*} = 2 * \mathrm{Re}(grad\_output^*
     * \frac{\partial s}{\partial z^{*}})</annotation></semantics></math> ∂z∗∂L​=2∗Re(grad_output∗∗∂z∗∂s​)  ##
     Hooks for saved tensors'
+  id: totrans-162
   prefs:
   - PREF_BQ
   - PREF_IND
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: '<math display="block"><semantics><mrow><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac><mo>=</mo><mn>2</mn><mo>∗</mo><mrow><mi
+    mathvariant="normal">R</mi><mi mathvariant="normal">e</mi></mrow><mo stretchy="false">(</mo><mi>g</mi><mi>r</mi><mi>a</mi><mi>d</mi><mi
+    mathvariant="normal">_</mi><mi>o</mi><mi>u</mi><mi>t</mi><mi>p</mi><mi>u</mi><msup><mi>t</mi><mo>∗</mo></msup><mo>∗</mo><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>s</mi></mrow><mrow><mi mathvariant="normal">∂</mi><msup><mi>z</mi><mo
+    lspace="0em" rspace="0em">∗</mo></msup></mrow></mfrac><mo stretchy="false">)</mo></mrow><annotation
+    encoding="application/x-tex">\frac{\partial L}{\partial z^*} = 2 * \mathrm{Re}(grad\_output^*
+    * \frac{\partial s}{\partial z^{*}})</annotation></semantics></math> ∂z∗∂L​=2∗Re(grad_output∗∗∂z∗∂s​)  ##
+    保存的张量的钩子'
 - en: You can control [how saved tensors are packed / unpacked](#saved-tensors-doc)
     by defining a pair of `pack_hook` / `unpack_hook` hooks. The `pack_hook` function
     should take a tensor as its single argument but can return any python object (e.g.
@@ -1233,103 +1692,152 @@
     only needs to have the same content as the tensor passed as input to `pack_hook`.
     In particular, any autograd-related metadata can be ignored as they will be overwritten
     during unpacking.
+  id: totrans-163
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过定义一对`pack_hook` / `unpack_hook`钩子，您可以控制[保存的张量如何打包/解包](#saved-tensors-doc)。`pack_hook`函数应该以一个张量作为其单个参数，但可以返回任何Python对象（例如另一个张量，一个元组，甚至包含文件名的字符串）。`unpack_hook`函数以`pack_hook`的输出作为其单个参数，并应返回一个张量，用于在反向传播中使用。`unpack_hook`返回的张量只需要与传递给`pack_hook`的输入张量具有相同的内容。特别地，任何与自动求导相关的元数据都可以忽略，因为它们在解包过程中将被覆盖。
 - en: 'An example of such pair is:'
+  id: totrans-164
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个这样的示例是：
 - en: '[PRE3]'
+  id: totrans-165
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: 'Notice that the `unpack_hook` should not delete the temporary file because
     it might be called multiple times: the temporary file should be alive for as long
     as the returned SelfDeletingTempFile object is alive. In the above example, we
     prevent leaking the temporary file by closing it when it is no longer needed (on
     deletion of the SelfDeletingTempFile object).'
+  id: totrans-166
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，`unpack_hook`不应删除临时文件，因为它可能会被多次调用：临时文件应该在返回的SelfDeletingTempFile对象存在期间保持活动状态。在上面的示例中，我们通过在不再需要时关闭临时文件（在删除SelfDeletingTempFile对象时）来防止泄漏临时文件。
 - en: Note
+  id: totrans-167
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: We guarantee that `pack_hook` will only be called once but `unpack_hook` can
     be called as many times as the backward pass requires it and we expect it to return
     the same data each time.
+  id: totrans-168
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们保证`pack_hook`只会被调用一次，但`unpack_hook`可以根据反向传播的需要被调用多次，并且我们期望每次返回相同的数据。
 - en: Warning
+  id: totrans-169
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: Performing inplace operations on the input of any of the functions is forbidden
     as they may lead to unexpected side-effects. PyTorch will throw an error if the
     input to a pack hook is modified inplace but does not catch the case where the
     input to an unpack hook is modified inplace.
+  id: totrans-170
   prefs: []
   type: TYPE_NORMAL
+  zh: 对任何函数的输入执行原地操作是禁止的，因为这可能会导致意外的副作用。如果对pack hook的输入进行了原地修改，PyTorch会抛出错误，但不会捕获对unpack
+    hook的输入进行原地修改的情况。
 - en: Registering hooks for a saved tensor[](#registering-hooks-for-a-saved-tensor
     "Permalink to this heading")
+  id: totrans-171
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 注册保存的张量的钩子[](#registering-hooks-for-a-saved-tensor "跳转到此标题的永久链接")
 - en: You can register a pair of hooks on a saved tensor by calling the `register_hooks()`
     method on a `SavedTensor` object. Those objects are exposed as attributes of a
     `grad_fn` and start with the `_raw_saved_` prefix.
+  id: totrans-172
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可以通过在`SavedTensor`对象上调用`register_hooks()`方法来注册一对保存的张量上的钩子。这些对象作为`grad_fn`的属性暴露，并以`_raw_saved_`前缀开头。
 - en: '[PRE4]'
+  id: totrans-173
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: The `pack_hook` method is called as soon as the pair is registered. The `unpack_hook`
     method is called each time the saved tensor needs to be accessed, either by means
     of `y.grad_fn._saved_self` or during the backward pass.
+  id: totrans-174
   prefs: []
   type: TYPE_NORMAL
+  zh: 一旦注册，`pack_hook`方法将立即被调用。每当需要访问保存的张量时，`unpack_hook`方法将被调用，可以通过`y.grad_fn._saved_self`或在反向传播期间访问。
 - en: Warning
+  id: totrans-175
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: If you maintain a reference to a `SavedTensor` after the saved tensors have
     been released (i.e. after backward has been called), calling its `register_hooks()`
     is forbidden. PyTorch will throw an error most of the time but it may fail to
     do so in some cases and undefined behavior may arise.
+  id: totrans-176
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果在保存的张量被释放后（即在调用反向传播后）仍保留对`SavedTensor`的引用，则禁止调用其`register_hooks()`。PyTorch大多数情况下会抛出错误，但在某些情况下可能无法这样做，可能会出现未定义的行为。
 - en: Registering default hooks for saved tensors[](#registering-default-hooks-for-saved-tensors
     "Permalink to this heading")
+  id: totrans-177
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 注册保存的张量的默认钩子[](#registering-default-hooks-for-saved-tensors "跳转到此标题的永久链接")
 - en: Alternatively, you can use the context-manager [`saved_tensors_hooks`](../autograd.html#torch.autograd.graph.saved_tensors_hooks
     "torch.autograd.graph.saved_tensors_hooks") to register a pair of hooks which
     will be applied to *all* saved tensors that are created in that context.
+  id: totrans-178
   prefs: []
   type: TYPE_NORMAL
+  zh: 另外，您可以使用上下文管理器[`saved_tensors_hooks`](../autograd.html#torch.autograd.graph.saved_tensors_hooks
+    "torch.autograd.graph.saved_tensors_hooks")来注册一对钩子，这些钩子将应用于在该上下文中创建的*所有*保存的张量。
 - en: 'Example:'
+  id: totrans-179
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例：
 - en: '[PRE5]'
+  id: totrans-180
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: The hooks defined with this context manager are thread-local. Hence, the following
     code will not produce the desired effects because the hooks do not go through
     DataParallel.
+  id: totrans-181
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用此上下文管理器定义的钩子是线程局部的。因此，以下代码不会产生期望的效果，因为这些钩子不会通过DataParallel。
 - en: '[PRE6]'
+  id: totrans-182
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: 'Note that using those hooks disables all the optimization in place to reduce
     Tensor object creation. For example:'
+  id: totrans-183
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，使用这些钩子会禁用所有优化，以减少张量对象的创建。例如：
 - en: '[PRE7]'
+  id: totrans-184
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: 'Without the hooks, `x`, `y.grad_fn._saved_self` and `y.grad_fn._saved_other`
     all refer to the same tensor object. With the hooks, PyTorch will pack and unpack
     x into two new tensor objects that share the same storage with the original x
     (no copy performed).  ## Backward Hooks execution[](#backward-hooks-execution
     "Permalink to this heading")'
+  id: totrans-185
   prefs: []
   type: TYPE_NORMAL
+  zh: 没有钩子，`x`，`y.grad_fn._saved_self`和`y.grad_fn._saved_other`都指向同一个张量对象。有了钩子，PyTorch将x打包并解包为两个新的张量对象，这两个对象与原始x共享相同的存储（不执行复制）。##
+    后向钩子执行[](#backward-hooks-execution "Permalink to this heading")
 - en: 'This section will discuss when different hooks fire or don’t fire. Then it
     will discuss the order in which they are fired. The hooks that will be covered
     are: backward hooks registered to Tensor via [`torch.Tensor.register_hook()`](../generated/torch.Tensor.register_hook.html#torch.Tensor.register_hook
@@ -1340,21 +1848,33 @@
     "torch.autograd.graph.Node.register_hook"), and pre-hooks registered to Node via
     [`torch.autograd.graph.Node.register_prehook()`](../generated/torch.autograd.graph.Node.register_prehook.html#torch.autograd.graph.Node.register_prehook
     "torch.autograd.graph.Node.register_prehook").'
+  id: totrans-186
   prefs: []
   type: TYPE_NORMAL
+  zh: 本节将讨论不同的钩子何时触发或不触发。然后将讨论它们触发的顺序。将涵盖的钩子包括：通过[`torch.Tensor.register_hook()`](../generated/torch.Tensor.register_hook.html#torch.Tensor.register_hook
+    "torch.Tensor.register_hook")注册到张量的后向钩子，通过[`torch.Tensor.register_post_accumulate_grad_hook()`](../generated/torch.Tensor.register_post_accumulate_grad_hook.html#torch.Tensor.register_post_accumulate_grad_hook
+    "torch.Tensor.register_post_accumulate_grad_hook")注册到张量的后累积梯度钩子，通过[`torch.autograd.graph.Node.register_hook()`](../generated/torch.autograd.graph.Node.register_hook.html#torch.autograd.graph.Node.register_hook
+    "torch.autograd.graph.Node.register_hook")注册到节点的后钩子，以及通过[`torch.autograd.graph.Node.register_prehook()`](../generated/torch.autograd.graph.Node.register_prehook.html#torch.autograd.graph.Node.register_prehook
+    "torch.autograd.graph.Node.register_prehook")注册到节点的前钩子。
 - en: Whether a particular hook will be fired[](#whether-a-particular-hook-will-be-fired
     "Permalink to this heading")
+  id: totrans-187
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 特定钩子是否会被触发[](#whether-a-particular-hook-will-be-fired "Permalink to this heading")
 - en: Hooks registered to a Tensor via [`torch.Tensor.register_hook()`](../generated/torch.Tensor.register_hook.html#torch.Tensor.register_hook
     "torch.Tensor.register_hook") are executed when gradients are being computed for
     that Tensor. (Note that this does not require the Tensor’s grad_fn to be executed.
     For example, if the Tensor is passed as part of the `inputs` argument to [`torch.autograd.grad()`](../generated/torch.autograd.grad.html#torch.autograd.grad
     "torch.autograd.grad"), the Tensor’s grad_fn may not be executed, but the hook
     register to that Tensor will always be executed.)
+  id: totrans-188
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过[`torch.Tensor.register_hook()`](../generated/torch.Tensor.register_hook.html#torch.Tensor.register_hook
+    "torch.Tensor.register_hook")注册到张量的钩子在计算该张量的梯度时执行。（请注意，这不需要执行张量的grad_fn。例如，如果张量作为`inputs`参数的一部分传递给[`torch.autograd.grad()`](../generated/torch.autograd.grad.html#torch.autograd.grad
+    "torch.autograd.grad")，则可能不会执行张量的grad_fn，但是注册到该张量的钩子将始终被执行。）
 - en: Hooks registered to a Tensor via [`torch.Tensor.register_post_accumulate_grad_hook()`](../generated/torch.Tensor.register_post_accumulate_grad_hook.html#torch.Tensor.register_post_accumulate_grad_hook
     "torch.Tensor.register_post_accumulate_grad_hook") are executed after the gradients
     have been accumulated for that Tensor, meaning the Tensor’s grad field has been
@@ -1367,14 +1887,22 @@
     a hook via [`torch.Tensor.register_post_accumulate_grad_hook()`](../generated/torch.Tensor.register_post_accumulate_grad_hook.html#torch.Tensor.register_post_accumulate_grad_hook
     "torch.Tensor.register_post_accumulate_grad_hook") on a non-leaf Tensor will error,
     even if you call backward(retain_graph=True).
+  id: totrans-189
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过[`torch.Tensor.register_post_accumulate_grad_hook()`](../generated/torch.Tensor.register_post_accumulate_grad_hook.html#torch.Tensor.register_post_accumulate_grad_hook
+    "torch.Tensor.register_post_accumulate_grad_hook")注册到张量的钩子在该张量的梯度累积后执行，这意味着张量的grad字段已经设置。而通过[`torch.Tensor.register_hook()`](../generated/torch.Tensor.register_hook.html#torch.Tensor.register_hook
+    "torch.Tensor.register_hook")注册的钩子在计算梯度时运行，通过[`torch.Tensor.register_post_accumulate_grad_hook()`](../generated/torch.Tensor.register_post_accumulate_grad_hook.html#torch.Tensor.register_post_accumulate_grad_hook
+    "torch.Tensor.register_post_accumulate_grad_hook")注册的钩子只有在autograd在反向传播结束时更新张量的grad字段时才会触发。因此，后累积梯度钩子只能注册给叶子张量。在非叶子张量上通过[`torch.Tensor.register_post_accumulate_grad_hook()`](../generated/torch.Tensor.register_post_accumulate_grad_hook.html#torch.Tensor.register_post_accumulate_grad_hook
+    "torch.Tensor.register_post_accumulate_grad_hook")注册钩子会出错，即使您调用backward(retain_graph=True)。
 - en: Hooks registered to `torch.autograd.graph.Node` using [`torch.autograd.graph.Node.register_hook()`](../generated/torch.autograd.graph.Node.register_hook.html#torch.autograd.graph.Node.register_hook
     "torch.autograd.graph.Node.register_hook") or [`torch.autograd.graph.Node.register_prehook()`](../generated/torch.autograd.graph.Node.register_prehook.html#torch.autograd.graph.Node.register_prehook
     "torch.autograd.graph.Node.register_prehook") are only fired if the Node it was
     registered to is executed.
+  id: totrans-190
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用[`torch.autograd.graph.Node.register_hook()`](../generated/torch.autograd.graph.Node.register_hook.html#torch.autograd.graph.Node.register_hook)或[`torch.autograd.graph.Node.register_prehook()`](../generated/torch.autograd.graph.Node.register_prehook.html#torch.autograd.graph.Node.register_prehook)注册到`torch.autograd.graph.Node`的钩子仅在注册的节点被执行时触发。
 - en: Whether a particular Node is executed may depend on whether the backward pass
     was called with [`torch.autograd.grad()`](../generated/torch.autograd.grad.html#torch.autograd.grad
     "torch.autograd.grad") or [`torch.autograd.backward()`](../generated/torch.autograd.backward.html#torch.autograd.backward
@@ -1383,8 +1911,10 @@
     to [`torch.autograd.grad()`](../generated/torch.autograd.grad.html#torch.autograd.grad
     "torch.autograd.grad") or [`torch.autograd.backward()`](../generated/torch.autograd.backward.html#torch.autograd.backward
     "torch.autograd.backward") as part of the `inputs` argument.
+  id: totrans-191
   prefs: []
   type: TYPE_NORMAL
+  zh: 特定节点是否执行可能取决于反向传播是使用[`torch.autograd.grad()`](../generated/torch.autograd.grad.html#torch.autograd.grad)还是[`torch.autograd.backward()`](../generated/torch.autograd.backward.html#torch.autograd.backward)调用的。具体来说，当您在注册到与作为`inputs`参数的一部分传递给[`torch.autograd.grad()`](../generated/torch.autograd.grad.html#torch.autograd.grad)或[`torch.autograd.backward()`](../generated/torch.autograd.backward.html#torch.autograd.backward)的张量对应的节点上注册钩子时，您应该注意这些差异。
 - en: If you are using [`torch.autograd.backward()`](../generated/torch.autograd.backward.html#torch.autograd.backward
     "torch.autograd.backward"), all of the above mentioned hooks will be executed,
     whether or not you specified the `inputs` argument. This is because .backward()
@@ -1392,64 +1922,90 @@
     (Note that the execution of this additional Node corresponding to Tensors passed
     as `inputs` is usually unnecessary, but done anyway. This behavior is subject
     to change; you should not depend on it.)
+  id: totrans-192
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您使用[`torch.autograd.backward()`](../generated/torch.autograd.backward.html#torch.autograd.backward)，上述提到的所有钩子都将被执行，无论您是否指定了`inputs`参数。这是因为.backward()执行所有节点，即使它们对应于作为输入指定的张量。（请注意，执行作为`inputs`传递的张量对应的此额外节点通常是不必要的，但仍然会执行。此行为可能会更改；您不应该依赖它。）
 - en: On the other hand, if you are using [`torch.autograd.grad()`](../generated/torch.autograd.grad.html#torch.autograd.grad
     "torch.autograd.grad"), the backward hooks registered to Nodes that correspond
     to the Tensors passed to `input` may not be executed, because those Nodes will
     not be executed unless there is another input that depends on the gradient result
     of this Node.
+  id: totrans-193
   prefs: []
   type: TYPE_NORMAL
+  zh: 另一方面，如果您使用[`torch.autograd.grad()`](../generated/torch.autograd.grad.html#torch.autograd.grad)，则注册到与传递给`input`的张量对应的节点的反向钩子可能不会被执行，因为除非有另一个依赖于此节点梯度结果的输入，否则不会执行这些节点。
 - en: The order in which the different hooks are fired[](#the-order-in-which-the-different-hooks-are-fired
     "Permalink to this heading")
+  id: totrans-194
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 不同钩子被触发的顺序[](#the-order-in-which-the-different-hooks-are-fired)
 - en: 'The order in which things happen are:'
+  id: totrans-195
   prefs: []
   type: TYPE_NORMAL
+  zh: 发生事情的顺序是：
 - en: hooks registered to Tensor are executed
+  id: totrans-196
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 执行注册到张量的钩子
 - en: pre-hooks registered to Node are executed (if Node is executed).
+  id: totrans-197
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 执行注册到节点的前钩子（如果节点被执行）。
 - en: the `.grad` field is updated for Tensors that retain_grad
+  id: totrans-198
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 对保留梯度的张量更新`.grad`字段
 - en: Node is executed (subject to rules above)
+  id: totrans-199
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 节点被执行（受上述规则约束）
 - en: for leaf Tensors that have `.grad` accumulated, post-accumulate-grad hooks are
     executed
+  id: totrans-200
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 对于累积了`.grad`的叶子张量，执行后累积梯度钩子
 - en: post-hooks registered to Node are executed (if Node is executed)
+  id: totrans-201
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 执行注册到节点的后钩子（如果节点被执行）
 - en: If multiple hooks of the same type are registered on the same Tensor or Node
     they are executed in the order in which they are registered. Hooks that are executed
     later can observe the modifications to the gradient made by earlier hooks.
+  id: totrans-202
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果同一类型的多个钩子注册到同一张量或节点上，则它们按照注册的顺序执行。稍后执行的钩子可以观察到先前钩子对梯度所做的修改。
 - en: Special hooks
+  id: totrans-203
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 特殊钩子
 - en: '[`torch.autograd.graph.register_multi_grad_hook()`](../autograd.html#torch.autograd.graph.register_multi_grad_hook
     "torch.autograd.graph.register_multi_grad_hook") is implemented using hooks registered
     to Tensors. Each individual Tensor hook is fired following the Tensor hook ordering
     defined above and the registered multi-grad hook is called when the last Tensor
     gradient is computed.'
+  id: totrans-204
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`torch.autograd.graph.register_multi_grad_hook()`](../autograd.html#torch.autograd.graph.register_multi_grad_hook)是使用注册到张量的钩子实现的。每个单独的张量钩子按照上面定义的张量钩子顺序触发，并且当计算最后一个张量梯度时调用注册的多梯度钩子。'
 - en: '[`torch.nn.modules.module.register_module_full_backward_hook()`](../generated/torch.nn.modules.module.register_module_full_backward_hook.html#torch.nn.modules.module.register_module_full_backward_hook
     "torch.nn.modules.module.register_module_full_backward_hook") is implemented using
     hooks registered to Node. As the forward is computed, hooks are registered to
@@ -1458,36 +2014,52 @@
     Function is first applied to the inputs of the module before forward and the outputs
     of the module before the output of forward is returned to ensure that those Tensors
     share a single grad_fn, which we can then attach our hooks to.'
+  id: totrans-205
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`torch.nn.modules.module.register_module_full_backward_hook()`](../generated/torch.nn.modules.module.register_module_full_backward_hook.html#torch.nn.modules.module.register_module_full_backward_hook
+    "torch.nn.modules.module.register_module_full_backward_hook") 是使用注册到节点的钩子来实现的。在计算前向传播时，钩子被注册到与模块的输入和输出对应的grad_fn上。因为一个模块可能接受多个输入并返回多个输出，所以在前向传播之前，首先对模块的输入应用一个虚拟的自定义自动求导函数，然后将前向传播的输出返回到确保这些张量共享一个单一的grad_fn，然后我们可以将我们的钩子附加到上面。'
 - en: Behavior of Tensor hooks when Tensor is modified in-place[](#behavior-of-tensor-hooks-when-tensor-is-modified-in-place
     "Permalink to this heading")
+  id: totrans-206
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 张量在原地修改时的钩子行为[](#behavior-of-tensor-hooks-when-tensor-is-modified-in-place "Permalink
+    to this heading")
 - en: Usually hooks registered to a Tensor receive the gradient of the outputs with
     respect to that Tensor, where the value of the Tensor is taken to be its value
     at the time backward is computed.
+  id: totrans-207
   prefs: []
   type: TYPE_NORMAL
+  zh: 通常，注册到张量的钩子接收相对于该张量的输出的梯度，其中张量的值被视为在计算反向传播时的值。
 - en: However, if you register hooks to a Tensor, and then modify that Tensor in-place,
     hooks registered before in-place modification similarly receive gradients of the
     outputs with respect to the Tensor, but the value of the Tensor is taken to be
     its value before in-place modification.
+  id: totrans-208
   prefs: []
   type: TYPE_NORMAL
+  zh: 然而，如果您将钩子注册到一个张量，然后对该张量进行原地修改，那么在原地修改之前注册的钩子同样会接收相对于该张量的输出的梯度，但是张量的值被视为在原地修改之前的值。
 - en: 'If you prefer the behavior in the former case, you should register them to
     the Tensor after all in-place modifications to it have been made. For example:'
+  id: totrans-209
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您更喜欢前一种情况的行为，您应该在对张量进行所有原地修改之后将它们注册到张量上。例如：
 - en: '[PRE8]'
+  id: totrans-210
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: Furthermore, it can be helpful to know that under the hood, when hooks are registered
     to a Tensor, they actually become permanently bound to the grad_fn of that Tensor,
     so if that Tensor is then modified in-place, even though the Tensor now has a
     new grad_fn, hooks registered before it was modified in-place will continue to
     be associated with the old grad_fn, e.g. they will fire when that Tensor’s old
     grad_fn is reached in the graph by the autograd engine.
+  id: totrans-211
   prefs: []
   type: TYPE_NORMAL
+  zh: 此外，值得知道的是，在幕后，当钩子注册到张量时，它们实际上会永久绑定到该张量的grad_fn上，因此如果该张量随后被原地修改，即使该张量现在有一个新的grad_fn，之前在原地修改之前注册的钩子仍将继续与旧的grad_fn相关联，例如，当自动求导引擎在图中到达该张量的旧grad_fn时，它们将触发。

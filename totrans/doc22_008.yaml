@@ -1,112 +1,162 @@
 - en: CUDA Automatic Mixed Precision examples
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: CUDA自动混合精度示例
 - en: 原文：[https://pytorch.org/docs/stable/notes/amp_examples.html](https://pytorch.org/docs/stable/notes/amp_examples.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: '[https://pytorch.org/docs/stable/notes/amp_examples.html](https://pytorch.org/docs/stable/notes/amp_examples.html)'
 - en: Ordinarily, “automatic mixed precision training” means training with [`torch.autocast`](../amp.html#torch.autocast
     "torch.autocast") and [`torch.cuda.amp.GradScaler`](../amp.html#torch.cuda.amp.GradScaler
     "torch.cuda.amp.GradScaler") together.
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 通常，“自动混合精度训练”意味着同时使用[`torch.autocast`](../amp.html#torch.autocast "torch.autocast")和[`torch.cuda.amp.GradScaler`](../amp.html#torch.cuda.amp.GradScaler
+    "torch.cuda.amp.GradScaler")进行训练。
 - en: Instances of [`torch.autocast`](../amp.html#torch.autocast "torch.autocast")
     enable autocasting for chosen regions. Autocasting automatically chooses the precision
     for GPU operations to improve performance while maintaining accuracy.
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`torch.autocast`](../amp.html#torch.autocast "torch.autocast")的实例使得可以为选择的区域进行自动转换。自动转换会自动选择GPU操作的精度，以提高性能同时保持准确性。'
 - en: Instances of [`torch.cuda.amp.GradScaler`](../amp.html#torch.cuda.amp.GradScaler
     "torch.cuda.amp.GradScaler") help perform the steps of gradient scaling conveniently.
     Gradient scaling improves convergence for networks with `float16` gradients by
     minimizing gradient underflow, as explained [here](../amp.html#gradient-scaling).
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`torch.cuda.amp.GradScaler`](../amp.html#torch.cuda.amp.GradScaler "torch.cuda.amp.GradScaler")的实例有助于方便地执行梯度缩放的步骤。梯度缩放通过最小化梯度下溢来提高具有`float16`梯度的网络的收敛性，如[此处](../amp.html#gradient-scaling)所解释。'
 - en: '[`torch.autocast`](../amp.html#torch.autocast "torch.autocast") and [`torch.cuda.amp.GradScaler`](../amp.html#torch.cuda.amp.GradScaler
     "torch.cuda.amp.GradScaler") are modular. In the samples below, each is used as
     its individual documentation suggests.'
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`torch.autocast`](../amp.html#torch.autocast "torch.autocast")和[`torch.cuda.amp.GradScaler`](../amp.html#torch.cuda.amp.GradScaler
+    "torch.cuda.amp.GradScaler")是模块化的。在下面的示例中，每个都按照其各自的文档建议使用。'
 - en: (Samples here are illustrative. See the [Automatic Mixed Precision recipe](https://pytorch.org/tutorials/recipes/recipes/amp_recipe.html)
     for a runnable walkthrough.)
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: （这里的示例仅供参考。请查看[自动混合精度教程](https://pytorch.org/tutorials/recipes/recipes/amp_recipe.html)以获得可运行的步骤。）
 - en: '[Typical Mixed Precision Training](#typical-mixed-precision-training)'
+  id: totrans-7
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[典型的混合精度训练](#typical-mixed-precision-training)'
 - en: '[Working with Unscaled Gradients](#working-with-unscaled-gradients)'
+  id: totrans-8
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[使用未缩放梯度](#working-with-unscaled-gradients)'
 - en: '[Gradient clipping](#gradient-clipping)'
+  id: totrans-9
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[梯度裁剪](#gradient-clipping)'
 - en: '[Working with Scaled Gradients](#working-with-scaled-gradients)'
+  id: totrans-10
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[使用缩放梯度](#working-with-scaled-gradients)'
 - en: '[Gradient accumulation](#gradient-accumulation)'
+  id: totrans-11
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[梯度累积](#gradient-accumulation)'
 - en: '[Gradient penalty](#gradient-penalty)'
+  id: totrans-12
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[梯度惩罚](#gradient-penalty)'
 - en: '[Working with Multiple Models, Losses, and Optimizers](#working-with-multiple-models-losses-and-optimizers)'
+  id: totrans-13
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[使用多个模型、损失和优化器](#working-with-multiple-models-losses-and-optimizers)'
 - en: '[Working with Multiple GPUs](#working-with-multiple-gpus)'
+  id: totrans-14
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[使用多个GPU](#working-with-multiple-gpus)'
 - en: '[DataParallel in a single process](#dataparallel-in-a-single-process)'
+  id: totrans-15
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[单进程中的DataParallel](#dataparallel-in-a-single-process)'
 - en: '[DistributedDataParallel, one GPU per process](#distributeddataparallel-one-gpu-per-process)'
+  id: totrans-16
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[DistributedDataParallel，每个进程一个GPU](#distributeddataparallel-one-gpu-per-process)'
 - en: '[DistributedDataParallel, multiple GPUs per process](#distributeddataparallel-multiple-gpus-per-process)'
+  id: totrans-17
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[DistributedDataParallel，每个进程多个GPU](#distributeddataparallel-multiple-gpus-per-process)'
 - en: '[Autocast and Custom Autograd Functions](#autocast-and-custom-autograd-functions)'
+  id: totrans-18
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[自动转换和自定义自动梯度函数](#autocast-and-custom-autograd-functions)'
 - en: '[Functions with multiple inputs or autocastable ops](#functions-with-multiple-inputs-or-autocastable-ops)'
+  id: totrans-19
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[具有多个输入或可自动转换操作的函数](#functions-with-multiple-inputs-or-autocastable-ops)'
 - en: '[Functions that need a particular `dtype`](#functions-that-need-a-particular-dtype)'
+  id: totrans-20
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[需要特定`dtype`的函数](#functions-that-need-a-particular-dtype)'
 - en: '[Typical Mixed Precision Training](#id2)[](#typical-mixed-precision-training
     "Permalink to this heading")'
+  id: totrans-21
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: '[典型的混合精度训练](#id2)[](#typical-mixed-precision-training "跳转到此标题")'
 - en: '[PRE0]'
+  id: totrans-22
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: '## [Working with Unscaled Gradients](#id3)[](#working-with-unscaled-gradients
     "Permalink to this heading")'
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: '## [使用未缩放梯度](#id3)[](#working-with-unscaled-gradients "跳转到此标题")'
 - en: All gradients produced by `scaler.scale(loss).backward()` are scaled. If you
     wish to modify or inspect the parameters’ `.grad` attributes between `backward()`
     and `scaler.step(optimizer)`, you should unscale them first. For example, gradient
@@ -117,33 +167,49 @@
     threshold. If you attempted to clip *without* unscaling, the gradients’ norm/maximum
     magnitude would also be scaled, so your requested threshold (which was meant to
     be the threshold for *unscaled* gradients) would be invalid.
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: '`scaler.scale(loss).backward()`产生的所有梯度都是经过缩放的。如果您希望在`backward()`和`scaler.step(optimizer)`之间修改或检查参数的`.grad`属性，您应该首先取消缩放它们。例如，梯度裁剪操作会操纵一组梯度，使它们的全局范数（参见[`torch.nn.utils.clip_grad_norm_()`](../generated/torch.nn.utils.clip_grad_norm_.html#torch.nn.utils.clip_grad_norm_
+    "torch.nn.utils.clip_grad_norm_")）或最大幅度（参见[`torch.nn.utils.clip_grad_value_()`](../generated/torch.nn.utils.clip_grad_value_.html#torch.nn.utils.clip_grad_value_
+    "torch.nn.utils.clip_grad_value_")）小于某个用户设定的阈值。如果您尝试在不取消缩放的情况下裁剪梯度，梯度的范数/最大幅度也会被缩放，因此您请求的阈值（本来是用于*未缩放*梯度的阈值）将无效。'
 - en: '`scaler.unscale_(optimizer)` unscales gradients held by `optimizer`’s assigned
     parameters. If your model or models contain other parameters that were assigned
     to another optimizer (say `optimizer2`), you may call `scaler.unscale_(optimizer2)`
     separately to unscale those parameters’ gradients as well.'
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: '`scaler.unscale_(optimizer)`取消缩放`optimizer`的参数所持有的梯度。如果您的模型包含其他分配给另一个优化器（比如`optimizer2`）的参数，您可以单独调用`scaler.unscale_(optimizer2)`来取消缩放这些参数的梯度。'
 - en: '[Gradient clipping](#id4)'
+  id: totrans-26
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: '[梯度裁剪](#id4)'
 - en: 'Calling `scaler.unscale_(optimizer)` before clipping enables you to clip unscaled
     gradients as usual:'
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 在裁剪之前调用`scaler.unscale_(optimizer)`使您可以像往常一样裁剪未缩放的梯度：
 - en: '[PRE1]'
+  id: totrans-28
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: '`scaler` records that `scaler.unscale_(optimizer)` was already called for this
     optimizer this iteration, so `scaler.step(optimizer)` knows not to redundantly
     unscale gradients before (internally) calling `optimizer.step()`.'
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: '`scaler`记录了在此迭代中已经为此优化器调用了`scaler.unscale_(optimizer)`，因此`scaler.step(optimizer)`知道在（内部）调用`optimizer.step()`之前不要冗余地对梯度进行未缩放处理。'
 - en: Warning
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: '[`unscale_`](../amp.html#torch.cuda.amp.GradScaler.unscale_ "torch.cuda.amp.GradScaler.unscale_")
     should only be called once per optimizer per [`step`](../amp.html#torch.cuda.amp.GradScaler.step
     "torch.cuda.amp.GradScaler.step") call, and only after all gradients for that
@@ -151,18 +217,26 @@
     "torch.cuda.amp.GradScaler.unscale_") twice for a given optimizer between each
     [`step`](../amp.html#torch.cuda.amp.GradScaler.step "torch.cuda.amp.GradScaler.step")
     triggers a RuntimeError.'
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`unscale_`](../amp.html#torch.cuda.amp.GradScaler.unscale_ "torch.cuda.amp.GradScaler.unscale_")应该每个优化器每次[`step`](../amp.html#torch.cuda.amp.GradScaler.step
+    "torch.cuda.amp.GradScaler.step")调用只调用一次，并且只在为该优化器分配的参数的所有梯度都被累积之后才调用。在每个[`step`](../amp.html#torch.cuda.amp.GradScaler.step
+    "torch.cuda.amp.GradScaler.step")之间为给定的优化器调用两次[`unscale_`](../amp.html#torch.cuda.amp.GradScaler.unscale_
+    "torch.cuda.amp.GradScaler.unscale_")会触发一个运行时错误。'
 - en: '[Working with Scaled Gradients](#id5)[](#working-with-scaled-gradients "Permalink
     to this heading")'
+  id: totrans-32
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
-- en: '[Gradient accumulation](#id6)[](#gradient-accumulation "Permalink to this
-    heading")'
+  zh: '[使用缩放梯度](#id5)[](#working-with-scaled-gradients "跳转到此标题")'
+- en: '[Gradient accumulation](#id6)[](#gradient-accumulation "Permalink to this heading")'
+  id: totrans-33
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: '[梯度累积](#id6)[](#gradient-accumulation "跳转到此标题")'
 - en: Gradient accumulation adds gradients over an effective batch of size `batch_per_iter
     * iters_to_accumulate` (`* num_procs` if distributed). The scale should be calibrated
     for the effective batch, which means inf/NaN checking, step skipping if inf/NaN
@@ -173,8 +247,11 @@
     pass will add scaled grads to unscaled grads (or grads scaled by a different factor)
     after which it’s impossible to recover the accumulated unscaled grads [`step`](../amp.html#torch.cuda.amp.GradScaler.step
     "torch.cuda.amp.GradScaler.step") must apply.
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 梯度累积会在一个有效批次的大小上添加梯度，大小为`batch_per_iter * iters_to_accumulate`（如果是分布式的话还要乘以`num_procs`）。尺度应该校准到有效批次，这意味着在有效批次粒度上进行inf/NaN检查，如果发现inf/NaN梯度，则跳过步骤，同时尺度更新应该在有效批次粒度上发生。此外，梯度应该保持缩放，尺度因子应该保持恒定，而给定有效批次的梯度被累积。如果在累积完成之前梯度未被缩放（或尺度因子发生变化），下一个反向传播将会在将缩放的梯度添加到未缩放的梯度（或使用不同因子缩放的梯度）之后，无法恢复已累积的未缩放梯度，必须调用[`step`](../amp.html#torch.cuda.amp.GradScaler.step
+    "torch.cuda.amp.GradScaler.step")。
 - en: 'Therefore, if you want to [`unscale_`](../amp.html#torch.cuda.amp.GradScaler.unscale_
     "torch.cuda.amp.GradScaler.unscale_") grads (e.g., to allow clipping unscaled
     grads), call [`unscale_`](../amp.html#torch.cuda.amp.GradScaler.unscale_ "torch.cuda.amp.GradScaler.unscale_")
@@ -184,111 +261,165 @@
     "torch.cuda.amp.GradScaler.update") at the end of iterations where you called
     [`step`](../amp.html#torch.cuda.amp.GradScaler.step "torch.cuda.amp.GradScaler.step")
     for a full effective batch:'
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 因此，如果要对梯度进行[`unscale_`](../amp.html#torch.cuda.amp.GradScaler.unscale_ "torch.cuda.amp.GradScaler.unscale_")（例如，允许裁剪未缩放的梯度），请在所有（缩放的）梯度为即将到来的[`step`](../amp.html#torch.cuda.amp.GradScaler.step
+    "torch.cuda.amp.GradScaler.step")累积完成之后，在[`step`](../amp.html#torch.cuda.amp.GradScaler.step
+    "torch.cuda.amp.GradScaler.step")之前调用[`unscale_`](../amp.html#torch.cuda.amp.GradScaler.unscale_
+    "torch.cuda.amp.GradScaler.unscale_")。此外，只在调用了[`step`](../amp.html#torch.cuda.amp.GradScaler.step
+    "torch.cuda.amp.GradScaler.step")进行完整有效批次的迭代结束时才调用[`update`](../amp.html#torch.cuda.amp.GradScaler.update
+    "torch.cuda.amp.GradScaler.update")：
 - en: '[PRE2]'
+  id: totrans-36
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: '[Gradient penalty](#id7)'
+  id: totrans-37
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: '[梯度惩罚](#id7)'
 - en: A gradient penalty implementation commonly creates gradients using [`torch.autograd.grad()`](../generated/torch.autograd.grad.html#torch.autograd.grad
     "torch.autograd.grad"), combines them to create the penalty value, and adds the
     penalty value to the loss.
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 梯度惩罚的实现通常使用[`torch.autograd.grad()`](../generated/torch.autograd.grad.html#torch.autograd.grad
+    "torch.autograd.grad")创建梯度，将它们组合以创建惩罚值，并将惩罚值添加到损失中。
 - en: 'Here’s an ordinary example of an L2 penalty without gradient scaling or autocasting:'
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 这是一个普通的L2惩罚的例子，没有梯度缩放或自动转换：
 - en: '[PRE3]'
+  id: totrans-40
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: To implement a gradient penalty *with* gradient scaling, the `outputs` Tensor(s)
     passed to [`torch.autograd.grad()`](../generated/torch.autograd.grad.html#torch.autograd.grad
     "torch.autograd.grad") should be scaled. The resulting gradients will therefore
     be scaled, and should be unscaled before being combined to create the penalty
     value.
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 要实现带有梯度缩放的梯度惩罚，传递给[`torch.autograd.grad()`](../generated/torch.autograd.grad.html#torch.autograd.grad
+    "torch.autograd.grad")的`outputs`张量应该被缩放。因此，得到的梯度将被缩放，应该在组合创建惩罚值之前取消缩放。
 - en: Also, the penalty term computation is part of the forward pass, and therefore
     should be inside an [`autocast`](../amp.html#torch.cuda.amp.autocast "torch.cuda.amp.autocast")
     context.
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 此外，惩罚项的计算是前向传播的一部分，因此应该在[`autocast`](../amp.html#torch.cuda.amp.autocast "torch.cuda.amp.autocast")上下文中。
 - en: 'Here’s how that looks for the same L2 penalty:'
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于相同的L2惩罚，看起来是这样的：
 - en: '[PRE4]'
+  id: totrans-44
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: '[Working with Multiple Models, Losses, and Optimizers](#id8)[](#working-with-multiple-models-losses-and-optimizers
     "Permalink to this heading")'
+  id: totrans-45
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: '[使用多个模型、损失和优化器](#id8)[](#working-with-multiple-models-losses-and-optimizers
+    "跳转到此标题")'
 - en: If your network has multiple losses, you must call [`scaler.scale`](../amp.html#torch.cuda.amp.GradScaler.scale
     "torch.cuda.amp.GradScaler.scale") on each of them individually. If your network
     has multiple optimizers, you may call [`scaler.unscale_`](../amp.html#torch.cuda.amp.GradScaler.unscale_
     "torch.cuda.amp.GradScaler.unscale_") on any of them individually, and you must
     call [`scaler.step`](../amp.html#torch.cuda.amp.GradScaler.step "torch.cuda.amp.GradScaler.step")
     on each of them individually.
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您的网络有多个损失，您必须分别对每个损失调用`scaler.scale`。如果您的网络有多个优化器，您可以分别对其中任何一个调用`scaler.unscale_`，并且您必须分别对每个调用`scaler.step`。
 - en: 'However, [`scaler.update`](../amp.html#torch.cuda.amp.GradScaler.update "torch.cuda.amp.GradScaler.update")
     should only be called once, after all optimizers used this iteration have been
     stepped:'
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: 然而，`scaler.update`应该只被调用一次，在本次迭代中所有优化器都已经执行完步骤之后：
 - en: '[PRE5]'
+  id: totrans-48
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: Each optimizer checks its gradients for infs/NaNs and makes an independent decision
     whether or not to skip the step. This may result in one optimizer skipping the
     step while the other one does not. Since step skipping occurs rarely (every several
     hundred iterations) this should not impede convergence. If you observe poor convergence
     after adding gradient scaling to a multiple-optimizer model, please report a bug.
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: 每个优化器都会检查其梯度是否包含无穷大/NaN，并独立决定是否跳过该步骤。这可能导致一个优化器跳过该步骤，而另一个不跳过。由于很少发生跳过步骤（每几百次迭代一次），这不应该影响收敛。如果您在将梯度缩放添加到多优化器模型后观察到收敛不佳，请报告错误。
 - en: '## [Working with Multiple GPUs](#id9)[](#working-with-multiple-gpus "Permalink
     to this heading")'
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: '## [使用多个GPU](#id9)'
 - en: The issues described here only affect [`autocast`](../amp.html#torch.cuda.amp.autocast
     "torch.cuda.amp.autocast"). [`GradScaler`](../amp.html#torch.cuda.amp.GradScaler
     "torch.cuda.amp.GradScaler")‘s usage is unchanged.
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
+  zh: 这里描述的问题只影响`autocast`。`GradScaler`的使用方式没有改变。
 - en: '### [DataParallel in a single process](#id10)[](#dataparallel-in-a-single-process
     "Permalink to this heading")'
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
+  zh: '### [单进程中的DataParallel](#id10)'
 - en: 'Even if [`torch.nn.DataParallel`](../generated/torch.nn.DataParallel.html#torch.nn.DataParallel
     "torch.nn.DataParallel") spawns threads to run the forward pass on each device.
     The autocast state is propagated in each one and the following will work:'
+  id: totrans-53
   prefs: []
   type: TYPE_NORMAL
+  zh: 即使`torch.nn.DataParallel`会生成线程来在每个设备上运行前向传播。自动转换状态在每个线程中传播，并且以下操作将起作用：
 - en: '[PRE6]'
+  id: totrans-54
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: '[DistributedDataParallel, one GPU per process](#id11)[](#distributeddataparallel-one-gpu-per-process
     "Permalink to this heading")'
+  id: totrans-55
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: '[分布式数据并行，每个进程一个GPU](#id11)'
 - en: '[`torch.nn.parallel.DistributedDataParallel`](../generated/torch.nn.parallel.DistributedDataParallel.html#torch.nn.parallel.DistributedDataParallel
     "torch.nn.parallel.DistributedDataParallel")’s documentation recommends one GPU
     per process for best performance. In this case, `DistributedDataParallel` does
     not spawn threads internally, so usages of [`autocast`](../amp.html#torch.cuda.amp.autocast
     "torch.cuda.amp.autocast") and [`GradScaler`](../amp.html#torch.cuda.amp.GradScaler
     "torch.cuda.amp.GradScaler") are not affected.'
+  id: totrans-56
   prefs: []
   type: TYPE_NORMAL
+  zh: '`torch.nn.parallel.DistributedDataParallel`的文档建议每个进程一个GPU以获得最佳性能。在这种情况下，`DistributedDataParallel`不会在内部生成线程，因此对`autocast`和`GradScaler`的使用不受影响。'
 - en: '[DistributedDataParallel, multiple GPUs per process](#id12)[](#distributeddataparallel-multiple-gpus-per-process
     "Permalink to this heading")'
+  id: totrans-57
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: '[分布式数据并行，每个进程多个GPU](#id12)'
 - en: 'Here [`torch.nn.parallel.DistributedDataParallel`](../generated/torch.nn.parallel.DistributedDataParallel.html#torch.nn.parallel.DistributedDataParallel
     "torch.nn.parallel.DistributedDataParallel") may spawn a side thread to run the
     forward pass on each device, like [`torch.nn.DataParallel`](../generated/torch.nn.DataParallel.html#torch.nn.DataParallel
@@ -296,83 +427,120 @@
     as part of your model’s `forward` method to ensure it’s enabled in side threads.  ##
     [Autocast and Custom Autograd Functions](#id13)[](#autocast-and-custom-autograd-functions
     "Permalink to this heading")'
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这里，`torch.nn.parallel.DistributedDataParallel`可能会生成一个辅助线程来在每个设备上运行前向传播，就像`torch.nn.DataParallel`一样。[修复方法相同](#amp-dataparallel)：在模型的`forward`方法中应用autocast，以确保在辅助线程中启用它。##
+    [自动转换和自定义自动求导函数](#id13)
 - en: If your network uses [custom autograd functions](extending.html#extending-autograd)
     (subclasses of [`torch.autograd.Function`](../autograd.html#torch.autograd.Function
     "torch.autograd.Function")), changes are required for autocast compatibility if
     any function
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您的网络使用[自定义自动求导函数](extending.html#extending-autograd)（`torch.autograd.Function`的子类），则需要对自动转换兼容性进行更改，如果任何函数
 - en: takes multiple floating-point Tensor inputs,
+  id: totrans-60
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 接受多个浮点张量输入，
 - en: wraps any autocastable op (see the [Autocast Op Reference](../amp.html#autocast-op-reference)),
     or
+  id: totrans-61
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 包装任何可自动转换的操作（参见[自动转换操作参考](../amp.html#autocast-op-reference)，或者
 - en: requires a particular `dtype` (for example, if it wraps [CUDA extensions](https://pytorch.org/tutorials/advanced/cpp_extension.html)
     that were only compiled for `dtype`).
+  id: totrans-62
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 需要特定的`dtype`（例如，如果它包装了仅为`dtype`编译的[CUDA扩展](https://pytorch.org/tutorials/advanced/cpp_extension.html)）。
 - en: 'In all cases, if you’re importing the function and can’t alter its definition,
     a safe fallback is to disable autocast and force execution in `float32` ( or `dtype`)
     at any points of use where errors occur:'
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: 在所有情况下，如果您正在导入该函数并且无法更改其定义，一个安全的备选方案是在出现错误的任何使用点禁用自动转换并强制执行为`float32`（或`dtype`）：
 - en: '[PRE7]'
+  id: totrans-64
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: If you’re the function’s author (or can alter its definition) a better solution
     is to use the [`torch.cuda.amp.custom_fwd()`](../amp.html#torch.cuda.amp.custom_fwd
     "torch.cuda.amp.custom_fwd") and [`torch.cuda.amp.custom_bwd()`](../amp.html#torch.cuda.amp.custom_bwd
     "torch.cuda.amp.custom_bwd") decorators as shown in the relevant case below.
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您是函数的作者（或可以更改其定义），更好的解决方案是在下面相关案例中所示使用[`torch.cuda.amp.custom_fwd()`](../amp.html#torch.cuda.amp.custom_fwd)和[`torch.cuda.amp.custom_bwd()`](../amp.html#torch.cuda.amp.custom_bwd)装饰器。
 - en: '[Functions with multiple inputs or autocastable ops](#id14)[](#functions-with-multiple-inputs-or-autocastable-ops
     "Permalink to this heading")'
+  id: totrans-66
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: '[具有多个输入或可自动转换操作的函数](#id14)'
 - en: 'Apply [`custom_fwd`](../amp.html#torch.cuda.amp.custom_fwd "torch.cuda.amp.custom_fwd")
     and [`custom_bwd`](../amp.html#torch.cuda.amp.custom_bwd "torch.cuda.amp.custom_bwd")
     (with no arguments) to `forward` and `backward` respectively. These ensure `forward`
     executes with the current autocast state and `backward` executes with the same
     autocast state as `forward` (which can prevent type mismatch errors):'
+  id: totrans-67
   prefs: []
   type: TYPE_NORMAL
+  zh: 将[`custom_fwd`](../amp.html#torch.cuda.amp.custom_fwd)和[`custom_bwd`](../amp.html#torch.cuda.amp.custom_bwd)（不带参数）分别应用于`forward`和`backward`。这些确保`forward`以当前自动转换状态执行，`backward`以与`forward`相同的自动转换状态执行（可以防止类型不匹配错误）：
 - en: '[PRE8]'
+  id: totrans-68
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: 'Now `MyMM` can be invoked anywhere, without disabling autocast or manually
     casting inputs:'
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在`MyMM`可以在任何地方调用，而无需禁用自动转换或手动转换输入：
 - en: '[PRE9]'
+  id: totrans-70
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: '[Functions that need a particular `dtype`](#id15)[](#functions-that-need-a-particular-dtype
     "Permalink to this heading")'
+  id: totrans-71
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: '[需要特定`dtype`的函数](#id15)'
 - en: 'Consider a custom function that requires `torch.float32` inputs. Apply [`custom_fwd(cast_inputs=torch.float32)`](../amp.html#torch.cuda.amp.custom_fwd
     "torch.cuda.amp.custom_fwd") to `forward` and [`custom_bwd`](../amp.html#torch.cuda.amp.custom_bwd
     "torch.cuda.amp.custom_bwd") (with no arguments) to `backward`. If `forward` runs
     in an autocast-enabled region, the decorators cast floating-point CUDA Tensor
     inputs to `float32`, and locally disable autocast during `forward` and `backward`:'
+  id: totrans-72
   prefs: []
   type: TYPE_NORMAL
+  zh: 考虑一个需要`torch.float32`输入的自定义函数。将[`custom_fwd(cast_inputs=torch.float32)`](../amp.html#torch.cuda.amp.custom_fwd)应用于`forward`，将[`custom_bwd`](../amp.html#torch.cuda.amp.custom_bwd)（不带参数）应用于`backward`。如果`forward`在启用自动转换的区域运行，则装饰器将浮点CUDA张量输入转换为`float32`，并在`forward`和`backward`期间本地禁用自动转换：
 - en: '[PRE10]'
+  id: totrans-73
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: 'Now `MyFloat32Func` can be invoked anywhere, without manually disabling autocast
     or casting inputs:'
+  id: totrans-74
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在`MyFloat32Func`可以在任何地方调用，而无需手动禁用自动转换或转换输入：
 - en: '[PRE11]'
+  id: totrans-75
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
