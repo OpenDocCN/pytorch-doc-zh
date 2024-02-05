@@ -1,1175 +1,1871 @@
 - en: Distributed Checkpoint - torch.distributed.checkpoint
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 分布式检查点 - torch.distributed.checkpoint
 - en: 原文：[https://pytorch.org/docs/stable/distributed.checkpoint.html](https://pytorch.org/docs/stable/distributed.checkpoint.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/docs/stable/distributed.checkpoint.html](https://pytorch.org/docs/stable/distributed.checkpoint.html)
 - en: Distributed Checkpoint (DCP) support loading and saving models from multiple
     ranks in parallel. It handles load-time resharding which enables saving in one
     cluster topology and loading into another.
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 分布式检查点（DCP）支持并行从多个排名加载和保存模型。它处理加载时的重分片，使得可以在一个集群拓扑中保存并加载到另一个集群拓扑中。
 - en: 'DCP is different than torch.save and torch.load in a few significant ways:'
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: DCP与torch.save和torch.load在几个重要方面有所不同：
 - en: It produces multiple files per checkpoint, with at least one per rank.
+  id: totrans-4
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 每个检查点会生成多个文件，每个排名至少有一个文件。
 - en: It operates in place, meaning that the model should allocate its data first
     and DCP uses that storage instead.
+  id: totrans-5
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 它是就地操作，这意味着模型应该首先分配其数据，DCP将使用该存储空间。
 - en: 'The entrypoints to load and save a checkpoint are the following:'
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 加载和保存检查点的入口点如下：
 - en: '[PRE0]'
+  id: totrans-7
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: Load a distributed `state_dict` in SPMD style.
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 以SPMD风格加载分布式`state_dict`。
 - en: Each rank will try to read the least amount of data necessary to fullfill the
     requested state_dict. When loading `ShardedTensor` or `DTensor` instances, each
     rank only reads data for their local shards.
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 每个排名将尝试读取尽可能少的数据以满足请求的state_dict。在加载`ShardedTensor`或`DTensor`实例时，每个排名只读取其本地分片的数据。
 - en: For each `Stateful` object (having both a `state_dict` and a `load_state_dict`),
     load will first call `state_dict` before attempting deserialization, followed
     by `load_state_dict` once the deserialization is complete.
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于每个具有`state_dict`和`load_state_dict`的`Stateful`对象，在尝试反序列化之前，load将首先调用`state_dict`，然后在反序列化完成后调用`load_state_dict`。
 - en: Warning
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: All tensors in `state_dict` must be allocated on their destination device *prior
     to* calling this function.
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: '`state_dict`中的所有张量必须在调用此函数之前分配到其目标设备上。'
 - en: All non-tensor data is loaded using torch.load() and modified in place on state_dict.
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: 所有非张量数据都是使用torch.load()加载并在state_dict上进行就地修改的。
 - en: Warning
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: Users must call load_state_dict on the root module to ensure load pos-processing
     and non-tensor data properly propagates.
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 用户必须在根模块上调用load_state_dict以确保加载后处理和非张量数据正确传播。
 - en: Parameters
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**state_dict** (*Dict**[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)")*,* *Any**]*) – The state_dict to load. Note that this state
     dict will updated in place.'
+  id: totrans-17
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**state_dict**（*Dict**[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* *Any**]*) - 要加载的state_dict。请注意，此state dict将就地更新。'
 - en: '**storage_reader** ([*StorageReader*](#torch.distributed.checkpoint.StorageReader
     "torch.distributed.checkpoint.StorageReader")) – StorageReader used to load data
     from.'
+  id: totrans-18
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**storage_reader**（[*StorageReader*](#torch.distributed.checkpoint.StorageReader
+    "torch.distributed.checkpoint.StorageReader")）- 用于加载数据的StorageReader。'
 - en: '**process_group** (*ProcessGroup*) – ProcessGroup to be used for cross-rank
     synchronization.'
+  id: totrans-19
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**process_group**（*ProcessGroup*）- 用于跨排同步的ProcessGroup。'
 - en: '**coordinator_rank** ([*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")) – Rank to use to coordinate the checkpoint. rank0 is used
     by default.'
+  id: totrans-20
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**coordinator_rank**（[*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")）- 用于协调检查点的排名。默认情况下使用rank0。'
 - en: '**no_dist** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")) – If `True`, distributed checkpoint will not load in SPMD
     style. (Default: `False`)'
+  id: totrans-21
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**no_dist**（[*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")）- 如果为`True`，分布式检查点将不以SPMD风格加载。 （默认值：`False`）'
 - en: Returns
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回
 - en: None.
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 无。
 - en: Return type
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: None
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: 无
 - en: Examples
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例
 - en: '[PRE1]'
+  id: totrans-27
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: '[PRE2]'
+  id: totrans-28
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: '[PRE3]'
+  id: totrans-29
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: Note
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: load_state_dict uses collectives to coordinate reads across ranks. For NCCL-based
     process groups, internal tensor representations of objects must be moved to the
     GPU device before communication takes place. In this case, the device used is
     given by `torch.cuda.current_device()` and it is the user’s responsibility to
     ensure that this is set so that each rank has an individual GPU, via `torch.cuda.set_device()`.
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: load_state_dict使用集合来协调跨排读取。对于基于NCCL的进程组，对象的内部张量表示必须在通信发生之前移动到GPU设备。在这种情况下，使用的设备由`torch.cuda.current_device()`给出，用户有责任确保设置了这一点，以便每个排名都有一个独立的GPU，通过`torch.cuda.set_device()`。
 - en: '[PRE4]'
+  id: totrans-32
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: Save a distributed model in SPMD style.
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: 以SPMD风格保存分布式模型。
 - en: This function is different from `torch.save()` as it handles `ShardedTensor`
     , and `DTensor` by having each rank only save their local shards.
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 此函数与`torch.save()`不同，它处理`ShardedTensor`和`DTensor`，通过让每个排名仅保存其本地分片来实现。
 - en: For each `Stateful` object (having both a `state_dict` and a `load_state_dict`),
     save will call `state_dict` before serialization.
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于每个具有`state_dict`和`load_state_dict`的`Stateful`对象，在序列化之前会调用`state_dict`。
 - en: Warning
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: There is no guarantees of Backwards Compatibility across PyTorch versions for
     saved state_dicts.
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于保存的state_dicts，不保证在PyTorch版本之间的向后兼容性。
 - en: Warning
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: If using the process_group argument, make sure that only its ranks call save_state_dict
     and that all data in state_dict belong to it.
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果使用process_group参数，请确保只有其排名调用save_state_dict，并且state_dict中的所有数据都属于它。
 - en: Note
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: When saving checkpoint for FSDP’s ShardingStrategy.HYBRID_SHARD, only one of
     the shard_group should be calling save_state_dict and the corresponding process
     group needs to be passed in.
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于FSDP的ShardingStrategy.HYBRID_SHARD保存检查点时，只有一个shard_group应该调用save_state_dict，并且需要传递相应的进程组。
 - en: Note
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: This function can be used to save a state_dict without having a process group
     initialized by passing `no_dist=True`.
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过传递`no_dist=True`，可以在没有初始化进程组的情况下使用此函数保存state_dict。
 - en: Parameters
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**state_dict** (*Dict**[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)")*,* *Any**]*) – The state_dict to save.'
+  id: totrans-45
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**state_dict**（*Dict**[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* *Any**]*) - 要保存的state_dict。'
 - en: '**storage_writer** ([*StorageWriter*](#torch.distributed.checkpoint.StorageWriter
     "torch.distributed.checkpoint.StorageWriter")) – Instance of StorageWrite use
     to perform writes.'
+  id: totrans-46
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**storage_writer**（[*StorageWriter*](#torch.distributed.checkpoint.StorageWriter
+    "torch.distributed.checkpoint.StorageWriter")）- 用于执行写操作的StorageWriter实例。'
 - en: '**process_group** (*ProcessGroup*) – ProcessGroup to be used for cross-rank
     synchronization.'
+  id: totrans-47
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**process_group**（*ProcessGroup*） - 用于跨等级同步的ProcessGroup。'
 - en: '**coordinator_rank** ([*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")) – Rank to use to coordinate the checkpoint. rank0 is used
     by default.'
+  id: totrans-48
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**coordinator_rank**（[*int*](https://docs.python.org/3/library/functions.html#int
+    "(在Python v3.12中)")） - 用于协调检查点的等级。默认情况下使用rank0。'
 - en: '**no_dist** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")) – If `True`, distributed checkpoint will not save in SPMD
     style. (Default: `False`)'
+  id: totrans-49
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**no_dist**（[*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(在Python v3.12中)")） - 如果为`True`，分布式检查点将不以SPMD样式保存。（默认值：`False`）'
 - en: Returns
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回
 - en: Metadata object for the saved checkpoint.
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
+  zh: 保存检查点的元数据对象。
 - en: Return type
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: Metadata
+  id: totrans-53
   prefs: []
   type: TYPE_NORMAL
+  zh: 元数据
 - en: Example
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例
 - en: '[PRE5]'
+  id: totrans-55
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: '[PRE6]'
+  id: totrans-56
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: '[PRE7]'
+  id: totrans-57
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: Note
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: save_state_dict uses collectives to coordinate writes across ranks. For NCCL-based
     process groups, internal tensor representations of objects must be moved to the
     GPU device before communication takes place. In this case, the device used is
     given by `torch.cuda.current_device()` and it is the user’s responsibility to
     ensure that this is set so that each rank has an individual GPU, via `torch.cuda.set_device()`.
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: save_state_dict使用集合来协调跨等级的写入。对于基于NCCL的进程组，对象的内部张量表示必须在通信发生之前移动到GPU设备。在这种情况下，使用的设备由`torch.cuda.current_device()`给出，用户有责任确保设置正确，以便每个等级都有独立的GPU，通过`torch.cuda.set_device()`。
 - en: '[PRE8]'
+  id: totrans-60
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: This method is deprecated. Please switch to ‘load’.
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: 此方法已弃用。请切换到“load”。
 - en: '[PRE9]'
+  id: totrans-62
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: This method is deprecated. Please switch to ‘save’.
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: 此方法已弃用。请切换到“save”。
 - en: Return type
+  id: totrans-64
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '*Metadata*'
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: '*元数据*'
 - en: 'In addition to the above entrypoints, Stateful objects, as described below,
     provide additional customization during saving/loading .. automodule:: torch.distributed.checkpoint.stateful'
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: '除了上述入口点外，如下所述的Stateful对象在保存/加载期间提供额外的定制化.. automodule:: torch.distributed.checkpoint.stateful'
 - en: '[PRE10]'
+  id: totrans-67
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: Stateful protocol for objects that can be checkpointed and restored.
+  id: totrans-68
   prefs: []
   type: TYPE_NORMAL
+  zh: 可以进行检查点和恢复的具有状态的对象的Stateful协议。
 - en: '[PRE11]'
+  id: totrans-69
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: Restore the object’s state from the provided state_dict.
+  id: totrans-70
   prefs: []
   type: TYPE_NORMAL
+  zh: 从提供的state_dict中恢复对象的状态。
 - en: Parameters
+  id: totrans-71
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**state_dict** ([*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
     "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)")*,* [*Any*](https://docs.python.org/3/library/typing.html#typing.Any
     "(in Python v3.12)")*]*) – The state dict to restore from'
+  id: totrans-72
   prefs: []
   type: TYPE_NORMAL
+  zh: '**state_dict**（[*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(在Python v3.12中)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(在Python v3.12中)")*,* [*Any*](https://docs.python.org/3/library/typing.html#typing.Any
+    "(在Python v3.12中)")*]*) - 要从中恢复的状态字典'
 - en: '[PRE12]'
+  id: totrans-73
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: Objects should return their state_dict representation as a dictionary. The output
     of this function will be checkpointed, and later restored in load_state_dict().
+  id: totrans-74
   prefs: []
   type: TYPE_NORMAL
+  zh: 对象应该将它们的state_dict表示作为字典返回。此函数的输出将被检查点，并稍后在load_state_dict()中恢复。
 - en: Warning
+  id: totrans-75
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: Because of the inplace nature of restoring a checkpoint, this function is also
     called during torch.distributed.checkpoint.load.
+  id: totrans-76
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于恢复检查点的就地性质，此函数在torch.distributed.checkpoint.load期间也被调用。
 - en: Returns
+  id: totrans-77
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回
 - en: The objects state dict
+  id: totrans-78
   prefs: []
   type: TYPE_NORMAL
+  zh: 对象状态字典
 - en: Return type
+  id: totrans-79
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: Dict
+  id: totrans-80
   prefs: []
   type: TYPE_NORMAL
+  zh: 字典
 - en: This [example](https://github.com/pytorch/pytorch/blob/main/torch/distributed/checkpoint/examples/fsdp_checkpoint_example.py)
     shows how to use Pytorch Distributed Checkpoint to save a FSDP model.
+  id: totrans-81
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个[示例](https://github.com/pytorch/pytorch/blob/main/torch/distributed/checkpoint/examples/fsdp_checkpoint_example.py)展示了如何使用Pytorch分布式检查点保存FSDP模型。
 - en: 'The following types define the IO interface used during checkpoint:'
+  id: totrans-82
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下类型定义了检查点期间使用的IO接口：
 - en: '[PRE13]'
+  id: totrans-83
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: Interface used by `load_state_dict` to read from storage.
+  id: totrans-84
   prefs: []
   type: TYPE_NORMAL
+  zh: '`load_state_dict`用于从存储中读取的接口。'
 - en: One StorageReader instance acts as both the coordinator and the follower in
     a distributed checkpoint. As part of initialization, each instance is told its
     role.
+  id: totrans-85
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个StorageReader实例在分布式检查点中同时充当协调员和跟随者。作为初始化的一部分，告知每个实例其角色。
 - en: 'A subclass should expected the following sequence of calls by `load_state_dict`:'
+  id: totrans-86
   prefs: []
   type: TYPE_NORMAL
+  zh: 子类应该期望`load_state_dict`按以下顺序调用：
 - en: (all ranks) read_metadata()
+  id: totrans-87
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: （所有等级）read_metadata()
 - en: (all ranks) set_up_storage_reader()
+  id: totrans-88
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: （所有等级）set_up_storage_reader()
 - en: (all ranks) prepare_local_plan()
+  id: totrans-89
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: （所有等级）prepare_local_plan()
 - en: (coordinator) prepare_global_plan()
+  id: totrans-90
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: （协调员）prepare_global_plan()
 - en: (all ranks) read_data()
+  id: totrans-91
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: （所有等级）read_data()
 - en: '[PRE14]'
+  id: totrans-92
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: Perform centralized planning of storage loading.
+  id: totrans-93
   prefs: []
   type: TYPE_NORMAL
+  zh: 执行存储加载的集中规划。
 - en: This method is only called on the coordinator instance.
+  id: totrans-94
   prefs: []
   type: TYPE_NORMAL
+  zh: 此方法仅在协调员实例上调用。
 - en: While this method can produce a completely different plan, the preferred way
     is to store storage specific data in LoadPlan::storage_data.
+  id: totrans-95
   prefs: []
   type: TYPE_NORMAL
+  zh: 虽然此方法可以生成完全不同的计划，但推荐的方法是将特定于存储的数据存储在LoadPlan::storage_data中。
 - en: Parameters
+  id: totrans-96
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**plans** ([*List*](https://docs.python.org/3/library/typing.html#typing.List
     "(in Python v3.12)")*[*[*LoadPlan*](#torch.distributed.checkpoint.LoadPlan "torch.distributed.checkpoint.planner.LoadPlan")*]*)
     – A list of `LoadPlan` instances, one for each rank.'
+  id: totrans-97
   prefs: []
   type: TYPE_NORMAL
+  zh: '**plans**（[*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(在Python v3.12中)")*[*[*LoadPlan*](#torch.distributed.checkpoint.LoadPlan "torch.distributed.checkpoint.planner.LoadPlan")*]*)
+    - 每个等级一个`LoadPlan`实例的列表。'
 - en: Returns
+  id: totrans-98
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回
 - en: A list of transformed `LoadPlan` after storage global planning
+  id: totrans-99
   prefs: []
   type: TYPE_NORMAL
+  zh: 存储全局规划后的转换后的`LoadPlan`列表
 - en: Return type
+  id: totrans-100
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*List*](https://docs.python.org/3/library/typing.html#typing.List "(in Python
     v3.12)")[[*LoadPlan*](#torch.distributed.checkpoint.LoadPlan "torch.distributed.checkpoint.planner.LoadPlan")]'
+  id: totrans-101
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*List*](https://docs.python.org/3/library/typing.html#typing.List "(在Python
+    v3.12中)")[[*LoadPlan*](#torch.distributed.checkpoint.LoadPlan "torch.distributed.checkpoint.planner.LoadPlan")]'
 - en: '[PRE15]'
+  id: totrans-102
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: Perform storage-specific local planning.
+  id: totrans-103
   prefs: []
   type: TYPE_NORMAL
+  zh: 执行特定于存储的本地规划。
 - en: While this method can produce a completely different plan, the recommended way
     is to store storage specific data in LoadPlan::storage_data.
+  id: totrans-104
   prefs: []
   type: TYPE_NORMAL
+  zh: 虽然此方法可以生成完全不同的计划，但推荐的方法是将特定于存储的数据存储在LoadPlan::storage_data中。
 - en: Parameters
+  id: totrans-105
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**plan** ([*LoadPlan*](#torch.distributed.checkpoint.LoadPlan "torch.distributed.checkpoint.LoadPlan"))
     – The local plan from the `LoadPlan` in use.'
+  id: totrans-106
   prefs: []
   type: TYPE_NORMAL
+  zh: '**plan**（[*LoadPlan*](#torch.distributed.checkpoint.LoadPlan "torch.distributed.checkpoint.LoadPlan")）
+    - 使用中的`LoadPlan`的本地计划。'
 - en: Returns
+  id: totrans-107
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回
 - en: A transformed `LoadPlan` after storage local planning
+  id: totrans-108
   prefs: []
   type: TYPE_NORMAL
+  zh: 存储本地规划后的转换后的`LoadPlan`
 - en: Return type
+  id: totrans-109
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*LoadPlan*](#torch.distributed.checkpoint.LoadPlan "torch.distributed.checkpoint.planner.LoadPlan")'
+  id: totrans-110
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*LoadPlan*](#torch.distributed.checkpoint.LoadPlan "torch.distributed.checkpoint.planner.LoadPlan")'
 - en: '[PRE16]'
+  id: totrans-111
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: Read all items from `plan` using `planner` to resolve the data.
+  id: totrans-112
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用`planner`从`plan`中读取所有项目以解析数据。
 - en: A subclass should call `LoadPlanner::load_bytes` to deserialize a BytesIO object
     into the right place.
+  id: totrans-113
   prefs: []
   type: TYPE_NORMAL
+  zh: 子类应调用`LoadPlanner::load_bytes`将BytesIO对象反序列化到正确的位置。
 - en: A subclass should call `LoadPlanner::resolve_tensor` to get access to the tensors
     that in should load data into.
+  id: totrans-114
   prefs: []
   type: TYPE_NORMAL
+  zh: 子类应调用`LoadPlanner::resolve_tensor`来访问应加载数据的张量。
 - en: It’s the StorageLayer responsibility to properly schedule any cross device copies
     required.
+  id: totrans-115
   prefs: []
   type: TYPE_NORMAL
+  zh: StorageLayer有责任正确安排所需的任何跨设备复制。
 - en: Parameters
+  id: totrans-116
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**plan** ([*LoadPlan*](#torch.distributed.checkpoint.LoadPlan "torch.distributed.checkpoint.LoadPlan"))
     – The local plan to execute on'
+  id: totrans-117
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**plan**（[*LoadPlan*](#torch.distributed.checkpoint.LoadPlan "torch.distributed.checkpoint.LoadPlan")）
+    - 要执行的本地计划'
 - en: '**planner** ([*LoadPlanner*](#torch.distributed.checkpoint.LoadPlanner "torch.distributed.checkpoint.LoadPlanner"))
     – The planner object to use to resolve items.'
+  id: totrans-118
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**planner**（[*LoadPlanner*](#torch.distributed.checkpoint.LoadPlanner "torch.distributed.checkpoint.LoadPlanner")）
+    - 用于解析项目的计划器对象。'
 - en: Returns
+  id: totrans-119
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回
 - en: A future that completes once all reads are finished.
+  id: totrans-120
   prefs: []
   type: TYPE_NORMAL
+  zh: 一种在所有读取完成后完成的未来。
 - en: Return type
+  id: totrans-121
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*Future*](futures.html#torch.futures.Future "torch.jit.Future")[None]'
+  id: totrans-122
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*Future*](futures.html#torch.futures.Future "torch.jit.Future")[无]'
 - en: '[PRE17]'
+  id: totrans-123
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: Read the checkpoint metadata.
+  id: totrans-124
   prefs: []
   type: TYPE_NORMAL
+  zh: 读取检查点元数据。
 - en: Returns
+  id: totrans-125
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回
 - en: The metadata object associated with the checkpoint being loaded.
+  id: totrans-126
   prefs: []
   type: TYPE_NORMAL
+  zh: 与正在加载的检查点相关联的元数据对象。
 - en: Return type
+  id: totrans-127
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '*Metadata*'
+  id: totrans-128
   prefs: []
   type: TYPE_NORMAL
+  zh: '*元数据*'
 - en: '[PRE18]'
+  id: totrans-129
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: Initialize this instance.
+  id: totrans-130
   prefs: []
   type: TYPE_NORMAL
+  zh: 初始化此实例。
 - en: Parameters
+  id: totrans-131
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**metadata** (*Metadata*) – The metadata schema to use.'
+  id: totrans-132
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**metadata**（*Metadata*） - 要使用的元数据模式。'
 - en: '**is_coordinator** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")) – Whether this instance is responsible for coordinating
     the checkpoint.'
+  id: totrans-133
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**is_coordinator**（[*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(在Python v3.12中)")） - 此实例是否负责协调检查点。'
 - en: '[PRE19]'
+  id: totrans-134
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE19]'
 - en: Interface used by `save_state_dict` to write to storage.
+  id: totrans-135
   prefs: []
   type: TYPE_NORMAL
+  zh: '`save_state_dict`用于写入存储的接口。'
 - en: One StorageWriter instance acts as both the coordinator and the follower in
     a distributed checkpoint. As part of initialization, each instance is told its
     role.
+  id: totrans-136
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个StorageWriter实例在分布式检查点中充当协调器和跟随者。作为初始化的一部分，告知每个实例其角色。
 - en: A subclass should expect the following sequence of calls.
+  id: totrans-137
   prefs: []
   type: TYPE_NORMAL
+  zh: 子类应该期望以下调用序列。
 - en: (all ranks) set_up_storage_writer()
+  id: totrans-138
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: （所有秩）set_up_storage_writer()
 - en: (all ranks) prepare_local_plan()
+  id: totrans-139
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: （所有秩）prepare_local_plan()
 - en: (coordinator) prepare_global_plan()
+  id: totrans-140
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: （协调器）prepare_global_plan()
 - en: (all ranks) write_data()
+  id: totrans-141
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: （所有秩）write_data()
 - en: (coordinator) finish()
+  id: totrans-142
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: （协调器）完成()
 - en: '[PRE20]'
+  id: totrans-143
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE20]'
 - en: Write the metadata and marks the current checkpoint as successful.
+  id: totrans-144
   prefs: []
   type: TYPE_NORMAL
+  zh: 写入元数据并将当前检查点标记为成功。
 - en: The actual format/schema used for serializing metadata is an implementation
     detail. The only requirement is that it’s recoverable in to the same object graph.
+  id: totrans-145
   prefs: []
   type: TYPE_NORMAL
+  zh: 用于序列化元数据的实际格式/模式是实现细节。唯一要求是它可以恢复到相同的对象图中。
 - en: Parameters
+  id: totrans-146
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**metadata** (*Metadata*) – metadata for the new checkpoint'
+  id: totrans-147
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**metadata**（*Metadata*） - 新检查点的元数据'
 - en: '**results** ([*List*](https://docs.python.org/3/library/typing.html#typing.List
     "(in Python v3.12)")*[*[*List*](https://docs.python.org/3/library/typing.html#typing.List
     "(in Python v3.12)")*[**WriteResult**]**]*) – A list of WriteResults from all
     ranks.'
+  id: totrans-148
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**results**（[*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(在Python v3.12中)")*[*[*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(在Python v3.12中)")*[**WriteResult**]**]*) - 所有秩的WriteResults列表。'
 - en: Returns
+  id: totrans-149
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回
 - en: None
+  id: totrans-150
   prefs: []
   type: TYPE_NORMAL
+  zh: 无
 - en: Return type
+  id: totrans-151
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: None
+  id: totrans-152
   prefs: []
   type: TYPE_NORMAL
+  zh: 无
 - en: '[PRE21]'
+  id: totrans-153
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE21]'
 - en: Perform centralized planning of storage.
+  id: totrans-154
   prefs: []
   type: TYPE_NORMAL
+  zh: 执行存储的集中规划。
 - en: This method is only called on the coordinator instance.
+  id: totrans-155
   prefs: []
   type: TYPE_NORMAL
+  zh: 此方法仅在协调器实例上调用。
 - en: While this method can produce a completely different plan, the preferred way
     is to store storage specific data in SavePlan::storage_data.
+  id: totrans-156
   prefs: []
   type: TYPE_NORMAL
+  zh: 虽然此方法可以生成完全不同的计划，但首选方法是将特定于存储的数据存储在SavePlan::storage_data中。
 - en: Parameters
+  id: totrans-157
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**plans** ([*List*](https://docs.python.org/3/library/typing.html#typing.List
     "(in Python v3.12)")*[*[*SavePlan*](#torch.distributed.checkpoint.SavePlan "torch.distributed.checkpoint.planner.SavePlan")*]*)
     – A list of `SavePlan` instances, one for each rank.'
+  id: totrans-158
   prefs: []
   type: TYPE_NORMAL
+  zh: '**plans**（[*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(在Python v3.12中)")*[*[*SavePlan*](#torch.distributed.checkpoint.SavePlan "torch.distributed.checkpoint.planner.SavePlan")*]*)
+    - `SavePlan`实例列表，每个秩一个。'
 - en: Returns
+  id: totrans-159
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回
 - en: A list of transformed `SavePlan` after storage global planning
+  id: totrans-160
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个经过转换的`SavePlan`列表，存储全局规划后
 - en: Return type
+  id: totrans-161
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*List*](https://docs.python.org/3/library/typing.html#typing.List "(in Python
     v3.12)")[[*SavePlan*](#torch.distributed.checkpoint.SavePlan "torch.distributed.checkpoint.planner.SavePlan")]'
+  id: totrans-162
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*List*](https://docs.python.org/3/library/typing.html#typing.List "(在Python
+    v3.12中)")[[*SavePlan*](#torch.distributed.checkpoint.SavePlan "torch.distributed.checkpoint.planner.SavePlan")]'
 - en: '[PRE22]'
+  id: totrans-163
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE22]'
 - en: Perform storage-specific local planning.
+  id: totrans-164
   prefs: []
   type: TYPE_NORMAL
+  zh: 执行特定于存储的本地规划。
 - en: While this method can produce a completely different plan, the recommended way
     is to store storage specific data in SavePlan::storage_data.
+  id: totrans-165
   prefs: []
   type: TYPE_NORMAL
+  zh: 虽然此方法可以生成完全不同的计划，但推荐的方法是将特定于存储的数据存储在SavePlan::storage_data中。
 - en: Parameters
+  id: totrans-166
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**plan** ([*SavePlan*](#torch.distributed.checkpoint.SavePlan "torch.distributed.checkpoint.SavePlan"))
     – The local plan from the `SavePlanner` in use.'
+  id: totrans-167
   prefs: []
   type: TYPE_NORMAL
+  zh: '**plan**（[*SavePlan*](#torch.distributed.checkpoint.SavePlan "torch.distributed.checkpoint.SavePlan")）
+    - 使用中的`SavePlanner`中的本地计划。'
 - en: Returns
+  id: totrans-168
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回
 - en: A transformed `SavePlan` after storage local planning
+  id: totrans-169
   prefs: []
   type: TYPE_NORMAL
+  zh: 存储本地规划后的转换的`SavePlan`
 - en: Return type
+  id: totrans-170
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*SavePlan*](#torch.distributed.checkpoint.SavePlan "torch.distributed.checkpoint.planner.SavePlan")'
+  id: totrans-171
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*SavePlan*](#torch.distributed.checkpoint.SavePlan "torch.distributed.checkpoint.planner.SavePlan")'
 - en: '[PRE23]'
+  id: totrans-172
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE23]'
 - en: Initialize this instance.
+  id: totrans-173
   prefs: []
   type: TYPE_NORMAL
+  zh: 初始化此实例。
 - en: Parameters
+  id: totrans-174
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**is_coordinator** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")) – Whether this instance is responsible for coordinating
     the checkpoint.'
+  id: totrans-175
   prefs: []
   type: TYPE_NORMAL
+  zh: '**is_coordinator**（[*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(在Python v3.12中)")） - 此实例是否负责协调检查点。'
 - en: '[PRE24]'
+  id: totrans-176
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE24]'
 - en: Write all items from `plan` using `planner` to resolve the data.
+  id: totrans-177
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用`planner`解析数据，从`plan`中写入所有项目。
 - en: A subclass should call `SavePlanner::resolve_data` on each item from the plan
     to get access to the underlying object to write.
+  id: totrans-178
   prefs: []
   type: TYPE_NORMAL
+  zh: 子类应该对计划中的每个项目调用`SavePlanner::resolve_data`以获得写入底层对象的访问权限。
 - en: 'Subclasses should lazily call resolve_data as it can allocate memory. In case
     of tensors, make following assumptions:'
+  id: totrans-179
   prefs: []
   type: TYPE_NORMAL
+  zh: 子类应该懒惰地调用resolve_data，因为它可能会分配内存。对于张量，做出以下假设：
 - en: They might be on any device, including not matching the one on `WriteItem::tensor_data`
+  id: totrans-180
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 它们可能位于任何设备上，包括与`WriteItem::tensor_data`不匹配的设备
 - en: They might be views or not contiguous. Only the projection needs to be saved.
+  id: totrans-181
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 它们可能是视图，也可能不是连续的。只需要保存投影。
 - en: Parameters
+  id: totrans-182
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**plan** ([*SavePlan*](#torch.distributed.checkpoint.SavePlan "torch.distributed.checkpoint.SavePlan"))
     – The save plan to execute.'
+  id: totrans-183
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**plan** ([*SavePlan*](#torch.distributed.checkpoint.SavePlan "torch.distributed.checkpoint.SavePlan"))
+    – 要执行的保存计划。'
 - en: '**planner** ([*SavePlanner*](#torch.distributed.checkpoint.SavePlanner "torch.distributed.checkpoint.SavePlanner"))
     – Planner object to be used to resolve items to data.'
+  id: totrans-184
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**planner** ([*SavePlanner*](#torch.distributed.checkpoint.SavePlanner "torch.distributed.checkpoint.SavePlanner"))
+    – 用于将项目解析为数据的规划器对象。'
 - en: Returns
+  id: totrans-185
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回
 - en: A future that completes to a list of WriteResult
+  id: totrans-186
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个将完成为WriteResult列表的未来
 - en: Return type
+  id: totrans-187
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*Future*](futures.html#torch.futures.Future "torch.jit.Future")[[*List*](https://docs.python.org/3/library/typing.html#typing.List
     "(in Python v3.12)")[*WriteResult*]]'
+  id: totrans-188
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*Future*](futures.html#torch.futures.Future "torch.jit.Future")[[*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(在Python v3.12中)")[*WriteResult*]]'
 - en: 'The following types define the planner interface used during checkpoint:'
+  id: totrans-189
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下类型定义了检查点期间使用的规划器接口：
 - en: '[PRE25]'
+  id: totrans-190
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE25]'
 - en: Abstract class defining the protocol used by load_state_dict to plan the load
     process.
+  id: totrans-191
   prefs: []
   type: TYPE_NORMAL
+  zh: 定义load_state_dict用于规划加载过程的协议的抽象类。
 - en: LoadPlanner are stateful objects that can be used to customize the whole load
     process.
+  id: totrans-192
   prefs: []
   type: TYPE_NORMAL
+  zh: LoadPlanner是可以用于自定义整个加载过程的有状态对象。
 - en: LoadPlanner acts as an access proxy to the state_dict, so any transformation
     done to it will be visible to the whole process.
+  id: totrans-193
   prefs: []
   type: TYPE_NORMAL
+  zh: LoadPlanner充当对state_dict的访问代理，因此对其进行的任何转换都将对整个过程可见。
 - en: 'A planner subclass can expect the following sequence of calls during load_state_dict:'
+  id: totrans-194
   prefs: []
   type: TYPE_NORMAL
+  zh: 在load_state_dict期间，规划器子类可以期望以下调用序列：
 - en: set_up_planner - called on all ranks.
+  id: totrans-195
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: set_up_planner - 在所有等级上调用。
 - en: Signals the start of loading a checkpoint.
+  id: totrans-196
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 标志着加载检查点的开始。
 - en: create_local_plan - called on all ranks.
+  id: totrans-197
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: create_local_plan - 在所有等级上调用。
 - en: Process the state_dict and produces a LoadPlan that will be sent for global
     planning.
+  id: totrans-198
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 处理state_dict并生成将发送到全局规划的LoadPlan。
 - en: create_global_plan - called on the coordinator rank only.
+  id: totrans-199
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: create_global_plan - 仅在协调等级上调用。
 - en: Takes the LoadPlan from all ranks and make any global decision.
+  id: totrans-200
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 获取所有等级的LoadPlan并做出任何全局决策。
 - en: load_bytes - called multiple times on each rank
+  id: totrans-201
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: load_bytes - 在每个等级上多次调用
 - en: This is called once per non-tensor value in state_dict.
+  id: totrans-202
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 对于state_dict中的每个非张量值，调用一次。
 - en: resolve_tensor and commit_tensor - called multiple times on each rank
+  id: totrans-203
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: resolve_tensor和commit_tensor - 在每个等级上多次调用
 - en: They are called in pair for each Tensor value in state_dict.
+  id: totrans-204
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 它们为state_dict中的每个张量值成对调用。
 - en: Users are recommended to extend DefaultLoadPlanner instead of this interface
     directly as most changes can be expressed by changes in a single method.
+  id: totrans-205
   prefs: []
   type: TYPE_NORMAL
+  zh: 建议用户扩展DefaultLoadPlanner而不是直接扩展此接口，因为大多数更改可以通过更改单个方法来表达。
 - en: 'There are two usual patterns of extension:'
+  id: totrans-206
   prefs: []
   type: TYPE_NORMAL
+  zh: 有两种常见的扩展模式：
 - en: Rewriting state_dict. This is the simplest way to extend the load process as
     it doesn’t requite understanding the intrincacies of how LoadPlan works. We need
     to keep a reference to the original state_dict as load happens in place so we
     need to be able to perform it in place
+  id: totrans-207
   prefs: []
   type: TYPE_NORMAL
+  zh: 重写state_dict。这是扩展加载过程的最简单方法，因为它不需要理解LoadPlan的工作原理。由于加载是就地进行的，因此我们需要保留对原始state_dict的引用，因此我们需要能够就地执行它
 - en: '[PRE26]'
+  id: totrans-208
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE26]'
 - en: Modifying resolve_tensor and commit_tensor to handle load time transformation.
+  id: totrans-209
   prefs: []
   type: TYPE_NORMAL
+  zh: 修改resolve_tensor和commit_tensor以处理加载时的转换。
 - en: '[PRE27]'
+  id: totrans-210
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE27]'
 - en: '[PRE28]'
+  id: totrans-211
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE28]'
 - en: Call once the StorageReader finished loading data into `tensor`.
+  id: totrans-212
   prefs: []
   type: TYPE_NORMAL
+  zh: 在StorageReader完成将数据加载到`tensor`后调用一次。
 - en: The provided tensor is the same one returned by the call to `resolve_tensor`.
     This method is only needed if this LoadPlanner needs to post process `tensor`
     prior to copying it back to the one in the state_dict.
+  id: totrans-213
   prefs: []
   type: TYPE_NORMAL
+  zh: 提供的张量与调用`resolve_tensor`返回的相同。如果此LoadPlanner需要在将`tensor`复制回state_dict中的张量之前对其进行后处理，则只需要此方法。
 - en: The contents of tensor will follow its device synchronization model.
+  id: totrans-214
   prefs: []
   type: TYPE_NORMAL
+  zh: 张量的内容将遵循其设备同步模型。
 - en: '[PRE29]'
+  id: totrans-215
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE29]'
 - en: Compute the global load plan and return plans for each rank.
+  id: totrans-216
   prefs: []
   type: TYPE_NORMAL
+  zh: 计算全局加载计划并返回每个等级的计划。
 - en: . N.B. This is called on the coordinator rank only
+  id: totrans-217
   prefs: []
   type: TYPE_NORMAL
+  zh: 。注意：仅在协调等级上调用
 - en: Return type
+  id: totrans-218
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*List*](https://docs.python.org/3/library/typing.html#typing.List "(in Python
     v3.12)")[[*LoadPlan*](#torch.distributed.checkpoint.LoadPlan "torch.distributed.checkpoint.planner.LoadPlan")]'
+  id: totrans-219
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*List*](https://docs.python.org/3/library/typing.html#typing.List "(在Python
+    v3.12中)")[[*LoadPlan*](#torch.distributed.checkpoint.LoadPlan "torch.distributed.checkpoint.planner.LoadPlan")]'
 - en: '[PRE30]'
+  id: totrans-220
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE30]'
 - en: Create a LoadPlan based on state_dict and metadata provided by set_up_planner.
+  id: totrans-221
   prefs: []
   type: TYPE_NORMAL
+  zh: 根据set_up_planner提供的state_dict和元数据创建一个LoadPlan。
 - en: . N.B. This is called on every rank.
+  id: totrans-222
   prefs: []
   type: TYPE_NORMAL
+  zh: 。注意：在每个等级上调用。
 - en: Return type
+  id: totrans-223
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*LoadPlan*](#torch.distributed.checkpoint.LoadPlan "torch.distributed.checkpoint.planner.LoadPlan")'
+  id: totrans-224
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*LoadPlan*](#torch.distributed.checkpoint.LoadPlan "torch.distributed.checkpoint.planner.LoadPlan")'
 - en: '[PRE31]'
+  id: totrans-225
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE31]'
 - en: Accept the plan from coordinator and return final LoadPlan.
+  id: totrans-226
   prefs: []
   type: TYPE_NORMAL
+  zh: 接受来自协调员的计划并返回最终的LoadPlan。
 - en: Return type
+  id: totrans-227
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*LoadPlan*](#torch.distributed.checkpoint.LoadPlan "torch.distributed.checkpoint.planner.LoadPlan")'
+  id: totrans-228
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*LoadPlan*](#torch.distributed.checkpoint.LoadPlan "torch.distributed.checkpoint.planner.LoadPlan")'
 - en: '[PRE32]'
+  id: totrans-229
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE32]'
 - en: Load the item described by `read_item``and ``value`.
+  id: totrans-230
   prefs: []
   type: TYPE_NORMAL
+  zh: 加载由`read_item``和``value`描述的项目。
 - en: This method is expected to modify in-place the underlying state_dict.
+  id: totrans-231
   prefs: []
   type: TYPE_NORMAL
+  zh: 这种方法预计会就地修改底层的state_dict。
 - en: The contents of `value` are defined by the SavePlanner used to produce the checkpoint
     being loaded.
+  id: totrans-232
   prefs: []
   type: TYPE_NORMAL
+  zh: '`value`的内容由用于生成正在加载的检查点的SavePlanner定义。'
 - en: '[PRE33]'
+  id: totrans-233
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE33]'
 - en: Return the tensor described by `read_item` to be used by the StorageReader to
     load read_item.
+  id: totrans-234
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回由`read_item`描述的张量，以供StorageReader加载read_item使用。
 - en: The tensor should alias with one on the underlying state_dict as StorageReader
     will replace its contents. If, for any reason, that’s not possible, the planner
     can use the `commit_tensor` method to copy the data back to the one in state_dict.
+  id: totrans-235
   prefs: []
   type: TYPE_NORMAL
+  zh: 张量应该与底层state_dict上的张量别名，因为StorageReader将替换其内容。如果由于任何原因这不可能，规划器可以使用`commit_tensor`方法将数据复制回state_dict中的数据。
 - en: Return type
+  id: totrans-236
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*Tensor*](tensors.html#torch.Tensor "torch.Tensor")'
+  id: totrans-237
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*Tensor*](tensors.html#torch.Tensor "torch.Tensor")'
 - en: '[PRE34]'
+  id: totrans-238
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE34]'
 - en: Initialize this instance to load data into `state_dict`.
+  id: totrans-239
   prefs: []
   type: TYPE_NORMAL
+  zh: 初始化此实例以将数据加载到`state_dict`中。
 - en: . N.B. This is called on every rank.
+  id: totrans-240
   prefs: []
   type: TYPE_NORMAL
+  zh: . 注意。这在每个等级上都会被调用。
 - en: '[PRE35]'
+  id: totrans-241
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE35]'
 - en: '[PRE36]'
+  id: totrans-242
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE36]'
 - en: '[PRE37]'
+  id: totrans-243
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE37]'
 - en: Abstract class defining the protocol used by save_state_dict to plan the save
     process.
+  id: totrans-244
   prefs: []
   type: TYPE_NORMAL
+  zh: 定义由save_state_dict用于规划保存过程的协议的抽象类。
 - en: SavePlanners are stateful objects that can be used to customize the whole save
     process.
+  id: totrans-245
   prefs: []
   type: TYPE_NORMAL
+  zh: SavePlanners是可以用来自定义整个保存过程的有状态对象。
 - en: SavePlanner acts as an access proxy to the state_dict, so any transformation
     done to it will be visible to the whole process.
+  id: totrans-246
   prefs: []
   type: TYPE_NORMAL
+  zh: SavePlanner充当对state_dict的访问代理，因此对其进行的任何转换都将对整个过程可见。
 - en: 'A planner subclass can expect the following sequence of calls during save_state_dict:'
+  id: totrans-247
   prefs: []
   type: TYPE_NORMAL
+  zh: 在保存状态字典期间，规划器子类可以期望以下调用序列：
 - en: set_up_planner - called on all ranks.
+  id: totrans-248
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: set_up_planner - 在所有等级上调用。
 - en: Signals the start of a checkpoint save.
+  id: totrans-249
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 标志着检查点保存的开始。
 - en: create_local_plan - called on all ranks.
+  id: totrans-250
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: create_local_plan - 在所有等级上调用。
 - en: Process the state_dict and produces a SavePlan that will be sent for global
     planning.
+  id: totrans-251
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 处理state_dict并生成一个将发送给全局规划的SavePlan。
 - en: create_global_plan - called on the coordinator rank only.
+  id: totrans-252
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: create_global_plan - 仅在协调员等级上调用。
 - en: Takes the SavePlan from all ranks and make any global decision.
+  id: totrans-253
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 获取所有等级的SavePlan并做出任何全局决定。
 - en: finish_plan - called on all ranks.
+  id: totrans-254
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: finish_plan - 在所有等级上调用。
 - en: This gives each rank a chance to adjust to global planning decisions.
+  id: totrans-255
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 这使每个等级有机会调整到全局规划决策。
 - en: resolve_data - called multiple times on each rank
+  id: totrans-256
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: resolve_data - 在每个等级上多次调用
 - en: Lookups a value on the state_dict for the storage layer to write.
+  id: totrans-257
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 在state_dict上查找存储层要写入的值。
 - en: Users are recommended to extend DefaultSavePlanner instead of this interface
     directly as most changes can be expressed by changes in a single method.
+  id: totrans-258
   prefs: []
   type: TYPE_NORMAL
+  zh: 建议用户扩展DefaultSavePlanner而不是直接扩展此接口，因为大多数更改可以通过单个方法的更改来表达。
 - en: 'There are 3 usual patterns of extension:'
+  id: totrans-259
   prefs: []
   type: TYPE_NORMAL
+  zh: 有3种常见的扩展模式：
 - en: 'Rewriting state_dict. This is the simplest way to extend the save process as
     it doesn’t requite understanding the intrincacies of how SavePlan works:'
+  id: totrans-260
   prefs: []
   type: TYPE_NORMAL
+  zh: 重写state_dict。这是扩展保存过程的最简单方法，因为它不需要理解SavePlan的工作原理的复杂性：
 - en: '[PRE38]'
+  id: totrans-261
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE38]'
 - en: Modifying local plan and lookup in tandem. This is useful when fine control
     of how data is persisted
+  id: totrans-262
   prefs: []
   type: TYPE_NORMAL
+  zh: 修改本地计划并同时查找。当需要对数据持久化的方式进行精细控制时，这是有用的。
 - en: '[PRE39]'
+  id: totrans-263
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE39]'
 - en: Using the global planning step to make central decisions that can’t be made
     individually by each rank
+  id: totrans-264
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用全局规划步骤做出中央决策，这些决策无法由每个等级单独做出
 - en: '[PRE40]'
+  id: totrans-265
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE40]'
 - en: 'Finally, some planners need to save additional metadata in the checkpoint,
     this is accomplished by having each rank contribute their data items in the local
     plan and the global planner aggregate them:'
+  id: totrans-266
   prefs: []
   type: TYPE_NORMAL
+  zh: 最后，一些规划器需要在检查点中保存附加元数据，这是通过让每个等级在本地计划中贡献其数据项并让全局规划器聚合它们来实现的：
 - en: '[PRE41]'
+  id: totrans-267
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE41]'
 - en: '[PRE42]'
+  id: totrans-268
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE42]'
 - en: Compute the global checkpoint plan and return the local plan of each rank.
+  id: totrans-269
   prefs: []
   type: TYPE_NORMAL
+  zh: 计算全局检查点计划并返回每个等级的本地计划。
 - en: This is called on the coordinator rank only.
+  id: totrans-270
   prefs: []
   type: TYPE_NORMAL
+  zh: 这仅在协调员等级上调用。
 - en: Return type
+  id: totrans-271
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple "(in Python
     v3.12)")[[*List*](https://docs.python.org/3/library/typing.html#typing.List "(in
     Python v3.12)")[[*SavePlan*](#torch.distributed.checkpoint.SavePlan "torch.distributed.checkpoint.planner.SavePlan")],
     *Metadata*]'
+  id: totrans-272
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple "(in Python
+    v3.12)")[[*List*](https://docs.python.org/3/library/typing.html#typing.List "(in
+    Python v3.12)")[[*SavePlan*](#torch.distributed.checkpoint.SavePlan "torch.distributed.checkpoint.planner.SavePlan")],
+    *Metadata*]'
 - en: '[PRE43]'
+  id: totrans-273
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE43]'
 - en: Compute the save plan for the current rank.
+  id: totrans-274
   prefs: []
   type: TYPE_NORMAL
+  zh: 计算当前等级的保存计划。
 - en: This will be aggregated and passed to create_global_plan. Planner specific data
     can be passed through SavePlan::planner_data.
+  id: totrans-275
   prefs: []
   type: TYPE_NORMAL
+  zh: 这将被聚合并传递给create_global_plan。规划器特定的数据可以通过SavePlan::planner_data传递。
 - en: This is called on all ranks.
+  id: totrans-276
   prefs: []
   type: TYPE_NORMAL
+  zh: 这在所有等级上都会被调用。
 - en: Return type
+  id: totrans-277
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*SavePlan*](#torch.distributed.checkpoint.SavePlan "torch.distributed.checkpoint.planner.SavePlan")'
+  id: totrans-278
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*SavePlan*](#torch.distributed.checkpoint.SavePlan "torch.distributed.checkpoint.planner.SavePlan")'
 - en: '[PRE44]'
+  id: totrans-279
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE44]'
 - en: Merge the plan created by create_local_plan and the result of create_global_plan.
+  id: totrans-280
   prefs: []
   type: TYPE_NORMAL
+  zh: 合并由create_local_plan创建的计划和create_global_plan的结果。
 - en: This is called on all ranks.
+  id: totrans-281
   prefs: []
   type: TYPE_NORMAL
+  zh: 这在所有等级上都会被调用。
 - en: Return type
+  id: totrans-282
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*SavePlan*](#torch.distributed.checkpoint.SavePlan "torch.distributed.checkpoint.planner.SavePlan")'
+  id: totrans-283
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*SavePlan*](#torch.distributed.checkpoint.SavePlan "torch.distributed.checkpoint.planner.SavePlan")'
 - en: '[PRE45]'
+  id: totrans-284
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE45]'
 - en: Transform and prepare `write_item` from `state_dict` for storage, ensuring idempotency
     and thread-safety.
+  id: totrans-285
   prefs: []
   type: TYPE_NORMAL
+  zh: 转换和准备`state_dict`中的`write_item`以供存储，确保幂等性和线程安全。
 - en: Lookup the object associated with `write_item` in `state_dict` and apply any
     transformation (such as serialization) prior to the storage layer consuming it.
+  id: totrans-286
   prefs: []
   type: TYPE_NORMAL
+  zh: 查找与`write_item`在`state_dict`中关联的对象，并在存储层消耗之前应用任何转换（如序列化）。
 - en: Called on each rank multiple times, at least once per WriteItem in the final
     SavePlan.
+  id: totrans-287
   prefs: []
   type: TYPE_NORMAL
+  zh: 在最终SavePlan中的每个WriteItem中，每个等级多次调用，至少一次。
 - en: This method should be idempotent and thread-save. StorageWriter implementations
     are free to call it as frequently as they need.
+  id: totrans-288
   prefs: []
   type: TYPE_NORMAL
+  zh: 此方法应该是幂等的和线程安全的。StorageWriter实现可以根据需要频繁调用它。
 - en: Any transformation that allocates memory should be lazily done when his method
     is called in order to reduce peak memory required by checkpointing.
+  id: totrans-289
   prefs: []
   type: TYPE_NORMAL
+  zh: 任何分配内存的转换都应该在调用此方法时懒惰地完成，以减少检查点所需的峰值内存。
 - en: When returning tensors, they can be on any device or format, they can be views
     too. It’s the storage layer responsibility to figure out how to save them.
+  id: totrans-290
   prefs: []
   type: TYPE_NORMAL
+  zh: 在返回张量时，它们可以在任何设备或格式上，它们也可以是视图。存储层负责找出如何保存它们。
 - en: Return type
+  id: totrans-291
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*Union*](https://docs.python.org/3/library/typing.html#typing.Union "(in Python
     v3.12)")[[*Tensor*](tensors.html#torch.Tensor "torch.Tensor"), *BytesIO*]'
+  id: totrans-292
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*Union*](https://docs.python.org/3/library/typing.html#typing.Union "(in Python
+    v3.12)")[[*Tensor*](tensors.html#torch.Tensor "torch.Tensor"), *BytesIO*]'
 - en: '[PRE46]'
+  id: totrans-293
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE46]'
 - en: Initialize this planner to save `state_dict`.
+  id: totrans-294
   prefs: []
   type: TYPE_NORMAL
+  zh: 初始化此规划者以保存 `state_dict`。
 - en: Implementations should save those values as they won’t be provided lated in
     the save process.
+  id: totrans-295
   prefs: []
   type: TYPE_NORMAL
+  zh: 实现应该保存这些值，因为它们在保存过程中不会提供。
 - en: This is called on all ranks.
+  id: totrans-296
   prefs: []
   type: TYPE_NORMAL
+  zh: 这在所有秩上都被调用。
 - en: '[PRE47]'
+  id: totrans-297
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE47]'
 - en: '[PRE48]'
+  id: totrans-298
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE48]'
 - en: 'We provide a filesystem based storage layer:'
+  id: totrans-299
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们提供了基于文件系统的存储层：
 - en: '[PRE49]'
+  id: totrans-300
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE49]'
 - en: '[PRE50]'
+  id: totrans-301
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE50]'
 - en: Basic implementation of StorageWriter using file IO.
+  id: totrans-302
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用文件 IO 的 StorageWriter 的基本实现。
 - en: 'This implementation makes the following assumptions and simplifications:'
+  id: totrans-303
   prefs: []
   type: TYPE_NORMAL
+  zh: 此实现做出以下假设和简化：
 - en: The checkpoint path is an empty or non-existing directory.
+  id: totrans-304
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 检查点路径是一个空的或不存在的目录。
 - en: File creation is atomic
+  id: totrans-305
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 文件创建是原子的
 - en: The checkpoint consist of one file per write request plus a .metadata file with
     the serialized metadata.
+  id: totrans-306
   prefs: []
   type: TYPE_NORMAL
+  zh: 检查点由每个写入请求一个文件以及一个包含序列化元数据的 .metadata 文件组成。
 - en: We provide default implementations of LoadPlanner and SavePlanner that can handle
     all of torch.distributed constructs such as FSDP, DDP, ShardedTensor and DistributedTensor.
+  id: totrans-307
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们提供了默认的 LoadPlanner 和 SavePlanner 实现，可以处理所有 torch.distributed 构造，如 FSDP、DDP、ShardedTensor
+    和 DistributedTensor。
 - en: '[PRE51]'
+  id: totrans-308
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE51]'
 - en: '[PRE52]'
+  id: totrans-309
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE52]'
 - en: Extension from the planner interface to make it easy to extend the default planner.
+  id: totrans-310
   prefs: []
   type: TYPE_NORMAL
+  zh: 从规划者接口扩展以便于扩展默认规划者。
 - en: Return type
+  id: totrans-311
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*Any*](https://docs.python.org/3/library/typing.html#typing.Any "(in Python
     v3.12)")'
+  id: totrans-312
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*Any*](https://docs.python.org/3/library/typing.html#typing.Any "(in Python
+    v3.12)")'
 - en: '[PRE53]'
+  id: totrans-313
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE53]'
 - en: Extension from the planner interface to make it easy to extend the default planner.
+  id: totrans-314
   prefs: []
   type: TYPE_NORMAL
+  zh: 从规划者接口扩展以便于扩展默认规划者。
 - en: '[PRE54]'
+  id: totrans-315
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE54]'
 - en: DefaultLoadPlanner that adds multiple features on top of LoadPlanner.
+  id: totrans-316
   prefs: []
   type: TYPE_NORMAL
+  zh: DefaultLoadPlanner 在 LoadPlanner 的基础上添加了多个功能。
 - en: 'In particular it adds the following:'
+  id: totrans-317
   prefs: []
   type: TYPE_NORMAL
+  zh: 特别是它添加了以下内容：
 - en: 'flatten_state_dict: Handle state_dict with nested dicts flatten_sharded_tensors:
     For FSDP in 2D parallel mode'
+  id: totrans-318
   prefs: []
   type: TYPE_NORMAL
+  zh: 'flatten_state_dict: 处理具有嵌套字典的 state_dict flatten_sharded_tensors: 用于 FSDP 的
+    2D 并行模式'
 - en: '[PRE55]'
+  id: totrans-319
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE55]'
 - en: Extension from the planner interface to make it easy to extend the default planner.
+  id: totrans-320
   prefs: []
   type: TYPE_NORMAL
+  zh: 从规划者接口扩展以便于扩展默认规划者。
 - en: Return type
+  id: totrans-321
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*Tensor*](tensors.html#torch.Tensor "torch.Tensor")'
+  id: totrans-322
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*Tensor*](tensors.html#torch.Tensor "torch.Tensor")'
 - en: '[PRE56]'
+  id: totrans-323
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE56]'
 - en: Extension from the planner interface to make it easy to extend the default planner.
+  id: totrans-324
   prefs: []
   type: TYPE_NORMAL
+  zh: 从规划者接口扩展以便于扩展默认规划者。
 - en: We provide a set of APIs to help users do get and set state_dict easily. This
     is an experimental feature and is subject to change.
+  id: totrans-325
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们提供了一组 API 来帮助用户轻松获取和设置 state_dict。这是一个实验性功能，可能会发生变化。
 - en: '[PRE57]'
+  id: totrans-326
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE57]'
 - en: Return the model state_dict and optimizers state_dict.
+  id: totrans-327
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回模型 state_dict 和优化器 state_dict。
 - en: '`get_state_dict` can process any module that is parallelized by PyTorch FSDP/fully_shard,
     DDP/replicate, tensor_parallel/parallelize_module, and any combination of these
     parallelisms. The main functions of `get_state_dict` are: 1.) returning a model
     and optimizer state_dict that can be resharded with a different number of trainers
     and/or different parallelisms. 2.) hiding the parallelism-specific state_dict
     APIs. Users don’t have to call these APIs. 3.) sanity checking the result state_dict.'
+  id: totrans-328
   prefs: []
   type: TYPE_NORMAL
+  zh: '`get_state_dict` 可以处理任何由 PyTorch FSDP/fully_shard、DDP/replicate、tensor_parallel/parallelize_module
+    并且这些并行方式的模块。`get_state_dict` 的主要功能是：1.) 返回一个可以使用不同数量的训练器和/或不同并行方式重新分片的模型和优化器 state_dict。2.)
+    隐藏特定于并行方式的 state_dict API。用户不必调用这些 API。3.) 对结果 state_dict 进行合理性检查。'
 - en: The keys of the result state dictionary are the canonical FQNs (Fully Qualified
     Names). A canonical FQN refers to the FQN based on a parameter’s position in an
     nn.Module hierarchy. More specifically, a canonical FQN to a parameter is the
@@ -1177,74 +1873,120 @@
     module is not distributed by any parallelisms. Since the optimizer internally
     uses parameter IDs to represent a parameter, there will be a conversion from the
     parameter IDs to the canonical FQNs when calling this API.
+  id: totrans-329
   prefs: []
   type: TYPE_NORMAL
+  zh: 结果 state 字典的键是规范的 FQN（Fully Qualified Names）。规范的 FQN 指的是基于参数在 nn.Module 层次结构中的位置的
+    FQN。更具体地，参数的规范 FQN 是在模块没有被任何并行方式分布时，由 `module.named_parameters()` 或 `module.named_buffers()`
+    返回的 FQN。由于优化器内部使用参数 ID 来表示参数，因此在调用此 API 时会将参数 ID 转换为规范的 FQN。
 - en: '`get_state_dict` can also process a module that is not parallelized. In such
     a case, `get_state_dict` only performs one function – converting the optimizer
     parameter IDs to the canonical FQNs.'
+  id: totrans-330
   prefs: []
   type: TYPE_NORMAL
+  zh: '`get_state_dict` 也可以处理未并行化的模块。在这种情况下，`get_state_dict` 只执行一个功能 - 将优化器参数 ID 转换为规范的
+    FQN。'
 - en: Example
+  id: totrans-331
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例
 - en: import torch from torch.distributed.fsdp import FullyShardedDataParallel as
     FSDP from torch.nn.parallel import DistributedDataParallel as DDP from torch.distributed.checkpoint.state_dict
     import get_state_dict
+  id: totrans-332
   prefs: []
   type: TYPE_NORMAL
+  zh: import torch from torch.distributed.fsdp import FullyShardedDataParallel as
+    FSDP from torch.nn.parallel import DistributedDataParallel as DDP from torch.distributed.checkpoint.state_dict
+    import get_state_dict
 - en: fsdp_model = FSDP(copy.deepcopy(model)) fsdp_optim = torch.optim.Adam(model.parameters(),
     lr=1e-3) ddp_model = DDP(copy.deepcopy(model)) ddp_optim = torch.optim.Adam(model.parameters(),
     lr=1e-3)
+  id: totrans-333
   prefs: []
   type: TYPE_NORMAL
+  zh: fsdp_model = FSDP(copy.deepcopy(model)) fsdp_optim = torch.optim.Adam(model.parameters(),
+    lr=1e-3) ddp_model = DDP(copy.deepcopy(model)) ddp_optim = torch.optim.Adam(model.parameters(),
+    lr=1e-3)
 - en: ddp_state_dict, ddp_optim_state_dict = get_state_dict(ddp_model, ddp_optim)
     fsdp_state_dict, fsdp_optim_state_dict = get_state_dict(fsdp_model, fsdp_optim)
+  id: totrans-334
   prefs: []
   type: TYPE_NORMAL
+  zh: ddp_state_dict, ddp_optim_state_dict = get_state_dict(ddp_model, ddp_optim)
+    fsdp_state_dict, fsdp_optim_state_dict = get_state_dict(fsdp_model, fsdp_optim)
 - en: 'if we simply call ddp_model.state_dict() and fsdp_model.state_dict(), # the
     asserts will fail. assert ddp_state_dict == fsdp_state_dict assert ddp_optim_state
     == fsdp_optim_state_dict'
+  id: totrans-335
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 如果我们简单地调用 ddp_model.state_dict() 和 fsdp_model.state_dict()，# 断言将失败。assert ddp_state_dict
+    == fsdp_state_dict assert ddp_optim_state == fsdp_optim_state_dict
 - en: Parameters
+  id: totrans-336
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**model** ([*nn.Module*](generated/torch.nn.Module.html#torch.nn.Module "torch.nn.Module"))
     – the nn.Module to the model.'
+  id: totrans-337
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**model**（[*nn.Module*](generated/torch.nn.Module.html#torch.nn.Module "torch.nn.Module"）
+    - 模型的 nn.Module。'
 - en: '**optimizers** (*Union**[**None**,* [*Optimizer*](optim.html#torch.optim.Optimizer
     "torch.optim.Optimizer")*,* *Iterable**[*[*Optimizer*](optim.html#torch.optim.Optimizer
     "torch.optim.Optimizer")*]**]*) – The optimizers that are used to optimize `model`.'
+  id: totrans-338
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**优化器**（*Union**[**None**,* [*Optimizer*](optim.html#torch.optim.Optimizer
+    "torch.optim.Optimizer")*,* *Iterable**[*[*Optimizer*](optim.html#torch.optim.Optimizer
+    "torch.optim.Optimizer")*]**]*) - 用于优化 `model` 的优化器。'
 - en: '**submodules** ([*Optional*](https://docs.python.org/3/library/typing.html#typing.Optional
     "(in Python v3.12)")*[*[*Set*](https://docs.python.org/3/library/typing.html#typing.Set
     "(in Python v3.12)")*[*[*Module*](generated/torch.nn.Module.html#torch.nn.Module
     "torch.nn.modules.module.Module")*]**]*) – Optional[Set[nn.Module]]: only return
     the model parameters that belong to the submodules.'
+  id: totrans-339
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**子模块**（[*可选*](https://docs.python.org/3/library/typing.html#typing.Optional
+    "(在Python v3.12中)")*[*[*集合*](https://docs.python.org/3/library/typing.html#typing.Set
+    "(在Python v3.12中)")*[*[*模块*](generated/torch.nn.Module.html#torch.nn.Module "torch.nn.modules.module.Module")*]**]*)
+    - 可选[Set[nn.Module]]：仅返回属于子模块的模型参数。'
 - en: '**options** ([*StateDictOptions*](#torch.distributed.checkpoint.state_dict.StateDictOptions
     "torch.distributed.checkpoint.state_dict.StateDictOptions")) – the options to
     control how model state_dict and optimizer state_dict should be returned. See
     StateDictOptions for the details.'
+  id: totrans-340
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**选项**（[*StateDictOptions*](#torch.distributed.checkpoint.state_dict.StateDictOptions
+    "torch.distributed.checkpoint.state_dict.StateDictOptions"）- 控制模型state_dict和优化器state_dict应如何返回的选项。有关详细信息，请参见StateDictOptions。'
 - en: Returns
+  id: totrans-341
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回
 - en: '`Tuple` that contain model state_dict and optimizer state_dict.'
+  id: totrans-342
   prefs: []
   type: TYPE_NORMAL
+  zh: 包含模型state_dict和优化器state_dict的`元组`。
 - en: Return type
+  id: totrans-343
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple "(in Python
     v3.12)")[[*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict "(in
     Python v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str "(in
@@ -1371,49 +2113,156 @@
     "(in Python v3.12)")]], [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
     "(in Python v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)"), ValueType]]]]]]]]]'
+  id: totrans-344
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*元组*](https://docs.python.org/3/library/typing.html#typing.Tuple "(在Python
+    v3.12中)")[[*字典*](https://docs.python.org/3/library/typing.html#typing.Dict "(在Python
+    v3.12中)")[[str](https://docs.python.org/3/library/stdtypes.html#str "(在Python
+    v3.12中)"), [*联合*](https://docs.python.org/3/library/typing.html#typing.Union "(在Python
+    v3.12中)")[*DTensor*, *ShardedTensor*, [*张量*](tensors.html#torch.Tensor "torch.Tensor"),
+    [int](https://docs.python.org/3/library/functions.html#int "(在Python v3.12中)"),
+    [float](https://docs.python.org/3/library/functions.html#float "(在Python v3.12中)"),
+    [str](https://docs.python.org/3/library/stdtypes.html#str "(在Python v3.12中)"),
+    [*列表*](https://docs.python.org/3/library/typing.html#typing.List "(在Python v3.12中)")[[*联合*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(在Python v3.12中)")[*DTensor*, *ShardedTensor*, [*张量*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(在Python
+    v3.12中)"), [float](https://docs.python.org/3/library/functions.html#float "(在Python
+    v3.12中)"), [str](https://docs.python.org/3/library/stdtypes.html#str "(在Python
+    v3.12中)")]], [*元组*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(在Python v3.12中)")[[*联合*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(在Python v3.12中)")[*DTensor*, *ShardedTensor*, [*张量*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(在Python
+    v3.12中)"), [float](https://docs.python.org/3/library/functions.html#float "(在Python
+    v3.12中)"), [str](https://docs.python.org/3/library/stdtypes.html#str "(在Python
+    v3.12中)")]], [*字典*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(在Python v3.12中)")[[str](https://docs.python.org/3/library/stdtypes.html#str
+    "(在Python v3.12中)"), [*联合*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(在Python v3.12中)")[*DTensor*, *ShardedTensor*, [*张量*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(在Python
+    v3.12中)"), [float](https://docs.python.org/3/library/functions.html#float "(在Python
+    v3.12中)"), [str](https://docs.python.org/3/library/stdtypes.html#str "(在Python
+    v3.12中)"), [*列表*](https://docs.python.org/3/library/typing.html#typing.List "(在Python
+    v3.12中)")[[*联合*](https://docs.python.org/3/library/typing.html#typing.Union "(在Python
+    v3.12中)")[*DTensor*, *ShardedTensor*, [*张量*](tensors.html#torch.Tensor "torch.Tensor"),
+    [int](https://docs.python.org/3/library/functions.html#int "(在Python v3.12中)"),
+    [float](https://docs.python.org/3/library/functions.html#float "(在Python v3.12中)"),
+    [str](https://docs.python.org/3/library/stdtypes.html#str "(在Python v3.12中)")]],
+    [*元组*](https://docs.python.org/3/library/typing.html#typing.Tuple "(在Python v3.12中)")[[*联合*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(在Python v3.12中)")[*DTensor*, *ShardedTensor*, [*张量*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(在Python
+    v3.12中)"), [float](https://docs.python.org/3/library/functions.html#float "(在Python
+    v3.12中)"), [str](https://docs.python.org/3/library/stdtypes.html#str "(在Python
+    v3.12中)")]], [*字典*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(在Python v3.12中)")[[str](https://docs.python.org/3/library/stdtypes.html#str
+    "(在Python v3.12中)"), ValueType]]]]], [*字典*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(在Python v3.12中)")[[str](https://docs.python.org/3/library/stdtypes.html#str
+    "(在Python v3.12中)"), [*联合*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(在Python v3.12中)")[[*字典*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(在Python v3.12中)")[[str](https://docs.python.org/3/library/stdtypes.html#str
+    "(在Python v3.12中)"), [*联合*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(在Python v3.12中)")[*DTensor*, *ShardedTensor*, [*张量*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(在Python
+    v3.12中)"), [float](https://docs.python.org/3/library/functions.html#float "(在Python
+    v3.12中)"), [str](https://docs.python.org/3/library/stdtypes.html#str "(在Python
+    v3.12中)"), [*列表*](https://docs.python.org/3/library/typing.html#typing.List "(在Python
+    v3.12中)")[[*联合*](https://docs.python.org/3/library/typing.html#typing.Union "(在Python
+    v3.12中)")[*DTensor*, *ShardedTensor*, [*张量*](tensors.html#torch.Tensor "torch.Tensor"),
+    [int](https://docs.python.org/3/library/functions.html#int "(在Python v3.12中)"),
+    [float](https://docs.python.org/3/library/functions.html#float "(在Python v3.12中)"),
+    [str](https://docs.python.org/3/library/stdtypes.html#str "(在Python v3.12中)")]],
+    [*元组*](https://docs.python.org/3/library/typing.html#typing.Tuple "(在Python v3.12中)")[[*联合*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(在Python v3.12中)")[*DTensor*, *ShardedTensor*, [*张量*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(在Python
+    v3.12中)"), [float](https://docs.python.org/3/library/functions.html#float "(在Python
+    v3.12中)"), [str](https://docs.python.org/3/library/stdtypes.html#str "(在Python
+    v3.12中)")]], [*字典*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(在Python v3.12中)")[[str](https://docs.python.org/3/library/stdtypes.html#str
+    "(在Python v3.12中)"), [*联合*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(在Python v3.12中)")[*DTensor*, *ShardedTensor*, [*张量*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(在Python
+    v3.12中)"), [float](https://docs.python.org/3/library/functions.html#float "(在Python
+    v3.12中)"), [str](https://docs.python.org/3/library/stdtypes.html#str "(在Python
+    v3.12中)"), [*列表*](https://docs.python.org/3/library/typing.html#typing.List "(在Python
+    v3.12中)")[[*联合*](https://docs.python.org/3/library/typing.html#typing.Union "(在Python
+    v3.12中)")[*DTensor*, *ShardedTensor*, [*张量*](tensors.html#torch.Tensor "torch.Tensor"),
+    [int](https://docs.python.org/3/library/functions.html#int "(在Python v3.12中)"),
+    [float](https://docs.python.org/3/library/functions.html#float "(在Python v3.12中)"),
+    [str](https://docs.python.org/3/library/stdtypes.html#str "(在Python v3.12中)")]],
+    [*元组*](https://docs.python.org/3/library/typing.html#typing.Tuple "(在Python v3.12中)")[[*联合*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(在Python v3.12中)")[*DTensor*, *ShardedTensor*, [*张量*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(在Python
+    v3.12中)"), [float](https://docs.python.org/3/library/functions.html#float "(在Python
+    v3.12中)"), [str](https://docs.python.org/3/library/stdtypes.html#str "(在Python
+    v3.12中)")]], [*字典*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(在Python v3.12中)")[[str](https://docs.python.org/3/library/stdtypes.html#str
+    "(在Python v3.12中)"), ValueType]]]]]]]]]'
 - en: '[PRE58]'
+  id: totrans-345
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE58]'
 - en: Return the model state_dict of `model`.
+  id: totrans-346
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回`model`的模型state_dict。
 - en: See `get_state_dict` for the detail usage.
+  id: totrans-347
   prefs: []
   type: TYPE_NORMAL
+  zh: 有关详细用法，请参见`get_state_dict`。
 - en: Parameters
+  id: totrans-348
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**model** ([*nn.Module*](generated/torch.nn.Module.html#torch.nn.Module "torch.nn.Module"))
     – the nn.Module to the model.'
+  id: totrans-349
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**模型**（[*nn.Module*](generated/torch.nn.Module.html#torch.nn.Module "torch.nn.Module")）
+    - 模型的nn.Module。'
 - en: '**submodules** ([*Optional*](https://docs.python.org/3/library/typing.html#typing.Optional
     "(in Python v3.12)")*[*[*Set*](https://docs.python.org/3/library/typing.html#typing.Set
     "(in Python v3.12)")*[*[*Module*](generated/torch.nn.Module.html#torch.nn.Module
     "torch.nn.modules.module.Module")*]**]*) – Optional[Set[nn.Module]]: only return
     the model parameters that belong to the submodules.'
+  id: totrans-350
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**子模块**（[*可选*](https://docs.python.org/3/library/typing.html#typing.Optional
+    "(在Python v3.12中)")*[*[*Set*](https://docs.python.org/3/library/typing.html#typing.Set
+    "(在Python v3.12中)")*[*[*Module*](generated/torch.nn.Module.html#torch.nn.Module
+    "torch.nn.modules.module.Module")*]**]*) - 可选[Set[nn.Module]]：仅返回属于子模块的模型参数。'
 - en: '**options** ([*StateDictOptions*](#torch.distributed.checkpoint.state_dict.StateDictOptions
     "torch.distributed.checkpoint.state_dict.StateDictOptions")) – the options to
     control how model state_dict and optimizer state_dict should be returned. See
     StateDictOptions for the details.'
+  id: totrans-351
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**选项**（[*StateDictOptions*](#torch.distributed.checkpoint.state_dict.StateDictOptions
+    "torch.distributed.checkpoint.state_dict.StateDictOptions"） - 控制如何返回模型state_dict和优化器state_dict的选项。有关详细信息，请参见StateDictOptions。'
 - en: Returns
+  id: totrans-352
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回
 - en: The state_dict for `model`.
+  id: totrans-353
   prefs: []
   type: TYPE_NORMAL
+  zh: '`model`的state_dict。'
 - en: Return type
+  id: totrans-354
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict "(in Python
     v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str "(in Python
     v3.12)"), [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
@@ -1455,55 +2304,122 @@
     "(in Python v3.12)")]], [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
     "(in Python v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)"), ValueType]]]]]'
+  id: totrans-355
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict "(in Python
+    v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str "(in Python
+    v3.12)"), [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)"), [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")[[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")]], [*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(in Python v3.12)")[[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")]], [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)"), [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)"), [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")[[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")]], [*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(in Python v3.12)")[[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")]], [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)"), ValueType]]]]]'
 - en: '[PRE59]'
+  id: totrans-356
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE59]'
 - en: Return the combined state_dict for optimizers.
+  id: totrans-357
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回优化器的组合state_dict。
 - en: See `get_state_dict` for the detail usage.
+  id: totrans-358
   prefs: []
   type: TYPE_NORMAL
+  zh: 查看`get_state_dict`以获取详细用法。
 - en: Parameters
+  id: totrans-359
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**model** ([*nn.Module*](generated/torch.nn.Module.html#torch.nn.Module "torch.nn.Module"))
     – the nn.Module to the model.'
+  id: totrans-360
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**model** ([*nn.Module*](generated/torch.nn.Module.html#torch.nn.Module "torch.nn.Module"))
+    – 要模型的nn.Module。'
 - en: '**optimizers** (*Union**[**None**,* [*Optimizer*](optim.html#torch.optim.Optimizer
     "torch.optim.Optimizer")*,* *Iterable**[*[*Optimizer*](optim.html#torch.optim.Optimizer
     "torch.optim.Optimizer")*]**]*) – The optimizers that are used to optimize `model`.'
+  id: totrans-361
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**optimizers** (*Union**[**None**,* [*Optimizer*](optim.html#torch.optim.Optimizer
+    "torch.optim.Optimizer")*,* *Iterable**[*[*Optimizer*](optim.html#torch.optim.Optimizer
+    "torch.optim.Optimizer")*]**]*) – 用于优化`model`的优化器。'
 - en: '**submodules** ([*Optional*](https://docs.python.org/3/library/typing.html#typing.Optional
     "(in Python v3.12)")*[*[*Set*](https://docs.python.org/3/library/typing.html#typing.Set
     "(in Python v3.12)")*[*[*Module*](generated/torch.nn.Module.html#torch.nn.Module
     "torch.nn.modules.module.Module")*]**]*) – Optional[Set[nn.Module]]: only return
     the model parameters that belong to the submodules.'
+  id: totrans-362
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**子模块**（可选） - Optional[Set[Module]]：仅返回属于子模块的模型参数。'
 - en: '**options** ([*StateDictOptions*](#torch.distributed.checkpoint.state_dict.StateDictOptions
     "torch.distributed.checkpoint.state_dict.StateDictOptions")) – the options to
     control how model state_dict and optimizer state_dict should be returned. See
     StateDictOptions for the details.'
+  id: totrans-363
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**选项**（StateDictOptions） - 控制模型state_dict和优化器state_dict应如何返回的选项。有关详细信息，请参见StateDictOptions。'
 - en: Returns
+  id: totrans-364
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回
 - en: The state_dict for `optimizers`.
+  id: totrans-365
   prefs: []
   type: TYPE_NORMAL
+  zh: '`optimizers`的state_dict。'
 - en: Return type
+  id: totrans-366
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict "(in Python
     v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str "(in Python
     v3.12)"), [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
@@ -1589,36 +2505,139 @@
     "(in Python v3.12)")]], [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
     "(in Python v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)"), ValueType]]]]]]]]'
+  id: totrans-367
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict "(in Python
+    v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str "(in Python
+    v3.12)"), [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[[*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)"), [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)"), [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")[[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")]], [*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(in Python v3.12)")[[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")]], [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)"), [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)"), [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")[[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")]], [*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(in Python v3.12)")[[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")]], [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)"), ValueType]]]]], [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")[[*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)"), [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)"), [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")[[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")]], [*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(in Python v3.12)")[[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")]], [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)"), [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)"), [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")[[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")]], [*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(in Python v3.12)")[[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")]], [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)"), ValueType]]]]]]]]'
 - en: '[PRE60]'
+  id: totrans-368
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE60]'
 - en: Load the model state_dict and optimizers state_dict.
+  id: totrans-369
   prefs: []
   type: TYPE_NORMAL
+  zh: 加载模型的 state_dict 和优化器的 state_dict。
 - en: 'The counterpart of `get_state_dict` to set the state_dict to the model and
     optimizers. The given `model_state_dict` and `optim_state_dict` do not have to
     be returned by `get_state_dict` but must meet the following requirements: 1) all
     FQNs are canonical FQNs as defined in `get_state_dict`, 2) if a tensor is sharded,
     it must be either a ShardedTensor or DTensor, 3) optimizer state_dict cannot contain
     the parameter IDs; the keys should be the canonical FQNs.'
+  id: totrans-370
   prefs: []
   type: TYPE_NORMAL
+  zh: '`get_state_dict` 的对应项，用于将 state_dict 设置为模型和优化器。给定的 `model_state_dict` 和 `optim_state_dict`
+    不必由 `get_state_dict` 返回，但必须满足以下要求：1）所有 FQN 必须是在 `get_state_dict` 中定义的规范 FQN，2）如果张量被分片，它必须是
+    ShardedTensor 或 DTensor，3）优化器的 state_dict 不能包含参数 ID；键应该是规范 FQN。'
 - en: Parameters
+  id: totrans-371
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**model** ([*nn.Module*](generated/torch.nn.Module.html#torch.nn.Module "torch.nn.Module"))
     – the nn.Module to the model.'
+  id: totrans-372
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**模型**（[*nn.Module*](generated/torch.nn.Module.html#torch.nn.Module "torch.nn.Module"））-
+    模型的 nn.Module。'
 - en: '**optimizers** (*Union**[*[*Optimizer*](optim.html#torch.optim.Optimizer "torch.optim.Optimizer")*,*
     *Iterable**[*[*Optimizer*](optim.html#torch.optim.Optimizer "torch.optim.Optimizer")*]**]*)
     – The optimizers that are used to optimize `model`.'
+  id: totrans-373
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**optimizers**（*Union**[*[*Optimizer*](optim.html#torch.optim.Optimizer "torch.optim.Optimizer"）*，*
+    *Iterable**[*[*Optimizer*](optim.html#torch.optim.Optimizer "torch.optim.Optimizer"）*]***)
+    - 用于优化 `model` 的优化器。'
 - en: '**model_state_dict** ([*Union*](https://docs.python.org/3/library/typing.html#typing.Union
     "(in Python v3.12)")*[*[*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
     "(in Python v3.12)")*[*[*Module*](generated/torch.nn.Module.html#torch.nn.Module
@@ -1707,9 +2726,55 @@
     the key of the `model_state_dict` is nn.Module, the key is a submodule of `model`
     and the value should be the state_dict of the submodule. When loading the state_dict,
     the prefix of the submodule will be append to the state_dict.'
+  id: totrans-374
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**model_state_dict**（[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[*[*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")*[*[*Module*](generated/torch.nn.Module.html#torch.nn.Module
+    "torch.nn.modules.module.Module")*,* [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**]**,* [*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**]**,* [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**]**,* [*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**]**,* [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* *ValueType**]**]**]**]**]**]*) – (Union[Dict[nn.Module,
+    Dict[str, ValueType]], Dict[str, ValueType]]): 要加载的模型state_dict。如果`model_state_dict`的键是nn.Module，则该键是`model`的子模块，值应为子模块的state_dict。在加载state_dict时，子模块的前缀将附加到state_dict中。'
 - en: '**optim_state_dict** ([*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
     "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)")*,* [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
@@ -1796,53 +2861,122 @@
     "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)")*,* *ValueType**]**]**]**]**]**]**]**]*) – OptimizerStateType:
     the optimizer state_dict to load.'
+  id: totrans-375
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**optim_state_dict** ([*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[*[*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**]**,* [*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**]**,* [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**]**,* [*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**]**,* [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* *ValueType**]**]**]**]**]*) – OptimizerStateType: 要加载的优化器状态字典。'
 - en: '**options** ([*StateDictOptions*](#torch.distributed.checkpoint.state_dict.StateDictOptions
     "torch.distributed.checkpoint.state_dict.StateDictOptions")) – the options to
     control how model state_dict and optimizer state_dict should be loaded. See StateDictOptions
     for the details.'
+  id: totrans-376
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**options**（[*StateDictOptions*](#torch.distributed.checkpoint.state_dict.StateDictOptions
+    "torch.distributed.checkpoint.state_dict.StateDictOptions")） - 控制如何加载模型state_dict和优化器state_dict的选项。有关详细信息，请参见StateDictOptions。'
 - en: Returns
+  id: totrans-377
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回
 - en: '**missing_keys** is a list of str containing the missing keys of the model
     state_dict.'
+  id: totrans-378
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**missing_keys**是一个包含模型state_dict中缺失键的str列表。'
 - en: '**unexpected_keys** is a list of str containing the unexpected keys of the
     model state_dict.'
+  id: totrans-379
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**unexpected_keys**是一个包含模型state_dict中意外键的str列表。'
 - en: Return type
+  id: totrans-380
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '`NamedTuple` with `missing_keys` and `unexpected_keys` fields'
+  id: totrans-381
   prefs: []
   type: TYPE_NORMAL
+  zh: 带有`missing_keys`和`unexpected_keys`字段的`NamedTuple`
 - en: '[PRE61]'
+  id: totrans-382
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE61]'
 - en: Load the model state_dict.
+  id: totrans-383
   prefs: []
   type: TYPE_NORMAL
+  zh: 加载模型的state_dict。
 - en: The counterpart of `get_model_state_dict` to set the state_dict to the model.
     See `set_state_dict` for the detail usage.
+  id: totrans-384
   prefs: []
   type: TYPE_NORMAL
+  zh: '`get_model_state_dict`的对应项，用于将state_dict设置到模型中。有关详细用法，请参见`set_state_dict`。'
 - en: Parameters
+  id: totrans-385
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**model** ([*nn.Module*](generated/torch.nn.Module.html#torch.nn.Module "torch.nn.Module"))
     – the nn.Module to the model.'
+  id: totrans-386
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**model**（[*nn.Module*](generated/torch.nn.Module.html#torch.nn.Module "torch.nn.Module")）
+    - 模型的nn.Module。'
 - en: '**model_state_dict** ([*Union*](https://docs.python.org/3/library/typing.html#typing.Union
     "(in Python v3.12)")*[*[*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
     "(in Python v3.12)")*[*[*Module*](generated/torch.nn.Module.html#torch.nn.Module
@@ -1931,57 +3065,131 @@
     the key of the `model_state_dict` is nn.Module, the key is a submodule of `model`
     and the value should be the state_dict of the submodule. When loading the state_dict,
     the prefix of the submodule will be append to the state_dict.'
+  id: totrans-387
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**model_state_dict**（[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[*[*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")*[*[*Module*](generated/torch.nn.Module.html#torch.nn.Module
+    "torch.nn.modules.module.Module")*,* [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**]**,* [*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**]**,* [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**]**,* [*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**]**,* [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* *ValueType**]**]**]**]**]**]*) – (Union[Dict[nn.Module,
+    Dict[str, ValueType]], Dict[str, ValueType]]): 要加载的模型state_dict。如果`model_state_dict`的键是nn.Module，则该键是`model`的子模块，值应为子模块的state_dict。在加载state_dict时，子模块的前缀将附加到state_dict中。'
 - en: '**options** ([*StateDictOptions*](#torch.distributed.checkpoint.state_dict.StateDictOptions
     "torch.distributed.checkpoint.state_dict.StateDictOptions")) – the options to
     control how model state_dict and optimizer state_dict should be loaded. See StateDictOptions
     for the details.'
+  id: totrans-388
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**options**（[*StateDictOptions*](#torch.distributed.checkpoint.state_dict.StateDictOptions
+    "torch.distributed.checkpoint.state_dict.StateDictOptions")） - 控制如何加载模型状态字典和优化器状态字典的选项。有关详细信息，请参见StateDictOptions。'
 - en: Returns
+  id: totrans-389
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回
 - en: '**missing_keys** is a list of str containing the missing keys'
+  id: totrans-390
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**missing_keys** 是一个包含缺失键的字符串列表'
 - en: '**unexpected_keys** is a list of str containing the unexpected keys'
+  id: totrans-391
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**unexpected_keys** 是一个包含意外键的字符串列表'
 - en: Return type
+  id: totrans-392
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '`NamedTuple` with `missing_keys` and `unexpected_keys` fields'
+  id: totrans-393
   prefs: []
   type: TYPE_NORMAL
+  zh: 带有`missing_keys`和`unexpected_keys`字段的`NamedTuple`
 - en: '[PRE62]'
+  id: totrans-394
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE62]'
 - en: Load the optimizers state_dict.
+  id: totrans-395
   prefs: []
   type: TYPE_NORMAL
+  zh: 加载优化器的状态字典。
 - en: The counterpart of `get_optimizer_state_dict` to set the state_dict to the optimizers.
     See `set_state_dict` for the detail usage.
+  id: totrans-396
   prefs: []
   type: TYPE_NORMAL
+  zh: '`get_optimizer_state_dict` 的对应项，用于将状态字典设置为优化器。有关详细用法，请参见`set_state_dict`。'
 - en: Parameters
+  id: totrans-397
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**model** ([*nn.Module*](generated/torch.nn.Module.html#torch.nn.Module "torch.nn.Module"))
     – the nn.Module to the model.'
+  id: totrans-398
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**model**（[*nn.Module*](generated/torch.nn.Module.html#torch.nn.Module "torch.nn.Module")）
+    - 模型的 nn.Module。'
 - en: '**optimizers** (*Union**[*[*Optimizer*](optim.html#torch.optim.Optimizer "torch.optim.Optimizer")*,*
     *Iterable**[*[*Optimizer*](optim.html#torch.optim.Optimizer "torch.optim.Optimizer")*]**]*)
     – The optimizers that are used to optimize `model`.'
+  id: totrans-399
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**optimizers**（*Union**[*[*Optimizer*](optim.html#torch.optim.Optimizer "torch.optim.Optimizer")*,*
+    *Iterable**[*[*Optimizer*](optim.html#torch.optim.Optimizer "torch.optim.Optimizer")*]**]*)
+    - 用于优化`model`的优化器。'
 - en: '**optim_state_dict** ([*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
     "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)")*,* [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
@@ -2068,52 +3276,119 @@
     "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)")*,* *ValueType**]**]**]**]**]**]**]**]*) – OptimizerStateType:
     the optimizer state_dict to load.'
+  id: totrans-400
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**optim_state_dict** ([*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[*[*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**]**,* [*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**]**,* [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**]**,* [*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**]**,* [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* *ValueType**]**]**]**]**]*) – OptimizerStateType: the
+    optimizer state_dict to load.'
 - en: '**options** ([*StateDictOptions*](#torch.distributed.checkpoint.state_dict.StateDictOptions
     "torch.distributed.checkpoint.state_dict.StateDictOptions")) – the options to
     control how model state_dict and optimizer state_dict should be loaded. See StateDictOptions
     for the details.'
+  id: totrans-401
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**options** ([*StateDictOptions*](#torch.distributed.checkpoint.state_dict.StateDictOptions
+    "torch.distributed.checkpoint.state_dict.StateDictOptions")) - 控制如何加载模型state_dict和优化器state_dict的选项。有关详细信息，请参阅StateDictOptions。'
 - en: Returns
+  id: totrans-402
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回
 - en: None
+  id: totrans-403
   prefs: []
   type: TYPE_NORMAL
+  zh: None
 - en: Return type
+  id: totrans-404
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: None
+  id: totrans-405
   prefs: []
   type: TYPE_NORMAL
+  zh: None
 - en: '[PRE63]'
+  id: totrans-406
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE63]'
 - en: This dataclass specifies how get_state_dict/set_state_dict will work.
+  id: totrans-407
   prefs: []
   type: TYPE_NORMAL
+  zh: 此数据类指定了get_state_dict/set_state_dict的工作方式。
 - en: '`full_state_dict`: if this is set to True, all the tensors in the returned
     state_dict will be gathered. No ShardedTensor and DTensor will be in the returned
     state_dict.'
+  id: totrans-408
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`full_state_dict`: 如果设置为True，则返回的state_dict中的所有张量将被收集。返回的state_dict中不会有ShardedTensor和DTensor。'
 - en: '`cpu_offload`: offload all the tensors to cpu. To prevent CPU OOM, if `full_state_dict`
     is also true, then only the rank0 will get the state_dict and all other ranks
     will get empty state_dict.'
+  id: totrans-409
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`cpu_offload`: 将所有张量卸载到CPU。为防止CPU OOM，如果`full_state_dict`也为true，则只有rank0会获取state_dict，所有其他rank将获取空的state_dict。'
 - en: '`ignore_frozen_params`: if the value is True, the returned state_dict won’t
     contain any frozen parameters – the `requires_grad` is False. The default value
     is False.'
+  id: totrans-410
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`ignore_frozen_params`: 如果值为True，则返回的state_dict不会包含任何冻结参数 - `requires_grad`为False。默认值为False。'
 - en: '`keep_submodule_prefixes`: when `submodules` is not None, this option indicates
     whether to keep the submodule prefixes from the state_dict keys. or example, if
     the submodule is `module.pretrain` and the full FQN of the parameter is `pretrain.layer1.weight`
@@ -2121,11 +3396,15 @@
     will be `pretrain.layer1.weight`. If the options is False, the key will be `layer1.weight`.
     Note that if `keep_submodule_prefixes` is False, there may be conflicted FQNs,
     hence there should be only one submodule in `submodules`.'
+  id: totrans-411
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`keep_submodule_prefixes`: 当`submodules`不为None时，此选项指示是否保留state_dict键中的子模块前缀。例如，如果子模块是`module.pretrain`，参数的完整FQN是`pretrain.layer1.weight`。当此选项为True时，返回的state_dict中参数的键将是`pretrain.layer1.weight`。如果选项为False，则键将是`layer1.weight`。请注意，如果`keep_submodule_prefixes`为False，则可能存在冲突的FQN，因此`submodules`中应该只有一个子模块。'
 - en: '`strict`: the `strict` option when `set_state_dict` calls model.load_state_dict().
     The default value is False.'
+  id: totrans-412
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`strict`: `set_state_dict` 调用 model.load_state_dict() 时的 `strict` 选项。默认值为False。'

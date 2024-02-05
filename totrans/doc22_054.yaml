@@ -1,201 +1,312 @@
 - en: torch.compiler
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: torch.compiler
 - en: 原文：[https://pytorch.org/docs/stable/torch.compiler.html](https://pytorch.org/docs/stable/torch.compiler.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/docs/stable/torch.compiler.html](https://pytorch.org/docs/stable/torch.compiler.html)
 - en: '`torch.compiler` is a namespace through which some of the internal compiler
     methods are surfaced for user consumption. The main function and the feature in
     this namespace is `torch.compile`.'
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: '`torch.compiler` 是一个命名空间，通过该命名空间，一些内部编译器方法被公开供用户使用。该命名空间中的主要函数和特性是 `torch.compile`。'
 - en: '`torch.compile` is a PyTorch function introduced in PyTorch 2.x that aims to
     solve the problem of accurate graph capturing in PyTorch and ultimately enable
     software engineers to run their PyTorch programs faster. `torch.compile` is written
     in Python and it marks the transition of PyTorch from C++ to Python.'
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: '`torch.compile` 是 PyTorch 2.x 中引入的一个函数，旨在解决 PyTorch 中准确捕获图形的问题，最终使软件工程师能够更快地运行他们的
+    PyTorch 程序。`torch.compile` 是用 Python 编写的，标志着 PyTorch 从 C++ 转向 Python。'
 - en: '`torch.compile` leverages the following underlying technologies:'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '`torch.compile` 利用以下基础技术：'
 - en: '**TorchDynamo (torch._dynamo)** is an internal API that uses a CPython feature
     called the Frame Evaluation API to safely capture PyTorch graphs. Methods that
     are available externally for PyTorch users are surfaced through the `torch.compiler`
     namespace.'
+  id: totrans-5
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**TorchDynamo (torch._dynamo)** 是一个内部 API，使用了一个名为 Frame Evaluation API 的 CPython
+    特性，安全地捕获 PyTorch 图。对于 PyTorch 用户可用的方法通过 `torch.compiler` 命名空间公开。'
 - en: '**TorchInductor** is the default `torch.compile` deep learning compiler that
     generates fast code for multiple accelerators and backends. You need to use a
     backend compiler to make speedups through `torch.compile` possible. For NVIDIA
     and AMD GPUs, it leverages OpenAI Triton as the key building block.'
+  id: totrans-6
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**TorchInductor** 是默认的 `torch.compile` 深度学习编译器，可以为多个加速器和后端生成快速代码。您需要使用后端编译器才能通过
+    `torch.compile` 实现加速。对于 NVIDIA 和 AMD GPU，它利用 OpenAI Triton 作为关键构建模块。'
 - en: '**AOT Autograd** captures not only the user-level code, but also backpropagation,
     which results in capturing the backwards pass “ahead-of-time”. This enables acceleration
     of both forwards and backwards pass using TorchInductor.'
+  id: totrans-7
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**AOT Autograd** 不仅捕获用户级代码，还包括反向传播，这导致提前捕获反向传播。这使得使用 TorchInductor 加速前向和反向传播成为可能。'
 - en: Note
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: In some cases, the terms `torch.compile`, TorchDynamo, `torch.compiler` might
     be used interchangeably in this documentation.
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 在某些情况下，本文档中可能会互换使用术语 `torch.compile`、TorchDynamo、`torch.compiler`。
 - en: As mentioned above, to run your workflows faster, `torch.compile` through TorchDynamo
     requires a backend that converts the captured graphs into a fast machine code.
     Different backends can result in various optimization gains. The default backend
     is called TorchInductor, also known as *inductor*, TorchDynamo has a list of supported
     backends developed by our partners, which can be see by running `torch.compiler.list_backends()`
     each of which with its optional dependencies.
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 如上所述，为了更快地运行您的工作流程，通过 TorchDynamo 的 `torch.compile` 需要一个将捕获的图转换为快速机器代码的后端。不同的后端可能会导致不同的优化收益。默认后端称为
+    TorchInductor，也称为 *inductor*，TorchDynamo 有一个由我们的合作伙伴开发的支持后端列表，可以通过运行 `torch.compiler.list_backends()`
+    查看，每个后端都有其可选依赖项。
 - en: 'Some of the most commonly used backends include:'
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 一些最常用的后端包括：
 - en: '**Training & inference backends**'
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: '**训练和推理后端**'
 - en: '| Backend | Description |'
+  id: totrans-13
   prefs: []
   type: TYPE_TB
+  zh: '| 后端 | 描述 |'
 - en: '| --- | --- |'
+  id: totrans-14
   prefs: []
   type: TYPE_TB
+  zh: '| --- | --- |'
 - en: '| `torch.compile(m, backend="inductor")` | Uses the TorchInductor backend.
     [Read more](https://dev-discuss.pytorch.org/t/torchinductor-a-pytorch-native-compiler-with-define-by-run-ir-and-symbolic-shapes/747)
     |'
+  id: totrans-15
   prefs: []
   type: TYPE_TB
+  zh: '| `torch.compile(m, backend="inductor")` | 使用 TorchInductor 后端。[阅读更多](https://dev-discuss.pytorch.org/t/torchinductor-a-pytorch-native-compiler-with-define-by-run-ir-and-symbolic-shapes/747)
+    |'
 - en: '| `torch.compile(m, backend="cudagraphs")` | CUDA graphs with AOT Autograd.
     [Read more](https://github.com/pytorch/torchdynamo/pull/757) |'
+  id: totrans-16
   prefs: []
   type: TYPE_TB
+  zh: '| `torch.compile(m, backend="cudagraphs")` | 使用 CUDA 图形与 AOT Autograd。[阅读更多](https://github.com/pytorch/torchdynamo/pull/757)
+    |'
 - en: '| `torch.compile(m, backend="ipex")` | Uses IPEX on CPU. [Read more](https://github.com/intel/intel-extension-for-pytorch)
     |'
+  id: totrans-17
   prefs: []
   type: TYPE_TB
+  zh: '| `torch.compile(m, backend="ipex")` | 在 CPU 上使用 IPEX。[阅读更多](https://github.com/intel/intel-extension-for-pytorch)
+    |'
 - en: '| `torch.compile(m, backend="onnxrt")` | Uses ONNX Runtime for training on
     CPU/GPU. [Read more](onnx_dynamo_onnxruntime_backend.html) |'
+  id: totrans-18
   prefs: []
   type: TYPE_TB
+  zh: '| `torch.compile(m, backend="onnxrt")` | 使用 ONNX Runtime 在 CPU/GPU 上进行训练。[阅读更多](onnx_dynamo_onnxruntime_backend.html)
+    |'
 - en: '**Inference-only backends**'
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: '**仅推理后端**'
 - en: '| Backend | Description |'
+  id: totrans-20
   prefs: []
   type: TYPE_TB
+  zh: '| 后端 | 描述 |'
 - en: '| --- | --- |'
+  id: totrans-21
   prefs: []
   type: TYPE_TB
+  zh: '| --- | --- |'
 - en: '| `torch.compile(m, backend="tensorrt")` | Uses Torch-TensorRT for inference
     optimizations. Requires `import torch_tensorrt` in the calling script to register
     backend. [Read more](https://github.com/pytorch/TensorRT) |'
+  id: totrans-22
   prefs: []
   type: TYPE_TB
+  zh: '| `torch.compile(m, backend="tensorrt")` | 使用 Torch-TensorRT 进行推理优化。需要在调用脚本中导入
+    `torch_tensorrt` 来注册后端。[阅读更多](https://github.com/pytorch/TensorRT) |'
 - en: '| `torch.compile(m, backend="ipex")` | Uses IPEX for inference on CPU. [Read
     more](https://github.com/intel/intel-extension-for-pytorch) |'
+  id: totrans-23
   prefs: []
   type: TYPE_TB
+  zh: '| `torch.compile(m, backend="ipex")` | 在 CPU 上使用 IPEX 进行推理。[阅读更多](https://github.com/intel/intel-extension-for-pytorch)
+    |'
 - en: '| `torch.compile(m, backend="tvm")` | Uses Apache TVM for inference optimizations.
     [Read more](https://tvm.apache.org/) |'
+  id: totrans-24
   prefs: []
   type: TYPE_TB
+  zh: '| `torch.compile(m, backend="tvm")` | 使用 Apache TVM 进行推理优化。[阅读更多](https://tvm.apache.org/)
+    |'
 - en: '| `torch.compile(m, backend="openvino")` | Uses OpenVINO for inference optimizations.
     [Read more](https://docs.openvino.ai/2023.1/pytorch_2_0_torch_compile.html) |'
+  id: totrans-25
   prefs: []
   type: TYPE_TB
+  zh: '| `torch.compile(m, backend="openvino")` | 使用 OpenVINO 进行推理优化。[阅读更多](https://docs.openvino.ai/2023.1/pytorch_2_0_torch_compile.html)
+    |'
 - en: Read More
+  id: totrans-26
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 阅读更多
 - en: Getting Started for PyTorch Users
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch 用户入门
 - en: '[Getting Started](torch.compiler_get_started.html)'
+  id: totrans-28
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[入门指南](torch.compiler_get_started.html)'
 - en: '[torch.compiler API reference](torch.compiler_api.html)'
+  id: totrans-29
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[torch.compiler API 参考](torch.compiler_api.html)'
 - en: '[TorchDynamo APIs for fine-grained tracing](torch.compiler_fine_grain_apis.html)'
+  id: totrans-30
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[TorchDynamo 用于细粒度跟踪的 API](torch.compiler_fine_grain_apis.html)'
 - en: '[AOTInductor: Ahead-Of-Time Compilation for Torch.Export-ed Models](torch.compiler_aot_inductor.html)'
+  id: totrans-31
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[AOTInductor：Torch.Export-ed 模型的预编译](torch.compiler_aot_inductor.html)'
 - en: '[TorchInductor GPU Profiling](torch.compiler_inductor_profiling.html)'
+  id: totrans-32
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[TorchInductor GPU Profiling](torch.compiler_inductor_profiling.html)'
 - en: '[Profiling to understand torch.compile performance](torch.compiler_profiling_torch_compile.html)'
+  id: totrans-33
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[分析以了解 torch.compile 性能](torch.compiler_profiling_torch_compile.html)'
 - en: '[Frequently Asked Questions](torch.compiler_faq.html)'
+  id: totrans-34
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[常见问题解答](torch.compiler_faq.html)'
 - en: '[PyTorch 2.0 Troubleshooting](torch.compiler_troubleshooting.html)'
+  id: totrans-35
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[PyTorch 2.0 故障排除](torch.compiler_troubleshooting.html)'
 - en: '[PyTorch 2.0 Performance Dashboard](torch.compiler_performance_dashboard.html)'
+  id: totrans-36
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[PyTorch 2.0 性能仪表板](torch.compiler_performance_dashboard.html)'
 - en: Deep Dive for PyTorch Developers
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch 开发者深入研究
 - en: '[TorchDynamo Deep Dive](torch.compiler_deepdive.html)'
+  id: totrans-38
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[TorchDynamo 深入研究](torch.compiler_deepdive.html)'
 - en: '[Guards Overview](torch.compiler_guards_overview.html)'
+  id: totrans-39
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[守卫概述](torch.compiler_guards_overview.html)'
 - en: '[Dynamic shapes](torch.compiler_dynamic_shapes.html)'
+  id: totrans-40
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[动态形状](torch.compiler_dynamic_shapes.html)'
 - en: '[PyTorch 2.0 NNModule Support](torch.compiler_nn_module.html)'
+  id: totrans-41
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[PyTorch 2.0 NNModule 支持](torch.compiler_nn_module.html)'
 - en: '[Best Practices for Backends](torch.compiler_best_practices_for_backends.html)'
+  id: totrans-42
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[后端最佳实践](torch.compiler_best_practices_for_backends.html)'
 - en: '[CUDAGraph Trees](torch.compiler_cudagraph_trees.html)'
+  id: totrans-43
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[CUDAGraph 树](torch.compiler_cudagraph_trees.html)'
 - en: '[Fake tensor](torch.compiler_fake_tensor.html)'
+  id: totrans-44
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[伪张量](torch.compiler_fake_tensor.html)'
 - en: HowTo for PyTorch Backend Vendors
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch 后端供应商操作指南
 - en: '[Custom Backends](torch.compiler_custom_backends.html)'
+  id: totrans-46
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[自定义后端](torch.compiler_custom_backends.html)'
 - en: '[Writing Graph Transformations on ATen IR](torch.compiler_transformations.html)'
+  id: totrans-47
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[在 ATen IR 上编写图转换](torch.compiler_transformations.html)'
 - en: '[IRs](torch.compiler_ir.html)'
+  id: totrans-48
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[IRs](torch.compiler_ir.html)'

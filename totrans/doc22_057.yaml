@@ -1,8 +1,10 @@
 - en: torch.futures
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
 - en: 原文：[https://pytorch.org/docs/stable/futures.html](https://pytorch.org/docs/stable/futures.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
@@ -11,25 +13,33 @@
     to simplify operations on [`Future`](#torch.futures.Future "torch.futures.Future")
     objects. Currently, the [`Future`](#torch.futures.Future "torch.futures.Future")
     type is primarily used by the [Distributed RPC Framework](rpc.html#distributed-rpc-framework).
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE0]'
+  id: totrans-3
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: Wrapper around a `torch._C.Future` which encapsulates an asynchronous execution
     of a callable, e.g. [`rpc_async()`](rpc.html#torch.distributed.rpc.rpc_async "torch.distributed.rpc.rpc_async").
     It also exposes a set of APIs to add callback functions and set results.
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
 - en: Warning
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
 - en: GPU support is a beta feature, subject to changes.
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE1]'
+  id: totrans-7
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Append the given callback function to this `Future`, which will be run when
     the `Future` is completed. Multiple callbacks can be added to the same `Future`,
     but the order in which they will be executed cannot be guaranteed. The callback
@@ -37,6 +47,7 @@
     function can use the [`value()`](#torch.futures.Future.value "torch.futures.Future.value")
     method to get the value. Note that if this `Future` is already completed, the
     given callback will be run inline.
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
 - en: We recommend that you use the [`then()`](#torch.futures.Future.then "torch.futures.Future.then")
@@ -44,20 +55,25 @@
     `add_done_callback` can be cheaper if your callback does not return anything.
     But both [`then()`](#torch.futures.Future.then "torch.futures.Future.then") and
     `add_done_callback` use the same callback registration API under the hood.
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
 - en: With respect to GPU tensors, this method behaves in the same way as [`then()`](#torch.futures.Future.then
     "torch.futures.Future.then").
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
 - en: '**callback** (`Future`) – a `Callable` that takes in one argument, which is
     the reference to this `Future`.'
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
 - en: Note
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
 - en: Note that if the callback function throws, either through the original future
@@ -66,19 +82,26 @@
     if this callback later completes additional futures, those futures are not marked
     as completed with an error and the user is responsible for handling completion/waiting
     on those futures independently.
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
 - en: 'Example::'
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE2]'
+  id: totrans-16
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: '[PRE3]'
+  id: totrans-17
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: Return `True` if this `Future` is done. A `Future` is done if it has a result
     or an exception.
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
 - en: If the value contains tensors that reside on GPUs, `Future.done()` will return
@@ -86,41 +109,55 @@
     yet completed running on the device, because at such stage the result is already
     usable, provided one performs the appropriate synchronizations (see [`wait()`](#torch.futures.Future.wait
     "torch.futures.Future.wait")).
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
 - en: Return type
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
 - en: '[bool](https://docs.python.org/3/library/functions.html#bool "(in Python v3.12)")'
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE4]'
+  id: totrans-22
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: Set an exception for this `Future`, which will mark this `Future` as completed
     with an error and trigger all attached callbacks. Note that when calling wait()/value()
     on this `Future`, the exception set here will be raised inline.
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
 - en: '**result** ([*BaseException*](https://docs.python.org/3/library/exceptions.html#BaseException
     "(in Python v3.12)")) – the exception for this `Future`.'
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
 - en: 'Example::'
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE5]'
+  id: totrans-27
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: '[PRE6]'
+  id: totrans-28
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: Set the result for this `Future`, which will mark this `Future` as completed
     and trigger all attached callbacks. Note that a `Future` cannot be marked completed
     twice.
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
 - en: If the result contains tensors that reside on GPUs, this method can be called
@@ -131,24 +168,37 @@
     any additional synchronization, as long as one doesn’t change streams in between.
     This method will record events on all the relevant current streams and will use
     them to ensure proper scheduling for all the consumers of this `Future`.
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果结果包含驻留在GPU上的张量，即使用于填充这些张量的异步内核尚未在设备上完成运行，也可以调用此方法，前提是在调用此方法时将这些内核排队的流设置为当前流。简而言之，只要在启动这些内核后立即调用此方法，而不需要任何额外的同步，就是安全的，只要在其中不更改流。此方法将在所有相关的当前流上记录事件，并将使用它们来确保所有此`Future`的消费者的适当调度。
 - en: Parameters
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**result** ([*object*](https://docs.python.org/3/library/functions.html#object
     "(in Python v3.12)")) – the result object of this `Future`.'
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: '**result**（[*object*](https://docs.python.org/3/library/functions.html#object
+    "(in Python v3.12)")）- 此`Future`的结果对象。'
 - en: 'Example::'
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: '示例::'
 - en: '[PRE7]'
+  id: totrans-34
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: '[PRE8]'
+  id: totrans-35
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: 'Append the given callback function to this `Future`, which will be run when
     the `Future` is completed. Multiple callbacks can be added to the same `Future`,
     but the order in which they will be executed cannot be guaranteed (to enforce
@@ -157,8 +207,11 @@
     can use the [`value()`](#torch.futures.Future.value "torch.futures.Future.value")
     method to get the value. Note that if this `Future` is already completed, the
     given callback will be run immediately inline.'
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 将给定的回调函数附加到此`Future`，当`Future`完成时将运行该回调函数。可以向同一个`Future`添加多个回调，但不能保证它们将按照特定顺序执行（要强制执行特定顺序，请考虑链接：`fut.then(cb1).then(cb2)`）。回调函数必须接受一个参数，即对此`Future`的引用。回调函数可以使用[`value()`](#torch.futures.Future.value
+    "torch.futures.Future.value")方法获取值。请注意，如果此`Future`已经完成，给定的回调将立即内联运行。
 - en: If the `Future`’s value contains tensors that reside on GPUs, the callback might
     be invoked while the async kernels that are populating those tensors haven’t yet
     finished executing on the device. However, the callback will be invoked with some
@@ -168,91 +221,139 @@
     long as the callback doesn’t switch streams, it can safely manipulate the result
     without any additional synchronization. This is similar to the non-blocking behavior
     of [`wait()`](#torch.futures.Future.wait "torch.futures.Future.wait").
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果`Future`的值包含驻留在GPU上的张量，回调可能在填充这些张量的异步内核尚未在设备上完成执行时被调用。但是，回调将使用一些专用流（从全局池中获取）作为当前流进行调用，这些流将与这些内核同步。因此，回调在这些张量上执行的任何操作将在内核完成后在设备上调度。换句话说，只要回调不切换流，就可以安全地操作结果而无需任何额外的同步。这类似于[`wait()`](#torch.futures.Future.wait
+    "torch.futures.Future.wait")的非阻塞行为。
 - en: Similarly, if the callback returns a value that contains tensors that reside
     on a GPU, it can do so even if the kernels that are producing these tensors are
     still running on the device, as long as the callback didn’t change streams during
     its execution. If one wants to change streams, one must be careful to re-synchronize
     them with the original streams, that is, those that were current when the callback
     was invoked.
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 同样，如果回调返回一个包含驻留在GPU上的张量的值，即使生成这些张量的内核仍在设备上运行，只要回调在执行期间没有更改流，它也可以这样做。如果想要更改流，必须小心地将其重新与原始流同步，即在调用回调时当前的流。
 - en: Parameters
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**callback** (`Callable`) – a `Callable` that takes this `Future` as the only
     argument.'
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: '**callback**（`Callable`）- 一个以此`Future`为唯一参数的`Callable`。'
 - en: Returns
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回
 - en: A new `Future` object that holds the return value of the `callback` and will
     be marked as completed when the given `callback` finishes.
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个新的`Future`对象，它保存`callback`的返回值，并在给定的`callback`完成时标记为已完成。
 - en: Return type
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*Future*](#torch.futures.Future "torch.jit.Future")[*S*]'
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*Future*](#torch.futures.Future "torch.jit.Future")[*S*]'
 - en: Note
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Note that if the callback function throws, either through the original future
     being completed with an exception and calling `fut.wait()`, or through other code
     in the callback, the future returned by `then` will be marked appropriately with
     the encountered error. However, if this callback later completes additional futures,
     those futures are not marked as completed with an error and the user is responsible
     for handling completion/waiting on those futures independently.
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，如果回调函数抛出异常，要么通过原始future完成并调用`fut.wait()`，要么通过回调中的其他代码，`then`返回的future将适当标记为遇到的错误。但是，如果此回调稍后完成其他future，这些future不会被标记为带有错误的已完成状态，用户需要独立处理这些future的完成/等待。
 - en: 'Example::'
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: '示例::'
 - en: '[PRE9]'
+  id: totrans-48
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: '[PRE10]'
+  id: totrans-49
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: Obtain the value of an already-completed future.
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: 获取已完成future的值。
 - en: This method should only be called after a call to [`wait()`](#torch.futures.Future.wait
     "torch.futures.Future.wait") has completed, or inside a callback function passed
     to [`then()`](#torch.futures.Future.then "torch.futures.Future.then"). In other
     cases this `Future` may not yet hold a value and calling `value()` could fail.
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
+  zh: 此方法应该在调用[`wait()`](#torch.futures.Future.wait "torch.futures.Future.wait")完成后调用，或者在传递给[`then()`](#torch.futures.Future.then
+    "torch.futures.Future.then")的回调函数中调用。在其他情况下，此`Future`可能尚未持有值，调用`value()`可能会失败。
 - en: If the value contains tensors that reside on GPUs, then this method will *not*
     perform any additional synchronization. This should be done beforehand, separately,
     through a call to [`wait()`](#torch.futures.Future.wait "torch.futures.Future.wait")
     (except within callbacks, for which it’s already being taken care of by [`then()`](#torch.futures.Future.then
     "torch.futures.Future.then")).
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果值包含驻留在GPU上的张量，则此方法将*不*执行任何额外的同步。这应该事先单独完成，通过调用[`wait()`](#torch.futures.Future.wait
+    "torch.futures.Future.wait")（除了在回调中，已经通过[`then()`](#torch.futures.Future.then
+    "torch.futures.Future.then")处理）。
 - en: Returns
+  id: totrans-53
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回值
 - en: The value held by this `Future`. If the function (callback or RPC) creating
     the value has thrown an error, this `value()` method will also throw an error.
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: 此`Future`持有的值。如果创建值的函数（回调或RPC）抛出错误，则此`value()`方法也将抛出错误。
 - en: Return type
+  id: totrans-55
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '*T*'
+  id: totrans-56
   prefs: []
   type: TYPE_NORMAL
+  zh: '*T*'
 - en: '[PRE11]'
+  id: totrans-57
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: Block until the value of this `Future` is ready.
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: 阻塞，直到此“Future”的值准备就绪。
 - en: If the value contains tensors that reside on GPUs, then an additional synchronization
     is performed with the kernels (executing on the device) which may be asynchronously
     populating those tensors. Such sync is non-blocking, which means that `wait()`
@@ -261,85 +362,137 @@
     kernels but, once that is done, `wait()` will return, even if those kernels are
     still running. No further synchronization is required when accessing and using
     the values, as long as one doesn’t change streams.
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果值包含驻留在GPU上的张量，则会执行与在设备上执行的内核进行的额外同步，这些内核可能是异步填充这些张量。这种同步是非阻塞的，这意味着`wait()`将在当前流中插入必要的指令，以确保在这些流上排队的进一步操作将在异步内核之后正确调度，但是一旦完成，`wait()`将返回，即使这些内核仍在运行。在访问和使用值时不需要进一步的同步，只要不改变流。
 - en: Returns
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回值
 - en: The value held by this `Future`. If the function (callback or RPC) creating
     the value has thrown an error, this `wait` method will also throw an error.
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: 此`Future`持有的值。如果创建值的函数（回调或RPC）抛出错误，则此`wait`方法也将抛出错误。
 - en: Return type
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '*T*'
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: '*T*'
 - en: '[PRE12]'
+  id: totrans-64
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: Collects the provided [`Future`](#torch.futures.Future "torch.futures.Future")
     objects into a single combined [`Future`](#torch.futures.Future "torch.futures.Future")
     that is completed when all of the sub-futures are completed.
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: 将提供的[`Future`](#torch.futures.Future "torch.futures.Future")对象收集到一个单独的组合[`Future`](#torch.futures.Future
+    "torch.futures.Future")中，当所有子Future完成时，该组合Future完成。
 - en: Parameters
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**futures** ([*list*](https://docs.python.org/3/library/stdtypes.html#list
     "(in Python v3.12)")) – a list of [`Future`](#torch.futures.Future "torch.futures.Future")
     objects.'
+  id: totrans-67
   prefs: []
   type: TYPE_NORMAL
+  zh: '**futures**（[*列表*](https://docs.python.org/3/library/stdtypes.html#list "(在Python
+    v3.12中)")）- 一个[`Future`](#torch.futures.Future "torch.futures.Future")对象的列表。'
 - en: Returns
+  id: totrans-68
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回值
 - en: Returns a [`Future`](#torch.futures.Future "torch.futures.Future") object to
     a list of the passed in Futures.
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回一个[`Future`](#torch.futures.Future "torch.futures.Future")对象到传入Futures的列表。
 - en: Return type
+  id: totrans-70
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*Future*](#torch.futures.Future "torch.jit.Future")[[*List*](https://docs.python.org/3/library/typing.html#typing.List
     "(in Python v3.12)")[[*Future*](#torch.futures.Future "torch.jit.Future")]]'
+  id: totrans-71
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*Future*](#torch.futures.Future "torch.jit.Future")[[*列表*](https://docs.python.org/3/library/typing.html#typing.List
+    "(在Python v3.12中)")[[*Future*](#torch.futures.Future "torch.jit.Future")]]'
 - en: 'Example::'
+  id: totrans-72
   prefs: []
   type: TYPE_NORMAL
+  zh: '示例::'
 - en: '[PRE13]'
+  id: totrans-73
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: '[PRE14]'
+  id: totrans-74
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: Waits for all provided futures to be complete, and returns the list of completed
     values. If any of the futures encounters an error, the method will exit early
     and report the error not waiting for other futures to complete.
+  id: totrans-75
   prefs: []
   type: TYPE_NORMAL
+  zh: 等待所有提供的Futures完成，并返回已完成值的列表。如果任何Future遇到错误，该方法将提前退出并报告错误，不等待其他Futures完成。
 - en: Parameters
+  id: totrans-76
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**futures** ([*list*](https://docs.python.org/3/library/stdtypes.html#list
     "(in Python v3.12)")) – a list of [`Future`](#torch.futures.Future "torch.futures.Future")
     object.'
+  id: totrans-77
   prefs: []
   type: TYPE_NORMAL
+  zh: '**futures**（[*列表*](https://docs.python.org/3/library/stdtypes.html#list "(在Python
+    v3.12中)")）- 一个[`Future`](#torch.futures.Future "torch.futures.Future")对象的列表。'
 - en: Returns
+  id: totrans-78
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回值
 - en: A list of the completed [`Future`](#torch.futures.Future "torch.futures.Future")
     results. This method will throw an error if `wait` on any [`Future`](#torch.futures.Future
     "torch.futures.Future") throws.
+  id: totrans-79
   prefs: []
   type: TYPE_NORMAL
+  zh: 已完成的[`Future`](#torch.futures.Future "torch.futures.Future")结果列表。如果任何[`Future`](#torch.futures.Future
+    "torch.futures.Future")上的`wait`抛出错误，此方法将抛出错误。
 - en: Return type
+  id: totrans-80
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*List*](https://docs.python.org/3/library/typing.html#typing.List "(in Python
     v3.12)")'
+  id: totrans-81
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*列表*](https://docs.python.org/3/library/typing.html#typing.List "(在Python
+    v3.12中)")'

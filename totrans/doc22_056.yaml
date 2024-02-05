@@ -1,165 +1,236 @@
 - en: torch.func
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: torch.func
 - en: 原文：[https://pytorch.org/docs/stable/func.html](https://pytorch.org/docs/stable/func.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/docs/stable/func.html](https://pytorch.org/docs/stable/func.html)
 - en: torch.func, previously known as “functorch”, is [JAX-like](https://github.com/google/jax)
     composable function transforms for PyTorch.
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: torch.func，以前称为“functorch”，是PyTorch的[JAX-like](https://github.com/google/jax)可组合函数变换。
 - en: Note
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: This library is currently in [beta](https://pytorch.org/blog/pytorch-feature-classification-changes/#beta).
     What this means is that the features generally work (unless otherwise documented)
     and we (the PyTorch team) are committed to bringing this library forward. However,
     the APIs may change under user feedback and we don’t have full coverage over PyTorch
     operations.
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 该库目前处于[测试版](https://pytorch.org/blog/pytorch-feature-classification-changes/#beta)。这意味着功能通常可用（除非另有说明），我们（PyTorch团队）致力于推进该库。但是，API可能会根据用户反馈进行更改，我们对PyTorch操作的覆盖范围不完整。
 - en: If you have suggestions on the API or use-cases you’d like to be covered, please
     open an GitHub issue or reach out. We’d love to hear about how you’re using the
     library.
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您对API或用例有建议，请打开GitHub问题或联系我们。我们很乐意听听您如何使用库。
 - en: What are composable function transforms?[](#what-are-composable-function-transforms
     "Permalink to this heading")
+  id: totrans-6
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 什么是可组合的函数变换？[](#what-are-composable-function-transforms "跳转到此标题")
 - en: A “function transform” is a higher-order function that accepts a numerical function
     and returns a new function that computes a different quantity.
+  id: totrans-7
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: “函数变换”是一个高阶函数，接受一个数值函数并返回一个计算不同量的新函数。
 - en: '[`torch.func`](func.api.html#module-torch.func "torch.func") has auto-differentiation
     transforms (`grad(f)` returns a function that computes the gradient of `f`), a
     vectorization/batching transform (`vmap(f)` returns a function that computes `f`
     over batches of inputs), and others.'
+  id: totrans-8
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[`torch.func`](func.api.html#module-torch.func "torch.func")具有自动微分变换（`grad(f)`返回一个计算`f`梯度的函数），矢量化/批处理变换（`vmap(f)`返回一个计算输入批次上的`f`的函数）等。'
 - en: These function transforms can compose with each other arbitrarily. For example,
     composing `vmap(grad(f))` computes a quantity called per-sample-gradients that
     stock PyTorch cannot efficiently compute today.
+  id: totrans-9
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 这些函数变换可以任意组合。例如，组合`vmap(grad(f))`计算一种称为每样本梯度的量，目前原始PyTorch无法高效计算。
 - en: Why composable function transforms?[](#why-composable-function-transforms "Permalink
     to this heading")
+  id: totrans-10
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 为什么使用可组合的函数变换？[](#why-composable-function-transforms "跳转到此标题")
 - en: 'There are a number of use cases that are tricky to do in PyTorch today:'
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 目前在PyTorch中有一些棘手的用例：
 - en: computing per-sample-gradients (or other per-sample quantities)
+  id: totrans-12
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 计算每样本梯度（或其他每样本量）
 - en: running ensembles of models on a single machine
+  id: totrans-13
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在单台机器上运行模型集合
 - en: efficiently batching together tasks in the inner-loop of MAML
+  id: totrans-14
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在MAML的内循环中高效批处理任务
 - en: efficiently computing Jacobians and Hessians
+  id: totrans-15
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 高效计算雅可比矩阵和海森矩阵
 - en: efficiently computing batched Jacobians and Hessians
+  id: totrans-16
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 高效计算批量雅可比矩阵和海森矩阵
 - en: Composing [`vmap()`](generated/torch.func.vmap.html#torch.func.vmap "torch.func.vmap"),
     [`grad()`](generated/torch.func.grad.html#torch.func.grad "torch.func.grad"),
     and [`vjp()`](generated/torch.func.vjp.html#torch.func.vjp "torch.func.vjp") transforms
     allows us to express the above without designing a separate subsystem for each.
     This idea of composable function transforms comes from the [JAX framework](https://github.com/google/jax).
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 组合[`vmap()`](generated/torch.func.vmap.html#torch.func.vmap "torch.func.vmap")、[`grad()`](generated/torch.func.grad.html#torch.func.grad
+    "torch.func.grad")和[`vjp()`](generated/torch.func.vjp.html#torch.func.vjp "torch.func.vjp")变换使我们能够表达上述内容，而无需为每个设计单独的子系统。这种可组合函数变换的想法来自[JAX框架](https://github.com/google/jax)。
 - en: Read More
+  id: totrans-18
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 阅读更多
 - en: '[torch.func Whirlwind Tour](func.whirlwind_tour.html)'
+  id: totrans-19
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[torch.func快速浏览](func.whirlwind_tour.html)'
 - en: '[What is torch.func?](func.whirlwind_tour.html#what-is-torch-func)'
+  id: totrans-20
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[什么是torch.func？](func.whirlwind_tour.html#what-is-torch-func)'
 - en: '[Why composable function transforms?](func.whirlwind_tour.html#why-composable-function-transforms)'
+  id: totrans-21
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[为什么使用可组合的函数变换？](func.whirlwind_tour.html#why-composable-function-transforms)'
 - en: '[What are the transforms?](func.whirlwind_tour.html#what-are-the-transforms)'
+  id: totrans-22
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[什么是变换？](func.whirlwind_tour.html#what-are-the-transforms)'
 - en: '[torch.func API Reference](func.api.html)'
+  id: totrans-23
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[torch.func API参考](func.api.html)'
 - en: '[Function Transforms](func.api.html#function-transforms)'
+  id: totrans-24
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[函数变换](func.api.html#function-transforms)'
 - en: '[Utilities for working with torch.nn.Modules](func.api.html#utilities-for-working-with-torch-nn-modules)'
+  id: totrans-25
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[与torch.nn.Modules一起工作的实用程序](func.api.html#utilities-for-working-with-torch-nn-modules)'
 - en: '[UX Limitations](func.ux_limitations.html)'
+  id: totrans-26
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[用户体验限制](func.ux_limitations.html)'
 - en: '[General limitations](func.ux_limitations.html#general-limitations)'
+  id: totrans-27
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[一般限制](func.ux_limitations.html#general-limitations)'
 - en: '[torch.autograd APIs](func.ux_limitations.html#torch-autograd-apis)'
+  id: totrans-28
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[torch.autograd API](func.ux_limitations.html#torch-autograd-apis)'
 - en: '[vmap limitations](func.ux_limitations.html#vmap-limitations)'
+  id: totrans-29
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[vmap限制](func.ux_limitations.html#vmap-limitations)'
 - en: '[Randomness](func.ux_limitations.html#randomness)'
+  id: totrans-30
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[随机性](func.ux_limitations.html#randomness)'
 - en: '[Migrating from functorch to torch.func](func.migrating.html)'
+  id: totrans-31
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[从functorch迁移到torch.func](func.migrating.html)'
 - en: '[function transforms](func.migrating.html#function-transforms)'
+  id: totrans-32
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[函数变换](func.migrating.html#function-transforms)'
 - en: '[NN module utilities](func.migrating.html#nn-module-utilities)'
+  id: totrans-33
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[NN模块实用程序](func.migrating.html#nn-module-utilities)'
 - en: '[functorch.compile](func.migrating.html#functorch-compile)'
+  id: totrans-34
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[functorch.compile](func.migrating.html#functorch-compile)'
