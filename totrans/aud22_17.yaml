@@ -1,450 +1,709 @@
 - en: StreamReader Advanced Usages
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: StreamReader高级用法
 - en: 原文：[https://pytorch.org/audio/stable/tutorials/streamreader_advanced_tutorial.html](https://pytorch.org/audio/stable/tutorials/streamreader_advanced_tutorial.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/audio/stable/tutorials/streamreader_advanced_tutorial.html](https://pytorch.org/audio/stable/tutorials/streamreader_advanced_tutorial.html)
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-tutorials-streamreader-advanced-tutorial-py)
     to download the full example code
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[这里](#sphx-glr-download-tutorials-streamreader-advanced-tutorial-py)下载完整示例代码
 - en: '**Author**: [Moto Hira](mailto:moto%40meta.com)'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '**作者**：[Moto Hira](mailto:moto%40meta.com)'
 - en: This tutorial is the continuation of [StreamReader Basic Usages](./streamreader_basic_tutorial.html).
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程是[StreamReader基本用法](./streamreader_basic_tutorial.html)的延续。
 - en: This shows how to use [`StreamReader`](../generated/torchaudio.io.StreamReader.html#torchaudio.io.StreamReader
     "torchaudio.io.StreamReader") for
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 这显示了如何使用[`StreamReader`](../generated/torchaudio.io.StreamReader.html#torchaudio.io.StreamReader
+    "torchaudio.io.StreamReader")进行
 - en: Device inputs, such as microphone, webcam and screen recording
+  id: totrans-7
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 设备输入，如麦克风、网络摄像头和屏幕录制
 - en: Generating synthetic audio / video
+  id: totrans-8
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 生成合成音频/视频
 - en: Applying preprocessing with custom filter expressions
+  id: totrans-9
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 应用自定义滤波器表达式进行预处理
 - en: '[PRE0]'
+  id: totrans-10
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: '[PRE1]'
+  id: totrans-11
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Audio / Video device input[](#audio-video-device-input "Permalink to this heading")
+  id: totrans-12
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 音频/视频设备输入[](#audio-video-device-input "跳转到此标题的永久链接")
 - en: See also
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: 另请参阅
 - en: '[Accelerated Video Decoding with NVDEC](../hw_acceleration_tutorial.html).'
+  id: totrans-14
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[使用NVDEC进行加速视频解码](../hw_acceleration_tutorial.html)。'
 - en: '[Online ASR with Emformer RNN-T](./online_asr_tutorial.html).'
+  id: totrans-15
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[使用Emformer RNN-T进行在线ASR](./online_asr_tutorial.html)。'
 - en: '[Device ASR with Emformer RNN-T](./device_asr.html).'
+  id: totrans-16
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[使用Emformer RNN-T进行设备ASR](./device_asr.html)。'
 - en: Given that the system has proper media devices and libavdevice is configured
     to use the devices, the streaming API can pull media streams from these devices.
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 假设系统具有适当的媒体设备并且libavdevice已配置为使用这些设备，则流媒体API可以从这些设备中提取媒体流。
 - en: To do this, we pass additional parameters `format` and `option` to the constructor.
     `format` specifies the device component and `option` dictionary is specific to
     the specified component.
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: 为此，我们向构造函数传递额外的参数`format`和`option`。`format`指定设备组件，`option`字典特定于指定的组件。
 - en: The exact arguments to be passed depend on the system configuration. Please
     refer to [https://ffmpeg.org/ffmpeg-devices.html](https://ffmpeg.org/ffmpeg-devices.html)
     for the detail.
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 要传递的确切参数取决于系统配置。请参考[https://ffmpeg.org/ffmpeg-devices.html](https://ffmpeg.org/ffmpeg-devices.html)获取详细信息。
 - en: The following example illustrates how one can do this on MacBook Pro.
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下示例说明了如何在MacBook Pro上执行此操作。
 - en: First, we need to check the available devices.
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 首先，我们需要检查可用设备。
 - en: '[PRE2]'
+  id: totrans-22
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: We use FaceTime HD Camera as video device (index 0) and MacBook Pro Microphone
     as audio device (index 0).
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们使用FaceTime HD摄像头作为视频设备（索引0），MacBook Pro麦克风作为音频设备（索引0）。
 - en: If we do not pass any `option`, the device uses its default configuration. The
     decoder might not support the configuration.
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果我们不传递任何`option`，设备将使用其默认配置。解码器可能不支持该配置。
 - en: '[PRE3]'
+  id: totrans-25
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: By providing `option`, we can change the format that the device streams to a
     format supported by decoder.
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过提供`option`，我们可以更改设备流到解码器支持的格式。
 - en: '[PRE4]'
+  id: totrans-27
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: '## Synthetic source streams[](#synthetic-source-streams "Permalink to this
     heading")'
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: '##合成源流[](#synthetic-source-streams "跳转到此标题的永久链接")'
 - en: As a part of device integration, ffmpeg provides a “virtual device” interface.
     This interface provides synthetic audio / video data generation using libavfilter.
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 作为设备集成的一部分，ffmpeg提供了“虚拟设备”接口。该接口使用libavfilter提供合成音频/视频数据生成。
 - en: To use this, we set `format=lavfi` and provide a filter description to `src`.
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 要使用此功能，我们设置`format=lavfi`并为`src`提供一个滤波器描述。
 - en: The detail of filter description can be found at [https://ffmpeg.org/ffmpeg-filters.html](https://ffmpeg.org/ffmpeg-filters.html)
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: 有关滤波器描述的详细信息，请参阅[https://ffmpeg.org/ffmpeg-filters.html](https://ffmpeg.org/ffmpeg-filters.html)
 - en: Audio Examples[](#audio-examples "Permalink to this heading")
+  id: totrans-32
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 音频示例[](#audio-examples "跳转到此标题的永久链接")
 - en: Sine wave[](#sine-wave "Permalink to this heading")
+  id: totrans-33
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 正弦波[](#sine-wave "跳转到此标题的永久链接")
 - en: '[https://ffmpeg.org/ffmpeg-filters.html#sine](https://ffmpeg.org/ffmpeg-filters.html#sine)'
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: '[https://ffmpeg.org/ffmpeg-filters.html#sine](https://ffmpeg.org/ffmpeg-filters.html#sine)'
 - en: '[PRE5]'
+  id: totrans-35
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: <https://download.pytorch.org/torchaudio/tutorial-assets/stream-api/sine.wav>
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: <https://download.pytorch.org/torchaudio/tutorial-assets/stream-api/sine.wav>
 - en: '![](../Images/4951828f6e6cb4ef7945b4445da896af.png)'
+  id: totrans-37
   prefs: []
   type: TYPE_IMG
+  zh: '![](../Images/4951828f6e6cb4ef7945b4445da896af.png)'
 - en: Signal with arbitral expression[](#signal-with-arbitral-expression "Permalink
     to this heading")
+  id: totrans-38
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 具有任意表达式的信号[](#signal-with-arbitral-expression "跳转到此标题的永久链接")
 - en: '[https://ffmpeg.org/ffmpeg-filters.html#aevalsrc](https://ffmpeg.org/ffmpeg-filters.html#aevalsrc)'
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: '[https://ffmpeg.org/ffmpeg-filters.html#aevalsrc](https://ffmpeg.org/ffmpeg-filters.html#aevalsrc)'
 - en: '[PRE6]'
+  id: totrans-40
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: <https://download.pytorch.org/torchaudio/tutorial-assets/stream-api/aevalsrc.wav>
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: <https://download.pytorch.org/torchaudio/tutorial-assets/stream-api/aevalsrc.wav>
 - en: '![](../Images/fdbb3facca115030372b67b2e0a87035.png)'
+  id: totrans-42
   prefs: []
   type: TYPE_IMG
+  zh: '![](../Images/fdbb3facca115030372b67b2e0a87035.png)'
 - en: Noise[](#noise "Permalink to this heading")
+  id: totrans-43
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 噪声[](#noise "跳转到此标题的永久链接")
 - en: '[https://ffmpeg.org/ffmpeg-filters.html#anoisesrc](https://ffmpeg.org/ffmpeg-filters.html#anoisesrc)'
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: '[https://ffmpeg.org/ffmpeg-filters.html#anoisesrc](https://ffmpeg.org/ffmpeg-filters.html#anoisesrc)'
 - en: '[PRE7]'
+  id: totrans-45
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: <https://download.pytorch.org/torchaudio/tutorial-assets/stream-api/anoisesrc.wav>
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: <https://download.pytorch.org/torchaudio/tutorial-assets/stream-api/anoisesrc.wav>
 - en: '![](../Images/221138e798d8d14f09df7f8607a3082b.png)'
+  id: totrans-47
   prefs: []
   type: TYPE_IMG
+  zh: '![](../Images/221138e798d8d14f09df7f8607a3082b.png)'
 - en: Video Examples[](#video-examples "Permalink to this heading")
+  id: totrans-48
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 视频示例[](#video-examples "跳转到此标题的永久链接")
 - en: Cellular automaton[](#cellular-automaton "Permalink to this heading")
+  id: totrans-49
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 元胞自动机[](#cellular-automaton "跳转到此标题的永久链接")
 - en: '[https://ffmpeg.org/ffmpeg-filters.html#cellauto](https://ffmpeg.org/ffmpeg-filters.html#cellauto)'
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: '[https://ffmpeg.org/ffmpeg-filters.html#cellauto](https://ffmpeg.org/ffmpeg-filters.html#cellauto)'
 - en: '[PRE8]'
+  id: totrans-51
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: <https://download.pytorch.org/torchaudio/tutorial-assets/stream-api/cellauto.mp4>
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
+  zh: <https://download.pytorch.org/torchaudio/tutorial-assets/stream-api/cellauto.mp4>
 - en: Mandelbrot[](#mandelbrot "Permalink to this heading")
+  id: totrans-53
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 曼德尔布罗特[](#mandelbrot "跳转到此标题的永久链接")
 - en: '[https://ffmpeg.org/ffmpeg-filters.html#cellauto](https://ffmpeg.org/ffmpeg-filters.html#cellauto)'
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: '[https://ffmpeg.org/ffmpeg-filters.html#cellauto](https://ffmpeg.org/ffmpeg-filters.html#cellauto)'
 - en: '[PRE9]'
+  id: totrans-55
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: <https://download.pytorch.org/torchaudio/tutorial-assets/stream-api/mandelbrot.mp4>
+  id: totrans-56
   prefs: []
   type: TYPE_NORMAL
+  zh: <https://download.pytorch.org/torchaudio/tutorial-assets/stream-api/mandelbrot.mp4>
 - en: MPlayer Test patterns[](#mplayer-test-patterns "Permalink to this heading")
+  id: totrans-57
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: MPlayer测试模式
 - en: '[https://ffmpeg.org/ffmpeg-filters.html#mptestsrc](https://ffmpeg.org/ffmpeg-filters.html#mptestsrc)'
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: '[https://ffmpeg.org/ffmpeg-filters.html#mptestsrc](https://ffmpeg.org/ffmpeg-filters.html#mptestsrc)'
 - en: '[PRE10]'
+  id: totrans-59
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: <https://download.pytorch.org/torchaudio/tutorial-assets/stream-api/mptestsrc.mp4>
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: <https://download.pytorch.org/torchaudio/tutorial-assets/stream-api/mptestsrc.mp4>
 - en: John Conway’s life game[](#john-conway-s-life-game "Permalink to this heading")
+  id: totrans-61
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 约翰·康威的生命游戏
 - en: '[https://ffmpeg.org/ffmpeg-filters.html#life](https://ffmpeg.org/ffmpeg-filters.html#life)'
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
+  zh: '[https://ffmpeg.org/ffmpeg-filters.html#life](https://ffmpeg.org/ffmpeg-filters.html#life)'
 - en: '[PRE11]'
+  id: totrans-63
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: <https://download.pytorch.org/torchaudio/tutorial-assets/stream-api/life.mp4>
+  id: totrans-64
   prefs: []
   type: TYPE_NORMAL
+  zh: <https://download.pytorch.org/torchaudio/tutorial-assets/stream-api/life.mp4>
 - en: Sierpinski carpet/triangle fractal[](#sierpinski-carpet-triangle-fractal "Permalink
     to this heading")
+  id: totrans-65
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: Sierpinski carpet/triangle fractal
 - en: '[https://ffmpeg.org/ffmpeg-filters.html#sierpinski](https://ffmpeg.org/ffmpeg-filters.html#sierpinski)'
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: '[https://ffmpeg.org/ffmpeg-filters.html#sierpinski](https://ffmpeg.org/ffmpeg-filters.html#sierpinski)'
 - en: '[PRE12]'
+  id: totrans-67
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: <https://download.pytorch.org/torchaudio/tutorial-assets/stream-api/sierpinski.mp4>
+  id: totrans-68
   prefs: []
   type: TYPE_NORMAL
+  zh: <https://download.pytorch.org/torchaudio/tutorial-assets/stream-api/sierpinski.mp4>
 - en: Custom filters[](#custom-filters "Permalink to this heading")
+  id: totrans-69
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 自定义过滤器
 - en: When defining an output stream, you can use `add_audio_stream()` and `add_video_stream()`
     methods.
+  id: totrans-70
   prefs: []
   type: TYPE_NORMAL
+  zh: 在定义输出流时，可以使用`add_audio_stream()`和`add_video_stream()`方法。
 - en: These methods take `filter_desc` argument, which is a string formatted according
     to ffmpeg’s [filter expression](https://ffmpeg.org/ffmpeg-filters.html).
+  id: totrans-71
   prefs: []
   type: TYPE_NORMAL
+  zh: 这些方法接受`filter_desc`参数，该参数是根据ffmpeg的[过滤器表达式](https://ffmpeg.org/ffmpeg-filters.html)格式化的字符串。
 - en: The difference between `add_basic_(audio|video)_stream` and `add_(audio|video)_stream`
     is that `add_basic_(audio|video)_stream` constructs the filter expression and
     passes it to the same underlying implementation. Everything `add_basic_(audio|video)_stream`
     can be achieved with `add_(audio|video)_stream`.
+  id: totrans-72
   prefs: []
   type: TYPE_NORMAL
+  zh: '`add_basic_(audio|video)_stream`和`add_(audio|video)_stream`之间的区别在于`add_basic_(audio|video)_stream`构建了过滤器表达式并将其传递给相同的底层实现。一切`add_basic_(audio|video)_stream`可以通过`add_(audio|video)_stream`实现。'
 - en: Note
+  id: totrans-73
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: When applying custom filters, the client code must convert the audio/video stream
     to one of the formats that torchaudio can convert to tensor format. This can be
     achieved, for example, by applying `format=pix_fmts=rgb24` to video stream and
     `aformat=sample_fmts=fltp` to audio stream.
+  id: totrans-74
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在应用自定义过滤器时，客户端代码必须将音频/视频流转换为torchaudio可以转换为张量格式的格式之一。例如，可以通过将`format=pix_fmts=rgb24`应用于视频流和`aformat=sample_fmts=fltp`应用于音频流来实现这一点。
 - en: Each output stream has separate filter graph. Therefore, it is not possible
     to use different input/output streams for a filter expression. However, it is
     possible to split one input stream into multiple of them, and merge them later.
+  id: totrans-75
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 每个输出流都有单独的过滤器图。因此，不可能为过滤器表达式使用不同的输入/输出流。但是，可以将一个输入流拆分为多个流，然后将它们合并。
 - en: Audio Examples[](#id1 "Permalink to this heading")
+  id: totrans-76
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 音频示例
 - en: '[PRE13]'
+  id: totrans-77
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: '[PRE14]'
+  id: totrans-78
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: Original[](#original "Permalink to this heading")
+  id: totrans-79
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 原始
 - en: '[PRE15]'
+  id: totrans-80
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: '![streamreader advanced tutorial](../Images/9422f36c7502b1bcef0f877aa913b653.png)'
+  id: totrans-81
   prefs: []
   type: TYPE_IMG
+  zh: '![streamreader高级教程](../Images/9422f36c7502b1bcef0f877aa913b653.png)'
 - en: '[PRE16]'
+  id: totrans-82
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE16]'
+- en: null
+  id: totrans-83
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-84
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: Highpass / lowpass filter[](#highpass-lowpass-filter "Permalink to this heading")
+  id: totrans-85
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 高通/低通滤波器
 - en: '[PRE17]'
+  id: totrans-86
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: '![streamreader advanced tutorial](../Images/265b57356aac35df68450a1af7d44461.png)'
+  id: totrans-87
   prefs: []
   type: TYPE_IMG
+  zh: '![streamreader高级教程](../Images/265b57356aac35df68450a1af7d44461.png)'
 - en: '[PRE18]'
+  id: totrans-88
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE18]'
+- en: null
+  id: totrans-89
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-90
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: FFT filter - Robot 🤖[](#fft-filter-robot "Permalink to this heading")
+  id: totrans-91
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: FFT滤波器 - 机器人🤖
 - en: '[PRE19]'
+  id: totrans-92
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE19]'
 - en: '![streamreader advanced tutorial](../Images/29cba5f8e6ece9a91c532b94bbd19c2a.png)'
+  id: totrans-93
   prefs: []
   type: TYPE_IMG
+  zh: '![streamreader高级教程](../Images/29cba5f8e6ece9a91c532b94bbd19c2a.png)'
 - en: '[PRE20]'
+  id: totrans-94
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE20]'
+- en: null
+  id: totrans-95
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-96
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: FFT filter - Whisper[](#fft-filter-whisper "Permalink to this heading")
+  id: totrans-97
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: FFT滤波器 - 低语
 - en: '[PRE21]'
+  id: totrans-98
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE21]'
 - en: '![streamreader advanced tutorial](../Images/406d88c3a3f285f209ced7de7719ea34.png)'
+  id: totrans-99
   prefs: []
   type: TYPE_IMG
+  zh: '![streamreader高级教程](../Images/406d88c3a3f285f209ced7de7719ea34.png)'
 - en: '[PRE22]'
+  id: totrans-100
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE22]'
+- en: null
+  id: totrans-101
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-102
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: Video Examples[](#id2 "Permalink to this heading")
+  id: totrans-103
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 视频示例
 - en: '[PRE23]'
+  id: totrans-104
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE23]'
 - en: '[PRE24]'
+  id: totrans-105
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE24]'
 - en: Original[](#id3 "Permalink to this heading")
+  id: totrans-106
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 原始
 - en: '[PRE25]'
+  id: totrans-107
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE25]'
 - en: '![streamreader advanced tutorial](../Images/e52ccb510fecdebbce6ae360b991f85d.png)'
+  id: totrans-108
   prefs: []
   type: TYPE_IMG
+  zh: '![streamreader高级教程](../Images/e52ccb510fecdebbce6ae360b991f85d.png)'
 - en: '[PRE26]'
+  id: totrans-109
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE26]'
 - en: Mirror[](#mirror "Permalink to this heading")
+  id: totrans-110
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 镜像
 - en: '[PRE27]'
+  id: totrans-111
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE27]'
 - en: '![streamreader advanced tutorial](../Images/0b38768351c328de5fdaae90f7fe7066.png)'
+  id: totrans-112
   prefs: []
   type: TYPE_IMG
+  zh: '![streamreader高级教程](../Images/0b38768351c328de5fdaae90f7fe7066.png)'
 - en: '[PRE28]'
+  id: totrans-113
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE28]'
 - en: Edge detection[](#edge-detection "Permalink to this heading")
+  id: totrans-114
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 边缘检测
 - en: '[PRE29]'
+  id: totrans-115
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE29]'
 - en: '![streamreader advanced tutorial](../Images/c9366a2d9e62e5faacc20268e77ce566.png)'
+  id: totrans-116
   prefs: []
   type: TYPE_IMG
+  zh: '![streamreader高级教程](../Images/c9366a2d9e62e5faacc20268e77ce566.png)'
 - en: '[PRE30]'
+  id: totrans-117
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE30]'
 - en: Random rotation[](#random-rotation "Permalink to this heading")
+  id: totrans-118
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 随机旋转
 - en: '[PRE31]'
+  id: totrans-119
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE31]'
 - en: '![streamreader advanced tutorial](../Images/9bcd668d0694dbc4b90b7d448cc142da.png)'
+  id: totrans-120
   prefs: []
   type: TYPE_IMG
+  zh: '![streamreader高级教程](../Images/9bcd668d0694dbc4b90b7d448cc142da.png)'
 - en: '[PRE32]'
+  id: totrans-121
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE32]'
 - en: Pixel manipulation[](#pixel-manipulation "Permalink to this heading")
+  id: totrans-122
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 像素操作
 - en: '[PRE33]'
+  id: totrans-123
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE33]'
 - en: '![streamreader advanced tutorial](../Images/f5b57739b74a653aec75310af2f57814.png)'
+  id: totrans-124
   prefs: []
   type: TYPE_IMG
+  zh: '![streamreader高级教程](../Images/f5b57739b74a653aec75310af2f57814.png)'
 - en: '[PRE34]'
+  id: totrans-125
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE34]'
 - en: 'Tag: [`torchaudio.io`](../io.html#module-torchaudio.io "torchaudio.io")'
+  id: totrans-126
   prefs: []
   type: TYPE_NORMAL
+  zh: 标签：[`torchaudio.io`](../io.html#module-torchaudio.io)
 - en: '**Total running time of the script:** ( 0 minutes 17.260 seconds)'
+  id: totrans-127
   prefs: []
   type: TYPE_NORMAL
+  zh: '**脚本的总运行时间：**（0分钟17.260秒）'
 - en: '[`Download Python source code: streamreader_advanced_tutorial.py`](../_downloads/21502c17878277ad648c064df573f05e/streamreader_advanced_tutorial.py)'
+  id: totrans-128
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Python源代码：streamreader_advanced_tutorial.py`](../_downloads/21502c17878277ad648c064df573f05e/streamreader_advanced_tutorial.py)'
 - en: '[`Download Jupyter notebook: streamreader_advanced_tutorial.ipynb`](../_downloads/f3b1cbeaf1ae66d226233d2ca3d0ef3d/streamreader_advanced_tutorial.ipynb)'
+  id: totrans-129
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Jupyter笔记本：streamreader_advanced_tutorial.ipynb`](../_downloads/f3b1cbeaf1ae66d226233d2ca3d0ef3d/streamreader_advanced_tutorial.ipynb)'
 - en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  id: totrans-130
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Sphinx-Gallery生成的画廊](https://sphinx-gallery.github.io)'

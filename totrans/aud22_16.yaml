@@ -1,538 +1,832 @@
 - en: StreamReader Basic Usages
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: StreamReader基本用法
 - en: 原文：[https://pytorch.org/audio/stable/tutorials/streamreader_basic_tutorial.html](https://pytorch.org/audio/stable/tutorials/streamreader_basic_tutorial.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/audio/stable/tutorials/streamreader_basic_tutorial.html](https://pytorch.org/audio/stable/tutorials/streamreader_basic_tutorial.html)
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-tutorials-streamreader-basic-tutorial-py) to
     download the full example code
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[这里](#sphx-glr-download-tutorials-streamreader-basic-tutorial-py)下载完整示例代码
 - en: '**Author**: [Moto Hira](mailto:moto%40meta.com)'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '**作者**：[Moto Hira](mailto:moto%40meta.com)'
 - en: This tutorial shows how to use [`torchaudio.io.StreamReader`](../generated/torchaudio.io.StreamReader.html#torchaudio.io.StreamReader
     "torchaudio.io.StreamReader") to fetch and decode audio/video data and apply preprocessings
     that libavfilter provides.
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程展示了如何使用[`torchaudio.io.StreamReader`](../generated/torchaudio.io.StreamReader.html#torchaudio.io.StreamReader
+    "torchaudio.io.StreamReader")来获取和解码音频/视频数据，并应用libavfilter提供的预处理。
 - en: Note
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: This tutorial requires FFmpeg libraries. Please refer to [FFmpeg dependency](../installation.html#ffmpeg-dependency)
     for the detail.
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程需要FFmpeg库。请参考[FFmpeg依赖](../installation.html#ffmpeg-dependency)获取详细信息。
 - en: Overview[](#overview "Permalink to this heading")
+  id: totrans-8
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 概述[](#overview "跳转到此标题的永久链接")
 - en: Streaming API leverages the powerful I/O features of ffmpeg.
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 流式传输API利用了ffmpeg强大的I/O功能。
 - en: It can
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 它可以
 - en: Load audio/video in variety of formats
+  id: totrans-11
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 以各种格式加载音频/视频
 - en: Load audio/video from local/remote source
+  id: totrans-12
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 从本地/远程源加载音频/视频
 - en: Load audio/video from file-like object
+  id: totrans-13
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 从类文件对象加载音频/视频
 - en: Load audio/video from microphone, camera and screen
+  id: totrans-14
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 从麦克风、摄像头和屏幕加载音频/视频
 - en: Generate synthetic audio/video signals.
+  id: totrans-15
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 生成合成音频/视频信号。
 - en: Load audio/video chunk by chunk
+  id: totrans-16
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 逐块加载音频/视频
 - en: Change the sample rate / frame rate, image size, on-the-fly
+  id: totrans-17
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 更改采样率/帧率、图像大小，实时处理
 - en: Apply filters and preprocessings
+  id: totrans-18
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 应用过滤器和预处理
 - en: The streaming API works in three steps.
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 流式传输API分为三个步骤。
 - en: Open media source (file, device, synthetic pattern generator)
+  id: totrans-20
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 打开媒体源（文件、设备、合成模式生成器）
 - en: Configure output stream
+  id: totrans-21
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 配置输出流
 - en: Stream the media
+  id: totrans-22
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 流式传输媒体
 - en: At this moment, the features that the ffmpeg integration provides are limited
     to the form of
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 目前，ffmpeg集成提供的功能形式有限
 - en: <some media source> -> <optional processing> -> <tensor>
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: <某些媒体源> -> <可选处理> -> <张量>
 - en: If you have other forms that can be useful to your usecases, (such as integration
     with torch.Tensor type) please file a feature request.
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您有其他形式对您的用例有用（例如与torch.Tensor类型集成），请提出功能请求。
 - en: Preparation[](#preparation "Permalink to this heading")
+  id: totrans-26
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 准备工作[](#preparation "跳转到此标题的永久链接")
 - en: '[PRE0]'
+  id: totrans-27
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: '[PRE1]'
+  id: totrans-28
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Opening the source[](#opening-the-source "Permalink to this heading")
+  id: totrans-29
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 打开源[](#opening-the-source "跳转到此标题的永久链接")
 - en: There are mainly three different sources that streaming API can handle. Whichever
     source is used, the remaining processes (configuring the output, applying preprocessing)
     are same.
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 流式传输API可以处理主要三种不同的源。无论使用哪种源，剩余的流程（配置输出、应用预处理）都是相同的。
 - en: Common media formats (resource indicator of string type or file-like object)
+  id: totrans-31
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 常见媒体格式（字符串类型或类文件对象的资源指示符）
 - en: Audio / Video devices
+  id: totrans-32
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 音频/视频设备
 - en: Synthetic audio / video sources
+  id: totrans-33
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 合成音频/视频源
 - en: The following section covers how to open common media formats. For the other
     streams, please refer to the [StreamReader Advanced Usage](./streamreader_advanced_tutorial.html).
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下部分介绍了如何打开常见的媒体格式。对于其他流，请参考[StreamReader高级用法](./streamreader_advanced_tutorial.html)。
 - en: Note
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: The coverage of the supported media (such as containers, codecs and protocols)
     depend on the FFmpeg libraries found in the system.
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 支持的媒体覆盖范围（如容器、编解码器和协议）取决于系统中发现的FFmpeg库。
 - en: If StreamReader raises an error opening a source, please check that ffmpeg command
     can handle it.
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果StreamReader在打开源时引发错误，请检查ffmpeg命令是否可以处理它。
 - en: Local files[](#local-files "Permalink to this heading")
+  id: totrans-38
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 本地文件[](#local-files "跳转到此标题的永久链接")
 - en: To open a media file, you can simply pass the path of the file to the constructor
     of StreamReader.
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 要打开媒体文件，只需将文件路径传递给StreamReader的构造函数即可。
 - en: '[PRE2]'
+  id: totrans-40
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: This works for image file, video file and video streams.
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 这适用于图像文件、视频文件和视频流。
 - en: '[PRE3]'
+  id: totrans-42
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: Network protocols[](#network-protocols "Permalink to this heading")
+  id: totrans-43
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 网络协议[](#network-protocols "跳转到此标题的永久链接")
 - en: You can directly pass a URL as well.
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 您也可以直接传递URL。
 - en: '[PRE4]'
+  id: totrans-45
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: File-like objects[](#file-like-objects "Permalink to this heading")
+  id: totrans-46
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 类文件对象[](#file-like-objects "跳转到此标题的永久链接")
 - en: You can also pass a file-like object. A file-like object must implement `read`
     method conforming to [`io.RawIOBase.read`](https://docs.python.org/3/library/io.html#io.RawIOBase.read
     "(in Python v3.12)").
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: 您还可以传递一个类文件对象。类文件对象必须实现符合[`io.RawIOBase.read`](https://docs.python.org/3/library/io.html#io.RawIOBase.read
+    "(在Python v3.12中)")的`read`方法。
 - en: If the given file-like object has `seek` method, StreamReader uses it as well.
     In this case the `seek` method is expected to conform to [`io.IOBase.seek`](https://docs.python.org/3/library/io.html#io.IOBase.seek
     "(in Python v3.12)").
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果给定的类文件对象具有`seek`方法，StreamReader也会使用它。在这种情况下，`seek`方法应符合[`io.IOBase.seek`](https://docs.python.org/3/library/io.html#io.IOBase.seek
+    "(在Python v3.12中)")。
 - en: '[PRE5]'
+  id: totrans-49
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: In case where third-party libraries implement `seek` so that it raises an error,
     you can write a wrapper class to mask the `seek` method.
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: 在第三方库实现`seek`会引发错误的情况下，可以编写一个包装类来屏蔽`seek`方法。
 - en: '[PRE6]'
+  id: totrans-51
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: '[PRE7]'
+  id: totrans-52
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: '[PRE8]'
+  id: totrans-53
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: Note
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: When using an unseekable file-like object, the source media has to be streamable.
     For example, a valid MP4-formatted object can have its metadata either at the
     beginning or at the end of the media data. Those with metadata at the beginning
     can be opened without method seek, but those with metadata at the end cannot be
     opened without seek.
+  id: totrans-55
   prefs: []
   type: TYPE_NORMAL
+  zh: 当使用不可寻址的类文件对象时，源媒体必须是可流式传输的。例如，一个有效的MP4格式对象可以在媒体数据的开头或结尾处具有其元数据。具有在开头的元数据的对象可以在不使用`seek`方法的情况下打开，但具有在结尾的元数据的对象则无法在不使用seek的情况下打开。
 - en: Headerless media[](#headerless-media "Permalink to this heading")
+  id: totrans-56
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 无头媒体[](#headerless-media "跳转到此标题的永久链接")
 - en: If attempting to load headerless raw data, you can use `format` and `option`
     to specify the format of the data.
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果尝试加载无头原始数据，可以使用`format`和`option`来指定数据的格式。
 - en: Say, you converted an audio file into faw format with `sox` command as follow;
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: 比如，您可以使用`sox`命令将音频文件转换为faw格式，如下所示;
 - en: '[PRE9]'
+  id: totrans-59
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: Such audio can be opened like following.
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: 这样的音频可以像以下这样打开。
 - en: '[PRE10]'
+  id: totrans-61
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: Checking the source streams[](#checking-the-source-streams "Permalink to this
     heading")
+  id: totrans-62
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 检查源流[](#checking-the-source-streams "跳转到此标题")
 - en: Once the media is opened, we can inspect the streams and configure the output
     streams.
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: 媒体打开后，我们可以检查流并配置输出流。
 - en: You can check the number of source streams with `num_src_streams`.
+  id: totrans-64
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可以使用`num_src_streams`检查源流的数量。
 - en: Note
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: The number of streams is NOT the number of channels. Each audio stream can contain
     an arbitrary number of channels.
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: 流的数量不是通道的数量。每个音频流可以包含任意数量的通道。
 - en: To check the metadata of source stream you can use `get_src_stream_info()` method
     and provide the index of the source stream.
+  id: totrans-67
   prefs: []
   type: TYPE_NORMAL
+  zh: 要检查源流的元数据，可以使用`get_src_stream_info()`方法并提供源流的索引。
 - en: This method returns `SourceStream`. If a source stream is audio type, then the
     return type is `SourceAudioStream`, which is a subclass of SourceStream, with
     additional audio-specific attributes. Similarly, if a source stream is video type,
     then the return type is `SourceVideoStream`.
+  id: totrans-68
   prefs: []
   type: TYPE_NORMAL
+  zh: 此方法返回`SourceStream`。如果源流是音频类型，则返回类型为`SourceAudioStream`，它是SourceStream的子类，具有额外的音频特定属性。同样，如果源流是视频类型，则返回类型为`SourceVideoStream`。
 - en: For regular audio formats and still image formats, such as WAV and JPEG, the
     number of souorce streams is 1.
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于常规音频格式和静态图像格式，例如WAV和JPEG，源流的数量为1。
 - en: '[PRE11]'
+  id: totrans-70
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: '[PRE12]'
+  id: totrans-71
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: Container formats and playlist formats may contain multiple streams of different
     media type.
+  id: totrans-72
   prefs: []
   type: TYPE_NORMAL
+  zh: 容器格式和播放列表格式可能包含不同媒体类型的多个流。
 - en: '[PRE13]'
+  id: totrans-73
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: '[PRE14]'
+  id: totrans-74
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: Configuring output streams[](#configuring-output-streams "Permalink to this
     heading")
+  id: totrans-75
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 配置输出流[](#configuring-output-streams "跳转到此标题")
 - en: The stream API lets you stream data from an arbitrary combination of the input
     streams. If your application does not need audio or video, you can omit them.
     Or if you want to apply different preprocessing to the same source stream, you
     can duplicate the source stream.
+  id: totrans-76
   prefs: []
   type: TYPE_NORMAL
+  zh: 流API允许您从输入流的任意组合中流式传输数据。如果您的应用程序不需要音频或视频，可以省略它们。或者，如果要对相同源流应用不同的预处理，可以复制源流。
 - en: Default streams[](#default-streams "Permalink to this heading")
+  id: totrans-77
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 默认流[](#default-streams "跳转到此标题")
 - en: When there are multiple streams in the source, it is not immediately clear which
     stream should be used.
+  id: totrans-78
   prefs: []
   type: TYPE_NORMAL
+  zh: 当源中有多个流时，不清楚应该使用哪个流。
 - en: FFmpeg implements some heuristics to determine the default stream. The resulting
     stream index is exposed via
+  id: totrans-79
   prefs: []
   type: TYPE_NORMAL
+  zh: FFmpeg实现了一些启发式方法来确定默认流。生成的流索引通过暴露
 - en: '`default_audio_stream` and `default_video_stream`.'
+  id: totrans-80
   prefs: []
   type: TYPE_NORMAL
+  zh: '`default_audio_stream`和`default_video_stream`。'
 - en: Configuring output streams[](#id1 "Permalink to this heading")
+  id: totrans-81
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 配置输出流[](#id1 "跳转到此标题")
 - en: Once you know which source stream you want to use, then you can configure output
     streams with `add_basic_audio_stream()` and `add_basic_video_stream()`.
+  id: totrans-82
   prefs: []
   type: TYPE_NORMAL
+  zh: 一旦确定要使用哪个源流，然后可以使用`add_basic_audio_stream()`和`add_basic_video_stream()`配置输出流。
 - en: These methods provide a simple way to change the basic property of media to
     match the application’s requirements.
+  id: totrans-83
   prefs: []
   type: TYPE_NORMAL
+  zh: 这些方法提供了一种简单的方式来更改媒体的基本属性以匹配应用程序的要求。
 - en: The arguments common to both methods are;
+  id: totrans-84
   prefs: []
   type: TYPE_NORMAL
+  zh: 两种方法的共同参数是;
 - en: '`frames_per_chunk`: How many frames at maximum should be returned at each iteration.
     For audio, the resulting tensor will be the shape of (frames_per_chunk, num_channels).
     For video, it will be (frames_per_chunk, num_channels, height, width).'
+  id: totrans-85
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`frames_per_chunk`：每次迭代最多应返回多少帧。对于音频，生成的张量将是形状为(frames_per_chunk, num_channels)。对于视频，它将是形状为(frames_per_chunk,
+    num_channels, height, width)。'
 - en: '`buffer_chunk_size`: The maximum number of chunks to be buffered internally.
     When the StreamReader buffered this number of chunks and is asked to pull more
     frames, StreamReader drops the old frames/chunks.'
+  id: totrans-86
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`buffer_chunk_size`：内部缓冲的最大块数。当StreamReader缓冲了这么多块并被要求拉取更多帧时，StreamReader会丢弃旧帧/块。'
 - en: '`stream_index`: The index of the source stream.'
+  id: totrans-87
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`stream_index`：源流的索引。'
 - en: '`decoder`: If provided, override the decoder. Useful if it fails to detect
     the codec.'
+  id: totrans-88
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`decoder`：如果提供，则覆盖解码器。如果无法检测编解码器，则很有用。'
 - en: '`decoder_option`: The option for the decoder.'
+  id: totrans-89
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`decoder_option`：解码器选项。'
 - en: For audio output stream, you can provide the following additional parameters
     to change the audio properties.
+  id: totrans-90
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于音频输出流，您可以提供以下附加参数来更改音频属性。
 - en: '`format`: By default the StreamReader returns tensor of float32 dtype, with
     sample values ranging [-1, 1]. By providing `format` argument the resulting dtype
     and value range is changed.'
+  id: totrans-91
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`format`：默认情况下，StreamReader返回float32 dtype的张量，样本值范围为[-1, 1]。通过提供`format`参数，可以更改结果的dtype和值范围。'
 - en: '`sample_rate`: When provided, StreamReader resamples the audio on-the-fly.'
+  id: totrans-92
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`sample_rate`：提供时，StreamReader会实时重新采样音频。'
 - en: For video output stream, the following parameters are available.
+  id: totrans-93
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于视频输出流，以下参数可用。
 - en: '`format`: Image frame format. By default StreamReader returns frames in 8-bit
     3 channel, in RGB order.'
+  id: totrans-94
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`format`：图像帧格式。默认情况下，StreamReader以8位3通道的RGB顺序返回帧。'
 - en: '`frame_rate`: Change the frame rate by dropping or duplicating frames. No interpolation
     is performed.'
+  id: totrans-95
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`frame_rate`：通过丢弃或复制帧来更改帧速率。不执行插值。'
 - en: '`width`, `height`: Change the image size.'
+  id: totrans-96
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`width`，`height`：更改图像大小。'
 - en: '[PRE15]'
+  id: totrans-97
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: '[PRE16]'
+  id: totrans-98
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: You can check the resulting output streams in a similar manner as checking the
     source streams. `num_out_streams` reports the number of configured output streams,
     and `get_out_stream_info()` fetches the information about the output streams.
+  id: totrans-99
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可以像检查源流一样检查生成的输出流。`num_out_streams`报告配置的输出流数量，`get_out_stream_info()`获取有关输出流的信息。
 - en: '[PRE17]'
+  id: totrans-100
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: If you want to remove an output stream, you can do so with `remove_stream()`
     method.
+  id: totrans-101
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果要删除输出流，可以使用`remove_stream()`方法。
 - en: '[PRE18]'
+  id: totrans-102
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: Streaming[](#streaming "Permalink to this heading")
+  id: totrans-103
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 流[](#streaming "跳转到此标题")
 - en: To stream media data, the streamer alternates the process of fetching and decoding
     the source data, and passing the resulting audio / video data to client code.
+  id: totrans-104
   prefs: []
   type: TYPE_NORMAL
+  zh: 流媒体数据，流媒体播放器交替进行获取和解码源数据的过程，并将生成的音频/视频数据传递给客户端代码。
 - en: There are low-level methods that performs these operations. `is_buffer_ready()`,
     `process_packet()` and `pop_chunks()`.
+  id: totrans-105
   prefs: []
   type: TYPE_NORMAL
+  zh: 有执行这些操作的低级方法。`is_buffer_ready()`，`process_packet()`和`pop_chunks()`。
 - en: In this tutorial, we will use the high-level API, iterator protocol. It is as
     simple as a `for` loop.
+  id: totrans-106
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，我们将使用高级API，迭代器协议。就像一个`for`循环一样简单。
 - en: '[PRE19]'
+  id: totrans-107
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE19]'
 - en: Example[](#example "Permalink to this heading")
+  id: totrans-108
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 示例[](#example "跳转到此标题的永久链接")
 - en: Let’s take an example video to configure the output streams. We will use the
     following video.
+  id: totrans-109
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们以一个示例视频来配置输出流。我们将使用以下视频。
 - en: '[https://www.youtube.com/embed/6zNsc0e3Zns](https://www.youtube.com/embed/6zNsc0e3Zns)'
+  id: totrans-110
   prefs: []
   type: TYPE_NORMAL
+  zh: '[https://www.youtube.com/embed/6zNsc0e3Zns](https://www.youtube.com/embed/6zNsc0e3Zns)'
 - en: 'Source: [https://svs.gsfc.nasa.gov/13013](https://svs.gsfc.nasa.gov/13013)
     (This video is in public domain)'
+  id: totrans-111
   prefs: []
   type: TYPE_NORMAL
+  zh: 来源：[https://svs.gsfc.nasa.gov/13013](https://svs.gsfc.nasa.gov/13013)（此视频属于公共领域）
 - en: 'Credit: NASA’s Goddard Space Flight Center.'
+  id: totrans-112
   prefs: []
   type: TYPE_NORMAL
+  zh: 来源：NASA的戈达德航天飞行中心。
 - en: 'NASA’s Media Usage Guidelines: [https://www.nasa.gov/multimedia/guidelines/index.html](https://www.nasa.gov/multimedia/guidelines/index.html)'
+  id: totrans-113
   prefs: []
   type: TYPE_NORMAL
+  zh: NASA的媒体使用指南：[https://www.nasa.gov/multimedia/guidelines/index.html](https://www.nasa.gov/multimedia/guidelines/index.html)
 - en: Opening the source media[](#opening-the-source-media "Permalink to this heading")
+  id: totrans-114
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 打开源媒体[](#opening-the-source-media "跳转到此标题的永久链接")
 - en: Firstly, let’s list the available streams and its properties.
+  id: totrans-115
   prefs: []
   type: TYPE_NORMAL
+  zh: 首先，让我们列出可用的流及其属性。
 - en: '[PRE20]'
+  id: totrans-116
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE20]'
 - en: '[PRE21]'
+  id: totrans-117
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE21]'
 - en: Now we configure the output stream.
+  id: totrans-118
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们配置输出流。
 - en: Configuring ouptut streams[](#configuring-ouptut-streams "Permalink to this
     heading")
+  id: totrans-119
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 配置输出流[](#configuring-ouptut-streams "跳转到此标题的永久链接")
 - en: '[PRE22]'
+  id: totrans-120
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE22]'
 - en: Note
+  id: totrans-121
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: When configuring multiple output streams, in order to keep all streams synced,
     set parameters so that the ratio between `frames_per_chunk` and `sample_rate`
     or `frame_rate` is consistent across output streams.
+  id: totrans-122
   prefs: []
   type: TYPE_NORMAL
+  zh: 在配置多个输出流时，为了保持所有流同步，设置参数使得`frames_per_chunk`和`sample_rate`或`frame_rate`之间的比率在所有输出流中保持一致。
 - en: Checking the output streams.
+  id: totrans-123
   prefs: []
   type: TYPE_NORMAL
+  zh: 检查输出流。
 - en: '[PRE23]'
+  id: totrans-124
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE23]'
 - en: '[PRE24]'
+  id: totrans-125
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE24]'
 - en: Remove the second audio stream.
+  id: totrans-126
   prefs: []
   type: TYPE_NORMAL
+  zh: 移除第二个音频流。
 - en: '[PRE25]'
+  id: totrans-127
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE25]'
 - en: '[PRE26]'
+  id: totrans-128
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE26]'
 - en: Streaming[](#id2 "Permalink to this heading")
+  id: totrans-129
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 流媒体[](#id2 "跳转到此标题的永久链接")
 - en: Jump to the 10 second point.
+  id: totrans-130
   prefs: []
   type: TYPE_NORMAL
+  zh: 跳转到第10秒处。
 - en: '[PRE27]'
+  id: totrans-131
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE27]'
 - en: Now, let’s finally iterate over the output streams.
+  id: totrans-132
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，让我们最终遍历输出流。
 - en: '[PRE28]'
+  id: totrans-133
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE28]'
 - en: For audio stream, the chunk Tensor will be the shape of (frames_per_chunk, num_channels),
     and for video stream, it is (frames_per_chunk, num_color_channels, height, width).
+  id: totrans-134
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于音频流，块张量的形状为（每块帧数，通道数），对于视频流，形状为（每块帧数，颜色通道数，高度，宽度）。
 - en: '[PRE29]'
+  id: totrans-135
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE29]'
 - en: '[PRE30]'
+  id: totrans-136
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE30]'
 - en: Let’s visualize what we received.
+  id: totrans-137
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们将接收到的内容可视化。
 - en: '[PRE31]'
+  id: totrans-138
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE31]'
 - en: '![Iteration 0, Iteration 1, Iteration 2](../Images/b4b4e717ab69f1911cc59e246f8112cc.png)'
+  id: totrans-139
   prefs: []
   type: TYPE_IMG
+  zh: '![迭代0，迭代1，迭代2](../Images/b4b4e717ab69f1911cc59e246f8112cc.png)'
 - en: 'Tag: [`torchaudio.io`](../io.html#module-torchaudio.io "torchaudio.io")'
+  id: totrans-140
   prefs: []
   type: TYPE_NORMAL
+  zh: 标签：[`torchaudio.io`](../io.html#module-torchaudio.io "torchaudio.io")
 - en: '**Total running time of the script:** ( 0 minutes 6.077 seconds)'
+  id: totrans-141
   prefs: []
   type: TYPE_NORMAL
+  zh: '**脚本的总运行时间：**（0分钟6.077秒）'
 - en: '[`Download Python source code: streamreader_basic_tutorial.py`](../_downloads/dc81b404e96c6cb650e0c5a8115bc1f1/streamreader_basic_tutorial.py)'
+  id: totrans-142
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Python源代码：streamreader_basic_tutorial.py`](../_downloads/dc81b404e96c6cb650e0c5a8115bc1f1/streamreader_basic_tutorial.py)'
 - en: '[`Download Jupyter notebook: streamreader_basic_tutorial.ipynb`](../_downloads/2b51f71e4505865cc313762deb71d572/streamreader_basic_tutorial.ipynb)'
+  id: totrans-143
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Jupyter笔记本：streamreader_basic_tutorial.ipynb`](../_downloads/2b51f71e4505865cc313762deb71d572/streamreader_basic_tutorial.ipynb)'
 - en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  id: totrans-144
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Sphinx-Gallery生成的画廊](https://sphinx-gallery.github.io)'
