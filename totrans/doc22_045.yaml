@@ -1,0 +1,1088 @@
+- en: torch.export
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/docs/stable/export.html](https://pytorch.org/docs/stable/export.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: This feature is a prototype under active development and there WILL BE BREAKING
+    CHANGES in the future.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Overview
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[`torch.export.export()`](#torch.export.export "torch.export.export") takes
+    an arbitrary Python callable (a [`torch.nn.Module`](generated/torch.nn.Module.html#torch.nn.Module
+    "torch.nn.Module"), a function or a method) and produces a traced graph representing
+    only the Tensor computation of the function in an Ahead-of-Time (AOT) fashion,
+    which can subsequently be executed with different outputs or serialized.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: '`torch.export` produces a clean intermediate representation (IR) with the following
+    invariants. More specifications about the IR can be found [here](export.ir_spec.html#export-ir-spec).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Soundness**: It is guaranteed to be a sound representation of the original
+    program, and maintains the same calling conventions of the original program.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Normalized**: There are no Python semantics within the graph. Submodules
+    from the original programs are inlined to form one fully flattened computational
+    graph.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Defined Operator Set**: The graph produced contains only a small defined
+    [Core ATen IR](torch.compiler_ir.html#torch-compiler-ir) opset and registered
+    custom operators.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Graph properties**: The graph is purely functional, meaning it does not contain
+    operations with side effects such as mutations or aliasing. It does not mutate
+    any intermediate values, parameters, or buffers.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Metadata**: The graph contains metadata captured during tracing, such as
+    a stacktrace from user’s code.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Under the hood, `torch.export` leverages the following latest technologies:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**TorchDynamo (torch._dynamo)** is an internal API that uses a CPython feature
+    called the Frame Evaluation API to safely trace PyTorch graphs. This provides
+    a massively improved graph capturing experience, with much fewer rewrites needed
+    in order to fully trace the PyTorch code.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**AOT Autograd** provides a functionalized PyTorch graph and ensures the graph
+    is decomposed/lowered to the small defined Core ATen operator set.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Torch FX (torch.fx)** is the underlying representation of the graph, allowing
+    flexible Python-based transformations.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Existing frameworks
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[`torch.compile()`](generated/torch.compile.html#torch.compile "torch.compile")
+    also utilizes the same PT2 stack as `torch.export`, but is slightly different:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**JIT vs. AOT**: [`torch.compile()`](generated/torch.compile.html#torch.compile
+    "torch.compile") is a JIT compiler whereas which is not intended to be used to
+    produce compiled artifacts outside of deployment.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Partial vs. Full Graph Capture**: When [`torch.compile()`](generated/torch.compile.html#torch.compile
+    "torch.compile") runs into an untraceable part of a model, it will “graph break”
+    and fall back to running the program in the eager Python runtime. In comparison,
+    `torch.export` aims to get a full graph representation of a PyTorch model, so
+    it will error out when something untraceable is reached. Since `torch.export`
+    produces a full graph disjoint from any Python features or runtime, this graph
+    can then be saved, loaded, and run in different environments and languages.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Usability tradeoff**: Since [`torch.compile()`](generated/torch.compile.html#torch.compile
+    "torch.compile") is able to fallback to the Python runtime whenever it reaches
+    something untraceable, it is a lot more flexible. `torch.export` will instead
+    require users to provide more information or rewrite their code to make it traceable.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Compared to [`torch.fx.symbolic_trace()`](fx.html#torch.fx.symbolic_trace "torch.fx.symbolic_trace"),
+    `torch.export` traces using TorchDynamo which operates at the Python bytecode
+    level, giving it the ability to trace arbitrary Python constructs not limited
+    by what Python operator overloading supports. Additionally, `torch.export` keeps
+    fine-grained track of tensor metadata, so that conditionals on things like tensor
+    shapes do not fail tracing. In general, `torch.export` is expected to work on
+    more user programs, and produce lower-level graphs (at the `torch.ops.aten` operator
+    level). Note that users can still use [`torch.fx.symbolic_trace()`](fx.html#torch.fx.symbolic_trace
+    "torch.fx.symbolic_trace") as a preprocessing step before `torch.export`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Compared to [`torch.jit.script()`](generated/torch.jit.script.html#torch.jit.script
+    "torch.jit.script"), `torch.export` does not capture Python control flow or data
+    structures, but it supports more Python language features than TorchScript (as
+    it is easier to have comprehensive coverage over Python bytecodes). The resulting
+    graphs are simpler and only have straight line control flow (except for explicit
+    control flow operators).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Compared to [`torch.jit.trace()`](generated/torch.jit.trace.html#torch.jit.trace
+    "torch.jit.trace"), `torch.export` is sound: it is able to trace code that performs
+    integer computation on sizes and records all of the side-conditions necessary
+    to show that a particular trace is valid for other inputs.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Exporting a PyTorch Model
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: An Example
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'The main entrypoint is through [`torch.export.export()`](#torch.export.export
+    "torch.export.export"), which takes a callable ([`torch.nn.Module`](generated/torch.nn.Module.html#torch.nn.Module
+    "torch.nn.Module"), function, or method) and sample inputs, and captures the computation
+    graph into an [`torch.export.ExportedProgram`](#torch.export.ExportedProgram "torch.export.ExportedProgram").
+    An example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Inspecting the `ExportedProgram`, we can note the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The [`torch.fx.Graph`](fx.html#torch.fx.Graph "torch.fx.Graph") contains the
+    computation graph of the original program, along with records of the original
+    code for easy debugging.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The graph contains only `torch.ops.aten` operators found in the [Core ATen IR](torch.compiler_ir.html#torch-compiler-ir)
+    opset and custom operators, and is fully functional, without any inplace operators
+    such as `torch.add_`.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The parameters (weight and bias to conv) are lifted as inputs to the graph,
+    resulting in no `get_attr` nodes in the graph, which previously existed in the
+    result of [`torch.fx.symbolic_trace()`](fx.html#torch.fx.symbolic_trace "torch.fx.symbolic_trace").
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The [`torch.export.ExportGraphSignature`](#torch.export.ExportGraphSignature
+    "torch.export.ExportGraphSignature") models the input and output signature, along
+    with specifying which inputs are parameters.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The resulting shape and dtype of tensors produced by each node in the graph
+    is noted. For example, the `convolution` node will result in a tensor of dtype
+    `torch.float32` and shape (1, 16, 256, 256).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Expressing Dynamism
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'By default `torch.export` will trace the program assuming all input shapes
+    are **static**, and specializing the exported program to those dimensions. However,
+    some dimensions, such as a batch dimension, can be dynamic and vary from run to
+    run. Such dimensions must be specified by using the [`torch.export.Dim()`](#torch.export.Dim
+    "torch.export.Dim") API to create them and by passing them into [`torch.export.export()`](#torch.export.export
+    "torch.export.export") through the `dynamic_shapes` argument. An example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Some additional things to note:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Through the [`torch.export.Dim()`](#torch.export.Dim "torch.export.Dim") API
+    and the `dynamic_shapes` argument, we specified the first dimension of each input
+    to be dynamic. Looking at the inputs `arg5_1` and `arg6_1`, they have a symbolic
+    shape of (s0, 64) and (s0, 128), instead of the (32, 64) and (32, 128) shaped
+    tensors that we passed in as example inputs. `s0` is a symbol representing that
+    this dimension can be a range of values.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`exported_program.range_constraints` describes the ranges of each symbol appearing
+    in the graph. In this case, we see that `s0` has the range [2, inf]. For technical
+    reasons that are difficult to explain here, they are assumed to be not 0 or 1\.
+    This is not a bug, and does not necessarily mean that the exported program will
+    not work for dimensions 0 or 1\. See [The 0/1 Specialization Problem](https://docs.google.com/document/d/16VPOa3d-Liikf48teAOmxLc92rgvJdfosIy-yoT38Io/edit?fbclid=IwAR3HNwmmexcitV0pbZm_x1a4ykdXZ9th_eJWK-3hBtVgKnrkmemz6Pm5jRQ#heading=h.ez923tomjvyk)
+    for an in-depth discussion of this topic.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`exported_program.equality_constraints` describes which dimensions are required
+    to be equal. Since we specified in the constraints that the first dimension of
+    each argument is equivalent, (`dynamic_dim(example_args[0], 0) == dynamic_dim(example_args[1],
+    0)`), we see in the equality constraints the tuple specifying that `arg5_1` dimension
+    0 and `arg6_1` dimension 0 are equal.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: (A legacy mechanism for specifying dynamic shapes involves marking and constraining
+    dynamic dimensions with the [`torch.export.dynamic_dim()`](#torch.export.dynamic_dim
+    "torch.export.dynamic_dim") API and passing them into [`torch.export.export()`](#torch.export.export
+    "torch.export.export") through the `constraints` argument. That mechanism is now
+    **deprecated** and will not be supported in the future.)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Serialization
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: To save the `ExportedProgram`, users can use the [`torch.export.save()`](#torch.export.save
+    "torch.export.save") and [`torch.export.load()`](#torch.export.load "torch.export.load")
+    APIs. A convention is to save the `ExportedProgram` using a `.pt2` file extension.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'An example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: Specialization
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Input shapes
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'As mentioned before, by default, `torch.export` will trace the program specializing
+    on the input tensors’ shapes, unless a dimension is specified as dynamic via the
+    [`torch.export.dynamic_dim()`](#torch.export.dynamic_dim "torch.export.dynamic_dim")
+    API. This means that if there exists shape-dependent control flow, `torch.export`
+    will specialize on the branch that is being taken with the given sample inputs.
+    For example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: The conditional of (`x.shape[0] > 5`) does not appear in the `ExportedProgram`
+    because the example inputs have the static shape of (10, 2). Since `torch.export`
+    specializes on the inputs’ static shapes, the else branch (`x - 1`) will never
+    be reached. To preserve the dynamic branching behavior based on the shape of a
+    tensor in the traced graph, [`torch.export.dynamic_dim()`](#torch.export.dynamic_dim
+    "torch.export.dynamic_dim") will need to be used to specify the dimension of the
+    input tensor (`x.shape[0]`) to be dynamic, and the source code will need to be
+    [rewritten](#data-shape-dependent-control-flow).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Non-tensor inputs
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: '`torch.export` also specializes the traced graph based on the values of inputs
+    that are not `torch.Tensor`, such as `int`, `float`, `bool`, and `str`. However,
+    we will likely change this in the near future to not specialize on inputs of primitive
+    types.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'For example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: Because integers are specialized, the `torch.ops.aten.add.Tensor` operations
+    are all computed with the inlined constant `1`, rather than `arg1_1`. Additionally,
+    the `times` iterator used in the `for` loop is also “inlined” in the graph through
+    the 3 repeated `torch.ops.aten.add.Tensor` calls, and the input `arg2_1` is never
+    used.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Limitations of torch.export[](#limitations-of-torch-export "Permalink to this
+    heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Graph Breaks
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: As `torch.export` is a one-shot process for capturing a computation graph from
+    a PyTorch program, it might ultimately run into untraceable parts of programs
+    as it is nearly impossible to support tracing all PyTorch and Python features.
+    In the case of `torch.compile`, an unsupported operation will cause a “graph break”
+    and the unsupported operation will be run with default Python evaluation. In contrast,
+    `torch.export` will require users to provide additional information or rewrite
+    parts of their code to make it traceable. As the tracing is based on TorchDynamo,
+    which evaluates at the Python bytecode level, there will be significantly fewer
+    rewrites required compared to previous tracing frameworks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: When a graph break is encountered, [ExportDB](generated/exportdb/index.html#torch-export-db)
+    is a great resource for learning about the kinds of programs that are supported
+    and unsupported, along with ways to rewrite programs to make them traceable.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '### Data/Shape-Dependent Control Flow[](#data-shape-dependent-control-flow
+    "Permalink to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Graph breaks can also be encountered on data-dependent control flow (`if x.shape[0]
+    > 2`) when shapes are not being specialized, as a tracing compiler cannot possibly
+    deal with without generating code for a combinatorially exploding number of paths.
+    In such cases, users will need to rewrite their code using special control flow
+    operators. Currently, we support [torch.cond](cond.html#cond) to express if-else
+    like control flow (more coming soon!).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Missing Meta Kernels for Operators[](#missing-meta-kernels-for-operators "Permalink
+    to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: When tracing, a META implementation (or “meta kernel”) is required for all operators.
+    This is used to reason about the input/output shapes for this operator.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To register a meta kernel for a C++ Custom Operator, please refer to [this documentation](https://docs.google.com/document/d/1_W62p8WJOQQUzPsJYa7s701JXt0qf2OfLub2sbkHOaU/edit#heading=h.ahugy69p2jmz).
+  prefs: []
+  type: TYPE_NORMAL
+- en: The official API for registering custom meta kernels for custom ops implemented
+    in python is currently undergoing development. While the final API is being refined,
+    you can refer to the documentation [here](https://docs.google.com/document/d/1GgvOe7C8_NVOMLOCwDaYV1mXXyHMXY7ExoewHqooxrs/edit#heading=h.64r4npvq0w0).
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the unfortunate case where your model uses an ATen operator that is does
+    not have a meta kernel implementation yet, please file an issue.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Read More
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Additional Links for Export Users
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[torch.export IR Specification](export.ir_spec.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Writing Graph Transformations on ATen IR](torch.compiler_transformations.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[IRs](torch.compiler_ir.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[ExportDB](generated/exportdb/index.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Control Flow - Cond](cond.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Deep Dive for PyTorch Developers
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[TorchDynamo Deep Dive](torch.compiler_deepdive.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Dynamic shapes](torch.compiler_dynamic_shapes.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Fake tensor](torch.compiler_fake_tensor.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '## API Reference'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[`export()`](#torch.export.export "torch.export.export") takes an arbitrary
+    Python callable (an nn.Module, a function or a method) along with example inputs,
+    and produces a traced graph representing only the Tensor computation of the function
+    in an Ahead-of-Time (AOT) fashion, which can subsequently be executed with different
+    inputs or serialized. The traced graph (1) produces normalized operators in the
+    functional ATen operator set (as well as any user-specified custom operators),
+    (2) has eliminated all Python control flow and data structures (with certain exceptions),
+    and (3) records the set of shape constraints needed to show that this normalization
+    and control-flow elimination is sound for future inputs.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Soundness Guarantee**'
+  prefs: []
+  type: TYPE_NORMAL
+- en: While tracing, [`export()`](#torch.export.export "torch.export.export") takes
+    note of shape-related assumptions made by the user program and the underlying
+    PyTorch operator kernels. The output [`ExportedProgram`](#torch.export.ExportedProgram
+    "torch.export.ExportedProgram") is considered valid only when these assumptions
+    hold true.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Tracing makes assumptions on the shapes (not values) of input tensors. Such
+    assumptions must be validated at graph capture time for [`export()`](#torch.export.export
+    "torch.export.export") to succeed. Specifically:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Assumptions on static shapes of input tensors are automatically validated without
+    additional effort.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Assumptions on dynamic shape of input tensors require explicit specification
+    by using the [`Dim()`](#torch.export.Dim "torch.export.Dim") API to construct
+    dynamic dimensions and by associating them with example inputs through the `dynamic_shapes`
+    argument.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'If any assumption can not be validated, a fatal error will be raised. When
+    that happens, the error message will include suggested fixes to the specification
+    that are needed to validate the assumptions. For example [`export()`](#torch.export.export
+    "torch.export.export") might suggest the following fix to the definition of a
+    dynamic dimension `dim0_x`, say appearing in the shape associated with input `x`,
+    that was previously defined as `Dim("dim0_x")`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: This example means the generated code requires dimension 0 of input `x` to be
+    less than or equal to 5 to be valid. You can inspect the suggested fixes to dynamic
+    dimension definitions and then copy them verbatim into your code without needing
+    to change the `dynamic_shapes` argument to your [`export()`](#torch.export.export
+    "torch.export.export") call.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**f** ([*Callable*](https://docs.python.org/3/library/typing.html#typing.Callable
+    "(in Python v3.12)")) – The callable to trace.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**args** ([*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(in Python v3.12)")*[*[*Any*](https://docs.python.org/3/library/typing.html#typing.Any
+    "(in Python v3.12)")*,* *...**]*) – Example positional inputs.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**kwargs** ([*Optional*](https://docs.python.org/3/library/typing.html#typing.Optional
+    "(in Python v3.12)")*[*[*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*Any*](https://docs.python.org/3/library/typing.html#typing.Any
+    "(in Python v3.12)")*]**]*) – Optional example keyword inputs.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**constraints** ([*Optional*](https://docs.python.org/3/library/typing.html#typing.Optional
+    "(in Python v3.12)")*[*[*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")*[*[*Constraint*](#torch.export.Constraint "torch.export.Constraint")*]**]*)
+    – [DEPRECATED: use `dynamic_shapes` instead, see below] An optional list of constraints
+    on the dynamic arguments that specify their possible range of shapes. By default,
+    shapes of input torch.Tensors are assumed to be static. If an input torch.Tensor
+    is expected to have dynamic shapes, please use [`dynamic_dim()`](#torch.export.dynamic_dim
+    "torch.export.dynamic_dim") to define [`Constraint`](#torch.export.Constraint
+    "torch.export.Constraint") objects that specify the dynamics and the possible
+    range of shapes. See [`dynamic_dim()`](#torch.export.dynamic_dim "torch.export.dynamic_dim")
+    docstring for examples on how to use it.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**dynamic_shapes** ([*Optional*](https://docs.python.org/3/library/typing.html#typing.Optional
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[*[*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*Any*](https://docs.python.org/3/library/typing.html#typing.Any
+    "(in Python v3.12)")*]**,* [*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(in Python v3.12)")*[*[*Any*](https://docs.python.org/3/library/typing.html#typing.Any
+    "(in Python v3.12)")*]**]**]*) –'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Should either be: 1) a dict from argument names of `f` to their dynamic shape
+    specifications, 2) a tuple that specifies dynamic shape specifications for each
+    input in original order. If you are specifying dynamism on keyword args, you will
+    need to pass them in the order that is defined in the original function signature.'
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: The dynamic shape of a tensor argument can be specified as either (1) a dict
+    from dynamic dimension indices to [`Dim()`](#torch.export.Dim "torch.export.Dim")
+    types, where it is not required to include static dimension indices in this dict,
+    but when they are, they should be mapped to None; or (2) a tuple / list of [`Dim()`](#torch.export.Dim
+    "torch.export.Dim") types or None, where the [`Dim()`](#torch.export.Dim "torch.export.Dim")
+    types correspond to dynamic dimensions, and static dimensions are denoted by None.
+    Arguments that are dicts or tuples / lists of tensors are recursively specified
+    by using mappings or sequences of contained specifications.
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: '**strict** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")) – When enabled (default), the export function will trace
+    the program through TorchDynamo which will ensure the soundness of the resulting
+    graph. Otherwise, the exported program will not validate the implicit assumptions
+    baked into the graph and may cause behavior divergence between the original model
+    and the exported one. This is useful when users need to workaround bugs in the
+    tracer, or simply want incrementally enable safety in their models. Note that
+    this does not affect the resulting IR spec to be different and the model will
+    be serialized in the same way regardless of what value is passed here. WARNING:
+    This option is experimental and use this at your own risk.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: An [`ExportedProgram`](#torch.export.ExportedProgram "torch.export.ExportedProgram")
+    containing the traced callable.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*ExportedProgram*](#torch.export.ExportedProgram "torch.export.exported_program.ExportedProgram")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Acceptable input/output types**'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Acceptable types of inputs (for `args` and `kwargs`) and outputs include:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Primitive types, i.e. `torch.Tensor`, `int`, `float`, `bool` and `str`.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Dataclasses, but they must be registered by calling [`register_dataclass()`](#torch.export.register_dataclass
+    "torch.export.register_dataclass") first.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: (Nested) Data structures comprising of `dict`, `list`, `tuple`, `namedtuple`
+    and `OrderedDict` containing all above types.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: (This feature is DEPRECATED. See [`Dim()`](#torch.export.Dim "torch.export.Dim")
+    instead.)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`dynamic_dim()`](#torch.export.dynamic_dim "torch.export.dynamic_dim") constructs
+    a [`Constraint`](#torch.export.Constraint "torch.export.Constraint") object that
+    describes the dynamism of a dimension `index` of tensor `t`. [`Constraint`](#torch.export.Constraint
+    "torch.export.Constraint") objects should be passed to `constraints` argument
+    of [`export()`](#torch.export.export "torch.export.export").'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**t** ([*torch.Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – Example
+    input tensor that have dynamic dimension size(s)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**index** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)")) – Index of dynamic dimension'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: A [`Constraint`](#torch.export.Constraint "torch.export.Constraint") object
+    that describes shape dynamism. It can be passed to [`export()`](#torch.export.export
+    "torch.export.export") so that [`export()`](#torch.export.export "torch.export.export")
+    does not assume static size of specified tensor, i.e. keeping it dynamic as a
+    symbolic size rather than specializing according to size of example tracing input.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Specifically [`dynamic_dim()`](#torch.export.dynamic_dim "torch.export.dynamic_dim")
+    can be used to express following types of dynamism.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Size of a dimension is dynamic and unbounded:'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs:
+  - PREF_IND
+  type: TYPE_PRE
+- en: 'Size of a dimension is dynamic with a lower bound:'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs:
+  - PREF_IND
+  type: TYPE_PRE
+- en: 'Size of a dimension is dynamic with an upper bound:'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs:
+  - PREF_IND
+  type: TYPE_PRE
+- en: 'Size of a dimension is dynamic and it is always equal to size of another dynamic
+    dimension:'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs:
+  - PREF_IND
+  type: TYPE_PRE
+- en: Mix and match all types above as long as they do not express conflicting requirements
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: Under active development, saved files may not be usable in newer versions of
+    PyTorch.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Saves an [`ExportedProgram`](#torch.export.ExportedProgram "torch.export.ExportedProgram")
+    to a file-like object. It can then be loaded using the Python API [`torch.export.load`](#torch.export.load
+    "torch.export.load").
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**ep** ([*ExportedProgram*](#torch.export.ExportedProgram "torch.export.ExportedProgram"))
+    – The exported program to save.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**f** (*Union**[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*pathlib.Path*](https://docs.python.org/3/library/pathlib.html#pathlib.Path
+    "(in Python v3.12)")*,* [*io.BytesIO*](https://docs.python.org/3/library/io.html#io.BytesIO
+    "(in Python v3.12)")) – A file-like object (has to implement write and flush)
+    or a string containing a file name.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**extra_files** (*Optional**[**Dict**[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* *Any**]**]*) – Map from filename to contents which will
+    be stored as part of f.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**opset_version** (*Optional**[**Dict**[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*]**]*) – A map of opset names to the version of this opset'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: Under active development, saved files may not be usable in newer versions of
+    PyTorch.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Loads an [`ExportedProgram`](#torch.export.ExportedProgram "torch.export.ExportedProgram")
+    previously saved with [`torch.export.save`](#torch.export.save "torch.export.save").
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**ep** ([*ExportedProgram*](#torch.export.ExportedProgram "torch.export.ExportedProgram"))
+    – The exported program to save.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**f** (*Union**[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*pathlib.Path*](https://docs.python.org/3/library/pathlib.html#pathlib.Path
+    "(in Python v3.12)")*,* [*io.BytesIO*](https://docs.python.org/3/library/io.html#io.BytesIO
+    "(in Python v3.12)")) – A file-like object (has to implement write and flush)
+    or a string containing a file name.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**extra_files** (*Optional**[**Dict**[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* *Any**]**]*) – The extra filenames given in this map would
+    be loaded and their content would be stored in the provided map.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**expected_opset_version** (*Optional**[**Dict**[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*]**]*) – A map of opset names to expected opset versions'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: An [`ExportedProgram`](#torch.export.ExportedProgram "torch.export.ExportedProgram")
+    object
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*ExportedProgram*](#torch.export.ExportedProgram "torch.export.exported_program.ExportedProgram")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: Registers a dataclass as a valid input/output type for [`torch.export.export()`](#torch.export.export
+    "torch.export.export").
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**cls** ([*Type*](https://docs.python.org/3/library/typing.html#typing.Type
+    "(in Python v3.12)")*[*[*Any*](https://docs.python.org/3/library/typing.html#typing.Any
+    "(in Python v3.12)")*]*) – the dataclass type to register'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[`Dim()`](#torch.export.Dim "torch.export.Dim") constructs a type analogous
+    to a named symbolic integer with a range. It can be used to describe multiple
+    possible values of a dynamic tensor dimension. Note that different dynamic dimensions
+    of the same tensor, or of different tensors, can be described by the same type.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**name** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
+    Python v3.12)")) – Human-readable name for debugging.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**min** (*Optional**[*[*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*]*) – Minimum possible value of given symbol (inclusive)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**max** (*Optional**[*[*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*]*) – Maximum possible value of given symbol (inclusive)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: A type that can be used in dynamic shape specifications for tensors.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: Util to create multiple [`Dim()`](#torch.export.Dim "torch.export.Dim") types.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE26]'
+  prefs: []
+  type: TYPE_PRE
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: Do not construct [`Constraint`](#torch.export.Constraint "torch.export.Constraint")
+    directly, use [`dynamic_dim()`](#torch.export.dynamic_dim "torch.export.dynamic_dim")
+    instead.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This represents constraints on input tensor dimensions, e.g., requiring them
+    to be fully polymorphic or within some range.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE27]'
+  prefs: []
+  type: TYPE_PRE
+- en: Package of a program from [`export()`](#torch.export.export "torch.export.export").
+    It contains an [`torch.fx.Graph`](fx.html#torch.fx.Graph "torch.fx.Graph") that
+    represents Tensor computation, a state_dict containing tensor values of all lifted
+    parameters and buffers, and various metadata.
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can call an ExportedProgram like the original callable traced by [`export()`](#torch.export.export
+    "torch.export.export") with the same calling convention.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To perform transformations on the graph, use `.module` property to access an
+    [`torch.fx.GraphModule`](fx.html#torch.fx.GraphModule "torch.fx.GraphModule").
+    You can then use [FX transformation](https://pytorch.org/docs/stable/fx.html#writing-transformations)
+    to rewrite the graph. Afterwards, you can simply use [`export()`](#torch.export.export
+    "torch.export.export") again to construct a correct ExportedProgram.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE28]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns a self contained GraphModule with all the parameters/buffers inlined.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*Module*](generated/torch.nn.Module.html#torch.nn.Module "torch.nn.modules.module.Module")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE29]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns an iterator over original module buffers.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: This API is experimental and is *NOT* backward-compatible.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*Iterator*](https://docs.python.org/3/library/typing.html#typing.Iterator
+    "(in Python v3.12)")[[*Tensor*](tensors.html#torch.Tensor "torch.Tensor")]'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE30]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns an iterator over original module buffers, yielding both the name of
+    the buffer as well as the buffer itself.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: This API is experimental and is *NOT* backward-compatible.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*Iterator*](https://docs.python.org/3/library/typing.html#typing.Iterator
+    "(in Python v3.12)")[[*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(in Python v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)"), [*Tensor*](tensors.html#torch.Tensor "torch.Tensor")]]'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE31]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns an iterator over original module’s parameters.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: This API is experimental and is *NOT* backward-compatible.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*Iterator*](https://docs.python.org/3/library/typing.html#typing.Iterator
+    "(in Python v3.12)")[[*Parameter*](generated/torch.nn.parameter.Parameter.html#torch.nn.parameter.Parameter
+    "torch.nn.parameter.Parameter")]'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE32]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns an iterator over original module parameters, yielding both the name
+    of the parameter as well as the parameter itself.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: This API is experimental and is *NOT* backward-compatible.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*Iterator*](https://docs.python.org/3/library/typing.html#typing.Iterator
+    "(in Python v3.12)")[[*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(in Python v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)"), [*Parameter*](generated/torch.nn.parameter.Parameter.html#torch.nn.parameter.Parameter
+    "torch.nn.parameter.Parameter")]]'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE33]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE34]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[`ExportGraphSignature`](#torch.export.ExportGraphSignature "torch.export.ExportGraphSignature")
+    models the input/output signature of Export Graph, which is a fx.Graph with stronger
+    invariants gurantees.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Export Graph is functional and does not access “states” like parameters or buffers
+    within the graph via `getattr` nodes. Instead, [`export()`](#torch.export.export
+    "torch.export.export") gurantees that parameters, buffers, and constant tensors
+    are lifted out of the graph as inputs. Similarly, any mutations to buffers are
+    not included in the graph either, instead the updated values of mutated buffers
+    are modeled as additional outputs of Export Graph.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The ordering of all inputs and outputs are:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE35]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'e.g. If following module is exported:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE36]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Resulting Graph would be:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE37]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Resulting ExportGraphSignature would be:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE38]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE39]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE40]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE41]'
+  prefs: []
+  type: TYPE_PRE
+- en: An enumeration.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE42]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE43]'
+  prefs: []
+  type: TYPE_PRE
+- en: An enumeration.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE44]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE45]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[`ExportGraphSignature`](#torch.export.graph_signature.ExportGraphSignature
+    "torch.export.graph_signature.ExportGraphSignature") models the input/output signature
+    of Export Graph, which is a fx.Graph with stronger invariants gurantees.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Export Graph is functional and does not access “states” like parameters or buffers
+    within the graph via `getattr` nodes. Instead, `export()` gurantees that parameters,
+    buffers, and constant tensors are lifted out of the graph as inputs. Similarly,
+    any mutations to buffers are not included in the graph either, instead the updated
+    values of mutated buffers are modeled as additional outputs of Export Graph.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The ordering of all inputs and outputs are:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE46]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'e.g. If following module is exported:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE47]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Resulting Graph would be:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE48]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Resulting ExportGraphSignature would be:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE49]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE50]'
+  prefs: []
+  type: TYPE_PRE
+- en: Replace all uses of the old name with new name in the signature.
+  prefs: []
+  type: TYPE_NORMAL

@@ -1,0 +1,406 @@
+- en: Extending torch.func with autograd.Function
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/docs/stable/notes/extending.func.html](https://pytorch.org/docs/stable/notes/extending.func.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: So you’d like to use [`torch.autograd.Function`](../autograd.html#torch.autograd.Function
+    "torch.autograd.Function") with the [`torch.func`](../func.api.html#module-torch.func
+    "torch.func") transforms like [`torch.vmap()`](../generated/torch.vmap.html#torch.vmap
+    "torch.vmap"), [`torch.func.grad()`](../generated/torch.func.grad.html#torch.func.grad
+    "torch.func.grad"), etc.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'There are two main use cases:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: you wish to call code that does not contain PyTorch operations and have it work
+    with function transforms. That is, the [`torch.autograd.Function`](../autograd.html#torch.autograd.Function
+    "torch.autograd.Function")’s forward/backward/etc calls into functions from other
+    systems like C++, CUDA, numpy.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: you wish to specify custom gradient rules, like JAX’s [custom_vjp/custom_jvp](https://jax.readthedocs.io/en/latest/notebooks/Custom_derivative_rules_for_Python_code.html)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: PyTorch combines both of these concepts into [`torch.autograd.Function`](../autograd.html#torch.autograd.Function
+    "torch.autograd.Function").
+  prefs: []
+  type: TYPE_NORMAL
+- en: Basic Usage
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: This guide assumes you are familiar with [Extending torch.autograd](extending.html#extending-autograd),
+    which explains how to use [`torch.autograd.Function`](../autograd.html#torch.autograd.Function
+    "torch.autograd.Function").
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`torch.autograd.Function`](../autograd.html#torch.autograd.Function "torch.autograd.Function")
+    can either have a [`forward()`](../generated/torch.autograd.Function.forward.html#torch.autograd.Function.forward
+    "torch.autograd.Function.forward") that accepts a ctx object, or it can have separate
+    [`forward()`](../generated/torch.autograd.Function.forward.html#torch.autograd.Function.forward
+    "torch.autograd.Function.forward") (that does not accept `ctx`) and a `setup_context()`
+    staticmethod that modifies the `ctx` object.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Only the latter is supported with function transforms:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`forward()`](../generated/torch.autograd.Function.forward.html#torch.autograd.Function.forward
+    "torch.autograd.Function.forward") is the code that performs the operation and
+    it should not accept a `ctx` object.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`setup_context(ctx, inputs, output)` is the code where you can call methods
+    on `ctx`. Here is where you should save Tensors for backward (by calling `ctx.save_for_backward(*tensors)`),
+    or save non-Tensors (by assigning them to the `ctx` object).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Because `setup_context()` accepts only `inputs` and `output`, the only quantities
+    that can be saved are either objects (such as Tensors) in the inputs or outputs
+    or quantities (like `Tensor.shape`) derived from them. If you wish to save a non-input
+    intermediate activation from [`Function.forward()`](../generated/torch.autograd.Function.forward.html#torch.autograd.Function.forward
+    "torch.autograd.Function.forward") for backward, then you’ll need to return it
+    as an output from [`forward()`](../generated/torch.autograd.Function.forward.html#torch.autograd.Function.forward
+    "torch.autograd.Function.forward") so that it gets passed to `setup_context()`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Depending on the transform,
+  prefs: []
+  type: TYPE_NORMAL
+- en: to support reverse-mode AD ([`torch.func.grad()`](../generated/torch.func.grad.html#torch.func.grad
+    "torch.func.grad"), [`torch.func.vjp()`](../generated/torch.func.vjp.html#torch.func.vjp
+    "torch.func.vjp")), the [`torch.autograd.Function`](../autograd.html#torch.autograd.Function
+    "torch.autograd.Function") needs a [`backward()`](../generated/torch.autograd.Function.backward.html#torch.autograd.Function.backward
+    "torch.autograd.Function.backward") staticmethod.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: to support [`torch.vmap()`](../generated/torch.vmap.html#torch.vmap "torch.vmap"),
+    the [`torch.autograd.Function`](../autograd.html#torch.autograd.Function "torch.autograd.Function")
+    needs a [`vmap()`](../generated/torch.autograd.Function.vmap.html#torch.autograd.Function.vmap
+    "torch.autograd.Function.vmap") staticmethod.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: to support [`torch.func.jvp()`](../generated/torch.func.jvp.html#torch.func.jvp
+    "torch.func.jvp"), the [`torch.autograd.Function`](../autograd.html#torch.autograd.Function
+    "torch.autograd.Function") needs a [`jvp()`](../generated/torch.autograd.Function.jvp.html#torch.autograd.Function.jvp
+    "torch.autograd.Function.jvp") staticmethod.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: to support compositions of transforms (like [`torch.func.jacrev()`](../generated/torch.func.jacrev.html#torch.func.jacrev
+    "torch.func.jacrev"), [`torch.func.jacfwd()`](../generated/torch.func.jacfwd.html#torch.func.jacfwd
+    "torch.func.jacfwd"), [`torch.func.hessian()`](../generated/torch.func.hessian.html#torch.func.hessian
+    "torch.func.hessian")) – you may need multiple of the above.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'In order for the [`torch.autograd.Function`](../autograd.html#torch.autograd.Function
+    "torch.autograd.Function") to be arbitrarily composable with function transforms,
+    we recommend that all other staticmethods other than [`forward()`](../generated/torch.autograd.Function.forward.html#torch.autograd.Function.forward
+    "torch.autograd.Function.forward") and `setup_context()` must be transformable:
+    that is, they must consist of only PyTorch operators or call other [`torch.autograd.Function`](../autograd.html#torch.autograd.Function
+    "torch.autograd.Function") (that may call into C++/CUDA/etc).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let’s go over some examples of common use cases.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example 1: autograd.Function calls into another system[](#example-1-autograd-function-calls-into-another-system
+    "Permalink to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: A common case is a [`torch.autograd.Function`](../autograd.html#torch.autograd.Function
+    "torch.autograd.Function") with both forward() and backward() calling into another
+    system (like C++, CUDA, numpy, triton).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Now, to make it easier to use `NumpySort` (to hide away the intermediates we
+    returned as outputs, as well as allow default args and kwargs), we create a new
+    function that invokes it:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'And here’s a sanity check:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Example 2: autograd.Function specifies custom gradient rules[](#example-2-autograd-function-specifies-custom-gradient-rules
+    "Permalink to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Another common case is an [`torch.autograd.Function`](../autograd.html#torch.autograd.Function
+    "torch.autograd.Function") that is implemented with PyTorch operations. PyTorch
+    is able to compute gradients for PyTorch operations automatically, but perhaps
+    we wish to customize how the gradients are computed. Some reasons why we may want
+    a custom backward different from the one PyTorch gives us are:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: improving numeric stability
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: changing the performance characteristics of the backward
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: changing how edge cases are handled (e.g. nans, inf)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: modifying the gradient (e.g. gradient clipping)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Here’s an example of an [`torch.autograd.Function`](../autograd.html#torch.autograd.Function
+    "torch.autograd.Function") for the function `y = x ** 3` where we change the performance
+    characteristics (some computation that would normally happen during the backward
+    pass, computing dx, happens in the forward pass).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Now, to make it easier to use `NumpySort` (and hide away the intermediates
+    we returned as outputs) we create a new function that invokes it:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Here’s a sanity check computing the second-order gradients:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: Limitations and gotchas
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: Please read these limitations of [`torch.autograd.Function`](../autograd.html#torch.autograd.Function
+    "torch.autograd.Function") with torch.func transforms carefully. We are not able
+    to catch many of these situations and error out gracefully so they will lead to
+    undefined behavior.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Please do not capture Tensors that are being transformed over, have requires_grad=True,
+    or are dual tensors, into the methods of the [`torch.autograd.Function`](../autograd.html#torch.autograd.Function
+    "torch.autograd.Function"). The way to be completely safe is to ensure that the
+    only Tensors being used inside any method of the [`torch.autograd.Function`](../autograd.html#torch.autograd.Function
+    "torch.autograd.Function") must be directly passed as inputs (or via the ctx object)
+    rather than come from outside the [`torch.autograd.Function`](../autograd.html#torch.autograd.Function
+    "torch.autograd.Function").
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`torch.autograd.Function`](../autograd.html#torch.autograd.Function "torch.autograd.Function")
+    does not handle Tensors in pytrees (arbitrary nested Python data structures that
+    may or may not contain Tensors). For those Tensors to be tracked by autograd,
+    they must be passed directly as an argument to [`torch.autograd.Function`](../autograd.html#torch.autograd.Function
+    "torch.autograd.Function"). This is in contrast to jax.{custom_vjp, custom_jvp},
+    which do accept pytrees.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Please only use [`save_for_backward()`](../generated/torch.autograd.function.FunctionCtx.save_for_backward.html#torch.autograd.function.FunctionCtx.save_for_backward
+    "torch.autograd.function.FunctionCtx.save_for_backward") or `save_for_forward()`
+    to save Tensors. Please do not assign Tensors or collections of Tensors directly
+    onto the ctx object - these Tensors will not get tracked
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`torch.vmap()`](../generated/torch.vmap.html#torch.vmap "torch.vmap") Support[](#torch-vmap-support
+    "Permalink to this heading")'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'To use an [`torch.autograd.Function`](../autograd.html#torch.autograd.Function
+    "torch.autograd.Function") with [`torch.vmap()`](../generated/torch.vmap.html#torch.vmap
+    "torch.vmap"), you must either:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: provide a [`vmap()`](../generated/torch.autograd.Function.vmap.html#torch.autograd.Function.vmap
+    "torch.autograd.Function.vmap") staticmethod that tells us the behavior of the
+    [`torch.autograd.Function`](../autograd.html#torch.autograd.Function "torch.autograd.Function")
+    under [`torch.vmap()`](../generated/torch.vmap.html#torch.vmap "torch.vmap")
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ask us to autogenerate it by setting `generate_vmap_rule=True`.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Automatically generate a vmap rule[](#automatically-generate-a-vmap-rule "Permalink
+    to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: If your [`torch.autograd.Function`](../autograd.html#torch.autograd.Function
+    "torch.autograd.Function") fulfills the following additional constraints, then
+    we are able to generate a vmap rule for it. If it doesn’t fulfill the constraints
+    or if you want custom behavior under vmap, please manually define a vmap staticmethod
+    (see next section).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: We are not easily able to check for the following constraints and error out
+    gracefully. Violation of the constraints may lead to undefined behavior.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The [`torch.autograd.Function`](../autograd.html#torch.autograd.Function "torch.autograd.Function")’s
+    [`forward()`](../generated/torch.autograd.Function.forward.html#torch.autograd.Function.forward
+    "torch.autograd.Function.forward"), [`backward()`](../generated/torch.autograd.Function.backward.html#torch.autograd.Function.backward
+    "torch.autograd.Function.backward") (if it exists) and [`jvp()`](../generated/torch.autograd.Function.jvp.html#torch.autograd.Function.jvp
+    "torch.autograd.Function.jvp") (if it exists) staticmethods must be transformable
+    via [`torch.vmap()`](../generated/torch.vmap.html#torch.vmap "torch.vmap"). That
+    is, they must consist of only PyTorch operations (as opposed to e.g. NumPy or
+    custom CUDA kernels).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: Defining the vmap staticmethod[](#defining-the-vmap-staticmethod "Permalink
+    to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: If your [`torch.autograd.Function`](../autograd.html#torch.autograd.Function
+    "torch.autograd.Function") calls into another system (like NumPy, C++, CUDA, triton),
+    then to get it to work with [`torch.vmap()`](../generated/torch.vmap.html#torch.vmap
+    "torch.vmap") or transforms that use it, you’ll need to manually define a [`vmap()`](../generated/torch.autograd.Function.vmap.html#torch.autograd.Function.vmap
+    "torch.autograd.Function.vmap") staticmethod.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Depending on what transforms you want to use and your use case, you may not
+    need to add a [`vmap()`](../generated/torch.autograd.Function.vmap.html#torch.autograd.Function.vmap
+    "torch.autograd.Function.vmap") staticmethod to all of your [`torch.autograd.Function`](../autograd.html#torch.autograd.Function
+    "torch.autograd.Function"):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: For example, [`torch.func.jacrev()`](../generated/torch.func.jacrev.html#torch.func.jacrev
+    "torch.func.jacrev") performs [`vmap()`](../generated/torch.vmap.html#torch.vmap
+    "torch.vmap") over the backward pass. So if you’re only interested in using [`torch.func.jacrev()`](../generated/torch.func.jacrev.html#torch.func.jacrev
+    "torch.func.jacrev"), only the [`backward()`](../generated/torch.autograd.Function.backward.html#torch.autograd.Function.backward
+    "torch.autograd.Function.backward") staticmethod needs to be vmappable.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: We do recommend ensuring all of your [`torch.autograd.Function`](../autograd.html#torch.autograd.Function
+    "torch.autograd.Function") have support for [`torch.vmap()`](../generated/torch.vmap.html#torch.vmap
+    "torch.vmap") though, especially if you are writing a third-party library and
+    you want your [`torch.autograd.Function`](../autograd.html#torch.autograd.Function
+    "torch.autograd.Function") to work with all combinations of [`torch.func()`](../func.api.html#module-torch.func
+    "torch.func") transforms.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Conceptually, the vmap staticmethod is responsible for defining how the [`forward()`](../generated/torch.autograd.Function.forward.html#torch.autograd.Function.forward
+    "torch.autograd.Function.forward") should behave under [`torch.vmap()`](../generated/torch.vmap.html#torch.vmap
+    "torch.vmap"). That is, it defines how to transform the [`forward()`](../generated/torch.autograd.Function.forward.html#torch.autograd.Function.forward
+    "torch.autograd.Function.forward") to run over inputs with an additional dimension
+    (the dimension being vmapped over). This is similar to how [`torch.vmap()`](../generated/torch.vmap.html#torch.vmap
+    "torch.vmap") is implemented over PyTorch operations: for each operation, we define
+    a vmap rule (sometimes also referred to as a “batching rule”).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Here’s how to define the [`vmap()`](../generated/torch.autograd.Function.vmap.html#torch.autograd.Function.vmap
+    "torch.autograd.Function.vmap") staticmethod:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'the signature is `vmap(info, in_dims: Tuple[Optional[int]], *args)`, where
+    `*args` is the same as the args to [`forward()`](../generated/torch.autograd.Function.forward.html#torch.autograd.Function.forward
+    "torch.autograd.Function.forward").'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The vmap staticmethod is responsible for defining how the [`forward()`](../generated/torch.autograd.Function.forward.html#torch.autograd.Function.forward
+    "torch.autograd.Function.forward") should behave under [`torch.vmap()`](../generated/torch.vmap.html#torch.vmap
+    "torch.vmap"). That is, given inputs with an additional dimension (specified by
+    `in_dims`), how do we compute the batched version of [`forward()`](../generated/torch.autograd.Function.forward.html#torch.autograd.Function.forward
+    "torch.autograd.Function.forward")?
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: For each arg in `args`, `in_dims` has a corresponding `Optional[int]`. It is
+    `None` if the arg is not a Tensor or if the arg is not being vmapped over, otherwise,
+    it is an integer specifying what dimension of the Tensor is being vmapped over.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`info` is a collection of additional metadata that may be helpful: `info.batch_size`
+    specifies the size of the dimension being vmapped over, while `info.randomness`
+    is the `randomness` option that was passed to [`torch.vmap()`](../generated/torch.vmap.html#torch.vmap
+    "torch.vmap").'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The return of the vmap staticmethod is a tuple of `(output, out_dims)`. Similar
+    to `in_dims`, `out_dims` should be of the same structure as `output` and contain
+    one `out_dim` per output that specifies if the output has the vmapped dimension
+    and what index it is in.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: The vmap staticmethod should aim to preserve the semantics of the entire [`Function`](../autograd.html#torch.autograd.Function
+    "torch.autograd.Function"). That is, (pseudocode) `grad(vmap(MyFunc))` should
+    be replaceable with a `grad(map(MyFunc))`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: If your autograd.Function has any custom behavior in the backward pass, please
+    keep this in mind.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: It is a legitimate use case to write a custom vmap staticmethod for a [`Function`](../autograd.html#torch.autograd.Function
+    "torch.autograd.Function") that PyTorch is able to generate a vmap rule for via
+    `generate_vmap_rule=True`. You may wish to do this if the generated vmap rule
+    doesn’t have the semantics you’re looking for.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`torch.func.jvp()`](../generated/torch.func.jvp.html#torch.func.jvp "torch.func.jvp")
+    Support'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: To support forward-mode AD, a [`torch.autograd.Function`](../autograd.html#torch.autograd.Function
+    "torch.autograd.Function") must have a [`jvp()`](../generated/torch.autograd.Function.jvp.html#torch.autograd.Function.jvp
+    "torch.autograd.Function.jvp") staticmethod. Please see [Forward mode AD](extending.html#forward-ad-autograd-function)
+    for details.
+  prefs: []
+  type: TYPE_NORMAL

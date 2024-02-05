@@ -1,0 +1,440 @@
+- en: torch.nested
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/docs/stable/nested.html](https://pytorch.org/docs/stable/nested.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: '## Introduction'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: The PyTorch API of nested tensors is in prototype stage and will change in the
+    near future.
+  prefs: []
+  type: TYPE_NORMAL
+- en: NestedTensor allows the user to pack a list of Tensors into a single, efficient
+    datastructure.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The only constraint on the input Tensors is that their dimension must match.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This enables more efficient metadata representations and access to purpose built
+    kernels.
+  prefs: []
+  type: TYPE_NORMAL
+- en: One application of NestedTensors is to express sequential data in various domains.
+    While the conventional approach is to pad variable length sequences, NestedTensor
+    enables users to bypass padding. The API for calling operations on a nested tensor
+    is no different from that of a regular `torch.Tensor`, which should allow seamless
+    integration with existing models, with the main difference being [construction
+    of the inputs](#construction).
+  prefs: []
+  type: TYPE_NORMAL
+- en: As this is a prototype feature, the [operations supported](#supported-operations)
+    are still limited. However, we welcome issues, feature requests and contributions.
+    More information on contributing can be found [in this Readme](https://github.com/pytorch/pytorch/blob/main/aten/src/ATen/native/nested/README.md).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '## Construction'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Construction is straightforward and involves passing a list of Tensors to the
+    `torch.nested.nested_tensor` constructor.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Data type, device and whether gradients are required can be chosen via the usual
+    keyword arguments.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: In the vein of `torch.as_tensor`, `torch.nested.as_nested_tensor` can be used
+    to preserve autograd history from the tensors passed to the constructor. For more
+    information, refer to the section on [Nested tensor constructor and conversion
+    functions](#constructor-functions).
+  prefs: []
+  type: TYPE_NORMAL
+- en: In order to form a valid NestedTensor all the passed Tensors need to match in
+    dimension, but none of the other attributes need to.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: If one of the dimensions doesn’t match, the constructor throws an error.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note that the passed Tensors are being copied into a contiguous piece of memory.
+    The resulting NestedTensor allocates new memory to store them and does not keep
+    a reference.
+  prefs: []
+  type: TYPE_NORMAL
+- en: At this moment we only support one level of nesting, i.e. a simple, flat list
+    of Tensors. In the future we can add support for multiple levels of nesting, such
+    as a list that consists entirely of lists of Tensors. Note that for this extension
+    it is important to maintain an even level of nesting across entries so that the
+    resulting NestedTensor has a well defined dimension. If you have a need for this
+    feature, please feel encouraged to open a feature request so that we can track
+    it and plan accordingly.
+  prefs: []
+  type: TYPE_NORMAL
+- en: size
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Even though a NestedTensor does not support `.size()` (or `.shape`), it supports
+    `.size(i)` if dimension i is regular.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: If all dimensions are regular, the NestedTensor is intended to be semantically
+    indistinguishable from a regular `torch.Tensor`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: In the future we might make it easier to detect this condition and convert seamlessly.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Please open a feature request if you have a need for this (or any other related
+    feature for that matter).
+  prefs: []
+  type: TYPE_NORMAL
+- en: unbind
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '`unbind` allows you to retrieve a view of the constituents.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note that `nt.unbind()[0]` is not a copy, but rather a slice of the underlying
+    memory, which represents the first entry or constituent of the NestedTensor.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '## Nested tensor constructor and conversion functions[](#nested-tensor-constructor-and-conversion-functions
+    "Permalink to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The following functions are related to nested tensors:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Constructs a nested tensor with no autograd history (also known as a “leaf tensor”,
+    see [Autograd mechanics](notes/autograd.html#autograd-mechanics)) from `tensor_list`
+    a list of tensors.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**tensor_list** (*List**[**array_like**]*) – a list of tensors, or anything
+    that can be passed to torch.tensor,'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**dimensionality.** (*where each element* *of* *the list has the same*) –'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Keyword Arguments
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**dtype** ([`torch.dtype`](tensor_attributes.html#torch.dtype "torch.dtype"),
+    optional) – the desired type of returned nested tensor. Default: if None, same
+    [`torch.dtype`](tensor_attributes.html#torch.dtype "torch.dtype") as leftmost
+    tensor in the list.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**layout** ([`torch.layout`](tensor_attributes.html#torch.layout "torch.layout"),
+    optional) – the desired layout of returned nested tensor. Only strided and jagged
+    layouts are supported. Default: if None, the strided layout.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**device** ([`torch.device`](tensor_attributes.html#torch.device "torch.device"),
+    optional) – the desired device of returned nested tensor. Default: if None, same
+    [`torch.device`](tensor_attributes.html#torch.device "torch.device") as leftmost
+    tensor in the list'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**requires_grad** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")*,* *optional*) – If autograd should record operations on
+    the returned nested tensor. Default: `False`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**pin_memory** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")*,* *optional*) – If set, returned nested tensor would be
+    allocated in the pinned memory. Works only for CPU tensors. Default: `False`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*Tensor*](tensors.html#torch.Tensor "torch.Tensor")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: Constructs a nested tensor preserving autograd history from `tensor_list` a
+    list of tensors.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tensors within the list are always copied by this function due to current nested
+    tensor semantics.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**tensor_list** (*List**[*[*Tensor*](tensors.html#torch.Tensor "torch.Tensor")*]*)
+    – a list of tensors with the same ndim'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Keyword Arguments
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**dtype** ([`torch.dtype`](tensor_attributes.html#torch.dtype "torch.dtype"),
+    optional) – the desired type of returned nested tensor. Default: if None, same
+    [`torch.dtype`](tensor_attributes.html#torch.dtype "torch.dtype") as leftmost
+    tensor in the list.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**device** ([`torch.device`](tensor_attributes.html#torch.device "torch.device"),
+    optional) – the desired device of returned nested tensor. Default: if None, same
+    [`torch.device`](tensor_attributes.html#torch.device "torch.device") as leftmost
+    tensor in the list'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**layout** ([`torch.layout`](tensor_attributes.html#torch.layout "torch.layout"),
+    optional) – the desired layout of returned nested tensor. Only strided and jagged
+    layouts are supported. Default: if None, the strided layout.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*Tensor*](tensors.html#torch.Tensor "torch.Tensor")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns a new (non-nested) Tensor by padding the `input` nested tensor. The
+    leading entries will be filled with the nested data, while the trailing entries
+    will be padded.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`to_padded_tensor()`](#torch.nested.to_padded_tensor "torch.nested.to_padded_tensor")
+    always copies the underlying data, since the nested and the non-nested tensors
+    differ in memory layout.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**padding** ([*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")) – The padding value for the trailing entries.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Keyword Arguments
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**output_size** (*Tuple**[*[*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*]*) – The size of the output tensor. If given, it must be
+    large enough to contain all nested data; else, will infer by taking the max size
+    of each nested sub-tensor along each dimension.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**out** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")*,* *optional*)
+    – the output tensor.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]  ## Supported operations[](#supported-operations "Permalink to this
+    heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: In this section, we summarize the operations that are currently supported on
+    NestedTensor and any constraints they have.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| PyTorch operation | Constraints |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`torch.matmul()`](generated/torch.matmul.html#torch.matmul "torch.matmul")
+    | Supports matrix multiplication between two (>= 3d) nested tensors where the
+    last two dimensions are matrix dimensions and the leading (batch) dimensions have
+    the same size (i.e. no broadcasting support for batch dimensions yet). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`torch.bmm()`](generated/torch.bmm.html#torch.bmm "torch.bmm") | Supports
+    batch matrix multiplication of two 3-d nested tensors. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`torch.nn.Linear()`](generated/torch.nn.Linear.html#torch.nn.Linear "torch.nn.Linear")
+    | Supports 3-d nested input and a dense 2-d weight matrix. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`torch.nn.functional.softmax()`](generated/torch.nn.functional.softmax.html#torch.nn.functional.softmax
+    "torch.nn.functional.softmax") | Supports softmax along all dims except dim=0.
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`torch.nn.Dropout()`](generated/torch.nn.Dropout.html#torch.nn.Dropout "torch.nn.Dropout")
+    | Behavior is the same as on regular tensors. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`torch.Tensor.masked_fill()`](generated/torch.Tensor.masked_fill.html#torch.Tensor.masked_fill
+    "torch.Tensor.masked_fill") | Behavior is the same as on regular tensors. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `torch.relu()` | Behavior is the same as on regular tensors. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `torch.gelu()` | Behavior is the same as on regular tensors. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `torch.silu()` | Behavior is the same as on regular tensors. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`torch.abs()`](generated/torch.abs.html#torch.abs "torch.abs") | Behavior
+    is the same as on regular tensors. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`torch.sgn()`](generated/torch.sgn.html#torch.sgn "torch.sgn") | Behavior
+    is the same as on regular tensors. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`torch.logical_not()`](generated/torch.logical_not.html#torch.logical_not
+    "torch.logical_not") | Behavior is the same as on regular tensors. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`torch.neg()`](generated/torch.neg.html#torch.neg "torch.neg") | Behavior
+    is the same as on regular tensors. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`torch.sub()`](generated/torch.sub.html#torch.sub "torch.sub") | Supports
+    elementwise subtraction of two nested tensors. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`torch.add()`](generated/torch.add.html#torch.add "torch.add") | Supports
+    elementwise addition of two nested tensors. Supports addition of a scalar to a
+    nested tensor. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`torch.mul()`](generated/torch.mul.html#torch.mul "torch.mul") | Supports
+    elementwise multiplication of two nested tensors. Supports multiplication of a
+    nested tensor by a scalar. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`torch.select()`](generated/torch.select.html#torch.select "torch.select")
+    | Supports selecting along all dimensions. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`torch.clone()`](generated/torch.clone.html#torch.clone "torch.clone") |
+    Behavior is the same as on regular tensors. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `torch.detach()` | Behavior is the same as on regular tensors. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`torch.unbind()`](generated/torch.unbind.html#torch.unbind "torch.unbind")
+    | Supports unbinding along `dim=0` only. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`torch.reshape()`](generated/torch.reshape.html#torch.reshape "torch.reshape")
+    | Supports reshaping with size of `dim=0` preserved (i.e. number of tensors nested
+    cannot be changed). Unlike regular tensors, a size of `-1` here means that the
+    existing size is inherited. In particular, the only valid size for a irregular
+    dimension is `-1`. Size inference is not implemented yet and hence for new dimensions
+    the size cannot be `-1`. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`torch.Tensor.reshape_as()`](generated/torch.Tensor.reshape_as.html#torch.Tensor.reshape_as
+    "torch.Tensor.reshape_as") | Similar constraint as for `reshape`. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`torch.transpose()`](generated/torch.transpose.html#torch.transpose "torch.transpose")
+    | Supports transposing of all dims except `dim=0`. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`torch.Tensor.view()`](generated/torch.Tensor.view.html#torch.Tensor.view
+    "torch.Tensor.view") | Rules for the new shape are similar to that of `reshape`.
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`torch.empty_like()`](generated/torch.empty_like.html#torch.empty_like "torch.empty_like")
+    | Behavior is analogous to that of regular tensors; returns a new empty nested
+    tensor (i.e. with uninitialized values) matching the nested structure of the input.
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`torch.randn_like()`](generated/torch.randn_like.html#torch.randn_like "torch.randn_like")
+    | Behavior is analogous to that of regular tensors; returns a new nested tensor
+    with values randomly initialized according to a standard normal distribution matching
+    the nested structure of the input. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`torch.zeros_like()`](generated/torch.zeros_like.html#torch.zeros_like "torch.zeros_like")
+    | Behavior is analogous to that of regular tensors; returns a new nested tensor
+    with all zero values matching the nested structure of the input. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`torch.nn.LayerNorm()`](generated/torch.nn.LayerNorm.html#torch.nn.LayerNorm
+    "torch.nn.LayerNorm") | The `normalized_shape` argument is restricted to not extend
+    into the irregular dimensions of the NestedTensor. |'
+  prefs: []
+  type: TYPE_TB

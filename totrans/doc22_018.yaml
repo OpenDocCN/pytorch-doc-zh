@@ -1,0 +1,142 @@
+- en: HIP (ROCm) semantics
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/docs/stable/notes/hip.html](https://pytorch.org/docs/stable/notes/hip.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: ROCm™ is AMD’s open source software platform for GPU-accelerated high performance
+    computing and machine learning. HIP is ROCm’s C++ dialect designed to ease conversion
+    of CUDA applications to portable C++ code. HIP is used when converting existing
+    CUDA applications like PyTorch to portable C++ and for new projects that require
+    portability between AMD and NVIDIA.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '## HIP Interfaces Reuse the CUDA Interfaces[](#hip-interfaces-reuse-the-cuda-interfaces
+    "Permalink to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: PyTorch for HIP intentionally reuses the existing [`torch.cuda`](../cuda.html#module-torch.cuda
+    "torch.cuda") interfaces. This helps to accelerate the porting of existing PyTorch
+    code and models because very few code changes are necessary, if any.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The example from [CUDA semantics](cuda.html#cuda-semantics) will work exactly
+    the same for HIP:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]  ## Checking for HIP'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Whether you are using PyTorch for CUDA or HIP, the result of calling [`is_available()`](../generated/torch.cuda.is_available.html#torch.cuda.is_available
+    "torch.cuda.is_available") will be the same. If you are using a PyTorch that has
+    been built with GPU support, it will return True. If you must check which version
+    of PyTorch you are using, refer to this example below:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]  ## TensorFloat-32(TF32) on ROCm[](#tensorfloat-32-tf32-on-rocm "Permalink
+    to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'TF32 is not supported on ROCm.  ## Memory management[](#memory-management
+    "Permalink to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: PyTorch uses a caching memory allocator to speed up memory allocations. This
+    allows fast memory deallocation without device synchronizations. However, the
+    unused memory managed by the allocator will still show as if used in `rocm-smi`.
+    You can use [`memory_allocated()`](../generated/torch.cuda.memory_allocated.html#torch.cuda.memory_allocated
+    "torch.cuda.memory_allocated") and [`max_memory_allocated()`](../generated/torch.cuda.max_memory_allocated.html#torch.cuda.max_memory_allocated
+    "torch.cuda.max_memory_allocated") to monitor memory occupied by tensors, and
+    use [`memory_reserved()`](../generated/torch.cuda.memory_reserved.html#torch.cuda.memory_reserved
+    "torch.cuda.memory_reserved") and [`max_memory_reserved()`](../generated/torch.cuda.max_memory_reserved.html#torch.cuda.max_memory_reserved
+    "torch.cuda.max_memory_reserved") to monitor the total amount of memory managed
+    by the caching allocator. Calling [`empty_cache()`](../generated/torch.cuda.empty_cache.html#torch.cuda.empty_cache
+    "torch.cuda.empty_cache") releases all **unused** cached memory from PyTorch so
+    that those can be used by other GPU applications. However, the occupied GPU memory
+    by tensors will not be freed so it can not increase the amount of GPU memory available
+    for PyTorch.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For more advanced users, we offer more comprehensive memory benchmarking via
+    [`memory_stats()`](../generated/torch.cuda.memory_stats.html#torch.cuda.memory_stats
+    "torch.cuda.memory_stats"). We also offer the capability to capture a complete
+    snapshot of the memory allocator state via [`memory_snapshot()`](../generated/torch.cuda.memory_snapshot.html#torch.cuda.memory_snapshot
+    "torch.cuda.memory_snapshot"), which can help you understand the underlying allocation
+    patterns produced by your code.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'To debug memory errors, set `PYTORCH_NO_CUDA_MEMORY_CACHING=1` in your environment
+    to disable caching.  ## hipFFT/rocFFT plan cache[](#hipfft-rocfft-plan-cache
+    "Permalink to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Setting the size of the cache for hipFFT/rocFFT plans is not supported.  ##
+    torch.distributed backends'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Currently, only the “nccl” and “gloo” backends for torch.distributed are supported
+    on ROCm.  ## CUDA API to HIP API mappings in C++[](#cuda-api-to-hip-api-mappings-in-c
+    "Permalink to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Please refer: [https://rocmdocs.amd.com/en/latest/Programming_Guides/HIP_API_Guide.html](https://rocmdocs.amd.com/en/latest/Programming_Guides/HIP_API_Guide.html)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'NOTE: The CUDA_VERSION macro, cudaRuntimeGetVersion and cudaDriverGetVersion
+    APIs do not semantically map to the same values as HIP_VERSION macro, hipRuntimeGetVersion
+    and hipDriverGetVersion APIs. Please do not use them interchangeably when doing
+    version checks.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'For example: Instead of using'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`#if defined(CUDA_VERSION) && CUDA_VERSION >= 11000` to implicitly exclude
+    ROCm/HIP,'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'use the following to not take the code path for ROCm/HIP:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`#if defined(CUDA_VERSION) && CUDA_VERSION >= 11000 && !defined(USE_ROCM)`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Alternatively, if it is desired to take the code path for ROCm/HIP:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`#if (defined(CUDA_VERSION) && CUDA_VERSION >= 11000) || defined(USE_ROCM)`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Or if it is desired to take the code path for ROCm/HIP only for specific HIP
+    versions:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`#if (defined(CUDA_VERSION) && CUDA_VERSION >= 11000) || (defined(USE_ROCM)
+    && ROCM_VERSION >= 40300)`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Refer to CUDA Semantics doc[](#refer-to-cuda-semantics-doc "Permalink to this
+    heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'For any sections not listed here, please refer to the CUDA semantics doc: [CUDA
+    semantics](cuda.html#cuda-semantics)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Enabling kernel asserts
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Kernel asserts are supported on ROCm, but they are disabled due to performance
+    overhead. It can be enabled by recompiling the PyTorch from source.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Please add below line as an argument to cmake command parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE

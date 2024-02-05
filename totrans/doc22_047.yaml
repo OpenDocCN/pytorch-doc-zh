@@ -1,0 +1,211 @@
+- en: Generic Join Context Manager
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/docs/stable/distributed.algorithms.join.html](https://pytorch.org/docs/stable/distributed.algorithms.join.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: 'The generic join context manager facilitates distributed training on uneven
+    inputs. This page outlines the API of the relevant classes: `Join`, `Joinable`,
+    and `JoinHook`. For a tutorial, see [Distributed Training with Uneven Inputs Using
+    the Join Context Manager](https://pytorch.org/tutorials/advanced/generic_join.html).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: This class defines the generic join context manager, which allows custom hooks
+    to be called after a process joins.
+  prefs: []
+  type: TYPE_NORMAL
+- en: These hooks should shadow the collective communications of non-joined processes
+    to prevent hanging and erroring and to ensure algorithmic correctness. Refer to
+    [`JoinHook`](#torch.distributed.algorithms.JoinHook "torch.distributed.algorithms.JoinHook")
+    for details about the hook definition.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: The context manager requires each participating [`Joinable`](#torch.distributed.algorithms.Joinable
+    "torch.distributed.algorithms.Joinable") to call the method [`notify_join_context()`](#torch.distributed.algorithms.Join.notify_join_context
+    "torch.distributed.algorithms.Join.notify_join_context") before its own per- iteration
+    collective communications to ensure correctness.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: The context manager requires that all `process_group` attributes in the [`JoinHook`](#torch.distributed.algorithms.JoinHook
+    "torch.distributed.algorithms.JoinHook") objects are the same. If there are multiple
+    [`JoinHook`](#torch.distributed.algorithms.JoinHook "torch.distributed.algorithms.JoinHook")
+    objects, then the `device` of the first is used. The process group and device
+    information is used for checking for non- joined processes and for notifying processes
+    to throw an exception if `throw_on_early_termination` is enabled, both of which
+    using an all- reduce.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**joinables** (*List**[*[*Joinable*](#torch.distributed.algorithms.Joinable
+    "torch.distributed.algorithms.Joinable")*]*) – a list of the participating [`Joinable`](#torch.distributed.algorithms.Joinable
+    "torch.distributed.algorithms.Joinable") s; their hooks are iterated over in the
+    given order.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**enable** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")) – a flag enabling uneven input detection; setting to `False`
+    disables the context manager’s functionality and should only be set when the user
+    knows the inputs will not be uneven (default: `True`).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**throw_on_early_termination** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")) – a flag controlling whether to throw an exception upon
+    detecting uneven inputs (default: `False`).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Notifies the join context manager that the calling process has not yet joined.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Then, if `throw_on_early_termination=True`, checks if uneven inputs have been
+    detected (i.e. if one process has already joined) and throws an exception if so.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This method should be called from a [`Joinable`](#torch.distributed.algorithms.Joinable
+    "torch.distributed.algorithms.Joinable") object before its per-iteration collective
+    communications. For example, this should be called at the beginning of the forward
+    pass in `DistributedDataParallel`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Only the first [`Joinable`](#torch.distributed.algorithms.Joinable "torch.distributed.algorithms.Joinable")
+    object passed into the context manager performs the collective communications
+    in this method, and for the others, this method is vacuous.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**joinable** ([*Joinable*](#torch.distributed.algorithms.Joinable "torch.distributed.algorithms.Joinable"))
+    – the [`Joinable`](#torch.distributed.algorithms.Joinable "torch.distributed.algorithms.Joinable")
+    object calling this method.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: An async work handle for the all-reduce meant to notify the context manager
+    that the process has not yet joined if `joinable` is the first one passed into
+    the context manager; `None` otherwise.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: This defines an abstract base class for joinable classes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: A joinable class (inheriting from [`Joinable`](#torch.distributed.algorithms.Joinable
+    "torch.distributed.algorithms.Joinable")) should implement [`join_hook()`](#torch.distributed.algorithms.Joinable.join_hook
+    "torch.distributed.algorithms.Joinable.join_hook"), which returns a [`JoinHook`](#torch.distributed.algorithms.JoinHook
+    "torch.distributed.algorithms.JoinHook") instance, in addition to [`join_device()`](#torch.distributed.algorithms.Joinable.join_device
+    "torch.distributed.algorithms.Joinable.join_device") and [`join_process_group()`](#torch.distributed.algorithms.Joinable.join_process_group
+    "torch.distributed.algorithms.Joinable.join_process_group") that return device
+    and process group information, respectively.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Return the device from which to perform collective communications needed by
+    the join context manager.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: Return a [`JoinHook`](#torch.distributed.algorithms.JoinHook "torch.distributed.algorithms.JoinHook")
+    instance for the given [`Joinable`](#torch.distributed.algorithms.Joinable "torch.distributed.algorithms.Joinable").
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**kwargs** ([*dict*](https://docs.python.org/3/library/stdtypes.html#dict "(in
+    Python v3.12)")) – a [`dict`](https://docs.python.org/3/library/stdtypes.html#dict
+    "(in Python v3.12)") containing any keyword arguments to modify the behavior of
+    the join hook at run time; all [`Joinable`](#torch.distributed.algorithms.Joinable
+    "torch.distributed.algorithms.Joinable") instances sharing the same join context
+    manager are forwarded the same value for `kwargs`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*JoinHook*](#torch.distributed.algorithms.JoinHook "torch.distributed.algorithms.join.JoinHook")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns the process group for the collective communications needed by the join
+    context manager itself.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: This defines a join hook, which provides two entry points in the join context
+    manager.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Entry points : a main hook, which is called repeatedly while there exists a
+    non-joined process, and a post-hook, which is called once all processes have joined.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: To implement a join hook for the generic join context manager, define a class
+    that inherits from [`JoinHook`](#torch.distributed.algorithms.JoinHook "torch.distributed.algorithms.JoinHook")
+    and override `main_hook()` and `post_hook()` as appropriate.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: Call this hook while there exists a non-joined process to shadow collective
+    communications in a training iteration.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Training iteration i.e., in one forward pass, backward pass, and optimizer step.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: Call hook after all processes have joined.
+  prefs: []
+  type: TYPE_NORMAL
+- en: It is passed an additional `bool` argument `is_last_joiner`, which indicates
+    if the rank is one of the last to join.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**is_last_joiner** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")) – `True` if the rank is one of the last to join; `False`
+    otherwise.'
+  prefs: []
+  type: TYPE_NORMAL

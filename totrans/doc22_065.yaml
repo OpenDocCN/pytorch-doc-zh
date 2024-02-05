@@ -1,0 +1,298 @@
+- en: torch.overrides
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/docs/stable/torch.overrides.html](https://pytorch.org/docs/stable/torch.overrides.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: This module exposes various helper functions for the `__torch_function__` protocol.
+    See [Extending torch Python API](notes/extending.html#extending-torch-python)
+    for more details on the `__torch_function__` protocol.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Functions
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Return public functions that cannot be overridden by `__torch_function__`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: A tuple of functions that are publicly available in the torch API but cannot
+    be overridden with `__torch_function__`. Mostly this is because none of the arguments
+    of these functions are tensors or tensor-likes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: Set[Callable]
+  prefs: []
+  type: TYPE_NORMAL
+- en: Examples
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: List functions that are overridable via __torch_function__
+  prefs: []
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: A dictionary that maps namespaces that contain overridable functions to functions
+    in that namespace that can be overridden.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: Dict[Any, List[Callable]]
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Get a human readable string name for a function passed to __torch_function__
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**f** (*Callable*) – Function to resolve the name of.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: Name of the function; if eval’ed it should give back the input function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[str](https://docs.python.org/3/library/stdtypes.html#str "(in Python v3.12)")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Return a dict containing dummy overrides for all overridable functions
+  prefs: []
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: A dictionary that maps overridable functions in the PyTorch API to lambda functions
+    that have the same signature as the real function and unconditionally return -1\.
+    These lambda functions are useful for testing API coverage for a type that defines
+    `__torch_function__`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: Dict[Callable, Callable]
+  prefs: []
+  type: TYPE_NORMAL
+- en: Examples
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: Implement a function with checks for `__torch_function__` overrides.
+  prefs: []
+  type: TYPE_NORMAL
+- en: See torch::autograd::handle_torch_function for the equivalent of this function
+    in the C++ implementation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**public_api** (*function*) – Function exposed by the public torch API originally
+    called like `public_api(*args, **kwargs)` on which arguments are now being checked.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**relevant_args** (*iterable*) – Iterable of arguments to check for __torch_function__
+    methods.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**args** ([*tuple*](https://docs.python.org/3/library/stdtypes.html#tuple "(in
+    Python v3.12)")) – Arbitrary positional arguments originally passed into `public_api`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**kwargs** ([*tuple*](https://docs.python.org/3/library/stdtypes.html#tuple
+    "(in Python v3.12)")) – Arbitrary keyword arguments originally passed into `public_api`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: Result from calling `implementation` or an `__torch_function__` method, as appropriate.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[object](https://docs.python.org/3/library/functions.html#object "(in Python
+    v3.12)")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: ':raises TypeError : if no implementation is found.:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Example
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Check for __torch_function__ implementations in the elements of an iterable
+    or if a __torch_function__ mode is enabled. Considers exact `Tensor` s and `Parameter`
+    s non-dispatchable. Use this to guard a call to [`handle_torch_function()`](#torch.overrides.handle_torch_function
+    "torch.overrides.handle_torch_function"); don’t use it to test if something is
+    Tensor-like, use [`is_tensor_like()`](#torch.overrides.is_tensor_like "torch.overrides.is_tensor_like")
+    instead. :param relevant_args: Iterable or arguments to check for __torch_function__
+    methods. :type relevant_args: iterable'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: True if any of the elements of relevant_args have __torch_function__ implementations,
+    False otherwise.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[bool](https://docs.python.org/3/library/functions.html#bool "(in Python v3.12)")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: See also
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`torch.is_tensor_like`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Checks if something is a Tensor-like, including an exact `Tensor`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns `True` if the passed-in input is a Tensor-like.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Currently, this occurs whenever there’s a `__torch_function__` attribute on
+    the type of the input.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Examples
+  prefs: []
+  type: TYPE_NORMAL
+- en: A subclass of tensor is generally a Tensor-like.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: Built-in or user types aren’t usually Tensor-like.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: But, they can be made Tensor-like by implementing __torch_function__.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns True if the function passed in is a handler for a method or property
+    belonging to `torch.Tensor`, as passed into `__torch_function__`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: For properties, their `__get__` method must be passed in.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'This may be needed, in particular, for the following reasons:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Methods/properties sometimes don’t contain a __module__ slot.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: They require that the first passed-in argument is an instance of `torch.Tensor`.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Examples
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[bool](https://docs.python.org/3/library/functions.html#bool "(in Python v3.12)")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: Wraps a given function with `__torch_function__` -related functionality.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**dispatcher** (*Callable*) – A callable that returns an iterable of Tensor-likes
+    passed into the function.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: This decorator may reduce the performance of your code. Generally, it’s enough
+    to express your code as a series of functions that, themselves, support __torch_function__.
+    If you find yourself in the rare situation where this is not the case, e.g. if
+    you’re wrapping a low-level library and you also need it to work for Tensor-likes,
+    then this function is available.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Examples
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE

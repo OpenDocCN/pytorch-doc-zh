@@ -1,0 +1,107 @@
+- en: Broadcasting semantics
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/docs/stable/notes/broadcasting.html](https://pytorch.org/docs/stable/notes/broadcasting.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Many PyTorch operations support NumPy’s broadcasting semantics. See [https://numpy.org/doc/stable/user/basics.broadcasting.html](https://numpy.org/doc/stable/user/basics.broadcasting.html)
+    for details.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In short, if a PyTorch operation supports broadcast, then its Tensor arguments
+    can be automatically expanded to be of equal sizes (without making copies of the
+    data).
+  prefs: []
+  type: TYPE_NORMAL
+- en: General semantics
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Two tensors are “broadcastable” if the following rules hold:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Each tensor has at least one dimension.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: When iterating over the dimension sizes, starting at the trailing dimension,
+    the dimension sizes must either be equal, one of them is 1, or one of them does
+    not exist.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'For Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'If two tensors `x`, `y` are “broadcastable”, the resulting tensor size is calculated
+    as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: If the number of dimensions of `x` and `y` are not equal, prepend 1 to the dimensions
+    of the tensor with fewer dimensions to make them equal length.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Then, for each dimension size, the resulting dimension size is the max of the
+    sizes of `x` and `y` along that dimension.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'For Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: In-place semantics
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: One complication is that in-place operations do not allow the in-place tensor
+    to change shape as a result of the broadcast.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'For Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Backwards compatibility
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Prior versions of PyTorch allowed certain pointwise functions to execute on
+    tensors with different shapes, as long as the number of elements in each tensor
+    was equal. The pointwise operation would then be carried out by viewing each tensor
+    as 1-dimensional. PyTorch now supports broadcasting and the “1-dimensional” pointwise
+    behavior is considered deprecated and will generate a Python warning in cases
+    where tensors are not broadcastable, but have the same number of elements.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Note that the introduction of broadcasting can cause backwards incompatible
+    changes in the case where two tensors do not have the same shape, but are broadcastable
+    and have the same number of elements. For Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'would previously produce a Tensor with size: torch.Size([4,1]), but now produces
+    a Tensor with size: torch.Size([4,4]). In order to help identify cases in your
+    code where backwards incompatibilities introduced by broadcasting may exist, you
+    may set torch.utils.backcompat.broadcast_warning.enabled to True, which will generate
+    a python warning in such cases.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'For Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE

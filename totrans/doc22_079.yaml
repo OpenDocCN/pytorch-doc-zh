@@ -1,0 +1,1740 @@
+- en: torch.sparse
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/docs/stable/sparse.html](https://pytorch.org/docs/stable/sparse.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: The PyTorch API of sparse tensors is in beta and may change in the near future.
+    We highly welcome feature requests, bug reports and general suggestions as GitHub
+    issues.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Why and when to use sparsity[](#why-and-when-to-use-sparsity "Permalink to
+    this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: By default PyTorch stores [`torch.Tensor`](tensors.html#torch.Tensor "torch.Tensor")
+    stores elements contiguously physical memory. This leads to efficient implementations
+    of various array processing algorithms that require fast access to elements.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Now, some users might decide to represent data such as graph adjacency matrices,
+    pruned weights or points clouds by Tensors whose *elements are mostly zero valued*.
+    We recognize these are important applications and aim to provide performance optimizations
+    for these use cases via sparse storage formats.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Various sparse storage formats such as COO, CSR/CSC, semi-structured, LIL, etc.
+    have been developed over the years. While they differ in exact layouts, they all
+    compress data through efficient representation of zero valued elements. We call
+    the uncompressed values *specified* in contrast to *unspecified*, compressed elements.
+  prefs: []
+  type: TYPE_NORMAL
+- en: By compressing repeat zeros sparse storage formats aim to save memory and computational
+    resources on various CPUs and GPUs. Especially for high degrees of sparsity or
+    highly structured sparsity this can have significant performance implications.
+    As such sparse storage formats can be seen as a performance optimization.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Like many other performance optimization sparse storage formats are not always
+    advantageous. When trying sparse formats for your use case you might find your
+    execution time to increase rather than decrease.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Please feel encouraged to open a GitHub issue if you analytically expected to
+    see a stark increase in performance but measured a degradation instead. This helps
+    us prioritize the implementation of efficient kernels and wider performance optimizations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We make it easy to try different sparsity layouts, and convert between them,
+    without being opinionated on what’s best for your particular application.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Functionality overview
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: We want it to be straightforward to construct a sparse Tensor from a given dense
+    Tensor by providing conversion routines for each layout.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the next example we convert a 2D Tensor with default dense (strided) layout
+    to a 2D Tensor backed by the COO memory layout. Only values and indices of non-zero
+    elements are stored in this case.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: PyTorch currently supports [COO](#sparse-coo-docs), [CSR](#sparse-csr-docs),
+    [CSC](#sparse-csc-docs), [BSR](#sparse-bsr-docs), and [BSC](#sparse-bsc-docs).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We also have a prototype implementation to support :ref: semi-structured sparsity<sparse-semi-structured-docs>.
+    Please see the references for more details.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that we provide slight generalizations of these formats.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Batching: Devices such as GPUs require batching for optimal performance and
+    thus we support batch dimensions.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: We currently offer a very simple version of batching where each component of
+    a sparse format itself is batched. This also requires the same number of specified
+    elements per batch entry. In this example we construct a 3D (batched) CSR Tensor
+    from a 3D dense Tensor.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Dense dimensions: On the other hand, some data such as Graph embeddings might
+    be better viewed as sparse collections of vectors instead of scalars.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: In this example we create a 3D Hybrid COO Tensor with 2 sparse and 1 dense dimension
+    from a 3D strided Tensor. If an entire row in the 3D strided Tensor is zero, it
+    is not stored. If however any of the values in the row are non-zero, they are
+    stored entirely. This reduces the number of indices since we need one index one
+    per row instead of one per element. But it also increases the amount of storage
+    for the values. Since only rows that are *entirely* zero can be emitted and the
+    presence of any non-zero valued elements cause the entire row to be stored.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Operator overview
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Fundamentally, operations on Tensor with sparse storage formats behave the same
+    as operations on Tensor with strided (or other) storage formats. The particularities
+    of storage, that is the physical layout of the data, influences the performance
+    of an operation but should not influence the semantics.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We are actively increasing operator coverage for sparse tensors. Users should
+    not expect support same level of support as for dense Tensors yet. See our [operator](#sparse-ops-docs)
+    documentation for a list.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: As shown in the example above, we don’t support non-zero preserving unary operators
+    such as cos. The output of a non-zero preserving unary operation will not be able
+    to take advantage of sparse storage formats to the same extent as the input and
+    potentially result in a catastrophic increase in memory. We instead rely on the
+    user to explicitly convert to a dense Tensor first and then run the operation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: We are aware that some users want to ignore compressed zeros for operations
+    such as cos instead of preserving the exact semantics of the operation. For this
+    we can point to torch.masked and its MaskedTensor, which is in turn also backed
+    and powered by sparse storage formats and kernels.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Also note that, for now, the user doesn’t have a choice of the output layout.
+    For example, adding a sparse Tensor to a regular strided Tensor results in a strided
+    Tensor. Some users might prefer for this to stay a sparse layout, because they
+    know the result will still be sufficiently sparse.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: We acknowledge that access to kernels that can efficiently produce different
+    output layouts can be very useful. A subsequent operation might significantly
+    benefit from receiving a particular layout. We are working on an API to control
+    the result layout and recognize it is an important feature to plan a more optimal
+    path of execution for any given model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '## Sparse Semi-Structured Tensors[](#sparse-semi-structured-tensors "Permalink
+    to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: Sparse semi-structured tensors are currently a prototype feature and subject
+    to change. Please feel free to open an issue to report a bug or if you have feedback
+    to share.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Semi-Structured sparsity is a sparse data layout that was first introduced in
+    NVIDIA’s Ampere architecture. It is also referred to as **fine-grained structured
+    sparsity** or **2:4 structured sparsity**.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This sparse layout stores n elements out of every 2n elements, with n being
+    determined by the width of the Tensor’s data type (dtype). The most frequently
+    used dtype is float16, where n=2, thus the term “2:4 structured sparsity.”
+  prefs: []
+  type: TYPE_NORMAL
+- en: Semi-structured sparsity is explained in greater detail in [this NVIDIA blog
+    post](https://developer.nvidia.com/blog/exploiting-ampere-structured-sparsity-with-cusparselt).
+  prefs: []
+  type: TYPE_NORMAL
+- en: In PyTorch, semi-structured sparsity is implemented via a Tensor subclass. By
+    subclassing, we can override `__torch_dispatch__` , allowing us to use faster
+    sparse kernels when performing matrix multiplication. We can also store the tensor
+    in it’s compressed form inside the subclass to reduce memory overhead.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In this compressed form, the sparse tensor is stored by retaining only the *specified*
+    elements and some metadata, which encodes the mask.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: The specified elements and metadata mask of a semi-structured sparse tensor
+    are stored together in a single flat compressed tensor. They are appended to each
+    other to form a contiguous chunk of memory.
+  prefs: []
+  type: TYPE_NORMAL
+- en: compressed tensor = [ specified elements of original tensor | metadata_mask
+    ]
+  prefs: []
+  type: TYPE_NORMAL
+- en: For an original tensor of size (r, c) we expect the first m * k // 2 elements
+    to be the kept elements and the rest of the tensor is metadata.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In order to make it easier for the user to view the specified elements and mask,
+    one can use `.indices()` and `.values()` to access the mask and specified elements
+    respectively.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`.values()` returns the specified elements in a tensor of size (r, c//2) and
+    with the same dtype as the dense matrix.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`.indices()` returns the metadata_mask in a tensor of size (r, c//2 ) and with
+    element type `torch.int16` if dtype is torch.float16 or torch.bfloat16, and element
+    type `torch.int32` if dtype is torch.int8.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: For 2:4 sparse tensors, the metadata overhead is minor - just 2 bits per specified
+    element.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: It’s important to note that `torch.float32` is only supported for 1:2 sparsity.
+    Therefore, it does not follow the same formula as above.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Here, we break down how to calculate the compression ratio ( size dense / size
+    sparse) of a 2:4 sparse tensor.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let (r, c) = tensor.shape and e = bitwidth(tensor.dtype), so e = 16 for `torch.float16`
+    and `torch.bfloat16` and e = 8 for `torch.int8`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: <math display="block"><semantics><mrow><msub><mi>M</mi><mrow><mi>d</mi><mi>e</mi><mi>n</mi><mi>s</mi><mi>e</mi></mrow></msub><mo>=</mo><mi>r</mi><mo>×</mo><mi>c</mi><mo>×</mo><mi>e</mi><msub><mi>M</mi><mrow><mi>s</mi><mi>p</mi><mi>a</mi><mi>r</mi><mi>s</mi><mi>e</mi></mrow></msub><mo>=</mo><msub><mi>M</mi><mrow><mi>s</mi><mi>p</mi><mi>e</mi><mi>c</mi><mi>i</mi><mi>f</mi><mi>i</mi><mi>e</mi><mi>d</mi></mrow></msub><mo>+</mo><msub><mi>M</mi><mrow><mi>m</mi><mi>e</mi><mi>t</mi><mi>a</mi><mi>d</mi><mi>a</mi><mi>t</mi><mi>a</mi></mrow></msub><mo>=</mo><mi>r</mi><mo>×</mo><mfrac><mi>c</mi><mn>2</mn></mfrac><mo>×</mo><mi>e</mi><mo>+</mo><mi>r</mi><mo>×</mo><mfrac><mi>c</mi><mn>2</mn></mfrac><mo>×</mo><mn>2</mn><mo>=</mo><mfrac><mrow><mi>r</mi><mi>c</mi><mi>e</mi></mrow><mn>2</mn></mfrac><mo>+</mo><mi>r</mi><mi>c</mi><mo>=</mo><mi>r</mi><mi>c</mi><mi>e</mi><mo
+    stretchy="false">(</mo><mfrac><mn>1</mn><mn>2</mn></mfrac><mo>+</mo><mfrac><mn>1</mn><mi>e</mi></mfrac><mo
+    stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">M_{dense}
+    = r \times c \times e \\ M_{sparse} = M_{specified} + M_{metadata} = r \times
+    \frac{c}{2} \times e + r \times \frac{c}{2} \times 2 = \frac{rce}{2} + rc =rce(\frac{1}{2}
+    +\frac{1}{e})</annotation></semantics></math> Mdense​=r×c×eMsparse​=Mspecified​+Mmetadata​=r×2c​×e+r×2c​×2=2rce​+rc=rce(21​+e1​)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Using these calculations, we can determine the total memory footprint for both
+    the original dense and the new sparse representation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This gives us a simple formula for the compression ratio, which is dependent
+    only on the bitwidth of the tensor datatype.
+  prefs: []
+  type: TYPE_NORMAL
+- en: <math display="block"><semantics><mrow><mi>C</mi><mo>=</mo><mfrac><msub><mi>M</mi><mrow><mi>s</mi><mi>p</mi><mi>a</mi><mi>r</mi><mi>s</mi><mi>e</mi></mrow></msub><msub><mi>M</mi><mrow><mi>d</mi><mi>e</mi><mi>n</mi><mi>s</mi><mi>e</mi></mrow></msub></mfrac><mo>=</mo><mfrac><mn>1</mn><mn>2</mn></mfrac><mo>+</mo><mfrac><mn>1</mn><mi>e</mi></mfrac></mrow><annotation
+    encoding="application/x-tex">C = \frac{M_{sparse}}{M_{dense}} = \frac{1}{2} +
+    \frac{1}{e}</annotation></semantics></math> C=Mdense​Msparse​​=21​+e1​
+  prefs: []
+  type: TYPE_NORMAL
+- en: By using this formula, we find that the compression ratio is 56.25% for `torch.float16`
+    or `torch.bfloat16`, and 62.5% for `torch.int8`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Constructing Sparse Semi-Structured Tensors[](#constructing-sparse-semi-structured-tensors
+    "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: You can transform a dense tensor into a sparse semi-structured tensor by simply
+    using the `torch.to_sparse_semi_structured` function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Please also note that we only support CUDA tensors since hardware compatibility
+    for semi-structured sparsity is limited to NVIDIA GPUs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The following datatypes are supported for semi-structured sparsity. Note that
+    each datatype has its own shape constraints and compression factor.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| PyTorch dtype | Shape Constraints | Compression Factor | Sparsity Pattern
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `torch.float16` | Tensor must be 2D and (r, c) must both be a positive multiple
+    of 64 | 9/16 | 2:4 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `torch.bfloat16` | Tensor must be 2D and (r, c) must both be a positive multiple
+    of 64 | 9/16 | 2:4 |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `torch.int8` | Tensor must be 2D and (r, c) must both be a positive multiple
+    of 128 | 10/16 | 2:4 |'
+  prefs: []
+  type: TYPE_TB
+- en: To construct a semi-structured sparse tensor, start by creating a regular dense
+    tensor that adheres to a 2:4 (or semi-structured) sparse format. To do this we
+    tile a small 1x4 strip to create a 16x16 dense float16 tensor. Afterwards, we
+    can call `to_sparse_semi_structured` function to compress it for accelerated inference.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: Sparse Semi-Structured Tensor Operations[](#sparse-semi-structured-tensor-operations
+    "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Currently, the following operations are supported for semi-structured sparse
+    tensors:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: torch.addmm(bias, dense, sparse.t())
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: torch.mm(dense, sparse)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: torch.mm(sparse, dense)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: aten.linear.default(dense, sparse, bias)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: aten.t.default(sparse)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: aten.t.detach(sparse)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'To use these ops, simply pass the output of `to_sparse_semi_structured(tensor)`
+    instead of using `tensor` once your tensor has 0s in a semi-structured sparse
+    format, like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Accelerating nn.Linear with semi-structured sparsity[](#accelerating-nn-linear-with-semi-structured-sparsity
+    "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'You can accelerate the linear layers in your model if the weights are already
+    semi-structured sparse with just a few lines of code:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]  ## Sparse COO tensors'
+  prefs: []
+  type: TYPE_NORMAL
+- en: PyTorch implements the so-called Coordinate format, or COO format, as one of
+    the storage formats for implementing sparse tensors. In COO format, the specified
+    elements are stored as tuples of element indices and the corresponding values.
+    In particular,
+  prefs: []
+  type: TYPE_NORMAL
+- en: the indices of specified elements are collected in `indices` tensor of size
+    `(ndim, nse)` and with element type `torch.int64`,
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: the corresponding values are collected in `values` tensor of size `(nse,)` and
+    with an arbitrary integer or floating point number element type,
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: where `ndim` is the dimensionality of the tensor and `nse` is the number of
+    specified elements.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: The memory consumption of a sparse COO tensor is at least `(ndim * 8 + <size
+    of element type in bytes>) * nse` bytes (plus a constant overhead from storing
+    other tensor data).
+  prefs: []
+  type: TYPE_NORMAL
+- en: The memory consumption of a strided tensor is at least `product(<tensor shape>)
+    * <size of element type in bytes>`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For example, the memory consumption of a 10 000 x 10 000 tensor with 100 000
+    non-zero 32-bit floating point numbers is at least `(2 * 8 + 4) * 100 000 = 2
+    000 000` bytes when using COO tensor layout and `10 000 * 10 000 * 4 = 400 000
+    000` bytes when using the default strided tensor layout. Notice the 200 fold memory
+    saving from using the COO storage format.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Construction
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: A sparse COO tensor can be constructed by providing the two tensors of indices
+    and values, as well as the size of the sparse tensor (when it cannot be inferred
+    from the indices and values tensors) to a function [`torch.sparse_coo_tensor()`](generated/torch.sparse_coo_tensor.html#torch.sparse_coo_tensor
+    "torch.sparse_coo_tensor").
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Suppose we want to define a sparse tensor with the entry 3 at location (0,
+    2), entry 4 at location (1, 0), and entry 5 at location (1, 2). Unspecified elements
+    are assumed to have the same value, fill value, which is zero by default. We would
+    then write:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Note that the input `i` is NOT a list of index tuples. If you want to write
+    your indices this way, you should transpose before passing them to the sparse
+    constructor:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'An empty sparse COO tensor can be constructed by specifying its size only:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: '### Sparse hybrid COO tensors[](#sparse-hybrid-coo-tensors "Permalink to this
+    heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: PyTorch implements an extension of sparse tensors with scalar values to sparse
+    tensors with (contiguous) tensor values. Such tensors are called hybrid tensors.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'PyTorch hybrid COO tensor extends the sparse COO tensor by allowing the `values`
+    tensor to be a multi-dimensional tensor so that we have:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: the indices of specified elements are collected in `indices` tensor of size
+    `(sparse_dims, nse)` and with element type `torch.int64`,
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: the corresponding (tensor) values are collected in `values` tensor of size `(nse,
+    dense_dims)` and with an arbitrary integer or floating point number element type.
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: We use (M + K)-dimensional tensor to denote a N-dimensional sparse hybrid tensor,
+    where M and K are the numbers of sparse and dense dimensions, respectively, such
+    that M + K == N holds.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Suppose we want to create a (2 + 1)-dimensional tensor with the entry [3, 4]
+    at location (0, 2), entry [5, 6] at location (1, 0), and entry [7, 8] at location
+    (1, 2). We would write
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'In general, if `s` is a sparse COO tensor and `M = s.sparse_dim()`, `K = s.dense_dim()`,
+    then we have the following invariants:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`M + K == len(s.shape) == s.ndim` - dimensionality of a tensor is the sum of
+    the number of sparse and dense dimensions,'
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: '`s.indices().shape == (M, nse)` - sparse indices are stored explicitly,'
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: '`s.values().shape == (nse,) + s.shape[M : M + K]` - the values of a hybrid
+    tensor are K-dimensional tensors,'
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: '`s.values().layout == torch.strided` - values are stored as strided tensors.'
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Dense dimensions always follow sparse dimensions, that is, mixing of dense and
+    sparse dimensions is not supported.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'To be sure that a constructed sparse tensor has consistent indices, values,
+    and size, the invariant checks can be enabled per tensor creation via `check_invariants=True`
+    keyword argument, or globally using [`torch.sparse.check_sparse_tensor_invariants`](generated/torch.sparse.check_sparse_tensor_invariants.html#torch.sparse.check_sparse_tensor_invariants
+    "torch.sparse.check_sparse_tensor_invariants") context manager instance. By default,
+    the sparse tensor invariants checks are disabled.  ### Uncoalesced sparse COO
+    tensors'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'PyTorch sparse COO tensor format permits sparse *uncoalesced* tensors, where
+    there may be duplicate coordinates in the indices; in this case, the interpretation
+    is that the value at that index is the sum of all duplicate value entries. For
+    example, one can specify multiple values, `3` and `4`, for the same index `1`,
+    that leads to an 1-D uncoalesced tensor:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'while the coalescing process will accumulate the multi-valued elements into
+    a single value using summation:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'In general, the output of [`torch.Tensor.coalesce()`](generated/torch.Tensor.coalesce.html#torch.Tensor.coalesce
+    "torch.Tensor.coalesce") method is a sparse tensor with the following properties:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: the indices of specified tensor elements are unique,
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: the indices are sorted in lexicographical order,
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[`torch.Tensor.is_coalesced()`](generated/torch.Tensor.is_coalesced.html#torch.Tensor.is_coalesced
+    "torch.Tensor.is_coalesced") returns `True`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: For the most part, you shouldn’t have to care whether or not a sparse tensor
+    is coalesced or not, as most operations will work identically given a sparse coalesced
+    or uncoalesced tensor.
+  prefs: []
+  type: TYPE_NORMAL
+- en: However, some operations can be implemented more efficiently on uncoalesced
+    tensors, and some on coalesced tensors.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'For instance, addition of sparse COO tensors is implemented by simply concatenating
+    the indices and values tensors:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: If you repeatedly perform an operation that can produce duplicate entries (e.g.,
+    [`torch.Tensor.add()`](generated/torch.Tensor.add.html#torch.Tensor.add "torch.Tensor.add")),
+    you should occasionally coalesce your sparse tensors to prevent them from growing
+    too large.
+  prefs: []
+  type: TYPE_NORMAL
+- en: On the other hand, the lexicographical ordering of indices can be advantageous
+    for implementing algorithms that involve many element selection operations, such
+    as slicing or matrix products.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Working with sparse COO tensors[](#working-with-sparse-coo-tensors "Permalink
+    to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Let’s consider the following example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'As mentioned above, a sparse COO tensor is a [`torch.Tensor`](tensors.html#torch.Tensor
+    "torch.Tensor") instance and to distinguish it from the Tensor instances that
+    use some other layout, on can use [`torch.Tensor.is_sparse`](generated/torch.Tensor.is_sparse.html#torch.Tensor.is_sparse
+    "torch.Tensor.is_sparse") or `torch.Tensor.layout` properties:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The number of sparse and dense dimensions can be acquired using methods [`torch.Tensor.sparse_dim()`](generated/torch.Tensor.sparse_dim.html#torch.Tensor.sparse_dim
+    "torch.Tensor.sparse_dim") and [`torch.Tensor.dense_dim()`](generated/torch.Tensor.dense_dim.html#torch.Tensor.dense_dim
+    "torch.Tensor.dense_dim"), respectively. For instance:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: If `s` is a sparse COO tensor then its COO format data can be acquired using
+    methods [`torch.Tensor.indices()`](generated/torch.Tensor.indices.html#torch.Tensor.indices
+    "torch.Tensor.indices") and [`torch.Tensor.values()`](generated/torch.Tensor.values.html#torch.Tensor.values
+    "torch.Tensor.values").
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Currently, one can acquire the COO format data only when the tensor instance
+    is coalesced:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'For acquiring the COO format data of an uncoalesced tensor, use `torch.Tensor._values()`
+    and `torch.Tensor._indices()`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: Calling `torch.Tensor._values()` will return a *detached* tensor. To track gradients,
+    `torch.Tensor.coalesce().values()` must be used instead.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Constructing a new sparse COO tensor results a tensor that is not coalesced:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'but one can construct a coalesced copy of a sparse COO tensor using the [`torch.Tensor.coalesce()`](generated/torch.Tensor.coalesce.html#torch.Tensor.coalesce
+    "torch.Tensor.coalesce") method:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'When working with uncoalesced sparse COO tensors, one must take into an account
+    the additive nature of uncoalesced data: the values of the same indices are the
+    terms of a sum that evaluation gives the value of the corresponding tensor element.
+    For example, the scalar multiplication on a sparse uncoalesced tensor could be
+    implemented by multiplying all the uncoalesced values with the scalar because
+    `c * (a + b) == c * a + c * b` holds. However, any nonlinear operation, say, a
+    square root, cannot be implemented by applying the operation to uncoalesced data
+    because `sqrt(a + b) == sqrt(a) + sqrt(b)` does not hold in general.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Slicing (with positive step) of a sparse COO tensor is supported only for dense
+    dimensions. Indexing is supported for both sparse and dense dimensions:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'In PyTorch, the fill value of a sparse tensor cannot be specified explicitly
+    and is assumed to be zero in general. However, there exists operations that may
+    interpret the fill value differently. For instance, [`torch.sparse.softmax()`](generated/torch.sparse.softmax.html#torch.sparse.softmax
+    "torch.sparse.softmax") computes the softmax with the assumption that the fill
+    value is negative infinity.  ## Sparse Compressed Tensors[](#sparse-compressed-tensors
+    "Permalink to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Sparse Compressed Tensors represents a class of sparse tensors that have a common
+    feature of compressing the indices of a certain dimension using an encoding that
+    enables certain optimizations on linear algebra kernels of sparse compressed tensors.
+    This encoding is based on the [Compressed Sparse Row (CSR)](https://en.wikipedia.org/wiki/Sparse_matrix#Compressed_sparse_row_(CSR,_CRS_or_Yale_format))
+    format that PyTorch sparse compressed tensors extend with the support of sparse
+    tensor batches, allowing multi-dimensional tensor values, and storing sparse tensor
+    values in dense blocks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: We use (B + M + K)-dimensional tensor to denote a N-dimensional sparse compressed
+    hybrid tensor, where B, M, and K are the numbers of batch, sparse, and dense dimensions,
+    respectively, such that `B + M + K == N` holds. The number of sparse dimensions
+    for sparse compressed tensors is always two, `M == 2`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We say that an indices tensor `compressed_indices` uses CSR encoding if the
+    following invariants are satisfied:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`compressed_indices` is a contiguous strided 32 or 64 bit integer tensor'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`compressed_indices` shape is `(*batchsize, compressed_dim_size + 1)` where
+    `compressed_dim_size` is the number of compressed dimensions (e.g. rows or columns)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`compressed_indices[..., 0] == 0` where `...` denotes batch indices'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`compressed_indices[..., compressed_dim_size] == nse` where `nse` is the number
+    of specified elements'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`0 <= compressed_indices[..., i] - compressed_indices[..., i - 1] <= plain_dim_size`
+    for `i=1, ..., compressed_dim_size`, where `plain_dim_size` is the number of plain
+    dimensions (orthogonal to compressed dimensions, e.g. columns or rows).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: To be sure that a constructed sparse tensor has consistent indices, values,
+    and size, the invariant checks can be enabled per tensor creation via `check_invariants=True`
+    keyword argument, or globally using [`torch.sparse.check_sparse_tensor_invariants`](generated/torch.sparse.check_sparse_tensor_invariants.html#torch.sparse.check_sparse_tensor_invariants
+    "torch.sparse.check_sparse_tensor_invariants") context manager instance. By default,
+    the sparse tensor invariants checks are disabled.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: The generalization of sparse compressed layouts to N-dimensional tensors can
+    lead to some confusion regarding the count of specified elements. When a sparse
+    compressed tensor contains batch dimensions the number of specified elements will
+    correspond to the number of such elements per-batch. When a sparse compressed
+    tensor has dense dimensions the element considered is now the K-dimensional array.
+    Also for block sparse compressed layouts the 2-D block is considered as the element
+    being specified. Take as an example a 3-dimensional block sparse tensor, with
+    one batch dimension of length `b`, and a block shape of `p, q`. If this tensor
+    has `n` specified elements, then in fact we have `n` blocks specified per batch.
+    This tensor would have `values` with shape `(b, n, p, q)`. This interpretation
+    of the number of specified elements comes from all sparse compressed layouts being
+    derived from the compression of a 2-dimensional matrix. Batch dimensions are treated
+    as stacking of sparse matrices, dense dimensions change the meaning of the element
+    from a simple scalar value to an array with its own dimensions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '### Sparse CSR Tensor'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The primary advantage of the CSR format over the COO format is better use of
+    storage and much faster computation operations such as sparse matrix-vector multiplication
+    using MKL and MAGMA backends.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In the simplest case, a (0 + 2 + 0)-dimensional sparse CSR tensor consists
+    of three 1-D tensors: `crow_indices`, `col_indices` and `values`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The `crow_indices` tensor consists of compressed row indices. This is a 1-D
+    tensor of size `nrows + 1` (the number of rows plus 1). The last element of `crow_indices`
+    is the number of specified elements, `nse`. This tensor encodes the index in `values`
+    and `col_indices` depending on where the given row starts. Each successive number
+    in the tensor subtracted by the number before it denotes the number of elements
+    in a given row.
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: The `col_indices` tensor contains the column indices of each element. This is
+    a 1-D tensor of size `nse`.
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: The `values` tensor contains the values of the CSR tensor elements. This is
+    a 1-D tensor of size `nse`.
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: The index tensors `crow_indices` and `col_indices` should have element type
+    either `torch.int64` (default) or `torch.int32`. If you want to use MKL-enabled
+    matrix operations, use `torch.int32`. This is as a result of the default linking
+    of pytorch being with MKL LP64, which uses 32 bit integer indexing.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the general case, the (B + 2 + K)-dimensional sparse CSR tensor consists
+    of two (B + 1)-dimensional index tensors `crow_indices` and `col_indices`, and
+    of (1 + K)-dimensional `values` tensor such that
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`crow_indices.shape == (*batchsize, nrows + 1)`'
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: '`col_indices.shape == (*batchsize, nse)`'
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: '`values.shape == (nse, *densesize)`'
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: while the shape of the sparse CSR tensor is `(*batchsize, nrows, ncols, *densesize)`
+    where `len(batchsize) == B` and `len(densesize) == K`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The batches of sparse CSR tensors are dependent: the number of specified elements
+    in all batches must be the same. This somewhat artificial constraint allows efficient
+    storage of the indices of different CSR batches.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The number of sparse and dense dimensions can be acquired using [`torch.Tensor.sparse_dim()`](generated/torch.Tensor.sparse_dim.html#torch.Tensor.sparse_dim
+    "torch.Tensor.sparse_dim") and [`torch.Tensor.dense_dim()`](generated/torch.Tensor.dense_dim.html#torch.Tensor.dense_dim
+    "torch.Tensor.dense_dim") methods. The batch dimensions can be computed from the
+    tensor shape: `batchsize = tensor.shape[:-tensor.sparse_dim() - tensor.dense_dim()]`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: The memory consumption of a sparse CSR tensor is at least `(nrows * 8 + (8 +
+    <size of element type in bytes> * prod(densesize)) * nse) * prod(batchsize)` bytes
+    (plus a constant overhead from storing other tensor data).
+  prefs: []
+  type: TYPE_NORMAL
+- en: With the same example data of [the note in sparse COO format introduction](#sparse-coo-docs),
+    the memory consumption of a 10 000 x 10 000 tensor with 100 000 non-zero 32-bit
+    floating point numbers is at least `(10000 * 8 + (8 + 4 * 1) * 100 000) * 1 =
+    1 280 000` bytes when using CSR tensor layout. Notice the 1.6 and 310 fold savings
+    from using CSR storage format compared to using the COO and strided formats, respectively.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Construction of CSR tensors[](#construction-of-csr-tensors "Permalink to this
+    heading")
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Sparse CSR tensors can be directly constructed by using the [`torch.sparse_csr_tensor()`](generated/torch.sparse_csr_tensor.html#torch.sparse_csr_tensor
+    "torch.sparse_csr_tensor") function. The user must supply the row and column indices
+    and values tensors separately where the row indices must be specified using the
+    CSR compression encoding. The `size` argument is optional and will be deduced
+    from the `crow_indices` and `col_indices` if it is not present.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: The values of sparse dimensions in deduced `size` is computed from the size
+    of `crow_indices` and the maximal index value in `col_indices`. If the number
+    of columns needs to be larger than in the deduced `size` then the `size` argument
+    must be specified explicitly.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The simplest way of constructing a 2-D sparse CSR tensor from a strided or
+    sparse COO tensor is to use [`torch.Tensor.to_sparse_csr()`](generated/torch.Tensor.to_sparse_csr.html#torch.Tensor.to_sparse_csr
+    "torch.Tensor.to_sparse_csr") method. Any zeros in the (strided) tensor will be
+    interpreted as missing values in the sparse tensor:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE26]'
+  prefs: []
+  type: TYPE_PRE
+- en: CSR Tensor Operations
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: The sparse matrix-vector multiplication can be performed with the `tensor.matmul()`
+    method. This is currently the only math operation supported on CSR tensors.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE27]  ### Sparse CSC Tensor'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The sparse CSC (Compressed Sparse Column) tensor format implements the CSC format
+    for storage of 2 dimensional tensors with an extension to supporting batches of
+    sparse CSC tensors and values being multi-dimensional tensors.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Sparse CSC tensor is essentially a transpose of the sparse CSR tensor when the
+    transposition is about swapping the sparse dimensions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Similarly to [sparse CSR tensors](#sparse-csr-docs), a sparse CSC tensor consists
+    of three tensors: `ccol_indices`, `row_indices` and `values`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The `ccol_indices` tensor consists of compressed column indices. This is a (B
+    + 1)-D tensor of shape `(*batchsize, ncols + 1)`. The last element is the number
+    of specified elements, `nse`. This tensor encodes the index in `values` and `row_indices`
+    depending on where the given column starts. Each successive number in the tensor
+    subtracted by the number before it denotes the number of elements in a given column.
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: The `row_indices` tensor contains the row indices of each element. This is a
+    (B + 1)-D tensor of shape `(*batchsize, nse)`.
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: The `values` tensor contains the values of the CSC tensor elements. This is
+    a (1 + K)-D tensor of shape `(nse, *densesize)`.
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Construction of CSC tensors[](#construction-of-csc-tensors "Permalink to this
+    heading")
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Sparse CSC tensors can be directly constructed by using the [`torch.sparse_csc_tensor()`](generated/torch.sparse_csc_tensor.html#torch.sparse_csc_tensor
+    "torch.sparse_csc_tensor") function. The user must supply the row and column indices
+    and values tensors separately where the column indices must be specified using
+    the CSR compression encoding. The `size` argument is optional and will be deduced
+    from the `row_indices` and `ccol_indices` tensors if it is not present.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE28]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: The sparse CSC tensor constructor function has the compressed column indices
+    argument before the row indices argument.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The (0 + 2 + 0)-dimensional sparse CSC tensors can be constructed from any
+    two-dimensional tensor using [`torch.Tensor.to_sparse_csc()`](generated/torch.Tensor.to_sparse_csc.html#torch.Tensor.to_sparse_csc
+    "torch.Tensor.to_sparse_csc") method. Any zeros in the (strided) tensor will be
+    interpreted as missing values in the sparse tensor:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE29]  ### Sparse BSR Tensor'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The sparse BSR (Block compressed Sparse Row) tensor format implements the BSR
+    format for storage of two-dimensional tensors with an extension to supporting
+    batches of sparse BSR tensors and values being blocks of multi-dimensional tensors.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'A sparse BSR tensor consists of three tensors: `crow_indices`, `col_indices`
+    and `values`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The `crow_indices` tensor consists of compressed row indices. This is a (B +
+    1)-D tensor of shape `(*batchsize, nrowblocks + 1)`. The last element is the number
+    of specified blocks, `nse`. This tensor encodes the index in `values` and `col_indices`
+    depending on where the given column block starts. Each successive number in the
+    tensor subtracted by the number before it denotes the number of blocks in a given
+    row.
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: The `col_indices` tensor contains the column block indices of each element.
+    This is a (B + 1)-D tensor of shape `(*batchsize, nse)`.
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: The `values` tensor contains the values of the sparse BSR tensor elements collected
+    into two-dimensional blocks. This is a (1 + 2 + K)-D tensor of shape `(nse, nrowblocks,
+    ncolblocks, *densesize)`.
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Construction of BSR tensors[](#construction-of-bsr-tensors "Permalink to this
+    heading")
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Sparse BSR tensors can be directly constructed by using the [`torch.sparse_bsr_tensor()`](generated/torch.sparse_bsr_tensor.html#torch.sparse_bsr_tensor
+    "torch.sparse_bsr_tensor") function. The user must supply the row and column block
+    indices and values tensors separately where the row block indices must be specified
+    using the CSR compression encoding. The `size` argument is optional and will be
+    deduced from the `crow_indices` and `col_indices` tensors if it is not present.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE30]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The (0 + 2 + 0)-dimensional sparse BSR tensors can be constructed from any
+    two-dimensional tensor using [`torch.Tensor.to_sparse_bsr()`](generated/torch.Tensor.to_sparse_bsr.html#torch.Tensor.to_sparse_bsr
+    "torch.Tensor.to_sparse_bsr") method that also requires the specification of the
+    values block size:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE31]  ### Sparse BSC Tensor'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The sparse BSC (Block compressed Sparse Column) tensor format implements the
+    BSC format for storage of two-dimensional tensors with an extension to supporting
+    batches of sparse BSC tensors and values being blocks of multi-dimensional tensors.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'A sparse BSC tensor consists of three tensors: `ccol_indices`, `row_indices`
+    and `values`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The `ccol_indices` tensor consists of compressed column indices. This is a (B
+    + 1)-D tensor of shape `(*batchsize, ncolblocks + 1)`. The last element is the
+    number of specified blocks, `nse`. This tensor encodes the index in `values` and
+    `row_indices` depending on where the given row block starts. Each successive number
+    in the tensor subtracted by the number before it denotes the number of blocks
+    in a given column.
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: The `row_indices` tensor contains the row block indices of each element. This
+    is a (B + 1)-D tensor of shape `(*batchsize, nse)`.
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: The `values` tensor contains the values of the sparse BSC tensor elements collected
+    into two-dimensional blocks. This is a (1 + 2 + K)-D tensor of shape `(nse, nrowblocks,
+    ncolblocks, *densesize)`.
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Construction of BSC tensors[](#construction-of-bsc-tensors "Permalink to this
+    heading")
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Sparse BSC tensors can be directly constructed by using the [`torch.sparse_bsc_tensor()`](generated/torch.sparse_bsc_tensor.html#torch.sparse_bsc_tensor
+    "torch.sparse_bsc_tensor") function. The user must supply the row and column block
+    indices and values tensors separately where the column block indices must be specified
+    using the CSR compression encoding. The `size` argument is optional and will be
+    deduced from the `ccol_indices` and `row_indices` tensors if it is not present.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE32]'
+  prefs: []
+  type: TYPE_PRE
+- en: Tools for working with sparse compressed tensors[](#tools-for-working-with-sparse-compressed-tensors
+    "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'All sparse compressed tensors — CSR, CSC, BSR, and BSC tensors — are conceptionally
+    very similar in that their indices data is split into two parts: so-called compressed
+    indices that use the CSR encoding, and so-called plain indices that are orthogonal
+    to the compressed indices. This allows various tools on these tensors to share
+    the same implementations that are parameterized by tensor layout.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Construction of sparse compressed tensors[](#construction-of-sparse-compressed-tensors
+    "Permalink to this heading")
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'Sparse CSR, CSC, BSR, and CSC tensors can be constructed by using [`torch.sparse_compressed_tensor()`](generated/torch.sparse_compressed_tensor.html#torch.sparse_compressed_tensor
+    "torch.sparse_compressed_tensor") function that have the same interface as the
+    above discussed constructor functions [`torch.sparse_csr_tensor()`](generated/torch.sparse_csr_tensor.html#torch.sparse_csr_tensor
+    "torch.sparse_csr_tensor"), [`torch.sparse_csc_tensor()`](generated/torch.sparse_csc_tensor.html#torch.sparse_csc_tensor
+    "torch.sparse_csc_tensor"), [`torch.sparse_bsr_tensor()`](generated/torch.sparse_bsr_tensor.html#torch.sparse_bsr_tensor
+    "torch.sparse_bsr_tensor"), and [`torch.sparse_bsc_tensor()`](generated/torch.sparse_bsc_tensor.html#torch.sparse_bsc_tensor
+    "torch.sparse_bsc_tensor"), respectively, but with an extra required `layout`
+    argument. The following example illustrates a method of constructing CSR and CSC
+    tensors using the same input data by specifying the corresponding layout parameter
+    to the [`torch.sparse_compressed_tensor()`](generated/torch.sparse_compressed_tensor.html#torch.sparse_compressed_tensor
+    "torch.sparse_compressed_tensor") function:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE33]  ## Supported operations[](#supported-operations "Permalink to this
+    heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Linear Algebra operations
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The following table summarizes supported Linear Algebra operations on sparse
+    matrices where the operands layouts may vary. Here `T[layout]` denotes a tensor
+    with a given layout. Similarly, `M[layout]` denotes a matrix (2-D PyTorch tensor),
+    and `V[layout]` denotes a vector (1-D PyTorch tensor). In addition, `f` denotes
+    a scalar (float or 0-D PyTorch tensor), `*` is element-wise multiplication, and
+    `@` is matrix multiplication.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| PyTorch operation | Sparse grad? | Layout signature |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`torch.mv()`](generated/torch.mv.html#torch.mv "torch.mv") | no | `M[sparse_coo]
+    @ V[strided] -> V[strided]` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`torch.mv()`](generated/torch.mv.html#torch.mv "torch.mv") | no | `M[sparse_csr]
+    @ V[strided] -> V[strided]` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`torch.matmul()`](generated/torch.matmul.html#torch.matmul "torch.matmul")
+    | no | `M[sparse_coo] @ M[strided] -> M[strided]` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`torch.matmul()`](generated/torch.matmul.html#torch.matmul "torch.matmul")
+    | no | `M[sparse_csr] @ M[strided] -> M[strided]` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`torch.matmul()`](generated/torch.matmul.html#torch.matmul "torch.matmul")
+    | no | `M[SparseSemiStructured] @ M[strided] -> M[strided]` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`torch.matmul()`](generated/torch.matmul.html#torch.matmul "torch.matmul")
+    | no | `M[strided] @ M[SparseSemiStructured] -> M[strided]` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`torch.mm()`](generated/torch.mm.html#torch.mm "torch.mm") | no | `M[sparse_coo]
+    @ M[strided] -> M[strided]` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`torch.mm()`](generated/torch.mm.html#torch.mm "torch.mm") | no | `M[SparseSemiStructured]
+    @ M[strided] -> M[strided]` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`torch.mm()`](generated/torch.mm.html#torch.mm "torch.mm") | no | `M[strided]
+    @ M[SparseSemiStructured] -> M[strided]` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`torch.sparse.mm()`](generated/torch.sparse.mm.html#torch.sparse.mm "torch.sparse.mm")
+    | yes | `M[sparse_coo] @ M[strided] -> M[strided]` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`torch.smm()`](generated/torch.smm.html#torch.smm "torch.smm") | no | `M[sparse_coo]
+    @ M[strided] -> M[sparse_coo]` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`torch.hspmm()`](generated/torch.hspmm.html#torch.hspmm "torch.hspmm") |
+    no | `M[sparse_coo] @ M[strided] -> M[hybrid sparse_coo]` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`torch.bmm()`](generated/torch.bmm.html#torch.bmm "torch.bmm") | no | `T[sparse_coo]
+    @ T[strided] -> T[strided]` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`torch.addmm()`](generated/torch.addmm.html#torch.addmm "torch.addmm") |
+    no | `f * M[strided] + f * (M[sparse_coo] @ M[strided]) -> M[strided]` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`torch.addmm()`](generated/torch.addmm.html#torch.addmm "torch.addmm") |
+    no | `f * M[strided] + f * (M[SparseSemiStructured] @ M[strided]) -> M[strided]`
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`torch.addmm()`](generated/torch.addmm.html#torch.addmm "torch.addmm") |
+    no | `f * M[strided] + f * (M[strided] @ M[SparseSemiStructured]) -> M[strided]`
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`torch.sparse.addmm()`](generated/torch.sparse.addmm.html#torch.sparse.addmm
+    "torch.sparse.addmm") | yes | `f * M[strided] + f * (M[sparse_coo] @ M[strided])
+    -> M[strided]` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`torch.sspaddmm()`](generated/torch.sspaddmm.html#torch.sspaddmm "torch.sspaddmm")
+    | no | `f * M[sparse_coo] + f * (M[sparse_coo] @ M[strided]) -> M[sparse_coo]`
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`torch.lobpcg()`](generated/torch.lobpcg.html#torch.lobpcg "torch.lobpcg")
+    | no | `GENEIG(M[sparse_coo]) -> M[strided], M[strided]` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`torch.pca_lowrank()`](generated/torch.pca_lowrank.html#torch.pca_lowrank
+    "torch.pca_lowrank") | yes | `PCA(M[sparse_coo]) -> M[strided], M[strided], M[strided]`
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`torch.svd_lowrank()`](generated/torch.svd_lowrank.html#torch.svd_lowrank
+    "torch.svd_lowrank") | yes | `SVD(M[sparse_coo]) -> M[strided], M[strided], M[strided]`
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: where “Sparse grad?” column indicates if the PyTorch operation supports backward
+    with respect to sparse matrix argument. All PyTorch operations, except [`torch.smm()`](generated/torch.smm.html#torch.smm
+    "torch.smm"), support backward with respect to strided matrix arguments.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Currently, PyTorch does not support matrix multiplication with the layout signature
+    `M[strided] @ M[sparse_coo]`. However, applications can still compute this using
+    the matrix relation `D @ S == (S.t() @ D.t()).t()`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tensor methods and sparse
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'The following Tensor methods are related to sparse tensors:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| [`Tensor.is_sparse`](generated/torch.Tensor.is_sparse.html#torch.Tensor.is_sparse
+    "torch.Tensor.is_sparse") | Is `True` if the Tensor uses sparse COO storage layout,
+    `False` otherwise. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`Tensor.is_sparse_csr`](generated/torch.Tensor.is_sparse_csr.html#torch.Tensor.is_sparse_csr
+    "torch.Tensor.is_sparse_csr") | Is `True` if the Tensor uses sparse CSR storage
+    layout, `False` otherwise. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`Tensor.dense_dim`](generated/torch.Tensor.dense_dim.html#torch.Tensor.dense_dim
+    "torch.Tensor.dense_dim") | Return the number of dense dimensions in a [sparse
+    tensor](#sparse-docs) `self`. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`Tensor.sparse_dim`](generated/torch.Tensor.sparse_dim.html#torch.Tensor.sparse_dim
+    "torch.Tensor.sparse_dim") | Return the number of sparse dimensions in a [sparse
+    tensor](#sparse-docs) `self`. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`Tensor.sparse_mask`](generated/torch.Tensor.sparse_mask.html#torch.Tensor.sparse_mask
+    "torch.Tensor.sparse_mask") | Returns a new [sparse tensor](#sparse-docs) with
+    values from a strided tensor `self` filtered by the indices of the sparse tensor
+    `mask`. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`Tensor.to_sparse`](generated/torch.Tensor.to_sparse.html#torch.Tensor.to_sparse
+    "torch.Tensor.to_sparse") | Returns a sparse copy of the tensor. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`Tensor.to_sparse_coo`](generated/torch.Tensor.to_sparse_coo.html#torch.Tensor.to_sparse_coo
+    "torch.Tensor.to_sparse_coo") | Convert a tensor to [coordinate format](#sparse-coo-docs).
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`Tensor.to_sparse_csr`](generated/torch.Tensor.to_sparse_csr.html#torch.Tensor.to_sparse_csr
+    "torch.Tensor.to_sparse_csr") | Convert a tensor to compressed row storage format
+    (CSR). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`Tensor.to_sparse_csc`](generated/torch.Tensor.to_sparse_csc.html#torch.Tensor.to_sparse_csc
+    "torch.Tensor.to_sparse_csc") | Convert a tensor to compressed column storage
+    (CSC) format. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`Tensor.to_sparse_bsr`](generated/torch.Tensor.to_sparse_bsr.html#torch.Tensor.to_sparse_bsr
+    "torch.Tensor.to_sparse_bsr") | Convert a tensor to a block sparse row (BSR) storage
+    format of given blocksize. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`Tensor.to_sparse_bsc`](generated/torch.Tensor.to_sparse_bsc.html#torch.Tensor.to_sparse_bsc
+    "torch.Tensor.to_sparse_bsc") | Convert a tensor to a block sparse column (BSC)
+    storage format of given blocksize. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`Tensor.to_dense`](generated/torch.Tensor.to_dense.html#torch.Tensor.to_dense
+    "torch.Tensor.to_dense") | Creates a strided copy of `self` if `self` is not a
+    strided tensor, otherwise returns `self`. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`Tensor.values`](generated/torch.Tensor.values.html#torch.Tensor.values
+    "torch.Tensor.values") | Return the values tensor of a [sparse COO tensor](#sparse-coo-docs).
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: 'The following Tensor methods are specific to sparse COO tensors:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| [`Tensor.coalesce`](generated/torch.Tensor.coalesce.html#torch.Tensor.coalesce
+    "torch.Tensor.coalesce") | Returns a coalesced copy of `self` if `self` is an
+    [uncoalesced tensor](#sparse-uncoalesced-coo-docs). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`Tensor.sparse_resize_`](generated/torch.Tensor.sparse_resize_.html#torch.Tensor.sparse_resize_
+    "torch.Tensor.sparse_resize_") | Resizes `self` [sparse tensor](#sparse-docs)
+    to the desired size and the number of sparse and dense dimensions. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`Tensor.sparse_resize_and_clear_`](generated/torch.Tensor.sparse_resize_and_clear_.html#torch.Tensor.sparse_resize_and_clear_
+    "torch.Tensor.sparse_resize_and_clear_") | Removes all specified elements from
+    a [sparse tensor](#sparse-docs) `self` and resizes `self` to the desired size
+    and the number of sparse and dense dimensions. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`Tensor.is_coalesced`](generated/torch.Tensor.is_coalesced.html#torch.Tensor.is_coalesced
+    "torch.Tensor.is_coalesced") | Returns `True` if `self` is a [sparse COO tensor](#sparse-coo-docs)
+    that is coalesced, `False` otherwise. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`Tensor.indices`](generated/torch.Tensor.indices.html#torch.Tensor.indices
+    "torch.Tensor.indices") | Return the indices tensor of a [sparse COO tensor](#sparse-coo-docs).
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: 'The following methods are specific to [sparse CSR tensors](#sparse-csr-docs)
+    and [sparse BSR tensors](#sparse-bsr-docs):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| [`Tensor.crow_indices`](generated/torch.Tensor.crow_indices.html#torch.Tensor.crow_indices
+    "torch.Tensor.crow_indices") | Returns the tensor containing the compressed row
+    indices of the `self` tensor when `self` is a sparse CSR tensor of layout `sparse_csr`.
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`Tensor.col_indices`](generated/torch.Tensor.col_indices.html#torch.Tensor.col_indices
+    "torch.Tensor.col_indices") | Returns the tensor containing the column indices
+    of the `self` tensor when `self` is a sparse CSR tensor of layout `sparse_csr`.
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: 'The following methods are specific to [sparse CSC tensors](#sparse-csc-docs)
+    and [sparse BSC tensors](#sparse-bsc-docs):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| [`Tensor.row_indices`](generated/torch.Tensor.row_indices.html#torch.Tensor.row_indices
+    "torch.Tensor.row_indices") |  |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`Tensor.ccol_indices`](generated/torch.Tensor.ccol_indices.html#torch.Tensor.ccol_indices
+    "torch.Tensor.ccol_indices") |  |'
+  prefs: []
+  type: TYPE_TB
+- en: 'The following Tensor methods support sparse COO tensors:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`add()`](generated/torch.Tensor.add.html#torch.Tensor.add "torch.Tensor.add")
+    [`add_()`](generated/torch.Tensor.add_.html#torch.Tensor.add_ "torch.Tensor.add_")
+    [`addmm()`](generated/torch.Tensor.addmm.html#torch.Tensor.addmm "torch.Tensor.addmm")
+    [`addmm_()`](generated/torch.Tensor.addmm_.html#torch.Tensor.addmm_ "torch.Tensor.addmm_")
+    [`any()`](generated/torch.Tensor.any.html#torch.Tensor.any "torch.Tensor.any")
+    [`asin()`](generated/torch.Tensor.asin.html#torch.Tensor.asin "torch.Tensor.asin")
+    [`asin_()`](generated/torch.Tensor.asin_.html#torch.Tensor.asin_ "torch.Tensor.asin_")
+    [`arcsin()`](generated/torch.Tensor.arcsin.html#torch.Tensor.arcsin "torch.Tensor.arcsin")
+    [`arcsin_()`](generated/torch.Tensor.arcsin_.html#torch.Tensor.arcsin_ "torch.Tensor.arcsin_")
+    [`bmm()`](generated/torch.Tensor.bmm.html#torch.Tensor.bmm "torch.Tensor.bmm")
+    [`clone()`](generated/torch.Tensor.clone.html#torch.Tensor.clone "torch.Tensor.clone")
+    [`deg2rad()`](generated/torch.Tensor.deg2rad.html#torch.Tensor.deg2rad "torch.Tensor.deg2rad")
+    `deg2rad_()` [`detach()`](generated/torch.Tensor.detach.html#torch.Tensor.detach
+    "torch.Tensor.detach") [`detach_()`](generated/torch.Tensor.detach_.html#torch.Tensor.detach_
+    "torch.Tensor.detach_") [`dim()`](generated/torch.Tensor.dim.html#torch.Tensor.dim
+    "torch.Tensor.dim") [`div()`](generated/torch.Tensor.div.html#torch.Tensor.div
+    "torch.Tensor.div") [`div_()`](generated/torch.Tensor.div_.html#torch.Tensor.div_
+    "torch.Tensor.div_") [`floor_divide()`](generated/torch.Tensor.floor_divide.html#torch.Tensor.floor_divide
+    "torch.Tensor.floor_divide") [`floor_divide_()`](generated/torch.Tensor.floor_divide_.html#torch.Tensor.floor_divide_
+    "torch.Tensor.floor_divide_") [`get_device()`](generated/torch.Tensor.get_device.html#torch.Tensor.get_device
+    "torch.Tensor.get_device") [`index_select()`](generated/torch.Tensor.index_select.html#torch.Tensor.index_select
+    "torch.Tensor.index_select") [`isnan()`](generated/torch.Tensor.isnan.html#torch.Tensor.isnan
+    "torch.Tensor.isnan") [`log1p()`](generated/torch.Tensor.log1p.html#torch.Tensor.log1p
+    "torch.Tensor.log1p") [`log1p_()`](generated/torch.Tensor.log1p_.html#torch.Tensor.log1p_
+    "torch.Tensor.log1p_") [`mm()`](generated/torch.Tensor.mm.html#torch.Tensor.mm
+    "torch.Tensor.mm") [`mul()`](generated/torch.Tensor.mul.html#torch.Tensor.mul
+    "torch.Tensor.mul") [`mul_()`](generated/torch.Tensor.mul_.html#torch.Tensor.mul_
+    "torch.Tensor.mul_") [`mv()`](generated/torch.Tensor.mv.html#torch.Tensor.mv "torch.Tensor.mv")
+    [`narrow_copy()`](generated/torch.Tensor.narrow_copy.html#torch.Tensor.narrow_copy
+    "torch.Tensor.narrow_copy") [`neg()`](generated/torch.Tensor.neg.html#torch.Tensor.neg
+    "torch.Tensor.neg") [`neg_()`](generated/torch.Tensor.neg_.html#torch.Tensor.neg_
+    "torch.Tensor.neg_") [`negative()`](generated/torch.Tensor.negative.html#torch.Tensor.negative
+    "torch.Tensor.negative") [`negative_()`](generated/torch.Tensor.negative_.html#torch.Tensor.negative_
+    "torch.Tensor.negative_") [`numel()`](generated/torch.Tensor.numel.html#torch.Tensor.numel
+    "torch.Tensor.numel") [`rad2deg()`](generated/torch.Tensor.rad2deg.html#torch.Tensor.rad2deg
+    "torch.Tensor.rad2deg") `rad2deg_()` [`resize_as_()`](generated/torch.Tensor.resize_as_.html#torch.Tensor.resize_as_
+    "torch.Tensor.resize_as_") [`size()`](generated/torch.Tensor.size.html#torch.Tensor.size
+    "torch.Tensor.size") [`pow()`](generated/torch.Tensor.pow.html#torch.Tensor.pow
+    "torch.Tensor.pow") [`sqrt()`](generated/torch.Tensor.sqrt.html#torch.Tensor.sqrt
+    "torch.Tensor.sqrt") [`square()`](generated/torch.Tensor.square.html#torch.Tensor.square
+    "torch.Tensor.square") [`smm()`](generated/torch.Tensor.smm.html#torch.Tensor.smm
+    "torch.Tensor.smm") [`sspaddmm()`](generated/torch.Tensor.sspaddmm.html#torch.Tensor.sspaddmm
+    "torch.Tensor.sspaddmm") [`sub()`](generated/torch.Tensor.sub.html#torch.Tensor.sub
+    "torch.Tensor.sub") [`sub_()`](generated/torch.Tensor.sub_.html#torch.Tensor.sub_
+    "torch.Tensor.sub_") [`t()`](generated/torch.Tensor.t.html#torch.Tensor.t "torch.Tensor.t")
+    [`t_()`](generated/torch.Tensor.t_.html#torch.Tensor.t_ "torch.Tensor.t_") [`transpose()`](generated/torch.Tensor.transpose.html#torch.Tensor.transpose
+    "torch.Tensor.transpose") [`transpose_()`](generated/torch.Tensor.transpose_.html#torch.Tensor.transpose_
+    "torch.Tensor.transpose_") [`zero_()`](generated/torch.Tensor.zero_.html#torch.Tensor.zero_
+    "torch.Tensor.zero_")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Torch functions specific to sparse Tensors[](#torch-functions-specific-to-sparse-tensors
+    "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '| [`sparse_coo_tensor`](generated/torch.sparse_coo_tensor.html#torch.sparse_coo_tensor
+    "torch.sparse_coo_tensor") | Constructs a [sparse tensor in COO(rdinate) format](#sparse-coo-docs)
+    with specified values at the given `indices`. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`sparse_csr_tensor`](generated/torch.sparse_csr_tensor.html#torch.sparse_csr_tensor
+    "torch.sparse_csr_tensor") | Constructs a [sparse tensor in CSR (Compressed Sparse
+    Row)](#sparse-csr-docs) with specified values at the given `crow_indices` and
+    `col_indices`. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`sparse_csc_tensor`](generated/torch.sparse_csc_tensor.html#torch.sparse_csc_tensor
+    "torch.sparse_csc_tensor") | Constructs a [sparse tensor in CSC (Compressed Sparse
+    Column)](#sparse-csc-docs) with specified values at the given `ccol_indices` and
+    `row_indices`. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`sparse_bsr_tensor`](generated/torch.sparse_bsr_tensor.html#torch.sparse_bsr_tensor
+    "torch.sparse_bsr_tensor") | Constructs a [sparse tensor in BSR (Block Compressed
+    Sparse Row))](#sparse-bsr-docs) with specified 2-dimensional blocks at the given
+    `crow_indices` and `col_indices`. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`sparse_bsc_tensor`](generated/torch.sparse_bsc_tensor.html#torch.sparse_bsc_tensor
+    "torch.sparse_bsc_tensor") | Constructs a [sparse tensor in BSC (Block Compressed
+    Sparse Column))](#sparse-bsc-docs) with specified 2-dimensional blocks at the
+    given `ccol_indices` and `row_indices`. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`sparse_compressed_tensor`](generated/torch.sparse_compressed_tensor.html#torch.sparse_compressed_tensor
+    "torch.sparse_compressed_tensor") | Constructs a [sparse tensor in Compressed
+    Sparse format - CSR, CSC, BSR, or BSC -](#sparse-compressed-docs) with specified
+    values at the given `compressed_indices` and `plain_indices`. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`sparse.sum`](generated/torch.sparse.sum.html#torch.sparse.sum "torch.sparse.sum")
+    | Return the sum of each row of the given sparse tensor. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`sparse.addmm`](generated/torch.sparse.addmm.html#torch.sparse.addmm "torch.sparse.addmm")
+    | This function does exact same thing as [`torch.addmm()`](generated/torch.addmm.html#torch.addmm
+    "torch.addmm") in the forward, except that it supports backward for sparse COO
+    matrix `mat1`. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`sparse.sampled_addmm`](generated/torch.sparse.sampled_addmm.html#torch.sparse.sampled_addmm
+    "torch.sparse.sampled_addmm") | Performs a matrix multiplication of the dense
+    matrices `mat1` and `mat2` at the locations specified by the sparsity pattern
+    of `input`. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`sparse.mm`](generated/torch.sparse.mm.html#torch.sparse.mm "torch.sparse.mm")
+    | Performs a matrix multiplication of the sparse matrix `mat1` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`sspaddmm`](generated/torch.sspaddmm.html#torch.sspaddmm "torch.sspaddmm")
+    | Matrix multiplies a sparse tensor `mat1` with a dense tensor `mat2`, then adds
+    the sparse tensor `input` to the result. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`hspmm`](generated/torch.hspmm.html#torch.hspmm "torch.hspmm") | Performs
+    a matrix multiplication of a [sparse COO matrix](#sparse-coo-docs) `mat1` and
+    a strided matrix `mat2`. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`smm`](generated/torch.smm.html#torch.smm "torch.smm") | Performs a matrix
+    multiplication of the sparse matrix `input` with the dense matrix `mat`. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`sparse.softmax`](generated/torch.sparse.softmax.html#torch.sparse.softmax
+    "torch.sparse.softmax") | Applies a softmax function. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`sparse.log_softmax`](generated/torch.sparse.log_softmax.html#torch.sparse.log_softmax
+    "torch.sparse.log_softmax") | Applies a softmax function followed by logarithm.
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`sparse.spdiags`](generated/torch.sparse.spdiags.html#torch.sparse.spdiags
+    "torch.sparse.spdiags") | Creates a sparse 2D tensor by placing the values from
+    rows of `diagonals` along specified diagonals of the output |'
+  prefs: []
+  type: TYPE_TB
+- en: Other functions
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'The following [`torch`](torch.html#module-torch "torch") functions support
+    sparse tensors:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`cat()`](generated/torch.cat.html#torch.cat "torch.cat") [`dstack()`](generated/torch.dstack.html#torch.dstack
+    "torch.dstack") [`empty()`](generated/torch.empty.html#torch.empty "torch.empty")
+    [`empty_like()`](generated/torch.empty_like.html#torch.empty_like "torch.empty_like")
+    [`hstack()`](generated/torch.hstack.html#torch.hstack "torch.hstack") [`index_select()`](generated/torch.index_select.html#torch.index_select
+    "torch.index_select") [`is_complex()`](generated/torch.is_complex.html#torch.is_complex
+    "torch.is_complex") [`is_floating_point()`](generated/torch.is_floating_point.html#torch.is_floating_point
+    "torch.is_floating_point") [`is_nonzero()`](generated/torch.is_nonzero.html#torch.is_nonzero
+    "torch.is_nonzero") `is_same_size()` `is_signed()` [`is_tensor()`](generated/torch.is_tensor.html#torch.is_tensor
+    "torch.is_tensor") [`lobpcg()`](generated/torch.lobpcg.html#torch.lobpcg "torch.lobpcg")
+    [`mm()`](generated/torch.mm.html#torch.mm "torch.mm") `native_norm()` [`pca_lowrank()`](generated/torch.pca_lowrank.html#torch.pca_lowrank
+    "torch.pca_lowrank") [`select()`](generated/torch.select.html#torch.select "torch.select")
+    [`stack()`](generated/torch.stack.html#torch.stack "torch.stack") [`svd_lowrank()`](generated/torch.svd_lowrank.html#torch.svd_lowrank
+    "torch.svd_lowrank") [`unsqueeze()`](generated/torch.unsqueeze.html#torch.unsqueeze
+    "torch.unsqueeze") [`vstack()`](generated/torch.vstack.html#torch.vstack "torch.vstack")
+    [`zeros()`](generated/torch.zeros.html#torch.zeros "torch.zeros") [`zeros_like()`](generated/torch.zeros_like.html#torch.zeros_like
+    "torch.zeros_like")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'To manage checking sparse tensor invariants, see:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| [`sparse.check_sparse_tensor_invariants`](generated/torch.sparse.check_sparse_tensor_invariants.html#torch.sparse.check_sparse_tensor_invariants
+    "torch.sparse.check_sparse_tensor_invariants") | A tool to control checking sparse
+    tensor invariants. |'
+  prefs: []
+  type: TYPE_TB
+- en: 'To use sparse tensors with [`gradcheck()`](autograd.html#module-torch.autograd.gradcheck
+    "torch.autograd.gradcheck") function, see:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| [`sparse.as_sparse_gradcheck`](generated/torch.sparse.as_sparse_gradcheck.html#torch.sparse.as_sparse_gradcheck
+    "torch.sparse.as_sparse_gradcheck") | Decorate function, to extend gradcheck for
+    sparse tensors. |'
+  prefs: []
+  type: TYPE_TB
+- en: Unary functions
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: We aim to support all zero-preserving unary functions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: If you find that we are missing a zero-preserving unary function that you need,
+    please feel encouraged to open an issue for a feature request. As always please
+    kindly try the search function first before opening an issue.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The following operators currently support sparse COO/CSR/CSC/BSR/CSR tensor
+    inputs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`abs()`](generated/torch.abs.html#torch.abs "torch.abs") [`asin()`](generated/torch.asin.html#torch.asin
+    "torch.asin") [`asinh()`](generated/torch.asinh.html#torch.asinh "torch.asinh")
+    [`atan()`](generated/torch.atan.html#torch.atan "torch.atan") [`atanh()`](generated/torch.atanh.html#torch.atanh
+    "torch.atanh") [`ceil()`](generated/torch.ceil.html#torch.ceil "torch.ceil") [`conj_physical()`](generated/torch.conj_physical.html#torch.conj_physical
+    "torch.conj_physical") [`floor()`](generated/torch.floor.html#torch.floor "torch.floor")
+    [`log1p()`](generated/torch.log1p.html#torch.log1p "torch.log1p") [`neg()`](generated/torch.neg.html#torch.neg
+    "torch.neg") [`round()`](generated/torch.round.html#torch.round "torch.round")
+    [`sin()`](generated/torch.sin.html#torch.sin "torch.sin") [`sinh()`](generated/torch.sinh.html#torch.sinh
+    "torch.sinh") [`sign()`](generated/torch.sign.html#torch.sign "torch.sign") [`sgn()`](generated/torch.sgn.html#torch.sgn
+    "torch.sgn") [`signbit()`](generated/torch.signbit.html#torch.signbit "torch.signbit")
+    [`tan()`](generated/torch.tan.html#torch.tan "torch.tan") [`tanh()`](generated/torch.tanh.html#torch.tanh
+    "torch.tanh") [`trunc()`](generated/torch.trunc.html#torch.trunc "torch.trunc")
+    [`expm1()`](generated/torch.expm1.html#torch.expm1 "torch.expm1") [`sqrt()`](generated/torch.sqrt.html#torch.sqrt
+    "torch.sqrt") [`angle()`](generated/torch.angle.html#torch.angle "torch.angle")
+    [`isinf()`](generated/torch.isinf.html#torch.isinf "torch.isinf") [`isposinf()`](generated/torch.isposinf.html#torch.isposinf
+    "torch.isposinf") [`isneginf()`](generated/torch.isneginf.html#torch.isneginf
+    "torch.isneginf") [`isnan()`](generated/torch.isnan.html#torch.isnan "torch.isnan")
+    [`erf()`](generated/torch.erf.html#torch.erf "torch.erf") [`erfinv()`](generated/torch.erfinv.html#torch.erfinv
+    "torch.erfinv")'
+  prefs: []
+  type: TYPE_NORMAL

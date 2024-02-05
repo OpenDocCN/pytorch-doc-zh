@@ -1,0 +1,378 @@
+- en: CUDA Automatic Mixed Precision examples
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/docs/stable/notes/amp_examples.html](https://pytorch.org/docs/stable/notes/amp_examples.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Ordinarily, “automatic mixed precision training” means training with [`torch.autocast`](../amp.html#torch.autocast
+    "torch.autocast") and [`torch.cuda.amp.GradScaler`](../amp.html#torch.cuda.amp.GradScaler
+    "torch.cuda.amp.GradScaler") together.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Instances of [`torch.autocast`](../amp.html#torch.autocast "torch.autocast")
+    enable autocasting for chosen regions. Autocasting automatically chooses the precision
+    for GPU operations to improve performance while maintaining accuracy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Instances of [`torch.cuda.amp.GradScaler`](../amp.html#torch.cuda.amp.GradScaler
+    "torch.cuda.amp.GradScaler") help perform the steps of gradient scaling conveniently.
+    Gradient scaling improves convergence for networks with `float16` gradients by
+    minimizing gradient underflow, as explained [here](../amp.html#gradient-scaling).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`torch.autocast`](../amp.html#torch.autocast "torch.autocast") and [`torch.cuda.amp.GradScaler`](../amp.html#torch.cuda.amp.GradScaler
+    "torch.cuda.amp.GradScaler") are modular. In the samples below, each is used as
+    its individual documentation suggests.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: (Samples here are illustrative. See the [Automatic Mixed Precision recipe](https://pytorch.org/tutorials/recipes/recipes/amp_recipe.html)
+    for a runnable walkthrough.)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Typical Mixed Precision Training](#typical-mixed-precision-training)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Working with Unscaled Gradients](#working-with-unscaled-gradients)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Gradient clipping](#gradient-clipping)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Working with Scaled Gradients](#working-with-scaled-gradients)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Gradient accumulation](#gradient-accumulation)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Gradient penalty](#gradient-penalty)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Working with Multiple Models, Losses, and Optimizers](#working-with-multiple-models-losses-and-optimizers)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Working with Multiple GPUs](#working-with-multiple-gpus)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[DataParallel in a single process](#dataparallel-in-a-single-process)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[DistributedDataParallel, one GPU per process](#distributeddataparallel-one-gpu-per-process)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[DistributedDataParallel, multiple GPUs per process](#distributeddataparallel-multiple-gpus-per-process)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Autocast and Custom Autograd Functions](#autocast-and-custom-autograd-functions)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Functions with multiple inputs or autocastable ops](#functions-with-multiple-inputs-or-autocastable-ops)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Functions that need a particular `dtype`](#functions-that-need-a-particular-dtype)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Typical Mixed Precision Training](#id2)[](#typical-mixed-precision-training
+    "Permalink to this heading")'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: '## [Working with Unscaled Gradients](#id3)[](#working-with-unscaled-gradients
+    "Permalink to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: All gradients produced by `scaler.scale(loss).backward()` are scaled. If you
+    wish to modify or inspect the parameters’ `.grad` attributes between `backward()`
+    and `scaler.step(optimizer)`, you should unscale them first. For example, gradient
+    clipping manipulates a set of gradients such that their global norm (see [`torch.nn.utils.clip_grad_norm_()`](../generated/torch.nn.utils.clip_grad_norm_.html#torch.nn.utils.clip_grad_norm_
+    "torch.nn.utils.clip_grad_norm_")) or maximum magnitude (see [`torch.nn.utils.clip_grad_value_()`](../generated/torch.nn.utils.clip_grad_value_.html#torch.nn.utils.clip_grad_value_
+    "torch.nn.utils.clip_grad_value_")) is <math><semantics><mrow><mo><</mo><mo>=</mo></mrow><annotation
+    encoding="application/x-tex"><=</annotation></semantics></math><= some user-imposed
+    threshold. If you attempted to clip *without* unscaling, the gradients’ norm/maximum
+    magnitude would also be scaled, so your requested threshold (which was meant to
+    be the threshold for *unscaled* gradients) would be invalid.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`scaler.unscale_(optimizer)` unscales gradients held by `optimizer`’s assigned
+    parameters. If your model or models contain other parameters that were assigned
+    to another optimizer (say `optimizer2`), you may call `scaler.unscale_(optimizer2)`
+    separately to unscale those parameters’ gradients as well.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Gradient clipping](#id4)'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Calling `scaler.unscale_(optimizer)` before clipping enables you to clip unscaled
+    gradients as usual:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: '`scaler` records that `scaler.unscale_(optimizer)` was already called for this
+    optimizer this iteration, so `scaler.step(optimizer)` knows not to redundantly
+    unscale gradients before (internally) calling `optimizer.step()`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`unscale_`](../amp.html#torch.cuda.amp.GradScaler.unscale_ "torch.cuda.amp.GradScaler.unscale_")
+    should only be called once per optimizer per [`step`](../amp.html#torch.cuda.amp.GradScaler.step
+    "torch.cuda.amp.GradScaler.step") call, and only after all gradients for that
+    optimizer’s assigned parameters have been accumulated. Calling [`unscale_`](../amp.html#torch.cuda.amp.GradScaler.unscale_
+    "torch.cuda.amp.GradScaler.unscale_") twice for a given optimizer between each
+    [`step`](../amp.html#torch.cuda.amp.GradScaler.step "torch.cuda.amp.GradScaler.step")
+    triggers a RuntimeError.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Working with Scaled Gradients](#id5)[](#working-with-scaled-gradients "Permalink
+    to this heading")'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[Gradient accumulation](#id6)[](#gradient-accumulation "Permalink to this
+    heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Gradient accumulation adds gradients over an effective batch of size `batch_per_iter
+    * iters_to_accumulate` (`* num_procs` if distributed). The scale should be calibrated
+    for the effective batch, which means inf/NaN checking, step skipping if inf/NaN
+    grads are found, and scale updates should occur at effective-batch granularity.
+    Also, grads should remain scaled, and the scale factor should remain constant,
+    while grads for a given effective batch are accumulated. If grads are unscaled
+    (or the scale factor changes) before accumulation is complete, the next backward
+    pass will add scaled grads to unscaled grads (or grads scaled by a different factor)
+    after which it’s impossible to recover the accumulated unscaled grads [`step`](../amp.html#torch.cuda.amp.GradScaler.step
+    "torch.cuda.amp.GradScaler.step") must apply.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Therefore, if you want to [`unscale_`](../amp.html#torch.cuda.amp.GradScaler.unscale_
+    "torch.cuda.amp.GradScaler.unscale_") grads (e.g., to allow clipping unscaled
+    grads), call [`unscale_`](../amp.html#torch.cuda.amp.GradScaler.unscale_ "torch.cuda.amp.GradScaler.unscale_")
+    just before [`step`](../amp.html#torch.cuda.amp.GradScaler.step "torch.cuda.amp.GradScaler.step"),
+    after all (scaled) grads for the upcoming [`step`](../amp.html#torch.cuda.amp.GradScaler.step
+    "torch.cuda.amp.GradScaler.step") have been accumulated. Also, only call [`update`](../amp.html#torch.cuda.amp.GradScaler.update
+    "torch.cuda.amp.GradScaler.update") at the end of iterations where you called
+    [`step`](../amp.html#torch.cuda.amp.GradScaler.step "torch.cuda.amp.GradScaler.step")
+    for a full effective batch:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[Gradient penalty](#id7)'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: A gradient penalty implementation commonly creates gradients using [`torch.autograd.grad()`](../generated/torch.autograd.grad.html#torch.autograd.grad
+    "torch.autograd.grad"), combines them to create the penalty value, and adds the
+    penalty value to the loss.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Here’s an ordinary example of an L2 penalty without gradient scaling or autocasting:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: To implement a gradient penalty *with* gradient scaling, the `outputs` Tensor(s)
+    passed to [`torch.autograd.grad()`](../generated/torch.autograd.grad.html#torch.autograd.grad
+    "torch.autograd.grad") should be scaled. The resulting gradients will therefore
+    be scaled, and should be unscaled before being combined to create the penalty
+    value.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Also, the penalty term computation is part of the forward pass, and therefore
+    should be inside an [`autocast`](../amp.html#torch.cuda.amp.autocast "torch.cuda.amp.autocast")
+    context.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Here’s how that looks for the same L2 penalty:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[Working with Multiple Models, Losses, and Optimizers](#id8)[](#working-with-multiple-models-losses-and-optimizers
+    "Permalink to this heading")'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: If your network has multiple losses, you must call [`scaler.scale`](../amp.html#torch.cuda.amp.GradScaler.scale
+    "torch.cuda.amp.GradScaler.scale") on each of them individually. If your network
+    has multiple optimizers, you may call [`scaler.unscale_`](../amp.html#torch.cuda.amp.GradScaler.unscale_
+    "torch.cuda.amp.GradScaler.unscale_") on any of them individually, and you must
+    call [`scaler.step`](../amp.html#torch.cuda.amp.GradScaler.step "torch.cuda.amp.GradScaler.step")
+    on each of them individually.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'However, [`scaler.update`](../amp.html#torch.cuda.amp.GradScaler.update "torch.cuda.amp.GradScaler.update")
+    should only be called once, after all optimizers used this iteration have been
+    stepped:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: Each optimizer checks its gradients for infs/NaNs and makes an independent decision
+    whether or not to skip the step. This may result in one optimizer skipping the
+    step while the other one does not. Since step skipping occurs rarely (every several
+    hundred iterations) this should not impede convergence. If you observe poor convergence
+    after adding gradient scaling to a multiple-optimizer model, please report a bug.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '## [Working with Multiple GPUs](#id9)[](#working-with-multiple-gpus "Permalink
+    to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The issues described here only affect [`autocast`](../amp.html#torch.cuda.amp.autocast
+    "torch.cuda.amp.autocast"). [`GradScaler`](../amp.html#torch.cuda.amp.GradScaler
+    "torch.cuda.amp.GradScaler")‘s usage is unchanged.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '### [DataParallel in a single process](#id10)[](#dataparallel-in-a-single-process
+    "Permalink to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Even if [`torch.nn.DataParallel`](../generated/torch.nn.DataParallel.html#torch.nn.DataParallel
+    "torch.nn.DataParallel") spawns threads to run the forward pass on each device.
+    The autocast state is propagated in each one and the following will work:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[DistributedDataParallel, one GPU per process](#id11)[](#distributeddataparallel-one-gpu-per-process
+    "Permalink to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[`torch.nn.parallel.DistributedDataParallel`](../generated/torch.nn.parallel.DistributedDataParallel.html#torch.nn.parallel.DistributedDataParallel
+    "torch.nn.parallel.DistributedDataParallel")’s documentation recommends one GPU
+    per process for best performance. In this case, `DistributedDataParallel` does
+    not spawn threads internally, so usages of [`autocast`](../amp.html#torch.cuda.amp.autocast
+    "torch.cuda.amp.autocast") and [`GradScaler`](../amp.html#torch.cuda.amp.GradScaler
+    "torch.cuda.amp.GradScaler") are not affected.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[DistributedDataParallel, multiple GPUs per process](#id12)[](#distributeddataparallel-multiple-gpus-per-process
+    "Permalink to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Here [`torch.nn.parallel.DistributedDataParallel`](../generated/torch.nn.parallel.DistributedDataParallel.html#torch.nn.parallel.DistributedDataParallel
+    "torch.nn.parallel.DistributedDataParallel") may spawn a side thread to run the
+    forward pass on each device, like [`torch.nn.DataParallel`](../generated/torch.nn.DataParallel.html#torch.nn.DataParallel
+    "torch.nn.DataParallel"). [The fix is the same](#amp-dataparallel): apply autocast
+    as part of your model’s `forward` method to ensure it’s enabled in side threads.  ##
+    [Autocast and Custom Autograd Functions](#id13)[](#autocast-and-custom-autograd-functions
+    "Permalink to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: If your network uses [custom autograd functions](extending.html#extending-autograd)
+    (subclasses of [`torch.autograd.Function`](../autograd.html#torch.autograd.Function
+    "torch.autograd.Function")), changes are required for autocast compatibility if
+    any function
+  prefs: []
+  type: TYPE_NORMAL
+- en: takes multiple floating-point Tensor inputs,
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: wraps any autocastable op (see the [Autocast Op Reference](../amp.html#autocast-op-reference)),
+    or
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: requires a particular `dtype` (for example, if it wraps [CUDA extensions](https://pytorch.org/tutorials/advanced/cpp_extension.html)
+    that were only compiled for `dtype`).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'In all cases, if you’re importing the function and can’t alter its definition,
+    a safe fallback is to disable autocast and force execution in `float32` ( or `dtype`)
+    at any points of use where errors occur:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: If you’re the function’s author (or can alter its definition) a better solution
+    is to use the [`torch.cuda.amp.custom_fwd()`](../amp.html#torch.cuda.amp.custom_fwd
+    "torch.cuda.amp.custom_fwd") and [`torch.cuda.amp.custom_bwd()`](../amp.html#torch.cuda.amp.custom_bwd
+    "torch.cuda.amp.custom_bwd") decorators as shown in the relevant case below.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Functions with multiple inputs or autocastable ops](#id14)[](#functions-with-multiple-inputs-or-autocastable-ops
+    "Permalink to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Apply [`custom_fwd`](../amp.html#torch.cuda.amp.custom_fwd "torch.cuda.amp.custom_fwd")
+    and [`custom_bwd`](../amp.html#torch.cuda.amp.custom_bwd "torch.cuda.amp.custom_bwd")
+    (with no arguments) to `forward` and `backward` respectively. These ensure `forward`
+    executes with the current autocast state and `backward` executes with the same
+    autocast state as `forward` (which can prevent type mismatch errors):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Now `MyMM` can be invoked anywhere, without disabling autocast or manually
+    casting inputs:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[Functions that need a particular `dtype`](#id15)[](#functions-that-need-a-particular-dtype
+    "Permalink to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Consider a custom function that requires `torch.float32` inputs. Apply [`custom_fwd(cast_inputs=torch.float32)`](../amp.html#torch.cuda.amp.custom_fwd
+    "torch.cuda.amp.custom_fwd") to `forward` and [`custom_bwd`](../amp.html#torch.cuda.amp.custom_bwd
+    "torch.cuda.amp.custom_bwd") (with no arguments) to `backward`. If `forward` runs
+    in an autocast-enabled region, the decorators cast floating-point CUDA Tensor
+    inputs to `float32`, and locally disable autocast during `forward` and `backward`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Now `MyFloat32Func` can be invoked anywhere, without manually disabling autocast
+    or casting inputs:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE

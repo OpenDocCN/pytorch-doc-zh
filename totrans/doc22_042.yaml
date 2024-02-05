@@ -1,0 +1,169 @@
+- en: Understanding CUDA Memory Usage
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/docs/stable/torch_cuda_memory.html](https://pytorch.org/docs/stable/torch_cuda_memory.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: To debug CUDA memory use, PyTorch provides a way to generate memory snapshots
+    that record the state of allocated CUDA memory at any point in time, and optionally
+    record the history of allocation events that led up to that snapshot.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The generated snapshots can then be drag and dropped onto the interactiver viewer
+    hosted at [pytorch.org/memory_viz](https://pytorch.org/memory_viz) which can be
+    used to explore the snapshot.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Generating a Snapshot
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 'The common pattern for recording a snapshot is to enable memory history, run
+    the code to be observed, and then save a file with a pickled snapshot:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Using the visualizer
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: Open [pytorch.org/memory_viz](https://pytorch.org/memory_viz) and drag/drop
+    the pickled snapshot file into the visualizer. The visualizer is a javascript
+    application that runs locally on your computer. It does not upload any snapshot
+    data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Active Memory Timeline
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The Active Memory Timeline shows all the live tensors over time in the snapshot
+    on a particular GPU. Pan/Zoom over the plot to look at smaller allocations. Mouse
+    over allocated blocks to see a stack trace for when that block was allocated,
+    and details like its address. The detail slider can be adjusted to render fewer
+    allocations and improve performance when there is a lot of data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![_images/active_memory_timeline.png](../Images/eed5d13530c32a9ffc147fbef83865d2.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Allocator State History
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The Allocator State History shows individual allocator events in a timeline
+    on the left. Select an event in the timeline to see a visual summary of the allocator
+    state at that event. This summary shows each individual segment returned from
+    cudaMalloc and how it is split up into blocks of individual allocations or free
+    space. Mouse over segments and blocks to see the stack trace when the memory was
+    allocated. Mouse over events to see the stack trace when the event occurred, such
+    as when a tensor was freed. Out of memory errors are reported as OOM events. Looking
+    at the state of memory during an OOM may provide insight into why an allocation
+    failed even though reserved memory still exists.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![_images/allocator_state_history.png](../Images/330e9ea5e1c7c9cf54145afa5cde9d6e.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The stack trace information also reports the address at which an allocation
+    occurred. The address b7f064c000000_0 refers to the (b)lock at address 7f064c000000
+    which is the “_0”th time this address was allocated. This unique string can be
+    looked up in the Active Memory Timeline and searched in the Active State History
+    to examine the memory state when a tensor was allocated or freed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Snapshot API Reference
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Enable recording of stack traces associated with memory allocations, so you
+    can tell what allocated any piece of memory in [`torch.cuda.memory._snapshot()`](#torch.cuda.memory._snapshot
+    "torch.cuda.memory._snapshot").
+  prefs: []
+  type: TYPE_NORMAL
+- en: In addition too keeping stack traces with each current allocation and free,
+    this will also enable recording of a history of all alloc/free events.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Use [`torch.cuda.memory._snapshot()`](#torch.cuda.memory._snapshot "torch.cuda.memory._snapshot")
+    to retrieve this information, and the tools in _memory_viz.py to visualize snapshots.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The Python trace collection is fast (2us per trace), so you may consider enabling
+    this on production jobs if you anticipate ever having to debug memory issues.
+  prefs: []
+  type: TYPE_NORMAL
+- en: C++ trace collection is also fast (~50ns/frame), which for many typical programs
+    works out to ~2us per trace, but can vary depending on stack depth.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**enabled** (*Literal**[**None**,* *"state"**,* *"all"**]**,* *optional*) –
+    None, disable recording memory history. “state”, keep information for currenly
+    allocated memory. “all”, additionally keep a history of all alloc/free calls.
+    Defaults to “all”.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**context** (*Literal**[**None**,* *"state"**,* *"alloc"**,* *"all"**]**,*
+    *optional*) – None, Do not record any tracebacks. “state”, Record tracebacks for
+    currently allocated memory. “alloc”, additionally keep tracebacks for alloc calls.
+    “all”, additionally keep tracebacks for free calls. Defaults to “all”.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**stacks** (*Literal**[**"python"**,* *"all"**]**,* *optional*) – “python”,
+    include Python, TorchScript, and inductor frames in tracebacks “all”, additionally
+    include C++ frames Defaults to “all”.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**max_entries** ([*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* *optional*) – Keep a maximum of max_entries alloc/free
+    events in the recorded history recorded.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Save a snapshot of CUDA memory state at the time it was called.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The state is represented as a dictionary with the following structure.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: The Snapshot dictionary object
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Save a pickled version of the torch.memory._snapshot() dictionary to a file.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This file can be opened by the interactive snapshot viewer at pytorch.org/memory_viz
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**filename** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
+    Python v3.12)")*,* *optional*) – Name of the file to create. Defaults to “dump_snapshot.pickle”.'
+  prefs: []
+  type: TYPE_NORMAL

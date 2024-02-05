@@ -1,0 +1,434 @@
+- en: Distributed Optimizers
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/docs/stable/distributed.optim.html](https://pytorch.org/docs/stable/distributed.optim.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: Distributed optimizer is not currently supported when using CUDA tensors
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`torch.distributed.optim`](#module-torch.distributed.optim "torch.distributed.optim")
+    exposes DistributedOptimizer, which takes a list of remote parameters (`RRef`)
+    and runs the optimizer locally on the workers where the parameters live. The distributed
+    optimizer can use any of the local optimizer [Base class](optim.html#optimizer-algorithms)
+    to apply the gradients on each worker.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: DistributedOptimizer takes remote references to parameters scattered across
+    workers and applies the given optimizer locally for each parameter.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This class uses [`get_gradients()`](rpc.html#torch.distributed.autograd.get_gradients
+    "torch.distributed.autograd.get_gradients") in order to retrieve the gradients
+    for specific parameters.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Concurrent calls to [`step()`](#torch.distributed.optim.DistributedOptimizer.step
+    "torch.distributed.optim.DistributedOptimizer.step"), either from the same or
+    different clients, will be serialized on each worker – as each worker’s optimizer
+    can only work on one set of gradients at a time. However, there is no guarantee
+    that the full forward-backward-optimizer sequence will execute for one client
+    at a time. This means that the gradients being applied may not correspond to the
+    latest forward pass executed on a given worker. Also, there is no guaranteed ordering
+    across workers.
+  prefs: []
+  type: TYPE_NORMAL
+- en: DistributedOptimizer creates the local optimizer with TorchScript enabled by
+    default, so that optimizer updates are not blocked by the Python Global Interpreter
+    Lock (GIL) in the case of multithreaded training (e.g. Distributed Model Parallel).
+    This feature is currently enabled for most optimizers. You can also follow [the
+    recipe](https://github.com/pytorch/tutorials/pull/1465) in PyTorch tutorials to
+    enable TorchScript support for your own custom optimizers.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**optimizer_class** ([*optim.Optimizer*](optim.html#torch.optim.Optimizer "torch.optim.Optimizer"))
+    – the class of optimizer to instantiate on each worker.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**params_rref** ([*list*](https://docs.python.org/3/library/stdtypes.html#list
+    "(in Python v3.12)")*[**RRef**]*) – list of RRefs to local or remote parameters
+    to optimize.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**args** – arguments to pass to the optimizer constructor on each worker.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**kwargs** – arguments to pass to the optimizer constructor on each worker.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Example::'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Performs a single optimization step.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This will call [`torch.optim.Optimizer.step()`](generated/torch.optim.Optimizer.step.html#torch.optim.Optimizer.step
+    "torch.optim.Optimizer.step") on each worker containing parameters to be optimized,
+    and will block until all workers return. The provided `context_id` will be used
+    to retrieve the corresponding [`context`](rpc.html#torch.distributed.autograd.context
+    "torch.distributed.autograd.context") that contains the gradients that should
+    be applied to the parameters.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**context_id** – the autograd context id for which we should run the optimizer
+    step.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Wraps an arbitrary [`torch.optim.Optimizer`](optim.html#torch.optim.Optimizer
+    "torch.optim.Optimizer") and runs [post-local SGD](https://arxiv.org/abs/1808.07217),
+    This optimizer runs local optimizer at every step. After the warm-up stage, it
+    averages parameters periodically afer the local optimizer is applied.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**optim** ([*Optimizer*](optim.html#torch.optim.Optimizer "torch.optim.optimizer.Optimizer"))
+    – The local optimizer.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**averager** (*ModelAverager*) – A model averager instance to run post-localSGD
+    algorithm.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: This is the same as [`torch.optim.Optimizer`](optim.html#torch.optim.Optimizer
+    "torch.optim.Optimizer") [`load_state_dict()`](#torch.distributed.optim.PostLocalSGDOptimizer.load_state_dict
+    "torch.distributed.optim.PostLocalSGDOptimizer.load_state_dict"), but also restores
+    model averager’s step value to the one saved in the provided `state_dict`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: If there is no `"step"` entry in `state_dict`, it will raise a warning and initialize
+    the model averager’s step to 0.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: This is the same as [`torch.optim.Optimizer`](optim.html#torch.optim.Optimizer
+    "torch.optim.Optimizer") [`state_dict()`](#torch.distributed.optim.PostLocalSGDOptimizer.state_dict
+    "torch.distributed.optim.PostLocalSGDOptimizer.state_dict"), but adds an extra
+    entry to record model averager’s step to the checkpoint to ensure reload does
+    not cause unnecessary warm up again.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Performs a single optimization step (parameter update).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: Wrap an arbitrary [`optim.Optimizer`](optim.html#torch.optim.Optimizer "torch.optim.Optimizer")
+    and shards its states across ranks in the group.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The sharing is done as described by [ZeRO](https://arxiv.org/abs/1910.02054).
+  prefs: []
+  type: TYPE_NORMAL
+- en: The local optimizer instance in each rank is only responsible for updating approximately
+    `1 / world_size` parameters and hence only needs to keep `1 / world_size` optimizer
+    states. After parameters are updated locally, each rank will broadcast its parameters
+    to all other peers to keep all model replicas in the same state. `ZeroRedundancyOptimizer`
+    can be used in conjunction with [`torch.nn.parallel.DistributedDataParallel`](generated/torch.nn.parallel.DistributedDataParallel.html#torch.nn.parallel.DistributedDataParallel
+    "torch.nn.parallel.DistributedDataParallel") to reduce per-rank peak memory consumption.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`ZeroRedundancyOptimizer` uses a sorted-greedy algorithm to pack a number of
+    parameters at each rank. Each parameter belongs to a single rank and is not divided
+    among ranks. The partition is arbitrary and might not match the the parameter
+    registration or usage order.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**params** (`Iterable`) – an `Iterable` of [`torch.Tensor`](tensors.html#torch.Tensor
+    "torch.Tensor") s or [`dict`](https://docs.python.org/3/library/stdtypes.html#dict
+    "(in Python v3.12)") s giving all parameters, which will be sharded across ranks.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Keyword Arguments
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**optimizer_class** (`torch.nn.Optimizer`) – the class of the local optimizer.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**process_group** (`ProcessGroup`, optional) – `torch.distributed` `ProcessGroup`
+    (default: `dist.group.WORLD` initialized by [`torch.distributed.init_process_group()`](distributed.html#torch.distributed.init_process_group
+    "torch.distributed.init_process_group")).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**parameters_as_bucket_view** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")*,* *optional*) – if `True`, parameters are packed into buckets
+    to speed up communication, and `param.data` fields point to bucket views at different
+    offsets; if `False`, each individual parameter is communicated separately, and
+    each `params.data` stays intact (default: `False`).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**overlap_with_ddp** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")*,* *optional*) – if `True`, [`step()`](#torch.distributed.optim.ZeroRedundancyOptimizer.step
+    "torch.distributed.optim.ZeroRedundancyOptimizer.step") is overlapped with `DistributedDataParallel`
+    ‘s gradient synchronization; this requires (1) either a functional optimizer for
+    the `optimizer_class` argument or one with a functional equivalent and (2) registering
+    a DDP communication hook constructed from one of the functions in `ddp_zero_hook.py`;
+    parameters are packed into buckets matching those in `DistributedDataParallel`,
+    meaning that the `parameters_as_bucket_view` argument is ignored. If `False`,
+    [`step()`](#torch.distributed.optim.ZeroRedundancyOptimizer.step "torch.distributed.optim.ZeroRedundancyOptimizer.step")
+    runs disjointly after the backward pass (per normal). (default: `False`)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '****defaults** – any trailing arguments, which are forwarded to the local optimizer.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: Currently, `ZeroRedundancyOptimizer` requires that all of the passed-in parameters
+    are the same dense type.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'If you pass `overlap_with_ddp=True`, be wary of the following: Given the way
+    that overlapping `DistributedDataParallel` with [`ZeroRedundancyOptimizer`](#torch.distributed.optim.ZeroRedundancyOptimizer
+    "torch.distributed.optim.ZeroRedundancyOptimizer") is currently implemented, the
+    first two or three training iterations do not perform parameter updates in the
+    optimizer step, depending on if `static_graph=False` or `static_graph=True`, respectively.
+    This is because it needs information about the gradient bucketing strategy used
+    by `DistributedDataParallel`, which is not finalized until the second forward
+    pass if `static_graph=False` or until the third forward pass if `static_graph=True`.
+    To adjust for this, one option is to prepend dummy inputs.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: ZeroRedundancyOptimizer is experimental and subject to change.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: Add a parameter group to the `Optimizer` ‘s `param_groups`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This can be useful when fine tuning a pre-trained network, as frozen layers
+    can be made trainable and added to the `Optimizer` as training progresses.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**param_group** ([*dict*](https://docs.python.org/3/library/stdtypes.html#dict
+    "(in Python v3.12)")) – specifies the parameters to be optimized and group-specific
+    optimization options.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: This method handles updating the shards on all partitions but needs to be called
+    on all ranks. Calling this on a subset of the ranks will cause the training to
+    hang because communication primitives are called depending on the managed parameters
+    and expect all the ranks to participate on the same set of parameters.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: Consolidate a list of `state_dict` s (one per rank) on the target rank.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**to** ([*int*](https://docs.python.org/3/library/functions.html#int "(in Python
+    v3.12)")) – the rank that receives the optimizer states (default: 0).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Raises
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[**RuntimeError**](https://docs.python.org/3/library/exceptions.html#RuntimeError
+    "(in Python v3.12)") – if `overlap_with_ddp=True` and this method is called before
+    this [`ZeroRedundancyOptimizer`](#torch.distributed.optim.ZeroRedundancyOptimizer
+    "torch.distributed.optim.ZeroRedundancyOptimizer") instance has been fully initialized,
+    which happens once `DistributedDataParallel` gradient buckets have been rebuilt.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: This needs to be called on all ranks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: Return default device.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: Return the ZeRO join hook.
+  prefs: []
+  type: TYPE_NORMAL
+- en: It enables training on uneven inputs by shadowing the collective communications
+    in the optimizer step.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Gradients must be properly set before this hook is called.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**kwargs** ([*dict*](https://docs.python.org/3/library/stdtypes.html#dict "(in
+    Python v3.12)")) – a [`dict`](https://docs.python.org/3/library/stdtypes.html#dict
+    "(in Python v3.12)") containing any keyword arguments to modify the behavior of
+    the join hook at run time; all `Joinable` instances sharing the same join context
+    manager are forwarded the same value for `kwargs`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: This hook does not support any keyword arguments; i.e. `kwargs` is unused.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: Return process group.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: Load the state pertaining to the given rank from the input `state_dict`, updating
+    the local optimizer as needed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**state_dict** ([*dict*](https://docs.python.org/3/library/stdtypes.html#dict
+    "(in Python v3.12)")) – optimizer state; should be an object returned from a call
+    to [`state_dict()`](#torch.distributed.optim.ZeroRedundancyOptimizer.state_dict
+    "torch.distributed.optim.ZeroRedundancyOptimizer.state_dict").'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Raises
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[**RuntimeError**](https://docs.python.org/3/library/exceptions.html#RuntimeError
+    "(in Python v3.12)") – if `overlap_with_ddp=True` and this method is called before
+    this [`ZeroRedundancyOptimizer`](#torch.distributed.optim.ZeroRedundancyOptimizer
+    "torch.distributed.optim.ZeroRedundancyOptimizer") instance has been fully initialized,
+    which happens once `DistributedDataParallel` gradient buckets have been rebuilt.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: Return the last global optimizer state known to this rank.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Raises
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[**RuntimeError**](https://docs.python.org/3/library/exceptions.html#RuntimeError
+    "(in Python v3.12)") – if `overlap_with_ddp=True` and this method is called before
+    this [`ZeroRedundancyOptimizer`](#torch.distributed.optim.ZeroRedundancyOptimizer
+    "torch.distributed.optim.ZeroRedundancyOptimizer") instance has been fully initialized,
+    which happens once `DistributedDataParallel` gradient buckets have been rebuilt;
+    or if this method is called without a preceding call to [`consolidate_state_dict()`](#torch.distributed.optim.ZeroRedundancyOptimizer.consolidate_state_dict
+    "torch.distributed.optim.ZeroRedundancyOptimizer.consolidate_state_dict").'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict "(in Python
+    v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str "(in Python
+    v3.12)"), [*Any*](https://docs.python.org/3/library/typing.html#typing.Any "(in
+    Python v3.12)")]'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: Perform a single optimizer step and syncs parameters across all ranks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**closure** (*Callable*) – a closure that re-evaluates the model and returns
+    the loss; optional for most optimizers.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: Optional loss depending on the underlying local optimizer.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*Optional*](https://docs.python.org/3/library/typing.html#typing.Optional
+    "(in Python v3.12)")[[float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")]'
+  prefs: []
+  type: TYPE_NORMAL

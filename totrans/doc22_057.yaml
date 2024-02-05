@@ -1,0 +1,345 @@
+- en: torch.futures
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/docs/stable/futures.html](https://pytorch.org/docs/stable/futures.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: This package provides a [`Future`](#torch.futures.Future "torch.futures.Future")
+    type that encapsulates an asynchronous execution and a set of utility functions
+    to simplify operations on [`Future`](#torch.futures.Future "torch.futures.Future")
+    objects. Currently, the [`Future`](#torch.futures.Future "torch.futures.Future")
+    type is primarily used by the [Distributed RPC Framework](rpc.html#distributed-rpc-framework).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Wrapper around a `torch._C.Future` which encapsulates an asynchronous execution
+    of a callable, e.g. [`rpc_async()`](rpc.html#torch.distributed.rpc.rpc_async "torch.distributed.rpc.rpc_async").
+    It also exposes a set of APIs to add callback functions and set results.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: GPU support is a beta feature, subject to changes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Append the given callback function to this `Future`, which will be run when
+    the `Future` is completed. Multiple callbacks can be added to the same `Future`,
+    but the order in which they will be executed cannot be guaranteed. The callback
+    must take one argument, which is the reference to this `Future`. The callback
+    function can use the [`value()`](#torch.futures.Future.value "torch.futures.Future.value")
+    method to get the value. Note that if this `Future` is already completed, the
+    given callback will be run inline.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We recommend that you use the [`then()`](#torch.futures.Future.then "torch.futures.Future.then")
+    method as it provides a way to synchronize after your callback has completed.
+    `add_done_callback` can be cheaper if your callback does not return anything.
+    But both [`then()`](#torch.futures.Future.then "torch.futures.Future.then") and
+    `add_done_callback` use the same callback registration API under the hood.
+  prefs: []
+  type: TYPE_NORMAL
+- en: With respect to GPU tensors, this method behaves in the same way as [`then()`](#torch.futures.Future.then
+    "torch.futures.Future.then").
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**callback** (`Future`) – a `Callable` that takes in one argument, which is
+    the reference to this `Future`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that if the callback function throws, either through the original future
+    being completed with an exception and calling `fut.wait()`, or through other code
+    in the callback, error handling must be carefully taken care of. For example,
+    if this callback later completes additional futures, those futures are not marked
+    as completed with an error and the user is responsible for handling completion/waiting
+    on those futures independently.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example::'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Return `True` if this `Future` is done. A `Future` is done if it has a result
+    or an exception.
+  prefs: []
+  type: TYPE_NORMAL
+- en: If the value contains tensors that reside on GPUs, `Future.done()` will return
+    `True` even if the asynchronous kernels that are populating those tensors haven’t
+    yet completed running on the device, because at such stage the result is already
+    usable, provided one performs the appropriate synchronizations (see [`wait()`](#torch.futures.Future.wait
+    "torch.futures.Future.wait")).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[bool](https://docs.python.org/3/library/functions.html#bool "(in Python v3.12)")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Set an exception for this `Future`, which will mark this `Future` as completed
+    with an error and trigger all attached callbacks. Note that when calling wait()/value()
+    on this `Future`, the exception set here will be raised inline.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**result** ([*BaseException*](https://docs.python.org/3/library/exceptions.html#BaseException
+    "(in Python v3.12)")) – the exception for this `Future`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example::'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: Set the result for this `Future`, which will mark this `Future` as completed
+    and trigger all attached callbacks. Note that a `Future` cannot be marked completed
+    twice.
+  prefs: []
+  type: TYPE_NORMAL
+- en: If the result contains tensors that reside on GPUs, this method can be called
+    even if the asynchronous kernels that are populating those tensors haven’t yet
+    completed running on the device, provided that the streams on which those kernels
+    were enqueued are set as the current ones when this method is called. Put simply,
+    it’s safe to call this method immediately after launching those kernels, without
+    any additional synchronization, as long as one doesn’t change streams in between.
+    This method will record events on all the relevant current streams and will use
+    them to ensure proper scheduling for all the consumers of this `Future`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**result** ([*object*](https://docs.python.org/3/library/functions.html#object
+    "(in Python v3.12)")) – the result object of this `Future`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example::'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Append the given callback function to this `Future`, which will be run when
+    the `Future` is completed. Multiple callbacks can be added to the same `Future`,
+    but the order in which they will be executed cannot be guaranteed (to enforce
+    a certain order consider chaining: `fut.then(cb1).then(cb2)`). The callback must
+    take one argument, which is the reference to this `Future`. The callback function
+    can use the [`value()`](#torch.futures.Future.value "torch.futures.Future.value")
+    method to get the value. Note that if this `Future` is already completed, the
+    given callback will be run immediately inline.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: If the `Future`’s value contains tensors that reside on GPUs, the callback might
+    be invoked while the async kernels that are populating those tensors haven’t yet
+    finished executing on the device. However, the callback will be invoked with some
+    dedicated streams set as current (fetched from a global pool) which will be synchronized
+    with those kernels. Hence any operation performed by the callback on these tensors
+    will be scheduled on the device after the kernels complete. In other words, as
+    long as the callback doesn’t switch streams, it can safely manipulate the result
+    without any additional synchronization. This is similar to the non-blocking behavior
+    of [`wait()`](#torch.futures.Future.wait "torch.futures.Future.wait").
+  prefs: []
+  type: TYPE_NORMAL
+- en: Similarly, if the callback returns a value that contains tensors that reside
+    on a GPU, it can do so even if the kernels that are producing these tensors are
+    still running on the device, as long as the callback didn’t change streams during
+    its execution. If one wants to change streams, one must be careful to re-synchronize
+    them with the original streams, that is, those that were current when the callback
+    was invoked.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**callback** (`Callable`) – a `Callable` that takes this `Future` as the only
+    argument.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: A new `Future` object that holds the return value of the `callback` and will
+    be marked as completed when the given `callback` finishes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*Future*](#torch.futures.Future "torch.jit.Future")[*S*]'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that if the callback function throws, either through the original future
+    being completed with an exception and calling `fut.wait()`, or through other code
+    in the callback, the future returned by `then` will be marked appropriately with
+    the encountered error. However, if this callback later completes additional futures,
+    those futures are not marked as completed with an error and the user is responsible
+    for handling completion/waiting on those futures independently.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example::'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: Obtain the value of an already-completed future.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This method should only be called after a call to [`wait()`](#torch.futures.Future.wait
+    "torch.futures.Future.wait") has completed, or inside a callback function passed
+    to [`then()`](#torch.futures.Future.then "torch.futures.Future.then"). In other
+    cases this `Future` may not yet hold a value and calling `value()` could fail.
+  prefs: []
+  type: TYPE_NORMAL
+- en: If the value contains tensors that reside on GPUs, then this method will *not*
+    perform any additional synchronization. This should be done beforehand, separately,
+    through a call to [`wait()`](#torch.futures.Future.wait "torch.futures.Future.wait")
+    (except within callbacks, for which it’s already being taken care of by [`then()`](#torch.futures.Future.then
+    "torch.futures.Future.then")).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: The value held by this `Future`. If the function (callback or RPC) creating
+    the value has thrown an error, this `value()` method will also throw an error.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*T*'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: Block until the value of this `Future` is ready.
+  prefs: []
+  type: TYPE_NORMAL
+- en: If the value contains tensors that reside on GPUs, then an additional synchronization
+    is performed with the kernels (executing on the device) which may be asynchronously
+    populating those tensors. Such sync is non-blocking, which means that `wait()`
+    will insert the necessary instructions in the current streams to ensure that further
+    operations enqueued on those streams will be properly scheduled after the async
+    kernels but, once that is done, `wait()` will return, even if those kernels are
+    still running. No further synchronization is required when accessing and using
+    the values, as long as one doesn’t change streams.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: The value held by this `Future`. If the function (callback or RPC) creating
+    the value has thrown an error, this `wait` method will also throw an error.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*T*'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: Collects the provided [`Future`](#torch.futures.Future "torch.futures.Future")
+    objects into a single combined [`Future`](#torch.futures.Future "torch.futures.Future")
+    that is completed when all of the sub-futures are completed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**futures** ([*list*](https://docs.python.org/3/library/stdtypes.html#list
+    "(in Python v3.12)")) – a list of [`Future`](#torch.futures.Future "torch.futures.Future")
+    objects.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: Returns a [`Future`](#torch.futures.Future "torch.futures.Future") object to
+    a list of the passed in Futures.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*Future*](#torch.futures.Future "torch.jit.Future")[[*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")[[*Future*](#torch.futures.Future "torch.jit.Future")]]'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example::'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: Waits for all provided futures to be complete, and returns the list of completed
+    values. If any of the futures encounters an error, the method will exit early
+    and report the error not waiting for other futures to complete.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**futures** ([*list*](https://docs.python.org/3/library/stdtypes.html#list
+    "(in Python v3.12)")) – a list of [`Future`](#torch.futures.Future "torch.futures.Future")
+    object.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: A list of the completed [`Future`](#torch.futures.Future "torch.futures.Future")
+    results. This method will throw an error if `wait` on any [`Future`](#torch.futures.Future
+    "torch.futures.Future") throws.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*List*](https://docs.python.org/3/library/typing.html#typing.List "(in Python
+    v3.12)")'
+  prefs: []
+  type: TYPE_NORMAL

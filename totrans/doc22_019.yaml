@@ -1,0 +1,168 @@
+- en: Features for large-scale deployments
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/docs/stable/notes/large_scale_deployments.html](https://pytorch.org/docs/stable/notes/large_scale_deployments.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: '[Fleet-wide operator profiling](#fleet-wide-operator-profiling)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[API usage logging](#api-usage-logging)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Attaching metadata to saved TorchScript models](#attaching-metadata-to-saved-torchscript-models)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Build environment considerations](#build-environment-considerations)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Common extension points](#common-extension-points)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: This note talks about several extension points and tricks that might be useful
+    when running PyTorch within a larger system or operating multiple systems using
+    PyTorch in a larger organization.
+  prefs: []
+  type: TYPE_NORMAL
+- en: It doesn’t cover topics of deploying models to production. Check [`torch.jit`](../jit.html#module-torch.jit
+    "torch.jit") or one of the corresponding tutorials.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The note assumes that you either build PyTorch from source in your organization
+    or have an ability to statically link additional code to be loaded when PyTorch
+    is used. Therefore, many of the hooks are exposed as C++ APIs that can be triggered
+    once in a centralized place, e.g. in static initialization code.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Fleet-wide operator profiling](#id1)[](#fleet-wide-operator-profiling "Permalink
+    to this heading")'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: PyTorch comes with [`torch.autograd.profiler`](../autograd.html#module-torch.autograd.profiler
+    "torch.autograd.profiler") capable of measuring time taken by individual operators
+    on demand. One can use the same mechanism to do “always ON” measurements for any
+    process running PyTorch. It might be useful for gathering information about PyTorch
+    workloads running in a given process or across the entire set of machines.
+  prefs: []
+  type: TYPE_NORMAL
+- en: New callbacks for any operator invocation can be added with `torch::addGlobalCallback`.
+    Hooks will be called with `torch::RecordFunction` struct that describes invocation
+    context (e.g. name). If enabled, `RecordFunction::inputs()` contains arguments
+    of the function represented as `torch::IValue` variant type. Note, that inputs
+    logging is relatively expensive and thus has to be enabled explicitly.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The operator callbacks also have access to `c10::ThreadLocalDebugInfo::get()`
+    interface that returns a pointer to the struct holding the debug information.
+    This debug information can be set earlier by using `at::DebugInfoGuard` object.
+    Debug information is propagated through the forward (including async `fork` tasks)
+    and backward passes and can be useful for passing some extra information about
+    execution environment (e.g. model id) from the higher layers of the application
+    down to the operator callbacks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Invoking callbacks adds some overhead, so usually it’s useful to just randomly
+    sample operator invocations. This can be enabled on per-callback basis with an
+    optional sampling rate passed into `torch::addGlobalCallback`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note, that `addGlobalCallback` is not thread-safe and can be called only when
+    no PyTorch operator is running. Usually, it’s a good idea to call them once during
+    initialization.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Here’s an example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[API usage logging](#id2)'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: When running in a broader ecosystem, for example in managed job scheduler, it’s
+    often useful to track which binaries invoke particular PyTorch APIs. There exists
+    simple instrumentation injected at several important API points that triggers
+    a given callback. Because usually PyTorch is invoked in one-off python scripts,
+    the callback fires only once for a given process for each of the APIs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`c10::SetAPIUsageHandler` can be used to register API usage instrumentation
+    handler. Passed argument is going to be an “api key” identifying used point, for
+    example `python.import` for PyTorch extension import or `torch.script.compile`
+    if TorchScript compilation was triggered.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Note for developers: new API trigger points can be added in code with `C10_LOG_API_USAGE_ONCE("my_api")`
+    in C++ or `torch._C._log_api_usage_once("my.api")` in Python.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Attaching metadata to saved TorchScript models](#id3)[](#attaching-metadata-to-saved-torchscript-models
+    "Permalink to this heading")'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: TorchScript modules can be saved as an archive file that bundles serialized
+    parameters and module code as TorchScript (see [`torch.jit.save()`](../generated/torch.jit.save.html#torch.jit.save
+    "torch.jit.save")). It’s often convenient to bundle additional information together
+    with the model, for example, description of model producer or auxiliary artifacts.
+  prefs: []
+  type: TYPE_NORMAL
+- en: It can be achieved by passing the `_extra_files` argument to [`torch.jit.save()`](../generated/torch.jit.save.html#torch.jit.save
+    "torch.jit.save") and `torch::jit::load` to store and retrieve arbitrary binary
+    blobs during saving process. Since TorchScript files are regular ZIP archives,
+    extra information gets stored as regular files inside archive’s `extra/` directory.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'There’s also a global hook allowing to attach extra files to any TorchScript
+    archive produced in the current process. It might be useful to tag models with
+    producer metadata, akin to JPEG metadata produced by digital cameras. Example
+    usage might look like:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[Build environment considerations](#id4)[](#build-environment-considerations
+    "Permalink to this heading")'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: TorchScript’s compilation needs to have access to the original python files
+    as it uses python’s `inspect.getsource` call. In certain production environments
+    it might require explicitly deploying `.py` files along with precompiled `.pyc`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Common extension points](#id5)[](#common-extension-points "Permalink to this
+    heading")'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'PyTorch APIs are generally loosely coupled and it’s easy to replace a component
+    with specialized version. Common extension points include:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Custom operators implemented in C++ - see [tutorial for more details](https://pytorch.org/tutorials/advanced/cpp_extension.html).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Custom data reading can be often integrated directly by invoking corresponding
+    python library. Existing functionality of [`torch.utils.data`](../data.html#module-torch.utils.data
+    "torch.utils.data") can be utilized by extending [`Dataset`](../data.html#torch.utils.data.Dataset
+    "torch.utils.data.Dataset") or [`IterableDataset`](../data.html#torch.utils.data.IterableDataset
+    "torch.utils.data.IterableDataset").
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL

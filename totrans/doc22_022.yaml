@@ -1,0 +1,237 @@
+- en: Multiprocessing best practices
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/docs/stable/notes/multiprocessing.html](https://pytorch.org/docs/stable/notes/multiprocessing.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: '[`torch.multiprocessing`](../multiprocessing.html#module-torch.multiprocessing
+    "torch.multiprocessing") is a drop in replacement for Python’s [`multiprocessing`](https://docs.python.org/3/library/multiprocessing.html#module-multiprocessing
+    "(in Python v3.12)") module. It supports the exact same operations, but extends
+    it, so that all tensors sent through a [`multiprocessing.Queue`](https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Queue
+    "(in Python v3.12)"), will have their data moved into shared memory and will only
+    send a handle to another process.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: When a [`Tensor`](../tensors.html#torch.Tensor "torch.Tensor") is sent to another
+    process, the [`Tensor`](../tensors.html#torch.Tensor "torch.Tensor") data is shared.
+    If [`torch.Tensor.grad`](../generated/torch.Tensor.grad.html#torch.Tensor.grad
+    "torch.Tensor.grad") is not `None`, it is also shared. After a [`Tensor`](../tensors.html#torch.Tensor
+    "torch.Tensor") without a [`torch.Tensor.grad`](../generated/torch.Tensor.grad.html#torch.Tensor.grad
+    "torch.Tensor.grad") field is sent to the other process, it creates a standard
+    process-specific `.grad` [`Tensor`](../tensors.html#torch.Tensor "torch.Tensor")
+    that is not automatically shared across all processes, unlike how the [`Tensor`](../tensors.html#torch.Tensor
+    "torch.Tensor")’s data has been shared.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This allows to implement various training methods, like Hogwild, A3C, or any
+    others that require asynchronous operation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '## CUDA in multiprocessing'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The CUDA runtime does not support the `fork` start method; either the `spawn`
+    or `forkserver` start method are required to use CUDA in subprocesses.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: The start method can be set via either creating a context with `multiprocessing.get_context(...)`
+    or directly using `multiprocessing.set_start_method(...)`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Unlike CPU tensors, the sending process is required to keep the original tensor
+    as long as the receiving process retains a copy of the tensor. It is implemented
+    under the hood but requires users to follow the best practices for the program
+    to run correctly. For example, the sending process must stay alive as long as
+    the consumer process has references to the tensor, and the refcounting can not
+    save you if the consumer process exits abnormally via a fatal signal. See [this
+    section](../multiprocessing.html#multiprocessing-cuda-sharing-details).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'See also: [Use nn.parallel.DistributedDataParallel instead of multiprocessing
+    or nn.DataParallel](cuda.html#cuda-nn-ddp-instead)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Best practices and tips
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Avoiding and fighting deadlocks[](#avoiding-and-fighting-deadlocks "Permalink
+    to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: There are a lot of things that can go wrong when a new process is spawned, with
+    the most common cause of deadlocks being background threads. If there’s any thread
+    that holds a lock or imports a module, and `fork` is called, it’s very likely
+    that the subprocess will be in a corrupted state and will deadlock or fail in
+    a different way. Note that even if you don’t, Python built in libraries do - no
+    need to look further than [`multiprocessing`](https://docs.python.org/3/library/multiprocessing.html#module-multiprocessing
+    "(in Python v3.12)"). [`multiprocessing.Queue`](https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Queue
+    "(in Python v3.12)") is actually a very complex class, that spawns multiple threads
+    used to serialize, send and receive objects, and they can cause aforementioned
+    problems too. If you find yourself in such situation try using a `SimpleQueue`,
+    that doesn’t use any additional threads.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We’re trying our best to make it easy for you and ensure these deadlocks don’t
+    happen but some things are out of our control. If you have any issues you can’t
+    cope with for a while, try reaching out on forums, and we’ll see if it’s an issue
+    we can fix.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Reuse buffers passed through a Queue[](#reuse-buffers-passed-through-a-queue
+    "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Remember that each time you put a [`Tensor`](../tensors.html#torch.Tensor "torch.Tensor")
+    into a [`multiprocessing.Queue`](https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Queue
+    "(in Python v3.12)"), it has to be moved into shared memory. If it’s already shared,
+    it is a no-op, otherwise it will incur an additional memory copy that can slow
+    down the whole process. Even if you have a pool of processes sending data to a
+    single one, make it send the buffers back - this is nearly free and will let you
+    avoid a copy when sending next batch.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Asynchronous multiprocess training (e.g. Hogwild)[](#asynchronous-multiprocess-training-e-g-hogwild
+    "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Using [`torch.multiprocessing`](../multiprocessing.html#module-torch.multiprocessing
+    "torch.multiprocessing"), it is possible to train a model asynchronously, with
+    parameters either shared all the time, or being periodically synchronized. In
+    the first case, we recommend sending over the whole model object, while in the
+    latter, we advise to only send the [`state_dict()`](../generated/torch.nn.Module.html#torch.nn.Module.state_dict
+    "torch.nn.Module.state_dict").
+  prefs: []
+  type: TYPE_NORMAL
+- en: We recommend using [`multiprocessing.Queue`](https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Queue
+    "(in Python v3.12)") for passing all kinds of PyTorch objects between processes.
+    It is possible to e.g. inherit the tensors and storages already in shared memory,
+    when using the `fork` start method, however it is very bug prone and should be
+    used with care, and only by advanced users. Queues, even though they’re sometimes
+    a less elegant solution, will work properly in all cases.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: You should be careful about having global statements, that are not guarded with
+    an `if __name__ == '__main__'`. If a different start method than `fork` is used,
+    they will be executed in all subprocesses.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Hogwild
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'A concrete Hogwild implementation can be found in the [examples repository](https://github.com/pytorch/examples/tree/master/mnist_hogwild),
+    but to showcase the overall structure of the code, there’s also a minimal example
+    below as well:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: CPU in multiprocessing
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Inappropriate multiprocessing can lead to CPU oversubscription, causing different
+    processes to compete for CPU resources, resulting in low efficiency.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This tutorial will explain what CPU oversubscription is and how to avoid it.
+  prefs: []
+  type: TYPE_NORMAL
+- en: CPU oversubscription
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: CPU oversubscription is a technical term that refers to a situation where the
+    total number of vCPUs allocated to a system exceeds the total number of vCPUs
+    available on the hardware.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This leads to severe contention for CPU resources. In such cases, there is frequent
+    switching between processes, which increases processes switching overhead and
+    decreases overall system efficiency.
+  prefs: []
+  type: TYPE_NORMAL
+- en: See CPU oversubscription with the code examples in the Hogwild implementation
+    found in the [example repository](https://github.com/pytorch/examples/tree/main/mnist_hogwild).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'When running the training example with the following command on CPU using 4
+    processes:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Assuming there are N vCPUs available on the machine, executing the above command
+    will generate 4 subprocesses. Each subprocess will allocate N vCPUs for itself,
+    resulting in a requirement of 4*N vCPUs. However, the machine only has N vCPUs
+    available. Consequently, the different processes will compete for resources, leading
+    to frequent process switching.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The following observations indicate the presence of CPU over subscription:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'High CPU Utilization: By using the `htop` command, you can observe that the
+    CPU utilization is consistently high, often reaching or exceeding its maximum
+    capacity. This indicates that the demand for CPU resources exceeds the available
+    physical cores, causing contention and competition among processes for CPU time.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'Frequent Context Switching with Low System Efficiency: In an oversubscribed
+    CPU scenario, processes compete for CPU time, and the operating system needs to
+    rapidly switch between different processes to allocate resources fairly. This
+    frequent context switching adds overhead and reduces the overall system efficiency.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Avoid CPU oversubscription[](#avoid-cpu-oversubscription "Permalink to this
+    heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: A good way to avoid CPU oversubscription is proper resource allocation. Ensure
+    that the number of processes or threads running concurrently does not exceed the
+    available CPU resources.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In this case, a solution would be to specify the appropriate number of threads
+    in the subprocesses. This can be achieved by setting the number of threads for
+    each process using the `torch.set_num_threads(int)` function in subprocess.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Assuming there are N vCPUs on the machine and M processes will be generated,
+    the maximum `num_threads` value used by each process would be `floor(N/M)`. To
+    avoid CPU oversubscription in the mnist_hogwild example, the following changes
+    are needed for the file `train.py` in [example repository](https://github.com/pytorch/examples/tree/main/mnist_hogwild).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Set `num_thread` for each process using `torch.set_num_threads(floor(N/M))`.
+    where you replace N with the number of vCPUs available and M with the chosen number
+    of processes. The appropriate `num_thread` value will vary depending on the specific
+    task at hand. However, as a general guideline, the maximum value for the `num_thread`
+    should be `floor(N/M)` to avoid CPU oversubscription. In the [mnist_hogwild](https://github.com/pytorch/examples/tree/main/mnist_hogwild)
+    training example, after avoiding CPU over subscription, you can achieve a 30x
+    performance boost.
+  prefs: []
+  type: TYPE_NORMAL

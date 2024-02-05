@@ -1,0 +1,2131 @@
+- en: Distributed Checkpoint - torch.distributed.checkpoint
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/docs/stable/distributed.checkpoint.html](https://pytorch.org/docs/stable/distributed.checkpoint.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Distributed Checkpoint (DCP) support loading and saving models from multiple
+    ranks in parallel. It handles load-time resharding which enables saving in one
+    cluster topology and loading into another.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'DCP is different than torch.save and torch.load in a few significant ways:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: It produces multiple files per checkpoint, with at least one per rank.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: It operates in place, meaning that the model should allocate its data first
+    and DCP uses that storage instead.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'The entrypoints to load and save a checkpoint are the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Load a distributed `state_dict` in SPMD style.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Each rank will try to read the least amount of data necessary to fullfill the
+    requested state_dict. When loading `ShardedTensor` or `DTensor` instances, each
+    rank only reads data for their local shards.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For each `Stateful` object (having both a `state_dict` and a `load_state_dict`),
+    load will first call `state_dict` before attempting deserialization, followed
+    by `load_state_dict` once the deserialization is complete.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: All tensors in `state_dict` must be allocated on their destination device *prior
+    to* calling this function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: All non-tensor data is loaded using torch.load() and modified in place on state_dict.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: Users must call load_state_dict on the root module to ensure load pos-processing
+    and non-tensor data properly propagates.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**state_dict** (*Dict**[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* *Any**]*) – The state_dict to load. Note that this state
+    dict will updated in place.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**storage_reader** ([*StorageReader*](#torch.distributed.checkpoint.StorageReader
+    "torch.distributed.checkpoint.StorageReader")) – StorageReader used to load data
+    from.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**process_group** (*ProcessGroup*) – ProcessGroup to be used for cross-rank
+    synchronization.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**coordinator_rank** ([*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")) – Rank to use to coordinate the checkpoint. rank0 is used
+    by default.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**no_dist** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")) – If `True`, distributed checkpoint will not load in SPMD
+    style. (Default: `False`)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: None.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: None
+  prefs: []
+  type: TYPE_NORMAL
+- en: Examples
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: load_state_dict uses collectives to coordinate reads across ranks. For NCCL-based
+    process groups, internal tensor representations of objects must be moved to the
+    GPU device before communication takes place. In this case, the device used is
+    given by `torch.cuda.current_device()` and it is the user’s responsibility to
+    ensure that this is set so that each rank has an individual GPU, via `torch.cuda.set_device()`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Save a distributed model in SPMD style.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This function is different from `torch.save()` as it handles `ShardedTensor`
+    , and `DTensor` by having each rank only save their local shards.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For each `Stateful` object (having both a `state_dict` and a `load_state_dict`),
+    save will call `state_dict` before serialization.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: There is no guarantees of Backwards Compatibility across PyTorch versions for
+    saved state_dicts.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: If using the process_group argument, make sure that only its ranks call save_state_dict
+    and that all data in state_dict belong to it.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: When saving checkpoint for FSDP’s ShardingStrategy.HYBRID_SHARD, only one of
+    the shard_group should be calling save_state_dict and the corresponding process
+    group needs to be passed in.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: This function can be used to save a state_dict without having a process group
+    initialized by passing `no_dist=True`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**state_dict** (*Dict**[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* *Any**]*) – The state_dict to save.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**storage_writer** ([*StorageWriter*](#torch.distributed.checkpoint.StorageWriter
+    "torch.distributed.checkpoint.StorageWriter")) – Instance of StorageWrite use
+    to perform writes.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**process_group** (*ProcessGroup*) – ProcessGroup to be used for cross-rank
+    synchronization.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**coordinator_rank** ([*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")) – Rank to use to coordinate the checkpoint. rank0 is used
+    by default.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**no_dist** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")) – If `True`, distributed checkpoint will not save in SPMD
+    style. (Default: `False`)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: Metadata object for the saved checkpoint.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: Metadata
+  prefs: []
+  type: TYPE_NORMAL
+- en: Example
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: save_state_dict uses collectives to coordinate writes across ranks. For NCCL-based
+    process groups, internal tensor representations of objects must be moved to the
+    GPU device before communication takes place. In this case, the device used is
+    given by `torch.cuda.current_device()` and it is the user’s responsibility to
+    ensure that this is set so that each rank has an individual GPU, via `torch.cuda.set_device()`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: This method is deprecated. Please switch to ‘load’.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: This method is deprecated. Please switch to ‘save’.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Metadata*'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In addition to the above entrypoints, Stateful objects, as described below,
+    provide additional customization during saving/loading .. automodule:: torch.distributed.checkpoint.stateful'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: Stateful protocol for objects that can be checkpointed and restored.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: Restore the object’s state from the provided state_dict.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**state_dict** ([*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*Any*](https://docs.python.org/3/library/typing.html#typing.Any
+    "(in Python v3.12)")*]*) – The state dict to restore from'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: Objects should return their state_dict representation as a dictionary. The output
+    of this function will be checkpointed, and later restored in load_state_dict().
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: Because of the inplace nature of restoring a checkpoint, this function is also
+    called during torch.distributed.checkpoint.load.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: The objects state dict
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: Dict
+  prefs: []
+  type: TYPE_NORMAL
+- en: This [example](https://github.com/pytorch/pytorch/blob/main/torch/distributed/checkpoint/examples/fsdp_checkpoint_example.py)
+    shows how to use Pytorch Distributed Checkpoint to save a FSDP model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The following types define the IO interface used during checkpoint:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: Interface used by `load_state_dict` to read from storage.
+  prefs: []
+  type: TYPE_NORMAL
+- en: One StorageReader instance acts as both the coordinator and the follower in
+    a distributed checkpoint. As part of initialization, each instance is told its
+    role.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'A subclass should expected the following sequence of calls by `load_state_dict`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: (all ranks) read_metadata()
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: (all ranks) set_up_storage_reader()
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: (all ranks) prepare_local_plan()
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: (coordinator) prepare_global_plan()
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: (all ranks) read_data()
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: Perform centralized planning of storage loading.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This method is only called on the coordinator instance.
+  prefs: []
+  type: TYPE_NORMAL
+- en: While this method can produce a completely different plan, the preferred way
+    is to store storage specific data in LoadPlan::storage_data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**plans** ([*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")*[*[*LoadPlan*](#torch.distributed.checkpoint.LoadPlan "torch.distributed.checkpoint.planner.LoadPlan")*]*)
+    – A list of `LoadPlan` instances, one for each rank.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: A list of transformed `LoadPlan` after storage global planning
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*List*](https://docs.python.org/3/library/typing.html#typing.List "(in Python
+    v3.12)")[[*LoadPlan*](#torch.distributed.checkpoint.LoadPlan "torch.distributed.checkpoint.planner.LoadPlan")]'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: Perform storage-specific local planning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: While this method can produce a completely different plan, the recommended way
+    is to store storage specific data in LoadPlan::storage_data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**plan** ([*LoadPlan*](#torch.distributed.checkpoint.LoadPlan "torch.distributed.checkpoint.LoadPlan"))
+    – The local plan from the `LoadPlan` in use.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: A transformed `LoadPlan` after storage local planning
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*LoadPlan*](#torch.distributed.checkpoint.LoadPlan "torch.distributed.checkpoint.planner.LoadPlan")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: Read all items from `plan` using `planner` to resolve the data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: A subclass should call `LoadPlanner::load_bytes` to deserialize a BytesIO object
+    into the right place.
+  prefs: []
+  type: TYPE_NORMAL
+- en: A subclass should call `LoadPlanner::resolve_tensor` to get access to the tensors
+    that in should load data into.
+  prefs: []
+  type: TYPE_NORMAL
+- en: It’s the StorageLayer responsibility to properly schedule any cross device copies
+    required.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**plan** ([*LoadPlan*](#torch.distributed.checkpoint.LoadPlan "torch.distributed.checkpoint.LoadPlan"))
+    – The local plan to execute on'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**planner** ([*LoadPlanner*](#torch.distributed.checkpoint.LoadPlanner "torch.distributed.checkpoint.LoadPlanner"))
+    – The planner object to use to resolve items.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: A future that completes once all reads are finished.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*Future*](futures.html#torch.futures.Future "torch.jit.Future")[None]'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: Read the checkpoint metadata.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: The metadata object associated with the checkpoint being loaded.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Metadata*'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: Initialize this instance.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**metadata** (*Metadata*) – The metadata schema to use.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**is_coordinator** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")) – Whether this instance is responsible for coordinating
+    the checkpoint.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: Interface used by `save_state_dict` to write to storage.
+  prefs: []
+  type: TYPE_NORMAL
+- en: One StorageWriter instance acts as both the coordinator and the follower in
+    a distributed checkpoint. As part of initialization, each instance is told its
+    role.
+  prefs: []
+  type: TYPE_NORMAL
+- en: A subclass should expect the following sequence of calls.
+  prefs: []
+  type: TYPE_NORMAL
+- en: (all ranks) set_up_storage_writer()
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: (all ranks) prepare_local_plan()
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: (coordinator) prepare_global_plan()
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: (all ranks) write_data()
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: (coordinator) finish()
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: Write the metadata and marks the current checkpoint as successful.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The actual format/schema used for serializing metadata is an implementation
+    detail. The only requirement is that it’s recoverable in to the same object graph.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**metadata** (*Metadata*) – metadata for the new checkpoint'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**results** ([*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")*[*[*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")*[**WriteResult**]**]*) – A list of WriteResults from all
+    ranks.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: None
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: None
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: Perform centralized planning of storage.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This method is only called on the coordinator instance.
+  prefs: []
+  type: TYPE_NORMAL
+- en: While this method can produce a completely different plan, the preferred way
+    is to store storage specific data in SavePlan::storage_data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**plans** ([*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")*[*[*SavePlan*](#torch.distributed.checkpoint.SavePlan "torch.distributed.checkpoint.planner.SavePlan")*]*)
+    – A list of `SavePlan` instances, one for each rank.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: A list of transformed `SavePlan` after storage global planning
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*List*](https://docs.python.org/3/library/typing.html#typing.List "(in Python
+    v3.12)")[[*SavePlan*](#torch.distributed.checkpoint.SavePlan "torch.distributed.checkpoint.planner.SavePlan")]'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: Perform storage-specific local planning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: While this method can produce a completely different plan, the recommended way
+    is to store storage specific data in SavePlan::storage_data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**plan** ([*SavePlan*](#torch.distributed.checkpoint.SavePlan "torch.distributed.checkpoint.SavePlan"))
+    – The local plan from the `SavePlanner` in use.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: A transformed `SavePlan` after storage local planning
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*SavePlan*](#torch.distributed.checkpoint.SavePlan "torch.distributed.checkpoint.planner.SavePlan")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: Initialize this instance.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**is_coordinator** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")) – Whether this instance is responsible for coordinating
+    the checkpoint.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: Write all items from `plan` using `planner` to resolve the data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: A subclass should call `SavePlanner::resolve_data` on each item from the plan
+    to get access to the underlying object to write.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Subclasses should lazily call resolve_data as it can allocate memory. In case
+    of tensors, make following assumptions:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: They might be on any device, including not matching the one on `WriteItem::tensor_data`
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: They might be views or not contiguous. Only the projection needs to be saved.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**plan** ([*SavePlan*](#torch.distributed.checkpoint.SavePlan "torch.distributed.checkpoint.SavePlan"))
+    – The save plan to execute.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**planner** ([*SavePlanner*](#torch.distributed.checkpoint.SavePlanner "torch.distributed.checkpoint.SavePlanner"))
+    – Planner object to be used to resolve items to data.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: A future that completes to a list of WriteResult
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*Future*](futures.html#torch.futures.Future "torch.jit.Future")[[*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")[*WriteResult*]]'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The following types define the planner interface used during checkpoint:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: Abstract class defining the protocol used by load_state_dict to plan the load
+    process.
+  prefs: []
+  type: TYPE_NORMAL
+- en: LoadPlanner are stateful objects that can be used to customize the whole load
+    process.
+  prefs: []
+  type: TYPE_NORMAL
+- en: LoadPlanner acts as an access proxy to the state_dict, so any transformation
+    done to it will be visible to the whole process.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'A planner subclass can expect the following sequence of calls during load_state_dict:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: set_up_planner - called on all ranks.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Signals the start of loading a checkpoint.
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: create_local_plan - called on all ranks.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Process the state_dict and produces a LoadPlan that will be sent for global
+    planning.
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: create_global_plan - called on the coordinator rank only.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Takes the LoadPlan from all ranks and make any global decision.
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: load_bytes - called multiple times on each rank
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: This is called once per non-tensor value in state_dict.
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: resolve_tensor and commit_tensor - called multiple times on each rank
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: They are called in pair for each Tensor value in state_dict.
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: Users are recommended to extend DefaultLoadPlanner instead of this interface
+    directly as most changes can be expressed by changes in a single method.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'There are two usual patterns of extension:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Rewriting state_dict. This is the simplest way to extend the load process as
+    it doesn’t requite understanding the intrincacies of how LoadPlan works. We need
+    to keep a reference to the original state_dict as load happens in place so we
+    need to be able to perform it in place
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE26]'
+  prefs: []
+  type: TYPE_PRE
+- en: Modifying resolve_tensor and commit_tensor to handle load time transformation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE27]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE28]'
+  prefs: []
+  type: TYPE_PRE
+- en: Call once the StorageReader finished loading data into `tensor`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The provided tensor is the same one returned by the call to `resolve_tensor`.
+    This method is only needed if this LoadPlanner needs to post process `tensor`
+    prior to copying it back to the one in the state_dict.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The contents of tensor will follow its device synchronization model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE29]'
+  prefs: []
+  type: TYPE_PRE
+- en: Compute the global load plan and return plans for each rank.
+  prefs: []
+  type: TYPE_NORMAL
+- en: . N.B. This is called on the coordinator rank only
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*List*](https://docs.python.org/3/library/typing.html#typing.List "(in Python
+    v3.12)")[[*LoadPlan*](#torch.distributed.checkpoint.LoadPlan "torch.distributed.checkpoint.planner.LoadPlan")]'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE30]'
+  prefs: []
+  type: TYPE_PRE
+- en: Create a LoadPlan based on state_dict and metadata provided by set_up_planner.
+  prefs: []
+  type: TYPE_NORMAL
+- en: . N.B. This is called on every rank.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*LoadPlan*](#torch.distributed.checkpoint.LoadPlan "torch.distributed.checkpoint.planner.LoadPlan")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE31]'
+  prefs: []
+  type: TYPE_PRE
+- en: Accept the plan from coordinator and return final LoadPlan.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*LoadPlan*](#torch.distributed.checkpoint.LoadPlan "torch.distributed.checkpoint.planner.LoadPlan")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE32]'
+  prefs: []
+  type: TYPE_PRE
+- en: Load the item described by `read_item``and ``value`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This method is expected to modify in-place the underlying state_dict.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The contents of `value` are defined by the SavePlanner used to produce the checkpoint
+    being loaded.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE33]'
+  prefs: []
+  type: TYPE_PRE
+- en: Return the tensor described by `read_item` to be used by the StorageReader to
+    load read_item.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The tensor should alias with one on the underlying state_dict as StorageReader
+    will replace its contents. If, for any reason, that’s not possible, the planner
+    can use the `commit_tensor` method to copy the data back to the one in state_dict.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*Tensor*](tensors.html#torch.Tensor "torch.Tensor")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE34]'
+  prefs: []
+  type: TYPE_PRE
+- en: Initialize this instance to load data into `state_dict`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: . N.B. This is called on every rank.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE35]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE36]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE37]'
+  prefs: []
+  type: TYPE_PRE
+- en: Abstract class defining the protocol used by save_state_dict to plan the save
+    process.
+  prefs: []
+  type: TYPE_NORMAL
+- en: SavePlanners are stateful objects that can be used to customize the whole save
+    process.
+  prefs: []
+  type: TYPE_NORMAL
+- en: SavePlanner acts as an access proxy to the state_dict, so any transformation
+    done to it will be visible to the whole process.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'A planner subclass can expect the following sequence of calls during save_state_dict:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: set_up_planner - called on all ranks.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Signals the start of a checkpoint save.
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: create_local_plan - called on all ranks.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Process the state_dict and produces a SavePlan that will be sent for global
+    planning.
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: create_global_plan - called on the coordinator rank only.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Takes the SavePlan from all ranks and make any global decision.
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: finish_plan - called on all ranks.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: This gives each rank a chance to adjust to global planning decisions.
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: resolve_data - called multiple times on each rank
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Lookups a value on the state_dict for the storage layer to write.
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: Users are recommended to extend DefaultSavePlanner instead of this interface
+    directly as most changes can be expressed by changes in a single method.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'There are 3 usual patterns of extension:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Rewriting state_dict. This is the simplest way to extend the save process as
+    it doesn’t requite understanding the intrincacies of how SavePlan works:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE38]'
+  prefs: []
+  type: TYPE_PRE
+- en: Modifying local plan and lookup in tandem. This is useful when fine control
+    of how data is persisted
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE39]'
+  prefs: []
+  type: TYPE_PRE
+- en: Using the global planning step to make central decisions that can’t be made
+    individually by each rank
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE40]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Finally, some planners need to save additional metadata in the checkpoint,
+    this is accomplished by having each rank contribute their data items in the local
+    plan and the global planner aggregate them:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE41]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE42]'
+  prefs: []
+  type: TYPE_PRE
+- en: Compute the global checkpoint plan and return the local plan of each rank.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This is called on the coordinator rank only.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple "(in Python
+    v3.12)")[[*List*](https://docs.python.org/3/library/typing.html#typing.List "(in
+    Python v3.12)")[[*SavePlan*](#torch.distributed.checkpoint.SavePlan "torch.distributed.checkpoint.planner.SavePlan")],
+    *Metadata*]'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE43]'
+  prefs: []
+  type: TYPE_PRE
+- en: Compute the save plan for the current rank.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This will be aggregated and passed to create_global_plan. Planner specific data
+    can be passed through SavePlan::planner_data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This is called on all ranks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*SavePlan*](#torch.distributed.checkpoint.SavePlan "torch.distributed.checkpoint.planner.SavePlan")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE44]'
+  prefs: []
+  type: TYPE_PRE
+- en: Merge the plan created by create_local_plan and the result of create_global_plan.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This is called on all ranks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*SavePlan*](#torch.distributed.checkpoint.SavePlan "torch.distributed.checkpoint.planner.SavePlan")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE45]'
+  prefs: []
+  type: TYPE_PRE
+- en: Transform and prepare `write_item` from `state_dict` for storage, ensuring idempotency
+    and thread-safety.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Lookup the object associated with `write_item` in `state_dict` and apply any
+    transformation (such as serialization) prior to the storage layer consuming it.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Called on each rank multiple times, at least once per WriteItem in the final
+    SavePlan.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This method should be idempotent and thread-save. StorageWriter implementations
+    are free to call it as frequently as they need.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Any transformation that allocates memory should be lazily done when his method
+    is called in order to reduce peak memory required by checkpointing.
+  prefs: []
+  type: TYPE_NORMAL
+- en: When returning tensors, they can be on any device or format, they can be views
+    too. It’s the storage layer responsibility to figure out how to save them.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*Union*](https://docs.python.org/3/library/typing.html#typing.Union "(in Python
+    v3.12)")[[*Tensor*](tensors.html#torch.Tensor "torch.Tensor"), *BytesIO*]'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE46]'
+  prefs: []
+  type: TYPE_PRE
+- en: Initialize this planner to save `state_dict`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Implementations should save those values as they won’t be provided lated in
+    the save process.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This is called on all ranks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE47]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE48]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'We provide a filesystem based storage layer:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE49]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE50]'
+  prefs: []
+  type: TYPE_PRE
+- en: Basic implementation of StorageWriter using file IO.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'This implementation makes the following assumptions and simplifications:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The checkpoint path is an empty or non-existing directory.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: File creation is atomic
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The checkpoint consist of one file per write request plus a .metadata file with
+    the serialized metadata.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We provide default implementations of LoadPlanner and SavePlanner that can handle
+    all of torch.distributed constructs such as FSDP, DDP, ShardedTensor and DistributedTensor.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE51]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE52]'
+  prefs: []
+  type: TYPE_PRE
+- en: Extension from the planner interface to make it easy to extend the default planner.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*Any*](https://docs.python.org/3/library/typing.html#typing.Any "(in Python
+    v3.12)")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE53]'
+  prefs: []
+  type: TYPE_PRE
+- en: Extension from the planner interface to make it easy to extend the default planner.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE54]'
+  prefs: []
+  type: TYPE_PRE
+- en: DefaultLoadPlanner that adds multiple features on top of LoadPlanner.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In particular it adds the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'flatten_state_dict: Handle state_dict with nested dicts flatten_sharded_tensors:
+    For FSDP in 2D parallel mode'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE55]'
+  prefs: []
+  type: TYPE_PRE
+- en: Extension from the planner interface to make it easy to extend the default planner.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*Tensor*](tensors.html#torch.Tensor "torch.Tensor")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE56]'
+  prefs: []
+  type: TYPE_PRE
+- en: Extension from the planner interface to make it easy to extend the default planner.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We provide a set of APIs to help users do get and set state_dict easily. This
+    is an experimental feature and is subject to change.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE57]'
+  prefs: []
+  type: TYPE_PRE
+- en: Return the model state_dict and optimizers state_dict.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`get_state_dict` can process any module that is parallelized by PyTorch FSDP/fully_shard,
+    DDP/replicate, tensor_parallel/parallelize_module, and any combination of these
+    parallelisms. The main functions of `get_state_dict` are: 1.) returning a model
+    and optimizer state_dict that can be resharded with a different number of trainers
+    and/or different parallelisms. 2.) hiding the parallelism-specific state_dict
+    APIs. Users don’t have to call these APIs. 3.) sanity checking the result state_dict.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The keys of the result state dictionary are the canonical FQNs (Fully Qualified
+    Names). A canonical FQN refers to the FQN based on a parameter’s position in an
+    nn.Module hierarchy. More specifically, a canonical FQN to a parameter is the
+    FQN returned by `module.named_parameters()` or `module.named_buffers()` when the
+    module is not distributed by any parallelisms. Since the optimizer internally
+    uses parameter IDs to represent a parameter, there will be a conversion from the
+    parameter IDs to the canonical FQNs when calling this API.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`get_state_dict` can also process a module that is not parallelized. In such
+    a case, `get_state_dict` only performs one function – converting the optimizer
+    parameter IDs to the canonical FQNs.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Example
+  prefs: []
+  type: TYPE_NORMAL
+- en: import torch from torch.distributed.fsdp import FullyShardedDataParallel as
+    FSDP from torch.nn.parallel import DistributedDataParallel as DDP from torch.distributed.checkpoint.state_dict
+    import get_state_dict
+  prefs: []
+  type: TYPE_NORMAL
+- en: fsdp_model = FSDP(copy.deepcopy(model)) fsdp_optim = torch.optim.Adam(model.parameters(),
+    lr=1e-3) ddp_model = DDP(copy.deepcopy(model)) ddp_optim = torch.optim.Adam(model.parameters(),
+    lr=1e-3)
+  prefs: []
+  type: TYPE_NORMAL
+- en: ddp_state_dict, ddp_optim_state_dict = get_state_dict(ddp_model, ddp_optim)
+    fsdp_state_dict, fsdp_optim_state_dict = get_state_dict(fsdp_model, fsdp_optim)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'if we simply call ddp_model.state_dict() and fsdp_model.state_dict(), # the
+    asserts will fail. assert ddp_state_dict == fsdp_state_dict assert ddp_optim_state
+    == fsdp_optim_state_dict'
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**model** ([*nn.Module*](generated/torch.nn.Module.html#torch.nn.Module "torch.nn.Module"))
+    – the nn.Module to the model.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**optimizers** (*Union**[**None**,* [*Optimizer*](optim.html#torch.optim.Optimizer
+    "torch.optim.Optimizer")*,* *Iterable**[*[*Optimizer*](optim.html#torch.optim.Optimizer
+    "torch.optim.Optimizer")*]**]*) – The optimizers that are used to optimize `model`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**submodules** ([*Optional*](https://docs.python.org/3/library/typing.html#typing.Optional
+    "(in Python v3.12)")*[*[*Set*](https://docs.python.org/3/library/typing.html#typing.Set
+    "(in Python v3.12)")*[*[*Module*](generated/torch.nn.Module.html#torch.nn.Module
+    "torch.nn.modules.module.Module")*]**]*) – Optional[Set[nn.Module]]: only return
+    the model parameters that belong to the submodules.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**options** ([*StateDictOptions*](#torch.distributed.checkpoint.state_dict.StateDictOptions
+    "torch.distributed.checkpoint.state_dict.StateDictOptions")) – the options to
+    control how model state_dict and optimizer state_dict should be returned. See
+    StateDictOptions for the details.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`Tuple` that contain model state_dict and optimizer state_dict.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple "(in Python
+    v3.12)")[[*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict "(in
+    Python v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str "(in
+    Python v3.12)"), [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)"), [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")[[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")]], [*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(in Python v3.12)")[[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")]], [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)"), [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)"), [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")[[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")]], [*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(in Python v3.12)")[[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")]], [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)"), ValueType]]]]], [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)"), [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[[*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)"), [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)"), [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")[[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")]], [*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(in Python v3.12)")[[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")]], [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)"), [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)"), [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")[[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")]], [*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(in Python v3.12)")[[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")]], [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)"), ValueType]]]]], [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")[[*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)"), [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)"), [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")[[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")]], [*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(in Python v3.12)")[[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")]], [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)"), [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)"), [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")[[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")]], [*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(in Python v3.12)")[[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")]], [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)"), ValueType]]]]]]]]]'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE58]'
+  prefs: []
+  type: TYPE_PRE
+- en: Return the model state_dict of `model`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: See `get_state_dict` for the detail usage.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**model** ([*nn.Module*](generated/torch.nn.Module.html#torch.nn.Module "torch.nn.Module"))
+    – the nn.Module to the model.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**submodules** ([*Optional*](https://docs.python.org/3/library/typing.html#typing.Optional
+    "(in Python v3.12)")*[*[*Set*](https://docs.python.org/3/library/typing.html#typing.Set
+    "(in Python v3.12)")*[*[*Module*](generated/torch.nn.Module.html#torch.nn.Module
+    "torch.nn.modules.module.Module")*]**]*) – Optional[Set[nn.Module]]: only return
+    the model parameters that belong to the submodules.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**options** ([*StateDictOptions*](#torch.distributed.checkpoint.state_dict.StateDictOptions
+    "torch.distributed.checkpoint.state_dict.StateDictOptions")) – the options to
+    control how model state_dict and optimizer state_dict should be returned. See
+    StateDictOptions for the details.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: The state_dict for `model`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict "(in Python
+    v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str "(in Python
+    v3.12)"), [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)"), [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")[[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")]], [*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(in Python v3.12)")[[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")]], [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)"), [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)"), [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")[[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")]], [*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(in Python v3.12)")[[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")]], [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)"), ValueType]]]]]'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE59]'
+  prefs: []
+  type: TYPE_PRE
+- en: Return the combined state_dict for optimizers.
+  prefs: []
+  type: TYPE_NORMAL
+- en: See `get_state_dict` for the detail usage.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**model** ([*nn.Module*](generated/torch.nn.Module.html#torch.nn.Module "torch.nn.Module"))
+    – the nn.Module to the model.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**optimizers** (*Union**[**None**,* [*Optimizer*](optim.html#torch.optim.Optimizer
+    "torch.optim.Optimizer")*,* *Iterable**[*[*Optimizer*](optim.html#torch.optim.Optimizer
+    "torch.optim.Optimizer")*]**]*) – The optimizers that are used to optimize `model`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**submodules** ([*Optional*](https://docs.python.org/3/library/typing.html#typing.Optional
+    "(in Python v3.12)")*[*[*Set*](https://docs.python.org/3/library/typing.html#typing.Set
+    "(in Python v3.12)")*[*[*Module*](generated/torch.nn.Module.html#torch.nn.Module
+    "torch.nn.modules.module.Module")*]**]*) – Optional[Set[nn.Module]]: only return
+    the model parameters that belong to the submodules.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**options** ([*StateDictOptions*](#torch.distributed.checkpoint.state_dict.StateDictOptions
+    "torch.distributed.checkpoint.state_dict.StateDictOptions")) – the options to
+    control how model state_dict and optimizer state_dict should be returned. See
+    StateDictOptions for the details.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: The state_dict for `optimizers`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict "(in Python
+    v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str "(in Python
+    v3.12)"), [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[[*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)"), [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)"), [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")[[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")]], [*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(in Python v3.12)")[[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")]], [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)"), [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)"), [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")[[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")]], [*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(in Python v3.12)")[[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")]], [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)"), ValueType]]]]], [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")[[*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)"), [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)"), [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")[[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")]], [*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(in Python v3.12)")[[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")]], [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)"), [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)"), [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")[[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")]], [*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(in Python v3.12)")[[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")[*DTensor*, *ShardedTensor*, [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor"), [int](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)"), [float](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")]], [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)"), ValueType]]]]]]]]'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE60]'
+  prefs: []
+  type: TYPE_PRE
+- en: Load the model state_dict and optimizers state_dict.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The counterpart of `get_state_dict` to set the state_dict to the model and
+    optimizers. The given `model_state_dict` and `optim_state_dict` do not have to
+    be returned by `get_state_dict` but must meet the following requirements: 1) all
+    FQNs are canonical FQNs as defined in `get_state_dict`, 2) if a tensor is sharded,
+    it must be either a ShardedTensor or DTensor, 3) optimizer state_dict cannot contain
+    the parameter IDs; the keys should be the canonical FQNs.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**model** ([*nn.Module*](generated/torch.nn.Module.html#torch.nn.Module "torch.nn.Module"))
+    – the nn.Module to the model.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**optimizers** (*Union**[*[*Optimizer*](optim.html#torch.optim.Optimizer "torch.optim.Optimizer")*,*
+    *Iterable**[*[*Optimizer*](optim.html#torch.optim.Optimizer "torch.optim.Optimizer")*]**]*)
+    – The optimizers that are used to optimize `model`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**model_state_dict** ([*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[*[*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")*[*[*Module*](generated/torch.nn.Module.html#torch.nn.Module
+    "torch.nn.modules.module.Module")*,* [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**]**,* [*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**]**,* [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**]**,* [*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**]**,* [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* *ValueType**]**]**]**]**]**]**,* [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**]**,* [*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**]**,* [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**]**,* [*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**]**,* [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* *ValueType**]**]**]**]**]**]*) – (Union[Dict[nn.Module,
+    Dict[str, ValueType]], Dict[str, ValueType]]): the model state_dict to load. If
+    the key of the `model_state_dict` is nn.Module, the key is a submodule of `model`
+    and the value should be the state_dict of the submodule. When loading the state_dict,
+    the prefix of the submodule will be append to the state_dict.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**optim_state_dict** ([*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[*[*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**]**,* [*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**]**,* [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**]**,* [*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**]**,* [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* *ValueType**]**]**]**]**]**,* [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")*[*[*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**]**,* [*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**]**,* [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**]**,* [*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**]**,* [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* *ValueType**]**]**]**]**]**]**]**]*) – OptimizerStateType:
+    the optimizer state_dict to load.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**options** ([*StateDictOptions*](#torch.distributed.checkpoint.state_dict.StateDictOptions
+    "torch.distributed.checkpoint.state_dict.StateDictOptions")) – the options to
+    control how model state_dict and optimizer state_dict should be loaded. See StateDictOptions
+    for the details.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**missing_keys** is a list of str containing the missing keys of the model
+    state_dict.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**unexpected_keys** is a list of str containing the unexpected keys of the
+    model state_dict.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`NamedTuple` with `missing_keys` and `unexpected_keys` fields'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE61]'
+  prefs: []
+  type: TYPE_PRE
+- en: Load the model state_dict.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The counterpart of `get_model_state_dict` to set the state_dict to the model.
+    See `set_state_dict` for the detail usage.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**model** ([*nn.Module*](generated/torch.nn.Module.html#torch.nn.Module "torch.nn.Module"))
+    – the nn.Module to the model.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**model_state_dict** ([*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[*[*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")*[*[*Module*](generated/torch.nn.Module.html#torch.nn.Module
+    "torch.nn.modules.module.Module")*,* [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**]**,* [*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**]**,* [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**]**,* [*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**]**,* [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* *ValueType**]**]**]**]**]**]**,* [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**]**,* [*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**]**,* [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**]**,* [*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**]**,* [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* *ValueType**]**]**]**]**]**]*) – (Union[Dict[nn.Module,
+    Dict[str, ValueType]], Dict[str, ValueType]]): the model state_dict to load. If
+    the key of the `model_state_dict` is nn.Module, the key is a submodule of `model`
+    and the value should be the state_dict of the submodule. When loading the state_dict,
+    the prefix of the submodule will be append to the state_dict.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**options** ([*StateDictOptions*](#torch.distributed.checkpoint.state_dict.StateDictOptions
+    "torch.distributed.checkpoint.state_dict.StateDictOptions")) – the options to
+    control how model state_dict and optimizer state_dict should be loaded. See StateDictOptions
+    for the details.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**missing_keys** is a list of str containing the missing keys'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**unexpected_keys** is a list of str containing the unexpected keys'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`NamedTuple` with `missing_keys` and `unexpected_keys` fields'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE62]'
+  prefs: []
+  type: TYPE_PRE
+- en: Load the optimizers state_dict.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The counterpart of `get_optimizer_state_dict` to set the state_dict to the optimizers.
+    See `set_state_dict` for the detail usage.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**model** ([*nn.Module*](generated/torch.nn.Module.html#torch.nn.Module "torch.nn.Module"))
+    – the nn.Module to the model.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**optimizers** (*Union**[*[*Optimizer*](optim.html#torch.optim.Optimizer "torch.optim.Optimizer")*,*
+    *Iterable**[*[*Optimizer*](optim.html#torch.optim.Optimizer "torch.optim.Optimizer")*]**]*)
+    – The optimizers that are used to optimize `model`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**optim_state_dict** ([*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[*[*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**]**,* [*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**]**,* [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**]**,* [*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**]**,* [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* *ValueType**]**]**]**]**]**,* [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")*[*[*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**]**,* [*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**]**,* [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**]**,* [*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**DTensor**,* *ShardedTensor**,* [*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")*,* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**]**,* [*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* *ValueType**]**]**]**]**]**]**]**]*) – OptimizerStateType:
+    the optimizer state_dict to load.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**options** ([*StateDictOptions*](#torch.distributed.checkpoint.state_dict.StateDictOptions
+    "torch.distributed.checkpoint.state_dict.StateDictOptions")) – the options to
+    control how model state_dict and optimizer state_dict should be loaded. See StateDictOptions
+    for the details.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: None
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: None
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE63]'
+  prefs: []
+  type: TYPE_PRE
+- en: This dataclass specifies how get_state_dict/set_state_dict will work.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`full_state_dict`: if this is set to True, all the tensors in the returned
+    state_dict will be gathered. No ShardedTensor and DTensor will be in the returned
+    state_dict.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`cpu_offload`: offload all the tensors to cpu. To prevent CPU OOM, if `full_state_dict`
+    is also true, then only the rank0 will get the state_dict and all other ranks
+    will get empty state_dict.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`ignore_frozen_params`: if the value is True, the returned state_dict won’t
+    contain any frozen parameters – the `requires_grad` is False. The default value
+    is False.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`keep_submodule_prefixes`: when `submodules` is not None, this option indicates
+    whether to keep the submodule prefixes from the state_dict keys. or example, if
+    the submodule is `module.pretrain` and the full FQN of the parameter is `pretrain.layer1.weight`
+    of the param. When this option is True, the parameter’s key in the returned state_dict
+    will be `pretrain.layer1.weight`. If the options is False, the key will be `layer1.weight`.
+    Note that if `keep_submodule_prefixes` is False, there may be conflicted FQNs,
+    hence there should be only one submodule in `submodules`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`strict`: the `strict` option when `set_state_dict` calls model.load_state_dict().
+    The default value is False.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL

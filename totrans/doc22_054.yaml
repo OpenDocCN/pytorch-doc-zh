@@ -1,0 +1,201 @@
+- en: torch.compiler
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/docs/stable/torch.compiler.html](https://pytorch.org/docs/stable/torch.compiler.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: '`torch.compiler` is a namespace through which some of the internal compiler
+    methods are surfaced for user consumption. The main function and the feature in
+    this namespace is `torch.compile`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`torch.compile` is a PyTorch function introduced in PyTorch 2.x that aims to
+    solve the problem of accurate graph capturing in PyTorch and ultimately enable
+    software engineers to run their PyTorch programs faster. `torch.compile` is written
+    in Python and it marks the transition of PyTorch from C++ to Python.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`torch.compile` leverages the following underlying technologies:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**TorchDynamo (torch._dynamo)** is an internal API that uses a CPython feature
+    called the Frame Evaluation API to safely capture PyTorch graphs. Methods that
+    are available externally for PyTorch users are surfaced through the `torch.compiler`
+    namespace.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**TorchInductor** is the default `torch.compile` deep learning compiler that
+    generates fast code for multiple accelerators and backends. You need to use a
+    backend compiler to make speedups through `torch.compile` possible. For NVIDIA
+    and AMD GPUs, it leverages OpenAI Triton as the key building block.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**AOT Autograd** captures not only the user-level code, but also backpropagation,
+    which results in capturing the backwards pass “ahead-of-time”. This enables acceleration
+    of both forwards and backwards pass using TorchInductor.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: In some cases, the terms `torch.compile`, TorchDynamo, `torch.compiler` might
+    be used interchangeably in this documentation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: As mentioned above, to run your workflows faster, `torch.compile` through TorchDynamo
+    requires a backend that converts the captured graphs into a fast machine code.
+    Different backends can result in various optimization gains. The default backend
+    is called TorchInductor, also known as *inductor*, TorchDynamo has a list of supported
+    backends developed by our partners, which can be see by running `torch.compiler.list_backends()`
+    each of which with its optional dependencies.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Some of the most commonly used backends include:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Training & inference backends**'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Backend | Description |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `torch.compile(m, backend="inductor")` | Uses the TorchInductor backend.
+    [Read more](https://dev-discuss.pytorch.org/t/torchinductor-a-pytorch-native-compiler-with-define-by-run-ir-and-symbolic-shapes/747)
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `torch.compile(m, backend="cudagraphs")` | CUDA graphs with AOT Autograd.
+    [Read more](https://github.com/pytorch/torchdynamo/pull/757) |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `torch.compile(m, backend="ipex")` | Uses IPEX on CPU. [Read more](https://github.com/intel/intel-extension-for-pytorch)
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `torch.compile(m, backend="onnxrt")` | Uses ONNX Runtime for training on
+    CPU/GPU. [Read more](onnx_dynamo_onnxruntime_backend.html) |'
+  prefs: []
+  type: TYPE_TB
+- en: '**Inference-only backends**'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Backend | Description |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `torch.compile(m, backend="tensorrt")` | Uses Torch-TensorRT for inference
+    optimizations. Requires `import torch_tensorrt` in the calling script to register
+    backend. [Read more](https://github.com/pytorch/TensorRT) |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `torch.compile(m, backend="ipex")` | Uses IPEX for inference on CPU. [Read
+    more](https://github.com/intel/intel-extension-for-pytorch) |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `torch.compile(m, backend="tvm")` | Uses Apache TVM for inference optimizations.
+    [Read more](https://tvm.apache.org/) |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `torch.compile(m, backend="openvino")` | Uses OpenVINO for inference optimizations.
+    [Read more](https://docs.openvino.ai/2023.1/pytorch_2_0_torch_compile.html) |'
+  prefs: []
+  type: TYPE_TB
+- en: Read More
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Getting Started for PyTorch Users
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Getting Started](torch.compiler_get_started.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[torch.compiler API reference](torch.compiler_api.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[TorchDynamo APIs for fine-grained tracing](torch.compiler_fine_grain_apis.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[AOTInductor: Ahead-Of-Time Compilation for Torch.Export-ed Models](torch.compiler_aot_inductor.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[TorchInductor GPU Profiling](torch.compiler_inductor_profiling.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Profiling to understand torch.compile performance](torch.compiler_profiling_torch_compile.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Frequently Asked Questions](torch.compiler_faq.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PyTorch 2.0 Troubleshooting](torch.compiler_troubleshooting.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PyTorch 2.0 Performance Dashboard](torch.compiler_performance_dashboard.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Deep Dive for PyTorch Developers
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[TorchDynamo Deep Dive](torch.compiler_deepdive.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Guards Overview](torch.compiler_guards_overview.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Dynamic shapes](torch.compiler_dynamic_shapes.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PyTorch 2.0 NNModule Support](torch.compiler_nn_module.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Best Practices for Backends](torch.compiler_best_practices_for_backends.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[CUDAGraph Trees](torch.compiler_cudagraph_trees.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Fake tensor](torch.compiler_fake_tensor.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: HowTo for PyTorch Backend Vendors
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Custom Backends](torch.compiler_custom_backends.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Writing Graph Transformations on ATen IR](torch.compiler_transformations.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[IRs](torch.compiler_ir.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL

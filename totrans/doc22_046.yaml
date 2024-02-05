@@ -1,0 +1,3330 @@
+- en: Distributed communication package - torch.distributed
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/docs/stable/distributed.html](https://pytorch.org/docs/stable/distributed.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Please refer to [PyTorch Distributed Overview](https://pytorch.org/tutorials/beginner/dist_overview.html)
+    for a brief introduction to all features related to distributed training.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '## Backends'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`torch.distributed` supports three built-in backends, each with different capabilities.
+    The table below shows which functions are available for use with CPU / CUDA tensors.
+    MPI supports CUDA only if the implementation used to build PyTorch supports it.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Backend | `gloo` | `mpi` | `nccl` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Device | CPU | GPU | CPU | GPU | CPU | GPU |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- | --- | --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| send | ✓ | ✘ | ✓ | ? | ✘ | ✓ |'
+  prefs: []
+  type: TYPE_TB
+- en: '| recv | ✓ | ✘ | ✓ | ? | ✘ | ✓ |'
+  prefs: []
+  type: TYPE_TB
+- en: '| broadcast | ✓ | ✓ | ✓ | ? | ✘ | ✓ |'
+  prefs: []
+  type: TYPE_TB
+- en: '| all_reduce | ✓ | ✓ | ✓ | ? | ✘ | ✓ |'
+  prefs: []
+  type: TYPE_TB
+- en: '| reduce | ✓ | ✘ | ✓ | ? | ✘ | ✓ |'
+  prefs: []
+  type: TYPE_TB
+- en: '| all_gather | ✓ | ✘ | ✓ | ? | ✘ | ✓ |'
+  prefs: []
+  type: TYPE_TB
+- en: '| gather | ✓ | ✘ | ✓ | ? | ✘ | ✓ |'
+  prefs: []
+  type: TYPE_TB
+- en: '| scatter | ✓ | ✘ | ✓ | ? | ✘ | ✓ |'
+  prefs: []
+  type: TYPE_TB
+- en: '| reduce_scatter | ✘ | ✘ | ✘ | ✘ | ✘ | ✓ |'
+  prefs: []
+  type: TYPE_TB
+- en: '| all_to_all | ✘ | ✘ | ✓ | ? | ✘ | ✓ |'
+  prefs: []
+  type: TYPE_TB
+- en: '| barrier | ✓ | ✘ | ✓ | ? | ✘ | ✓ |'
+  prefs: []
+  type: TYPE_TB
+- en: Backends that come with PyTorch[](#backends-that-come-with-pytorch "Permalink
+    to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: PyTorch distributed package supports Linux (stable), MacOS (stable), and Windows
+    (prototype). By default for Linux, the Gloo and NCCL backends are built and included
+    in PyTorch distributed (NCCL only when building with CUDA). MPI is an optional
+    backend that can only be included if you build PyTorch from source. (e.g. building
+    PyTorch on a host that has MPI installed.)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'As of PyTorch v1.8, Windows supports all collective communications backend
+    but NCCL, If the init_method argument of [`init_process_group()`](#torch.distributed.init_process_group
+    "torch.distributed.init_process_group") points to a file it must adhere to the
+    following schema:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Local file system, `init_method="file:///d:/tmp/some_file"`
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Shared file system, `init_method="file://////{machine_name}/{share_folder_name}/some_file"`
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Same as on Linux platform, you can enable TcpStore by setting environment variables,
+    MASTER_ADDR and MASTER_PORT.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Which backend to use?
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'In the past, we were often asked: “which backend should I use?”.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Rule of thumb
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Use the NCCL backend for distributed **GPU** training
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Use the Gloo backend for distributed **CPU** training.
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: GPU hosts with InfiniBand interconnect
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Use NCCL, since it’s the only backend that currently supports InfiniBand and
+    GPUDirect.
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: GPU hosts with Ethernet interconnect
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Use NCCL, since it currently provides the best distributed GPU training performance,
+    especially for multiprocess single-node or multi-node distributed training. If
+    you encounter any problem with NCCL, use Gloo as the fallback option. (Note that
+    Gloo currently runs slower than NCCL for GPUs.)
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: CPU hosts with InfiniBand interconnect
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: If your InfiniBand has enabled IP over IB, use Gloo, otherwise, use MPI instead.
+    We are planning on adding InfiniBand support for Gloo in the upcoming releases.
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: CPU hosts with Ethernet interconnect
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Use Gloo, unless you have specific reasons to use MPI.
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Common environment variables[](#common-environment-variables "Permalink to
+    this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Choosing the network interface to use[](#choosing-the-network-interface-to-use
+    "Permalink to this heading")
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'By default, both the NCCL and Gloo backends will try to find the right network
+    interface to use. If the automatically detected interface is not correct, you
+    can override it using the following environment variables (applicable to the respective
+    backend):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**NCCL_SOCKET_IFNAME**, for example `export NCCL_SOCKET_IFNAME=eth0`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**GLOO_SOCKET_IFNAME**, for example `export GLOO_SOCKET_IFNAME=eth0`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'If you’re using the Gloo backend, you can specify multiple interfaces by separating
+    them by a comma, like this: `export GLOO_SOCKET_IFNAME=eth0,eth1,eth2,eth3`. The
+    backend will dispatch operations in a round-robin fashion across these interfaces.
+    It is imperative that all processes specify the same number of interfaces in this
+    variable.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Other NCCL environment variables[](#other-nccl-environment-variables "Permalink
+    to this heading")
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: '**Debugging** - in case of NCCL failure, you can set `NCCL_DEBUG=INFO` to print
+    an explicit warning message as well as basic NCCL initialization information.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: You may also use `NCCL_DEBUG_SUBSYS` to get more details about a specific aspect
+    of NCCL. For example, `NCCL_DEBUG_SUBSYS=COLL` would print logs of collective
+    calls, which may be helpful when debugging hangs, especially those caused by collective
+    type or message size mismatch. In case of topology detection failure, it would
+    be helpful to set `NCCL_DEBUG_SUBSYS=GRAPH` to inspect the detailed detection
+    result and save as reference if further help from NCCL team is needed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Performance tuning** - NCCL performs automatic tuning based on its topology
+    detection to save users’ tuning effort. On some socket-based systems, users may
+    still try tuning `NCCL_SOCKET_NTHREADS` and `NCCL_NSOCKS_PERTHREAD` to increase
+    socket network bandwidth. These two environment variables have been pre-tuned
+    by NCCL for some cloud providers, such as AWS or GCP.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: For a full list of NCCL environment variables, please refer to [NVIDIA NCCL’s
+    official documentation](https://docs.nvidia.com/deeplearning/sdk/nccl-developer-guide/docs/env.html)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '## Basics'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The torch.distributed package provides PyTorch support and communication primitives
+    for multiprocess parallelism across several computation nodes running on one or
+    more machines. The class [`torch.nn.parallel.DistributedDataParallel()`](generated/torch.nn.parallel.DistributedDataParallel.html#torch.nn.parallel.DistributedDataParallel
+    "torch.nn.parallel.DistributedDataParallel") builds on this functionality to provide
+    synchronous distributed training as a wrapper around any PyTorch model. This differs
+    from the kinds of parallelism provided by [Multiprocessing package - torch.multiprocessing](multiprocessing.html)
+    and [`torch.nn.DataParallel()`](generated/torch.nn.DataParallel.html#torch.nn.DataParallel
+    "torch.nn.DataParallel") in that it supports multiple network-connected machines
+    and in that the user must explicitly launch a separate copy of the main training
+    script for each process.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In the single-machine synchronous case, torch.distributed or the [`torch.nn.parallel.DistributedDataParallel()`](generated/torch.nn.parallel.DistributedDataParallel.html#torch.nn.parallel.DistributedDataParallel
+    "torch.nn.parallel.DistributedDataParallel") wrapper may still have advantages
+    over other approaches to data-parallelism, including [`torch.nn.DataParallel()`](generated/torch.nn.DataParallel.html#torch.nn.DataParallel
+    "torch.nn.DataParallel"):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Each process maintains its own optimizer and performs a complete optimization
+    step with each iteration. While this may appear redundant, since the gradients
+    have already been gathered together and averaged across processes and are thus
+    the same for every process, this means that no parameter broadcast step is needed,
+    reducing time spent transferring tensors between nodes.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Each process contains an independent Python interpreter, eliminating the extra
+    interpreter overhead and “GIL-thrashing” that comes from driving several execution
+    threads, model replicas, or GPUs from a single Python process. This is especially
+    important for models that make heavy use of the Python runtime, including models
+    with recurrent layers or many small components.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Initialization
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The package needs to be initialized using the [`torch.distributed.init_process_group()`](#torch.distributed.init_process_group
+    "torch.distributed.init_process_group") or [`torch.distributed.device_mesh.init_device_mesh()`](#torch.distributed.device_mesh.init_device_mesh
+    "torch.distributed.device_mesh.init_device_mesh") function before calling any
+    other methods. Both block until all processes have joined.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Return `True` if the distributed package is available.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Otherwise, `torch.distributed` does not expose any other APIs. Currently, `torch.distributed`
+    is available on Linux, MacOS and Windows. Set `USE_DISTRIBUTED=1` to enable it
+    when building PyTorch from source. Currently, the default value is `USE_DISTRIBUTED=1`
+    for Linux and Windows, `USE_DISTRIBUTED=0` for MacOS.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[bool](https://docs.python.org/3/library/functions.html#bool "(in Python v3.12)")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Initialize the default distributed process group.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This will also initialize the distributed package.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'There are 2 main ways to initialize a process group:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Specify `store`, `rank`, and `world_size` explicitly.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Specify `init_method` (a URL string) which indicates where/how to discover peers.
+    Optionally specify `rank` and `world_size`, or encode all required parameters
+    in the URL and omit them.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: If neither is specified, `init_method` is assumed to be “env://”.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**backend** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
+    Python v3.12)") *or* [*Backend*](#torch.distributed.Backend "torch.distributed.Backend")*,*
+    *optional*) – The backend to use. Depending on build-time configurations, valid
+    values include `mpi`, `gloo`, `nccl`, and `ucc`. If the backend is not provided,
+    then both a `gloo` and `nccl` backend will be created, see notes below for how
+    multiple backends are managed. This field can be given as a lowercase string (e.g.,
+    `"gloo"`), which can also be accessed via [`Backend`](#torch.distributed.Backend
+    "torch.distributed.Backend") attributes (e.g., `Backend.GLOO`). If using multiple
+    processes per machine with `nccl` backend, each process must have exclusive access
+    to every GPU it uses, as sharing GPUs between processes can result in deadlocks.
+    `ucc` backend is experimental.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**init_method** ([*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* *optional*) – URL specifying how to initialize the process
+    group. Default is “env://” if no `init_method` or `store` is specified. Mutually
+    exclusive with `store`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**world_size** ([*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* *optional*) – Number of processes participating in the
+    job. Required if `store` is specified.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**rank** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)")*,* *optional*) – Rank of the current process (it should be a number
+    between 0 and `world_size`-1). Required if `store` is specified.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**store** ([*Store*](#torch.distributed.Store "torch.distributed.Store")*,*
+    *optional*) – Key/value store accessible to all workers, used to exchange connection/address
+    information. Mutually exclusive with `init_method`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**timeout** (*timedelta**,* *optional*) – Timeout for operations executed against
+    the process group. Default value is 10 minutes for NCCL and 30 minutes for other
+    backends. This is the duration after which collectives will be aborted asynchronously
+    and the process will crash. This is done since CUDA execution is async and it
+    is no longer safe to continue executing user code since failed async NCCL operations
+    might result in subsequent CUDA operations running on corrupted data. When TORCH_NCCL_BLOCKING_WAIT
+    is set, the process will block and wait for this timeout.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**group_name** ([*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* *optional**,* *deprecated*) – Group name. This argument
+    is ignored'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**pg_options** (*ProcessGroupOptions**,* *optional*) – process group options
+    specifying what additional options need to be passed in during the construction
+    of specific process groups. As of now, the only options we support is `ProcessGroupNCCL.Options`
+    for the `nccl` backend, `is_high_priority_stream` can be specified so that the
+    nccl backend can pick up high priority cuda streams when there’re compute kernels
+    waiting.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: To enable `backend == Backend.MPI`, PyTorch needs to be built from source on
+    a system that supports MPI.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Support for multiple backends is experimental. Currently when no backend is
+    specified, both `gloo` and `nccl` backends will be created. The `gloo` backend
+    will be used for collectives with CPU tensors and the `nccl` backend will be used
+    for collectives with CUDA tensors. A custom backend can be specified by passing
+    in a string with format “<device_type>:<backend_name>,<device_type>:<backend_name>”,
+    e.g. “cpu:gloo,cuda:custom_backend”.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Initializes a DeviceMesh based on device_type, mesh_shape, and mesh_dim_names
+    parameters.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This creates a DeviceMesh with an n-dimensional array layout, where n is the
+    length of mesh_shape. If mesh_dim_names is provided, each dimension is labeled
+    as mesh_dim_names[i].
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: init_device_mesh follows SPMD programming model, meaning the same PyTorch Python
+    program runs on all processes/ranks in the cluster. Ensure mesh_shape (the dimensions
+    of the nD array describing device layout) is identical across all ranks. Inconsistent
+    mesh_shape may lead to hanging.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: If no process group is found, init_device_mesh will initialize distributed process
+    group/groups required for distributed communications behind the scene.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**device_type** ([*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")) – The device type of the mesh. Currently supports: “cpu”,
+    “cuda/cuda-like”.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**mesh_shape** (*Tuple**[*[*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*]*) – A tuple defining the dimensions of the multi-dimensional
+    array describing the layout of devices.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**mesh_dim_names** (*Tuple**[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**,* *optional*) – A tuple of mesh dimension names to assign
+    to each dimension of the multi-dimensional array describing the layout of devices.
+    Its length must match the length of mesh_shape. Each string in mesh_dim_names
+    must be unique.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: A [`DeviceMesh`](#torch.distributed.device_mesh.DeviceMesh "torch.distributed.device_mesh.DeviceMesh")
+    object representing the device layout.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[DeviceMesh](#torch.distributed.device_mesh.DeviceMesh "torch.distributed.device_mesh.DeviceMesh")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example::'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Check if the default process group has been initialized.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[bool](https://docs.python.org/3/library/functions.html#bool "(in Python v3.12)")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: Check if the MPI backend is available.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[bool](https://docs.python.org/3/library/functions.html#bool "(in Python v3.12)")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: Check if the NCCL backend is available.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[bool](https://docs.python.org/3/library/functions.html#bool "(in Python v3.12)")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Check if the Gloo backend is available.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[bool](https://docs.python.org/3/library/functions.html#bool "(in Python v3.12)")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: Check whether this process was launched with `torch.distributed.elastic` (aka
+    torchelastic).
+  prefs: []
+  type: TYPE_NORMAL
+- en: The existence of `TORCHELASTIC_RUN_ID` environment variable is used as a proxy
+    to determine whether the current process was launched with torchelastic. This
+    is a reasonable proxy since `TORCHELASTIC_RUN_ID` maps to the rendezvous id which
+    is always a non-null value indicating the job id for peer discovery purposes..
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[bool](https://docs.python.org/3/library/functions.html#bool "(in Python v3.12)")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '* * *'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Currently three initialization methods are supported:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: TCP initialization
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: There are two ways to initialize using TCP, both requiring a network address
+    reachable from all processes and a desired `world_size`. The first way requires
+    specifying an address that belongs to the rank 0 process. This initialization
+    method requires that all processes have manually specified ranks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that multicast address is not supported anymore in the latest distributed
+    package. `group_name` is deprecated as well.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: Shared file-system initialization[](#shared-file-system-initialization "Permalink
+    to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Another initialization method makes use of a file system that is shared and
+    visible from all machines in a group, along with a desired `world_size`. The URL
+    should start with `file://` and contain a path to a non-existent file (in an existing
+    directory) on a shared file system. File-system initialization will automatically
+    create that file if it doesn’t exist, but will not delete the file. Therefore,
+    it is your responsibility to make sure that the file is cleaned up before the
+    next [`init_process_group()`](#torch.distributed.init_process_group "torch.distributed.init_process_group")
+    call on the same file path/name.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that automatic rank assignment is not supported anymore in the latest distributed
+    package and `group_name` is deprecated as well.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: This method assumes that the file system supports locking using `fcntl` - most
+    local systems and NFS support it.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: This method will always create the file and try its best to clean up and remove
+    the file at the end of the program. In other words, each initialization with the
+    file init method will need a brand new empty file in order for the initialization
+    to succeed. If the same file used by the previous initialization (which happens
+    not to get cleaned up) is used again, this is unexpected behavior and can often
+    cause deadlocks and failures. Therefore, even though this method will try its
+    best to clean up the file, if the auto-delete happens to be unsuccessful, it is
+    your responsibility to ensure that the file is removed at the end of the training
+    to prevent the same file to be reused again during the next time. This is especially
+    important if you plan to call [`init_process_group()`](#torch.distributed.init_process_group
+    "torch.distributed.init_process_group") multiple times on the same file name.
+    In other words, if the file is not removed/cleaned up and you call [`init_process_group()`](#torch.distributed.init_process_group
+    "torch.distributed.init_process_group") again on that file, failures are expected.
+    The rule of thumb here is that, make sure that the file is non-existent or empty
+    every time [`init_process_group()`](#torch.distributed.init_process_group "torch.distributed.init_process_group")
+    is called.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: Environment variable initialization[](#environment-variable-initialization
+    "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'This method will read the configuration from environment variables, allowing
+    one to fully customize how the information is obtained. The variables to be set
+    are:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`MASTER_PORT` - required; has to be a free port on machine with rank 0'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`MASTER_ADDR` - required (except for rank 0); address of rank 0 node'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`WORLD_SIZE` - required; can be set either here, or in a call to init function'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`RANK` - required; can be set either here, or in a call to init function'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The machine with rank 0 will be used to set up all connections.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This is the default method, meaning that `init_method` does not have to be specified
+    (or can be `env://`).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Post-Initialization
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Once [`torch.distributed.init_process_group()`](#torch.distributed.init_process_group
+    "torch.distributed.init_process_group") was run, the following functions can be
+    used. To check whether the process group has already been initialized use [`torch.distributed.is_initialized()`](#torch.distributed.is_initialized
+    "torch.distributed.is_initialized").
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: An enum-like class for backends.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Available backends: GLOO, NCCL, UCC, MPI, and other registered backends.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The values of this class are lowercase strings, e.g., `"gloo"`. They can be
+    accessed as attributes, e.g., `Backend.NCCL`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This class can be directly called to parse the string, e.g., `Backend(backend_str)`
+    will check if `backend_str` is valid, and return the parsed lowercase string if
+    so. It also accepts uppercase strings, e.g., `Backend("GLOO")` returns `"gloo"`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: The entry `Backend.UNDEFINED` is present but only used as initial value of some
+    fields. Users should neither use it directly nor assume its existence.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: Register a new backend with the given name and instantiating function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This class method is used by 3rd party `ProcessGroup` extension to register
+    new backends.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**name** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
+    Python v3.12)")) – Backend name of the `ProcessGroup` extension. It should match
+    the one in `init_process_group()`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**func** (*function*) – Function handler that instantiates the backend. The
+    function should be implemented in the backend extension and takes four arguments,
+    including `store`, `rank`, `world_size`, and `timeout`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**extended_api** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")*,* *optional*) – Whether the backend supports extended argument
+    structure. Default: `False`. If set to `True`, the backend will get an instance
+    of `c10d::DistributedBackendOptions`, and a process group options object as defined
+    by the backend implementation.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**device** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
+    Python v3.12)") *or* [*list*](https://docs.python.org/3/library/stdtypes.html#list
+    "(in Python v3.12)") *of* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* *optional*) – device type this backend supports, e.g.
+    “cpu”, “cuda”, etc. If None, assuming both “cpu” and “cuda”'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: This support of 3rd party backend is experimental and subject to change.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: Return the backend of the given process group.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**group** (*ProcessGroup**,* *optional*) – The process group to work on. The
+    default is the general main process group. If another specific group is specified,
+    the calling process must be part of `group`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: The backend of the given process group as a lower case string.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[str](https://docs.python.org/3/library/stdtypes.html#str "(in Python v3.12)")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: Return the rank of the current process in the provided `group`, default otherwise.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Rank is a unique identifier assigned to each process within a distributed process
+    group. They are always consecutive integers ranging from 0 to `world_size`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**group** (*ProcessGroup**,* *optional*) – The process group to work on. If
+    None, the default process group will be used.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: The rank of the process group -1, if not part of the group
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[int](https://docs.python.org/3/library/functions.html#int "(in Python v3.12)")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: Return the number of processes in the current process group.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**group** (*ProcessGroup**,* *optional*) – The process group to work on. If
+    None, the default process group will be used.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: The world size of the process group -1, if not part of the group
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[int](https://docs.python.org/3/library/functions.html#int "(in Python v3.12)")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '* * *'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Distributed Key-Value Store[](#distributed-key-value-store "Permalink to this
+    heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'The distributed package comes with a distributed key-value store, which can
+    be used to share information between processes in the group as well as to initialize
+    the distributed package in [`torch.distributed.init_process_group()`](#torch.distributed.init_process_group
+    "torch.distributed.init_process_group") (by explicitly creating the store as an
+    alternative to specifying `init_method`.) There are 3 choices for Key-Value Stores:
+    [`TCPStore`](#torch.distributed.TCPStore "torch.distributed.TCPStore"), [`FileStore`](#torch.distributed.FileStore
+    "torch.distributed.FileStore"), and [`HashStore`](#torch.distributed.HashStore
+    "torch.distributed.HashStore").'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Base class for all store implementations, such as the 3 provided by PyTorch
+    distributed: ([`TCPStore`](#torch.distributed.TCPStore "torch.distributed.TCPStore"),
+    [`FileStore`](#torch.distributed.FileStore "torch.distributed.FileStore"), and
+    [`HashStore`](#torch.distributed.HashStore "torch.distributed.HashStore")).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: A TCP-based distributed key-value store implementation. The server store holds
+    the data, while the client stores can connect to the server store over TCP and
+    perform actions such as `set()` to insert a key-value pair, `get()` to retrieve
+    a key-value pair, etc. There should always be one server store initialized because
+    the client store(s) will wait for the server to establish a connection.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**host_name** ([*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")) – The hostname or IP Address the server store should run
+    on.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**port** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)")) – The port on which the server store should listen for incoming
+    requests.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**world_size** ([*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* *optional*) – The total number of store users (number
+    of clients + 1 for the server). Default is None (None indicates a non-fixed number
+    of store users).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**is_master** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")*,* *optional*) – True when initializing the server store
+    and False for client stores. Default is False.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**timeout** (*timedelta**,* *optional*) – Timeout used by the store during
+    initialization and for methods such as `get()` and `wait()`. Default is timedelta(seconds=300)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**wait_for_workers** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")*,* *optional*) – Whether to wait for all the workers to connect
+    with the server store. This is only applicable when world_size is a fixed value.
+    Default is True.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**multi_tenant** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")*,* *optional*) – If True, all `TCPStore` instances in the
+    current process with the same host/port will use the same underlying `TCPServer`.
+    Default is False.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**master_listen_fd** ([*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* *optional*) – If specified, the underlying `TCPServer`
+    will listen on this file descriptor, which must be a socket already bound to `port`.
+    Useful to avoid port assignment races in some scenarios. Default is None (meaning
+    the server creates a new socket and attempts to bind it to `port`).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Example::'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: A thread-safe store implementation based on an underlying hashmap. This store
+    can be used within the same process (for example, by other threads), but cannot
+    be used across processes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example::'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: A store implementation that uses a file to store the underlying key-value pairs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**file_name** ([*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")) – path of the file in which to store the key-value pairs'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**world_size** ([*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* *optional*) – The total number of processes using the
+    store. Default is -1 (a negative value indicates a non-fixed number of store users).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Example::'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: A wrapper around any of the 3 key-value stores ([`TCPStore`](#torch.distributed.TCPStore
+    "torch.distributed.TCPStore"), [`FileStore`](#torch.distributed.FileStore "torch.distributed.FileStore"),
+    and [`HashStore`](#torch.distributed.HashStore "torch.distributed.HashStore"))
+    that adds a prefix to each key inserted to the store.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**prefix** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
+    Python v3.12)")) – The prefix string that is prepended to each key before being
+    inserted into the store.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**store** (*torch.distributed.store*) – A store object that forms the underlying
+    key-value store.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: Inserts the key-value pair into the store based on the supplied `key` and `value`.
+    If `key` already exists in the store, it will overwrite the old value with the
+    new supplied `value`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**key** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
+    v3.12)")) – The key to be added to the store.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**value** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
+    Python v3.12)")) – The value associated with `key` to be added to the store.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Example::'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE26]'
+  prefs: []
+  type: TYPE_PRE
+- en: Retrieves the value associated with the given `key` in the store. If `key` is
+    not present in the store, the function will wait for `timeout`, which is defined
+    when initializing the store, before throwing an exception.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**key** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
+    v3.12)")) – The function will return the value associated with this key.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: Value associated with `key` if `key` is in the store.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example::'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE27]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE28]'
+  prefs: []
+  type: TYPE_PRE
+- en: The first call to add for a given `key` creates a counter associated with `key`
+    in the store, initialized to `amount`. Subsequent calls to add with the same `key`
+    increment the counter by the specified `amount`. Calling `add()` with a key that
+    has already been set in the store by `set()` will result in an exception.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**key** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
+    v3.12)")) – The key in the store whose counter will be incremented.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**amount** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)")) – The quantity by which the counter will be incremented.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Example::'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE29]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE30]'
+  prefs: []
+  type: TYPE_PRE
+- en: Inserts the key-value pair into the store based on the supplied `key` and performs
+    comparison between `expected_value` and `desired_value` before inserting. `desired_value`
+    will only be set if `expected_value` for the `key` already exists in the store
+    or if `expected_value` is an empty string.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**key** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
+    v3.12)")) – The key to be checked in the store.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**expected_value** ([*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")) – The value associated with `key` to be checked before insertion.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**desired_value** ([*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")) – The value associated with `key` to be added to the store.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Example::'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE31]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE32]'
+  prefs: []
+  type: TYPE_PRE
+- en: Overloaded function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'wait(self: torch._C._distributed_c10d.Store, arg0: List[str]) -> None'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Waits for each key in `keys` to be added to the store. If not all keys are set
+    before the `timeout` (set during store initialization), then `wait` will throw
+    an exception.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**keys** ([*list*](https://docs.python.org/3/library/stdtypes.html#list "(in
+    Python v3.12)")) – List of keys on which to wait until they are set in the store.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example::'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE33]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'wait(self: torch._C._distributed_c10d.Store, arg0: List[str], arg1: datetime.timedelta)
+    -> None'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Waits for each key in `keys` to be added to the store, and throws an exception
+    if the keys have not been set by the supplied `timeout`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**keys** ([*list*](https://docs.python.org/3/library/stdtypes.html#list "(in
+    Python v3.12)")) – List of keys on which to wait until they are set in the store.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**timeout** (*timedelta*) – Time to wait for the keys to be added before throwing
+    an exception.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Example::'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE34]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE35]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns the number of keys set in the store. Note that this number will typically
+    be one greater than the number of keys added by `set()` and `add()` since one
+    key is used to coordinate all the workers using the store.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: When used with the [`TCPStore`](#torch.distributed.TCPStore "torch.distributed.TCPStore"),
+    `num_keys` returns the number of keys written to the underlying file. If the store
+    is destructed and another store is created with the same file, the original keys
+    will be retained.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: The number of keys present in the store.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example::'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE36]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE37]'
+  prefs: []
+  type: TYPE_PRE
+- en: Deletes the key-value pair associated with `key` from the store. Returns true
+    if the key was successfully deleted, and false if it was not.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: The `delete_key` API is only supported by the [`TCPStore`](#torch.distributed.TCPStore
+    "torch.distributed.TCPStore") and [`HashStore`](#torch.distributed.HashStore "torch.distributed.HashStore").
+    Using this API with the [`FileStore`](#torch.distributed.FileStore "torch.distributed.FileStore")
+    will result in an exception.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**key** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
+    v3.12)")) – The key to be deleted from the store'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: True if `key` was deleted, otherwise False.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example::'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE38]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE39]'
+  prefs: []
+  type: TYPE_PRE
+- en: Sets the store’s default timeout. This timeout is used during initialization
+    and in `wait()` and `get()`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**timeout** (*timedelta*) – timeout to be set in the store.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example::'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE40]'
+  prefs: []
+  type: TYPE_PRE
+- en: Groups
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: By default collectives operate on the default group (also called the world)
+    and require all processes to enter the distributed function call. However, some
+    workloads can benefit from more fine-grained communication. This is where distributed
+    groups come into play. [`new_group()`](#torch.distributed.new_group "torch.distributed.new_group")
+    function can be used to create new groups, with arbitrary subsets of all processes.
+    It returns an opaque group handle that can be given as a `group` argument to all
+    collectives (collectives are distributed functions to exchange information in
+    certain well-known programming patterns).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE41]'
+  prefs: []
+  type: TYPE_PRE
+- en: Create a new distributed group.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This function requires that all processes in the main group (i.e. all processes
+    that are part of the distributed job) enter this function, even if they are not
+    going to be members of the group. Additionally, groups should be created in the
+    same order in all processes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: Using multiple process groups with the `NCCL` backend concurrently is not safe
+    and the user should perform explicit synchronization in their application to ensure
+    only one process group is used at a time. This means collectives from one process
+    group should have completed execution on the device (not just enqueued since CUDA
+    execution is async) before collectives from another process group are enqueued.
+    See [Using multiple NCCL communicators concurrently](https://docs.nvidia.com/deeplearning/nccl/user-guide/docs/usage/communicators.html#using-multiple-nccl-communicators-concurrently)
+    for more details.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**ranks** ([*list*](https://docs.python.org/3/library/stdtypes.html#list "(in
+    Python v3.12)")*[*[*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*]*) – List of ranks of group members. If `None`, will be
+    set to all ranks. Default is `None`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**timeout** (*timedelta**,* *optional*) – see init_process_group for details
+    and default value.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**backend** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
+    Python v3.12)") *or* [*Backend*](#torch.distributed.Backend "torch.distributed.Backend")*,*
+    *optional*) – The backend to use. Depending on build-time configurations, valid
+    values are `gloo` and `nccl`. By default uses the same backend as the global group.
+    This field should be given as a lowercase string (e.g., `"gloo"`), which can also
+    be accessed via [`Backend`](#torch.distributed.Backend "torch.distributed.Backend")
+    attributes (e.g., `Backend.GLOO`). If `None` is passed in, the backend corresponding
+    to the default process group will be used. Default is `None`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**pg_options** (*ProcessGroupOptions**,* *optional*) – process group options
+    specifying what additional options need to be passed in during the construction
+    of specific process groups. i.e. for the `nccl` backend, `is_high_priority_stream`
+    can be specified so that process group can pick up high priority cuda streams.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**use_local_synchronization** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")*,* *optional*) – perform a group-local barrier at the end
+    of the process group creation. This is different in that non-member ranks don’t
+    need to call into API and don’t join the barrier.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: A handle of distributed group that can be given to collective calls or None
+    if the rank is not part of `ranks`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: N.B. use_local_synchronization doesn’t work with MPI.
+  prefs: []
+  type: TYPE_NORMAL
+- en: N.B. While use_local_synchronization=True can be significantly faster with larger
+    clusters and small process groups, care must be taken since it changes cluster
+    behavior as non-member ranks don’t join the group barrier().
+  prefs: []
+  type: TYPE_NORMAL
+- en: N.B. use_local_synchronization=True can lead to deadlocks when each rank creates
+    multiple overlaping process groups. To avoid that, make sure all ranks follow
+    the same global creation order.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE42]'
+  prefs: []
+  type: TYPE_PRE
+- en: Translate a global rank into a group rank.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`global_rank` must be part of `group` otherwise this raises RuntimeError.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**group** (*ProcessGroup*) – ProcessGroup to find the relative rank.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**global_rank** ([*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")) – Global rank to query.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: Group rank of `global_rank` relative to `group`
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[int](https://docs.python.org/3/library/functions.html#int "(in Python v3.12)")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: N.B. calling this function on the default process group returns identity
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE43]'
+  prefs: []
+  type: TYPE_PRE
+- en: Translate a group rank into a global rank.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`group_rank` must be part of group otherwise this raises RuntimeError.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**group** (*ProcessGroup*) – ProcessGroup to find the global rank from.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**group_rank** ([*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")) – Group rank to query.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: Global rank of `group_rank` relative to `group`
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[int](https://docs.python.org/3/library/functions.html#int "(in Python v3.12)")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: N.B. calling this function on the default process group returns identity
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE44]'
+  prefs: []
+  type: TYPE_PRE
+- en: Get all ranks associated with `group`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**group** (*ProcessGroup*) – ProcessGroup to get all ranks from.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: List of global ranks ordered by group rank.
+  prefs: []
+  type: TYPE_NORMAL
+- en: DeviceMesh
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: DeviceMesh is a higher level abstraction that manages process groups (or NCCL
+    communicators). It allows user to easily create inter node and intra node process
+    groups without worrying about how to set up the ranks correctly for different
+    sub process groups, and it helps manage those distributed process group easily.
+    [`init_device_mesh()`](#torch.distributed.device_mesh.init_device_mesh "torch.distributed.device_mesh.init_device_mesh")
+    function can be used to create new DeviceMesh, with a mesh shape describing the
+    device topology.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE45]'
+  prefs: []
+  type: TYPE_PRE
+- en: DeviceMesh represents a mesh of devices, where layout of devices could be represented
+    as a n-d dimension array, and each value of the n-d dimensional array is the global
+    id of the default process group ranks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: DeviceMesh could be used to describe the layout of devices across the cluster,
+    and serves as a proxy for communication among the device lists within the cluster.
+  prefs: []
+  type: TYPE_NORMAL
+- en: DeviceMesh can be used as a context manager.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: DeviceMesh follows SPMD programming model, which means the same PyTorch Python
+    program is running on all processes/ranks in the cluster. Therefore, users need
+    to make sure the mesh array (which describes the layout of devices) should be
+    identical across all ranks. Inconsistent mesh will lead to silent hang.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**device_type** ([*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")) – The device type of the mesh. Currently supports: “cpu”,
+    “cuda/cuda-like”.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**mesh** (*ndarray*) – A multi-dimensional array or an integer tensor describing
+    the layout of devices, where the IDs are global IDs of the default process group.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: A [`DeviceMesh`](#torch.distributed.device_mesh.DeviceMesh "torch.distributed.device_mesh.DeviceMesh")
+    object representing the device layout.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[DeviceMesh](#torch.distributed.device_mesh.DeviceMesh "torch.distributed.device_mesh.DeviceMesh")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The following program runs on each process/rank in an SPMD manner. In this example,
+    we have 2 hosts with 4 GPUs each. A reduction over the first dimension of mesh
+    will reduce across columns (0, 4), .. and (3, 7), a reduction over the second
+    dimension of mesh reduces across rows (0, 1, 2, 3) and (4, 5, 6, 7).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example::'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE46]'
+  prefs: []
+  type: TYPE_PRE
+- en: Point-to-point communication[](#point-to-point-communication "Permalink to
+    this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE47]'
+  prefs: []
+  type: TYPE_PRE
+- en: Send a tensor synchronously.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**tensor** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – Tensor
+    to send.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**dst** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)")) – Destination rank. Destination rank should not be the same as
+    the rank of the current process.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**group** (*ProcessGroup**,* *optional*) – The process group to work on. If
+    None, the default process group will be used.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**tag** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)")*,* *optional*) – Tag to match send with remote recv'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE48]'
+  prefs: []
+  type: TYPE_PRE
+- en: Receives a tensor synchronously.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**tensor** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – Tensor
+    to fill with received data.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**src** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)")*,* *optional*) – Source rank. Will receive from any process if
+    unspecified.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**group** (*ProcessGroup**,* *optional*) – The process group to work on. If
+    None, the default process group will be used.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**tag** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)")*,* *optional*) – Tag to match recv with remote send'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: Sender rank -1, if not part of the group
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[int](https://docs.python.org/3/library/functions.html#int "(in Python v3.12)")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`isend()`](#torch.distributed.isend "torch.distributed.isend") and [`irecv()`](#torch.distributed.irecv
+    "torch.distributed.irecv") return distributed request objects when used. In general,
+    the type of this object is unspecified as they should never be created manually,
+    but they are guaranteed to support two methods:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`is_completed()` - returns True if the operation has finished'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`wait()` - will block the process until the operation is finished. `is_completed()`
+    is guaranteed to return True once it returns.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE49]'
+  prefs: []
+  type: TYPE_PRE
+- en: Send a tensor asynchronously.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: Modifying `tensor` before the request completes causes undefined behavior.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`tag` is not supported with the NCCL backend.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**tensor** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – Tensor
+    to send.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**dst** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)")) – Destination rank.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**group** (*ProcessGroup**,* *optional*) – The process group to work on. If
+    None, the default process group will be used.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**tag** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)")*,* *optional*) – Tag to match send with remote recv'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: A distributed request object. None, if not part of the group
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Work*'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE50]'
+  prefs: []
+  type: TYPE_PRE
+- en: Receives a tensor asynchronously.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`tag` is not supported with the NCCL backend.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**tensor** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – Tensor
+    to fill with received data.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**src** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)")*,* *optional*) – Source rank. Will receive from any process if
+    unspecified.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**group** (*ProcessGroup**,* *optional*) – The process group to work on. If
+    None, the default process group will be used.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**tag** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)")*,* *optional*) – Tag to match recv with remote send'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: A distributed request object. None, if not part of the group
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*Work*'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE51]'
+  prefs: []
+  type: TYPE_PRE
+- en: Send or Receive a batch of tensors asynchronously and return a list of requests.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Process each of the operations in `p2p_op_list` and return the corresponding
+    requests. NCCL, Gloo, and UCC backend are currently supported.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**p2p_op_list** – A list of point-to-point operations(type of each operator
+    is `torch.distributed.P2POp`). The order of the isend/irecv in the list matters
+    and it needs to match with corresponding isend/irecv on the remote end.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: A list of distributed request objects returned by calling the corresponding
+    op in the op_list.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Examples
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE52]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that when this API is used with the NCCL PG backend, users must set the
+    current GPU device with torch.cuda.set_device, otherwise it will lead to unexpected
+    hang issues.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In addition, if this API is the first collective call in the `group` passed
+    to `dist.P2POp`, all ranks of the `group` must participate in this API call; otherwise,
+    the behavior is undefined. If this API call is not the first collective call in
+    the `group`, batched P2P operations involving only a subset of ranks of the `group`
+    are allowed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE53]'
+  prefs: []
+  type: TYPE_PRE
+- en: A class to build point-to-point operations for `batch_isend_irecv`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This class builds the type of P2P operation, communication buffer, peer rank,
+    Process Group, and tag. Instances of this class will be passed to `batch_isend_irecv`
+    for point-to-point communications.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**op** (*Callable*) – A function to send data to or receive data from a peer
+    process. The type of `op` is either `torch.distributed.isend` or `torch.distributed.irecv`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**tensor** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – Tensor
+    to send or receive.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**peer** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)")) – Destination or source rank.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**group** (*ProcessGroup**,* *optional*) – The process group to work on. If
+    None, the default process group will be used.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**tag** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)")*,* *optional*) – Tag to match send with recv.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Synchronous and asynchronous collective operations[](#synchronous-and-asynchronous-collective-operations
+    "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Every collective operation function supports the following two kinds of operations,
+    depending on the setting of the `async_op` flag passed into the collective:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Synchronous operation** - the default mode, when `async_op` is set to `False`.
+    When the function returns, it is guaranteed that the collective operation is performed.
+    In the case of CUDA operations, it is not guaranteed that the CUDA operation is
+    completed, since CUDA operations are asynchronous. For CPU collectives, any further
+    function calls utilizing the output of the collective call will behave as expected.
+    For CUDA collectives, function calls utilizing the output on the same CUDA stream
+    will behave as expected. Users must take care of synchronization under the scenario
+    of running under different streams. For details on CUDA semantics such as stream
+    synchronization, see [CUDA Semantics](https://pytorch.org/docs/stable/notes/cuda.html).
+    See the below script to see examples of differences in these semantics for CPU
+    and CUDA operations.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Asynchronous operation** - when `async_op` is set to True. The collective
+    operation function returns a distributed request object. In general, you don’t
+    need to create it manually and it is guaranteed to support two methods:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`is_completed()` - in the case of CPU collectives, returns `True` if completed.
+    In the case of CUDA operations, returns `True` if the operation has been successfully
+    enqueued onto a CUDA stream and the output can be utilized on the default stream
+    without further synchronization.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`wait()` - in the case of CPU collectives, will block the process until the
+    operation is completed. In the case of CUDA collectives, will block until the
+    operation has been successfully enqueued onto a CUDA stream and the output can
+    be utilized on the default stream without further synchronization.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`get_future()` - returns `torch._C.Future` object. Supported for NCCL, also
+    supported for most operations on GLOO and MPI, except for peer to peer operations.
+    Note: as we continue adopting Futures and merging APIs, `get_future()` call might
+    become redundant.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Example**'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The following code can serve as a reference regarding semantics for CUDA operations
+    when using distributed collectives. It shows the explicit need to synchronize
+    when using collective outputs on different CUDA streams:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE54]'
+  prefs: []
+  type: TYPE_PRE
+- en: Collective functions
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE55]'
+  prefs: []
+  type: TYPE_PRE
+- en: Broadcasts the tensor to the whole group.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`tensor` must have the same number of elements in all processes participating
+    in the collective.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**tensor** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – Data to
+    be sent if `src` is the rank of current process, and tensor to be used to save
+    received data otherwise.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**src** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)")) – Source rank.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**group** (*ProcessGroup**,* *optional*) – The process group to work on. If
+    None, the default process group will be used.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**async_op** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")*,* *optional*) – Whether this op should be an async op'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: Async work handle, if async_op is set to True. None, if not async_op or if not
+    part of the group
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE56]'
+  prefs: []
+  type: TYPE_PRE
+- en: Broadcasts picklable objects in `object_list` to the whole group.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Similar to [`broadcast()`](#torch.distributed.broadcast "torch.distributed.broadcast"),
+    but Python objects can be passed in. Note that all objects in `object_list` must
+    be picklable in order to be broadcasted.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**object_list** (*List**[**Any**]*) – List of input objects to broadcast. Each
+    object must be picklable. Only objects on the `src` rank will be broadcast, but
+    each rank must provide lists of equal sizes.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**src** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)")) – Source rank from which to broadcast `object_list`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**group** – (ProcessGroup, optional): The process group to work on. If None,
+    the default process group will be used. Default is `None`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**device** (`torch.device`, optional) – If not None, the objects are serialized
+    and converted to tensors which are moved to the `device` before broadcasting.
+    Default is `None`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`None`. If rank is part of the group, `object_list` will contain the broadcasted
+    objects from `src` rank.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: For NCCL-based process groups, internal tensor representations of objects must
+    be moved to the GPU device before communication takes place. In this case, the
+    device used is given by `torch.cuda.current_device()` and it is the user’s responsibility
+    to ensure that this is set so that each rank has an individual GPU, via `torch.cuda.set_device()`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that this API differs slightly from the [`all_gather()`](#torch.distributed.all_gather
+    "torch.distributed.all_gather") collective since it does not provide an `async_op`
+    handle and thus will be a blocking call.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`broadcast_object_list()`](#torch.distributed.broadcast_object_list "torch.distributed.broadcast_object_list")
+    uses `pickle` module implicitly, which is known to be insecure. It is possible
+    to construct malicious pickle data which will execute arbitrary code during unpickling.
+    Only call this function with data you trust.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: Calling [`broadcast_object_list()`](#torch.distributed.broadcast_object_list
+    "torch.distributed.broadcast_object_list") with GPU tensors is not well supported
+    and inefficient as it incurs GPU -> CPU transfer since tensors would be pickled.
+    Please consider using [`broadcast()`](#torch.distributed.broadcast "torch.distributed.broadcast")
+    instead.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example::'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE57]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE58]'
+  prefs: []
+  type: TYPE_PRE
+- en: Reduces the tensor data across all machines in a way that all get the final
+    result.
+  prefs: []
+  type: TYPE_NORMAL
+- en: After the call `tensor` is going to be bitwise identical in all processes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Complex tensors are supported.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**tensor** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – Input and
+    output of the collective. The function operates in-place.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**op** (*optional*) – One of the values from `torch.distributed.ReduceOp` enum.
+    Specifies an operation used for element-wise reductions.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**group** (*ProcessGroup**,* *optional*) – The process group to work on. If
+    None, the default process group will be used.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**async_op** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")*,* *optional*) – Whether this op should be an async op'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: Async work handle, if async_op is set to True. None, if not async_op or if not
+    part of the group
+  prefs: []
+  type: TYPE_NORMAL
+- en: Examples
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE59]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE60]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE61]'
+  prefs: []
+  type: TYPE_PRE
+- en: Reduces the tensor data across all machines.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Only the process with rank `dst` is going to receive the final result.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**tensor** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – Input and
+    output of the collective. The function operates in-place.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**dst** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)")) – Destination rank'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**op** (*optional*) – One of the values from `torch.distributed.ReduceOp` enum.
+    Specifies an operation used for element-wise reductions.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**group** (*ProcessGroup**,* *optional*) – The process group to work on. If
+    None, the default process group will be used.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**async_op** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")*,* *optional*) – Whether this op should be an async op'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: Async work handle, if async_op is set to True. None, if not async_op or if not
+    part of the group
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE62]'
+  prefs: []
+  type: TYPE_PRE
+- en: Gathers tensors from the whole group in a list.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Complex tensors are supported.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**tensor_list** ([*list*](https://docs.python.org/3/library/stdtypes.html#list
+    "(in Python v3.12)")*[*[*Tensor*](tensors.html#torch.Tensor "torch.Tensor")*]*)
+    – Output list. It should contain correctly-sized tensors to be used for output
+    of the collective.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**tensor** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – Tensor
+    to be broadcast from current process.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**group** (*ProcessGroup**,* *optional*) – The process group to work on. If
+    None, the default process group will be used.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**async_op** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")*,* *optional*) – Whether this op should be an async op'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: Async work handle, if async_op is set to True. None, if not async_op or if not
+    part of the group
+  prefs: []
+  type: TYPE_NORMAL
+- en: Examples
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE63]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE64]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE65]'
+  prefs: []
+  type: TYPE_PRE
+- en: Gather tensors from all ranks and put them in a single output tensor.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**output_tensor** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) –
+    Output tensor to accommodate tensor elements from all ranks. It must be correctly
+    sized to have one of the following forms: (i) a concatenation of all the input
+    tensors along the primary dimension; for definition of “concatenation”, see `torch.cat()`;
+    (ii) a stack of all the input tensors along the primary dimension; for definition
+    of “stack”, see `torch.stack()`. Examples below may better explain the supported
+    output forms.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**input_tensor** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – Tensor
+    to be gathered from current rank. Different from the `all_gather` API, the input
+    tensors in this API must have the same size across all ranks.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**group** (*ProcessGroup**,* *optional*) – The process group to work on. If
+    None, the default process group will be used.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**async_op** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")*,* *optional*) – Whether this op should be an async op'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: Async work handle, if async_op is set to True. None, if not async_op or if not
+    part of the group
+  prefs: []
+  type: TYPE_NORMAL
+- en: Examples
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE66]'
+  prefs: []
+  type: TYPE_PRE
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: The Gloo backend does not support this API.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE67]'
+  prefs: []
+  type: TYPE_PRE
+- en: Gathers picklable objects from the whole group into a list.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Similar to [`all_gather()`](#torch.distributed.all_gather "torch.distributed.all_gather"),
+    but Python objects can be passed in. Note that the object must be picklable in
+    order to be gathered.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**object_list** ([*list*](https://docs.python.org/3/library/stdtypes.html#list
+    "(in Python v3.12)")*[**Any**]*) – Output list. It should be correctly sized as
+    the size of the group for this collective and will contain the output.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**obj** (*Any*) – Pickable Python object to be broadcast from current process.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**group** (*ProcessGroup**,* *optional*) – The process group to work on. If
+    None, the default process group will be used. Default is `None`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: None. If the calling rank is part of this group, the output of the collective
+    will be populated into the input `object_list`. If the calling rank is not part
+    of the group, the passed in `object_list` will be unmodified.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that this API differs slightly from the [`all_gather()`](#torch.distributed.all_gather
+    "torch.distributed.all_gather") collective since it does not provide an `async_op`
+    handle and thus will be a blocking call.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: For NCCL-based processed groups, internal tensor representations of objects
+    must be moved to the GPU device before communication takes place. In this case,
+    the device used is given by `torch.cuda.current_device()` and it is the user’s
+    responsiblity to ensure that this is set so that each rank has an individual GPU,
+    via `torch.cuda.set_device()`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`all_gather_object()`](#torch.distributed.all_gather_object "torch.distributed.all_gather_object")
+    uses `pickle` module implicitly, which is known to be insecure. It is possible
+    to construct malicious pickle data which will execute arbitrary code during unpickling.
+    Only call this function with data you trust.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: Calling [`all_gather_object()`](#torch.distributed.all_gather_object "torch.distributed.all_gather_object")
+    with GPU tensors is not well supported and inefficient as it incurs GPU -> CPU
+    transfer since tensors would be pickled. Please consider using [`all_gather()`](#torch.distributed.all_gather
+    "torch.distributed.all_gather") instead.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example::'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE68]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE69]'
+  prefs: []
+  type: TYPE_PRE
+- en: Gathers a list of tensors in a single process.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**tensor** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – Input tensor.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**gather_list** ([*list*](https://docs.python.org/3/library/stdtypes.html#list
+    "(in Python v3.12)")*[*[*Tensor*](tensors.html#torch.Tensor "torch.Tensor")*]**,*
+    *optional*) – List of appropriately-sized tensors to use for gathered data (default
+    is None, must be specified on the destination rank)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**dst** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)")*,* *optional*) – Destination rank (default is 0)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**group** (*ProcessGroup**,* *optional*) – The process group to work on. If
+    None, the default process group will be used.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**async_op** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")*,* *optional*) – Whether this op should be an async op'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: Async work handle, if async_op is set to True. None, if not async_op or if not
+    part of the group
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE70]'
+  prefs: []
+  type: TYPE_PRE
+- en: Gathers picklable objects from the whole group in a single process.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Similar to [`gather()`](#torch.distributed.gather "torch.distributed.gather"),
+    but Python objects can be passed in. Note that the object must be picklable in
+    order to be gathered.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**obj** (*Any*) – Input object. Must be picklable.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**object_gather_list** ([*list*](https://docs.python.org/3/library/stdtypes.html#list
+    "(in Python v3.12)")*[**Any**]*) – Output list. On the `dst` rank, it should be
+    correctly sized as the size of the group for this collective and will contain
+    the output. Must be `None` on non-dst ranks. (default is `None`)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**dst** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)")*,* *optional*) – Destination rank. (default is 0)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**group** – (ProcessGroup, optional): The process group to work on. If None,
+    the default process group will be used. Default is `None`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: None. On the `dst` rank, `object_gather_list` will contain the output of the
+    collective.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that this API differs slightly from the gather collective since it does
+    not provide an async_op handle and thus will be a blocking call.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: For NCCL-based processed groups, internal tensor representations of objects
+    must be moved to the GPU device before communication takes place. In this case,
+    the device used is given by `torch.cuda.current_device()` and it is the user’s
+    responsiblity to ensure that this is set so that each rank has an individual GPU,
+    via `torch.cuda.set_device()`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`gather_object()`](#torch.distributed.gather_object "torch.distributed.gather_object")
+    uses `pickle` module implicitly, which is known to be insecure. It is possible
+    to construct malicious pickle data which will execute arbitrary code during unpickling.
+    Only call this function with data you trust.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: Calling [`gather_object()`](#torch.distributed.gather_object "torch.distributed.gather_object")
+    with GPU tensors is not well supported and inefficient as it incurs GPU -> CPU
+    transfer since tensors would be pickled. Please consider using [`gather()`](#torch.distributed.gather
+    "torch.distributed.gather") instead.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example::'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE71]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE72]'
+  prefs: []
+  type: TYPE_PRE
+- en: Scatters a list of tensors to all processes in a group.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Each process will receive exactly one tensor and store its data in the `tensor`
+    argument.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Complex tensors are supported.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**tensor** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – Output
+    tensor.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**scatter_list** ([*list*](https://docs.python.org/3/library/stdtypes.html#list
+    "(in Python v3.12)")*[*[*Tensor*](tensors.html#torch.Tensor "torch.Tensor")*]*)
+    – List of tensors to scatter (default is None, must be specified on the source
+    rank)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**src** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)")) – Source rank (default is 0)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**group** (*ProcessGroup**,* *optional*) – The process group to work on. If
+    None, the default process group will be used.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**async_op** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")*,* *optional*) – Whether this op should be an async op'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: Async work handle, if async_op is set to True. None, if not async_op or if not
+    part of the group
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that all Tensors in scatter_list must have the same size.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example::'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE73]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE74]'
+  prefs: []
+  type: TYPE_PRE
+- en: Scatters picklable objects in `scatter_object_input_list` to the whole group.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Similar to [`scatter()`](#torch.distributed.scatter "torch.distributed.scatter"),
+    but Python objects can be passed in. On each rank, the scattered object will be
+    stored as the first element of `scatter_object_output_list`. Note that all objects
+    in `scatter_object_input_list` must be picklable in order to be scattered.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**scatter_object_output_list** (*List**[**Any**]*) – Non-empty list whose first
+    element will store the object scattered to this rank.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**scatter_object_input_list** (*List**[**Any**]*) – List of input objects to
+    scatter. Each object must be picklable. Only objects on the `src` rank will be
+    scattered, and the argument can be `None` for non-src ranks.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**src** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)")) – Source rank from which to scatter `scatter_object_input_list`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**group** – (ProcessGroup, optional): The process group to work on. If None,
+    the default process group will be used. Default is `None`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`None`. If rank is part of the group, `scatter_object_output_list` will have
+    its first element set to the scattered object for this rank.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that this API differs slightly from the scatter collective since it does
+    not provide an `async_op` handle and thus will be a blocking call.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`scatter_object_list()`](#torch.distributed.scatter_object_list "torch.distributed.scatter_object_list")
+    uses `pickle` module implicitly, which is known to be insecure. It is possible
+    to construct malicious pickle data which will execute arbitrary code during unpickling.
+    Only call this function with data you trust.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: Calling [`scatter_object_list()`](#torch.distributed.scatter_object_list "torch.distributed.scatter_object_list")
+    with GPU tensors is not well supported and inefficient as it incurs GPU -> CPU
+    transfer since tensors would be pickled. Please consider using [`scatter()`](#torch.distributed.scatter
+    "torch.distributed.scatter") instead.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example::'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE75]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE76]'
+  prefs: []
+  type: TYPE_PRE
+- en: Reduces, then scatters a list of tensors to all processes in a group.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**output** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – Output
+    tensor.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**input_list** ([*list*](https://docs.python.org/3/library/stdtypes.html#list
+    "(in Python v3.12)")*[*[*Tensor*](tensors.html#torch.Tensor "torch.Tensor")*]*)
+    – List of tensors to reduce and scatter.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**op** (*optional*) – One of the values from `torch.distributed.ReduceOp` enum.
+    Specifies an operation used for element-wise reductions.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**group** (*ProcessGroup**,* *optional*) – The process group to work on. If
+    None, the default process group will be used.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**async_op** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")*,* *optional*) – Whether this op should be an async op.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: Async work handle, if async_op is set to True. None, if not async_op or if not
+    part of the group.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE77]'
+  prefs: []
+  type: TYPE_PRE
+- en: Reduces, then scatters a tensor to all ranks in a group.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**output** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – Output
+    tensor. It should have the same size across all ranks.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**input** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – Input tensor
+    to be reduced and scattered. Its size should be output tensor size times the world
+    size. The input tensor can have one of the following shapes: (i) a concatenation
+    of the output tensors along the primary dimension, or (ii) a stack of the output
+    tensors along the primary dimension. For definition of “concatenation”, see `torch.cat()`.
+    For definition of “stack”, see `torch.stack()`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**group** (*ProcessGroup**,* *optional*) – The process group to work on. If
+    None, the default process group will be used.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**async_op** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")*,* *optional*) – Whether this op should be an async op.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: Async work handle, if async_op is set to True. None, if not async_op or if not
+    part of the group.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Examples
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE78]'
+  prefs: []
+  type: TYPE_PRE
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: The Gloo backend does not support this API.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE79]'
+  prefs: []
+  type: TYPE_PRE
+- en: Split input tensor and then scatter the split list to all processes in a group.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Later the received tensors are concatenated from all the processes in the group
+    and returned as a single output tensor.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Complex tensors are supported.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**output** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – Gathered
+    concatenated output tensor.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**input** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – Input tensor
+    to scatter.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**output_split_sizes** – (list[Int], optional): Output split sizes for dim
+    0 if specified None or empty, dim 0 of `output` tensor must divide equally by
+    `world_size`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**input_split_sizes** – (list[Int], optional): Input split sizes for dim 0
+    if specified None or empty, dim 0 of `input` tensor must divide equally by `world_size`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**group** (*ProcessGroup**,* *optional*) – The process group to work on. If
+    None, the default process group will be used.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**async_op** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")*,* *optional*) – Whether this op should be an async op.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: Async work handle, if async_op is set to True. None, if not async_op or if not
+    part of the group.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: all_to_all_single is experimental and subject to change.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Examples
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE80]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE81]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE82]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE83]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE84]'
+  prefs: []
+  type: TYPE_PRE
+- en: Scatters list of input tensors to all processes in a group and return gathered
+    list of tensors in output list.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Complex tensors are supported.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**output_tensor_list** ([*list*](https://docs.python.org/3/library/stdtypes.html#list
+    "(in Python v3.12)")*[*[*Tensor*](tensors.html#torch.Tensor "torch.Tensor")*]*)
+    – List of tensors to be gathered one per rank.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**input_tensor_list** ([*list*](https://docs.python.org/3/library/stdtypes.html#list
+    "(in Python v3.12)")*[*[*Tensor*](tensors.html#torch.Tensor "torch.Tensor")*]*)
+    – List of tensors to scatter one per rank.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**group** (*ProcessGroup**,* *optional*) – The process group to work on. If
+    None, the default process group will be used.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**async_op** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")*,* *optional*) – Whether this op should be an async op.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: Async work handle, if async_op is set to True. None, if not async_op or if not
+    part of the group.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: all_to_all is experimental and subject to change.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Examples
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE85]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE86]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE87]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE88]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE89]'
+  prefs: []
+  type: TYPE_PRE
+- en: Synchronize all processes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This collective blocks processes until the whole group enters this function,
+    if async_op is False, or if async work handle is called on wait().
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**group** (*ProcessGroup**,* *optional*) – The process group to work on. If
+    None, the default process group will be used.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**async_op** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")*,* *optional*) – Whether this op should be an async op'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**device_ids** (*[*[*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*]**,* *optional*) – List of device/GPU ids.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: Async work handle, if async_op is set to True. None, if not async_op or if not
+    part of the group
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE90]'
+  prefs: []
+  type: TYPE_PRE
+- en: Synchronize processes similar to `torch.distributed.barrier`, but consider a
+    configurable timeout.
+  prefs: []
+  type: TYPE_NORMAL
+- en: It is able to report ranks that did not pass this barrier within the provided
+    timeout. Specifically, for non-zero ranks, will block until a send/recv is processed
+    from rank 0. Rank 0 will block until all send /recv from other ranks are processed,
+    and will report failures for ranks that failed to respond in time. Note that if
+    one rank does not reach the monitored_barrier (for example due to a hang), all
+    other ranks would fail in monitored_barrier.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This collective will block all processes/ranks in the group, until the whole
+    group exits the function successfully, making it useful for debugging and synchronizing.
+    However, it can have a performance impact and should only be used for debugging
+    or scenarios that require full synchronization points on the host-side. For debugging
+    purposes, this barrier can be inserted before the application’s collective calls
+    to check if any ranks are desynchronized.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that this collective is only supported with the GLOO backend.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**group** (*ProcessGroup**,* *optional*) – The process group to work on. If
+    `None`, the default process group will be used.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**timeout** ([*datetime.timedelta*](https://docs.python.org/3/library/datetime.html#datetime.timedelta
+    "(in Python v3.12)")*,* *optional*) – Timeout for monitored_barrier. If `None`,
+    the default process group timeout will be used.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**wait_all_ranks** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")*,* *optional*) – Whether to collect all failed ranks or not.
+    By default, this is `False` and `monitored_barrier` on rank 0 will throw on the
+    first failed rank it encounters in order to fail fast. By setting `wait_all_ranks=True`
+    `monitored_barrier` will collect all failed ranks and throw an error containing
+    information about all failed ranks.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`None`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example::'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE91]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE92]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'An enum-like class for available reduction operations: `SUM`, `PRODUCT`, `MIN`,
+    `MAX`, `BAND`, `BOR`, `BXOR`, and `PREMUL_SUM`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`BAND`, `BOR`, and `BXOR` reductions are not available when using the `NCCL`
+    backend.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`AVG` divides values by the world size before summing across ranks. `AVG` is
+    only available with the `NCCL` backend, and only for NCCL versions 2.10 or later.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`PREMUL_SUM` multiplies inputs by a given scalar locally before reduction.
+    `PREMUL_SUM` is only available with the `NCCL` backend, and only available for
+    NCCL versions 2.11 or later. Users are supposed to use `torch.distributed._make_nccl_premul_sum`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Additionally, `MAX`, `MIN` and `PRODUCT` are not supported for complex tensors.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The values of this class can be accessed as attributes, e.g., `ReduceOp.SUM`.
+    They are used in specifying strategies for reduction collectives, e.g., [`reduce()`](#torch.distributed.reduce
+    "torch.distributed.reduce").
+  prefs: []
+  type: TYPE_NORMAL
+- en: This class does not support `__members__` property.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE93]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Deprecated enum-like class for reduction operations: `SUM`, `PRODUCT`, `MIN`,
+    and `MAX`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`ReduceOp`](#torch.distributed.ReduceOp "torch.distributed.ReduceOp") is recommended
+    to use instead.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Profiling Collective Communication[](#profiling-collective-communication "Permalink
+    to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Note that you can use `torch.profiler` (recommended, only available after 1.8.1)
+    or `torch.autograd.profiler` to profile collective communication and point-to-point
+    communication APIs mentioned here. All out-of-the-box backends (`gloo`, `nccl`,
+    `mpi`) are supported and collective communication usage will be rendered as expected
+    in profiling output/traces. Profiling your code is the same as any regular torch
+    operator:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE94]'
+  prefs: []
+  type: TYPE_PRE
+- en: Please refer to the [profiler documentation](https://pytorch.org/docs/main/profiler.html)
+    for a full overview of profiler features.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Multi-GPU collective functions[](#multi-gpu-collective-functions "Permalink
+    to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: The multi-GPU functions (which stand for multiple GPUs per CPU thread) are deprecated.
+    As of today, PyTorch Distributed’s preferred programming model is one device per
+    thread, as exemplified by the APIs in this document. If you are a backend developer
+    and want to support multiple devices per thread, please contact PyTorch Distributed’s
+    maintainers.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '## Third-party backends'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Besides the builtin GLOO/MPI/NCCL backends, PyTorch distributed supports third-party
+    backends through a run-time register mechanism. For references on how to develop
+    a third-party backend through C++ Extension, please refer to [Tutorials - Custom
+    C++ and CUDA Extensions](https://pytorch.org/tutorials/advanced/cpp_extension.html)
+    and `test/cpp_extensions/cpp_c10d_extension.cpp`. The capability of third-party
+    backends are decided by their own implementations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The new backend derives from `c10d::ProcessGroup` and registers the backend
+    name and the instantiating interface through [`torch.distributed.Backend.register_backend()`](#torch.distributed.Backend.register_backend
+    "torch.distributed.Backend.register_backend") when imported.
+  prefs: []
+  type: TYPE_NORMAL
+- en: When manually importing this backend and invoking [`torch.distributed.init_process_group()`](#torch.distributed.init_process_group
+    "torch.distributed.init_process_group") with the corresponding backend name, the
+    `torch.distributed` package runs on the new backend.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: The support of third-party backend is experimental and subject to change.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Launch utility
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The torch.distributed package also provides a launch utility in torch.distributed.launch.
+    This helper utility can be used to launch multiple processes per node for distributed
+    training.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Module `torch.distributed.launch`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`torch.distributed.launch` is a module that spawns up multiple distributed
+    training processes on each of the training nodes.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: This module is going to be deprecated in favor of [torchrun](elastic/run.html#launcher-api).
+  prefs: []
+  type: TYPE_NORMAL
+- en: The utility can be used for single-node distributed training, in which one or
+    more processes per node will be spawned. The utility can be used for either CPU
+    training or GPU training. If the utility is used for GPU training, each distributed
+    process will be operating on a single GPU. This can achieve well-improved single-node
+    training performance. It can also be used in multi-node distributed training,
+    by spawning up multiple processes on each node for well-improved multi-node distributed
+    training performance as well. This will especially be beneficial for systems with
+    multiple Infiniband interfaces that have direct-GPU support, since all of them
+    can be utilized for aggregated communication bandwidth.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In both cases of single-node distributed training or multi-node distributed
+    training, this utility will launch the given number of processes per node (`--nproc-per-node`).
+    If used for GPU training, this number needs to be less or equal to the number
+    of GPUs on the current system (`nproc_per_node`), and each process will be operating
+    on a single GPU from *GPU 0 to GPU (nproc_per_node - 1)*.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**How to use this module:**'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Single-Node multi-process distributed training
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '[PRE95]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Multi-Node multi-process distributed training: (e.g. two nodes)'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'Node 1: *(IP: 192.168.1.1, and has a free port: 1234)*'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE96]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Node 2:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE97]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'To look up what optional arguments this module offers:'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '[PRE98]'
+  prefs: []
+  type: TYPE_PRE
+- en: '**Important Notices:**'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 1\. This utility and multi-process distributed (single-node or multi-node) GPU
+    training currently only achieves the best performance using the NCCL distributed
+    backend. Thus NCCL backend is the recommended backend to use for GPU training.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '2\. In your training program, you must parse the command-line argument: `--local-rank=LOCAL_PROCESS_RANK`,
+    which will be provided by this module. If your training program uses GPUs, you
+    should ensure that your code only runs on the GPU device of LOCAL_PROCESS_RANK.
+    This can be done by:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parsing the local_rank argument
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE99]'
+  prefs: []
+  type: TYPE_PRE
+- en: Set your device to local rank using either
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE100]'
+  prefs: []
+  type: TYPE_PRE
+- en: or
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE101]'
+  prefs: []
+  type: TYPE_PRE
+- en: 3\. In your training program, you are supposed to call the following function
+    at the beginning to start the distributed backend. It is strongly recommended
+    that `init_method=env://`. Other init methods (e.g. `tcp://`) may work, but `env://`
+    is the one that is officially supported by this module.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE102]'
+  prefs: []
+  type: TYPE_PRE
+- en: 4\. In your training program, you can either use regular distributed functions
+    or use [`torch.nn.parallel.DistributedDataParallel()`](generated/torch.nn.parallel.DistributedDataParallel.html#torch.nn.parallel.DistributedDataParallel
+    "torch.nn.parallel.DistributedDataParallel") module. If your training program
+    uses GPUs for training and you would like to use [`torch.nn.parallel.DistributedDataParallel()`](generated/torch.nn.parallel.DistributedDataParallel.html#torch.nn.parallel.DistributedDataParallel
+    "torch.nn.parallel.DistributedDataParallel") module, here is how to configure
+    it.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE103]'
+  prefs: []
+  type: TYPE_PRE
+- en: Please ensure that `device_ids` argument is set to be the only GPU device id
+    that your code will be operating on. This is generally the local rank of the process.
+    In other words, the `device_ids` needs to be `[args.local_rank]`, and `output_device`
+    needs to be `args.local_rank` in order to use this utility
+  prefs: []
+  type: TYPE_NORMAL
+- en: 5\. Another way to pass `local_rank` to the subprocesses via environment variable
+    `LOCAL_RANK`. This behavior is enabled when you launch the script with `--use-env=True`.
+    You must adjust the subprocess example above to replace `args.local_rank` with
+    `os.environ['LOCAL_RANK']`; the launcher will not pass `--local-rank` when you
+    specify this flag.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`local_rank` is NOT globally unique: it is only unique per process on a machine.
+    Thus, don’t use it to decide if you should, e.g., write to a networked filesystem.
+    See [https://github.com/pytorch/pytorch/issues/12042](https://github.com/pytorch/pytorch/issues/12042)
+    for an example of how things can go wrong if you don’t do this correctly.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Spawn utility
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The [Multiprocessing package - torch.multiprocessing](multiprocessing.html#multiprocessing-doc)
+    package also provides a `spawn` function in [`torch.multiprocessing.spawn()`](multiprocessing.html#module-torch.multiprocessing.spawn
+    "torch.multiprocessing.spawn"). This helper function can be used to spawn multiple
+    processes. It works by passing in the function that you want to run and spawns
+    N processes to run it. This can be used for multiprocess distributed training
+    as well.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For references on how to use it, please refer to [PyTorch example - ImageNet
+    implementation](https://github.com/pytorch/examples/tree/master/imagenet)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that this function requires Python 3.4 or higher.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Debugging `torch.distributed` applications[](#debugging-torch-distributed-applications
+    "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Debugging distributed applications can be challenging due to hard to understand
+    hangs, crashes, or inconsistent behavior across ranks. `torch.distributed` provides
+    a suite of tools to help debug training applications in a self-serve fashion:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Monitored Barrier
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'As of v1.10, [`torch.distributed.monitored_barrier()`](#torch.distributed.monitored_barrier
+    "torch.distributed.monitored_barrier") exists as an alternative to [`torch.distributed.barrier()`](#torch.distributed.barrier
+    "torch.distributed.barrier") which fails with helpful information about which
+    rank may be faulty when crashing, i.e. not all ranks calling into [`torch.distributed.monitored_barrier()`](#torch.distributed.monitored_barrier
+    "torch.distributed.monitored_barrier") within the provided timeout. [`torch.distributed.monitored_barrier()`](#torch.distributed.monitored_barrier
+    "torch.distributed.monitored_barrier") implements a host-side barrier using `send`/`recv`
+    communication primitives in a process similar to acknowledgements, allowing rank
+    0 to report which rank(s) failed to acknowledge the barrier in time. As an example,
+    consider the following function where rank 1 fails to call into [`torch.distributed.monitored_barrier()`](#torch.distributed.monitored_barrier
+    "torch.distributed.monitored_barrier") (in practice this could be due to an application
+    bug or hang in a previous collective):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE104]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The following error message is produced on rank 0, allowing the user to determine
+    which rank(s) may be faulty and investigate further:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE105]'
+  prefs: []
+  type: TYPE_PRE
+- en: '`TORCH_DISTRIBUTED_DEBUG`'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: With `TORCH_CPP_LOG_LEVEL=INFO`, the environment variable `TORCH_DISTRIBUTED_DEBUG`
+    can be used to trigger additional useful logging and collective synchronization
+    checks to ensure all ranks are synchronized appropriately. `TORCH_DISTRIBUTED_DEBUG`
+    can be set to either `OFF` (default), `INFO`, or `DETAIL` depending on the debugging
+    level required. Please note that the most verbose option, `DETAIL` may impact
+    the application performance and thus should only be used when debugging issues.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Setting `TORCH_DISTRIBUTED_DEBUG=INFO` will result in additional debug logging
+    when models trained with [`torch.nn.parallel.DistributedDataParallel()`](generated/torch.nn.parallel.DistributedDataParallel.html#torch.nn.parallel.DistributedDataParallel
+    "torch.nn.parallel.DistributedDataParallel") are initialized, and `TORCH_DISTRIBUTED_DEBUG=DETAIL`
+    will additionally log runtime performance statistics a select number of iterations.
+    These runtime statistics include data such as forward time, backward time, gradient
+    communication time, etc. As an example, given the following application:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE106]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The following logs are rendered at initialization time:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE107]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The following logs are rendered during runtime (when `TORCH_DISTRIBUTED_DEBUG=DETAIL`
+    is set):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE108]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'In addition, `TORCH_DISTRIBUTED_DEBUG=INFO` enhances crash logging in [`torch.nn.parallel.DistributedDataParallel()`](generated/torch.nn.parallel.DistributedDataParallel.html#torch.nn.parallel.DistributedDataParallel
+    "torch.nn.parallel.DistributedDataParallel") due to unused parameters in the model.
+    Currently, `find_unused_parameters=True` must be passed into [`torch.nn.parallel.DistributedDataParallel()`](generated/torch.nn.parallel.DistributedDataParallel.html#torch.nn.parallel.DistributedDataParallel
+    "torch.nn.parallel.DistributedDataParallel") initialization if there are parameters
+    that may be unused in the forward pass, and as of v1.10, all model outputs are
+    required to be used in loss computation as [`torch.nn.parallel.DistributedDataParallel()`](generated/torch.nn.parallel.DistributedDataParallel.html#torch.nn.parallel.DistributedDataParallel
+    "torch.nn.parallel.DistributedDataParallel") does not support unused parameters
+    in the backwards pass. These constraints are challenging especially for larger
+    models, thus when crashing with an error, [`torch.nn.parallel.DistributedDataParallel()`](generated/torch.nn.parallel.DistributedDataParallel.html#torch.nn.parallel.DistributedDataParallel
+    "torch.nn.parallel.DistributedDataParallel") will log the fully qualified name
+    of all parameters that went unused. For example, in the above application, if
+    we modify `loss` to be instead computed as `loss = output[1]`, then `TwoLinLayerNet.a`
+    does not receive a gradient in the backwards pass, and thus results in `DDP` failing.
+    On a crash, the user is passed information about parameters which went unused,
+    which may be challenging to manually find for large models:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE109]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Setting `TORCH_DISTRIBUTED_DEBUG=DETAIL` will trigger additional consistency
+    and synchronization checks on every collective call issued by the user either
+    directly or indirectly (such as DDP `allreduce`). This is done by creating a wrapper
+    process group that wraps all process groups returned by [`torch.distributed.init_process_group()`](#torch.distributed.init_process_group
+    "torch.distributed.init_process_group") and [`torch.distributed.new_group()`](#torch.distributed.new_group
+    "torch.distributed.new_group") APIs. As a result, these APIs will return a wrapper
+    process group that can be used exactly like a regular process group, but performs
+    consistency checks before dispatching the collective to an underlying process
+    group. Currently, these checks include a [`torch.distributed.monitored_barrier()`](#torch.distributed.monitored_barrier
+    "torch.distributed.monitored_barrier"), which ensures all ranks complete their
+    outstanding collective calls and reports ranks which are stuck. Next, the collective
+    itself is checked for consistency by ensuring all collective functions match and
+    are called with consistent tensor shapes. If this is not the case, a detailed
+    error report is included when the application crashes, rather than a hang or uninformative
+    error message. As an example, consider the following function which has mismatched
+    input shapes into [`torch.distributed.all_reduce()`](#torch.distributed.all_reduce
+    "torch.distributed.all_reduce"):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE110]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'With the `NCCL` backend, such an application would likely result in a hang
+    which can be challenging to root-cause in nontrivial scenarios. If the user enables
+    `TORCH_DISTRIBUTED_DEBUG=DETAIL` and reruns the application, the following error
+    message reveals the root cause:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE111]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: For fine-grained control of the debug level during runtime the functions `torch.distributed.set_debug_level()`,
+    `torch.distributed.set_debug_level_from_env()`, and `torch.distributed.get_debug_level()`
+    can also be used.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In addition, TORCH_DISTRIBUTED_DEBUG=DETAIL can be used in conjunction with
+    TORCH_SHOW_CPP_STACKTRACES=1 to log the entire callstack when a collective desynchronization
+    is detected. These collective desynchronization checks will work for all applications
+    that use `c10d` collective calls backed by process groups created with the [`torch.distributed.init_process_group()`](#torch.distributed.init_process_group
+    "torch.distributed.init_process_group") and [`torch.distributed.new_group()`](#torch.distributed.new_group
+    "torch.distributed.new_group") APIs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Logging
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In addition to explicit debugging support via [`torch.distributed.monitored_barrier()`](#torch.distributed.monitored_barrier
+    "torch.distributed.monitored_barrier") and `TORCH_DISTRIBUTED_DEBUG`, the underlying
+    C++ library of `torch.distributed` also outputs log messages at various levels.
+    These messages can be helpful to understand the execution state of a distributed
+    training job and to troubleshoot problems such as network connection failures.
+    The following matrix shows how the log level can be adjusted via the combination
+    of `TORCH_CPP_LOG_LEVEL` and `TORCH_DISTRIBUTED_DEBUG` environment variables.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| `TORCH_CPP_LOG_LEVEL` | `TORCH_DISTRIBUTED_DEBUG` | Effective Log Level |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `ERROR` | ignored | Error |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `WARNING` | ignored | Warning |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `INFO` | ignored | Info |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `INFO` | `INFO` | Debug |'
+  prefs: []
+  type: TYPE_TB
+- en: '| `INFO` | `DETAIL` | Trace (a.k.a. All) |'
+  prefs: []
+  type: TYPE_TB
+- en: 'Distributed components raise custom Exception types derived from RuntimeError:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'torch.distributed.DistError: This is the base type of all distributed exceptions.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'torch.distributed.DistBackendError: This exception is thrown when a backend-specific
+    error occurs. For example, if the NCCL backend is used and the user attempts to
+    use a GPU that is not available to the NCCL library.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'torch.distributed.DistNetworkError: This exception is thrown when networking
+    libraries encounter errors (ex: Connection reset by peer)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'torch.distributed.DistStoreError: This exception is thrown when the Store encounters
+    an error (ex: TCPStore timeout)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE112]'
+  prefs: []
+  type: TYPE_PRE
+- en: Exception raised when an error occurs in the distributed library
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE113]'
+  prefs: []
+  type: TYPE_PRE
+- en: Exception raised when a backend error occurs in distributed
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE114]'
+  prefs: []
+  type: TYPE_PRE
+- en: Exception raised when a network error occurs in distributed
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE115]'
+  prefs: []
+  type: TYPE_PRE
+- en: Exception raised when an error occurs in the distributed store
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'If you are running single node training, it may be convenient to interactively
+    breakpoint your script. We offer a way to conveniently breakpoint a single rank:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE116]'
+  prefs: []
+  type: TYPE_PRE
+- en: Set a breakpoint, but only on a single rank. All other ranks will wait for you
+    to be done with the breakpoint before continuing. This calls `breakpoint()` under
+    the hood, so you can customize it using the normal facilities, e.g., `PYTHONBREAKPOINT`
+    environment variable.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**rank** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)")) – Which rank to break on. Default: `0`'
+  prefs: []
+  type: TYPE_NORMAL

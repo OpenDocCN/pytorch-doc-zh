@@ -1,0 +1,871 @@
+- en: torch.utils.tensorboard
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/docs/stable/tensorboard.html](https://pytorch.org/docs/stable/tensorboard.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Before going further, more details on TensorBoard can be found at [https://www.tensorflow.org/tensorboard/](https://www.tensorflow.org/tensorboard/)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Once you’ve installed TensorBoard, these utilities let you log PyTorch models
+    and metrics into a directory for visualization within the TensorBoard UI. Scalars,
+    images, histograms, graphs, and embedding visualizations are all supported for
+    PyTorch models and tensors as well as Caffe2 nets and blobs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The SummaryWriter class is your main entry to log data for consumption and
+    visualization by TensorBoard. For example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'This can then be visualized with TensorBoard, which should be installable and
+    runnable with:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Lots of information can be logged for one experiment. To avoid cluttering the
+    UI and have better result clustering, we can group plots by naming them hierarchically.
+    For example, “Loss/train” and “Loss/test” will be grouped together, while “Accuracy/train”
+    and “Accuracy/test” will be grouped separately in the TensorBoard interface.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Expected result:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[![_images/hier_tags.png](../Images/58f4f40256d7b3e208ac29880d7a1053.png)](_images/hier_tags.png)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Writes entries directly to event files in the log_dir to be consumed by TensorBoard.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The SummaryWriter class provides a high-level API to create an event file in
+    a given directory and add summaries and events to it. The class updates the file
+    contents asynchronously. This allows a training program to call methods to add
+    data to the file directly from the training loop, without slowing down training.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Create a SummaryWriter that will write out events and summaries to the event
+    file.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**log_dir** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
+    Python v3.12)")) – Save directory location. Default is runs/**CURRENT_DATETIME_HOSTNAME**,
+    which changes after each run. Use hierarchical folder structure to compare between
+    runs easily. e.g. pass in ‘runs/exp1’, ‘runs/exp2’, etc. for each new experiment
+    to compare across them.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**comment** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
+    Python v3.12)")) – Comment log_dir suffix appended to the default `log_dir`. If
+    `log_dir` is assigned, this argument has no effect.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**purge_step** ([*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")) – When logging crashes at step <math><semantics><mrow><mi>T</mi><mo>+</mo><mi>X</mi></mrow><annotation
+    encoding="application/x-tex">T+X</annotation></semantics></math>T+X and restarts
+    at step <math><semantics><mrow><mi>T</mi></mrow><annotation encoding="application/x-tex">T</annotation></semantics></math>T,
+    any events whose global_step larger or equal to <math><semantics><mrow><mi>T</mi></mrow><annotation
+    encoding="application/x-tex">T</annotation></semantics></math>T will be purged
+    and hidden from TensorBoard. Note that crashed and resumed experiments should
+    have the same `log_dir`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**max_queue** ([*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")) – Size of the queue for pending events and summaries before
+    one of the ‘add’ calls forces a flush to disk. Default is ten items.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**flush_secs** ([*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")) – How often, in seconds, to flush the pending events and
+    summaries to disk. Default is every two minutes.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**filename_suffix** ([*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")) – Suffix added to all event filenames in the log_dir directory.
+    More details on filename construction in tensorboard.summary.writer.event_file_writer.EventFileWriter.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Examples:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: Add scalar data to summary.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**tag** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
+    v3.12)")) – Data identifier'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**scalar_value** ([*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)") *or* *string/blobname*) – Value to save'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**global_step** ([*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")) – Global step value to record'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**walltime** ([*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")) – Optional override default walltime (time.time()) with
+    seconds after epoch of event'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**new_style** (*boolean*) – Whether to use new style (tensor field) or old
+    style (simple_value field). New style could lead to faster data loading.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Examples:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Expected result:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[![_images/add_scalar.png](../Images/4141e5882a8a2676fa22ef39cd078e8a.png)](_images/add_scalar.png)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: Add many scalar data to summary.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**main_tag** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
+    Python v3.12)")) – The parent name for the tags'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**tag_scalar_dict** ([*dict*](https://docs.python.org/3/library/stdtypes.html#dict
+    "(in Python v3.12)")) – Key-value pair storing the tag and corresponding values'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**global_step** ([*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")) – Global step value to record'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**walltime** ([*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")) – Optional override default walltime (time.time()) seconds
+    after epoch of event'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Examples:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Expected result:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[![_images/add_scalars.png](../Images/815894710cb8be2fb3e45b4dbe87c8a3.png)](_images/add_scalars.png)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: Add histogram to summary.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**tag** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
+    v3.12)")) – Data identifier'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**values** ([*torch.Tensor*](tensors.html#torch.Tensor "torch.Tensor")*,* [*numpy.ndarray*](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray
+    "(in NumPy v1.26)")*, or* *string/blobname*) – Values to build histogram'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**global_step** ([*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")) – Global step value to record'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**bins** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
+    Python v3.12)")) – One of {‘tensorflow’,’auto’, ‘fd’, …}. This determines how
+    the bins are made. You can find other options in: [https://docs.scipy.org/doc/numpy/reference/generated/numpy.histogram.html](https://docs.scipy.org/doc/numpy/reference/generated/numpy.histogram.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**walltime** ([*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")) – Optional override default walltime (time.time()) seconds
+    after epoch of event'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Examples:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Expected result:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[![_images/add_histogram.png](../Images/d61cc1e0bc0bb484d5f77e9d34fd003b.png)](_images/add_histogram.png)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: Add image data to summary.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that this requires the `pillow` package.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**tag** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
+    v3.12)")) – Data identifier'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**img_tensor** ([*torch.Tensor*](tensors.html#torch.Tensor "torch.Tensor")*,*
+    [*numpy.ndarray*](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray
+    "(in NumPy v1.26)")*, or* *string/blobname*) – Image data'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**global_step** ([*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")) – Global step value to record'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**walltime** ([*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")) – Optional override default walltime (time.time()) seconds
+    after epoch of event'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**dataformats** ([*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")) – Image data format specification of the form CHW, HWC,
+    HW, WH, etc.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Shape:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'img_tensor: Default is <math><semantics><mrow><mo stretchy="false">(</mo><mn>3</mn><mo
+    separator="true">,</mo><mi>H</mi><mo separator="true">,</mo><mi>W</mi><mo stretchy="false">)</mo></mrow><annotation
+    encoding="application/x-tex">(3, H, W)</annotation></semantics></math>(3,H,W).
+    You can use `torchvision.utils.make_grid()` to convert a batch of tensor into
+    3xHxW format or call `add_images` and let us do the job. Tensor with <math><semantics><mrow><mo
+    stretchy="false">(</mo><mn>1</mn><mo separator="true">,</mo><mi>H</mi><mo separator="true">,</mo><mi>W</mi><mo
+    stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">(1, H,
+    W)</annotation></semantics></math>(1,H,W), <math><semantics><mrow><mo stretchy="false">(</mo><mi>H</mi><mo
+    separator="true">,</mo><mi>W</mi><mo stretchy="false">)</mo></mrow><annotation
+    encoding="application/x-tex">(H, W)</annotation></semantics></math>(H,W), <math><semantics><mrow><mo
+    stretchy="false">(</mo><mi>H</mi><mo separator="true">,</mo><mi>W</mi><mo separator="true">,</mo><mn>3</mn><mo
+    stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">(H, W,
+    3)</annotation></semantics></math>(H,W,3) is also suitable as long as corresponding
+    `dataformats` argument is passed, e.g. `CHW`, `HWC`, `HW`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Examples:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Expected result:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[![_images/add_image.png](../Images/e1f0afa1c1dc33a13af1b90b678262cf.png)](_images/add_image.png)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: Add batched image data to summary.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that this requires the `pillow` package.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**tag** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
+    v3.12)")) – Data identifier'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**img_tensor** ([*torch.Tensor*](tensors.html#torch.Tensor "torch.Tensor")*,*
+    [*numpy.ndarray*](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray
+    "(in NumPy v1.26)")*, or* *string/blobname*) – Image data'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**global_step** ([*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")) – Global step value to record'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**walltime** ([*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")) – Optional override default walltime (time.time()) seconds
+    after epoch of event'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**dataformats** ([*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")) – Image data format specification of the form NCHW, NHWC,
+    CHW, HWC, HW, WH, etc.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Shape:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'img_tensor: Default is <math><semantics><mrow><mo stretchy="false">(</mo><mi>N</mi><mo
+    separator="true">,</mo><mn>3</mn><mo separator="true">,</mo><mi>H</mi><mo separator="true">,</mo><mi>W</mi><mo
+    stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">(N, 3,
+    H, W)</annotation></semantics></math>(N,3,H,W). If `dataformats` is specified,
+    other shape will be accepted. e.g. NCHW or NHWC.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Examples:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Expected result:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[![_images/add_images.png](../Images/e4fd37001efd1121a008df6384d2fc6a.png)](_images/add_images.png)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: Render matplotlib figure into an image and add it to summary.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that this requires the `matplotlib` package.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**tag** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
+    v3.12)")) – Data identifier'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**figure** ([*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**Figure**,* [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(in Python v3.12)")*[**Figure**]**]*) – Figure or a list of figures'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**global_step** ([*Optional*](https://docs.python.org/3/library/typing.html#typing.Optional
+    "(in Python v3.12)")*[*[*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*]*) – Global step value to record'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**close** ([*bool*](https://docs.python.org/3/library/functions.html#bool "(in
+    Python v3.12)")) – Flag to automatically close the figure'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**walltime** ([*Optional*](https://docs.python.org/3/library/typing.html#typing.Optional
+    "(in Python v3.12)")*[*[*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*]*) – Optional override default walltime (time.time()) seconds
+    after epoch of event'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: Add video data to summary.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that this requires the `moviepy` package.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**tag** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
+    v3.12)")) – Data identifier'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**vid_tensor** ([*torch.Tensor*](tensors.html#torch.Tensor "torch.Tensor"))
+    – Video data'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**global_step** ([*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")) – Global step value to record'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**fps** ([*float*](https://docs.python.org/3/library/functions.html#float "(in
+    Python v3.12)") *or* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")) – Frames per second'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**walltime** ([*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")) – Optional override default walltime (time.time()) seconds
+    after epoch of event'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Shape:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'vid_tensor: <math><semantics><mrow><mo stretchy="false">(</mo><mi>N</mi><mo
+    separator="true">,</mo><mi>T</mi><mo separator="true">,</mo><mi>C</mi><mo separator="true">,</mo><mi>H</mi><mo
+    separator="true">,</mo><mi>W</mi><mo stretchy="false">)</mo></mrow><annotation
+    encoding="application/x-tex">(N, T, C, H, W)</annotation></semantics></math>(N,T,C,H,W).
+    The values should lie in [0, 255] for type uint8 or [0, 1] for type float.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: Add audio data to summary.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**tag** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
+    v3.12)")) – Data identifier'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**snd_tensor** ([*torch.Tensor*](tensors.html#torch.Tensor "torch.Tensor"))
+    – Sound data'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**global_step** ([*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")) – Global step value to record'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**sample_rate** ([*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")) – sample rate in Hz'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**walltime** ([*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")) – Optional override default walltime (time.time()) seconds
+    after epoch of event'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Shape:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'snd_tensor: <math><semantics><mrow><mo stretchy="false">(</mo><mn>1</mn><mo
+    separator="true">,</mo><mi>L</mi><mo stretchy="false">)</mo></mrow><annotation
+    encoding="application/x-tex">(1, L)</annotation></semantics></math>(1,L). The
+    values should lie between [-1, 1].'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: Add text data to summary.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**tag** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
+    v3.12)")) – Data identifier'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**text_string** ([*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")) – String to save'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**global_step** ([*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")) – Global step value to record'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**walltime** ([*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")) – Optional override default walltime (time.time()) seconds
+    after epoch of event'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Examples:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: Add graph data to summary.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**model** ([*torch.nn.Module*](generated/torch.nn.Module.html#torch.nn.Module
+    "torch.nn.Module")) – Model to draw.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**input_to_model** ([*torch.Tensor*](tensors.html#torch.Tensor "torch.Tensor")
+    *or* [*list*](https://docs.python.org/3/library/stdtypes.html#list "(in Python
+    v3.12)") *of* [*torch.Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – A
+    variable or a tuple of variables to be fed.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**verbose** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")) – Whether to print graph structure in console.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**use_strict_trace** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")) – Whether to pass keyword argument strict to torch.jit.trace.
+    Pass False when you want the tracer to record your mutable container types (list,
+    dict)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: Add embedding projector data to summary.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**mat** ([*torch.Tensor*](tensors.html#torch.Tensor "torch.Tensor") *or* [*numpy.ndarray*](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray
+    "(in NumPy v1.26)")) – A matrix which each row is the feature vector of the data
+    point'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**metadata** ([*list*](https://docs.python.org/3/library/stdtypes.html#list
+    "(in Python v3.12)")) – A list of labels, each element will be convert to string'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**label_img** ([*torch.Tensor*](tensors.html#torch.Tensor "torch.Tensor"))
+    – Images correspond to each data point'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**global_step** ([*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")) – Global step value to record'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**tag** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
+    v3.12)")) – Name for the embedding'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Shape:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'mat: <math><semantics><mrow><mo stretchy="false">(</mo><mi>N</mi><mo separator="true">,</mo><mi>D</mi><mo
+    stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">(N, D)</annotation></semantics></math>(N,D),
+    where N is number of data and D is feature dimension'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'label_img: <math><semantics><mrow><mo stretchy="false">(</mo><mi>N</mi><mo
+    separator="true">,</mo><mi>C</mi><mo separator="true">,</mo><mi>H</mi><mo separator="true">,</mo><mi>W</mi><mo
+    stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">(N, C,
+    H, W)</annotation></semantics></math>(N,C,H,W)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Examples:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: Add precision recall curve.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Plotting a precision-recall curve lets you understand your model’s performance
+    under different threshold settings. With this function, you provide the ground
+    truth labeling (T/F) and prediction confidence (usually the output of your model)
+    for each target. The TensorBoard UI will let you choose the threshold interactively.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**tag** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
+    v3.12)")) – Data identifier'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**labels** ([*torch.Tensor*](tensors.html#torch.Tensor "torch.Tensor")*,* [*numpy.ndarray*](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray
+    "(in NumPy v1.26)")*, or* *string/blobname*) – Ground truth data. Binary label
+    for each element.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**predictions** ([*torch.Tensor*](tensors.html#torch.Tensor "torch.Tensor")*,*
+    [*numpy.ndarray*](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray
+    "(in NumPy v1.26)")*, or* *string/blobname*) – The probability that an element
+    be classified as true. Value should be in [0, 1]'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**global_step** ([*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")) – Global step value to record'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**num_thresholds** ([*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")) – Number of thresholds used to draw the curve.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**walltime** ([*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")) – Optional override default walltime (time.time()) seconds
+    after epoch of event'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Examples:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE26]'
+  prefs: []
+  type: TYPE_PRE
+- en: Create special chart by collecting charts tags in ‘scalars’.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'NOTE: This function can only be called once for each SummaryWriter() object.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Because it only provides metadata to tensorboard, the function can be called
+    before or after the training loop.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**layout** ([*dict*](https://docs.python.org/3/library/stdtypes.html#dict "(in
+    Python v3.12)")) – {categoryName: *charts*}, where *charts* is also a dictionary
+    {chartName: *ListOfProperties*}. The first element in *ListOfProperties* is the
+    chart’s type (one of **Multiline** or **Margin**) and the second element should
+    be a list containing the tags you have used in add_scalar function, which will
+    be collected into the new chart.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Examples:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE27]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE28]'
+  prefs: []
+  type: TYPE_PRE
+- en: Add meshes or 3D point clouds to TensorBoard.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The visualization is based on Three.js, so it allows users to interact with
+    the rendered object. Besides the basic definitions such as vertices, faces, users
+    can further provide camera parameter, lighting condition, etc. Please check [https://threejs.org/docs/index.html#manual/en/introduction/Creating-a-scene](https://threejs.org/docs/index.html#manual/en/introduction/Creating-a-scene)
+    for advanced usage.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**tag** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
+    v3.12)")) – Data identifier'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**vertices** ([*torch.Tensor*](tensors.html#torch.Tensor "torch.Tensor")) –
+    List of the 3D coordinates of vertices.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**colors** ([*torch.Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – Colors
+    for each vertex'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**faces** ([*torch.Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – Indices
+    of vertices within each triangle. (Optional)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**config_dict** – Dictionary with ThreeJS classes names and configuration.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**global_step** ([*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")) – Global step value to record'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**walltime** ([*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")) – Optional override default walltime (time.time()) seconds
+    after epoch of event'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Shape:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'vertices: <math><semantics><mrow><mo stretchy="false">(</mo><mi>B</mi><mo separator="true">,</mo><mi>N</mi><mo
+    separator="true">,</mo><mn>3</mn><mo stretchy="false">)</mo></mrow><annotation
+    encoding="application/x-tex">(B, N, 3)</annotation></semantics></math>(B,N,3).
+    (batch, number_of_vertices, channels)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'colors: <math><semantics><mrow><mo stretchy="false">(</mo><mi>B</mi><mo separator="true">,</mo><mi>N</mi><mo
+    separator="true">,</mo><mn>3</mn><mo stretchy="false">)</mo></mrow><annotation
+    encoding="application/x-tex">(B, N, 3)</annotation></semantics></math>(B,N,3).
+    The values should lie in [0, 255] for type uint8 or [0, 1] for type float.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'faces: <math><semantics><mrow><mo stretchy="false">(</mo><mi>B</mi><mo separator="true">,</mo><mi>N</mi><mo
+    separator="true">,</mo><mn>3</mn><mo stretchy="false">)</mo></mrow><annotation
+    encoding="application/x-tex">(B, N, 3)</annotation></semantics></math>(B,N,3).
+    The values should lie in [0, number_of_vertices] for type uint8.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Examples:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE29]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE30]'
+  prefs: []
+  type: TYPE_PRE
+- en: Add a set of hyperparameters to be compared in TensorBoard.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**hparam_dict** ([*dict*](https://docs.python.org/3/library/stdtypes.html#dict
+    "(in Python v3.12)")) – Each key-value pair in the dictionary is the name of the
+    hyper parameter and it’s corresponding value. The type of the value can be one
+    of bool, string, float, int, or None.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**metric_dict** ([*dict*](https://docs.python.org/3/library/stdtypes.html#dict
+    "(in Python v3.12)")) – Each key-value pair in the dictionary is the name of the
+    metric and it’s corresponding value. Note that the key used here should be unique
+    in the tensorboard record. Otherwise the value you added by `add_scalar` will
+    be displayed in hparam plugin. In most cases, this is unwanted.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**hparam_domain_discrete** – (Optional[Dict[str, List[Any]]]) A dictionary
+    that contains names of the hyperparameters and all discrete values they can hold'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**run_name** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
+    Python v3.12)")) – Name of the run, to be included as part of the logdir. If unspecified,
+    will use current timestamp.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**global_step** ([*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")) – Global step value to record'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Examples:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE31]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Expected result:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[![_images/add_hparam.png](../Images/dd8f9e83c6f7c7f46390b6069cc8e6de.png)](_images/add_hparam.png)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE32]'
+  prefs: []
+  type: TYPE_PRE
+- en: Flushes the event file to disk.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Call this method to make sure that all pending events have been written to disk.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE33]'
+  prefs: []
+  type: TYPE_PRE

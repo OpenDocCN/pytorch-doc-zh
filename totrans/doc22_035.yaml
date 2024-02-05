@@ -1,0 +1,320 @@
+- en: Tensor Attributes
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/docs/stable/tensor_attributes.html](https://pytorch.org/docs/stable/tensor_attributes.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Each `torch.Tensor` has a [`torch.dtype`](#torch.dtype "torch.dtype"), [`torch.device`](#torch.device
+    "torch.device"), and [`torch.layout`](#torch.layout "torch.layout").
+  prefs: []
+  type: TYPE_NORMAL
+- en: '## torch.dtype'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'A [`torch.dtype`](#torch.dtype "torch.dtype") is an object that represents
+    the data type of a [`torch.Tensor`](tensors.html#torch.Tensor "torch.Tensor").
+    PyTorch has twelve different data types:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Data type | dtype | Legacy Constructors |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 32-bit floating point | `torch.float32` or `torch.float` | `torch.*.FloatTensor`
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 64-bit floating point | `torch.float64` or `torch.double` | `torch.*.DoubleTensor`
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 64-bit complex | `torch.complex64` or `torch.cfloat` |  |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 128-bit complex | `torch.complex128` or `torch.cdouble` |  |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 16-bit floating point [1](#id3) | `torch.float16` or `torch.half` | `torch.*.HalfTensor`
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 16-bit floating point [2](#id4) | `torch.bfloat16` | `torch.*.BFloat16Tensor`
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 8-bit integer (unsigned) | `torch.uint8` | `torch.*.ByteTensor` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 8-bit integer (signed) | `torch.int8` | `torch.*.CharTensor` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 16-bit integer (signed) | `torch.int16` or `torch.short` | `torch.*.ShortTensor`
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 32-bit integer (signed) | `torch.int32` or `torch.int` | `torch.*.IntTensor`
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| 64-bit integer (signed) | `torch.int64` or `torch.long` | `torch.*.LongTensor`
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Boolean | `torch.bool` | `torch.*.BoolTensor` |'
+  prefs: []
+  type: TYPE_TB
+- en: '[1](#id1)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Sometimes referred to as binary16: uses 1 sign, 5 exponent, and 10 significand
+    bits. Useful when precision is important.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[2](#id2)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Sometimes referred to as Brain Floating Point: use 1 sign, 8 exponent and 7
+    significand bits. Useful when range is important, since it has the same number
+    of exponent bits as `float32`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: To find out if a [`torch.dtype`](#torch.dtype "torch.dtype") is a floating point
+    data type, the property [`is_floating_point`](generated/torch.is_floating_point.html#torch.is_floating_point
+    "torch.is_floating_point") can be used, which returns `True` if the data type
+    is a floating point data type.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To find out if a [`torch.dtype`](#torch.dtype "torch.dtype") is a complex data
+    type, the property [`is_complex`](generated/torch.is_complex.html#torch.is_complex
+    "torch.is_complex") can be used, which returns `True` if the data type is a complex
+    data type.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'When the dtypes of inputs to an arithmetic operation (add, sub, div, mul) differ,
+    we promote by finding the minimum dtype that satisfies the following rules:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: If the type of a scalar operand is of a higher category than tensor operands
+    (where complex > floating > integral > boolean), we promote to a type with sufficient
+    size to hold all scalar operands of that category.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: If a zero-dimension tensor operand has a higher category than dimensioned operands,
+    we promote to a type with sufficient size and category to hold all zero-dim tensor
+    operands of that category.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: If there are no higher-category zero-dim operands, we promote to a type with
+    sufficient size and category to hold all dimensioned operands.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: A floating point scalar operand has dtype torch.get_default_dtype() and an integral
+    non-boolean scalar operand has dtype torch.int64. Unlike numpy, we do not inspect
+    values when determining the minimum dtypes of an operand. Quantized and complex
+    types are not yet supported.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Promotion Examples:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'When the output tensor of an arithmetic operation is specified, we allow casting
+    to its dtype except that:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: An integral output tensor cannot accept a floating point tensor.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: A boolean output tensor cannot accept a non-boolean tensor.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: A non-complex output tensor cannot accept a complex tensor
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Casting Examples:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]  ## torch.device'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: A [`torch.device`](#torch.device "torch.device") is an object representing the
+    device on which a [`torch.Tensor`](tensors.html#torch.Tensor "torch.Tensor") is
+    or will be allocated.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The [`torch.device`](#torch.device "torch.device") contains a device type (`'cpu'`,
+    `'cuda'` or `'mps'`) and optional device ordinal for the device type. If the device
+    ordinal is not present, this object will always represent the current device for
+    the device type, even after [`torch.cuda.set_device()`](generated/torch.cuda.set_device.html#torch.cuda.set_device
+    "torch.cuda.set_device") is called; e.g., a [`torch.Tensor`](tensors.html#torch.Tensor
+    "torch.Tensor") constructed with device `'cuda'` is equivalent to `'cuda:X'` where
+    X is the result of [`torch.cuda.current_device()`](generated/torch.cuda.current_device.html#torch.cuda.current_device
+    "torch.cuda.current_device").
+  prefs: []
+  type: TYPE_NORMAL
+- en: A [`torch.Tensor`](tensors.html#torch.Tensor "torch.Tensor")’s device can be
+    accessed via the [`Tensor.device`](generated/torch.Tensor.device.html#torch.Tensor.device
+    "torch.Tensor.device") property.
+  prefs: []
+  type: TYPE_NORMAL
+- en: A [`torch.device`](#torch.device "torch.device") can be constructed via a string
+    or via a string and device ordinal
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Via a string:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Via a string and device ordinal:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The device object can also be used as a context manager to change the default
+    device tensors are allocated on:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: This context manager has no effect if a factory function is passed an explicit,
+    non-None device argument. To globally change the default device, see also [`torch.set_default_device()`](generated/torch.set_default_device.html#torch.set_default_device
+    "torch.set_default_device").
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: This function imposes a slight performance cost on every Python call to the
+    torch API (not just factory functions). If this is causing problems for you, please
+    comment on [https://github.com/pytorch/pytorch/issues/92701](https://github.com/pytorch/pytorch/issues/92701)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: The [`torch.device`](#torch.device "torch.device") argument in functions can
+    generally be substituted with a string. This allows for fast prototyping of code.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: For legacy reasons, a device can be constructed via a single device ordinal,
+    which is treated as a cuda device. This matches [`Tensor.get_device()`](generated/torch.Tensor.get_device.html#torch.Tensor.get_device
+    "torch.Tensor.get_device"), which returns an ordinal for cuda tensors and is not
+    supported for cpu tensors.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Methods which take a device will generally accept a (properly formatted) string
+    or (legacy) integer device ordinal, i.e. the following are all equivalent:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]  ## torch.layout'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: The `torch.layout` class is in beta and subject to change.
+  prefs: []
+  type: TYPE_NORMAL
+- en: A [`torch.layout`](#torch.layout "torch.layout") is an object that represents
+    the memory layout of a [`torch.Tensor`](tensors.html#torch.Tensor "torch.Tensor").
+    Currently, we support `torch.strided` (dense Tensors) and have beta support for
+    `torch.sparse_coo` (sparse COO Tensors).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`torch.strided` represents dense Tensors and is the memory layout that is most
+    commonly used. Each strided tensor has an associated `torch.Storage`, which holds
+    its data. These tensors provide multi-dimensional, [strided](https://en.wikipedia.org/wiki/Stride_of_an_array)
+    view of a storage. Strides are a list of integers: the k-th stride represents
+    the jump in the memory necessary to go from one element to the next one in the
+    k-th dimension of the Tensor. This concept makes it possible to perform many tensor
+    operations efficiently.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: For more information on `torch.sparse_coo` tensors, see [torch.sparse](sparse.html#sparse-docs).
+  prefs: []
+  type: TYPE_NORMAL
+- en: torch.memory_format
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: A [`torch.memory_format`](#torch.memory_format "torch.memory_format") is an
+    object representing the memory format on which a [`torch.Tensor`](tensors.html#torch.Tensor
+    "torch.Tensor") is or will be allocated.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Possible values are:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`torch.contiguous_format`: Tensor is or will be allocated in dense non-overlapping
+    memory. Strides represented by values in decreasing order.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`torch.channels_last`: Tensor is or will be allocated in dense non-overlapping
+    memory. Strides represented by values in `strides[0] > strides[2] > strides[3]
+    > strides[1] == 1` aka NHWC order.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`torch.channels_last_3d`: Tensor is or will be allocated in dense non-overlapping
+    memory. Strides represented by values in `strides[0] > strides[2] > strides[3]
+    > strides[4] > strides[1] == 1` aka NDHWC order.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`torch.preserve_format`: Used in functions like clone to preserve the memory
+    format of the input tensor. If input tensor is allocated in dense non-overlapping
+    memory, the output tensor strides will be copied from the input. Otherwise output
+    strides will follow `torch.contiguous_format`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL

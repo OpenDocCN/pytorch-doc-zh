@@ -1,0 +1,669 @@
+- en: Modules
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/docs/stable/notes/modules.html](https://pytorch.org/docs/stable/notes/modules.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: 'PyTorch uses modules to represent neural networks. Modules are:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Building blocks of stateful computation.** PyTorch provides a robust library
+    of modules and makes it simple to define new custom modules, allowing for easy
+    construction of elaborate, multi-layer neural networks.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Tightly integrated with PyTorch’s** [autograd](https://pytorch.org/tutorials/beginner/blitz/autograd_tutorial.html)
+    **system.** Modules make it simple to specify learnable parameters for PyTorch’s
+    Optimizers to update.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Easy to work with and transform.** Modules are straightforward to save and
+    restore, transfer between CPU / GPU / TPU devices, prune, quantize, and more.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: This note describes modules, and is intended for all PyTorch users. Since modules
+    are so fundamental to PyTorch, many topics in this note are elaborated on in other
+    notes or tutorials, and links to many of those documents are provided here as
+    well.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[A Simple Custom Module](#a-simple-custom-module)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Modules as Building Blocks](#modules-as-building-blocks)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Neural Network Training with Modules](#neural-network-training-with-modules)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Module State](#module-state)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Module Initialization](#module-initialization)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Module Hooks](#module-hooks)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Advanced Features](#advanced-features)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Distributed Training](#distributed-training)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Profiling Performance](#profiling-performance)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Improving Performance with Quantization](#improving-performance-with-quantization)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Improving Memory Usage with Pruning](#improving-memory-usage-with-pruning)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Parametrizations](#parametrizations)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Transforming Modules with FX](#transforming-modules-with-fx)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[A Simple Custom Module](#id4)[](#a-simple-custom-module "Permalink to this
+    heading")'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: To get started, let’s look at a simpler, custom version of PyTorch’s [`Linear`](../generated/torch.nn.Linear.html#torch.nn.Linear
+    "torch.nn.Linear") module. This module applies an affine transformation to its
+    input.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'This simple module has the following fundamental characteristics of modules:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**It inherits from the base Module class.** All modules should subclass [`Module`](../generated/torch.nn.Module.html#torch.nn.Module
+    "torch.nn.Module") for composability with other modules.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**It defines some “state” that is used in computation.** Here, the state consists
+    of randomly-initialized `weight` and `bias` tensors that define the affine transformation.
+    Because each of these is defined as a [`Parameter`](../generated/torch.nn.parameter.Parameter.html#torch.nn.parameter.Parameter
+    "torch.nn.parameter.Parameter"), they are *registered* for the module and will
+    automatically be tracked and returned from calls to [`parameters()`](../generated/torch.nn.Module.html#torch.nn.Module.parameters
+    "torch.nn.Module.parameters"). Parameters can be considered the “learnable” aspects
+    of the module’s computation (more on this later). Note that modules are not required
+    to have state, and can also be stateless.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**It defines a forward() function that performs the computation.** For this
+    affine transformation module, the input is matrix-multiplied with the `weight`
+    parameter (using the `@` short-hand notation) and added to the `bias` parameter
+    to produce the output. More generally, the `forward()` implementation for a module
+    can perform arbitrary computation involving any number of inputs and outputs.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'This simple module demonstrates how modules package state and computation together.
+    Instances of this module can be constructed and called:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note that the module itself is callable, and that calling it invokes its `forward()`
+    function. This name is in reference to the concepts of “forward pass” and “backward
+    pass”, which apply to each module. The “forward pass” is responsible for applying
+    the computation represented by the module to the given input(s) (as shown in the
+    above snippet). The “backward pass” computes gradients of module outputs with
+    respect to its inputs, which can be used for “training” parameters through gradient
+    descent methods. PyTorch’s autograd system automatically takes care of this backward
+    pass computation, so it is not required to manually implement a `backward()` function
+    for each module. The process of training module parameters through successive
+    forward / backward passes is covered in detail in [Neural Network Training with
+    Modules](#neural-network-training-with-modules).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The full set of parameters registered by the module can be iterated through
+    via a call to [`parameters()`](../generated/torch.nn.Module.html#torch.nn.Module.parameters
+    "torch.nn.Module.parameters") or [`named_parameters()`](../generated/torch.nn.Module.html#torch.nn.Module.named_parameters
+    "torch.nn.Module.named_parameters"), where the latter includes each parameter’s
+    name:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: In general, the parameters registered by a module are aspects of the module’s
+    computation that should be “learned”. A later section of this note shows how to
+    update these parameters using one of PyTorch’s Optimizers. Before we get to that,
+    however, let’s first examine how modules can be composed with one another.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Modules as Building Blocks](#id5)[](#modules-as-building-blocks "Permalink
+    to this heading")'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Modules can contain other modules, making them useful building blocks for developing
+    more elaborate functionality. The simplest way to do this is using the [`Sequential`](../generated/torch.nn.Sequential.html#torch.nn.Sequential
+    "torch.nn.Sequential") module. It allows us to chain together multiple modules:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note that [`Sequential`](../generated/torch.nn.Sequential.html#torch.nn.Sequential
+    "torch.nn.Sequential") automatically feeds the output of the first `MyLinear`
+    module as input into the [`ReLU`](../generated/torch.nn.ReLU.html#torch.nn.ReLU
+    "torch.nn.ReLU"), and the output of that as input into the second `MyLinear` module.
+    As shown, it is limited to in-order chaining of modules with a single input and
+    output.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In general, it is recommended to define a custom module for anything beyond
+    the simplest use cases, as this gives full flexibility on how submodules are used
+    for a module’s computation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'For example, here’s a simple neural network implemented as a custom module:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'This module is composed of two “children” or “submodules” (`l0` and `l1`) that
+    define the layers of the neural network and are utilized for computation within
+    the module’s `forward()` method. Immediate children of a module can be iterated
+    through via a call to [`children()`](../generated/torch.nn.Module.html#torch.nn.Module.children
+    "torch.nn.Module.children") or [`named_children()`](../generated/torch.nn.Module.html#torch.nn.Module.named_children
+    "torch.nn.Module.named_children"):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'To go deeper than just the immediate children, [`modules()`](../generated/torch.nn.Module.html#torch.nn.Module.modules
+    "torch.nn.Module.modules") and [`named_modules()`](../generated/torch.nn.Module.html#torch.nn.Module.named_modules
+    "torch.nn.Module.named_modules") *recursively* iterate through a module and its
+    child modules:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Sometimes, it’s necessary for a module to dynamically define submodules. The
+    [`ModuleList`](../generated/torch.nn.ModuleList.html#torch.nn.ModuleList "torch.nn.ModuleList")
+    and [`ModuleDict`](../generated/torch.nn.ModuleDict.html#torch.nn.ModuleDict "torch.nn.ModuleDict")
+    modules are useful here; they register submodules from a list or dict:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'For any given module, its parameters consist of its direct parameters as well
+    as the parameters of all submodules. This means that calls to [`parameters()`](../generated/torch.nn.Module.html#torch.nn.Module.parameters
+    "torch.nn.Module.parameters") and [`named_parameters()`](../generated/torch.nn.Module.html#torch.nn.Module.named_parameters
+    "torch.nn.Module.named_parameters") will recursively include child parameters,
+    allowing for convenient optimization of all parameters within the network:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'It’s also easy to move all parameters to a different device or change their
+    precision using [`to()`](../generated/torch.nn.Module.html#torch.nn.Module.to
+    "torch.nn.Module.to"):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'More generally, an arbitrary function can be applied to a module and its submodules
+    recursively by using the [`apply()`](../generated/torch.nn.Module.html#torch.nn.Module.apply
+    "torch.nn.Module.apply") function. For example, to apply custom initialization
+    to parameters of a module and its submodules:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: These examples show how elaborate neural networks can be formed through module
+    composition and conveniently manipulated. To allow for quick and easy construction
+    of neural networks with minimal boilerplate, PyTorch provides a large library
+    of performant modules within the [`torch.nn`](../nn.html#module-torch.nn "torch.nn")
+    namespace that perform common neural network operations like pooling, convolutions,
+    loss functions, etc.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the next section, we give a full example of training a neural network.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'For more information, check out:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Library of PyTorch-provided modules: [torch.nn](https://pytorch.org/docs/stable/nn.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Defining neural net modules: [https://pytorch.org/tutorials/beginner/examples_nn/polynomial_module.html](https://pytorch.org/tutorials/beginner/examples_nn/polynomial_module.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '## [Neural Network Training with Modules](#id6)[](#neural-network-training-with-modules
+    "Permalink to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Once a network is built, it has to be trained, and its parameters can be easily
+    optimized with one of PyTorch’s Optimizers from [`torch.optim`](../optim.html#module-torch.optim
+    "torch.optim"):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'In this simplified example, the network learns to simply output zero, as any
+    non-zero output is “penalized” according to its absolute value by employing [`torch.abs()`](../generated/torch.abs.html#torch.abs
+    "torch.abs") as a loss function. While this is not a very interesting task, the
+    key parts of training are present:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: A network is created.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: An optimizer (in this case, a stochastic gradient descent optimizer) is created,
+    and the network’s parameters are associated with it.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: A training loop…
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: acquires an input,
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: runs the network,
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: computes a loss,
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: zeros the network’s parameters’ gradients,
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: calls loss.backward() to update the parameters’ gradients,
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: calls optimizer.step() to apply the gradients to the parameters.
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'After the above snippet has been run, note that the network’s parameters have
+    changed. In particular, examining the value of `l1`‘s `weight` parameter shows
+    that its values are now much closer to 0 (as may be expected):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Note that the above process is done entirely while the network module is in
+    “training mode”. Modules default to training mode and can be switched between
+    training and evaluation modes using [`train()`](../generated/torch.nn.Module.html#torch.nn.Module.train
+    "torch.nn.Module.train") and [`eval()`](../generated/torch.nn.Module.html#torch.nn.Module.eval
+    "torch.nn.Module.eval"). They can behave differently depending on which mode they
+    are in. For example, the `BatchNorm` module maintains a running mean and variance
+    during training that are not updated when the module is in evaluation mode. In
+    general, modules should be in training mode during training and only switched
+    to evaluation mode for inference or evaluation. Below is an example of a custom
+    module that behaves differently between the two modes:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Training neural networks can often be tricky. For more information, check out:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Using Optimizers: [https://pytorch.org/tutorials/beginner/examples_nn/two_layer_net_optim.html](https://pytorch.org/tutorials/beginner/examples_nn/two_layer_net_optim.html).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Neural network training: [https://pytorch.org/tutorials/beginner/blitz/neural_networks_tutorial.html](https://pytorch.org/tutorials/beginner/blitz/neural_networks_tutorial.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Introduction to autograd: [https://pytorch.org/tutorials/beginner/blitz/autograd_tutorial.html](https://pytorch.org/tutorials/beginner/blitz/autograd_tutorial.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Module State](#id7)'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'In the previous section, we demonstrated training a module’s “parameters”,
+    or learnable aspects of computation. Now, if we want to save the trained model
+    to disk, we can do so by saving its `state_dict` (i.e. “state dictionary”):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'A module’s `state_dict` contains state that affects its computation. This includes,
+    but is not limited to, the module’s parameters. For some modules, it may be useful
+    to have state beyond parameters that affects module computation but is not learnable.
+    For such cases, PyTorch provides the concept of “buffers”, both “persistent” and
+    “non-persistent”. Following is an overview of the various types of state a module
+    can have:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Parameters**: learnable aspects of computation; contained within the `state_dict`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Buffers**: non-learnable aspects of computation'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Persistent** buffers: contained within the `state_dict` (i.e. serialized
+    when saving & loading)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Non-persistent** buffers: not contained within the `state_dict` (i.e. left
+    out of serialization)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'As a motivating example for the use of buffers, consider a simple module that
+    maintains a running mean. We want the current value of the running mean to be
+    considered part of the module’s `state_dict` so that it will be restored when
+    loading a serialized form of the module, but we don’t want it to be learnable.
+    This snippet shows how to use [`register_buffer()`](../generated/torch.nn.Module.html#torch.nn.Module.register_buffer
+    "torch.nn.Module.register_buffer") to accomplish this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Now, the current value of the running mean is considered part of the module’s
+    `state_dict` and will be properly restored when loading the module from disk:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'As mentioned previously, buffers can be left out of the module’s `state_dict`
+    by marking them as non-persistent:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Both persistent and non-persistent buffers are affected by model-wide device
+    / dtype changes applied with [`to()`](../generated/torch.nn.Module.html#torch.nn.Module.to
+    "torch.nn.Module.to"):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: Buffers of a module can be iterated over using [`buffers()`](../generated/torch.nn.Module.html#torch.nn.Module.buffers
+    "torch.nn.Module.buffers") or [`named_buffers()`](../generated/torch.nn.Module.html#torch.nn.Module.named_buffers
+    "torch.nn.Module.named_buffers").
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The following class demonstrates the various ways of registering parameters
+    and buffers within a module:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'For more information, check out:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Saving and loading: [https://pytorch.org/tutorials/beginner/saving_loading_models.html](https://pytorch.org/tutorials/beginner/saving_loading_models.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Serialization semantics: [https://pytorch.org/docs/main/notes/serialization.html](https://pytorch.org/docs/main/notes/serialization.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: What is a state dict? [https://pytorch.org/tutorials/recipes/recipes/what_is_state_dict.html](https://pytorch.org/tutorials/recipes/recipes/what_is_state_dict.html)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Module Initialization](#id8)[](#module-initialization "Permalink to this
+    heading")'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: By default, parameters and floating-point buffers for modules provided by [`torch.nn`](../nn.html#module-torch.nn
+    "torch.nn") are initialized during module instantiation as 32-bit floating point
+    values on the CPU using an initialization scheme determined to perform well historically
+    for the module type. For certain use cases, it may be desired to initialize with
+    a different dtype, device (e.g. GPU), or initialization technique.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Examples:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Note that the device and dtype options demonstrated above also apply to any
+    floating-point buffers registered for the module:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'While module writers can use any device or dtype to initialize parameters in
+    their custom modules, good practice is to use `dtype=torch.float` and `device=''cpu''`
+    by default as well. Optionally, you can provide full flexibility in these areas
+    for your custom module by conforming to the convention demonstrated above that
+    all [`torch.nn`](../nn.html#module-torch.nn "torch.nn") modules follow:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Provide a `device` constructor kwarg that applies to any parameters / buffers
+    registered by the module.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Provide a `dtype` constructor kwarg that applies to any parameters / floating-point
+    buffers registered by the module.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Only use initialization functions (i.e. functions from [`torch.nn.init`](../nn.html#module-torch.nn.init
+    "torch.nn.init")) on parameters and buffers within the module’s constructor. Note
+    that this is only required to use [`skip_init()`](../generated/torch.nn.utils.skip_init.html#torch.nn.utils.skip_init
+    "torch.nn.utils.skip_init"); see [this page](https://pytorch.org/tutorials/prototype/skip_param_init.html#updating-modules-to-support-skipping-initialization)
+    for an explanation.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'For more information, check out:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Skipping module parameter initialization: [https://pytorch.org/tutorials/prototype/skip_param_init.html](https://pytorch.org/tutorials/prototype/skip_param_init.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Module Hooks](#id9)'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In [Neural Network Training with Modules](#neural-network-training-with-modules),
+    we demonstrated the training process for a module, which iteratively performs
+    forward and backward passes, updating module parameters each iteration. For more
+    control over this process, PyTorch provides “hooks” that can perform arbitrary
+    computation during a forward or backward pass, even modifying how the pass is
+    done if desired. Some useful examples for this functionality include debugging,
+    visualizing activations, examining gradients in-depth, etc. Hooks can be added
+    to modules you haven’t written yourself, meaning this functionality can be applied
+    to third-party or PyTorch-provided modules.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'PyTorch provides two types of hooks for modules:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Forward hooks** are called during the forward pass. They can be installed
+    for a given module with [`register_forward_pre_hook()`](../generated/torch.nn.Module.html#torch.nn.Module.register_forward_pre_hook
+    "torch.nn.Module.register_forward_pre_hook") and [`register_forward_hook()`](../generated/torch.nn.Module.html#torch.nn.Module.register_forward_hook
+    "torch.nn.Module.register_forward_hook"). These hooks will be called respectively
+    just before the forward function is called and just after it is called. Alternatively,
+    these hooks can be installed globally for all modules with the analogous [`register_module_forward_pre_hook()`](../generated/torch.nn.modules.module.register_module_forward_pre_hook.html#torch.nn.modules.module.register_module_forward_pre_hook
+    "torch.nn.modules.module.register_module_forward_pre_hook") and [`register_module_forward_hook()`](../generated/torch.nn.modules.module.register_module_forward_hook.html#torch.nn.modules.module.register_module_forward_hook
+    "torch.nn.modules.module.register_module_forward_hook") functions.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Backward hooks** are called during the backward pass. They can be installed
+    with [`register_full_backward_pre_hook()`](../generated/torch.nn.Module.html#torch.nn.Module.register_full_backward_pre_hook
+    "torch.nn.Module.register_full_backward_pre_hook") and [`register_full_backward_hook()`](../generated/torch.nn.Module.html#torch.nn.Module.register_full_backward_hook
+    "torch.nn.Module.register_full_backward_hook"). These hooks will be called when
+    the backward for this Module has been computed. [`register_full_backward_pre_hook()`](../generated/torch.nn.Module.html#torch.nn.Module.register_full_backward_pre_hook
+    "torch.nn.Module.register_full_backward_pre_hook") will allow the user to access
+    the gradients for outputs while [`register_full_backward_hook()`](../generated/torch.nn.Module.html#torch.nn.Module.register_full_backward_hook
+    "torch.nn.Module.register_full_backward_hook") will allow the user to access the
+    gradients both the inputs and outputs. Alternatively, they can be installed globally
+    for all modules with [`register_module_full_backward_hook()`](../generated/torch.nn.modules.module.register_module_full_backward_hook.html#torch.nn.modules.module.register_module_full_backward_hook
+    "torch.nn.modules.module.register_module_full_backward_hook") and [`register_module_full_backward_pre_hook()`](../generated/torch.nn.modules.module.register_module_full_backward_pre_hook.html#torch.nn.modules.module.register_module_full_backward_pre_hook
+    "torch.nn.modules.module.register_module_full_backward_pre_hook").'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: All hooks allow the user to return an updated value that will be used throughout
+    the remaining computation. Thus, these hooks can be used to either execute arbitrary
+    code along the regular module forward/backward or modify some inputs/outputs without
+    having to change the module’s `forward()` function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Below is an example demonstrating usage of forward and backward hooks:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[Advanced Features](#id10)'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: PyTorch also provides several more advanced features that are designed to work
+    with modules. All these functionalities are available for custom-written modules,
+    with the small caveat that certain features may require modules to conform to
+    particular constraints in order to be supported. In-depth discussion of these
+    features and the corresponding requirements can be found in the links below.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Distributed Training](#id11)'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Various methods for distributed training exist within PyTorch, both for scaling
+    up training using multiple GPUs as well as training across multiple machines.
+    Check out the [distributed training overview page](https://pytorch.org/tutorials/beginner/dist_overview.html)
+    for detailed information on how to utilize these.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Profiling Performance](#id12)[](#profiling-performance "Permalink to this
+    heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The [PyTorch Profiler](https://pytorch.org/tutorials/beginner/profiler.html)
+    can be useful for identifying performance bottlenecks within your models. It measures
+    and outputs performance characteristics for both memory usage and time spent.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Improving Performance with Quantization](#id13)[](#improving-performance-with-quantization
+    "Permalink to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Applying quantization techniques to modules can improve performance and memory
+    usage by utilizing lower bitwidths than floating-point precision. Check out the
+    various PyTorch-provided mechanisms for quantization [here](https://pytorch.org/docs/stable/quantization.html).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Improving Memory Usage with Pruning](#id14)[](#improving-memory-usage-with-pruning
+    "Permalink to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Large deep learning models are often over-parametrized, resulting in high memory
+    usage. To combat this, PyTorch provides mechanisms for model pruning, which can
+    help reduce memory usage while maintaining task accuracy. The [Pruning tutorial](https://pytorch.org/tutorials/intermediate/pruning_tutorial.html)
+    describes how to utilize the pruning techniques PyTorch provides or define custom
+    pruning techniques as necessary.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Parametrizations](#id15)'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: For certain applications, it can be beneficial to constrain the parameter space
+    during model training. For example, enforcing orthogonality of the learned parameters
+    can improve convergence for RNNs. PyTorch provides a mechanism for applying [parametrizations](https://pytorch.org/tutorials/intermediate/parametrizations.html)
+    such as this, and further allows for custom constraints to be defined.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Transforming Modules with FX](#id16)[](#transforming-modules-with-fx "Permalink
+    to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The [FX](https://pytorch.org/docs/stable/fx.html) component of PyTorch provides
+    a flexible way to transform modules by operating directly on module computation
+    graphs. This can be used to programmatically generate or manipulate modules for
+    a broad array of use cases. To explore FX, check out these examples of using FX
+    for [convolution + batch norm fusion](https://pytorch.org/tutorials/intermediate/fx_conv_bn_fuser.html)
+    and [CPU performance analysis](https://pytorch.org/tutorials/intermediate/fx_profiling_tutorial.html).
+  prefs: []
+  type: TYPE_NORMAL

@@ -1,0 +1,268 @@
+- en: torch.utils.checkpoint
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/docs/stable/checkpoint.html](https://pytorch.org/docs/stable/checkpoint.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Checkpointing is implemented by rerunning a forward-pass segment for each checkpointed
+    segment during backward. This can cause persistent states like the RNG state to
+    be advanced than they would without checkpointing. By default, checkpointing includes
+    logic to juggle the RNG state such that checkpointed passes making use of RNG
+    (through dropout for example) have deterministic output as compared to non-checkpointed
+    passes. The logic to stash and restore RNG states can incur a moderate performance
+    hit depending on the runtime of checkpointed operations. If deterministic output
+    compared to non-checkpointed passes is not required, supply `preserve_rng_state=False`
+    to `checkpoint` or `checkpoint_sequential` to omit stashing and restoring the
+    RNG state during each checkpoint.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The stashing logic saves and restores the RNG state for CPU and another device
+    type (infer the device type from Tensor arguments excluding CPU tensors by `_infer_device_type`)
+    to the `run_fn`. If there are multiple device, device state will only be saved
+    for devices of a single device type, and the remaining devices will be ignored.
+    Consequently, if any checkpointed functions involve randomness, this may result
+    in incorrect gradients. (Note that if CUDA devices are among the devices detected,
+    it will be prioritized; otherwise, the first device encountered will be selected.)
+    If there are no CPU-tensors, the default device type state (default value is cuda,
+    and it could be set to other device by `DefaultDeviceType`) will be saved and
+    restored. However, the logic has no way to anticipate if the user will move Tensors
+    to a new device within the `run_fn` itself. Therefore, if you move Tensors to
+    a new device (“new” meaning not belonging to the set of [current device + devices
+    of Tensor arguments]) within `run_fn`, deterministic output compared to non-checkpointed
+    passes is never guaranteed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Checkpoint a model or part of the model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Activation checkpointing is a technique that trades compute for memory. Instead
+    of keeping tensors needed for backward alive until they are used in gradient computation
+    during backward, forward computation in checkpointed regions omits saving tensors
+    for backward and recomputes them during the backward pass. Activation checkpointing
+    can be applied to any part of a model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: There are currently two checkpointing implementations available, determined
+    by the `use_reentrant` parameter. It is recommended that you use `use_reentrant=False`.
+    Please refer the note below for a discussion of their differences.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: If the `function` invocation during the backward pass differs from the forward
+    pass, e.g., due to a global variable, the checkpointed checkpointed version may
+    not be equivalent, potentially causing an error being raised or leading to silently
+    incorrect gradients.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: If you are using the `use_reentrant=True` variant (this is currently the default),
+    please refer to the note below for important considerations and potential limitations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The reentrant variant of checkpoint (`use_reentrant=True`) and the non-reentrant
+    variant of checkpoint (`use_reentrant=False`) differ in the following ways:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Non-reentrant checkpoint stops recomputation as soon as all needed intermediate
+    activations have been recomputed. This feature is enabled by default, but can
+    be disabled with `set_checkpoint_early_stop()`. Reentrant checkpoint always recomputes
+    `function` in its entirety during the backward pass.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The reentrant variant does not record the autograd graph during the forward
+    pass, as it runs with the forward pass under [`torch.no_grad()`](generated/torch.no_grad.html#torch.no_grad
+    "torch.no_grad"). The non-reentrant version does record the autograd graph, allowing
+    one to perform backward on the graph within checkpointed regions.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The reentrant checkpoint only supports the [`torch.autograd.backward()`](generated/torch.autograd.backward.html#torch.autograd.backward
+    "torch.autograd.backward") API for the backward pass without its inputs argument,
+    while the non-reentrant version supports all ways of performing the backward pass.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: At least one input and output must have `requires_grad=True` for the reentrant
+    variant. If this condition is unmet, the checkpointed part of the model will not
+    have gradients. The non-reentrant version does not have this requirement.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The reentrant version does not consider tensors in nested structures (e.g.,
+    custom objects, lists, dicts, etc) as participating in autograd, while the non-reentrant
+    version does.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The reentrant checkpoint does not support checkpointed regions with detached
+    tensors from the computational graph, whereas the non-reentrant version does.
+    For the reentrant variant, if the checkpointed segment contains tensors detached
+    using `detach()` or with [`torch.no_grad()`](generated/torch.no_grad.html#torch.no_grad
+    "torch.no_grad"), the backward pass will raise an error. This is because `checkpoint`
+    makes all the outputs require gradients and this causes issues when a tensor is
+    defined to have no gradient in the model. To avoid this, detach the tensors outside
+    of the `checkpoint` function.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**function** – describes what to run in the forward pass of the model or part
+    of the model. It should also know how to handle the inputs passed as the tuple.
+    For example, in LSTM, if user passes `(activation, hidden)`, `function` should
+    correctly use the first input as `activation` and the second input as `hidden`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**preserve_rng_state** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")*,* *optional*) – Omit stashing and restoring the RNG state
+    during each checkpoint. Default: `True`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**use_reentrant** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")*,* *optional*) – Use checkpointing implementation that requires
+    re-entrant autograd. If `use_reentrant=False` is specified, `checkpoint` will
+    use an implementation that does not require re-entrant autograd. This allows `checkpoint`
+    to support additional functionality, such as working as expected with `torch.autograd.grad`
+    and support for keyword arguments input into the checkpointed function. Note that
+    future versions of PyTorch will default to `use_reentrant=False`. Default: `True`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**context_fn** (*Callable**,* *optional*) – A callable returning a tuple of
+    two context managers. The function and its recomputation will be run under the
+    first and second context managers respectively. This argument is only supported
+    if `use_reentrant=False`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**determinism_check** ([*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* *optional*) – A string specifying the determinism check
+    to perform. By default it is set to `"default"` which compares the shapes, dtypes,
+    and devices of the recomputed tensors against those the saved tensors. To turn
+    off this check, specify `"none"`. Currently these are the only two supported values.
+    Please open an issue if you would like to see more determinism checks. This argument
+    is only supported if `use_reentrant=False`, if `use_reentrant=True`, the determinism
+    check is always disabled.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**debug** ([*bool*](https://docs.python.org/3/library/functions.html#bool "(in
+    Python v3.12)")*,* *optional*) – If `True`, error messages will also include a
+    trace of the operators ran during the original forward computation as well as
+    the recomputation. This argument is only supported if `use_reentrant=False`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**args** – tuple containing inputs to the `function`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: Output of running `function` on `*args`
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Checkpoint a sequential model to save memory.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Sequential models execute a list of modules/functions in order (sequentially).
+    Therefore, we can divide such a model in various segments and checkpoint each
+    segment. All segments except the last will not store the intermediate activations.
+    The inputs of each checkpointed segment will be saved for re-running the segment
+    in the backward pass.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: If you are using the `use_reentrant=True` variant (this is the default), please
+    see :func:`~torch.utils.checkpoint.checkpoint` for the important considerations
+    and limitations of this variant. It is recommended that you use ``use_reentrant=False`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**functions** – A [`torch.nn.Sequential`](generated/torch.nn.Sequential.html#torch.nn.Sequential
+    "torch.nn.Sequential") or the list of modules or functions (comprising the model)
+    to run sequentially.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**segments** – Number of chunks to create in the model'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**input** – A Tensor that is input to `functions`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**preserve_rng_state** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")*,* *optional*) – Omit stashing and restoring the RNG state
+    during each checkpoint. Default: `True`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**use_reentrant** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")*,* *optional*) – Use checkpointing implementation that requires
+    re-entrant autograd. If `use_reentrant=False` is specified, `checkpoint` will
+    use an implementation that does not require re-entrant autograd. This allows `checkpoint`
+    to support additional functionality, such as working as expected with `torch.autograd.grad`
+    and support for keyword arguments input into the checkpointed function. Default:
+    `True`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: Output of running `functions` sequentially on `*inputs`
+  prefs: []
+  type: TYPE_NORMAL
+- en: Example
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Context manager that sets whether checkpoint should print additional debug information
+    when running. See the `debug` flag for [`checkpoint()`](#torch.utils.checkpoint.checkpoint
+    "torch.utils.checkpoint.checkpoint") for more information. Note that when set,
+    this context manager overrides the value of `debug` passed to checkpoint. To defer
+    to the local setting, pass `None` to this context.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**enabled** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")) – Whether checkpoint should print debug information. Default
+    is ‘None’.'
+  prefs: []
+  type: TYPE_NORMAL

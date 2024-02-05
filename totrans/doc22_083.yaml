@@ -1,0 +1,548 @@
+- en: Benchmark Utils - torch.utils.benchmark
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/docs/stable/benchmark_utils.html](https://pytorch.org/docs/stable/benchmark_utils.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Helper class for measuring execution time of PyTorch statements.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'For a full tutorial on how to use this class, see: [https://pytorch.org/tutorials/recipes/recipes/benchmark.html](https://pytorch.org/tutorials/recipes/recipes/benchmark.html)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The PyTorch Timer is based on timeit.Timer (and in fact uses timeit.Timer internally),
+    but with several key differences:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Runtime aware:'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Timer will perform warmups (important as some elements of PyTorch are lazily
+    initialized), set threadpool size so that comparisons are apples-to-apples, and
+    synchronize asynchronous CUDA functions when necessary.
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: 'Focus on replicates:'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: When measuring code, and particularly complex kernels / models, run-to-run variation
+    is a significant confounding factor. It is expected that all measurements should
+    include replicates to quantify noise and allow median computation, which is more
+    robust than mean. To that effect, this class deviates from the timeit API by conceptually
+    merging timeit.Timer.repeat and timeit.Timer.autorange. (Exact algorithms are
+    discussed in method docstrings.) The timeit method is replicated for cases where
+    an adaptive strategy is not desired.
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: 'Optional metadata:'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: When defining a Timer, one can optionally specify label, sub_label, description,
+    and env. (Defined later) These fields are included in the representation of result
+    object and by the Compare class to group and display results for comparison.
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: Instruction counts
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: In addition to wall times, Timer can run a statement under Callgrind and report
+    instructions executed.
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: 'Directly analogous to timeit.Timer constructor arguments:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: stmt, setup, timer, globals
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: 'PyTorch Timer specific constructor arguments:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: label, sub_label, description, env, num_threads
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**stmt** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
+    Python v3.12)")) – Code snippet to be run in a loop and timed.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**setup** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
+    Python v3.12)")) – Optional setup code. Used to define variables used in stmt'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**global_setup** ([*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")) – (C++ only) Code which is placed at the top level of the
+    file for things like #include statements.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**timer** ([*Callable*](https://docs.python.org/3/library/typing.html#typing.Callable
+    "(in Python v3.12)")*[**[**]**,* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*]*) – Callable which returns the current time. If PyTorch
+    was built without CUDA or there is no GPU present, this defaults to timeit.default_timer;
+    otherwise it will synchronize CUDA before measuring the time.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**globals** ([*Optional*](https://docs.python.org/3/library/typing.html#typing.Optional
+    "(in Python v3.12)")*[*[*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*Any*](https://docs.python.org/3/library/typing.html#typing.Any
+    "(in Python v3.12)")*]**]*) – A dict which defines the global variables when stmt
+    is being executed. This is the other method for providing variables which stmt
+    needs.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**label** ([*Optional*](https://docs.python.org/3/library/typing.html#typing.Optional
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]*) – String which summarizes stmt. For instance, if stmt
+    is “torch.nn.functional.relu(torch.add(x, 1, out=out))” one might set label to
+    “ReLU(x + 1)” to improve readability.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**sub_label** ([*Optional*](https://docs.python.org/3/library/typing.html#typing.Optional
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]*) –'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Provide supplemental information to disambiguate measurements with identical
+    stmt or label. For instance, in our example above sub_label might be “float” or
+    “int”, so that it is easy to differentiate: “ReLU(x + 1): (float)”'
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: '”ReLU(x + 1): (int)” when printing Measurements or summarizing using Compare.'
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: '**description** ([*Optional*](https://docs.python.org/3/library/typing.html#typing.Optional
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]*) –'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'String to distinguish measurements with identical label and sub_label. The
+    principal use of description is to signal to Compare the columns of data. For
+    instance one might set it based on the input size to create a table of the form:'
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs:
+  - PREF_IND
+  type: TYPE_PRE
+- en: using Compare. It is also included when printing a Measurement.
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: '**env** ([*Optional*](https://docs.python.org/3/library/typing.html#typing.Optional
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]*) – This tag indicates that otherwise identical tasks were
+    run in different environments, and are therefore not equivalent, for instance
+    when A/B testing a change to a kernel. Compare will treat Measurements with different
+    env specification as distinct when merging replicate runs.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**num_threads** ([*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")) – The size of the PyTorch threadpool when executing stmt.
+    Single threaded performance is important as both a key inference workload and
+    a good indicator of intrinsic algorithmic efficiency, so the default is set to
+    one. This is in contrast to the default PyTorch threadpool size which tries to
+    utilize all cores.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Similar to blocked_autorange but also checks for variablility in measurements
+    and repeats until iqr/median is smaller than threshold or max_run_time is reached.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'At a high level, adaptive_autorange executes the following pseudo-code:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**threshold** ([*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")) – value of iqr/median threshold for stopping'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**min_run_time** ([*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")) – total runtime needed before checking threshold'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**max_run_time** ([*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")) – total runtime for all measurements regardless of threshold'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: A Measurement object that contains measured runtimes and repetition counts,
+    and can be used to compute statistics. (mean, median, etc.)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*Measurement*](#torch.utils.benchmark.Measurement "torch.utils.benchmark.utils.common.Measurement")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Measure many replicates while keeping timer overhead to a minimum.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'At a high level, blocked_autorange executes the following pseudo-code:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Note the variable block_size in the inner loop. The choice of block size is
+    important to measurement quality, and must balance two competing objectives:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: A small block size results in more replicates and generally better statistics.
+  prefs:
+  - PREF_BQ
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: A large block size better amortizes the cost of timer invocation, and results
+    in a less biased measurement. This is important because CUDA synchronization time
+    is non-trivial (order single to low double digit microseconds) and would otherwise
+    bias the measurement.
+  prefs:
+  - PREF_BQ
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: blocked_autorange sets block_size by running a warmup period, increasing block
+    size until timer overhead is less than 0.1% of the overall computation. This value
+    is then used for the main measurement loop.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: A Measurement object that contains measured runtimes and repetition counts,
+    and can be used to compute statistics. (mean, median, etc.)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*Measurement*](#torch.utils.benchmark.Measurement "torch.utils.benchmark.utils.common.Measurement")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Collect instruction counts using Callgrind.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Unlike wall times, instruction counts are deterministic (modulo non-determinism
+    in the program itself and small amounts of jitter from the Python interpreter.)
+    This makes them ideal for detailed performance analysis. This method runs stmt
+    in a separate process so that Valgrind can instrument the program. Performance
+    is severely degraded due to the instrumentation, however this is ameliorated by
+    the fact that a small number of iterations is generally sufficient to obtain good
+    measurements.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In order to to use this method valgrind, callgrind_control, and callgrind_annotate
+    must be installed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Because there is a process boundary between the caller (this process) and the
+    stmt execution, globals cannot contain arbitrary in-memory data structures. (Unlike
+    timing methods) Instead, globals are restricted to builtins, nn.Modules’s, and
+    TorchScripted functions/modules to reduce the surprise factor from serialization
+    and subsequent deserialization. The GlobalsBridge class provides more detail on
+    this subject. Take particular care with nn.Modules: they rely on pickle and you
+    may need to add an import to setup for them to transfer properly.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: By default, a profile for an empty statement will be collected and cached to
+    indicate how many instructions are from the Python loop which drives stmt.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: A CallgrindStats object which provides instruction counts and some basic facilities
+    for analyzing and manipulating results.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: Mirrors the semantics of timeit.Timer.timeit().
+  prefs: []
+  type: TYPE_NORMAL
+- en: Execute the main statement (stmt) number times. [https://docs.python.org/3/library/timeit.html#timeit.Timer.timeit](https://docs.python.org/3/library/timeit.html#timeit.Timer.timeit)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*Measurement*](#torch.utils.benchmark.Measurement "torch.utils.benchmark.utils.common.Measurement")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: The result of a Timer measurement.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This class stores one or more measurements of a given statement. It is serializable
+    and provides several convenience methods (including a detailed __repr__) for downstream
+    consumers.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: Convenience method for merging replicates.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Merge will extrapolate times to number_per_run=1 and will not transfer any metadata.
+    (Since it might differ between replicates)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*List*](https://docs.python.org/3/library/typing.html#typing.List "(in Python
+    v3.12)")[[*Measurement*](#torch.utils.benchmark.Measurement "torch.utils.benchmark.utils.common.Measurement")]'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: Approximate significant figure estimate.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This property is intended to give a convenient way to estimate the precision
+    of a measurement. It only uses the interquartile region to estimate statistics
+    to try to mitigate skew from the tails, and uses a static z value of 1.645 since
+    it is not expected to be used for small values of n, so z can approximate t.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The significant figure estimation used in conjunction with the trim_sigfig method
+    to provide a more human interpretable data summary. __repr__ does not use this
+    method; it simply displays raw values. Significant figure estimation is intended
+    for Compare.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: Top level container for Callgrind results collected by Timer.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Manipulation is generally done using the FunctionCounts class, which is obtained
+    by calling CallgrindStats.stats(…). Several convenience methods are provided as
+    well; the most significant is CallgrindStats.as_standardized().
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: Strip library names and some prefixes from function strings.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'When comparing two different sets of instruction counts, on stumbling block
+    can be path prefixes. Callgrind includes the full filepath when reporting a function
+    (as it should). However, this can cause issues when diffing profiles. If a key
+    component such as Python or PyTorch was built in separate locations in the two
+    profiles, which can result in something resembling:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: Stripping prefixes can ameliorate this issue by regularizing the strings and
+    causing better cancellation of equivalent call sites when diffing.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*CallgrindStats*](#torch.utils.benchmark.CallgrindStats "torch.utils.benchmark.utils.valgrind_wrapper.timer_interface.CallgrindStats")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns the total number of instructions executed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: See FunctionCounts.denoise() for an explanation of the denoise arg.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[int](https://docs.python.org/3/library/functions.html#int "(in Python v3.12)")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: Diff two sets of counts.
+  prefs: []
+  type: TYPE_NORMAL
+- en: One common reason to collect instruction counts is to determine the the effect
+    that a particular change will have on the number of instructions needed to perform
+    some unit of work. If a change increases that number, the next logical question
+    is “why”. This generally involves looking at what part if the code increased in
+    instruction count. This function automates that process so that one can easily
+    diff counts on both an inclusive and exclusive basis.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*FunctionCounts*](#torch.utils.benchmark.FunctionCounts "torch.utils.benchmark.utils.valgrind_wrapper.timer_interface.FunctionCounts")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns detailed function counts.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Conceptually, the FunctionCounts returned can be thought of as a tuple of (count,
+    path_and_function_name) tuples.
+  prefs: []
+  type: TYPE_NORMAL
+- en: inclusive matches the semantics of callgrind. If True, the counts include instructions
+    executed by children. inclusive=True is useful for identifying hot spots in code;
+    inclusive=False is useful for reducing noise when diffing counts from two different
+    runs. (See CallgrindStats.delta(…) for more details)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*FunctionCounts*](#torch.utils.benchmark.FunctionCounts "torch.utils.benchmark.utils.valgrind_wrapper.timer_interface.FunctionCounts")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: Container for manipulating Callgrind results.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'It supports:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Addition and subtraction to combine or diff results.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Tuple-like indexing.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: A denoise function which strips CPython calls which are known to be non-deterministic
+    and quite noisy.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Two higher order methods (filter and transform) for custom manipulation.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: Remove known noisy instructions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Several instructions in the CPython interpreter are rather noisy. These instructions
+    involve unicode to dictionary lookups which Python uses to map variable names.
+    FunctionCounts is generally a content agnostic container, however this is sufficiently
+    important for obtaining reliable results to warrant an exception.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*FunctionCounts*](#torch.utils.benchmark.FunctionCounts "torch.utils.benchmark.utils.valgrind_wrapper.timer_interface.FunctionCounts")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: Keep only the elements where filter_fn applied to function name returns True.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*FunctionCounts*](#torch.utils.benchmark.FunctionCounts "torch.utils.benchmark.utils.valgrind_wrapper.timer_interface.FunctionCounts")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: Apply map_fn to all of the function names.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This can be used to regularize function names (e.g. stripping irrelevant parts
+    of the file path), coalesce entries by mapping multiple functions to the same
+    name (in which case the counts are added together), etc.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*FunctionCounts*](#torch.utils.benchmark.FunctionCounts "torch.utils.benchmark.utils.valgrind_wrapper.timer_interface.FunctionCounts")'
+  prefs: []
+  type: TYPE_NORMAL

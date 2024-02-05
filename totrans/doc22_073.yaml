@@ -1,0 +1,405 @@
+- en: Pipeline Parallelism
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/docs/stable/pipeline.html](https://pytorch.org/docs/stable/pipeline.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Pipeline parallelism was original introduced in the [Gpipe](https://arxiv.org/abs/1811.06965)
+    paper and is an efficient technique to train large models on multiple GPUs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: Pipeline Parallelism is experimental and subject to change.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Model Parallelism using multiple GPUs[](#model-parallelism-using-multiple-gpus
+    "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Typically for large models which don’t fit on a single GPU, model parallelism
+    is employed where certain parts of the model are placed on different GPUs. Although,
+    if this is done naively for sequential models, the training process suffers from
+    GPU under utilization since only one GPU is active at one time as shown in the
+    figure below:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![_images/no_pipe.png](../Images/b9cf9a633037f50f7bc1ebee273078d5.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The figure represents a model with 4 layers placed on 4 different GPUs (vertical
+    axis). The horizontal axis represents training this model through time demonstrating
+    that only 1 GPU is utilized at a time ([image source](https://arxiv.org/abs/1811.06965)).[](#id2
+    "Permalink to this image")
+  prefs: []
+  type: TYPE_NORMAL
+- en: Pipelined Execution
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'To alleviate this problem, pipeline parallelism splits the input minibatch
+    into multiple microbatches and pipelines the execution of these microbatches across
+    multiple GPUs. This is outlined in the figure below:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![_images/pipe.png](../Images/ef057fe1265f513c363e3e4cdc5a1cf7.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: The figure represents a model with 4 layers placed on 4 different GPUs (vertical
+    axis). The horizontal axis represents training this model through time demonstrating
+    that the GPUs are utilized much more efficiently. However, there still exists
+    a bubble (as demonstrated in the figure) where certain GPUs are not utilized.
+    ([image source](https://arxiv.org/abs/1811.06965)).[](#id3 "Permalink to this
+    image")
+  prefs: []
+  type: TYPE_NORMAL
+- en: Pipe APIs in PyTorch
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Wraps an arbitrary [`nn.Sequential`](generated/torch.nn.Sequential.html#torch.nn.Sequential
+    "torch.nn.Sequential") module to train on using synchronous pipeline parallelism.
+    If the module requires lots of memory and doesn’t fit on a single GPU, pipeline
+    parallelism is a useful technique to employ for training.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The implementation is based on the [torchgpipe](https://arxiv.org/abs/2004.09910)
+    paper.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Pipe combines pipeline parallelism with checkpointing to reduce peak memory
+    required to train while minimizing device under-utilization.
+  prefs: []
+  type: TYPE_NORMAL
+- en: You should place all the modules on the appropriate devices and wrap them into
+    an [`nn.Sequential`](generated/torch.nn.Sequential.html#torch.nn.Sequential "torch.nn.Sequential")
+    module defining the desired order of execution. If a module does not contain any
+    parameters/buffers, it is assumed this module should be executed on CPU and appropriate
+    input tensors to the module are moved to CPU before execution. This behavior can
+    be overridden by the `WithDevice` wrapper which can be used to explicitly specify
+    which device a module should run on.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**module** ([`nn.Sequential`](generated/torch.nn.Sequential.html#torch.nn.Sequential
+    "torch.nn.Sequential")) – sequential module to be parallelized using pipelining.
+    Each module in the sequence has to have all of its parameters on a single device.
+    Each module in the sequence has to either be an nn.Module or [`nn.Sequential`](generated/torch.nn.Sequential.html#torch.nn.Sequential
+    "torch.nn.Sequential") (to combine multiple sequential modules on a single device)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**chunks** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)")) – number of micro-batches (default: `1`)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**checkpoint** ([*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")) – when to enable checkpointing, one of `''always''`, `''except_last''`,
+    or `''never''` (default: `''except_last''`). `''never''` disables checkpointing
+    completely, `''except_last''` enables checkpointing for all micro-batches except
+    the last one and `''always''` enables checkpointing for all micro-batches.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**deferred_batch_norm** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")) – whether to use deferred `BatchNorm` moving statistics
+    (default: [`False`](https://docs.python.org/3/library/constants.html#False "(in
+    Python v3.12)")). If set to [`True`](https://docs.python.org/3/library/constants.html#True
+    "(in Python v3.12)"), we track statistics across multiple micro-batches to update
+    the running statistics per mini-batch.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Raises
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[**TypeError**](https://docs.python.org/3/library/exceptions.html#TypeError
+    "(in Python v3.12)") – the module is not a [`nn.Sequential`](generated/torch.nn.Sequential.html#torch.nn.Sequential
+    "torch.nn.Sequential").'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[**ValueError**](https://docs.python.org/3/library/exceptions.html#ValueError
+    "(in Python v3.12)") – invalid arguments'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Example::'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Pipeline of two FC layers across GPUs 0 and 1.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can wrap a [`Pipe`](#torch.distributed.pipeline.sync.Pipe "torch.distributed.pipeline.sync.Pipe")
+    model with [`torch.nn.parallel.DistributedDataParallel`](generated/torch.nn.parallel.DistributedDataParallel.html#torch.nn.parallel.DistributedDataParallel
+    "torch.nn.parallel.DistributedDataParallel") only when the checkpoint parameter
+    of [`Pipe`](#torch.distributed.pipeline.sync.Pipe "torch.distributed.pipeline.sync.Pipe")
+    is `'never'`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Pipe`](#torch.distributed.pipeline.sync.Pipe "torch.distributed.pipeline.sync.Pipe")
+    only supports intra-node pipelining currently, but will be expanded to support
+    inter-node pipelining in the future. The forward function returns an `RRef` to
+    allow for inter-node pipelining in the future, where the output might be on a
+    remote host. For intra-node pipelining you can use `local_value()` to retrieve
+    the output locally.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Pipe`](#torch.distributed.pipeline.sync.Pipe "torch.distributed.pipeline.sync.Pipe")
+    is experimental and subject to change.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Processes a single input mini-batch through the pipe and returns an `RRef` pointing
+    to the output. [`Pipe`](#torch.distributed.pipeline.sync.Pipe "torch.distributed.pipeline.sync.Pipe")
+    is a fairly transparent module wrapper. It doesn’t modify the input and output
+    signature of the underlying module. But there’s type restriction. Input and output
+    have to contain at least one tensor. This restriction is applied at partition
+    boundaries too.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The sequence of inputs are fed into the first stage of the pipeline as `*inputs`.
+    As a result the positional args for this function should match the positional
+    args for the first stage of the pipeline. The same condition applies for output
+    of one stage of the pipeline which is the input for the next stage.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The input tensor is split into multiple micro-batches based on the `chunks`
+    parameter used to initialize [`Pipe`](#torch.distributed.pipeline.sync.Pipe "torch.distributed.pipeline.sync.Pipe").
+    The batch size is assumed to be the first dimension of the tensor and if the batch
+    size is less than `chunks`, the number of micro-batches is equal to the batch
+    size.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Only tensors are split into multiple micro-batches, non-Tensor inputs are just
+    replicated as-is in each micro-batch. For non-Tensor outputs in the last stage
+    of the pipeline, they are aggregated as a `List` and returned the user. For example,
+    if you have 2 micro-batches returning the integer 5, the user would receive the
+    consolidated output of [5, 5]
+  prefs: []
+  type: TYPE_NORMAL
+- en: All the input tensors need to be on the same device as the first partition of
+    the pipeline.
+  prefs: []
+  type: TYPE_NORMAL
+- en: If a tensor is wrapped with the `NoChunk` wrapper, the tensor is not split across
+    micro-batches and is replicated as-is similar to non-tensors.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**inputs** – input mini-batch'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`RRef` to the output of the mini-batch'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Raises
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[**TypeError**](https://docs.python.org/3/library/exceptions.html#TypeError
+    "(in Python v3.12)") – input doesn’t contain at least one tensor'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*RRef*'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Skip connections
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Certain models like [ResNeXt](https://pytorch.org/hub/pytorch_vision_resnext/)
+    are not completely sequential and have skip connections between layers. Naively
+    implementing as part of pipeline parallelism would imply that we need to copy
+    outputs for certain layers through multiple GPUs till we eventually reach the
+    GPU where the layer for the skip connection resides. To avoid this copy overhead,
+    we provide APIs below to stash and pop Tensors in different layers of the model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Define a decorator to create [`nn.Module`](generated/torch.nn.Module.html#torch.nn.Module
+    "torch.nn.Module") with skip connections.
+  prefs: []
+  type: TYPE_NORMAL
+- en: These decorated modules are called “skippable”. This functionality works perfectly
+    fine even when the module is not wrapped by [`Pipe`](#torch.distributed.pipeline.sync.Pipe
+    "torch.distributed.pipeline.sync.Pipe").
+  prefs: []
+  type: TYPE_NORMAL
+- en: Each skip tensor is managed by its name. Before manipulating skip tensors, a
+    skippable module must statically declare the names for skip tensors by stash and/or
+    pop parameters. Skip tensors with pre-declared name can be stashed by `yield stash(name,
+    tensor)` or popped by `tensor = yield pop(name)`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Here is an example with three layers. A skip tensor named “1to3” is stashed
+    and popped at the first and last layer, respectively:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'One skippable module can stash or pop multiple skip tensors:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: Every skip tensor must be associated with exactly one pair of stash and pop.
+    [`Pipe`](#torch.distributed.pipeline.sync.Pipe "torch.distributed.pipeline.sync.Pipe")
+    checks this restriction automatically when wrapping a module. You can also check
+    the restriction by [`verify_skippables()`](#torch.distributed.pipeline.sync.skip.skippable.verify_skippables
+    "torch.distributed.pipeline.sync.skip.skippable.verify_skippables") without [`Pipe`](#torch.distributed.pipeline.sync.Pipe
+    "torch.distributed.pipeline.sync.Pipe").
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*Callable*](https://docs.python.org/3/library/typing.html#typing.Callable
+    "(in Python v3.12)")[[[*Type*](https://docs.python.org/3/library/typing.html#typing.Type
+    "(in Python v3.12)")[[*Module*](generated/torch.nn.Module.html#torch.nn.Module
+    "torch.nn.modules.module.Module")]], [*Type*](https://docs.python.org/3/library/typing.html#typing.Type
+    "(in Python v3.12)")[*Skippable*]]'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: The command to stash a skip tensor.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**name** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
+    Python v3.12)")) – name of skip tensor'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**input** ([*torch.Tensor*](tensors.html#torch.Tensor "torch.Tensor") *or*
+    *None*) – tensor to pass to the skip connection'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: The command to pop a skip tensor.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**name** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
+    Python v3.12)")) – name of skip tensor'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: the skip tensor previously stashed by another layer under the same name
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: None
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: Verify if the underlying skippable modules satisfy integrity.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Every skip tensor must have only one pair of stash and pop. If there are one
+    or more unmatched pairs, it will raise [`TypeError`](https://docs.python.org/3/library/exceptions.html#TypeError
+    "(in Python v3.12)") with the detailed messages.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Here are a few failure cases. [`verify_skippables()`](#torch.distributed.pipeline.sync.skip.skippable.verify_skippables
+    "torch.distributed.pipeline.sync.skip.skippable.verify_skippables") will report
+    failure for these cases:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: To use the same name for multiple skip tensors, they must be isolated by different
+    namespaces. See `isolate()`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Raises
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[**TypeError**](https://docs.python.org/3/library/exceptions.html#TypeError
+    "(in Python v3.12)") – one or more pairs of stash and pop are not matched.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tutorials
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'The following tutorials give a good overview of how to use the [`Pipe`](#torch.distributed.pipeline.sync.Pipe
+    "torch.distributed.pipeline.sync.Pipe") API to train your models with the rest
+    of the components that PyTorch provides:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Training Transformer models using Pipeline Parallelism](https://pytorch.org/tutorials/intermediate/pipeline_tutorial.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Training Transformer models using Distributed Data Parallel and Pipeline Parallelism](https://pytorch.org/tutorials/advanced/ddp_pipeline.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Acknowledgements
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The implementation for pipeline parallelism is based on [fairscale’s pipe implementation](https://github.com/facebookresearch/fairscale/tree/main/fairscale/nn/pipe)
+    and [torchgpipe](https://github.com/kakaobrain/torchgpipe). We would like to thank
+    both teams for their contributions and guidance towards bringing pipeline parallelism
+    into PyTorch.
+  prefs: []
+  type: TYPE_NORMAL

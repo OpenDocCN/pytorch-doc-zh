@@ -1,0 +1,427 @@
+- en: torch.profiler
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/docs/stable/profiler.html](https://pytorch.org/docs/stable/profiler.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: '## Overview'
+  prefs: []
+  type: TYPE_NORMAL
+- en: PyTorch Profiler is a tool that allows the collection of performance metrics
+    during training and inference. Profiler’s context manager API can be used to better
+    understand what model operators are the most expensive, examine their input shapes
+    and stack traces, study device kernel activity and visualize the execution trace.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: An earlier version of the API in [`torch.autograd`](autograd.html#module-torch.autograd
+    "torch.autograd") module is considered legacy and will be deprecated.
+  prefs: []
+  type: TYPE_NORMAL
+- en: API Reference
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Low-level profiler wrap the autograd profile
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**activities** (*iterable*) – list of activity groups (CPU, CUDA) to use in
+    profiling, supported values: `torch.profiler.ProfilerActivity.CPU`, `torch.profiler.ProfilerActivity.CUDA`.
+    Default value: ProfilerActivity.CPU and (when available) ProfilerActivity.CUDA.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**record_shapes** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")) – save information about operator’s input shapes.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**profile_memory** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")) – track tensor memory allocation/deallocation (see `export_memory_timeline`
+    for more details).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**with_stack** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")) – record source information (file and line number) for the
+    ops.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**with_flops** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")) – use formula to estimate the FLOPS of specific operators
+    (matrix multiplication and 2D convolution).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**with_modules** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")) – record module hierarchy (including function names) corresponding
+    to the callstack of the op. e.g. If module A’s forward call’s module B’s forward
+    which contains an aten::add op, then aten::add’s module hierarchy is A.B Note
+    that this support exist, at the moment, only for TorchScript models and not eager
+    mode models.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**experimental_config** (*_ExperimentalConfig*) – A set of experimental options
+    used by profiler libraries like Kineto. Note, backward compatibility is not guaranteed.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: This API is experimental and subject to change in the future.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Enabling shape and stack tracing results in additional overhead. When record_shapes=True
+    is specified, profiler will temporarily hold references to the tensors; that may
+    further prevent certain optimizations that depend on the reference count and introduce
+    extra tensor copies.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Adds a user defined metadata with a string key and a string value into the trace
+    file
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Adds a user defined metadata with a string key and a valid json value into the
+    trace file
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns the list of unaggregated profiler events, to be used in the trace callback
+    or after the profiling is finished
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Exports the collected trace in Chrome JSON format.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: Export memory event information from the profiler collected tree for a given
+    device, and export a timeline plot. There are 3 exportable files using `export_memory_timeline`,
+    each controlled by the `path`’s suffix.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For an HTML compatible plot, use the suffix `.html`, and a memory timeline plot
+    will be embedded as a PNG file in the HTML file.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: For plot points consisting of `[times, [sizes by category]]`, where `times`
+    are timestamps and `sizes` are memory usage for each category. The memory timeline
+    plot will be saved a JSON (`.json`) or gzipped JSON (`.json.gz`) depending on
+    the suffix.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: For raw memory points, use the suffix `.raw.json.gz`. Each raw memory event
+    will consist of `(timestamp, action, numbytes, category)`, where `action` is one
+    of `[PREEXISTING, CREATE, INCREMENT_VERSION, DESTROY]`, and `category` is one
+    of the enums from `torch.profiler._memory_profiler.Category`.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Output: Memory timeline written as gzipped JSON, JSON, or HTML.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: Save stack traces in a file in a format suitable for visualization.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**path** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
+    Python v3.12)")) – save stacks file to this location;'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**metric** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
+    Python v3.12)")) – metric to use: “self_cpu_time_total” or “self_cuda_time_total”'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example of using FlameGraph tool:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: git clone [https://github.com/brendangregg/FlameGraph](https://github.com/brendangregg/FlameGraph)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: cd FlameGraph
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ./flamegraph.pl –title “CPU time” –countname “us.” profiler.stacks > perf_viz.svg
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Averages events, grouping them by operator name and (optionally) input shapes
+    and stack.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: To use shape/stack functionality make sure to set record_shapes/with_stack when
+    creating profiler context manager.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: Profiler context manager.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**activities** (*iterable*) – list of activity groups (CPU, CUDA) to use in
+    profiling, supported values: `torch.profiler.ProfilerActivity.CPU`, `torch.profiler.ProfilerActivity.CUDA`.
+    Default value: ProfilerActivity.CPU and (when available) ProfilerActivity.CUDA.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**schedule** (*Callable*) – callable that takes step (int) as a single parameter
+    and returns `ProfilerAction` value that specifies the profiler action to perform
+    at each step.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**on_trace_ready** (*Callable*) – callable that is called at each step when
+    `schedule` returns `ProfilerAction.RECORD_AND_SAVE` during the profiling.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**record_shapes** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")) – save information about operator’s input shapes.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**profile_memory** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")) – track tensor memory allocation/deallocation.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**with_stack** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")) – record source information (file and line number) for the
+    ops.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**with_flops** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")) – use formula to estimate the FLOPs (floating point operations)
+    of specific operators (matrix multiplication and 2D convolution).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**with_modules** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")) – record module hierarchy (including function names) corresponding
+    to the callstack of the op. e.g. If module A’s forward call’s module B’s forward
+    which contains an aten::add op, then aten::add’s module hierarchy is A.B Note
+    that this support exist, at the moment, only for TorchScript models and not eager
+    mode models.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**experimental_config** (*_ExperimentalConfig*) – A set of experimental options
+    used for Kineto library features. Note, backward compatibility is not guaranteed.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**use_cuda** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")) –'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Deprecated since version 1.8.1: use `activities` instead.'
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Use [`schedule()`](#torch.profiler.schedule "torch.profiler.schedule") to generate
+    the callable schedule. Non-default schedules are useful when profiling long training
+    jobs and allow the user to obtain multiple traces at the different iterations
+    of the training process. The default schedule simply records all the events continuously
+    for the duration of the context manager.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Use [`tensorboard_trace_handler()`](#torch.profiler.tensorboard_trace_handler
+    "torch.profiler.tensorboard_trace_handler") to generate result files for TensorBoard:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`on_trace_ready=torch.profiler.tensorboard_trace_handler(dir_name)`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'After profiling, result files can be found in the specified directory. Use
+    the command:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`tensorboard --logdir dir_name`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: to see the results in TensorBoard. For more information, see [PyTorch Profiler
+    TensorBoard Plugin](https://github.com/pytorch/kineto/tree/master/tb_plugin)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Enabling shape and stack tracing results in additional overhead. When record_shapes=True
+    is specified, profiler will temporarily hold references to the tensors; that may
+    further prevent certain optimizations that depend on the reference count and introduce
+    extra tensor copies.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Examples:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Using the profiler’s `schedule`, `on_trace_ready` and `step` functions:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: Signals the profiler that the next profiling step has started.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: Profiler actions that can be taken at the specified intervals
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Members:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: CPU
+  prefs: []
+  type: TYPE_NORMAL
+- en: XPU
+  prefs: []
+  type: TYPE_NORMAL
+- en: MTIA
+  prefs: []
+  type: TYPE_NORMAL
+- en: CUDA
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns a callable that can be used as profiler `schedule` argument. The profiler
+    will skip the first `skip_first` steps, then wait for `wait` steps, then do the
+    warmup for the next `warmup` steps, then do the active recording for the next
+    `active` steps and then repeat the cycle starting with `wait` steps. The optional
+    number of cycles is specified with the `repeat` parameter, the zero value means
+    that the cycles will continue until the profiling is finished.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*Callable*](https://docs.python.org/3/library/typing.html#typing.Callable
+    "(in Python v3.12)")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: Outputs tracing files to directory of `dir_name`, then that directory can be
+    directly delivered to tensorboard as logdir. `worker_name` should be unique for
+    each worker in distributed scenario, it will be set to ‘[hostname]_[pid]’ by default.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Intel Instrumentation and Tracing Technology APIs[](#intel-instrumentation-and-tracing-technology-apis
+    "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: Check if ITT feature is available or not
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: Describe an instantaneous event that occurred at some point.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**msg** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
+    v3.12)")) – ASCII message to associate with the event.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: Pushes a range onto a stack of nested range span. Returns zero-based depth of
+    the range that is started.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**msg** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
+    v3.12)")) – ASCII message to associate with range'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: Pops a range off of a stack of nested range spans. Returns the zero-based depth
+    of the range that is ended.
+  prefs: []
+  type: TYPE_NORMAL

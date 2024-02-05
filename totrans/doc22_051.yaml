@@ -1,0 +1,288 @@
+- en: Tensor Parallelism - torch.distributed.tensor.parallel
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/docs/stable/distributed.tensor.parallel.html](https://pytorch.org/docs/stable/distributed.tensor.parallel.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: 'Tensor Parallelism(TP) is built on top of the PyTorch DistributedTensor ([DTensor](https://github.com/pytorch/pytorch/blob/main/torch/distributed/_tensor/README.md))
+    and provides different parallelism styles: Colwise and Rowwise Parallelism.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tensor Parallelism APIs are experimental and subject to change.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The entrypoint to parallelize your `nn.Module` using Tensor Parallelism is:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Apply Tensor Parallelism in PyTorch by parallelizing modules or sub-modules
+    based on a user-specified plan.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We parallelize module or sub_modules based on a parallelize_plan. The parallelize_plan
+    contains `ParallelStyle`, which indicates how user wants the module or sub_module
+    to be parallelized.
+  prefs: []
+  type: TYPE_NORMAL
+- en: User can also specify different parallel style per module fully qualified name
+    (FQN).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that `parallelize_module` only accepts a 1-D `DeviceMesh`, if you have
+    a 2-D or N-D `DeviceMesh`, slice the DeviceMesh to a 1-D sub DeviceMesh first
+    then pass to this API(i.e. `device_mesh["tp"]`)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**module** (`nn.Module`) – Module to be parallelized.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**device_mesh** (`DeviceMesh`) – Object which describes the mesh topology of
+    devices for the DTensor.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**parallelize_plan** (Union[`ParallelStyle`, Dict[str, `ParallelStyle`]]) –
+    The plan used to parallelize the module. It can be either a `ParallelStyle` object
+    which contains how we prepare input/output for Tensor Parallelism or it can be
+    a dict of module FQN and its corresponding `ParallelStyle` object.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**tp_mesh_dim** ([*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* *deprecated*) – The dimension of `device_mesh` where we
+    perform Tensor Parallelism on, this field is deprecated and will be removed in
+    future. If you have a 2-D or N-D `DeviceMesh`, consider passing in device_mesh[“tp”]'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: A `nn.Module` object parallelized.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*Module*](generated/torch.nn.Module.html#torch.nn.Module "torch.nn.modules.module.Module")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example::'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: For complex module architecture like Attention, MLP layers, we recommend composing
+    different ParallelStyles together (i.e. `ColwiseParallel` and `RowwiseParallel`)
+    and pass as a parallelize_plan, to achieves the desired sharding computation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Tensor Parallelism supports the following parallel styles:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Partition a compatible nn.Module in a row-wise fashion. Currently supports nn.Linear
+    and nn.Embedding. Users can compose it together with RowwiseParallel to achieve
+    the sharding of more complicated modules. (i.e. MLP, Attention)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Keyword Arguments
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**input_layouts** (*Placement**,* *optional*) – The DTensor layout of input
+    tensor for the nn.Module, this is used to annotate the input tensor to become
+    a DTensor. If not specified, we assume the input tensor to be replicated.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**output_layouts** (*Placement**,* *optional*) – The DTensor layout of the
+    output for the nn.Module, this is used to ensure the output of the nn.Module with
+    the user desired layout. If not specified, the output tensor is sharded on the
+    last dimension.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**use_local_output** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")*,* *optional*) – Whether to use local [`torch.Tensor`](tensors.html#torch.Tensor
+    "torch.Tensor") instead of `DTensor` for the module output, default: True.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: A `ParallelStyle` object that represents Colwise sharding of the nn.Module.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example::'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: By default `ColwiseParallel` output is sharded on the last dimension if the
+    `output_layouts` not specified, if there’re operators that require specific tensor
+    shape (i.e. before the paired `RowwiseParallel`), keep in mind that if the output
+    is sharded the operator might need to be adjusted to the sharded size.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Partition a compatible nn.Module in a row-wise fashion. Currently supports nn.Linear
+    only. Users can compose it with ColwiseParallel to achieve the sharding of more
+    complicated modules. (i.e. MLP, Attention)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Keyword Arguments
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**input_layouts** (*Placement**,* *optional*) – The DTensor layout of input
+    tensor for the nn.Module, this is used to annotate the input tensor to become
+    a DTensor. If not specified, we assume the input tensor to be sharded on the last
+    dimension.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**output_layouts** (*Placement**,* *optional*) – The DTensor layout of the
+    output for the nn.Module, this is used to ensure the output of the nn.Module with
+    the user desired layout. If not specified, the output tensor is replicated.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**use_local_output** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")*,* *optional*) – Whether to use local [`torch.Tensor`](tensors.html#torch.Tensor
+    "torch.Tensor") instead of `DTensor` for the module output, default: True.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: A `ParallelStyle` object that represents Rowwise sharding of the nn.Module.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example::'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'To simply configure the nn.Module’s inputs and outputs with DTensor layouts
+    and perform necessary layout redistributions, without distribute the module parameters
+    to DTensors, the following classes can be used in the `parallelize_plan` of `parallelize_module`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: Configure the nn.Module’s inputs to convert the input tensors of the nn.Module
+    to DTensors at runtime according to `input_layouts`, and perform layout redistribution
+    according to the `desired_input_layouts`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Keyword Arguments
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**input_layouts** (*Union**[**Placement**,* *Tuple**[**Placement**]**]*) –
+    The DTensor layouts of input tensors for the nn.Module, this is used to convert
+    the input tensors to DTensors. If some inputs are not torch.Tensor or no need
+    to convert to DTensors, `None` need to be specified as a placeholder.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**desired_input_layouts** (*Union**[**Placement**,* *Tuple**[**Placement**]**]*)
+    – The desired DTensor layout of input tensors for the nn.Module, this is used
+    to ensure the inputs of the nn.Module have the desired DTensor layouts. This argument
+    needs to have the same length with `input_layouts`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**use_local_output** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")*,* *optional*) – Whether to use local [`torch.Tensor`](tensors.html#torch.Tensor
+    "torch.Tensor") instead of `DTensor` for the module inputs, default: False.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: A `ParallelStyle` object that prepares the sharding layouts of the nn.Module’s
+    inputs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example::'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: Configure the nn.Module’s outputs to convert the output tensors of the nn.Module
+    to DTensors at runtime according to `output_layouts`, and perform layout redistribution
+    according to the `desired_output_layouts`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Keyword Arguments
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**output_layouts** (*Union**[**Placement**,* *Tuple**[**Placement**]**]*) –
+    The DTensor layouts of output tensors for the nn.Module, this is used to convert
+    the output tensors to DTensors if they are [`torch.Tensor`](tensors.html#torch.Tensor
+    "torch.Tensor"). If some outputs are not torch.Tensor or no need to convert to
+    DTensors, `None` need to be specified as a placeholder.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**desired_output_layouts** (*Union**[**Placement**,* *Tuple**[**Placement**]**]*)
+    – The desired DTensor layouts of output tensors for the nn.Module, this is used
+    to ensure the outputs of the nn.Module have the desired DTensor layouts.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**use_local_output** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")*,* *optional*) – Whether to use local [`torch.Tensor`](tensors.html#torch.Tensor
+    "torch.Tensor") instead of `DTensor` for the module outputs, default: False.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: A ParallelStyle object that prepares the sharding layouts of the nn.Module’s
+    outputs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example::'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: For models like Transformer, we recommend users to use `ColwiseParallel` and
+    `RowwiseParallel` together in the parallelize_plan for achieve the desired sharding
+    for the entire model (i.e. Attention and MLP).
+  prefs: []
+  type: TYPE_NORMAL

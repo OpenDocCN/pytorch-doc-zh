@@ -1,0 +1,300 @@
+- en: torch.library
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/docs/stable/library.html](https://pytorch.org/docs/stable/library.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: torch.library is a collection of APIs for extending PyTorch’s core library of
+    operators. It contains utilities for creating new custom operators as well as
+    extending operators defined with PyTorch’s C++ operator registration APIs (e.g.
+    aten operators).
+  prefs: []
+  type: TYPE_NORMAL
+- en: For a detailed guide on effectively using these APIs, please see [this gdoc](https://docs.google.com/document/d/1W--T6wz8IY8fOI0Vm8BF44PdBgs283QvpelJZWieQWQ/edit)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Use [`torch.library.define()`](#torch.library.define "torch.library.define")
+    to define new custom operators. Use the impl methods, such as [`torch.library.impl()`](#torch.library.impl
+    "torch.library.impl") and func:torch.library.impl_abstract, to add implementations
+    for any operators (they may have been created using [`torch.library.define()`](#torch.library.define
+    "torch.library.define") or via PyTorch’s C++ operator registration APIs).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Defines a new operator.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In PyTorch, defining an op (short for “operator”) is a two step-process: -
+    we need to define the op (by providing an operator name and schema) - we need
+    to implement behavior for how the operator interacts with various PyTorch subsystems,
+    like CPU/CUDA Tensors, Autograd, etc.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: This entrypoint defines the custom operator (the first step) you must then perform
+    the second step by calling various `impl_*` APIs, like [`torch.library.impl()`](#torch.library.impl
+    "torch.library.impl") or [`torch.library.impl_abstract()`](#torch.library.impl_abstract
+    "torch.library.impl_abstract").
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**qualname** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
+    Python v3.12)")) – The qualified name for the operator. Should be a string that
+    looks like “namespace::name”, e.g. “aten::sin”. Operators in PyTorch need a namespace
+    to avoid name collisions; a given operator may only be created once. If you are
+    writing a Python library, we recommend the namespace to be the name of your top-level
+    module.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**schema** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
+    Python v3.12)")) – The schema of the operator. E.g. “(Tensor x) -> Tensor” for
+    an op that accepts one Tensor and returns one Tensor. It does not contain the
+    operator name (that is passed in `qualname`).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**lib** (*Optional**[*[*Library*](#torch.library.Library "torch.library.Library")*]*)
+    – If provided, the lifetime of this operator will be tied to the lifetime of the
+    Library object.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**tags** ([*Tag*](torch.html#torch.Tag "torch.Tag") *|* *Sequence**[*[*Tag*](torch.html#torch.Tag
+    "torch.Tag")*]*) – one or more torch.Tag to apply to this operator. Tagging an
+    operator changes the operator’s behavior under various PyTorch subsystems; please
+    read the docs for the torch.Tag carefully before applying it.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Example::'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Register an implementation for a device type for this operator.
+  prefs: []
+  type: TYPE_NORMAL
+- en: You may pass “default” for `types` to register this implementation as the default
+    implementation for ALL device types. Please only use this if the implementation
+    truly supports all device types; for example, this is true if it is a composition
+    of built-in PyTorch operators.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Some valid types are: “cpu”, “cuda”, “xla”, “mps”, “ipu”, “xpu”.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**qualname** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
+    Python v3.12)")) – Should be a string that looks like “namespace::operator_name”.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**types** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
+    Python v3.12)") *|* *Sequence**[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]*) – The device types to register an impl to.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**lib** (*Optional**[*[*Library*](#torch.library.Library "torch.library.Library")*]*)
+    – If provided, the lifetime of this registration will be tied to the lifetime
+    of the Library object.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Examples
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: Register an abstract implementation for this operator.
+  prefs: []
+  type: TYPE_NORMAL
+- en: An “abstract implementation” specifies the behavior of this operator on Tensors
+    that carry no data. Given some input Tensors with certain properties (sizes/strides/storage_offset/device),
+    it specifies what the properties of the output Tensors are.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The abstract implementation has the same signature as the operator. It is run
+    for both FakeTensors and meta tensors. To write an abstract implementation, assume
+    that all Tensor inputs to the operator are regular CPU/CUDA/Meta tensors, but
+    they do not have storage, and you are trying to return regular CPU/CUDA/Meta tensor(s)
+    as output. The abstract implementation must consist of only PyTorch operations
+    (and may not directly access the storage or data of any input or intermediate
+    Tensors).
+  prefs: []
+  type: TYPE_NORMAL
+- en: This API may be used as a decorator (see examples).
+  prefs: []
+  type: TYPE_NORMAL
+- en: For a detailed guide on custom ops, please see [https://docs.google.com/document/d/1W–T6wz8IY8fOI0Vm8BF44PdBgs283QvpelJZWieQWQ/edit](https://docs.google.com/document/d/1W--T6wz8IY8fOI0Vm8BF44PdBgs283QvpelJZWieQWQ/edit)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Examples
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: get_ctx() returns the current AbstractImplCtx object.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Calling `get_ctx()` is only valid inside of an abstract impl (see [`torch.library.impl_abstract()`](#torch.library.impl_abstract
+    "torch.library.impl_abstract") for more usage details.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*AbstractImplCtx*'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Low-level APIs
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The following APIs are direct bindings to PyTorch’s C++ low-level operator registration
+    APIs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: The low-level operator registration APIs and the PyTorch Dispatcher are a complicated
+    PyTorch concept. We recommend you use the higher level APIs above (that do not
+    require a torch.library.Library object) when possible. This blog post <[http://blog.ezyang.com/2020/09/lets-talk-about-the-pytorch-dispatcher/](http://blog.ezyang.com/2020/09/lets-talk-about-the-pytorch-dispatcher/)>`_
+    is a good starting point to learn about the PyTorch Dispatcher.
+  prefs: []
+  type: TYPE_NORMAL
+- en: A tutorial that walks you through some examples on how to use this API is available
+    on [Google Colab](https://colab.research.google.com/drive/1RRhSfk7So3Cn02itzLWE9K4Fam-8U011?usp=sharing).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: A class to create libraries that can be used to register new operators or override
+    operators in existing libraries from Python. A user can optionally pass in a dispatch
+    keyname if they only want to register kernels corresponding to only one specific
+    dispatch key.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To create a library to override operators in an existing library (with name
+    ns), set the kind to “IMPL”. To create a new library (with name ns) to register
+    new operators, set the kind to “DEF”. To create a fragment of a possibly existing
+    library to register operators (and bypass the limitation that there is only one
+    library for a given namespace), set the kind to “FRAGMENT”.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**ns** – library name'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**kind** – “DEF”, “IMPL” (default: “IMPL”), “FRAGMENT”'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**dispatch_key** – PyTorch dispatch key (default: “”)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: Defines a new operator and its semantics in the ns namespace.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**schema** – function schema to define a new operator.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**alias_analysis** (*optional*) – Indicates if the aliasing properties of the
+    operator arguments can be inferred from the schema (default behavior) or not (“CONSERVATIVE”).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**tags** ([*Tag*](torch.html#torch.Tag "torch.Tag") *|* *Sequence**[*[*Tag*](torch.html#torch.Tag
+    "torch.Tag")*]*) – one or more torch.Tag to apply to this operator. Tagging an
+    operator changes the operator’s behavior under various PyTorch subsystems; please
+    read the docs for the torch.Tag carefully before applying it.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: name of the operator as inferred from the schema.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example::'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: Registers the function implementation for an operator defined in the library.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**op_name** – operator name (along with the overload) or OpOverload object.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**fn** – function that’s the operator implementation for the input dispatch
+    key or [`fallthrough_kernel()`](#torch.library.fallthrough_kernel "torch.library.fallthrough_kernel")
+    to register a fallthrough.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**dispatch_key** – dispatch key that the input function should be registered
+    for. By default, it uses the dispatch key that the library was created with.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Example::'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: A dummy function to pass to `Library.impl` in order to register a fallthrough.
+  prefs: []
+  type: TYPE_NORMAL

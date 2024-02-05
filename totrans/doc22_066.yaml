@@ -1,0 +1,1848 @@
+- en: torch.package
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/docs/stable/package.html](https://pytorch.org/docs/stable/package.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: '`torch.package` adds support for creating packages containing both artifacts
+    and arbitrary PyTorch code. These packages can be saved, shared, used to load
+    and execute models at a later date or on a different machine, and can even be
+    deployed to production using `torch::deploy`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: This document contains tutorials, how-to guides, explanations, and an API reference
+    that will help you learn more about `torch.package` and how to use it.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: This module depends on the `pickle` module which is not secure. Only unpackage
+    data you trust.
+  prefs: []
+  type: TYPE_NORMAL
+- en: It is possible to construct malicious pickle data which will **execute arbitrary
+    code during unpickling**. Never unpackage data that could have come from an untrusted
+    source, or that could have been tampered with.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For more information, review the [documentation](https://docs.python.org/3/library/pickle.html)
+    for the `pickle` module.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Tutorials](#tutorials)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Packaging your first model](#packaging-your-first-model)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[How do I…](#how-do-i)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[See what is inside a package?](#see-what-is-inside-a-package)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[See why a given module was included as a dependency?](#see-why-a-given-module-was-included-as-a-dependency)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Include arbitrary resources with my package and access them later?](#include-arbitrary-resources-with-my-package-and-access-them-later)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Customize how a class is packaged?](#customize-how-a-class-is-packaged)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Test in my source code whether or not it is executing inside a package?](#test-in-my-source-code-whether-or-not-it-is-executing-inside-a-package)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Patch code into a package?](#patch-code-into-a-package)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Access package contents from packaged code?](#access-package-contents-from-packaged-code)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Distinguish between packaged code and non-packaged code?](#distinguish-between-packaged-code-and-non-packaged-code)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Re-export an imported object?](#re-export-an-imported-object)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Package a TorchScript module?](#package-a-torchscript-module)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Explanation](#explanation)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[`torch.package` Format Overview](#torch-package-format-overview)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[How `torch.package` finds your code’s dependencies](#how-torch-package-finds-your-code-s-dependencies)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Dependency Management](#dependency-management)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[`torch.package` sharp edges](#torch-package-sharp-edges)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[How `torch.package` keeps packages isolated from each other](#how-torch-package-keeps-packages-isolated-from-each-other)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[API Reference](#api-reference)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Tutorials](#id1)'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[Packaging your first model](#id2)[](#packaging-your-first-model "Permalink
+    to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: A tutorial that guides you through packaging and unpackaging a simple model
+    is available [on Colab](https://colab.research.google.com/drive/1lFZkLyViGfXxB-m3jqlyTQuYToo3XLo-).
+    After completing this exercise, you will be familiar with the basic API for creating
+    and using Torch packages.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[How do I…](#id3)'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[See what is inside a package?](#id4)[](#see-what-is-inside-a-package "Permalink
+    to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Treat the package like a ZIP archive[](#treat-the-package-like-a-zip-archive
+    "Permalink to this heading")
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'The container format for a `torch.package` is ZIP, so any tools that work with
+    standard ZIP files should work for exploring the contents. Some common ways to
+    interact with ZIP files:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`unzip my_package.pt` will unzip the `torch.package` archive to disk, where
+    you can freely inspect its contents.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: The Python `zipfile` module provides a standard way to read and write ZIP archive
+    contents.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: vim has the ability to natively read ZIP archives. You can even edit files and
+    :`write` them back into the archive!
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Use the `file_structure()` API[](#use-the-file-structure-api "Permalink to
+    this heading")
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: '[`PackageImporter`](#torch.package.PackageImporter "torch.package.PackageImporter")
+    provides a `file_structure()` method, which will return a printable and queryable
+    [`Directory`](#torch.package.Directory "torch.package.Directory") object. The
+    [`Directory`](#torch.package.Directory "torch.package.Directory") object is a
+    simple directory structure that you can use to explore the current contents of
+    a `torch.package`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The [`Directory`](#torch.package.Directory "torch.package.Directory") object
+    itself is directly printable and will print out a file tree representation. To
+    filter what is returned, use the glob-style `include` and `exclude` filtering
+    arguments.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Output:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: You can also query [`Directory`](#torch.package.Directory "torch.package.Directory")
+    objects with the `has_file()` method.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[See why a given module was included as a dependency?](#id5)[](#see-why-a-given-module-was-included-as-a-dependency
+    "Permalink to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Say there is a given module `foo`, and you want to know why your [`PackageExporter`](#torch.package.PackageExporter
+    "torch.package.PackageExporter") is pulling in `foo` as a dependency.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`PackageExporter.get_rdeps()`](#torch.package.PackageExporter.get_rdeps "torch.package.PackageExporter.get_rdeps")
+    will return all modules that directly depend on `foo`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: If you would like to see how a given module `src` depends on `foo`, the [`PackageExporter.all_paths()`](#torch.package.PackageExporter.all_paths
+    "torch.package.PackageExporter.all_paths") method will return a DOT-formatted
+    graph showing all the dependency paths between `src` and `foo`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: If you would just like to see the whole dependency graph of your [`PackageExporter`](#torch.package.PackageExporter
+    "torch.package.PackageExporter"), you can use [`PackageExporter.dependency_graph_string()`](#torch.package.PackageExporter.dependency_graph_string
+    "torch.package.PackageExporter.dependency_graph_string").
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Include arbitrary resources with my package and access them later?](#id6)[](#include-arbitrary-resources-with-my-package-and-access-them-later
+    "Permalink to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[`PackageExporter`](#torch.package.PackageExporter "torch.package.PackageExporter")
+    exposes three methods, `save_pickle`, `save_text` and `save_binary` that allow
+    you to save Python objects, text, and binary data to a package.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[`PackageImporter`](#torch.package.PackageImporter "torch.package.PackageImporter")
+    exposes complementary methods named `load_pickle`, `load_text` and `load_binary`
+    that allow you to load Python objects, text and binary data from a package.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[Customize how a class is packaged?](#id7)[](#customize-how-a-class-is-packaged
+    "Permalink to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '`torch.package` allows for the customization of how classes are packaged. This
+    behavior is accessed through defining the method `__reduce_package__` on a class
+    and by defining a corresponding de-packaging function. This is similar to defining
+    `__reduce__` for Python’s normal pickling process.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Steps:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Define the method `__reduce_package__(self, exporter: PackageExporter)` on
+    the target class. This method should do the work to save the class instance inside
+    of the package, and should return a tuple of the corresponding de-packaging function
+    with the arguments needed to invoke the de-packaging function. This method is
+    called by the `PackageExporter` when it encounters an instance of the target class.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Define a de-packaging function for the class. This de-packaging function should
+    do the work to reconstruct and return an instance of the class. The function signature’s
+    first parameter should be a `PackageImporter` instance, and the rest of the parameters
+    are user defined.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[Test in my source code whether or not it is executing inside a package?](#id8)[](#test-in-my-source-code-whether-or-not-it-is-executing-inside-a-package
+    "Permalink to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: A [`PackageImporter`](#torch.package.PackageImporter "torch.package.PackageImporter")
+    will add the attribute `__torch_package__` to every module that it initializes.
+    Your code can check for the presence of this attribute to determine whether it
+    is executing in a packaged context or not.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now, the code will behave differently depending on whether it’s imported normally
+    through your Python environment or imported from a `torch.package`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: '**Warning**: in general, it’s bad practice to have code that behaves differently
+    depending on whether it’s packaged or not. This can lead to hard-to-debug issues
+    that are sensitive to how you imported your code. If your package is intended
+    to be heavily used, consider restructuring your code so that it behaves the same
+    way no matter how it was loaded.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Patch code into a package?](#id9)[](#patch-code-into-a-package "Permalink
+    to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[`PackageExporter`](#torch.package.PackageExporter "torch.package.PackageExporter")
+    offers a `save_source_string()` method that allows one to save arbitrary Python
+    source code to a module of your choosing.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[Access package contents from packaged code?](#id10)[](#access-package-contents-from-packaged-code
+    "Permalink to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[`PackageImporter`](#torch.package.PackageImporter "torch.package.PackageImporter")
+    implements the [importlib.resources](https://docs.python.org/3/library/importlib.html#module-importlib.resources)
+    API for accessing resources from inside a package.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: The `importlib.resources` API allows access to resources from within packaged
+    code.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: Using `importlib.resources` is the recommended way to access package contents
+    from within packaged code, since it complies with the Python standard. However,
+    it is also possible to access the parent [`PackageImporter`](#torch.package.PackageImporter
+    "torch.package.PackageImporter") instance itself from within packaged code.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[Distinguish between packaged code and non-packaged code?](#id11)[](#distinguish-between-packaged-code-and-non-packaged-code
+    "Permalink to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'To tell if an object’s code is from a `torch.package`, use the `torch.package.is_from_package()`
+    function. Note: if an object is from a package but its definition is from a module
+    marked `extern` or from `stdlib`, this check will return `False`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[Re-export an imported object?](#id12)[](#re-export-an-imported-object "Permalink
+    to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: To re-export an object that was previously imported by a [`PackageImporter`](#torch.package.PackageImporter
+    "torch.package.PackageImporter"), you must make the new [`PackageExporter`](#torch.package.PackageExporter
+    "torch.package.PackageExporter") aware of the original [`PackageImporter`](#torch.package.PackageImporter
+    "torch.package.PackageImporter") so that it can find source code for your object’s
+    dependencies.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[Package a TorchScript module?](#id13)[](#package-a-torchscript-module "Permalink
+    to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: To package a TorchScript model, use the same `save_pickle` and `load_pickle`
+    APIs as you would with any other object. Saving TorchScript objects that are attributes
+    or submodules is supported as well with no extra work.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[Explanation](#id14)'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[`torch.package` Format Overview](#id15)[](#torch-package-format-overview
+    "Permalink to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'A `torch.package` file is a ZIP archive which conventionally uses the `.pt`
+    extension. Inside the ZIP archive, there are two kinds of files:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Framework files, which are placed in the `.data/`.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: User files, which is everything else.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'As an example, this is what a fully packaged ResNet model from `torchvision`
+    looks like:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: Framework files
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: The `.data/` directory is owned by torch.package, and its contents are considered
+    to be a private implementation detail. The `torch.package` format makes no guarantees
+    about the contents of `.data/`, but any changes made will be backward compatible
+    (that is, newer version of PyTorch will always be able to load older `torch.packages`).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Currently, the `.data/` directory contains the following items:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`version`: a version number for the serialized format, so that the `torch.package`
+    import infrastructures knows how to load this package.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`extern_modules`: a list of modules that are considered `extern`. `extern`
+    modules will be imported using the loading environment’s system importer.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`*.storage`: serialized tensor data.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: User files
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: All other files in the archive were put there by a user. The layout is identical
+    to a Python [regular package](https://docs.python.org/3/reference/import.html#regular-packages).
+    For a deeper dive in how Python packaging works, please consult [this essay](https://www.python.org/doc/essays/packages/)
+    (it’s slightly out of date, so double-check implementation details with the [Python
+    reference documentation](https://docs.python.org/3/library/importlib.html)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[How `torch.package` finds your code’s dependencies](#id16)[](#how-torch-package-finds-your-code-s-dependencies
+    "Permalink to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Analyzing an object’s dependencies[](#analyzing-an-object-s-dependencies "Permalink
+    to this heading")
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: When you issue a `save_pickle(obj, ...)` call, [`PackageExporter`](#torch.package.PackageExporter
+    "torch.package.PackageExporter") will pickle the object normally. Then, it uses
+    the `pickletools` standard library module to parse the pickle bytecode.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In a pickle, an object is saved along with a `GLOBAL` opcode that describes
+    where to find the implementation of the object’s type, like:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: The dependency resolver will gather up all `GLOBAL` ops and mark them as dependencies
+    of your pickled object. For more information about pickling and the pickle format,
+    please consult [the Python docs](https://docs.python.org/3/library/pickle.html).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Analyzing a module’s dependencies[](#analyzing-a-module-s-dependencies "Permalink
+    to this heading")
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'When a Python module is identified as a dependency, `torch.package` walks the
+    module’s python AST representation and looks for import statements with full support
+    for the standard forms: `from x import y`, `import z`, `from w import v as u`,
+    etc. When one of these import statements are encountered, `torch.package` registers
+    the imported modules as dependencies that are then themselves parsed in the same
+    AST walking way.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Note**: AST parsing has limited support for the `__import__(...)` syntax
+    and does not support `importlib.import_module` calls. In general, you should not
+    expect dynamic imports to be detected by `torch.package`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Dependency Management](#id17)[](#dependency-management "Permalink to this
+    heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '`torch.package` automatically finds the Python modules that your code and objects
+    depend on. This process is called dependency resolution. For each module that
+    the dependency resolver finds, you must specify an *action* to take.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The allowed actions are:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`intern`: put this module into the package.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`extern`: declare this module as an external dependency of the package.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`mock`: stub out this module.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`deny`: depending on this module will raise an error during package export.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Finally, there is one more important action that is not technically part of
+    `torch.package`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Refactoring: remove or change the dependencies in your code.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Note that actions are only defined on entire Python modules. There is no way
+    to package “just” a function or class from a module and leave the rest out. This
+    is by design. Python does not offer clean boundaries between objects defined in
+    a module. The only defined unit of dependency organization is a module, so that’s
+    what `torch.package` uses.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Actions are applied to modules using patterns. Patterns can either be module
+    names (`"foo.bar"`) or globs (like `"foo.**"`). You associate a pattern with an
+    action using methods on [`PackageExporter`](#torch.package.PackageExporter "torch.package.PackageExporter"),
+    e.g.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: If a module matches a pattern, the corresponding action is applied to it. For
+    a given module, patterns will be checked in the order that they were defined,
+    and the first action will be taken.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`intern`'
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: If a module is `intern`-ed, it will be placed into the package.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This action is your model code, or any related code you want to package. For
+    example, if you are trying to package a ResNet from `torchvision`, you will need
+    to `intern` the module torchvision.models.resnet.
+  prefs: []
+  type: TYPE_NORMAL
+- en: On package import, when your packaged code tries to import an `intern`-ed module,
+    PackageImporter will look inside your package for that module. If it can’t find
+    that module, an error will be raised. This ensures that each [`PackageImporter`](#torch.package.PackageImporter
+    "torch.package.PackageImporter") is isolated from the loading environment—even
+    if you have `my_interned_module` available in both your package and the loading
+    environment, [`PackageImporter`](#torch.package.PackageImporter "torch.package.PackageImporter")
+    will only use the version in your package.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Note**: Only Python source modules can be `intern`-ed. Other kinds of modules,
+    like C extension modules and bytecode modules, will raise an error if you attempt
+    to `intern` them. These kinds of modules need to be `mock`-ed or `extern`-ed.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`extern`'
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: If a module is `extern`-ed, it will not be packaged. Instead, it will be added
+    to a list of external dependencies for this package. You can find this list on
+    `package_exporter.extern_modules`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: On package import, when the packaged code tries to import an `extern`-ed module,
+    [`PackageImporter`](#torch.package.PackageImporter "torch.package.PackageImporter")
+    will use the default Python importer to find that module, as if you did `importlib.import_module("my_externed_module")`.
+    If it can’t find that module, an error will be raised.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In this way, you can depend on third-party libraries like `numpy` and `scipy`
+    from within your package without having to package them too.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Warning**: If any external library changes in a backwards-incompatible way,
+    your package may fail to load. If you need long-term reproducibility for your
+    package, try to limit your use of `extern`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`mock`'
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: If a module is `mock`-ed, it will not be packaged. Instead a stub module will
+    be packaged in its place. The stub module will allow you to retrieve objects from
+    it (so that `from my_mocked_module import foo` will not error), but any use of
+    that object will raise a `NotImplementedError`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`mock` should be used for code that you “know” will not be needed in the loaded
+    package, but you still want available for use in non-packaged contents. For example,
+    initialization/configuration code, or code only used for debugging/training.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Warning**: In general, `mock` should be used as a last resort. It introduces
+    behavioral differences between packaged code and non-packaged code, which may
+    lead to later confusion. Prefer instead to refactor your code to remove unwanted
+    dependencies.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Refactoring
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'The best way to manage dependencies is to not have dependencies at all! Often,
+    code can be refactored to remove unnecessary dependencies. Here are some guidelines
+    for writing code with clean dependencies (which are also generally good practices!):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Include only what you use**. Do not leave unused imports in your code. The
+    dependency resolver is not smart enough to tell that they are indeed unused, and
+    will try to process them.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Qualify your imports**. For example, instead of writing import foo and later
+    using `foo.bar.baz`, prefer to write `from foo.bar import baz`. This more precisely
+    specifies your real dependency (`foo.bar`) and lets the dependency resolver know
+    you don’t need all of `foo`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Split up large files with unrelated functionality into smaller ones**. If
+    your `utils` module contains a hodge-podge of unrelated functionality, any module
+    that depends on `utils` will need to pull in lots of unrelated dependencies, even
+    if you only needed a small part of it. Prefer instead to define single-purpose
+    modules that can be packaged independently of one another.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Patterns
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Patterns allow you to specify groups of modules with a convenient syntax. The
+    syntax and behavior of patterns follows the Bazel/Buck [glob()](https://docs.bazel.build/versions/master/be/functions.html#glob).
+  prefs: []
+  type: TYPE_NORMAL
+- en: A module that we are trying to match against a pattern is called a candidate.
+    A candidate is composed of a list of segments separated by a separator string,
+    e.g. `foo.bar.baz`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'A pattern contains one or more segments. Segments can be:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: A literal string (e.g. `foo`), which matches exactly.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: A string containing a wildcard (e.g. `torch`, or `foo*baz*`). The wildcard matches
+    any string, including the empty string.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: A double wildcard (`**`). This matches against zero or more complete segments.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Examples:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`torch.**`: matches `torch` and all its submodules, e.g. `torch.nn` and `torch.nn.functional`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`torch.*`: matches `torch.nn` or `torch.functional`, but not `torch.nn.functional`
+    or `torch`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`torch*.**`: matches `torch`, `torchvision`, and all of their submodules'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: When specifying actions, you can pass multiple patterns, e.g.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: A module will match against this action if it matches any of the patterns.
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can also specify patterns to exclude, e.g.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE26]'
+  prefs: []
+  type: TYPE_PRE
+- en: A module will not match against this action if it matches any of the exclude
+    patterns. In this example, we are mocking all modules except `torchvision` and
+    its submodules.
+  prefs: []
+  type: TYPE_NORMAL
+- en: When a module could potentially match against multiple actions, the first action
+    defined will be taken.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`torch.package` sharp edges](#id18)[](#torch-package-sharp-edges "Permalink
+    to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Avoid global state in your modules[](#avoid-global-state-in-your-modules "Permalink
+    to this heading")
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Python makes it really easy to bind objects and run code at module-level scope.
+    This is generally fine—after all, functions and classes are bound to names this
+    way. However, things become more complicated when you define an object at module
+    scope with the intention of mutating it, introducing mutable global state.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Mutable global state is quite useful—it can reduce boilerplate, allow for open
+    registration into tables, etc. But unless employed very carefully, it can cause
+    complications when used with `torch.package`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Every [`PackageImporter`](#torch.package.PackageImporter "torch.package.PackageImporter")
+    creates an independent environment for its contents. This is nice because it means
+    we load multiple packages and ensure they are isolated from each other, but when
+    modules are written in a way that assumes shared mutable global state, this behavior
+    can create hard-to-debug errors.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Types are not shared between packages and the loading environment[](#types-are-not-shared-between-packages-and-the-loading-environment
+    "Permalink to this heading")
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'Any class that you import from a [`PackageImporter`](#torch.package.PackageImporter
+    "torch.package.PackageImporter") will be a version of the class specific to that
+    importer. For example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE27]'
+  prefs: []
+  type: TYPE_PRE
+- en: In this example, `MyClass` and `imported_MyClass` are *not the same type*. In
+    this specific example, `MyClass` and `imported_MyClass` have exactly the same
+    implementation, so you might think it’s okay to consider them the same class.
+    But consider the situation where `imported_MyClass` is coming from an older package
+    with an entirely different implementation of `MyClass` — in that case, it’s unsafe
+    to consider them the same class.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Under the hood, each importer has a prefix that allows it to uniquely identify
+    classes:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE28]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'That means you should not expect `isinstance` checks to work when one of the
+    arguments is from a package and the other is not. If you need this functionality,
+    consider the following options:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Doing duck typing (just using the class instead of explicitly checking that
+    it is of a given type).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Make the typing relationship an explicit part of the class contract. For example,
+    you can add an attribute tag `self.handler = "handle_me_this_way"` and have client
+    code check for the value of `handler` instead of checking the type directly.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[How `torch.package` keeps packages isolated from each other](#id19)[](#how-torch-package-keeps-packages-isolated-from-each-other
+    "Permalink to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Each [`PackageImporter`](#torch.package.PackageImporter "torch.package.PackageImporter")
+    instance creates an independent, isolated environment for its modules and objects.
+    Modules in a package can only import other packaged modules, or modules marked
+    `extern`. If you use multiple [`PackageImporter`](#torch.package.PackageImporter
+    "torch.package.PackageImporter") instances to load a single package, you will
+    get multiple independent environments that do not interact.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This is achieved by extending Python’s import infrastructure with a custom importer.
+    [`PackageImporter`](#torch.package.PackageImporter "torch.package.PackageImporter")
+    provides the same core API as the `importlib` importer; namely, it implements
+    the `import_module` and `__import__` methods.
+  prefs: []
+  type: TYPE_NORMAL
+- en: When you invoke [`PackageImporter.import_module()`](#torch.package.PackageImporter.import_module
+    "torch.package.PackageImporter.import_module"), [`PackageImporter`](#torch.package.PackageImporter
+    "torch.package.PackageImporter") will construct and return a new module, much
+    as the system importer does. However, [`PackageImporter`](#torch.package.PackageImporter
+    "torch.package.PackageImporter") patches the returned module to use `self` (i.e.
+    that [`PackageImporter`](#torch.package.PackageImporter "torch.package.PackageImporter")
+    instance) to fulfill future import requests by looking in the package rather than
+    searching the user’s Python environment.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Mangling
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: To avoid confusion (“is this `foo.bar` object the one from my package, or the
+    one from my Python environment?”), [`PackageImporter`](#torch.package.PackageImporter
+    "torch.package.PackageImporter") mangles the `__name__` and `__file__` of all
+    imported modules, by adding a *mangle prefix* to them.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For `__name__`, a name like `torchvision.models.resnet18` becomes `<torch_package_0>.torchvision.models.resnet18`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For `__file__`, a name like `torchvision/models/resnet18.py` becomes `<torch_package_0>.torchvision/modules/resnet18.py`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Name mangling helps avoid inadvertent punning of module names between different
+    packages, and helps you debug by making stack traces and print statements more
+    clearly show whether they are referring to packaged code or not. For developer-facing
+    details about mangling, consult `mangling.md` in `torch/package/`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[API Reference](#id20)'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE29]'
+  prefs: []
+  type: TYPE_PRE
+- en: This exception is raised when there is an issue with exporting a package. `PackageExporter`
+    will attempt to gather up all the errors and present them to you at once.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE30]'
+  prefs: []
+  type: TYPE_PRE
+- en: This is an exception that is thrown when a mock or extern is marked as `allow_empty=False`,
+    and is not matched with any module during packaging.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE31]'
+  prefs: []
+  type: TYPE_PRE
+- en: Exporters allow you to write packages of code, pickled Python data, and arbitrary
+    binary and text resources into a self-contained package.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Imports can load this code in a hermetic way, such that code is loaded from
+    the package rather than the normal Python import system. This allows for the packaging
+    of PyTorch model code and data so that it can be run on a server or used in the
+    future for transfer learning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The code contained in packages is copied file-by-file from the original source
+    when it is created, and the file format is a specially organized zip file. Future
+    users of the package can unzip the package, and edit the code in order to perform
+    custom modifications to it.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The importer for packages ensures that code in the module can only be loaded
+    from within the package, except for modules explicitly listed as external using
+    [`extern()`](#torch.package.PackageExporter.extern "torch.package.PackageExporter.extern").
+    The file `extern_modules` in the zip archive lists all the modules that a package
+    externally depends on. This prevents “implicit” dependencies where the package
+    runs locally because it is importing a locally-installed package, but then fails
+    when the package is copied to another machine.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'When source code is added to the package, the exporter can optionally scan
+    it for further code dependencies (`dependencies=True`). It looks for import statements,
+    resolves relative references to qualified module names, and performs an action
+    specified by the user (See: [`extern()`](#torch.package.PackageExporter.extern
+    "torch.package.PackageExporter.extern"), [`mock()`](#torch.package.PackageExporter.mock
+    "torch.package.PackageExporter.mock"), and [`intern()`](#torch.package.PackageExporter.intern
+    "torch.package.PackageExporter.intern")).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE32]'
+  prefs: []
+  type: TYPE_PRE
+- en: Create an exporter.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**f** ([*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* [*Path*](https://docs.python.org/3/library/pathlib.html#pathlib.Path
+    "(in Python v3.12)")*,* [*BinaryIO*](https://docs.python.org/3/library/typing.html#typing.BinaryIO
+    "(in Python v3.12)")*]*) – The location to export to. Can be a `string`/`Path`
+    object containing a filename or a binary I/O object.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**importer** ([*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[**Importer**,* [*Sequence*](https://docs.python.org/3/library/typing.html#typing.Sequence
+    "(in Python v3.12)")*[**Importer**]**]*) – If a single Importer is passed, use
+    that to search for modules. If a sequence of importers are passed, an `OrderedImporter`
+    will be constructed out of them.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**debug** ([*bool*](https://docs.python.org/3/library/functions.html#bool "(in
+    Python v3.12)")) – If set to True, add path of broken modules to PackagingErrors.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE33]'
+  prefs: []
+  type: TYPE_PRE
+- en: Given a module, add it to the dependency graph according to patterns specified
+    by the user.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE34]'
+  prefs: []
+  type: TYPE_PRE
+- en: Return a dot representation of the subgraph
+  prefs: []
+  type: TYPE_NORMAL
+- en: that has all paths from src to dst.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: A dot representation containing all paths from src to dst. ([https://graphviz.org/doc/info/lang.html](https://graphviz.org/doc/info/lang.html))
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[str](https://docs.python.org/3/library/stdtypes.html#str "(in Python v3.12)")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE35]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Write the package to the filesystem. Any calls after [`close()`](#torch.package.PackageExporter.close
+    "torch.package.PackageExporter.close") are now invalid. It is preferable to use
+    resource guard syntax instead:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE36]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE37]'
+  prefs: []
+  type: TYPE_PRE
+- en: Return all modules that are currently denied.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: A list containing the names of modules which will be denied in this package.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*List*](https://docs.python.org/3/library/typing.html#typing.List "(in Python
+    v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str "(in Python
+    v3.12)")]'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE38]'
+  prefs: []
+  type: TYPE_PRE
+- en: Blocklist modules who names match the given glob patterns from the list of modules
+    the package can import. If a dependency on any matching packages is found, a [`PackagingError`](#torch.package.PackagingError
+    "torch.package.PackagingError") is raised.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**include** (*Union**[**List**[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]*) – A string e.g. `"my_package.my_subpackage"`, or list
+    of strings for the names of the modules to be externed. This can also be a glob-style
+    pattern, as described in [`mock()`](#torch.package.PackageExporter.mock "torch.package.PackageExporter.mock").'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**exclude** (*Union**[**List**[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]*) – An optional pattern that excludes some patterns that
+    match the include string.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE39]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns digraph string representation of dependencies in package.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: A string representation of dependencies in package.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[str](https://docs.python.org/3/library/stdtypes.html#str "(in Python v3.12)")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE40]'
+  prefs: []
+  type: TYPE_PRE
+- en: Include `module` in the list of external modules the package can import. This
+    will prevent dependency discovery from saving it in the package. The importer
+    will load an external module directly from the standard import system. Code for
+    extern modules must also exist in the process loading the package.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**include** (*Union**[**List**[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]*) – A string e.g. `"my_package.my_subpackage"`, or list
+    of strings for the names of the modules to be externed. This can also be a glob-style
+    pattern, as described in [`mock()`](#torch.package.PackageExporter.mock "torch.package.PackageExporter.mock").'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**exclude** (*Union**[**List**[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]*) – An optional pattern that excludes some patterns that
+    match the include string.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**allow_empty** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")) – An optional flag that specifies whether the extern modules
+    specified by this call to the `extern` method must be matched to some module during
+    packaging. If an extern module glob pattern is added with `allow_empty=False`,
+    and [`close()`](#torch.package.PackageExporter.close "torch.package.PackageExporter.close")
+    is called (either explicitly or via `__exit__`) before any modules match that
+    pattern, an exception is thrown. If `allow_empty=True`, no such exception is thrown.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE41]'
+  prefs: []
+  type: TYPE_PRE
+- en: Return all modules that are currently externed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: A list containing the names of modules which will be externed in this package.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*List*](https://docs.python.org/3/library/typing.html#typing.List "(in Python
+    v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str "(in Python
+    v3.12)")]'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE42]'
+  prefs: []
+  type: TYPE_PRE
+- en: Return a list of all modules which depend on the module `module_name`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: A list containing the names of modules which depend on `module_name`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*List*](https://docs.python.org/3/library/typing.html#typing.List "(in Python
+    v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str "(in Python
+    v3.12)")]'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE43]'
+  prefs: []
+  type: TYPE_PRE
+- en: Get an id. This id is guaranteed to only be handed out once for this package.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[str](https://docs.python.org/3/library/stdtypes.html#str "(in Python v3.12)")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE44]'
+  prefs: []
+  type: TYPE_PRE
+- en: Specify modules that should be packaged. A module must match some `intern` pattern
+    in order to be included in the package and have its dependencies processed recursively.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**include** (*Union**[**List**[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]*) – A string e.g. “my_package.my_subpackage”, or list of
+    strings for the names of the modules to be externed. This can also be a glob-style
+    pattern, as described in [`mock()`](#torch.package.PackageExporter.mock "torch.package.PackageExporter.mock").'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**exclude** (*Union**[**List**[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]*) – An optional pattern that excludes some patterns that
+    match the include string.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**allow_empty** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")) – An optional flag that specifies whether the intern modules
+    specified by this call to the `intern` method must be matched to some module during
+    packaging. If an `intern` module glob pattern is added with `allow_empty=False`,
+    and [`close()`](#torch.package.PackageExporter.close "torch.package.PackageExporter.close")
+    is called (either explicitly or via `__exit__`) before any modules match that
+    pattern, an exception is thrown. If `allow_empty=True`, no such exception is thrown.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE45]'
+  prefs: []
+  type: TYPE_PRE
+- en: Return all modules that are currently interned.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: A list containing the names of modules which will be interned in this package.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*List*](https://docs.python.org/3/library/typing.html#typing.List "(in Python
+    v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str "(in Python
+    v3.12)")]'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE46]'
+  prefs: []
+  type: TYPE_PRE
+- en: Replace some required modules with a mock implementation. Mocked modules will
+    return a fake object for any attribute accessed from it. Because we copy file-by-file,
+    the dependency resolution will sometimes find files that are imported by model
+    files but whose functionality is never used (e.g. custom serialization code or
+    training helpers). Use this function to mock this functionality out without having
+    to modify the original code.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**include** (*Union**[**List**[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]*) –'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: A string e.g. `"my_package.my_subpackage"`, or list of strings for the names
+    of the modules to be mocked out. Strings can also be a glob-style pattern string
+    that may match multiple modules. Any required dependencies that match this pattern
+    string will be mocked out automatically.
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: 'Examples :'
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: '`''torch.**''` – matches `torch` and all submodules of torch, e.g. `''torch.nn''`
+    and `''torch.nn.functional''`'
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: '`''torch.*''` – matches `''torch.nn''` or `''torch.functional''`, but not `''torch.nn.functional''`'
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: '**exclude** (*Union**[**List**[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]*) – An optional pattern that excludes some patterns that
+    match the include string. e.g. `include=''torch.**'', exclude=''torch.foo''` will
+    mock all torch packages except `''torch.foo''`, Default: is `[]`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**allow_empty** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")) – An optional flag that specifies whether the mock implementation(s)
+    specified by this call to the [`mock()`](#torch.package.PackageExporter.mock "torch.package.PackageExporter.mock")
+    method must be matched to some module during packaging. If a mock is added with
+    `allow_empty=False`, and [`close()`](#torch.package.PackageExporter.close "torch.package.PackageExporter.close")
+    is called (either explicitly or via `__exit__`) and the mock has not been matched
+    to a module used by the package being exported, an exception is thrown. If `allow_empty=True`,
+    no such exception is thrown.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE47]'
+  prefs: []
+  type: TYPE_PRE
+- en: Return all modules that are currently mocked.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: A list containing the names of modules which will be mocked in this package.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*List*](https://docs.python.org/3/library/typing.html#typing.List "(in Python
+    v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str "(in Python
+    v3.12)")]'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE48]'
+  prefs: []
+  type: TYPE_PRE
+- en: Registers an extern hook on the exporter.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The hook will be called each time a module matches against an [`extern()`](#torch.package.PackageExporter.extern
+    "torch.package.PackageExporter.extern") pattern. It should have the following
+    signature:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE49]'
+  prefs: []
+  type: TYPE_PRE
+- en: Hooks will be called in order of registration.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: A handle that can be used to remove the added hook by calling `handle.remove()`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`torch.utils.hooks.RemovableHandle`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE50]'
+  prefs: []
+  type: TYPE_PRE
+- en: Registers an intern hook on the exporter.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The hook will be called each time a module matches against an [`intern()`](#torch.package.PackageExporter.intern
+    "torch.package.PackageExporter.intern") pattern. It should have the following
+    signature:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE51]'
+  prefs: []
+  type: TYPE_PRE
+- en: Hooks will be called in order of registration.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: A handle that can be used to remove the added hook by calling `handle.remove()`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`torch.utils.hooks.RemovableHandle`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE52]'
+  prefs: []
+  type: TYPE_PRE
+- en: Registers a mock hook on the exporter.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The hook will be called each time a module matches against a [`mock()`](#torch.package.PackageExporter.mock
+    "torch.package.PackageExporter.mock") pattern. It should have the following signature:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE53]'
+  prefs: []
+  type: TYPE_PRE
+- en: Hooks will be called in order of registration.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: A handle that can be used to remove the added hook by calling `handle.remove()`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`torch.utils.hooks.RemovableHandle`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE54]'
+  prefs: []
+  type: TYPE_PRE
+- en: Save raw bytes to the package.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**package** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
+    Python v3.12)")) – The name of module package this resource should go it (e.g.
+    `"my_package.my_subpackage"`).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**resource** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
+    Python v3.12)")) – A unique name for the resource, used to identify it to load.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**binary** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
+    Python v3.12)")) – The data to save.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE55]'
+  prefs: []
+  type: TYPE_PRE
+- en: Save the code for `module` into the package. Code for the module is resolved
+    using the `importers` path to find the module object, and then using its `__file__`
+    attribute to find the source code.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**module_name** ([*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")) – e.g. `my_package.my_subpackage`, code will be saved to
+    provide code for this package.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**dependencies** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")*,* *optional*) – If `True`, we scan the source for dependencies.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE56]'
+  prefs: []
+  type: TYPE_PRE
+- en: Save a python object to the archive using pickle. Equivalent to [`torch.save()`](generated/torch.save.html#torch.save
+    "torch.save") but saving into the archive rather than a stand-alone file. Standard
+    pickle does not save the code, only the objects. If `dependencies` is true, this
+    method will also scan the pickled objects for which modules are required to reconstruct
+    them and save the relevant code.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To be able to save an object where `type(obj).__name__` is `my_module.MyObject`,
+    `my_module.MyObject` must resolve to the class of the object according to the
+    `importer` order. When saving objects that have previously been packaged, the
+    importer’s `import_module` method will need to be present in the `importer` list
+    for this to work.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**package** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
+    Python v3.12)")) – The name of module package this resource should go in (e.g.
+    `"my_package.my_subpackage"`).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**resource** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
+    Python v3.12)")) – A unique name for the resource, used to identify it to load.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**obj** (*Any*) – The object to save, must be picklable.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**dependencies** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")*,* *optional*) – If `True`, we scan the source for dependencies.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE57]'
+  prefs: []
+  type: TYPE_PRE
+- en: Adds the local file system `file_or_directory` to the source package to provide
+    the code for `module_name`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**module_name** ([*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")) – e.g. `"my_package.my_subpackage"`, code will be saved
+    to provide code for this package.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**file_or_directory** ([*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")) – the path to a file or directory of code. When a directory,
+    all python files in the directory are recursively copied using [`save_source_file()`](#torch.package.PackageExporter.save_source_file
+    "torch.package.PackageExporter.save_source_file"). If a file is named `"/__init__.py"`
+    the code is treated as a package.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**dependencies** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")*,* *optional*) – If `True`, we scan the source for dependencies.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE58]'
+  prefs: []
+  type: TYPE_PRE
+- en: Adds `src` as the source code for `module_name` in the exported package.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**module_name** ([*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")) – e.g. `my_package.my_subpackage`, code will be saved to
+    provide code for this package.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**src** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
+    v3.12)")) – The Python source code to save for this package.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**is_package** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")*,* *optional*) – If `True`, this module is treated as a package.
+    Packages are allowed to have submodules (e.g. `my_package.my_subpackage.my_subsubpackage`),
+    and resources can be saved inside them. Defaults to `False`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**dependencies** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")*,* *optional*) – If `True`, we scan the source for dependencies.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE59]'
+  prefs: []
+  type: TYPE_PRE
+- en: Save text data to the package.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**package** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
+    Python v3.12)")) – The name of module package this resource should go it (e.g.
+    `"my_package.my_subpackage"`).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**resource** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
+    Python v3.12)")) – A unique name for the resource, used to identify it to load.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**text** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
+    Python v3.12)")) – The contents to save.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE60]'
+  prefs: []
+  type: TYPE_PRE
+- en: Importers allow you to load code written to packages by [`PackageExporter`](#torch.package.PackageExporter
+    "torch.package.PackageExporter"). Code is loaded in a hermetic way, using files
+    from the package rather than the normal python import system. This allows for
+    the packaging of PyTorch model code and data so that it can be run on a server
+    or used in the future for transfer learning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The importer for packages ensures that code in the module can only be loaded
+    from within the package, except for modules explicitly listed as external during
+    export. The file `extern_modules` in the zip archive lists all the modules that
+    a package externally depends on. This prevents “implicit” dependencies where the
+    package runs locally because it is importing a locally-installed package, but
+    then fails when the package is copied to another machine.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE61]'
+  prefs: []
+  type: TYPE_PRE
+- en: Open `file_or_buffer` for importing. This checks that the imported package only
+    requires modules allowed by `module_allowed`
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**file_or_buffer** ([*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* *PyTorchFileReader**,* [*Path*](https://docs.python.org/3/library/pathlib.html#pathlib.Path
+    "(in Python v3.12)")*,* [*BinaryIO*](https://docs.python.org/3/library/typing.html#typing.BinaryIO
+    "(in Python v3.12)")*]*) – a file-like object (has to implement `read()`, `readline()`,
+    `tell()`, and `seek()`), a string, or an `os.PathLike` object containing a filename.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**module_allowed** (*Callable**[**[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**,* [*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")*]**,* *optional*) – A method to determine if a externally
+    provided module should be allowed. Can be used to ensure packages loaded do not
+    depend on modules that the server does not support. Defaults to allowing anything.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Raises
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[**ImportError**](https://docs.python.org/3/library/exceptions.html#ImportError
+    "(in Python v3.12)") – If the package will use a disallowed module.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE62]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns a file structure representation of package’s zipfile.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**include** (*Union**[**List**[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]*) – An optional string e.g. `"my_package.my_subpackage"`,
+    or optional list of strings for the names of the files to be included in the zipfile
+    representation. This can also be a glob-style pattern, as described in [`PackageExporter.mock()`](#torch.package.PackageExporter.mock
+    "torch.package.PackageExporter.mock")'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**exclude** (*Union**[**List**[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]**,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*]*) – An optional pattern that excludes files whose name
+    match the pattern.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Directory`](#torch.package.Directory "torch.package.Directory")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*Directory*](#torch.package.Directory "torch.package.file_structure_representation.Directory")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE63]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Returns internal identifier that torch.package uses to distinguish [`PackageImporter`](#torch.package.PackageImporter
+    "torch.package.PackageImporter") instances. Looks like:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE64]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE65]'
+  prefs: []
+  type: TYPE_PRE
+- en: Load a module from the package if it hasn’t already been loaded, and then return
+    the module. Modules are loaded locally to the importer and will appear in `self.modules`
+    rather than `sys.modules`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**name** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
+    Python v3.12)")) – Fully qualified name of the module to load.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**package** (*[*[*type*](https://docs.python.org/3/library/functions.html#type
+    "(in Python v3.12)")*]**,* *optional*) – Unused, but present to match the signature
+    of importlib.import_module. Defaults to `None`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: The (possibly already) loaded module.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[types.ModuleType](https://docs.python.org/3/library/types.html#types.ModuleType
+    "(in Python v3.12)")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE66]'
+  prefs: []
+  type: TYPE_PRE
+- en: Load raw bytes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**package** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
+    Python v3.12)")) – The name of module package (e.g. `"my_package.my_subpackage"`).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**resource** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
+    Python v3.12)")) – The unique name for the resource.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: The loaded data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[bytes](https://docs.python.org/3/library/stdtypes.html#bytes "(in Python v3.12)")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE67]'
+  prefs: []
+  type: TYPE_PRE
+- en: Unpickles the resource from the package, loading any modules that are needed
+    to construct the objects using [`import_module()`](#torch.package.PackageImporter.import_module
+    "torch.package.PackageImporter.import_module").
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**package** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
+    Python v3.12)")) – The name of module package (e.g. `"my_package.my_subpackage"`).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**resource** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
+    Python v3.12)")) – The unique name for the resource.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**map_location** – Passed to torch.load to determine how tensors are mapped
+    to devices. Defaults to `None`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: The unpickled object.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: Any
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE68]'
+  prefs: []
+  type: TYPE_PRE
+- en: Load a string.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**package** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
+    Python v3.12)")) – The name of module package (e.g. `"my_package.my_subpackage"`).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**resource** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
+    Python v3.12)")) – The unique name for the resource.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**encoding** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
+    Python v3.12)")*,* *optional*) – Passed to `decode`. Defaults to `''utf-8''`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**errors** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
+    Python v3.12)")*,* *optional*) – Passed to `decode`. Defaults to `''strict''`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: The loaded text.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[str](https://docs.python.org/3/library/stdtypes.html#str "(in Python v3.12)")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE69]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns the version of python that was used to create this package.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Note: this function is experimental and not Forward Compatible. The plan is
+    to move this into a lock file later on.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`Optional[str]` a python version e.g. 3.8.9 or None if no version was stored
+    with this package'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE70]'
+  prefs: []
+  type: TYPE_PRE
+- en: A file structure representation. Organized as Directory nodes that have lists
+    of their Directory children. Directories for a package are created by calling
+    [`PackageImporter.file_structure()`](#torch.package.PackageImporter.file_structure
+    "torch.package.PackageImporter.file_structure").
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE71]'
+  prefs: []
+  type: TYPE_PRE
+- en: Checks if a file is present in a [`Directory`](#torch.package.Directory "torch.package.Directory").
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**filename** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
+    Python v3.12)")) – Path of file to search for.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: If a [`Directory`](#torch.package.Directory "torch.package.Directory") contains
+    the specified file.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[bool](https://docs.python.org/3/library/functions.html#bool "(in Python v3.12)")'
+  prefs: []
+  type: TYPE_NORMAL

@@ -1,0 +1,1493 @@
+- en: Autograd mechanics
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/docs/stable/notes/autograd.html](https://pytorch.org/docs/stable/notes/autograd.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: This note will present an overview of how autograd works and records the operations.
+    It’s not strictly necessary to understand all this, but we recommend getting familiar
+    with it, as it will help you write more efficient, cleaner programs, and can aid
+    you in debugging.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '## How autograd encodes the history[](#how-autograd-encodes-the-history "Permalink
+    to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Autograd is a reverse automatic differentiation system. Conceptually, autograd
+    records a graph recording all of the operations that created the data as you execute
+    operations, giving you a directed acyclic graph whose leaves are the input tensors
+    and roots are the output tensors. By tracing this graph from roots to leaves,
+    you can automatically compute the gradients using the chain rule.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Internally, autograd represents this graph as a graph of `Function` objects
+    (really expressions), which can be `apply()` ed to compute the result of evaluating
+    the graph. When computing the forward pass, autograd simultaneously performs the
+    requested computations and builds up a graph representing the function that computes
+    the gradient (the `.grad_fn` attribute of each [`torch.Tensor`](../tensors.html#torch.Tensor
+    "torch.Tensor") is an entry point into this graph). When the forward pass is completed,
+    we evaluate this graph in the backwards pass to compute the gradients.
+  prefs: []
+  type: TYPE_NORMAL
+- en: An important thing to note is that the graph is recreated from scratch at every
+    iteration, and this is exactly what allows for using arbitrary Python control
+    flow statements, that can change the overall shape and size of the graph at every
+    iteration. You don’t have to encode all possible paths before you launch the training
+    - what you run is what you differentiate.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '### Saved tensors'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Some operations need intermediary results to be saved during the forward pass
+    in order to execute the backward pass. For example, the function <math><semantics><mrow><mi>x</mi><mo>↦</mo><msup><mi>x</mi><mn>2</mn></msup></mrow><annotation
+    encoding="application/x-tex">x\mapsto x^2</annotation></semantics></math>x↦x2
+    saves the input <math><semantics><mrow><mi>x</mi></mrow><annotation encoding="application/x-tex">x</annotation></semantics></math>x
+    to compute the gradient.
+  prefs: []
+  type: TYPE_NORMAL
+- en: When defining a custom Python [`Function`](../autograd.html#torch.autograd.Function
+    "torch.autograd.Function"), you can use `save_for_backward()` to save tensors
+    during the forward pass and `saved_tensors` to retrieve them during the backward
+    pass. See [Extending PyTorch](extending.html) for more information.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For operations that PyTorch defines (e.g. [`torch.pow()`](../generated/torch.pow.html#torch.pow
+    "torch.pow")), tensors are automatically saved as needed. You can explore (for
+    educational or debugging purposes) which tensors are saved by a certain `grad_fn`
+    by looking for its attributes starting with the prefix `_saved`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'In the previous code, `y.grad_fn._saved_self` refers to the same Tensor object
+    as x. But that may not always be the case. For instance:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Under the hood, to prevent reference cycles, PyTorch has *packed* the tensor
+    upon saving and *unpacked* it into a different tensor for reading. Here, the tensor
+    you get from accessing `y.grad_fn._saved_result` is a different tensor object
+    than `y` (but they still share the same storage).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Whether a tensor will be packed into a different tensor object depends on whether
+    it is an output of its own grad_fn, which is an implementation detail subject
+    to change and that users should not rely on.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'You can control how PyTorch does packing / unpacking with [Hooks for saved
+    tensors](#saved-tensors-hooks-doc).  ## Gradients for non-differentiable functions[](#gradients-for-non-differentiable-functions
+    "Permalink to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The gradient computation using Automatic Differentiation is only valid when
+    each elementary function being used is differentiable. Unfortunately many of the
+    functions we use in practice do not have this property (`relu` or `sqrt` at `0`,
+    for example). To try and reduce the impact of functions that are non-differentiable,
+    we define the gradients of the elementary operations by applying the following
+    rules in order:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: If the function is differentiable and thus a gradient exists at the current
+    point, use it.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: If the function is convex (at least locally), use the sub-gradient of minimum
+    norm (it is the steepest descent direction).
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: If the function is concave (at least locally), use the super-gradient of minimum
+    norm (consider -f(x) and apply the previous point).
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: If the function is defined, define the gradient at the current point by continuity
+    (note that `inf` is possible here, for example for `sqrt(0)`). If multiple values
+    are possible, pick one arbitrarily.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: If the function is not defined (`sqrt(-1)`, `log(-1)` or most functions when
+    the input is `NaN`, for example) then the value used as the gradient is arbitrary
+    (we might also raise an error but that is not guaranteed). Most functions will
+    use `NaN` as the gradient, but for performance reasons, some functions will use
+    other values (`log(-1)`, for example).
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'If the function is not a deterministic mapping (i.e. it is not a [mathematical
+    function](https://en.wikipedia.org/wiki/Function_(mathematics))), it will be marked
+    as non-differentiable. This will make it error out in the backward if used on
+    tensors that require grad outside of a `no_grad` environment.  ## Locally disabling
+    gradient computation[](#locally-disabling-gradient-computation "Permalink to
+    this heading")'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'There are several mechanisms available from Python to locally disable gradient
+    computation:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: To disable gradients across entire blocks of code, there are context managers
+    like no-grad mode and inference mode. For more fine-grained exclusion of subgraphs
+    from gradient computation, there is setting the `requires_grad` field of a tensor.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Below, in addition to discussing the mechanisms above, we also describe evaluation
+    mode (`nn.Module.eval()`), a method that is not used to disable gradient computation
+    but, because of its name, is often mixed up with the three.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Setting `requires_grad`
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '`requires_grad` is a flag, defaulting to false *unless wrapped in a* `nn.Parameter`,
+    that allows for fine-grained exclusion of subgraphs from gradient computation.
+    It takes effect in both the forward and backward passes:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: During the forward pass, an operation is only recorded in the backward graph
+    if at least one of its input tensors require grad. During the backward pass (`.backward()`),
+    only leaf tensors with `requires_grad=True` will have gradients accumulated into
+    their `.grad` fields.
+  prefs: []
+  type: TYPE_NORMAL
+- en: It is important to note that even though every tensor has this flag, *setting*
+    it only makes sense for leaf tensors (tensors that do not have a `grad_fn`, e.g.,
+    a `nn.Module`’s parameters). Non-leaf tensors (tensors that do have `grad_fn`)
+    are tensors that have a backward graph associated with them. Thus their gradients
+    will be needed as an intermediary result to compute the gradient for a leaf tensor
+    that requires grad. From this definition, it is clear that all non-leaf tensors
+    will automatically have `require_grad=True`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Setting `requires_grad` should be the main way you control which parts of the
+    model are part of the gradient computation, for example, if you need to freeze
+    parts of your pretrained model during model fine-tuning.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To freeze parts of your model, simply apply `.requires_grad_(False)` to the
+    parameters that you don’t want updated. And as described above, since computations
+    that use these parameters as inputs would not be recorded in the forward pass,
+    they won’t have their `.grad` fields updated in the backward pass because they
+    won’t be part of the backward graph in the first place, as desired.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Because this is such a common pattern, `requires_grad` can also be set at the
+    module level with `nn.Module.requires_grad_()`. When applied to a module, `.requires_grad_()`
+    takes effect on all of the module’s parameters (which have `requires_grad=True`
+    by default).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Grad Modes
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Apart from setting `requires_grad` there are also three grad modes that can
+    be selected from Python that can affect how computations in PyTorch are processed
+    by autograd internally: default mode (grad mode), no-grad mode, and inference
+    mode, all of which can be togglable via context managers and decorators.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Mode | Excludes operations from being recorded in backward graph | Skips
+    additional autograd tracking overhead | Tensors created while the mode is enabled
+    can be used in grad-mode later | Examples |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| default |  |  | ✓ | Forward pass |'
+  prefs: []
+  type: TYPE_TB
+- en: '| no-grad | ✓ |  | ✓ | Optimizer updates |'
+  prefs: []
+  type: TYPE_TB
+- en: '| inference | ✓ | ✓ |  | Data processing, model evaluation |'
+  prefs: []
+  type: TYPE_TB
+- en: Default Mode (Grad Mode)
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The “default mode” is the mode we are implicitly in when no other modes like
+    no-grad and inference mode are enabled. To be contrasted with “no-grad mode” the
+    default mode is also sometimes called “grad mode”.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The most important thing to know about the default mode is that it is the only
+    mode in which `requires_grad` takes effect. `requires_grad` is always overridden
+    to be `False` in both the two other modes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: No-grad Mode
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Computations in no-grad mode behave as if none of the inputs require grad. In
+    other words, computations in no-grad mode are never recorded in the backward graph
+    even if there are inputs that have `require_grad=True`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Enable no-grad mode when you need to perform operations that should not be recorded
+    by autograd, but you’d still like to use the outputs of these computations in
+    grad mode later. This context manager makes it convenient to disable gradients
+    for a block of code or function without having to temporarily set tensors to have
+    `requires_grad=False`, and then back to `True`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'For example, no-grad mode might be useful when writing an optimizer: when performing
+    the training update you’d like to update parameters in-place without the update
+    being recorded by autograd. You also intend to use the updated parameters for
+    computations in grad mode in the next forward pass.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The implementations in [torch.nn.init](../nn.init.html#nn-init-doc) also rely
+    on no-grad mode when initializing the parameters as to avoid autograd tracking
+    when updating the initialized parameters in-place.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Inference Mode
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Inference mode is the extreme version of no-grad mode. Just like in no-grad
+    mode, computations in inference mode are not recorded in the backward graph, but
+    enabling inference mode will allow PyTorch to speed up your model even more. This
+    better runtime comes with a drawback: tensors created in inference mode will not
+    be able to be used in computations to be recorded by autograd after exiting inference
+    mode.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Enable inference mode when you are performing computations that don’t need to
+    be recorded in the backward graph, AND you don’t plan on using the tensors created
+    in inference mode in any computation that is to be recorded by autograd later.
+  prefs: []
+  type: TYPE_NORMAL
+- en: It is recommended that you try out inference mode in the parts of your code
+    that do not require autograd tracking (e.g., data processing and model evaluation).
+    If it works out of the box for your use case it’s a free performance win. If you
+    run into errors after enabling inference mode, check that you are not using tensors
+    created in inference mode in computations that are recorded by autograd after
+    exiting inference mode. If you cannot avoid such use in your case, you can always
+    switch back to no-grad mode.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For details on inference mode please see [Inference Mode](https://pytorch.org/cppdocs/notes/inference_mode.html).
+  prefs: []
+  type: TYPE_NORMAL
+- en: For implementation details of inference mode see [RFC-0011-InferenceMode](https://github.com/pytorch/rfcs/pull/17).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Evaluation Mode (`nn.Module.eval()`)[](#evaluation-mode-nn-module-eval "Permalink
+    to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Evaluation mode is not a mechanism to locally disable gradient computation.
+    It is included here anyway because it is sometimes confused to be such a mechanism.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Functionally, `module.eval()` (or equivalently `module.train(False)`) are completely
+    orthogonal to no-grad mode and inference mode. How `model.eval()` affects your
+    model depends entirely on the specific modules used in your model and whether
+    they define any training-mode specific behavior.
+  prefs: []
+  type: TYPE_NORMAL
+- en: You are responsible for calling `model.eval()` and `model.train()` if your model
+    relies on modules such as [`torch.nn.Dropout`](../generated/torch.nn.Dropout.html#torch.nn.Dropout
+    "torch.nn.Dropout") and [`torch.nn.BatchNorm2d`](../generated/torch.nn.BatchNorm2d.html#torch.nn.BatchNorm2d
+    "torch.nn.BatchNorm2d") that may behave differently depending on training mode,
+    for example, to avoid updating your BatchNorm running statistics on validation
+    data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: It is recommended that you always use `model.train()` when training and `model.eval()`
+    when evaluating your model (validation/testing) even if you aren’t sure your model
+    has training-mode specific behavior, because a module you are using might be updated
+    to behave differently in training and eval modes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In-place operations with autograd[](#in-place-operations-with-autograd "Permalink
+    to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Supporting in-place operations in autograd is a hard matter, and we discourage
+    their use in most cases. Autograd’s aggressive buffer freeing and reuse makes
+    it very efficient and there are very few occasions when in-place operations lower
+    memory usage by any significant amount. Unless you’re operating under heavy memory
+    pressure, you might never need to use them.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'There are two main reasons that limit the applicability of in-place operations:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: In-place operations can potentially overwrite values required to compute gradients.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Every in-place operation requires the implementation to rewrite the computational
+    graph. Out-of-place versions simply allocate new objects and keep references to
+    the old graph, while in-place operations, require changing the creator of all
+    inputs to the `Function` representing this operation. This can be tricky, especially
+    if there are many Tensors that reference the same storage (e.g. created by indexing
+    or transposing), and in-place functions will raise an error if the storage of
+    modified inputs is referenced by any other `Tensor`.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: In-place correctness checks[](#in-place-correctness-checks "Permalink to this
+    heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Every tensor keeps a version counter, that is incremented every time it is marked
+    dirty in any operation. When a Function saves any tensors for backward, a version
+    counter of their containing Tensor is saved as well. Once you access `self.saved_tensors`
+    it is checked, and if it is greater than the saved value an error is raised. This
+    ensures that if you’re using in-place functions and not seeing any errors, you
+    can be sure that the computed gradients are correct.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Multithreaded Autograd
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The autograd engine is responsible for running all the backward operations necessary
+    to compute the backward pass. This section will describe all the details that
+    can help you make the best use of it in a multithreaded environment. (This is
+    relevant only for PyTorch 1.6+ as the behavior in previous version was different.)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'User could train their model with multithreading code (e.g. Hogwild training),
+    and does not block on the concurrent backward computations, example code could
+    be:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Note that some behaviors that user should be aware of:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Concurrency on CPU
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: When you run `backward()` or `grad()` via python or C++ API in multiple threads
+    on CPU, you are expecting to see extra concurrency instead of serializing all
+    the backward calls in a specific order during execution (behavior before PyTorch
+    1.6).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Non-determinism
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: If you are calling `backward()` from multiple threads concurrently and have
+    shared inputs (i.e. Hogwild CPU training), then non-determinism should be expected.
+    This can occur because parameters are automatically shared across threads, as
+    such, multiple threads may access and try to accumulate the same `.grad` attribute
+    during gradient accumulation. This is technically not safe, and it might result
+    in race condition and the result might be invalid to use.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Users developing multithreaded models featuring shared parameters should have
+    the threading model in mind and should understand the issues described above.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The functional API [`torch.autograd.grad()`](../generated/torch.autograd.grad.html#torch.autograd.grad
+    "torch.autograd.grad") may be used to calculate the gradients instead of `backward()`
+    to avoid non-determinism.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Graph retaining
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: If part of the autograd graph is shared between threads, i.e. run first part
+    of forward single thread, then run second part in multiple threads, then the first
+    part of graph is shared. In this case different threads execute `grad()` or `backward()`
+    on the same graph might have issue of destroying the graph on the fly of one thread,
+    and the other thread will crash in this case. Autograd will error out to the user
+    similar to what call `backward()` twice with out `retain_graph=True`, and let
+    the user know they should use `retain_graph=True`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Thread Safety on Autograd Node[](#thread-safety-on-autograd-node "Permalink
+    to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Since Autograd allows the caller thread to drive its backward execution for
+    potential parallelism, it’s important that we ensure thread safety on CPU with
+    parallel `backward()` calls that share part/whole of the GraphTask.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Custom Python `autograd.Function`s are automatically thread safe because of
+    GIL. For built-in C++ Autograd Nodes (e.g. AccumulateGrad, CopySlices) and custom
+    `autograd::Function`s, the Autograd Engine uses thread mutex locking to ensure
+    thread safety on autograd Nodes that might have state write/read.
+  prefs: []
+  type: TYPE_NORMAL
+- en: No thread safety on C++ hooks[](#no-thread-safety-on-c-hooks "Permalink to
+    this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Autograd relies on the user to write thread safe C++ hooks. If you want the
+    hook to be correctly applied in multithreading environment, you will need to write
+    proper thread locking code to ensure the hooks are thread safe.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '## Autograd for Complex Numbers[](#autograd-for-complex-numbers "Permalink
+    to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The short version:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: When you use PyTorch to differentiate any function <math><semantics><mrow><mi>f</mi><mo
+    stretchy="false">(</mo><mi>z</mi><mo stretchy="false">)</mo></mrow><annotation
+    encoding="application/x-tex">f(z)</annotation></semantics></math>f(z) with complex
+    domain and/or codomain, the gradients are computed under the assumption that the
+    function is a part of a larger real-valued loss function <math><semantics><mrow><mi>g</mi><mo
+    stretchy="false">(</mo><mi>i</mi><mi>n</mi><mi>p</mi><mi>u</mi><mi>t</mi><mo stretchy="false">)</mo><mo>=</mo><mi>L</mi></mrow><annotation
+    encoding="application/x-tex">g(input)=L</annotation></semantics></math>g(input)=L.
+    The gradient computed is <math><semantics><mrow><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac></mrow><annotation
+    encoding="application/x-tex">\frac{\partial L}{\partial z^*}</annotation></semantics></math>∂z∗∂L​
+    (note the conjugation of z), the negative of which is precisely the direction
+    of steepest descent used in Gradient Descent algorithm. Thus, all the existing
+    optimizers work out of the box with complex parameters.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: This convention matches TensorFlow’s convention for complex differentiation,
+    but is different from JAX (which computes <math><semantics><mrow><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><mi>z</mi></mrow></mfrac></mrow><annotation
+    encoding="application/x-tex">\frac{\partial L}{\partial z}</annotation></semantics></math>∂z∂L​).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'If you have a real-to-real function which internally uses complex operations,
+    the convention here doesn’t matter: you will always get the same result that you
+    would have gotten if it had been implemented with only real operations.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: If you are curious about the mathematical details, or want to know how to define
+    complex derivatives in PyTorch, read on.
+  prefs: []
+  type: TYPE_NORMAL
+- en: What are complex derivatives?[](#what-are-complex-derivatives "Permalink to
+    this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'The mathematical definition of complex-differentiability takes the limit definition
+    of a derivative and generalizes it to operate on complex numbers. Consider a function
+    <math><semantics><mrow><mi>f</mi><mo>:</mo><mi mathvariant="normal">C</mi><mo>→</mo><mi
+    mathvariant="normal">C</mi></mrow><annotation encoding="application/x-tex">f:
+    ℂ → ℂ</annotation></semantics></math>f:C→C,'
+  prefs: []
+  type: TYPE_NORMAL
+- en: <math display="block"><semantics><mrow><mi>f</mi><mo stretchy="false">(</mo><mi>z</mi><mo>=</mo><mi>x</mi><mo>+</mo><mi>y</mi><mi>j</mi><mo
+    stretchy="false">)</mo><mo>=</mo><mi>u</mi><mo stretchy="false">(</mo><mi>x</mi><mo
+    separator="true">,</mo><mi>y</mi><mo stretchy="false">)</mo><mo>+</mo><mi>v</mi><mo
+    stretchy="false">(</mo><mi>x</mi><mo separator="true">,</mo><mi>y</mi><mo stretchy="false">)</mo><mi>j</mi></mrow><annotation
+    encoding="application/x-tex">f(z=x+yj) = u(x, y) + v(x, y)j</annotation></semantics></math>
+    f(z=x+yj)=u(x,y)+v(x,y)j
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: where <math><semantics><mrow><mi>u</mi></mrow><annotation encoding="application/x-tex">u</annotation></semantics></math>u
+    and <math><semantics><mrow><mi>v</mi></mrow><annotation encoding="application/x-tex">v</annotation></semantics></math>v
+    are two variable real valued functions and <math><semantics><mrow><mi>j</mi></mrow><annotation
+    encoding="application/x-tex">j</annotation></semantics></math>j is the imaginary
+    unit.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Using the derivative definition, we can write:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: <math display="block"><semantics><mrow><msup><mi>f</mi><mo mathvariant="normal"
+    lspace="0em" rspace="0em">′</mo></msup><mo stretchy="false">(</mo><mi>z</mi><mo
+    stretchy="false">)</mo><mo>=</mo><munder><mrow><mi>lim</mi><mo>⁡</mo></mrow><mrow><mi>h</mi><mo>→</mo><mn>0</mn><mo
+    separator="true">,</mo><mi>h</mi><mo>∈</mo><mi>C</mi></mrow></munder><mfrac><mrow><mi>f</mi><mo
+    stretchy="false">(</mo><mi>z</mi><mo>+</mo><mi>h</mi><mo stretchy="false">)</mo><mo>−</mo><mi>f</mi><mo
+    stretchy="false">(</mo><mi>z</mi><mo stretchy="false">)</mo></mrow><mi>h</mi></mfrac></mrow><annotation
+    encoding="application/x-tex">f'(z) = \lim_{h \to 0, h \in C} \frac{f(z+h) - f(z)}{h}</annotation></semantics></math>
+    f′(z)=h→0,h∈Clim​hf(z+h)−f(z)​
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: 'In order for this limit to exist, not only must <math><semantics><mrow><mi>u</mi></mrow><annotation
+    encoding="application/x-tex">u</annotation></semantics></math>u and <math><semantics><mrow><mi>v</mi></mrow><annotation
+    encoding="application/x-tex">v</annotation></semantics></math>v must be real differentiable,
+    but <math><semantics><mrow><mi>f</mi></mrow><annotation encoding="application/x-tex">f</annotation></semantics></math>f
+    must also satisfy the Cauchy-Riemann [equations](https://en.wikipedia.org/wiki/Cauchy%E2%80%93Riemann_equations).
+    In other words: the limit computed for real and imaginary steps (<math><semantics><mrow><mi>h</mi></mrow><annotation
+    encoding="application/x-tex">h</annotation></semantics></math>h) must be equal.
+    This is a more restrictive condition.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The complex differentiable functions are commonly known as holomorphic functions.
+    They are well behaved, have all the nice properties that you’ve seen from real
+    differentiable functions, but are practically of no use in the optimization world.
+    For optimization problems, only real valued objective functions are used in the
+    research community since complex numbers are not part of any ordered field and
+    so having complex valued loss does not make much sense.
+  prefs: []
+  type: TYPE_NORMAL
+- en: It also turns out that no interesting real-valued objective fulfill the Cauchy-Riemann
+    equations. So the theory with homomorphic function cannot be used for optimization
+    and most people therefore use the Wirtinger calculus.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Wirtinger Calculus comes into the picture …[](#wirtinger-calculus-comes-into-the-picture
+    "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'So, we have this great theory of complex differentiability and holomorphic
+    functions, and we can’t use any of it at all, because many of the commonly used
+    functions are not holomorphic. What’s a poor mathematician to do? Well, Wirtinger
+    observed that even if <math><semantics><mrow><mi>f</mi><mo stretchy="false">(</mo><mi>z</mi><mo
+    stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">f(z)</annotation></semantics></math>f(z)
+    isn’t holomorphic, one could rewrite it as a two variable function <math><semantics><mrow><mi>f</mi><mo
+    stretchy="false">(</mo><mi>z</mi><mo separator="true">,</mo><mi>z</mi><mo>∗</mo><mo
+    stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">f(z, z*)</annotation></semantics></math>f(z,z∗)
+    which is always holomorphic. This is because real and imaginary of the components
+    of <math><semantics><mrow><mi>z</mi></mrow><annotation encoding="application/x-tex">z</annotation></semantics></math>z
+    can be expressed in terms of <math><semantics><mrow><mi>z</mi></mrow><annotation
+    encoding="application/x-tex">z</annotation></semantics></math>z and <math><semantics><mrow><msup><mi>z</mi><mo>∗</mo></msup></mrow><annotation
+    encoding="application/x-tex">z^*</annotation></semantics></math>z∗ as:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: <math display="block"><semantics><mtable rowspacing="0.25em" columnalign="right
+    left" columnspacing="0em"><mtr><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow><mrow><mi
+    mathvariant="normal">R</mi><mi mathvariant="normal">e</mi></mrow><mo stretchy="false">(</mo><mi>z</mi><mo
+    stretchy="false">)</mo></mrow></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow><mo>=</mo><mfrac><mrow><mi>z</mi><mo>+</mo><msup><mi>z</mi><mo>∗</mo></msup></mrow><mn>2</mn></mfrac></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle
+    scriptlevel="0" displaystyle="true"><mrow><mrow><mi mathvariant="normal">I</mi><mi
+    mathvariant="normal">m</mi></mrow><mo stretchy="false">(</mo><mi>z</mi><mo stretchy="false">)</mo></mrow></mstyle></mtd><mtd><mstyle
+    scriptlevel="0" displaystyle="true"><mrow><mo>=</mo><mfrac><mrow><mi>z</mi><mo>−</mo><msup><mi>z</mi><mo>∗</mo></msup></mrow><mrow><mn>2</mn><mi>j</mi></mrow></mfrac></mrow></mstyle></mtd></mtr></mtable><annotation
+    encoding="application/x-tex">\begin{aligned} \mathrm{Re}(z) &= \frac {z + z^*}{2}
+    \\ \mathrm{Im}(z) &= \frac {z - z^*}{2j} \end{aligned}</annotation></semantics></math>
+    Re(z)Im(z)​=2z+z∗​=2jz−z∗​​
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Wirtinger calculus suggests to study <math><semantics><mrow><mi>f</mi><mo stretchy="false">(</mo><mi>z</mi><mo
+    separator="true">,</mo><msup><mi>z</mi><mo>∗</mo></msup><mo stretchy="false">)</mo></mrow><annotation
+    encoding="application/x-tex">f(z, z^*)</annotation></semantics></math>f(z,z∗)
+    instead, which is guaranteed to be holomorphic if <math><semantics><mrow><mi>f</mi></mrow><annotation
+    encoding="application/x-tex">f</annotation></semantics></math>f was real differentiable
+    (another way to think of it is as a change of coordinate system, from <math><semantics><mrow><mi>f</mi><mo
+    stretchy="false">(</mo><mi>x</mi><mo separator="true">,</mo><mi>y</mi><mo stretchy="false">)</mo></mrow><annotation
+    encoding="application/x-tex">f(x, y)</annotation></semantics></math>f(x,y) to
+    <math><semantics><mrow><mi>f</mi><mo stretchy="false">(</mo><mi>z</mi><mo separator="true">,</mo><msup><mi>z</mi><mo>∗</mo></msup><mo
+    stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">f(z, z^*)</annotation></semantics></math>f(z,z∗).)
+    This function has partial derivatives <math><semantics><mrow><mfrac><mi mathvariant="normal">∂</mi><mrow><mi
+    mathvariant="normal">∂</mi><mi>z</mi></mrow></mfrac></mrow><annotation encoding="application/x-tex">\frac{\partial
+    }{\partial z}</annotation></semantics></math>∂z∂​ and <math><semantics><mrow><mfrac><mi
+    mathvariant="normal">∂</mi><mrow><mi mathvariant="normal">∂</mi><msup><mi>z</mi><mo
+    lspace="0em" rspace="0em">∗</mo></msup></mrow></mfrac></mrow><annotation encoding="application/x-tex">\frac{\partial}{\partial
+    z^{*}}</annotation></semantics></math>∂z∗∂​. We can use the chain rule to establish
+    a relationship between these partial derivatives and the partial derivatives w.r.t.,
+    the real and imaginary components of <math><semantics><mrow><mi>z</mi></mrow><annotation
+    encoding="application/x-tex">z</annotation></semantics></math>z.
+  prefs: []
+  type: TYPE_NORMAL
+- en: <math display="block"><semantics><mtable rowspacing="0.25em" columnalign="right
+    left" columnspacing="0em"><mtr><mtd><mstyle scriptlevel="0" displaystyle="true"><mfrac><mi
+    mathvariant="normal">∂</mi><mrow><mi mathvariant="normal">∂</mi><mi>x</mi></mrow></mfrac></mstyle></mtd><mtd><mstyle
+    scriptlevel="0" displaystyle="true"><mrow><mo>=</mo><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>z</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><mi>x</mi></mrow></mfrac><mo>∗</mo><mfrac><mi mathvariant="normal">∂</mi><mrow><mi
+    mathvariant="normal">∂</mi><mi>z</mi></mrow></mfrac><mo>+</mo><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow><mrow><mi mathvariant="normal">∂</mi><mi>x</mi></mrow></mfrac><mo>∗</mo><mfrac><mi
+    mathvariant="normal">∂</mi><mrow><mi mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle
+    scriptlevel="0" displaystyle="true"><mrow><mo>=</mo><mfrac><mi mathvariant="normal">∂</mi><mrow><mi
+    mathvariant="normal">∂</mi><mi>z</mi></mrow></mfrac><mo>+</mo><mfrac><mi mathvariant="normal">∂</mi><mrow><mi
+    mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle
+    scriptlevel="0" displaystyle="true"><mfrac><mi mathvariant="normal">∂</mi><mrow><mi
+    mathvariant="normal">∂</mi><mi>y</mi></mrow></mfrac></mstyle></mtd><mtd><mstyle
+    scriptlevel="0" displaystyle="true"><mrow><mo>=</mo><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>z</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><mi>y</mi></mrow></mfrac><mo>∗</mo><mfrac><mi mathvariant="normal">∂</mi><mrow><mi
+    mathvariant="normal">∂</mi><mi>z</mi></mrow></mfrac><mo>+</mo><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow><mrow><mi mathvariant="normal">∂</mi><mi>y</mi></mrow></mfrac><mo>∗</mo><mfrac><mi
+    mathvariant="normal">∂</mi><mrow><mi mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle
+    scriptlevel="0" displaystyle="true"><mrow><mo>=</mo><mn>1</mn><mi>j</mi><mo>∗</mo><mrow><mo
+    fence="true">(</mo><mfrac><mi mathvariant="normal">∂</mi><mrow><mi mathvariant="normal">∂</mi><mi>z</mi></mrow></mfrac><mo>−</mo><mfrac><mi
+    mathvariant="normal">∂</mi><mrow><mi mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac><mo
+    fence="true">)</mo></mrow></mrow></mstyle></mtd></mtr></mtable><annotation encoding="application/x-tex">\begin{aligned}
+    \frac{\partial }{\partial x} &= \frac{\partial z}{\partial x} * \frac{\partial
+    }{\partial z} + \frac{\partial z^*}{\partial x} * \frac{\partial }{\partial z^*}
+    \\ &= \frac{\partial }{\partial z} + \frac{\partial }{\partial z^*} \\ \\ \frac{\partial
+    }{\partial y} &= \frac{\partial z}{\partial y} * \frac{\partial }{\partial z}
+    + \frac{\partial z^*}{\partial y} * \frac{\partial }{\partial z^*} \\ &= 1j *
+    \left(\frac{\partial }{\partial z} - \frac{\partial }{\partial z^*}\right) \end{aligned}</annotation></semantics></math>
+    ∂x∂​∂y∂​​=∂x∂z​∗∂z∂​+∂x∂z∗​∗∂z∗∂​=∂z∂​+∂z∗∂​=∂y∂z​∗∂z∂​+∂y∂z∗​∗∂z∗∂​=1j∗(∂z∂​−∂z∗∂​)​
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: 'From the above equations, we get:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: <math display="block"><semantics><mtable rowspacing="0.25em" columnalign="right
+    left" columnspacing="0em"><mtr><mtd><mstyle scriptlevel="0" displaystyle="true"><mfrac><mi
+    mathvariant="normal">∂</mi><mrow><mi mathvariant="normal">∂</mi><mi>z</mi></mrow></mfrac></mstyle></mtd><mtd><mstyle
+    scriptlevel="0" displaystyle="true"><mrow><mo>=</mo><mn>1</mn><mi mathvariant="normal">/</mi><mn>2</mn><mo>∗</mo><mrow><mo
+    fence="true">(</mo><mfrac><mi mathvariant="normal">∂</mi><mrow><mi mathvariant="normal">∂</mi><mi>x</mi></mrow></mfrac><mo>−</mo><mn>1</mn><mi>j</mi><mo>∗</mo><mfrac><mi
+    mathvariant="normal">∂</mi><mrow><mi mathvariant="normal">∂</mi><mi>y</mi></mrow></mfrac><mo
+    fence="true">)</mo></mrow></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle scriptlevel="0"
+    displaystyle="true"><mfrac><mi mathvariant="normal">∂</mi><mrow><mi mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac></mstyle></mtd><mtd><mstyle
+    scriptlevel="0" displaystyle="true"><mrow><mo>=</mo><mn>1</mn><mi mathvariant="normal">/</mi><mn>2</mn><mo>∗</mo><mrow><mo
+    fence="true">(</mo><mfrac><mi mathvariant="normal">∂</mi><mrow><mi mathvariant="normal">∂</mi><mi>x</mi></mrow></mfrac><mo>+</mo><mn>1</mn><mi>j</mi><mo>∗</mo><mfrac><mi
+    mathvariant="normal">∂</mi><mrow><mi mathvariant="normal">∂</mi><mi>y</mi></mrow></mfrac><mo
+    fence="true">)</mo></mrow></mrow></mstyle></mtd></mtr></mtable><annotation encoding="application/x-tex">\begin{aligned}
+    \frac{\partial }{\partial z} &= 1/2 * \left(\frac{\partial }{\partial x} - 1j
+    * \frac{\partial }{\partial y}\right) \\ \frac{\partial }{\partial z^*} &= 1/2
+    * \left(\frac{\partial }{\partial x} + 1j * \frac{\partial }{\partial y}\right)
+    \end{aligned}</annotation></semantics></math> ∂z∂​∂z∗∂​​=1/2∗(∂x∂​−1j∗∂y∂​)=1/2∗(∂x∂​+1j∗∂y∂​)​
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: which is the classic definition of Wirtinger calculus that you would find on
+    [Wikipedia](https://en.wikipedia.org/wiki/Wirtinger_derivatives).
+  prefs: []
+  type: TYPE_NORMAL
+- en: There are a lot of beautiful consequences of this change.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For one, the Cauchy-Riemann equations translate into simply saying that <math><semantics><mrow><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>f</mi></mrow><mrow><mi mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac><mo>=</mo><mn>0</mn></mrow><annotation
+    encoding="application/x-tex">\frac{\partial f}{\partial z^*} = 0</annotation></semantics></math>∂z∗∂f​=0
+    (that is to say, the function <math><semantics><mrow><mi>f</mi></mrow><annotation
+    encoding="application/x-tex">f</annotation></semantics></math>f can be written
+    entirely in terms of <math><semantics><mrow><mi>z</mi></mrow><annotation encoding="application/x-tex">z</annotation></semantics></math>z,
+    without making reference to <math><semantics><mrow><msup><mi>z</mi><mo>∗</mo></msup></mrow><annotation
+    encoding="application/x-tex">z^*</annotation></semantics></math>z∗).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Another important (and somewhat counterintuitive) result, as we’ll see later,
+    is that when we do optimization on a real-valued loss, the step we should take
+    while making variable update is given by <math><semantics><mrow><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>L</mi><mi>o</mi><mi>s</mi><mi>s</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac></mrow><annotation
+    encoding="application/x-tex">\frac{\partial Loss}{\partial z^*}</annotation></semantics></math>∂z∗∂Loss​
+    (not <math><semantics><mrow><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi><mi>o</mi><mi>s</mi><mi>s</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><mi>z</mi></mrow></mfrac></mrow><annotation encoding="application/x-tex">\frac{\partial
+    Loss}{\partial z}</annotation></semantics></math>∂z∂Loss​).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'For more reading, check out: [https://arxiv.org/pdf/0906.4835.pdf](https://arxiv.org/pdf/0906.4835.pdf)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: How is Wirtinger Calculus useful in optimization?[](#how-is-wirtinger-calculus-useful-in-optimization
+    "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Researchers in audio and other fields, more commonly, use gradient descent
+    to optimize real valued loss functions with complex variables. Typically, these
+    people treat the real and imaginary values as separate channels that can be updated.
+    For a step size <math><semantics><mrow><mi>α</mi><mi mathvariant="normal">/</mi><mn>2</mn></mrow><annotation
+    encoding="application/x-tex">\alpha/2</annotation></semantics></math>α/2 and loss
+    <math><semantics><mrow><mi>L</mi></mrow><annotation encoding="application/x-tex">L</annotation></semantics></math>L,
+    we can write the following equations in <math><semantics><mrow><msup><mi mathvariant="normal">R</mi><mn>2</mn></msup></mrow><annotation
+    encoding="application/x-tex">ℝ^2</annotation></semantics></math>R2:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: <math display="block"><semantics><mtable rowspacing="0.25em" columnalign="right
+    left" columnspacing="0em"><mtr><mtd><mstyle scriptlevel="0" displaystyle="true"><msub><mi>x</mi><mrow><mi>n</mi><mo>+</mo><mn>1</mn></mrow></msub></mstyle></mtd><mtd><mstyle
+    scriptlevel="0" displaystyle="true"><mrow><mo>=</mo><msub><mi>x</mi><mi>n</mi></msub><mo>−</mo><mo
+    stretchy="false">(</mo><mi>α</mi><mi mathvariant="normal">/</mi><mn>2</mn><mo
+    stretchy="false">)</mo><mo>∗</mo><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><mi>x</mi></mrow></mfrac></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle
+    scriptlevel="0" displaystyle="true"><msub><mi>y</mi><mrow><mi>n</mi><mo>+</mo><mn>1</mn></mrow></msub></mstyle></mtd><mtd><mstyle
+    scriptlevel="0" displaystyle="true"><mrow><mo>=</mo><msub><mi>y</mi><mi>n</mi></msub><mo>−</mo><mo
+    stretchy="false">(</mo><mi>α</mi><mi mathvariant="normal">/</mi><mn>2</mn><mo
+    stretchy="false">)</mo><mo>∗</mo><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><mi>y</mi></mrow></mfrac></mrow></mstyle></mtd></mtr></mtable><annotation
+    encoding="application/x-tex">\begin{aligned} x_{n+1} &= x_n - (\alpha/2) * \frac{\partial
+    L}{\partial x} \\ y_{n+1} &= y_n - (\alpha/2) * \frac{\partial L}{\partial y}
+    \end{aligned}</annotation></semantics></math> xn+1​yn+1​​=xn​−(α/2)∗∂x∂L​=yn​−(α/2)∗∂y∂L​​
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: How do these equations translate into complex space <math><semantics><mrow><mi
+    mathvariant="normal">C</mi></mrow><annotation encoding="application/x-tex">ℂ</annotation></semantics></math>C?
+  prefs: []
+  type: TYPE_NORMAL
+- en: <math display="block"><semantics><mtable rowspacing="0.25em" columnalign="right
+    left" columnspacing="0em"><mtr><mtd><mstyle scriptlevel="0" displaystyle="true"><msub><mi>z</mi><mrow><mi>n</mi><mo>+</mo><mn>1</mn></mrow></msub></mstyle></mtd><mtd><mstyle
+    scriptlevel="0" displaystyle="true"><mrow><mo>=</mo><msub><mi>x</mi><mi>n</mi></msub><mo>−</mo><mo
+    stretchy="false">(</mo><mi>α</mi><mi mathvariant="normal">/</mi><mn>2</mn><mo
+    stretchy="false">)</mo><mo>∗</mo><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><mi>x</mi></mrow></mfrac><mo>+</mo><mn>1</mn><mi>j</mi><mo>∗</mo><mo
+    stretchy="false">(</mo><msub><mi>y</mi><mi>n</mi></msub><mo>−</mo><mo stretchy="false">(</mo><mi>α</mi><mi
+    mathvariant="normal">/</mi><mn>2</mn><mo stretchy="false">)</mo><mo>∗</mo><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><mi>y</mi></mrow></mfrac><mo
+    stretchy="false">)</mo></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle scriptlevel="0"
+    displaystyle="true"><mrow><mo>=</mo><msub><mi>z</mi><mi>n</mi></msub><mo>−</mo><mi>α</mi><mo>∗</mo><mn>1</mn><mi
+    mathvariant="normal">/</mi><mn>2</mn><mo>∗</mo><mrow><mo fence="true">(</mo><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><mi>x</mi></mrow></mfrac><mo>+</mo><mi>j</mi><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><mi>y</mi></mrow></mfrac><mo
+    fence="true">)</mo></mrow></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle scriptlevel="0"
+    displaystyle="true"><mrow><mo>=</mo><msub><mi>z</mi><mi>n</mi></msub><mo>−</mo><mi>α</mi><mo>∗</mo><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac></mrow></mstyle></mtd></mtr></mtable><annotation
+    encoding="application/x-tex">\begin{aligned} z_{n+1} &= x_n - (\alpha/2) * \frac{\partial
+    L}{\partial x} + 1j * (y_n - (\alpha/2) * \frac{\partial L}{\partial y}) \\ &=
+    z_n - \alpha * 1/2 * \left(\frac{\partial L}{\partial x} + j \frac{\partial L}{\partial
+    y}\right) \\ &= z_n - \alpha * \frac{\partial L}{\partial z^*} \end{aligned}</annotation></semantics></math>
+    zn+1​​=xn​−(α/2)∗∂x∂L​+1j∗(yn​−(α/2)∗∂y∂L​)=zn​−α∗1/2∗(∂x∂L​+j∂y∂L​)=zn​−α∗∂z∗∂L​​
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: 'Something very interesting has happened: Wirtinger calculus tells us that we
+    can simplify the complex variable update formula above to only refer to the conjugate
+    Wirtinger derivative <math><semantics><mrow><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac></mrow><annotation
+    encoding="application/x-tex">\frac{\partial L}{\partial z^*}</annotation></semantics></math>∂z∗∂L​,
+    giving us exactly the step we take in optimization.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Because the conjugate Wirtinger derivative gives us exactly the correct step
+    for a real valued loss function, PyTorch gives you this derivative when you differentiate
+    a function with a real valued loss.
+  prefs: []
+  type: TYPE_NORMAL
+- en: How does PyTorch compute the conjugate Wirtinger derivative?[](#how-does-pytorch-compute-the-conjugate-wirtinger-derivative
+    "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Typically, our derivative formulas take in grad_output as an input, representing
+    the incoming Vector-Jacobian product that we’ve already computed, aka, <math><semantics><mrow><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><msup><mi>s</mi><mo>∗</mo></msup></mrow></mfrac></mrow><annotation
+    encoding="application/x-tex">\frac{\partial L}{\partial s^*}</annotation></semantics></math>∂s∗∂L​,
+    where <math><semantics><mrow><mi>L</mi></mrow><annotation encoding="application/x-tex">L</annotation></semantics></math>L
+    is the loss of the entire computation (producing a real loss) and <math><semantics><mrow><mi>s</mi></mrow><annotation
+    encoding="application/x-tex">s</annotation></semantics></math>s is the output
+    of our function. The goal here is to compute <math><semantics><mrow><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac></mrow><annotation
+    encoding="application/x-tex">\frac{\partial L}{\partial z^*}</annotation></semantics></math>∂z∗∂L​,
+    where <math><semantics><mrow><mi>z</mi></mrow><annotation encoding="application/x-tex">z</annotation></semantics></math>z
+    is the input of the function. It turns out that in the case of real loss, we can
+    get away with *only* calculating <math><semantics><mrow><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><msup><mi>s</mi><mo>∗</mo></msup></mrow></mfrac></mrow><annotation
+    encoding="application/x-tex">\frac{\partial L}{\partial s^*}</annotation></semantics></math>∂s∗∂L​,
+    even though the chain rule implies that we also need to have access to <math><semantics><mrow><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><mi>s</mi></mrow></mfrac></mrow><annotation
+    encoding="application/x-tex">\frac{\partial L}{\partial s}</annotation></semantics></math>∂s∂L​.
+    If you want to skip this derivation, look at the last equation in this section
+    and then skip to the next section.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Let’s continue working with <math><semantics><mrow><mi>f</mi><mo>:</mo><mi
+    mathvariant="normal">C</mi><mo>→</mo><mi mathvariant="normal">C</mi></mrow><annotation
+    encoding="application/x-tex">f: ℂ → ℂ</annotation></semantics></math>f:C→C defined
+    as <math><semantics><mrow><mi>f</mi><mo stretchy="false">(</mo><mi>z</mi><mo stretchy="false">)</mo><mo>=</mo><mi>f</mi><mo
+    stretchy="false">(</mo><mi>x</mi><mo>+</mo><mi>y</mi><mi>j</mi><mo stretchy="false">)</mo><mo>=</mo><mi>u</mi><mo
+    stretchy="false">(</mo><mi>x</mi><mo separator="true">,</mo><mi>y</mi><mo stretchy="false">)</mo><mo>+</mo><mi>v</mi><mo
+    stretchy="false">(</mo><mi>x</mi><mo separator="true">,</mo><mi>y</mi><mo stretchy="false">)</mo><mi>j</mi></mrow><annotation
+    encoding="application/x-tex">f(z) = f(x+yj) = u(x, y) + v(x, y)j</annotation></semantics></math>f(z)=f(x+yj)=u(x,y)+v(x,y)j.
+    As discussed above, autograd’s gradient convention is centered around optimization
+    for real valued loss functions, so let’s assume <math><semantics><mrow><mi>f</mi></mrow><annotation
+    encoding="application/x-tex">f</annotation></semantics></math>f is a part of larger
+    real valued loss function <math><semantics><mrow><mi>g</mi></mrow><annotation
+    encoding="application/x-tex">g</annotation></semantics></math>g. Using chain rule,
+    we can write:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: (1)<math display="block"><semantics><mrow><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac><mo>=</mo><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><mi>u</mi></mrow></mfrac><mo>∗</mo><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>u</mi></mrow><mrow><mi mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac><mo>+</mo><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><mi>v</mi></mrow></mfrac><mo>∗</mo><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>v</mi></mrow><mrow><mi mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac></mrow><annotation
+    encoding="application/x-tex">\frac{\partial L}{\partial z^*} = \frac{\partial
+    L}{\partial u} * \frac{\partial u}{\partial z^*} + \frac{\partial L}{\partial
+    v} * \frac{\partial v}{\partial z^*}</annotation></semantics></math> ∂z∗∂L​=∂u∂L​∗∂z∗∂u​+∂v∂L​∗∂z∗∂v​
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: 'Now using Wirtinger derivative definition, we can write:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: <math display="block"><semantics><mtable rowspacing="0.25em" columnalign="right"
+    columnspacing=""><mtr><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><mi>s</mi></mrow></mfrac><mo>=</mo><mn>1</mn><mi
+    mathvariant="normal">/</mi><mn>2</mn><mo>∗</mo><mrow><mo fence="true">(</mo><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><mi>u</mi></mrow></mfrac><mo>−</mo><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><mi>v</mi></mrow></mfrac><mi>j</mi><mo
+    fence="true">)</mo></mrow></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle scriptlevel="0"
+    displaystyle="true"><mrow><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><msup><mi>s</mi><mo>∗</mo></msup></mrow></mfrac><mo>=</mo><mn>1</mn><mi
+    mathvariant="normal">/</mi><mn>2</mn><mo>∗</mo><mrow><mo fence="true">(</mo><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><mi>u</mi></mrow></mfrac><mo>+</mo><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><mi>v</mi></mrow></mfrac><mi>j</mi><mo
+    fence="true">)</mo></mrow></mrow></mstyle></mtd></mtr></mtable><annotation encoding="application/x-tex">\begin{aligned}
+    \frac{\partial L}{\partial s} = 1/2 * \left(\frac{\partial L}{\partial u} - \frac{\partial
+    L}{\partial v} j\right) \\ \frac{\partial L}{\partial s^*} = 1/2 * \left(\frac{\partial
+    L}{\partial u} + \frac{\partial L}{\partial v} j\right) \end{aligned}</annotation></semantics></math>
+    ∂s∂L​=1/2∗(∂u∂L​−∂v∂L​j)∂s∗∂L​=1/2∗(∂u∂L​+∂v∂L​j)​
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: 'It should be noted here that since <math><semantics><mrow><mi>u</mi></mrow><annotation
+    encoding="application/x-tex">u</annotation></semantics></math>u and <math><semantics><mrow><mi>v</mi></mrow><annotation
+    encoding="application/x-tex">v</annotation></semantics></math>v are real functions,
+    and <math><semantics><mrow><mi>L</mi></mrow><annotation encoding="application/x-tex">L</annotation></semantics></math>L
+    is real by our assumption that <math><semantics><mrow><mi>f</mi></mrow><annotation
+    encoding="application/x-tex">f</annotation></semantics></math>f is a part of a
+    real valued function, we have:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: (2)<math display="block"><semantics><mrow><msup><mrow><mo
+    fence="true">(</mo><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><mi>s</mi></mrow></mfrac><mo fence="true">)</mo></mrow><mo>∗</mo></msup><mo>=</mo><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><msup><mi>s</mi><mo>∗</mo></msup></mrow></mfrac></mrow><annotation
+    encoding="application/x-tex">\left( \frac{\partial L}{\partial s} \right)^* =
+    \frac{\partial L}{\partial s^*}</annotation></semantics></math> (∂s∂L​)∗=∂s∗∂L​
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: i.e., <math><semantics><mrow><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><mi>s</mi></mrow></mfrac></mrow><annotation encoding="application/x-tex">\frac{\partial
+    L}{\partial s}</annotation></semantics></math>∂s∂L​ equals to <math><semantics><mrow><mi>g</mi><mi>r</mi><mi>a</mi><mi>d</mi><mi
+    mathvariant="normal">_</mi><mi>o</mi><mi>u</mi><mi>t</mi><mi>p</mi><mi>u</mi><msup><mi>t</mi><mo>∗</mo></msup></mrow><annotation
+    encoding="application/x-tex">grad\_output^*</annotation></semantics></math>grad_output∗.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Solving the above equations for <math><semantics><mrow><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><mi>u</mi></mrow></mfrac></mrow><annotation encoding="application/x-tex">\frac{\partial
+    L}{\partial u}</annotation></semantics></math>∂u∂L​ and <math><semantics><mrow><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><mi>v</mi></mrow></mfrac></mrow><annotation
+    encoding="application/x-tex">\frac{\partial L}{\partial v}</annotation></semantics></math>∂v∂L​,
+    we get:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: (3)<math display="block"><semantics><mtable
+    rowspacing="0.25em" columnalign="right" columnspacing=""><mtr><mtd><mstyle scriptlevel="0"
+    displaystyle="true"><mrow><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><mi>u</mi></mrow></mfrac><mo>=</mo><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><mi>s</mi></mrow></mfrac><mo>+</mo><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><msup><mi>s</mi><mo>∗</mo></msup></mrow></mfrac></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle
+    scriptlevel="0" displaystyle="true"><mrow><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><mi>v</mi></mrow></mfrac><mo>=</mo><mo>−</mo><mn>1</mn><mi>j</mi><mo>∗</mo><mrow><mo
+    fence="true">(</mo><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><mi>s</mi></mrow></mfrac><mo>−</mo><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><msup><mi>s</mi><mo>∗</mo></msup></mrow></mfrac><mo
+    fence="true">)</mo></mrow></mrow></mstyle></mtd></mtr></mtable><annotation encoding="application/x-tex">\begin{aligned}
+    \frac{\partial L}{\partial u} = \frac{\partial L}{\partial s} + \frac{\partial
+    L}{\partial s^*} \\ \frac{\partial L}{\partial v} = -1j * \left(\frac{\partial
+    L}{\partial s} - \frac{\partial L}{\partial s^*}\right) \end{aligned}</annotation></semantics></math>
+    ∂u∂L​=∂s∂L​+∂s∗∂L​∂v∂L​=−1j∗(∂s∂L​−∂s∗∂L​)​
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: 'Substituting [(3)](#equation-3) in [(1)](#equation-1), we get:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: <math display="block"><semantics><mtable rowspacing="0.25em" columnalign="right
+    left" columnspacing="0em"><mtr><mtd><mstyle scriptlevel="0" displaystyle="true"><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac></mstyle></mtd><mtd><mstyle
+    scriptlevel="0" displaystyle="true"><mrow><mo>=</mo><mrow><mo fence="true">(</mo><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><mi>s</mi></mrow></mfrac><mo>+</mo><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><msup><mi>s</mi><mo>∗</mo></msup></mrow></mfrac><mo
+    fence="true">)</mo></mrow><mo>∗</mo><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>u</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac><mo>−</mo><mn>1</mn><mi>j</mi><mo>∗</mo><mrow><mo
+    fence="true">(</mo><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><mi>s</mi></mrow></mfrac><mo>−</mo><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><msup><mi>s</mi><mo>∗</mo></msup></mrow></mfrac><mo
+    fence="true">)</mo></mrow><mo>∗</mo><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>v</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle
+    scriptlevel="0" displaystyle="true"><mrow><mo>=</mo><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><mi>s</mi></mrow></mfrac><mo>∗</mo><mrow><mo fence="true">(</mo><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>u</mi></mrow><mrow><mi mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac><mo>+</mo><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>v</mi></mrow><mrow><mi mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac><mi>j</mi><mo
+    fence="true">)</mo></mrow><mo>+</mo><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><msup><mi>s</mi><mo>∗</mo></msup></mrow></mfrac><mo>∗</mo><mrow><mo
+    fence="true">(</mo><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>u</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac><mo>−</mo><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>v</mi></mrow><mrow><mi mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac><mi>j</mi><mo
+    fence="true">)</mo></mrow></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle scriptlevel="0"
+    displaystyle="true"><mrow><mo>=</mo><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><msup><mi>s</mi><mo>∗</mo></msup></mrow></mfrac><mo>∗</mo><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mo stretchy="false">(</mo><mi>u</mi><mo>+</mo><mi>v</mi><mi>j</mi><mo
+    stretchy="false">)</mo></mrow><mrow><mi mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac><mo>+</mo><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><mi>s</mi></mrow></mfrac><mo>∗</mo><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mo stretchy="false">(</mo><mi>u</mi><mo>+</mo><mi>v</mi><mi>j</mi><msup><mo
+    stretchy="false">)</mo><mo>∗</mo></msup></mrow><mrow><mi mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle
+    scriptlevel="0" displaystyle="true"><mrow><mo>=</mo><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><mi>s</mi></mrow></mfrac><mo>∗</mo><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>s</mi></mrow><mrow><mi mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac><mo>+</mo><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><msup><mi>s</mi><mo>∗</mo></msup></mrow></mfrac><mo>∗</mo><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><msup><mi>s</mi><mo>∗</mo></msup></mrow><mrow><mi mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac></mrow></mstyle></mtd></mtr></mtable><annotation
+    encoding="application/x-tex">\begin{aligned} \frac{\partial L}{\partial z^*} &=
+    \left(\frac{\partial L}{\partial s} + \frac{\partial L}{\partial s^*}\right) *
+    \frac{\partial u}{\partial z^*} - 1j * \left(\frac{\partial L}{\partial s} - \frac{\partial
+    L}{\partial s^*}\right) * \frac{\partial v}{\partial z^*} \\ &= \frac{\partial
+    L}{\partial s} * \left(\frac{\partial u}{\partial z^*} + \frac{\partial v}{\partial
+    z^*} j\right) + \frac{\partial L}{\partial s^*} * \left(\frac{\partial u}{\partial
+    z^*} - \frac{\partial v}{\partial z^*} j\right) \\ &= \frac{\partial L}{\partial
+    s^*} * \frac{\partial (u + vj)}{\partial z^*} + \frac{\partial L}{\partial s}
+    * \frac{\partial (u + vj)^*}{\partial z^*} \\ &= \frac{\partial L}{\partial s}
+    * \frac{\partial s}{\partial z^*} + \frac{\partial L}{\partial s^*} * \frac{\partial
+    s^*}{\partial z^*} \\ \end{aligned}</annotation></semantics></math> ∂z∗∂L​​=(∂s∂L​+∂s∗∂L​)∗∂z∗∂u​−1j∗(∂s∂L​−∂s∗∂L​)∗∂z∗∂v​=∂s∂L​∗(∂z∗∂u​+∂z∗∂v​j)+∂s∗∂L​∗(∂z∗∂u​−∂z∗∂v​j)=∂s∗∂L​∗∂z∗∂(u+vj)​+∂s∂L​∗∂z∗∂(u+vj)∗​=∂s∂L​∗∂z∗∂s​+∂s∗∂L​∗∂z∗∂s∗​​
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: 'Using [(2)](#equation-2), we get:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: (4)<math display="block"><semantics><mtable
+    rowspacing="0.25em" columnalign="right left" columnspacing="0em"><mtr><mtd><mstyle
+    scriptlevel="0" displaystyle="true"><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac></mstyle></mtd><mtd><mstyle
+    scriptlevel="0" displaystyle="true"><mrow><mo>=</mo><msup><mrow><mo fence="true">(</mo><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><msup><mi>s</mi><mo>∗</mo></msup></mrow></mfrac><mo
+    fence="true">)</mo></mrow><mo>∗</mo></msup><mo>∗</mo><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>s</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac><mo>+</mo><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><msup><mi>s</mi><mo>∗</mo></msup></mrow></mfrac><mo>∗</mo><msup><mrow><mo
+    fence="true">(</mo><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>s</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><mi>z</mi></mrow></mfrac><mo fence="true">)</mo></mrow><mo>∗</mo></msup></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle
+    scriptlevel="0" displaystyle="true"><mrow><mo>=</mo><menclose notation="box"><mstyle
+    scriptlevel="0" displaystyle="false"><mstyle scriptlevel="0" displaystyle="false"><mstyle
+    scriptlevel="0" displaystyle="true"><mrow><mo stretchy="false">(</mo><mi>g</mi><mi>r</mi><mi>a</mi><mi>d</mi><mi
+    mathvariant="normal">_</mi><mi>o</mi><mi>u</mi><mi>t</mi><mi>p</mi><mi>u</mi><mi>t</mi><msup><mo
+    stretchy="false">)</mo><mo>∗</mo></msup><mo>∗</mo><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>s</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac><mo>+</mo><mi>g</mi><mi>r</mi><mi>a</mi><mi>d</mi><mi
+    mathvariant="normal">_</mi><mi>o</mi><mi>u</mi><mi>t</mi><mi>p</mi><mi>u</mi><mi>t</mi><mo>∗</mo><msup><mrow><mo
+    fence="true">(</mo><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>s</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><mi>z</mi></mrow></mfrac><mo fence="true">)</mo></mrow><mo>∗</mo></msup></mrow></mstyle></mstyle></mstyle></menclose></mrow></mstyle></mtd></mtr></mtable><annotation
+    encoding="application/x-tex">\begin{aligned} \frac{\partial L}{\partial z^*} &=
+    \left(\frac{\partial L}{\partial s^*}\right)^* * \frac{\partial s}{\partial z^*}
+    + \frac{\partial L}{\partial s^*} * \left(\frac{\partial s}{\partial z}\right)^*
+    \\ &= \boxed{ (grad\_output)^* * \frac{\partial s}{\partial z^*} + grad\_output
+    * \left(\frac{\partial s}{\partial z}\right)^* } \\ \end{aligned}</annotation></semantics></math>
+    ∂z∗∂L​​=(∂s∗∂L​)∗∗∂z∗∂s​+∂s∗∂L​∗(∂z∂s​)∗=(grad_output)∗∗∂z∗∂s​+grad_output∗(∂z∂s​)∗​​
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: This last equation is the important one for writing your own gradients, as it
+    decomposes our derivative formula into a simpler one that is easy to compute by
+    hand.
+  prefs: []
+  type: TYPE_NORMAL
+- en: How can I write my own derivative formula for a complex function?[](#how-can-i-write-my-own-derivative-formula-for-a-complex-function
+    "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'The above boxed equation gives us the general formula for all derivatives on
+    complex functions. However, we still need to compute <math><semantics><mrow><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>s</mi></mrow><mrow><mi mathvariant="normal">∂</mi><mi>z</mi></mrow></mfrac></mrow><annotation
+    encoding="application/x-tex">\frac{\partial s}{\partial z}</annotation></semantics></math>∂z∂s​
+    and <math><semantics><mrow><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>s</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac></mrow><annotation
+    encoding="application/x-tex">\frac{\partial s}{\partial z^*}</annotation></semantics></math>∂z∗∂s​.
+    There are two ways you could do this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The first way is to just use the definition of Wirtinger derivatives directly
+    and calculate <math><semantics><mrow><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>s</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><mi>z</mi></mrow></mfrac></mrow><annotation encoding="application/x-tex">\frac{\partial
+    s}{\partial z}</annotation></semantics></math>∂z∂s​ and <math><semantics><mrow><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>s</mi></mrow><mrow><mi mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac></mrow><annotation
+    encoding="application/x-tex">\frac{\partial s}{\partial z^*}</annotation></semantics></math>∂z∗∂s​
+    by using <math><semantics><mrow><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>s</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><mi>x</mi></mrow></mfrac></mrow><annotation encoding="application/x-tex">\frac{\partial
+    s}{\partial x}</annotation></semantics></math>∂x∂s​ and <math><semantics><mrow><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>s</mi></mrow><mrow><mi mathvariant="normal">∂</mi><mi>y</mi></mrow></mfrac></mrow><annotation
+    encoding="application/x-tex">\frac{\partial s}{\partial y}</annotation></semantics></math>∂y∂s​
+    (which you can compute in the normal way).
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: The second way is to use the change of variables trick and rewrite <math><semantics><mrow><mi>f</mi><mo
+    stretchy="false">(</mo><mi>z</mi><mo stretchy="false">)</mo></mrow><annotation
+    encoding="application/x-tex">f(z)</annotation></semantics></math>f(z) as a two
+    variable function <math><semantics><mrow><mi>f</mi><mo stretchy="false">(</mo><mi>z</mi><mo
+    separator="true">,</mo><msup><mi>z</mi><mo>∗</mo></msup><mo stretchy="false">)</mo></mrow><annotation
+    encoding="application/x-tex">f(z, z^*)</annotation></semantics></math>f(z,z∗),
+    and compute the conjugate Wirtinger derivatives by treating <math><semantics><mrow><mi>z</mi></mrow><annotation
+    encoding="application/x-tex">z</annotation></semantics></math>z and <math><semantics><mrow><msup><mi>z</mi><mo>∗</mo></msup></mrow><annotation
+    encoding="application/x-tex">z^*</annotation></semantics></math>z∗ as independent
+    variables. This is often easier; for example, if the function in question is holomorphic,
+    only <math><semantics><mrow><mi>z</mi></mrow><annotation encoding="application/x-tex">z</annotation></semantics></math>z
+    will be used (and <math><semantics><mrow><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>s</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac></mrow><annotation
+    encoding="application/x-tex">\frac{\partial s}{\partial z^*}</annotation></semantics></math>∂z∗∂s​
+    will be zero).
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Let’s consider the function <math><semantics><mrow><mi>f</mi><mo stretchy="false">(</mo><mi>z</mi><mo>=</mo><mi>x</mi><mo>+</mo><mi>y</mi><mi>j</mi><mo
+    stretchy="false">)</mo><mo>=</mo><mi>c</mi><mo>∗</mo><mi>z</mi><mo>=</mo><mi>c</mi><mo>∗</mo><mo
+    stretchy="false">(</mo><mi>x</mi><mo>+</mo><mi>y</mi><mi>j</mi><mo stretchy="false">)</mo></mrow><annotation
+    encoding="application/x-tex">f(z = x + yj) = c * z = c * (x+yj)</annotation></semantics></math>f(z=x+yj)=c∗z=c∗(x+yj)
+    as an example, where <math><semantics><mrow><mi>c</mi><mo>∈</mo><mi mathvariant="normal">R</mi></mrow><annotation
+    encoding="application/x-tex">c \in ℝ</annotation></semantics></math>c∈R.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Using the first way to compute the Wirtinger derivatives, we have.
+  prefs: []
+  type: TYPE_NORMAL
+- en: <math display="block"><semantics><mtable rowspacing="0.25em" columnalign="right
+    left" columnspacing="0em"><mtr><mtd><mstyle scriptlevel="0" displaystyle="true"><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>s</mi></mrow><mrow><mi mathvariant="normal">∂</mi><mi>z</mi></mrow></mfrac></mstyle></mtd><mtd><mstyle
+    scriptlevel="0" displaystyle="true"><mrow><mo>=</mo><mn>1</mn><mi mathvariant="normal">/</mi><mn>2</mn><mo>∗</mo><mrow><mo
+    fence="true">(</mo><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>s</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><mi>x</mi></mrow></mfrac><mo>−</mo><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>s</mi></mrow><mrow><mi mathvariant="normal">∂</mi><mi>y</mi></mrow></mfrac><mi>j</mi><mo
+    fence="true">)</mo></mrow></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle scriptlevel="0"
+    displaystyle="true"><mrow><mo>=</mo><mn>1</mn><mi mathvariant="normal">/</mi><mn>2</mn><mo>∗</mo><mo
+    stretchy="false">(</mo><mi>c</mi><mo>−</mo><mo stretchy="false">(</mo><mi>c</mi><mo>∗</mo><mn>1</mn><mi>j</mi><mo
+    stretchy="false">)</mo><mo>∗</mo><mn>1</mn><mi>j</mi><mo stretchy="false">)</mo></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle
+    scriptlevel="0" displaystyle="true"><mrow><mo>=</mo><mi>c</mi></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle
+    scriptlevel="0" displaystyle="true"><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>s</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac></mstyle></mtd><mtd><mstyle
+    scriptlevel="0" displaystyle="true"><mrow><mo>=</mo><mn>1</mn><mi mathvariant="normal">/</mi><mn>2</mn><mo>∗</mo><mrow><mo
+    fence="true">(</mo><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>s</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><mi>x</mi></mrow></mfrac><mo>+</mo><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>s</mi></mrow><mrow><mi mathvariant="normal">∂</mi><mi>y</mi></mrow></mfrac><mi>j</mi><mo
+    fence="true">)</mo></mrow></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle scriptlevel="0"
+    displaystyle="true"><mrow><mo>=</mo><mn>1</mn><mi mathvariant="normal">/</mi><mn>2</mn><mo>∗</mo><mo
+    stretchy="false">(</mo><mi>c</mi><mo>+</mo><mo stretchy="false">(</mo><mi>c</mi><mo>∗</mo><mn>1</mn><mi>j</mi><mo
+    stretchy="false">)</mo><mo>∗</mo><mn>1</mn><mi>j</mi><mo stretchy="false">)</mo></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle
+    scriptlevel="0" displaystyle="true"><mrow><mo>=</mo><mn>0</mn></mrow></mstyle></mtd></mtr></mtable><annotation
+    encoding="application/x-tex">\begin{aligned} \frac{\partial s}{\partial z} &=
+    1/2 * \left(\frac{\partial s}{\partial x} - \frac{\partial s}{\partial y} j\right)
+    \\ &= 1/2 * (c - (c * 1j) * 1j) \\ &= c \\ \\ \\ \frac{\partial s}{\partial z^*}
+    &= 1/2 * \left(\frac{\partial s}{\partial x} + \frac{\partial s}{\partial y} j\right)
+    \\ &= 1/2 * (c + (c * 1j) * 1j) \\ &= 0 \\ \end{aligned}</annotation></semantics></math>
+    ∂z∂s​∂z∗∂s​​=1/2∗(∂x∂s​−∂y∂s​j)=1/2∗(c−(c∗1j)∗1j)=c=1/2∗(∂x∂s​+∂y∂s​j)=1/2∗(c+(c∗1j)∗1j)=0​
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Using [(4)](#equation-4), and grad_output = 1.0 (which is the default grad
+    output value used when `backward()` is called on a scalar output in PyTorch),
+    we get:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: <math display="block"><semantics><mrow><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac><mo>=</mo><mn>1</mn><mo>∗</mo><mn>0</mn><mo>+</mo><mn>1</mn><mo>∗</mo><mi>c</mi><mo>=</mo><mi>c</mi></mrow><annotation
+    encoding="application/x-tex">\frac{\partial L}{\partial z^*} = 1 * 0 + 1 * c =
+    c</annotation></semantics></math> ∂z∗∂L​=1∗0+1∗c=c
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: 'Using the second way to compute Wirtinger derivatives, we directly get:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: <math display="block"><semantics><mtable rowspacing="0.25em" columnalign="right
+    left" columnspacing="0em"><mtr><mtd><mstyle scriptlevel="0" displaystyle="true"><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>s</mi></mrow><mrow><mi mathvariant="normal">∂</mi><mi>z</mi></mrow></mfrac></mstyle></mtd><mtd><mstyle
+    scriptlevel="0" displaystyle="true"><mrow><mo>=</mo><mfrac><mrow><mi mathvariant="normal">∂</mi><mo
+    stretchy="false">(</mo><mi>c</mi><mo>∗</mo><mi>z</mi><mo stretchy="false">)</mo></mrow><mrow><mi
+    mathvariant="normal">∂</mi><mi>z</mi></mrow></mfrac></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle
+    scriptlevel="0" displaystyle="true"><mrow><mo>=</mo><mi>c</mi></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle
+    scriptlevel="0" displaystyle="true"><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>s</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac></mstyle></mtd><mtd><mstyle
+    scriptlevel="0" displaystyle="true"><mrow><mo>=</mo><mfrac><mrow><mi mathvariant="normal">∂</mi><mo
+    stretchy="false">(</mo><mi>c</mi><mo>∗</mo><mi>z</mi><mo stretchy="false">)</mo></mrow><mrow><mi
+    mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle
+    scriptlevel="0" displaystyle="true"><mrow><mo>=</mo><mn>0</mn></mrow></mstyle></mtd></mtr></mtable><annotation
+    encoding="application/x-tex">\begin{aligned} \frac{\partial s}{\partial z} &=
+    \frac{\partial (c*z)}{\partial z} \\ &= c \\ \frac{\partial s}{\partial z^*} &=
+    \frac{\partial (c*z)}{\partial z^*} \\ &= 0 \end{aligned}</annotation></semantics></math>
+    ∂z∂s​∂z∗∂s​​=∂z∂(c∗z)​=c=∂z∗∂(c∗z)​=0​
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: And using [(4)](#equation-4) again, we get <math><semantics><mrow><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac><mo>=</mo><mi>c</mi></mrow><annotation
+    encoding="application/x-tex">\frac{\partial L}{\partial z^*} = c</annotation></semantics></math>∂z∗∂L​=c.
+    As you can see, the second way involves lesser calculations, and comes in more
+    handy for faster calculations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: What about cross-domain functions?[](#what-about-cross-domain-functions "Permalink
+    to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Some functions map from complex inputs to real outputs, or vice versa. These
+    functions form a special case of [(4)](#equation-4), which we can derive using
+    the chain rule:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'For <math><semantics><mrow><mi>f</mi><mo>:</mo><mi mathvariant="normal">C</mi><mo>→</mo><mi
+    mathvariant="normal">R</mi></mrow><annotation encoding="application/x-tex">f:
+    ℂ → ℝ</annotation></semantics></math>f:C→R, we get:'
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: <math display="block"><semantics><mrow><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac><mo>=</mo><mn>2</mn><mo>∗</mo><mi>g</mi><mi>r</mi><mi>a</mi><mi>d</mi><mi
+    mathvariant="normal">_</mi><mi>o</mi><mi>u</mi><mi>t</mi><mi>p</mi><mi>u</mi><mi>t</mi><mo>∗</mo><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>s</mi></mrow><mrow><mi mathvariant="normal">∂</mi><msup><mi>z</mi><mo
+    lspace="0em" rspace="0em">∗</mo></msup></mrow></mfrac></mrow><annotation encoding="application/x-tex">\frac{\partial
+    L}{\partial z^*} = 2 * grad\_output * \frac{\partial s}{\partial z^{*}}</annotation></semantics></math>
+    ∂z∗∂L​=2∗grad_output∗∂z∗∂s​
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: 'For <math><semantics><mrow><mi>f</mi><mo>:</mo><mi mathvariant="normal">R</mi><mo>→</mo><mi
+    mathvariant="normal">C</mi></mrow><annotation encoding="application/x-tex">f:
+    ℝ → ℂ</annotation></semantics></math>f:R→C, we get:'
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: '<math display="block"><semantics><mrow><mfrac><mrow><mi mathvariant="normal">∂</mi><mi>L</mi></mrow><mrow><mi
+    mathvariant="normal">∂</mi><msup><mi>z</mi><mo>∗</mo></msup></mrow></mfrac><mo>=</mo><mn>2</mn><mo>∗</mo><mrow><mi
+    mathvariant="normal">R</mi><mi mathvariant="normal">e</mi></mrow><mo stretchy="false">(</mo><mi>g</mi><mi>r</mi><mi>a</mi><mi>d</mi><mi
+    mathvariant="normal">_</mi><mi>o</mi><mi>u</mi><mi>t</mi><mi>p</mi><mi>u</mi><msup><mi>t</mi><mo>∗</mo></msup><mo>∗</mo><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>s</mi></mrow><mrow><mi mathvariant="normal">∂</mi><msup><mi>z</mi><mo
+    lspace="0em" rspace="0em">∗</mo></msup></mrow></mfrac><mo stretchy="false">)</mo></mrow><annotation
+    encoding="application/x-tex">\frac{\partial L}{\partial z^*} = 2 * \mathrm{Re}(grad\_output^*
+    * \frac{\partial s}{\partial z^{*}})</annotation></semantics></math> ∂z∗∂L​=2∗Re(grad_output∗∗∂z∗∂s​)  ##
+    Hooks for saved tensors'
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: You can control [how saved tensors are packed / unpacked](#saved-tensors-doc)
+    by defining a pair of `pack_hook` / `unpack_hook` hooks. The `pack_hook` function
+    should take a tensor as its single argument but can return any python object (e.g.
+    another tensor, a tuple, or even a string containing a filename). The `unpack_hook`
+    function takes as its single argument the output of `pack_hook` and should return
+    a tensor to be used in the backward pass. The tensor returned by `unpack_hook`
+    only needs to have the same content as the tensor passed as input to `pack_hook`.
+    In particular, any autograd-related metadata can be ignored as they will be overwritten
+    during unpacking.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'An example of such pair is:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Notice that the `unpack_hook` should not delete the temporary file because
+    it might be called multiple times: the temporary file should be alive for as long
+    as the returned SelfDeletingTempFile object is alive. In the above example, we
+    prevent leaking the temporary file by closing it when it is no longer needed (on
+    deletion of the SelfDeletingTempFile object).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: We guarantee that `pack_hook` will only be called once but `unpack_hook` can
+    be called as many times as the backward pass requires it and we expect it to return
+    the same data each time.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: Performing inplace operations on the input of any of the functions is forbidden
+    as they may lead to unexpected side-effects. PyTorch will throw an error if the
+    input to a pack hook is modified inplace but does not catch the case where the
+    input to an unpack hook is modified inplace.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Registering hooks for a saved tensor[](#registering-hooks-for-a-saved-tensor
+    "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: You can register a pair of hooks on a saved tensor by calling the `register_hooks()`
+    method on a `SavedTensor` object. Those objects are exposed as attributes of a
+    `grad_fn` and start with the `_raw_saved_` prefix.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: The `pack_hook` method is called as soon as the pair is registered. The `unpack_hook`
+    method is called each time the saved tensor needs to be accessed, either by means
+    of `y.grad_fn._saved_self` or during the backward pass.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: If you maintain a reference to a `SavedTensor` after the saved tensors have
+    been released (i.e. after backward has been called), calling its `register_hooks()`
+    is forbidden. PyTorch will throw an error most of the time but it may fail to
+    do so in some cases and undefined behavior may arise.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Registering default hooks for saved tensors[](#registering-default-hooks-for-saved-tensors
+    "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Alternatively, you can use the context-manager [`saved_tensors_hooks`](../autograd.html#torch.autograd.graph.saved_tensors_hooks
+    "torch.autograd.graph.saved_tensors_hooks") to register a pair of hooks which
+    will be applied to *all* saved tensors that are created in that context.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: The hooks defined with this context manager are thread-local. Hence, the following
+    code will not produce the desired effects because the hooks do not go through
+    DataParallel.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Note that using those hooks disables all the optimization in place to reduce
+    Tensor object creation. For example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Without the hooks, `x`, `y.grad_fn._saved_self` and `y.grad_fn._saved_other`
+    all refer to the same tensor object. With the hooks, PyTorch will pack and unpack
+    x into two new tensor objects that share the same storage with the original x
+    (no copy performed).  ## Backward Hooks execution[](#backward-hooks-execution
+    "Permalink to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'This section will discuss when different hooks fire or don’t fire. Then it
+    will discuss the order in which they are fired. The hooks that will be covered
+    are: backward hooks registered to Tensor via [`torch.Tensor.register_hook()`](../generated/torch.Tensor.register_hook.html#torch.Tensor.register_hook
+    "torch.Tensor.register_hook"), post-accumulate-grad hooks registered to Tensor
+    via [`torch.Tensor.register_post_accumulate_grad_hook()`](../generated/torch.Tensor.register_post_accumulate_grad_hook.html#torch.Tensor.register_post_accumulate_grad_hook
+    "torch.Tensor.register_post_accumulate_grad_hook"), post-hooks registered to Node
+    via [`torch.autograd.graph.Node.register_hook()`](../generated/torch.autograd.graph.Node.register_hook.html#torch.autograd.graph.Node.register_hook
+    "torch.autograd.graph.Node.register_hook"), and pre-hooks registered to Node via
+    [`torch.autograd.graph.Node.register_prehook()`](../generated/torch.autograd.graph.Node.register_prehook.html#torch.autograd.graph.Node.register_prehook
+    "torch.autograd.graph.Node.register_prehook").'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Whether a particular hook will be fired[](#whether-a-particular-hook-will-be-fired
+    "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Hooks registered to a Tensor via [`torch.Tensor.register_hook()`](../generated/torch.Tensor.register_hook.html#torch.Tensor.register_hook
+    "torch.Tensor.register_hook") are executed when gradients are being computed for
+    that Tensor. (Note that this does not require the Tensor’s grad_fn to be executed.
+    For example, if the Tensor is passed as part of the `inputs` argument to [`torch.autograd.grad()`](../generated/torch.autograd.grad.html#torch.autograd.grad
+    "torch.autograd.grad"), the Tensor’s grad_fn may not be executed, but the hook
+    register to that Tensor will always be executed.)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Hooks registered to a Tensor via [`torch.Tensor.register_post_accumulate_grad_hook()`](../generated/torch.Tensor.register_post_accumulate_grad_hook.html#torch.Tensor.register_post_accumulate_grad_hook
+    "torch.Tensor.register_post_accumulate_grad_hook") are executed after the gradients
+    have been accumulated for that Tensor, meaning the Tensor’s grad field has been
+    set. Whereas hooks registered via [`torch.Tensor.register_hook()`](../generated/torch.Tensor.register_hook.html#torch.Tensor.register_hook
+    "torch.Tensor.register_hook") are run as gradients are being computed, hooks registered
+    via [`torch.Tensor.register_post_accumulate_grad_hook()`](../generated/torch.Tensor.register_post_accumulate_grad_hook.html#torch.Tensor.register_post_accumulate_grad_hook
+    "torch.Tensor.register_post_accumulate_grad_hook") are only triggered once the
+    Tensor’s grad field is updated by autograd at the end of the backward pass. Thus,
+    post-accumulate-grad hooks can only be registered for leaf Tensors. Registering
+    a hook via [`torch.Tensor.register_post_accumulate_grad_hook()`](../generated/torch.Tensor.register_post_accumulate_grad_hook.html#torch.Tensor.register_post_accumulate_grad_hook
+    "torch.Tensor.register_post_accumulate_grad_hook") on a non-leaf Tensor will error,
+    even if you call backward(retain_graph=True).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Hooks registered to `torch.autograd.graph.Node` using [`torch.autograd.graph.Node.register_hook()`](../generated/torch.autograd.graph.Node.register_hook.html#torch.autograd.graph.Node.register_hook
+    "torch.autograd.graph.Node.register_hook") or [`torch.autograd.graph.Node.register_prehook()`](../generated/torch.autograd.graph.Node.register_prehook.html#torch.autograd.graph.Node.register_prehook
+    "torch.autograd.graph.Node.register_prehook") are only fired if the Node it was
+    registered to is executed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Whether a particular Node is executed may depend on whether the backward pass
+    was called with [`torch.autograd.grad()`](../generated/torch.autograd.grad.html#torch.autograd.grad
+    "torch.autograd.grad") or [`torch.autograd.backward()`](../generated/torch.autograd.backward.html#torch.autograd.backward
+    "torch.autograd.backward"). Specifically, you should be aware of these differences
+    when you register a hook on a Node corresponding to a Tensor that you are passing
+    to [`torch.autograd.grad()`](../generated/torch.autograd.grad.html#torch.autograd.grad
+    "torch.autograd.grad") or [`torch.autograd.backward()`](../generated/torch.autograd.backward.html#torch.autograd.backward
+    "torch.autograd.backward") as part of the `inputs` argument.
+  prefs: []
+  type: TYPE_NORMAL
+- en: If you are using [`torch.autograd.backward()`](../generated/torch.autograd.backward.html#torch.autograd.backward
+    "torch.autograd.backward"), all of the above mentioned hooks will be executed,
+    whether or not you specified the `inputs` argument. This is because .backward()
+    executes all Nodes, even if they correspond to a Tensor specified as an input.
+    (Note that the execution of this additional Node corresponding to Tensors passed
+    as `inputs` is usually unnecessary, but done anyway. This behavior is subject
+    to change; you should not depend on it.)
+  prefs: []
+  type: TYPE_NORMAL
+- en: On the other hand, if you are using [`torch.autograd.grad()`](../generated/torch.autograd.grad.html#torch.autograd.grad
+    "torch.autograd.grad"), the backward hooks registered to Nodes that correspond
+    to the Tensors passed to `input` may not be executed, because those Nodes will
+    not be executed unless there is another input that depends on the gradient result
+    of this Node.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The order in which the different hooks are fired[](#the-order-in-which-the-different-hooks-are-fired
+    "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'The order in which things happen are:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: hooks registered to Tensor are executed
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: pre-hooks registered to Node are executed (if Node is executed).
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: the `.grad` field is updated for Tensors that retain_grad
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Node is executed (subject to rules above)
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: for leaf Tensors that have `.grad` accumulated, post-accumulate-grad hooks are
+    executed
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: post-hooks registered to Node are executed (if Node is executed)
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: If multiple hooks of the same type are registered on the same Tensor or Node
+    they are executed in the order in which they are registered. Hooks that are executed
+    later can observe the modifications to the gradient made by earlier hooks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Special hooks
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[`torch.autograd.graph.register_multi_grad_hook()`](../autograd.html#torch.autograd.graph.register_multi_grad_hook
+    "torch.autograd.graph.register_multi_grad_hook") is implemented using hooks registered
+    to Tensors. Each individual Tensor hook is fired following the Tensor hook ordering
+    defined above and the registered multi-grad hook is called when the last Tensor
+    gradient is computed.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`torch.nn.modules.module.register_module_full_backward_hook()`](../generated/torch.nn.modules.module.register_module_full_backward_hook.html#torch.nn.modules.module.register_module_full_backward_hook
+    "torch.nn.modules.module.register_module_full_backward_hook") is implemented using
+    hooks registered to Node. As the forward is computed, hooks are registered to
+    grad_fn corresponding to the inputs and outputs of the module. Because a module
+    may take multiple inputs and return multiple outputs, a dummy custom autograd
+    Function is first applied to the inputs of the module before forward and the outputs
+    of the module before the output of forward is returned to ensure that those Tensors
+    share a single grad_fn, which we can then attach our hooks to.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Behavior of Tensor hooks when Tensor is modified in-place[](#behavior-of-tensor-hooks-when-tensor-is-modified-in-place
+    "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Usually hooks registered to a Tensor receive the gradient of the outputs with
+    respect to that Tensor, where the value of the Tensor is taken to be its value
+    at the time backward is computed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: However, if you register hooks to a Tensor, and then modify that Tensor in-place,
+    hooks registered before in-place modification similarly receive gradients of the
+    outputs with respect to the Tensor, but the value of the Tensor is taken to be
+    its value before in-place modification.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'If you prefer the behavior in the former case, you should register them to
+    the Tensor after all in-place modifications to it have been made. For example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: Furthermore, it can be helpful to know that under the hood, when hooks are registered
+    to a Tensor, they actually become permanently bound to the grad_fn of that Tensor,
+    so if that Tensor is then modified in-place, even though the Tensor now has a
+    new grad_fn, hooks registered before it was modified in-place will continue to
+    be associated with the old grad_fn, e.g. they will fire when that Tensor’s old
+    grad_fn is reached in the graph by the autograd engine.
+  prefs: []
+  type: TYPE_NORMAL

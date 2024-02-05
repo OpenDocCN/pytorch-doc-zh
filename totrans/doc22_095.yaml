@@ -1,0 +1,559 @@
+- en: Named Tensors
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/docs/stable/named_tensor.html](https://pytorch.org/docs/stable/named_tensor.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Named Tensors allow users to give explicit names to tensor dimensions. In most
+    cases, operations that take dimension parameters will accept dimension names,
+    avoiding the need to track dimensions by position. In addition, named tensors
+    use names to automatically check that APIs are being used correctly at runtime,
+    providing extra safety. Names can also be used to rearrange dimensions, for example,
+    to support “broadcasting by name” rather than “broadcasting by position”.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: The named tensor API is a prototype feature and subject to change.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Creating named tensors
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Factory functions now take a new `names` argument that associates a name with
+    each dimension.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Named dimensions, like regular Tensor dimensions, are ordered. `tensor.names[i]`
+    is the name of dimension `i` of `tensor`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The following factory functions support named tensors:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`torch.empty()`](generated/torch.empty.html#torch.empty "torch.empty")'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[`torch.rand()`](generated/torch.rand.html#torch.rand "torch.rand")'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[`torch.randn()`](generated/torch.randn.html#torch.randn "torch.randn")'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[`torch.ones()`](generated/torch.ones.html#torch.ones "torch.ones")'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[`torch.tensor()`](generated/torch.tensor.html#torch.tensor "torch.tensor")'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[`torch.zeros()`](generated/torch.zeros.html#torch.zeros "torch.zeros")'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Named dimensions
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: See [`names`](#torch.Tensor.names "torch.Tensor.names") for restrictions on
+    tensor names.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Use [`names`](#torch.Tensor.names "torch.Tensor.names") to access the dimension
+    names of a tensor and [`rename()`](#torch.Tensor.rename "torch.Tensor.rename")
+    to rename named dimensions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Named tensors can coexist with unnamed tensors; named tensors are instances
+    of [`torch.Tensor`](tensors.html#torch.Tensor "torch.Tensor"). Unnamed tensors
+    have `None`-named dimensions. Named tensors do not require all dimensions to be
+    named.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Name propagation semantics[](#name-propagation-semantics "Permalink to this
+    heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Named tensors use names to automatically check that APIs are being called correctly
+    at runtime. This occurs in a process called *name inference*. More formally, name
+    inference consists of the following two steps:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Check names**: an operator may perform automatic checks at runtime that check
+    that certain dimension names must match.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Propagate names**: name inference propagates names to output tensors.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: All operations that support named tensors propagate names.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: '### match semantics'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Two names *match* if they are equal (string equality) or if at least one is
+    `None`. Nones are essentially a special “wildcard” name.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`unify(A, B)` determines which of the names `A` and `B` to propagate to the
+    outputs. It returns the more *specific* of the two names, if they match. If the
+    names do not match, then it errors.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: In practice, when working with named tensors, one should avoid having unnamed
+    dimensions because their handling can be complicated. It is recommended to lift
+    all unnamed dimensions to be named dimensions by using [`refine_names()`](#torch.Tensor.refine_names
+    "torch.Tensor.refine_names").
+  prefs: []
+  type: TYPE_NORMAL
+- en: Basic name inference rules[](#basic-name-inference-rules "Permalink to this
+    heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Let’s see how `match` and `unify` are used in name inference in the case of
+    adding two one-dim tensors with no broadcasting.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: '**Check names**: check that the names of the two tensors *match*.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'For the following examples:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: '**Propagate names**: *unify* the names to select which one to propagate. In
+    the case of `x + y`, `unify(''X'', None) = ''X''` because `''X''` is more specific
+    than `None`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'For a comprehensive list of name inference rules, see [Named Tensors operator
+    coverage](name_inference.html#name-inference-reference-doc). Here are two common
+    operations that may be useful to go over:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Binary arithmetic ops: [Unifies names from inputs](name_inference.html#unifies-names-from-inputs-doc)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Matrix multiplication ops: [Contracts away dims](name_inference.html#contracts-away-dims-doc)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Explicit alignment by names[](#explicit-alignment-by-names "Permalink to this
+    heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Use [`align_as()`](#torch.Tensor.align_as "torch.Tensor.align_as") or [`align_to()`](#torch.Tensor.align_to
+    "torch.Tensor.align_to") to align tensor dimensions by name to a specified ordering.
+    This is useful for performing “broadcasting by names”.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Manipulating dimensions
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Use [`align_to()`](#torch.Tensor.align_to "torch.Tensor.align_to") to permute
+    large amounts of dimensions without mentioning all of them as in required by [`permute()`](generated/torch.Tensor.permute.html#torch.Tensor.permute
+    "torch.Tensor.permute").
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: Use [`flatten()`](generated/torch.Tensor.flatten.html#torch.Tensor.flatten "torch.Tensor.flatten")
+    and [`unflatten()`](generated/torch.Tensor.unflatten.html#torch.Tensor.unflatten
+    "torch.Tensor.unflatten") to flatten and unflatten dimensions, respectively. These
+    methods are more verbose than [`view()`](generated/torch.Tensor.view.html#torch.Tensor.view
+    "torch.Tensor.view") and [`reshape()`](generated/torch.Tensor.reshape.html#torch.Tensor.reshape
+    "torch.Tensor.reshape"), but have more semantic meaning to someone reading the
+    code.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: '## Autograd support'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Autograd currently supports named tensors in a limited manner: autograd ignores
+    names on all tensors. Gradient computation is still correct but we lose the safety
+    that names give us.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: Currently supported operations and subsystems[](#currently-supported-operations-and-subsystems
+    "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Operators
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'See [Named Tensors operator coverage](name_inference.html#name-inference-reference-doc)
+    for a full list of the supported torch and tensor operations. We do not yet support
+    the following that is not covered by the link:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: indexing, advanced indexing.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'For `torch.nn.functional` operators, we support the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`torch.nn.functional.relu()`](generated/torch.nn.functional.relu.html#torch.nn.functional.relu
+    "torch.nn.functional.relu")'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[`torch.nn.functional.softmax()`](generated/torch.nn.functional.softmax.html#torch.nn.functional.softmax
+    "torch.nn.functional.softmax")'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[`torch.nn.functional.log_softmax()`](generated/torch.nn.functional.log_softmax.html#torch.nn.functional.log_softmax
+    "torch.nn.functional.log_softmax")'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[`torch.nn.functional.tanh()`](generated/torch.nn.functional.tanh.html#torch.nn.functional.tanh
+    "torch.nn.functional.tanh")'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[`torch.nn.functional.sigmoid()`](generated/torch.nn.functional.sigmoid.html#torch.nn.functional.sigmoid
+    "torch.nn.functional.sigmoid")'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[`torch.nn.functional.dropout()`](generated/torch.nn.functional.dropout.html#torch.nn.functional.dropout
+    "torch.nn.functional.dropout")'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Subsystems
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Autograd is supported, see [Autograd support](#named-tensors-autograd-doc).
+    Because gradients are currently unnamed, optimizers may work but are untested.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'NN modules are currently unsupported. This can lead to the following when calling
+    modules with named tensor inputs:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: NN module parameters are unnamed, so outputs may be partially named.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: NN module forward passes have code that don’t support named tensors and will
+    error out appropriately.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'We also do not support the following subsystems, though some may work out of
+    the box:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: distributions
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: serialization ([`torch.load()`](generated/torch.load.html#torch.load "torch.load"),
+    [`torch.save()`](generated/torch.save.html#torch.save "torch.save"))
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: multiprocessing
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: JIT
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: distributed
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ONNX
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: If any of these would help your use case, please [search if an issue has already
+    been filed](https://github.com/pytorch/pytorch/issues?q=is%3Aopen+is%3Aissue+label%3A%22module%3A+named+tensor%22)
+    and if not, [file one](https://github.com/pytorch/pytorch/issues/new/choose).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Named tensor API reference[](#named-tensor-api-reference "Permalink to this
+    heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In this section please find the documentation for named tensor specific APIs.
+    For a comprehensive reference for how names are propagated through other PyTorch
+    operators, see [Named Tensors operator coverage](name_inference.html#name-inference-reference-doc).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: Stores names for each of this tensor’s dimensions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`names[idx]` corresponds to the name of tensor dimension `idx`. Names are either
+    a string if the dimension is named or `None` if the dimension is unnamed.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Dimension names may contain characters or underscore. Furthermore, a dimension
+    name must be a valid Python variable name (i.e., does not start with underscore).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tensors may not have two named dimensions with the same name.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: The named tensor API is experimental and subject to change.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: Renames dimension names of `self`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'There are two main usages:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`self.rename(**rename_map)` returns a view on tensor that has dims renamed
+    as specified in the mapping `rename_map`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`self.rename(*names)` returns a view on tensor, renaming all dimensions positionally
+    using [`names`](#torch.Tensor.names "torch.Tensor.names"). Use `self.rename(None)`
+    to drop names on a tensor.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: One cannot specify both positional args [`names`](#torch.Tensor.names "torch.Tensor.names")
+    and keyword args `rename_map`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Examples:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: The named tensor API is experimental and subject to change.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: In-place version of [`rename()`](#torch.Tensor.rename "torch.Tensor.rename").
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: Refines the dimension names of `self` according to [`names`](#torch.Tensor.names
+    "torch.Tensor.names").
+  prefs: []
+  type: TYPE_NORMAL
+- en: Refining is a special case of renaming that “lifts” unnamed dimensions. A `None`
+    dim can be refined to have any name; a named dim can only be refined to have the
+    same name.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Because named tensors can coexist with unnamed tensors, refining names gives
+    a nice way to write named-tensor-aware code that works with both named and unnamed
+    tensors.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`names`](#torch.Tensor.names "torch.Tensor.names") may contain up to one Ellipsis
+    (`...`). The Ellipsis is expanded greedily; it is expanded in-place to fill [`names`](#torch.Tensor.names
+    "torch.Tensor.names") to the same length as `self.dim()` using names from the
+    corresponding indices of `self.names`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Python 2 does not support Ellipsis but one may use a string literal instead
+    (`'...'`).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**names** (*iterable* *of* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")) – The desired names of the output tensor. May contain up
+    to one Ellipsis.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Examples:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: The named tensor API is experimental and subject to change.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: Permutes the dimensions of the `self` tensor to match the dimension order in
+    the `other` tensor, adding size-one dims for any new names.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This operation is useful for explicit broadcasting by names (see examples).
+  prefs: []
+  type: TYPE_NORMAL
+- en: All of the dims of `self` must be named in order to use this method. The resulting
+    tensor is a view on the original tensor.
+  prefs: []
+  type: TYPE_NORMAL
+- en: All dimension names of `self` must be present in `other.names`. `other` may
+    contain named dimensions that are not in `self.names`; the output tensor has a
+    size-one dimension for each of those new names.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To align a tensor to a specific order, use [`align_to()`](#torch.Tensor.align_to
+    "torch.Tensor.align_to").
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Examples:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: The named tensor API is experimental and subject to change.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: Permutes the dimensions of the `self` tensor to match the order specified in
+    [`names`](#torch.Tensor.names "torch.Tensor.names"), adding size-one dims for
+    any new names.
+  prefs: []
+  type: TYPE_NORMAL
+- en: All of the dims of `self` must be named in order to use this method. The resulting
+    tensor is a view on the original tensor.
+  prefs: []
+  type: TYPE_NORMAL
+- en: All dimension names of `self` must be present in [`names`](#torch.Tensor.names
+    "torch.Tensor.names"). [`names`](#torch.Tensor.names "torch.Tensor.names") may
+    contain additional names that are not in `self.names`; the output tensor has a
+    size-one dimension for each of those new names.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`names`](#torch.Tensor.names "torch.Tensor.names") may contain up to one Ellipsis
+    (`...`). The Ellipsis is expanded to be equal to all dimension names of `self`
+    that are not mentioned in [`names`](#torch.Tensor.names "torch.Tensor.names"),
+    in the order that they appear in `self`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Python 2 does not support Ellipsis but one may use a string literal instead
+    (`'...'`).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**names** (*iterable* *of* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")) – The desired dimension ordering of the output tensor. May
+    contain up to one Ellipsis that is expanded to all unmentioned dim names of `self`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Examples:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: The named tensor API is experimental and subject to change.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: Flattens `dims` into a single dimension with name `out_dim`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: All of dims must be consecutive in order in the `self` tensor, but not necessary
+    contiguous in memory.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Examples:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: The named tensor API is experimental and subject to change.
+  prefs: []
+  type: TYPE_NORMAL

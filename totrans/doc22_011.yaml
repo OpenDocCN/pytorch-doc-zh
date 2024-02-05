@@ -1,0 +1,197 @@
+- en: CPU threading and TorchScript inference
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/docs/stable/notes/cpu_threading_torchscript_inference.html](https://pytorch.org/docs/stable/notes/cpu_threading_torchscript_inference.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: 'PyTorch allows using multiple CPU threads during TorchScript model inference.
+    The following figure shows different levels of parallelism one would find in a
+    typical application:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[![../_images/cpu_threading_torchscript_inference.svg](../Images/8df78fa0159321538b2e2a438f6cae52.png)](../_images/cpu_threading_torchscript_inference.svg)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'One or more inference threads execute a model’s forward pass on the given inputs.
+    Each inference thread invokes a JIT interpreter that executes the ops of a model
+    inline, one by one. A model can utilize a `fork` TorchScript primitive to launch
+    an asynchronous task. Forking several operations at once results in a task that
+    is executed in parallel. The `fork` operator returns a `Future` object which can
+    be used to synchronize on later, for example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: PyTorch uses a single thread pool for the inter-op parallelism, this thread
+    pool is shared by all inference tasks that are forked within the application process.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In addition to the inter-op parallelism, PyTorch can also utilize multiple threads
+    within the ops (intra-op parallelism). This can be useful in many cases, including
+    element-wise ops on large tensors, convolutions, GEMMs, embedding lookups and
+    others.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Build options
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: PyTorch uses an internal ATen library to implement ops. In addition to that,
+    PyTorch can also be built with support of external libraries, such as [MKL](https://software.intel.com/en-us/mkl)
+    and [MKL-DNN](https://github.com/intel/mkl-dnn), to speed up computations on CPU.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'ATen, MKL and MKL-DNN support intra-op parallelism and depend on the following
+    parallelization libraries to implement it:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[OpenMP](https://www.openmp.org/) - a standard (and a library, usually shipped
+    with a compiler), widely used in external libraries;'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[TBB](https://github.com/intel/tbb) - a newer parallelization library optimized
+    for task-based parallelism and concurrent environments.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: OpenMP historically has been used by a large number of libraries. It is known
+    for a relative ease of use and support for loop-based parallelism and other primitives.
+  prefs: []
+  type: TYPE_NORMAL
+- en: TBB is used to a lesser extent in external libraries, but, at the same time,
+    is optimized for the concurrent environments. PyTorch’s TBB backend guarantees
+    that there’s a separate, single, per-process intra-op thread pool used by all
+    of the ops running in the application.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Depending of the use case, one might find one or another parallelization library
+    a better choice in their application.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'PyTorch allows selecting of the parallelization backend used by ATen and other
+    libraries at the build time with the following build options:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Library | Build Option | Values | Notes |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| ATen | `ATEN_THREADING` | `OMP` (default), `TBB` |  |'
+  prefs: []
+  type: TYPE_TB
+- en: '| MKL | `MKL_THREADING` | (same) | To enable MKL use `BLAS=MKL` |'
+  prefs: []
+  type: TYPE_TB
+- en: '| MKL-DNN | `MKLDNN_CPU_RUNTIME` | (same) | To enable MKL-DNN use `USE_MKLDNN=1`
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: It is recommended not to mix OpenMP and TBB within one build.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Any of the `TBB` values above require `USE_TBB=1` build setting (default: OFF).
+    A separate setting `USE_OPENMP=1` (default: ON) is required for OpenMP parallelism.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Runtime API
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'The following API is used to control thread settings:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| Type of parallelism | Settings | Notes |'
+  prefs: []
+  type: TYPE_TB
+- en: '| --- | --- | --- |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Inter-op parallelism | `at::set_num_interop_threads`, `at::get_num_interop_threads`
+    (C++)`set_num_interop_threads`, `get_num_interop_threads` (Python, [`torch`](../torch.html#module-torch
+    "torch") module) | Default number of threads: number of CPU cores. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Intra-op parallelism | `at::set_num_threads`, `at::get_num_threads` (C++)
+    `set_num_threads`, `get_num_threads` (Python, [`torch`](../torch.html#module-torch
+    "torch") module)Environment variables: `OMP_NUM_THREADS` and `MKL_NUM_THREADS`
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: For the intra-op parallelism settings, `at::set_num_threads`, `torch.set_num_threads`
+    always take precedence over environment variables, `MKL_NUM_THREADS` variable
+    takes precedence over `OMP_NUM_THREADS`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tuning the number of threads[](#tuning-the-number-of-threads "Permalink to
+    this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'The following simple script shows how a runtime of matrix multiplication changes
+    with the number of threads:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Running the script on a system with 24 physical CPU cores (Xeon E5-2680, MKL
+    and OpenMP based build) results in the following runtimes:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[![../_images/cpu_threading_runtimes.svg](../Images/50cb089741be0ac4482f410e4d719b4b.png)](../_images/cpu_threading_runtimes.svg)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The following considerations should be taken into account when tuning the number
+    of intra- and inter-op threads:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: When choosing the number of threads one needs to avoid oversubscription (using
+    too many threads, leads to performance degradation). For example, in an application
+    that uses a large application thread pool or heavily relies on inter-op parallelism,
+    one might find disabling intra-op parallelism as a possible option (i.e. by calling
+    `set_num_threads(1)`);
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: In a typical application one might encounter a trade off between latency (time
+    spent on processing an inference request) and throughput (amount of work done
+    per unit of time). Tuning the number of threads can be a useful tool to adjust
+    this trade off in one way or another. For example, in latency critical applications
+    one might want to increase the number of intra-op threads to process each request
+    as fast as possible. At the same time, parallel implementations of ops may add
+    an extra overhead that increases amount work done per single request and thus
+    reduces the overall throughput.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: OpenMP does not guarantee that a single per-process intra-op thread pool is
+    going to be used in the application. On the contrary, two different application
+    or inter-op threads may use different OpenMP thread pools for intra-op work. This
+    might result in a large number of threads used by the application. Extra care
+    in tuning the number of threads is needed to avoid oversubscription in multi-threaded
+    applications in OpenMP case.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Pre-built PyTorch releases are compiled with OpenMP support.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`parallel_info` utility prints information about thread settings and can be
+    used for debugging. Similar output can be also obtained in Python with `torch.__config__.parallel_info()`
+    call.'
+  prefs: []
+  type: TYPE_NORMAL

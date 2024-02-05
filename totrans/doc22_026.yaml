@@ -1,0 +1,193 @@
+- en: Windows FAQ
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/docs/stable/notes/windows.html](https://pytorch.org/docs/stable/notes/windows.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Building from source
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Include optional components[](#include-optional-components "Permalink to this
+    heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'There are two supported components for Windows PyTorch: MKL and MAGMA. Here
+    are the steps to build with them.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Speeding CUDA build for Windows[](#speeding-cuda-build-for-windows "Permalink
+    to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Visual Studio doesn’t support parallel custom task currently. As an alternative,
+    we can use `Ninja` to parallelize CUDA build tasks. It can be used by typing only
+    a few lines of code.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: One key install script
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: You can take a look at [this set of scripts](https://github.com/peterjc123/pytorch-scripts).
+    It will lead the way for you.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Extension
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: CFFI Extension
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The support for CFFI Extension is very experimental. You must specify additional
+    `libraries` in `Extension` object to make it build on Windows.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Cpp Extension
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: This type of extension has better support compared with the previous one. However,
+    it still needs some manual configuration. First, you should open the **x86_x64
+    Cross Tools Command Prompt for VS 2017**. And then, you can start your compiling
+    process.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Installation
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Package not found in win-32 channel.[](#package-not-found-in-win-32-channel
+    "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: PyTorch doesn’t work on 32-bit system. Please use Windows and Python 64-bit
+    version.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Import error
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: The problem is caused by the missing of the essential files. Actually, we include
+    almost all the essential files that PyTorch need for the conda package except
+    VC2017 redistributable and some mkl libraries. You can resolve this by typing
+    the following command.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: As for the wheels package, since we didn’t pack some libraries and VS2017 redistributable
+    files in, please make sure you install them manually. The [VS 2017 redistributable
+    installer](https://aka.ms/vs/15/release/VC_redist.x64.exe) can be downloaded.
+    And you should also pay attention to your installation of Numpy. Make sure it
+    uses MKL instead of OpenBLAS. You may type in the following command.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: Another possible cause may be you are using GPU version without NVIDIA graphics
+    cards. Please replace your GPU package with the CPU one.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: This is actually an upstream issue of Anaconda. When you initialize your environment
+    with conda-forge channel, this issue will emerge. You may fix the intel-openmp
+    libraries through this command.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: Usage (multiprocessing)
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Multiprocessing error without if-clause protection[](#multiprocessing-error-without-if-clause-protection
+    "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: The implementation of `multiprocessing` is different on Windows, which uses
+    `spawn` instead of `fork`. So we have to wrap the code with an if-clause to protect
+    the code from executing multiple times. Refactor your code into the following
+    structure.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: Multiprocessing error “Broken pipe”[](#multiprocessing-error-broken-pipe "Permalink
+    to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: This issue happens when the child process ends before the parent process finishes
+    sending data. There may be something wrong with your code. You can debug your
+    code by reducing the `num_worker` of [`DataLoader`](../data.html#torch.utils.data.DataLoader
+    "torch.utils.data.DataLoader") to zero and see if the issue persists.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Multiprocessing error “driver shut down”[](#multiprocessing-error-driver-shut-down
+    "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: Please update your graphics driver. If this persists, this may be that your
+    graphics card is too old or the calculation is too heavy for your card. Please
+    update the TDR settings according to this [post](https://www.pugetsystems.com/labs/hpc/Working-around-TDR-in-Windows-for-a-better-GPU-computing-experience-777/).
+  prefs: []
+  type: TYPE_NORMAL
+- en: CUDA IPC operations
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: They are not supported on Windows. Something like doing multiprocessing on CUDA
+    tensors cannot succeed, there are two alternatives for this.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 1\. Don’t use `multiprocessing`. Set the `num_worker` of [`DataLoader`](../data.html#torch.utils.data.DataLoader
+    "torch.utils.data.DataLoader") to zero.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 2\. Share CPU tensors instead. Make sure your custom `DataSet` returns CPU tensors.
+  prefs: []
+  type: TYPE_NORMAL

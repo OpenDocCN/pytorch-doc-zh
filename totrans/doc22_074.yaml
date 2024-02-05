@@ -1,0 +1,1267 @@
+- en: Quantization
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/docs/stable/quantization.html](https://pytorch.org/docs/stable/quantization.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: Quantization is in beta and subject to change.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Introduction to Quantization[](#introduction-to-quantization "Permalink to
+    this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Quantization refers to techniques for performing computations and storing tensors
+    at lower bitwidths than floating point precision. A quantized model executes some
+    or all of the operations on tensors with reduced precision rather than full precision
+    (floating point) values. This allows for a more compact model representation and
+    the use of high performance vectorized operations on many hardware platforms.
+    PyTorch supports INT8 quantization compared to typical FP32 models allowing for
+    a 4x reduction in the model size and a 4x reduction in memory bandwidth requirements.
+    Hardware support for INT8 computations is typically 2 to 4 times faster compared
+    to FP32 compute. Quantization is primarily a technique to speed up inference and
+    only the forward pass is supported for quantized operators.
+  prefs: []
+  type: TYPE_NORMAL
+- en: PyTorch supports multiple approaches to quantizing a deep learning model. In
+    most cases the model is trained in FP32 and then the model is converted to INT8\.
+    In addition, PyTorch also supports quantization aware training, which models quantization
+    errors in both the forward and backward passes using fake-quantization modules.
+    Note that the entire computation is carried out in floating point. At the end
+    of quantization aware training, PyTorch provides conversion functions to convert
+    the trained model into lower precision.
+  prefs: []
+  type: TYPE_NORMAL
+- en: At lower level, PyTorch provides a way to represent quantized tensors and perform
+    operations with them. They can be used to directly construct models that perform
+    all or part of the computation in lower precision. Higher-level APIs are provided
+    that incorporate typical workflows of converting FP32 model to lower precision
+    with minimal accuracy loss.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Quantization API Summary
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'PyTorch provides three different modes of quantization: Eager Mode Quantization,
+    FX Graph Mode Quantization (maintainence) and PyTorch 2 Export Quantization.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Eager Mode Quantization is a beta feature. User needs to do fusion and specify
+    where quantization and dequantization happens manually, also it only supports
+    modules and not functionals.
+  prefs: []
+  type: TYPE_NORMAL
+- en: FX Graph Mode Quantization is an automated quantization workflow in PyTorch,
+    and currently it’s a prototype feature, it is in maintainence mode since we have
+    PyTorch 2 Export Quantization. It improves upon Eager Mode Quantization by adding
+    support for functionals and automating the quantization process, although people
+    might need to refactor the model to make the model compatible with FX Graph Mode
+    Quantization (symbolically traceable with `torch.fx`). Note that FX Graph Mode
+    Quantization is not expected to work on arbitrary models since the model might
+    not be symbolically traceable, we will integrate it into domain libraries like
+    torchvision and users will be able to quantize models similar to the ones in supported
+    domain libraries with FX Graph Mode Quantization. For arbitrary models we’ll provide
+    general guidelines, but to actually make it work, users might need to be familiar
+    with `torch.fx`, especially on how to make a model symbolically traceable.
+  prefs: []
+  type: TYPE_NORMAL
+- en: PyTorch 2 Export Quantization is the new full graph mode quantization workflow,
+    released as prototype feature in PyTorch 2.1\. With PyTorch 2, we are moving to
+    a better solution for full program capture (torch.export) since it can capture
+    a higher percentage (88.8% on 14K models) of models compared to torch.fx.symbolic_trace
+    (72.7% on 14K models), the program capture solution used by FX Graph Mode Quantization.
+    torch.export still has limitations around some python constructs and requires
+    user involvement to support dynamism in the exported model, but overall it is
+    an improvement over the previous program capture solution. PyTorch 2 Export Quantization
+    is built for models captured by torch.export, with flexibility and productivity
+    of both modeling users and backend developers in mind. The main features are (1).
+    Programmable API for configuring how a model is quantized that can scale to many
+    more use cases (2). Simplified UX for modeling users and backend developers since
+    they only need to interact with a single object (Quantizer) for expressing user’s
+    intention about how to quantize a model and what the backend support. (3). Optional
+    reference quantized model representation that can represent quantized computation
+    with integer operations that maps closer to actual quantized computations that
+    happens in hardware.
+  prefs: []
+  type: TYPE_NORMAL
+- en: New users of quantization are encouraged to try out PyTorch 2 Export Quantization
+    first, if it does not work well, user can try eager mode quantization.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The following table compares the differences between Eager Mode Quantization,
+    FX Graph Mode Quantization and PyTorch 2 Export Quantization:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '|  | Eager Mode Quantization | FX Graph Mode Quantization | PyTorch 2 Export
+    Quantization |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Release Status | beta | prototype (maintainence) | prototype |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Operator Fusion | Manual | Automatic | Automatic |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Quant/DeQuant Placement | Manual | Automatic | Automatic |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Quantizing Modules | Supported | Supported | Supported |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Quantizing Functionals/Torch Ops | Manual | Automatic | Supported |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Support for Customization | Limited Support | Fully Supported | Fully Supported
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Quantization Mode Support | Post Training Quantization: Static, Dynamic,
+    Weight OnlyQuantization Aware Training: Static | Post Training Quantization: Static,
+    Dynamic, Weight OnlyQuantization Aware Training: Static | Defined by Backend Specific
+    Quantizer |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Input/Output Model Type | `torch.nn.Module` | `torch.nn.Module` (May need
+    some refactors to make the model compatible with FX Graph Mode Quantization) |
+    `torch.fx.GraphModule` (captured by `torch.export` |'
+  prefs: []
+  type: TYPE_TB
+- en: 'There are three types of quantization supported:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: dynamic quantization (weights quantized with activations read/stored in floating
+    point and quantized for compute)
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: static quantization (weights quantized, activations quantized, calibration required
+    post training)
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: static quantization aware training (weights quantized, activations quantized,
+    quantization numerics modeled during training)
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Please see our [Introduction to Quantization on PyTorch](https://pytorch.org/blog/introduction-to-quantization-on-pytorch/)
+    blog post for a more comprehensive overview of the tradeoffs between these quantization
+    types.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Operator coverage varies between dynamic and static quantization and is captured
+    in the table below.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '|  | Static Quantization | Dynamic Quantization |'
+  prefs: []
+  type: TYPE_TB
+- en: '| nn.Linearnn.Conv1d/2d/3d | YY | YN |'
+  prefs: []
+  type: TYPE_TB
+- en: '| nn.LSTMnn.GRU | Y (throughcustom modules)N | YY |'
+  prefs: []
+  type: TYPE_TB
+- en: '| nn.RNNCellnn.GRUCellnn.LSTMCell | NNN | YYY |'
+  prefs: []
+  type: TYPE_TB
+- en: '| nn.EmbeddingBag | Y (activations are in fp32) | Y |'
+  prefs: []
+  type: TYPE_TB
+- en: '| nn.Embedding | Y | Y |'
+  prefs: []
+  type: TYPE_TB
+- en: '| nn.MultiheadAttention | Y (through custom modules) | Not supported |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Activations | Broadly supported | Un-changed, computations stay in fp32 |'
+  prefs: []
+  type: TYPE_TB
+- en: Eager Mode Quantization
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: For a general introduction to the quantization flow, including different types
+    of quantization, please take a look at [General Quantization Flow](#general-quantization-flow).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Post Training Dynamic Quantization[](#post-training-dynamic-quantization "Permalink
+    to this heading")
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: This is the simplest to apply form of quantization where the weights are quantized
+    ahead of time but the activations are dynamically quantized during inference.
+    This is used for situations where the model execution time is dominated by loading
+    weights from memory rather than computing the matrix multiplications. This is
+    true for LSTM and Transformer type models with small batch size.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Diagram:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'PTDQ API Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: To learn more about dynamic quantization please see our [dynamic quantization
+    tutorial](https://pytorch.org/tutorials/recipes/recipes/dynamic_quantization.html).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Post Training Static Quantization[](#post-training-static-quantization "Permalink
+    to this heading")
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Post Training Static Quantization (PTQ static) quantizes the weights and activations
+    of the model. It fuses activations into preceding layers where possible. It requires
+    calibration with a representative dataset to determine optimal quantization parameters
+    for activations. Post Training Static Quantization is typically used when both
+    memory bandwidth and compute savings are important with CNNs being a typical use
+    case.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We may need to modify the model before applying post training static quantization.
+    Please see [Model Preparation for Eager Mode Static Quantization](#model-preparation-for-eager-mode-static-quantization).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Diagram:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'PTSQ API Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: To learn more about static quantization, please see the [static quantization
+    tutorial](https://pytorch.org/tutorials/advanced/static_quantization_tutorial.html).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Quantization Aware Training for Static Quantization[](#quantization-aware-training-for-static-quantization
+    "Permalink to this heading")
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Quantization Aware Training (QAT) models the effects of quantization during
+    training allowing for higher accuracy compared to other quantization methods.
+    We can do QAT for static, dynamic or weight only quantization. During training,
+    all calculations are done in floating point, with fake_quant modules modeling
+    the effects of quantization by clamping and rounding to simulate the effects of
+    INT8\. After model conversion, weights and activations are quantized, and activations
+    are fused into the preceding layer where possible. It is commonly used with CNNs
+    and yields a higher accuracy compared to static quantization.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We may need to modify the model before applying post training static quantization.
+    Please see [Model Preparation for Eager Mode Static Quantization](#model-preparation-for-eager-mode-static-quantization).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Diagram:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'QAT API Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: To learn more about quantization aware training, please see the [QAT tutorial](https://pytorch.org/tutorials/advanced/static_quantization_tutorial.html).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Model Preparation for Eager Mode Static Quantization[](#model-preparation-for-eager-mode-static-quantization
+    "Permalink to this heading")
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'It is necessary to currently make some modifications to the model definition
+    prior to Eager mode quantization. This is because currently quantization works
+    on a module by module basis. Specifically, for all quantization techniques, the
+    user needs to:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Convert any operations that require output requantization (and thus have additional
+    parameters) from functionals to module form (for example, using `torch.nn.ReLU`
+    instead of `torch.nn.functional.relu`).
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Specify which parts of the model need to be quantized either by assigning `.qconfig`
+    attributes on submodules or by specifying `qconfig_mapping`. For example, setting
+    `model.conv1.qconfig = None` means that the `model.conv` layer will not be quantized,
+    and setting `model.linear1.qconfig = custom_qconfig` means that the quantization
+    settings for `model.linear1` will be using `custom_qconfig` instead of the global
+    qconfig.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'For static quantization techniques which quantize activations, the user needs
+    to do the following in addition:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Specify where activations are quantized and de-quantized. This is done using
+    [`QuantStub`](generated/torch.ao.quantization.QuantStub.html#torch.ao.quantization.QuantStub
+    "torch.ao.quantization.QuantStub") and [`DeQuantStub`](generated/torch.ao.quantization.DeQuantStub.html#torch.ao.quantization.DeQuantStub
+    "torch.ao.quantization.DeQuantStub") modules.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Use [`FloatFunctional`](generated/torch.ao.nn.quantized.FloatFunctional.html#torch.ao.nn.quantized.FloatFunctional
+    "torch.ao.nn.quantized.FloatFunctional") to wrap tensor operations that require
+    special handling for quantization into modules. Examples are operations like `add`
+    and `cat` which require special handling to determine output quantization parameters.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'Fuse modules: combine operations/modules into a single module to obtain higher
+    accuracy and performance. This is done using the [`fuse_modules()`](generated/torch.ao.quantization.fuse_modules.fuse_modules.html#torch.ao.quantization.fuse_modules.fuse_modules
+    "torch.ao.quantization.fuse_modules.fuse_modules") API, which takes in lists of
+    modules to be fused. We currently support the following fusions: [Conv, Relu],
+    [Conv, BatchNorm], [Conv, BatchNorm, Relu], [Linear, Relu]'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: (Prototype - maintaince mode) FX Graph Mode Quantization[](#prototype-maintaince-mode-fx-graph-mode-quantization
+    "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: There are multiple quantization types in post training quantization (weight
+    only, dynamic and static) and the configuration is done through qconfig_mapping
+    (an argument of the prepare_fx function).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'FXPTQ API Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Please follow the tutorials below to learn more about FX Graph Mode Quantization:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[User Guide on Using FX Graph Mode Quantization](https://pytorch.org/tutorials/prototype/fx_graph_mode_quant_guide.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[FX Graph Mode Post Training Static Quantization](https://pytorch.org/tutorials/prototype/fx_graph_mode_ptq_static.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[FX Graph Mode Post Training Dynamic Quantization](https://pytorch.org/tutorials/prototype/fx_graph_mode_ptq_dynamic.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: (Prototype) PyTorch 2 Export Quantization[](#prototype-pytorch-2-export-quantization
+    "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'API Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Please follow these tutorials to get started on PyTorch 2 Export Quantization:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Modeling Users:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PyTorch 2 Export Post Training Quantization](https://pytorch.org/tutorials/prototype/pt2e_quant_ptq.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PyTorch 2 Export Post Training Quantization with X86 Backend through Inductor](https://pytorch.org/tutorials/prototype/pt2e_quant_ptq_x86_inductor.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PyTorch 2 Export Quantization Aware Training](https://pytorch.org/tutorials/prototype/pt2e_quant_qat.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Backend Developers (please check out all Modeling Users docs as well):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[How to Write a Quantizer for PyTorch 2 Export Quantization](https://pytorch.org/tutorials/prototype/pt2e_quantizer.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Quantization Stack
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Quantization is the process to convert a floating point model to a quantized
+    model. So at high level the quantization stack can be split into two parts: 1).
+    The building blocks or abstractions for a quantized model 2). The building blocks
+    or abstractions for the quantization flow that converts a floating point model
+    to a quantized model'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Quantized Model
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Quantized Tensor
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: In order to do quantization in PyTorch, we need to be able to represent quantized
+    data in Tensors. A Quantized Tensor allows for storing quantized data (represented
+    as int8/uint8/int32) along with quantization parameters like scale and zero_point.
+    Quantized Tensors allow for many useful operations making quantized arithmetic
+    easy, in addition to allowing for serialization of data in a quantized format.
+  prefs: []
+  type: TYPE_NORMAL
+- en: PyTorch supports both per tensor and per channel symmetric and asymmetric quantization.
+    Per tensor means that all the values within the tensor are quantized the same
+    way with the same quantization parameters. Per channel means that for each dimension,
+    typically the channel dimension of a tensor, the values in the tensor are quantized
+    with different quantization parameters. This allows for less error in converting
+    tensors to quantized values since outlier values would only impact the channel
+    it was in, instead of the entire Tensor.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The mapping is performed by converting the floating point tensors using
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[![_images/math-quantizer-equation.png](../Images/161907b1eaa52e48f126f8041595a277.png)](_images/math-quantizer-equation.png)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that, we ensure that zero in floating point is represented with no error
+    after quantization, thereby ensuring that operations like padding do not cause
+    additional quantization error.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Here are a few key attributes for quantized Tensor:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'QScheme (torch.qscheme): a enum that specifies the way we quantize the Tensor'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: torch.per_tensor_affine
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: torch.per_tensor_symmetric
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: torch.per_channel_affine
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: torch.per_channel_symmetric
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'dtype (torch.dtype): data type of the quantized Tensor'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: torch.quint8
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: torch.qint8
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: torch.qint32
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: torch.float16
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'quantization parameters (varies based on QScheme): parameters for the chosen
+    way of quantization'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: torch.per_tensor_affine would have quantization parameters of
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: scale (float)
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: zero_point (int)
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: torch.per_channel_affine would have quantization parameters of
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: per_channel_scales (list of float)
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: per_channel_zero_points (list of int)
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: axis (int)
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Quantize and Dequantize
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: The input and output of a model are floating point Tensors, but activations
+    in the quantized model are quantized, so we need operators to convert between
+    floating point and quantized Tensors.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Quantize (float -> quantized)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: torch.quantize_per_tensor(x, scale, zero_point, dtype)
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: torch.quantize_per_channel(x, scales, zero_points, axis, dtype)
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: torch.quantize_per_tensor_dynamic(x, dtype, reduce_range)
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: to(torch.float16)
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Dequantize (quantized -> float)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: quantized_tensor.dequantize() - calling dequantize on a torch.float16 Tensor
+    will convert the Tensor back to torch.float
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: torch.dequantize(x)
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Quantized Operators/Modules[](#quantized-operators-modules "Permalink to this
+    heading")
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Quantized Operator are the operators that takes quantized Tensor as inputs,
+    and outputs a quantized Tensor.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Quantized Modules are PyTorch Modules that performs quantized operations. They
+    are typically defined for weighted operations like linear and conv.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Quantized Engine
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: When a quantized model is executed, the qengine (torch.backends.quantized.engine)
+    specifies which backend is to be used for execution. It is important to ensure
+    that the qengine is compatible with the quantized model in terms of value range
+    of quantized activation and weights.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Quantization Flow
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Observer and FakeQuantize
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: 'Observer are PyTorch Modules used to:'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: collect tensor statistics like min value and max value of the Tensor passing
+    through the observer
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: and calculate quantization parameters based on the collected tensor statistics
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'FakeQuantize are PyTorch Modules used to:'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: simulate quantization (performing quantize/dequantize) for a Tensor in the network
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: it can calculate quantization parameters based on the collected statistics from
+    observer, or it can learn the quantization parameters as well
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: QConfig
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: QConfig is a namedtuple of Observer or FakeQuantize Module class that can are
+    configurable with qscheme, dtype etc. it is used to configure how an operator
+    should be observed
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Quantization configuration for an operator/module
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: different types of Observer/FakeQuantize
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: dtype
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: qscheme
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'quant_min/quant_max: can be used to simulate lower precision Tensors'
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Currently supports configuration for activation and weight
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: We insert input/weight/output observer based on the qconfig that is configured
+    for a given operator or module
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: General Quantization Flow
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: In general, the flow is the following
+  prefs: []
+  type: TYPE_NORMAL
+- en: prepare
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: insert Observer/FakeQuantize modules based on user specified qconfig
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: calibrate/train (depending on post training quantization or quantization aware
+    training)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: allow Observers to collect statistics or FakeQuantize modules to learn the quantization
+    parameters
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: convert
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: convert a calibrated/trained model to a quantized model
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'There are different modes of quantization, they can be classified in two ways:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In terms of where we apply the quantization flow, we have:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Post Training Quantization (apply quantization after training, quantization
+    parameters are calculated based on sample calibration data)
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Quantization Aware Training (simulate quantization during training so that the
+    quantization parameters can be learned together with the model using training
+    data)
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'And in terms of how we quantize the operators, we can have:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Weight Only Quantization (only weight is statically quantized)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Dynamic Quantization (weight is statically quantized, activation is dynamically
+    quantized)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Static Quantization (both weight and activations are statically quantized)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: We can mix different ways of quantizing operators in the same quantization flow.
+    For example, we can have post training quantization that has both statically and
+    dynamically quantized operators.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Quantization Support Matrix[](#quantization-support-matrix "Permalink to this
+    heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Quantization Mode Support
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '|  | Quantization Mode | Dataset Requirement | Works Best For | Accuracy |
+    Notes |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Post Training Quantization | Dynamic/Weight Only Quantization | activation
+    dynamically quantized (fp16, int8) or not quantized, weight statically quantized
+    (fp16, int8, in4) | None | LSTM, MLP, Embedding, Transformer | good | Easy to
+    use, close to static quantization when performance is compute or memory bound
+    due to weights |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Static Quantization | activation and weights statically quantized (int8)
+    | calibration dataset | CNN | good | Provides best perf, may have big impact on
+    accuracy, good for hardwares that only support int8 computation |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Quantization Aware Training | Dynamic Quantization | activation and weight
+    are fake quantized | fine-tuning dataset | MLP, Embedding | best | Limited support
+    for now |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Static Quantization | activation and weight are fake quantized | fine-tuning
+    dataset | CNN, MLP, Embedding | best | Typically used when static quantization
+    leads to bad accuracy, and used to close the accuracy gap |'
+  prefs: []
+  type: TYPE_TB
+- en: Please see our [Introduction to Quantization on Pytorch](https://pytorch.org/blog/introduction-to-quantization-on-pytorch/)
+    blog post for a more comprehensive overview of the tradeoffs between these quantization
+    types.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Quantization Flow Support
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'PyTorch provides two modes of quantization: Eager Mode Quantization and FX
+    Graph Mode Quantization.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Eager Mode Quantization is a beta feature. User needs to do fusion and specify
+    where quantization and dequantization happens manually, also it only supports
+    modules and not functionals.
+  prefs: []
+  type: TYPE_NORMAL
+- en: FX Graph Mode Quantization is an automated quantization framework in PyTorch,
+    and currently it’s a prototype feature. It improves upon Eager Mode Quantization
+    by adding support for functionals and automating the quantization process, although
+    people might need to refactor the model to make the model compatible with FX Graph
+    Mode Quantization (symbolically traceable with `torch.fx`). Note that FX Graph
+    Mode Quantization is not expected to work on arbitrary models since the model
+    might not be symbolically traceable, we will integrate it into domain libraries
+    like torchvision and users will be able to quantize models similar to the ones
+    in supported domain libraries with FX Graph Mode Quantization. For arbitrary models
+    we’ll provide general guidelines, but to actually make it work, users might need
+    to be familiar with `torch.fx`, especially on how to make a model symbolically
+    traceable.
+  prefs: []
+  type: TYPE_NORMAL
+- en: New users of quantization are encouraged to try out FX Graph Mode Quantization
+    first, if it does not work, user may try to follow the guideline of [using FX
+    Graph Mode Quantization](https://pytorch.org/tutorials/prototype/fx_graph_mode_quant_guide.html)
+    or fall back to eager mode quantization.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The following table compares the differences between Eager Mode Quantization
+    and FX Graph Mode Quantization:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '|  | Eager Mode Quantization | FX Graph Mode Quantization |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Release Status | beta | prototype |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Operator Fusion | Manual | Automatic |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Quant/DeQuant Placement | Manual | Automatic |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Quantizing Modules | Supported | Supported |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Quantizing Functionals/Torch Ops | Manual | Automatic |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Support for Customization | Limited Support | Fully Supported |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Quantization Mode Support | Post Training Quantization: Static, Dynamic,
+    Weight OnlyQuantization Aware Training: Static | Post Training Quantization: Static,
+    Dynamic, Weight OnlyQuantization Aware Training: Static |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Input/Output Model Type | `torch.nn.Module` | `torch.nn.Module` (May need
+    some refactors to make the model compatible with FX Graph Mode Quantization) |'
+  prefs: []
+  type: TYPE_TB
+- en: Backend/Hardware Support
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '| Hardware | Kernel Library | Eager Mode Quantization | FX Graph Mode Quantization
+    | Quantization Mode Support |'
+  prefs: []
+  type: TYPE_TB
+- en: '| server CPU | fbgemm/onednn | Supported | All Supported |'
+  prefs: []
+  type: TYPE_TB
+- en: '| mobile CPU | qnnpack/xnnpack |'
+  prefs: []
+  type: TYPE_TB
+- en: '| server GPU | TensorRT (early prototype) | Not support this it requires a
+    graph | Supported | Static Quantization |'
+  prefs: []
+  type: TYPE_TB
+- en: 'Today, PyTorch supports the following backends for running quantized operators
+    efficiently:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: x86 CPUs with AVX2 support or higher (without AVX2 some operations have inefficient
+    implementations), via x86 optimized by [fbgemm](https://github.com/pytorch/FBGEMM)
+    and [onednn](https://github.com/oneapi-src/oneDNN) (see the details at [RFC](https://github.com/pytorch/pytorch/issues/83888))
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ARM CPUs (typically found in mobile/embedded devices), via [qnnpack](https://github.com/pytorch/pytorch/tree/main/aten/src/ATen/native/quantized/cpu/qnnpack)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: (early prototype) support for NVidia GPU via [TensorRT](https://developer.nvidia.com/tensorrt)
+    through fx2trt (to be open sourced)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Note for native CPU backends[](#note-for-native-cpu-backends "Permalink to
+    this heading")
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: We expose both x86 and qnnpack with the same native pytorch quantized operators,
+    so we need additional flag to distinguish between them. The corresponding implementation
+    of x86 and qnnpack is chosen automatically based on the PyTorch build mode, though
+    users have the option to override this by setting torch.backends.quantization.engine
+    to x86 or qnnpack.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'When preparing a quantized model, it is necessary to ensure that qconfig and
+    the engine used for quantized computations match the backend on which the model
+    will be executed. The qconfig controls the type of observers used during the quantization
+    passes. The qengine controls whether x86 or qnnpack specific packing function
+    is used when packing weights for linear and convolution functions and modules.
+    For example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Default settings for x86:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Default settings for qnnpack:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: Operator Support
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Operator coverage varies between dynamic and static quantization and is captured
+    in the table below. Note that for FX Graph Mode Quantization, the corresponding
+    functionals are also supported.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '|  | Static Quantization | Dynamic Quantization |'
+  prefs: []
+  type: TYPE_TB
+- en: '| nn.Linearnn.Conv1d/2d/3d | YY | YN |'
+  prefs: []
+  type: TYPE_TB
+- en: '| nn.LSTMnn.GRU | NN | YY |'
+  prefs: []
+  type: TYPE_TB
+- en: '| nn.RNNCellnn.GRUCellnn.LSTMCell | NNN | YYY |'
+  prefs: []
+  type: TYPE_TB
+- en: '| nn.EmbeddingBag | Y (activations are in fp32) | Y |'
+  prefs: []
+  type: TYPE_TB
+- en: '| nn.Embedding | Y | Y |'
+  prefs: []
+  type: TYPE_TB
+- en: '| nn.MultiheadAttention | Not Supported | Not supported |'
+  prefs: []
+  type: TYPE_TB
+- en: '| Activations | Broadly supported | Un-changed, computations stay in fp32 |'
+  prefs: []
+  type: TYPE_TB
+- en: 'Note: this will be updated with some information generated from native backend_config_dict
+    soon.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Quantization API Reference[](#quantization-api-reference "Permalink to this
+    heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The [Quantization API Reference](quantization-support.html) contains documentation
+    of quantization APIs, such as quantization passes, quantized tensor operations,
+    and supported quantized modules and functions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Quantization Backend Configuration[](#quantization-backend-configuration "Permalink
+    to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The [Quantization Backend Configuration](quantization-backend-configuration.html)
+    contains documentation on how to configure the quantization workflows for various
+    backends.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Quantization Accuracy Debugging[](#quantization-accuracy-debugging "Permalink
+    to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The [Quantization Accuracy Debugging](quantization-accuracy-debugging.html)
+    contains documentation on how to debug quantization accuracy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Quantization Customizations[](#quantization-customizations "Permalink to this
+    heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: While default implementations of observers to select the scale factor and bias
+    based on observed tensor data are provided, developers can provide their own quantization
+    functions. Quantization can be applied selectively to different parts of the model
+    or configured differently for different parts of the model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We also provide support for per channel quantization for **conv1d()**, **conv2d()**,
+    **conv3d()** and **linear()**.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Quantization workflows work by adding (e.g. adding observers as `.observer`
+    submodule) or replacing (e.g. converting `nn.Conv2d` to `nn.quantized.Conv2d`)
+    submodules in the model’s module hierarchy. It means that the model stays a regular
+    `nn.Module`-based instance throughout the process and thus can work with the rest
+    of PyTorch APIs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Quantization Custom Module API[](#quantization-custom-module-api "Permalink
+    to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Both Eager mode and FX graph mode quantization APIs provide a hook for the
+    user to specify module quantized in a custom way, with user defined logic for
+    observation and quantization. The user needs to specify:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The Python type of the source fp32 module (existing in the model)
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: The Python type of the observed module (provided by user). This module needs
+    to define a from_float function which defines how the observed module is created
+    from the original fp32 module.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: The Python type of the quantized module (provided by user). This module needs
+    to define a from_observed function which defines how the quantized module is created
+    from the observed module.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: A configuration describing (1), (2), (3) above, passed to the quantization APIs.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'The framework will then do the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: during the prepare module swaps, it will convert every module of type specified
+    in (1) to the type specified in (2), using the from_float function of the class
+    in (2).
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: during the convert module swaps, it will convert every module of type specified
+    in (2) to the type specified in (3), using the from_observed function of the class
+    in (3).
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Currently, there is a requirement that ObservedCustomModule will have a single
+    Tensor output, and an observer will be added by the framework (not by the user)
+    on that output. The observer will be stored under the activation_post_process
+    key as an attribute of the custom module instance. Relaxing these restrictions
+    may be done at a future time.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Custom API Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: Best Practices
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 1\. If you are using the `x86` backend, we need to use 7 bits instead of 8 bits.
+    Make sure you reduce the range for the `quant\_min`, `quant\_max`, e.g. if `dtype`
+    is `torch.quint8`, make sure to set a custom `quant_min` to be `0` and `quant_max`
+    to be `127` (`255` / `2`) if `dtype` is `torch.qint8`, make sure to set a custom
+    `quant_min` to be `-64` (`-128` / `2`) and `quant_max` to be `63` (`127` / `2`),
+    we already set this correctly if you call the torch.ao.quantization.get_default_qconfig(backend)
+    or torch.ao.quantization.get_default_qat_qconfig(backend) function to get the
+    default `qconfig` for `x86` or `qnnpack` backend
+  prefs: []
+  type: TYPE_NORMAL
+- en: 2\. If `onednn` backend is selected, 8 bits for activation will be used in the
+    default qconfig mapping `torch.ao.quantization.get_default_qconfig_mapping('onednn')`
+    and default qconfig `torch.ao.quantization.get_default_qconfig('onednn')`. It
+    is recommended to be used on CPUs with Vector Neural Network Instruction (VNNI)
+    support. Otherwise, setting `reduce_range` to True of the activation’s observer
+    to get better accuracy on CPUs without VNNI support.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Frequently Asked Questions[](#frequently-asked-questions "Permalink to this
+    heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'How can I do quantized inference on GPU?:'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: We don’t have official GPU support yet, but this is an area of active development,
+    you can find more information [here](https://github.com/pytorch/pytorch/issues/87395)
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: Where can I get ONNX support for my quantized model?
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'If you get errors exporting the model (using APIs under `torch.onnx`), you
+    may open an issue in the PyTorch repository. Prefix the issue title with `[ONNX]`
+    and tag the issue as `module: onnx`.'
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: If you encounter issues with ONNX Runtime, open an issue at [GitHub - microsoft/onnxruntime](https://github.com/microsoft/onnxruntime/issues/).
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: 'How can I use quantization with LSTM’s?:'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'LSTM is supported through our custom module api in both eager mode and fx graph
+    mode quantization. Examples can be found at Eager Mode: [pytorch/test_quantized_op.py
+    TestQuantizedOps.test_custom_module_lstm](https://github.com/pytorch/pytorch/blob/9b88dcf248e717ca6c3f8c5e11f600825547a561/test/quantization/core/test_quantized_op.py#L2782)
+    FX Graph Mode: [pytorch/test_quantize_fx.py TestQuantizeFx.test_static_lstm](https://github.com/pytorch/pytorch/blob/9b88dcf248e717ca6c3f8c5e11f600825547a561/test/quantization/fx/test_quantize_fx.py#L4116)'
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: Common Errors
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Passing a non-quantized Tensor into a quantized kernel[](#passing-a-non-quantized-tensor-into-a-quantized-kernel
+    "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'If you see an error similar to:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'This means that you are trying to pass a non-quantized Tensor to a quantized
+    kernel. A common workaround is to use `torch.ao.quantization.QuantStub` to quantize
+    the tensor. This needs to be done manually in Eager mode quantization. An e2e
+    example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: Passing a quantized Tensor into a non-quantized kernel[](#passing-a-quantized-tensor-into-a-non-quantized-kernel
+    "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'If you see an error similar to:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'This means that you are trying to pass a quantized Tensor to a non-quantized
+    kernel. A common workaround is to use `torch.ao.quantization.DeQuantStub` to dequantize
+    the tensor. This needs to be done manually in Eager mode quantization. An e2e
+    example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: Saving and Loading Quantized models[](#saving-and-loading-quantized-models
+    "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'When calling `torch.load` on a quantized model, if you see an error like:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'This is because directly saving and loading a quantized model using `torch.save`
+    and `torch.load` is not supported. To save/load quantized models, the following
+    ways can be used:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Saving/Loading the quantized model state_dict
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'An example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: Saving/Loading scripted quantized models using `torch.jit.save` and `torch.jit.load`
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'An example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: Symbolic Trace Error when using FX Graph Mode Quantization[](#symbolic-trace-error-when-using-fx-graph-mode-quantization
+    "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'Symbolic traceability is a requirement for [(Prototype - maintaince mode) FX
+    Graph Mode Quantization](#prototype-maintaince-mode-fx-graph-mode-quantization),
+    so if you pass a PyTorch Model that is not symbolically traceable to torch.ao.quantization.prepare_fx
+    or torch.ao.quantization.prepare_qat_fx, we might see an error like the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: Please take a look at [Limitations of Symbolic Tracing](https://pytorch.org/docs/2.0/fx.html#limitations-of-symbolic-tracing)
+    and use - [User Guide on Using FX Graph Mode Quantization](https://pytorch.org/tutorials/prototype/fx_graph_mode_quant_guide.html)
+    to workaround the problem.
+  prefs: []
+  type: TYPE_NORMAL

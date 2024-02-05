@@ -1,0 +1,4532 @@
+- en: Probability distributions - torch.distributions
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/docs/stable/distributions.html](https://pytorch.org/docs/stable/distributions.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: The `distributions` package contains parameterizable probability distributions
+    and sampling functions. This allows the construction of stochastic computation
+    graphs and stochastic gradient estimators for optimization. This package generally
+    follows the design of the [TensorFlow Distributions](https://arxiv.org/abs/1711.10604)
+    package.
+  prefs: []
+  type: TYPE_NORMAL
+- en: It is not possible to directly backpropagate through random samples. However,
+    there are two main methods for creating surrogate functions that can be backpropagated
+    through. These are the score function estimator/likelihood ratio estimator/REINFORCE
+    and the pathwise derivative estimator. REINFORCE is commonly seen as the basis
+    for policy gradient methods in reinforcement learning, and the pathwise derivative
+    estimator is commonly seen in the reparameterization trick in variational autoencoders.
+    Whilst the score function only requires the value of samples <math><semantics><mrow><mi>f</mi><mo
+    stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo></mrow><annotation
+    encoding="application/x-tex">f(x)</annotation></semantics></math>f(x), the pathwise
+    derivative requires the derivative <math><semantics><mrow><msup><mi>f</mi><mo
+    mathvariant="normal" lspace="0em" rspace="0em">′</mo></msup><mo stretchy="false">(</mo><mi>x</mi><mo
+    stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">f'(x)</annotation></semantics></math>f′(x).
+    The next sections discuss these two in a reinforcement learning example. For more
+    details see [Gradient Estimation Using Stochastic Computation Graphs](https://arxiv.org/abs/1506.05254)
+    .
+  prefs: []
+  type: TYPE_NORMAL
+- en: Score function
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'When the probability density function is differentiable with respect to its
+    parameters, we only need `sample()` and `log_prob()` to implement REINFORCE:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: <math display="block"><semantics><mrow><mi mathvariant="normal">Δ</mi><mi>θ</mi><mo>=</mo><mi>α</mi><mi>r</mi><mfrac><mrow><mi
+    mathvariant="normal">∂</mi><mi>log</mi><mo>⁡</mo><mi>p</mi><mo stretchy="false">(</mo><mi>a</mi><mi
+    mathvariant="normal">∣</mi><msup><mi>π</mi><mi>θ</mi></msup><mo stretchy="false">(</mo><mi>s</mi><mo
+    stretchy="false">)</mo><mo stretchy="false">)</mo></mrow><mrow><mi mathvariant="normal">∂</mi><mi>θ</mi></mrow></mfrac></mrow><annotation
+    encoding="application/x-tex">\Delta\theta = \alpha r \frac{\partial\log p(a|\pi^\theta(s))}{\partial\theta}</annotation></semantics></math>Δθ=αr∂θ∂logp(a∣πθ(s))​
+  prefs: []
+  type: TYPE_NORMAL
+- en: where <math><semantics><mrow><mi>θ</mi></mrow><annotation encoding="application/x-tex">\theta</annotation></semantics></math>θ
+    are the parameters, <math><semantics><mrow><mi>α</mi></mrow><annotation encoding="application/x-tex">\alpha</annotation></semantics></math>α
+    is the learning rate, <math><semantics><mrow><mi>r</mi></mrow><annotation encoding="application/x-tex">r</annotation></semantics></math>r
+    is the reward and <math><semantics><mrow><mi>p</mi><mo stretchy="false">(</mo><mi>a</mi><mi
+    mathvariant="normal">∣</mi><msup><mi>π</mi><mi>θ</mi></msup><mo stretchy="false">(</mo><mi>s</mi><mo
+    stretchy="false">)</mo><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">p(a|\pi^\theta(s))</annotation></semantics></math>p(a∣πθ(s))
+    is the probability of taking action <math><semantics><mrow><mi>a</mi></mrow><annotation
+    encoding="application/x-tex">a</annotation></semantics></math>a in state <math><semantics><mrow><mi>s</mi></mrow><annotation
+    encoding="application/x-tex">s</annotation></semantics></math>s given policy <math><semantics><mrow><msup><mi>π</mi><mi>θ</mi></msup></mrow><annotation
+    encoding="application/x-tex">\pi^\theta</annotation></semantics></math>πθ.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In practice we would sample an action from the output of a network, apply this
+    action in an environment, and then use `log_prob` to construct an equivalent loss
+    function. Note that we use a negative because optimizers use gradient descent,
+    whilst the rule above assumes gradient ascent. With a categorical policy, the
+    code for implementing REINFORCE would be as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Pathwise derivative
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'The other way to implement these stochastic/policy gradients would be to use
+    the reparameterization trick from the `rsample()` method, where the parameterized
+    random variable can be constructed via a parameterized deterministic function
+    of a parameter-free random variable. The reparameterized sample therefore becomes
+    differentiable. The code for implementing the pathwise derivative would be as
+    follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Distribution
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`object`](https://docs.python.org/3/library/functions.html#object "(in
+    Python v3.12)")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Distribution is the abstract base class for probability distributions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns a dictionary from argument names to [`Constraint`](#torch.distributions.constraints.Constraint
+    "torch.distributions.constraints.Constraint") objects that should be satisfied
+    by each argument of this distribution. Args that are not tensors need not appear
+    in this dict.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns the shape over which parameters are batched.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns the cumulative density/mass function evaluated at value.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**value** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) –'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*Tensor*](tensors.html#torch.Tensor "torch.Tensor")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns entropy of distribution, batched over batch_shape.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tensor of shape batch_shape.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*Tensor*](tensors.html#torch.Tensor "torch.Tensor")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns tensor containing all values supported by a discrete distribution. The
+    result will enumerate over dimension 0, so the shape of the result will be (cardinality,)
+    + batch_shape + event_shape (where event_shape = () for univariate distributions).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that this enumerates over all batched tensors in lock-step [[0, 0], [1,
+    1], …]. With expand=False, enumeration happens along dim 0, but with the remaining
+    batch dimensions being singleton dimensions, [[0], [1], ...
+  prefs: []
+  type: TYPE_NORMAL
+- en: To iterate over the full Cartesian product use itertools.product(m.enumerate_support()).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**expand** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")) – whether to expand the support over the batch dims to match
+    the distribution’s batch_shape.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tensor iterating over dimension 0.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*Tensor*](tensors.html#torch.Tensor "torch.Tensor")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns the shape of a single sample (without batching).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns a new distribution instance (or populates an existing instance provided
+    by a derived class) with batch dimensions expanded to batch_shape. This method
+    calls [`expand`](generated/torch.Tensor.expand.html#torch.Tensor.expand "torch.Tensor.expand")
+    on the distribution’s parameters. As such, this does not allocate new memory for
+    the expanded distribution instance. Additionally, this does not repeat any args
+    checking or parameter broadcasting in __init__.py, when an instance is first created.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**batch_shape** (*torch.Size*) – the desired expanded size.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**_instance** – new instance provided by subclasses that need to override .expand.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: New distribution instance with batch dimensions expanded to batch_size.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns the inverse cumulative density/mass function evaluated at value.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**value** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) –'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*Tensor*](tensors.html#torch.Tensor "torch.Tensor")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns the log of the probability density/mass function evaluated at value.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**value** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) –'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*Tensor*](tensors.html#torch.Tensor "torch.Tensor")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns the mean of the distribution.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns the mode of the distribution.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns perplexity of distribution, batched over batch_shape.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tensor of shape batch_shape.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*Tensor*](tensors.html#torch.Tensor "torch.Tensor")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: Generates a sample_shape shaped reparameterized sample or sample_shape shaped
+    batch of reparameterized samples if the distribution parameters are batched.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*Tensor*](tensors.html#torch.Tensor "torch.Tensor")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: Generates a sample_shape shaped sample or sample_shape shaped batch of samples
+    if the distribution parameters are batched.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*Tensor*](tensors.html#torch.Tensor "torch.Tensor")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: Generates n samples or n batches of samples if the distribution parameters are
+    batched.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*Tensor*](tensors.html#torch.Tensor "torch.Tensor")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: Sets whether validation is enabled or disabled.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The default behavior mimics Python’s `assert` statement: validation is on by
+    default, but is disabled if Python is run in optimized mode (via `python -O`).
+    Validation may be expensive, so you may want to disable it once a model is working.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**value** ([*bool*](https://docs.python.org/3/library/functions.html#bool "(in
+    Python v3.12)")) – Whether to enable validation.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns the standard deviation of the distribution.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns a [`Constraint`](#torch.distributions.constraints.Constraint "torch.distributions.constraints.Constraint")
+    object representing this distribution’s support.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns the variance of the distribution.
+  prefs: []
+  type: TYPE_NORMAL
+- en: ExponentialFamily
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`Distribution`](#torch.distributions.distribution.Distribution "torch.distributions.distribution.Distribution")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: ExponentialFamily is the abstract base class for probability distributions belonging
+    to an exponential family, whose probability mass/density function has the form
+    is defined below
+  prefs: []
+  type: TYPE_NORMAL
+- en: <math display="block"><semantics><mrow><msub><mi>p</mi><mi>F</mi></msub><mo
+    stretchy="false">(</mo><mi>x</mi><mo separator="true">;</mo><mi>θ</mi><mo stretchy="false">)</mo><mo>=</mo><mi>exp</mi><mo>⁡</mo><mo
+    stretchy="false">(</mo><mo stretchy="false">⟨</mo><mi>t</mi><mo stretchy="false">(</mo><mi>x</mi><mo
+    stretchy="false">)</mo><mo separator="true">,</mo><mi>θ</mi><mo stretchy="false">⟩</mo><mo>−</mo><mi>F</mi><mo
+    stretchy="false">(</mo><mi>θ</mi><mo stretchy="false">)</mo><mo>+</mo><mi>k</mi><mo
+    stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><mo stretchy="false">)</mo></mrow><annotation
+    encoding="application/x-tex">p_{F}(x; \theta) = \exp(\langle t(x), \theta\rangle
+    - F(\theta) + k(x))</annotation></semantics></math>pF​(x;θ)=exp(⟨t(x),θ⟩−F(θ)+k(x))
+  prefs: []
+  type: TYPE_NORMAL
+- en: where <math><semantics><mrow><mi>θ</mi></mrow><annotation encoding="application/x-tex">\theta</annotation></semantics></math>θ
+    denotes the natural parameters, <math><semantics><mrow><mi>t</mi><mo stretchy="false">(</mo><mi>x</mi><mo
+    stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">t(x)</annotation></semantics></math>t(x)
+    denotes the sufficient statistic, <math><semantics><mrow><mi>F</mi><mo stretchy="false">(</mo><mi>θ</mi><mo
+    stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">F(\theta)</annotation></semantics></math>F(θ)
+    is the log normalizer function for a given family and <math><semantics><mrow><mi>k</mi><mo
+    stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo></mrow><annotation
+    encoding="application/x-tex">k(x)</annotation></semantics></math>k(x) is the carrier
+    measure.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'This class is an intermediary between the Distribution class and distributions
+    which belong to an exponential family mainly to check the correctness of the .entropy()
+    and analytic KL divergence methods. We use this class to compute the entropy and
+    KL divergence using the AD framework and Bregman divergences (courtesy of: Frank
+    Nielsen and Richard Nock, Entropies and Cross-entropies of Exponential Families).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: Method to compute the entropy using Bregman divergence of the log normalizer.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Bernoulli
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`ExponentialFamily`](#torch.distributions.exp_family.ExponentialFamily
+    "torch.distributions.exp_family.ExponentialFamily")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Creates a Bernoulli distribution parameterized by [`probs`](#torch.distributions.bernoulli.Bernoulli.probs
+    "torch.distributions.bernoulli.Bernoulli.probs") or [`logits`](#torch.distributions.bernoulli.Bernoulli.logits
+    "torch.distributions.bernoulli.Bernoulli.logits") (but not both).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Samples are binary (0 or 1). They take the value 1 with probability p and 0
+    with probability 1 - p.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**probs** (*Number**,* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor"))
+    – the probability of sampling 1'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**logits** (*Number**,* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor"))
+    – the log-odds of sampling 1'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE26]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE27]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE28]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE29]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE30]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE31]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE32]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE33]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE34]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE35]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE36]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE37]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE38]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE39]'
+  prefs: []
+  type: TYPE_PRE
+- en: Beta
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE40]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`ExponentialFamily`](#torch.distributions.exp_family.ExponentialFamily
+    "torch.distributions.exp_family.ExponentialFamily")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Beta distribution parameterized by [`concentration1`](#torch.distributions.beta.Beta.concentration1
+    "torch.distributions.beta.Beta.concentration1") and [`concentration0`](#torch.distributions.beta.Beta.concentration0
+    "torch.distributions.beta.Beta.concentration0").
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE41]'
+  prefs: []
+  type: TYPE_PRE
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**concentration1** ([*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)") *or* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor"))
+    – 1st concentration parameter of the distribution (often referred to as alpha)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**concentration0** ([*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)") *or* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor"))
+    – 2nd concentration parameter of the distribution (often referred to as beta)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE42]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE43]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE44]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE45]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE46]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE47]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE48]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE49]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE50]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE51]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE52]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE53]'
+  prefs: []
+  type: TYPE_PRE
+- en: Binomial
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE54]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`Distribution`](#torch.distributions.distribution.Distribution "torch.distributions.distribution.Distribution")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Creates a Binomial distribution parameterized by `total_count` and either [`probs`](#torch.distributions.binomial.Binomial.probs
+    "torch.distributions.binomial.Binomial.probs") or [`logits`](#torch.distributions.binomial.Binomial.logits
+    "torch.distributions.binomial.Binomial.logits") (but not both). `total_count`
+    must be broadcastable with [`probs`](#torch.distributions.binomial.Binomial.probs
+    "torch.distributions.binomial.Binomial.probs")/[`logits`](#torch.distributions.binomial.Binomial.logits
+    "torch.distributions.binomial.Binomial.logits").
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE55]'
+  prefs: []
+  type: TYPE_PRE
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**total_count** ([*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)") *or* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor"))
+    – number of Bernoulli trials'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**probs** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – Event probabilities'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**logits** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – Event log-odds'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE56]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE57]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE58]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE59]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE60]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE61]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE62]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE63]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE64]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE65]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE66]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE67]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE68]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE69]'
+  prefs: []
+  type: TYPE_PRE
+- en: Categorical
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE70]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`Distribution`](#torch.distributions.distribution.Distribution "torch.distributions.distribution.Distribution")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Creates a categorical distribution parameterized by either [`probs`](#torch.distributions.categorical.Categorical.probs
+    "torch.distributions.categorical.Categorical.probs") or [`logits`](#torch.distributions.categorical.Categorical.logits
+    "torch.distributions.categorical.Categorical.logits") (but not both).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: It is equivalent to the distribution that [`torch.multinomial()`](generated/torch.multinomial.html#torch.multinomial
+    "torch.multinomial") samples from.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Samples are integers from <math><semantics><mrow><mo stretchy="false">{</mo><mn>0</mn><mo
+    separator="true">,</mo><mo>…</mo><mo separator="true">,</mo><mi>K</mi><mo>−</mo><mn>1</mn><mo
+    stretchy="false">}</mo></mrow><annotation encoding="application/x-tex">\{0, \ldots,
+    K-1\}</annotation></semantics></math>{0,…,K−1} where K is `probs.size(-1)`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: If probs is 1-dimensional with length-K, each element is the relative probability
+    of sampling the class at that index.
+  prefs: []
+  type: TYPE_NORMAL
+- en: If probs is N-dimensional, the first N-1 dimensions are treated as a batch of
+    relative probability vectors.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: The probs argument must be non-negative, finite and have a non-zero sum, and
+    it will be normalized to sum to 1 along the last dimension. [`probs`](#torch.distributions.categorical.Categorical.probs
+    "torch.distributions.categorical.Categorical.probs") will return this normalized
+    value. The logits argument will be interpreted as unnormalized log probabilities
+    and can therefore be any real number. It will likewise be normalized so that the
+    resulting probabilities sum to 1 along the last dimension. [`logits`](#torch.distributions.categorical.Categorical.logits
+    "torch.distributions.categorical.Categorical.logits") will return this normalized
+    value.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'See also: [`torch.multinomial()`](generated/torch.multinomial.html#torch.multinomial
+    "torch.multinomial")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE71]'
+  prefs: []
+  type: TYPE_PRE
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**probs** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – event probabilities'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**logits** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – event log
+    probabilities (unnormalized)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE72]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE73]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE74]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE75]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE76]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE77]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE78]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE79]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE80]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE81]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE82]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE83]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE84]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE85]'
+  prefs: []
+  type: TYPE_PRE
+- en: Cauchy
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE86]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`Distribution`](#torch.distributions.distribution.Distribution "torch.distributions.distribution.Distribution")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Samples from a Cauchy (Lorentz) distribution. The distribution of the ratio
+    of independent normally distributed random variables with means 0 follows a Cauchy
+    distribution.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE87]'
+  prefs: []
+  type: TYPE_PRE
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**loc** ([*float*](https://docs.python.org/3/library/functions.html#float "(in
+    Python v3.12)") *or* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – mode
+    or median of the distribution.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**scale** ([*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)") *or* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor"))
+    – half width at half maximum.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE88]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE89]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE90]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE91]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE92]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE93]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE94]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE95]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE96]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE97]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE98]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE99]'
+  prefs: []
+  type: TYPE_PRE
+- en: Chi2
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE100]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`Gamma`](#torch.distributions.gamma.Gamma "torch.distributions.gamma.Gamma")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Creates a Chi-squared distribution parameterized by shape parameter [`df`](#torch.distributions.chi2.Chi2.df
+    "torch.distributions.chi2.Chi2.df"). This is exactly equivalent to `Gamma(alpha=0.5*df,
+    beta=0.5)`
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE101]'
+  prefs: []
+  type: TYPE_PRE
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**df** ([*float*](https://docs.python.org/3/library/functions.html#float "(in
+    Python v3.12)") *or* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – shape
+    parameter of the distribution'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE102]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE103]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE104]'
+  prefs: []
+  type: TYPE_PRE
+- en: ContinuousBernoulli
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE105]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`ExponentialFamily`](#torch.distributions.exp_family.ExponentialFamily
+    "torch.distributions.exp_family.ExponentialFamily")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Creates a continuous Bernoulli distribution parameterized by [`probs`](#torch.distributions.continuous_bernoulli.ContinuousBernoulli.probs
+    "torch.distributions.continuous_bernoulli.ContinuousBernoulli.probs") or [`logits`](#torch.distributions.continuous_bernoulli.ContinuousBernoulli.logits
+    "torch.distributions.continuous_bernoulli.ContinuousBernoulli.logits") (but not
+    both).
+  prefs: []
+  type: TYPE_NORMAL
+- en: The distribution is supported in [0, 1] and parameterized by ‘probs’ (in (0,1))
+    or ‘logits’ (real-valued). Note that, unlike the Bernoulli, ‘probs’ does not correspond
+    to a probability and ‘logits’ does not correspond to log-odds, but the same names
+    are used due to the similarity with the Bernoulli. See [1] for more details.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE106]'
+  prefs: []
+  type: TYPE_PRE
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**probs** (*Number**,* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor"))
+    – (0,1) valued parameters'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**logits** (*Number**,* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor"))
+    – real valued parameters whose sigmoid matches ‘probs’'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[1] The continuous Bernoulli: fixing a pervasive error in variational autoencoders,
+    Loaiza-Ganem G and Cunningham JP, NeurIPS 2019. [https://arxiv.org/abs/1907.06845](https://arxiv.org/abs/1907.06845)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE107]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE108]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE109]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE110]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE111]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE112]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE113]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE114]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE115]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE116]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE117]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE118]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE119]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE120]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE121]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE122]'
+  prefs: []
+  type: TYPE_PRE
+- en: Dirichlet
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE123]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`ExponentialFamily`](#torch.distributions.exp_family.ExponentialFamily
+    "torch.distributions.exp_family.ExponentialFamily")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Creates a Dirichlet distribution parameterized by concentration `concentration`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE124]'
+  prefs: []
+  type: TYPE_PRE
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**concentration** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) –
+    concentration parameter of the distribution (often referred to as alpha)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE125]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE126]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE127]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE128]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE129]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE130]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE131]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE132]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE133]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE134]'
+  prefs: []
+  type: TYPE_PRE
+- en: Exponential
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE135]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`ExponentialFamily`](#torch.distributions.exp_family.ExponentialFamily
+    "torch.distributions.exp_family.ExponentialFamily")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Creates a Exponential distribution parameterized by `rate`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE136]'
+  prefs: []
+  type: TYPE_PRE
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**rate** ([*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)") *or* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor"))
+    – rate = 1 / scale of the distribution'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE137]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE138]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE139]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE140]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE141]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE142]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE143]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE144]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE145]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE146]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE147]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE148]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE149]'
+  prefs: []
+  type: TYPE_PRE
+- en: FisherSnedecor
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE150]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`Distribution`](#torch.distributions.distribution.Distribution "torch.distributions.distribution.Distribution")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Creates a Fisher-Snedecor distribution parameterized by `df1` and `df2`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE151]'
+  prefs: []
+  type: TYPE_PRE
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**df1** ([*float*](https://docs.python.org/3/library/functions.html#float "(in
+    Python v3.12)") *or* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – degrees
+    of freedom parameter 1'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**df2** ([*float*](https://docs.python.org/3/library/functions.html#float "(in
+    Python v3.12)") *or* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – degrees
+    of freedom parameter 2'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE152]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE153]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE154]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE155]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE156]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE157]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE158]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE159]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE160]'
+  prefs: []
+  type: TYPE_PRE
+- en: Gamma
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE161]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`ExponentialFamily`](#torch.distributions.exp_family.ExponentialFamily
+    "torch.distributions.exp_family.ExponentialFamily")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Creates a Gamma distribution parameterized by shape `concentration` and `rate`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE162]'
+  prefs: []
+  type: TYPE_PRE
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**concentration** ([*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)") *or* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor"))
+    – shape parameter of the distribution (often referred to as alpha)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**rate** ([*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)") *or* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor"))
+    – rate = 1 / scale of the distribution (often referred to as beta)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE163]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE164]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE165]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE166]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE167]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE168]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE169]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE170]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE171]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE172]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE173]'
+  prefs: []
+  type: TYPE_PRE
+- en: Geometric
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE174]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`Distribution`](#torch.distributions.distribution.Distribution "torch.distributions.distribution.Distribution")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Creates a Geometric distribution parameterized by [`probs`](#torch.distributions.geometric.Geometric.probs
+    "torch.distributions.geometric.Geometric.probs"), where [`probs`](#torch.distributions.geometric.Geometric.probs
+    "torch.distributions.geometric.Geometric.probs") is the probability of success
+    of Bernoulli trials.
+  prefs: []
+  type: TYPE_NORMAL
+- en: <math display="block"><semantics><mrow><mi>P</mi><mo stretchy="false">(</mo><mi>X</mi><mo>=</mo><mi>k</mi><mo
+    stretchy="false">)</mo><mo>=</mo><mo stretchy="false">(</mo><mn>1</mn><mo>−</mo><mi>p</mi><msup><mo
+    stretchy="false">)</mo><mi>k</mi></msup><mi>p</mi><mo separator="true">,</mo><mi>k</mi><mo>=</mo><mn>0</mn><mo
+    separator="true">,</mo><mn>1</mn><mo separator="true">,</mo><mi mathvariant="normal">.</mi><mi
+    mathvariant="normal">.</mi><mi mathvariant="normal">.</mi></mrow><annotation encoding="application/x-tex">P(X=k)
+    = (1-p)^{k} p, k = 0, 1, ...</annotation></semantics></math>P(X=k)=(1−p)kp,k=0,1,...
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`torch.distributions.geometric.Geometric()`](#torch.distributions.geometric.Geometric
+    "torch.distributions.geometric.Geometric") <math><semantics><mrow><mo stretchy="false">(</mo><mi>k</mi><mo>+</mo><mn>1</mn><mo
+    stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">(k+1)</annotation></semantics></math>(k+1)-th
+    trial is the first success hence draws samples in <math><semantics><mrow><mo stretchy="false">{</mo><mn>0</mn><mo
+    separator="true">,</mo><mn>1</mn><mo separator="true">,</mo><mo>…</mo><mo stretchy="false">}</mo></mrow><annotation
+    encoding="application/x-tex">\{0, 1, \ldots\}</annotation></semantics></math>{0,1,…},
+    whereas [`torch.Tensor.geometric_()`](generated/torch.Tensor.geometric_.html#torch.Tensor.geometric_
+    "torch.Tensor.geometric_") k-th trial is the first success hence draws samples
+    in <math><semantics><mrow><mo stretchy="false">{</mo><mn>1</mn><mo separator="true">,</mo><mn>2</mn><mo
+    separator="true">,</mo><mo>…</mo><mo stretchy="false">}</mo></mrow><annotation
+    encoding="application/x-tex">\{1, 2, \ldots\}</annotation></semantics></math>{1,2,…}.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE175]'
+  prefs: []
+  type: TYPE_PRE
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**probs** (*Number**,* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor"))
+    – the probability of sampling 1. Must be in range (0, 1]'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**logits** (*Number**,* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor"))
+    – the log-odds of sampling 1.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE176]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE177]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE178]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE179]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE180]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE181]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE182]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE183]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE184]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE185]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE186]'
+  prefs: []
+  type: TYPE_PRE
+- en: Gumbel
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE187]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`TransformedDistribution`](#torch.distributions.transformed_distribution.TransformedDistribution
+    "torch.distributions.transformed_distribution.TransformedDistribution")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Samples from a Gumbel Distribution.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Examples:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE188]'
+  prefs: []
+  type: TYPE_PRE
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**loc** ([*float*](https://docs.python.org/3/library/functions.html#float "(in
+    Python v3.12)") *or* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – Location
+    parameter of the distribution'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**scale** ([*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)") *or* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor"))
+    – Scale parameter of the distribution'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE189]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE190]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE191]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE192]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE193]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE194]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE195]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE196]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE197]'
+  prefs: []
+  type: TYPE_PRE
+- en: HalfCauchy
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE198]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`TransformedDistribution`](#torch.distributions.transformed_distribution.TransformedDistribution
+    "torch.distributions.transformed_distribution.TransformedDistribution")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Creates a half-Cauchy distribution parameterized by scale where:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE199]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE200]'
+  prefs: []
+  type: TYPE_PRE
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**scale** ([*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)") *or* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor"))
+    – scale of the full Cauchy distribution'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE201]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE202]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE203]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE204]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE205]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE206]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE207]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE208]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE209]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE210]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE211]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE212]'
+  prefs: []
+  type: TYPE_PRE
+- en: HalfNormal
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE213]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`TransformedDistribution`](#torch.distributions.transformed_distribution.TransformedDistribution
+    "torch.distributions.transformed_distribution.TransformedDistribution")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Creates a half-normal distribution parameterized by scale where:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE214]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE215]'
+  prefs: []
+  type: TYPE_PRE
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**scale** ([*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)") *or* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor"))
+    – scale of the full Normal distribution'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE216]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE217]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE218]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE219]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE220]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE221]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE222]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE223]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE224]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE225]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE226]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE227]'
+  prefs: []
+  type: TYPE_PRE
+- en: Independent
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE228]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`Distribution`](#torch.distributions.distribution.Distribution "torch.distributions.distribution.Distribution")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Reinterprets some of the batch dims of a distribution as event dims.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'This is mainly useful for changing the shape of the result of [`log_prob()`](#torch.distributions.independent.Independent.log_prob
+    "torch.distributions.independent.Independent.log_prob"). For example to create
+    a diagonal Normal distribution with the same shape as a Multivariate Normal distribution
+    (so they are interchangeable), you can:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE229]'
+  prefs: []
+  type: TYPE_PRE
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**base_distribution** ([*torch.distributions.distribution.Distribution*](#torch.distributions.distribution.Distribution
+    "torch.distributions.distribution.Distribution")) – a base distribution'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**reinterpreted_batch_ndims** ([*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")) – the number of batch dims to reinterpret as event dims'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE230]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE231]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE232]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE233]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE234]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE235]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE236]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE237]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE238]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE239]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE240]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE241]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE242]'
+  prefs: []
+  type: TYPE_PRE
+- en: InverseGamma
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE243]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`TransformedDistribution`](#torch.distributions.transformed_distribution.TransformedDistribution
+    "torch.distributions.transformed_distribution.TransformedDistribution")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Creates an inverse gamma distribution parameterized by [`concentration`](#torch.distributions.inverse_gamma.InverseGamma.concentration
+    "torch.distributions.inverse_gamma.InverseGamma.concentration") and [`rate`](#torch.distributions.inverse_gamma.InverseGamma.rate
+    "torch.distributions.inverse_gamma.InverseGamma.rate") where:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE244]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE245]'
+  prefs: []
+  type: TYPE_PRE
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**concentration** ([*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)") *or* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor"))
+    – shape parameter of the distribution (often referred to as alpha)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**rate** ([*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)") *or* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor"))
+    – rate = 1 / scale of the distribution (often referred to as beta)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE246]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE247]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE248]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE249]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE250]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE251]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE252]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE253]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE254]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE255]'
+  prefs: []
+  type: TYPE_PRE
+- en: Kumaraswamy
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE256]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`TransformedDistribution`](#torch.distributions.transformed_distribution.TransformedDistribution
+    "torch.distributions.transformed_distribution.TransformedDistribution")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Samples from a Kumaraswamy distribution.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE257]'
+  prefs: []
+  type: TYPE_PRE
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**concentration1** ([*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)") *or* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor"))
+    – 1st concentration parameter of the distribution (often referred to as alpha)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**concentration0** ([*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)") *or* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor"))
+    – 2nd concentration parameter of the distribution (often referred to as beta)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE258]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE259]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE260]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE261]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE262]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE263]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE264]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE265]'
+  prefs: []
+  type: TYPE_PRE
+- en: LKJCholesky
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE266]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`Distribution`](#torch.distributions.distribution.Distribution "torch.distributions.distribution.Distribution")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'LKJ distribution for lower Cholesky factor of correlation matrices. The distribution
+    is controlled by `concentration` parameter <math><semantics><mrow><mi>η</mi></mrow><annotation
+    encoding="application/x-tex">\eta</annotation></semantics></math>η to make the
+    probability of the correlation matrix <math><semantics><mrow><mi>M</mi></mrow><annotation
+    encoding="application/x-tex">M</annotation></semantics></math>M generated from
+    a Cholesky factor proportional to <math><semantics><mrow><mi>det</mi><mo>⁡</mo><mo
+    stretchy="false">(</mo><mi>M</mi><msup><mo stretchy="false">)</mo><mrow><mi>η</mi><mo>−</mo><mn>1</mn></mrow></msup></mrow><annotation
+    encoding="application/x-tex">\det(M)^{\eta - 1}</annotation></semantics></math>det(M)η−1.
+    Because of that, when `concentration == 1`, we have a uniform distribution over
+    Cholesky factors of correlation matrices:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE267]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note that this distribution samples the Cholesky factor of correlation matrices
+    and not the correlation matrices themselves and thereby differs slightly from
+    the derivations in [1] for the LKJCorr distribution. For sampling, this uses the
+    Onion method from [1] Section 3.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE268]'
+  prefs: []
+  type: TYPE_PRE
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**dimension** (*dim*) – dimension of the matrices'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**concentration** ([*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)") *or* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor"))
+    – concentration/shape parameter of the distribution (often referred to as eta)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**References**'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[1] Generating random correlation matrices based on vines and extended onion
+    method (2009), Daniel Lewandowski, Dorota Kurowicka, Harry Joe. Journal of Multivariate
+    Analysis. 100\. 10.1016/j.jmva.2009.04.008'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE269]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE270]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE271]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE272]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE273]'
+  prefs: []
+  type: TYPE_PRE
+- en: Laplace
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE274]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`Distribution`](#torch.distributions.distribution.Distribution "torch.distributions.distribution.Distribution")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Creates a Laplace distribution parameterized by `loc` and `scale`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE275]'
+  prefs: []
+  type: TYPE_PRE
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**loc** ([*float*](https://docs.python.org/3/library/functions.html#float "(in
+    Python v3.12)") *or* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – mean
+    of the distribution'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**scale** ([*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)") *or* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor"))
+    – scale of the distribution'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE276]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE277]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE278]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE279]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE280]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE281]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE282]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE283]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE284]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE285]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE286]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE287]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE288]'
+  prefs: []
+  type: TYPE_PRE
+- en: LogNormal
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE289]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`TransformedDistribution`](#torch.distributions.transformed_distribution.TransformedDistribution
+    "torch.distributions.transformed_distribution.TransformedDistribution")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Creates a log-normal distribution parameterized by [`loc`](#torch.distributions.log_normal.LogNormal.loc
+    "torch.distributions.log_normal.LogNormal.loc") and [`scale`](#torch.distributions.log_normal.LogNormal.scale
+    "torch.distributions.log_normal.LogNormal.scale") where:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE290]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE291]'
+  prefs: []
+  type: TYPE_PRE
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**loc** ([*float*](https://docs.python.org/3/library/functions.html#float "(in
+    Python v3.12)") *or* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – mean
+    of log of distribution'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**scale** ([*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)") *or* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor"))
+    – standard deviation of log of the distribution'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE292]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE293]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE294]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE295]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE296]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE297]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE298]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE299]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE300]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE301]'
+  prefs: []
+  type: TYPE_PRE
+- en: LowRankMultivariateNormal
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE302]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`Distribution`](#torch.distributions.distribution.Distribution "torch.distributions.distribution.Distribution")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Creates a multivariate normal distribution with covariance matrix having a
+    low-rank form parameterized by `cov_factor` and `cov_diag`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE303]'
+  prefs: []
+  type: TYPE_PRE
+- en: Example
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE304]'
+  prefs: []
+  type: TYPE_PRE
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**loc** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – mean of the
+    distribution with shape batch_shape + event_shape'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**cov_factor** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – factor
+    part of low-rank form of covariance matrix with shape batch_shape + event_shape
+    + (rank,)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**cov_diag** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – diagonal
+    part of low-rank form of covariance matrix with shape batch_shape + event_shape'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The computation for determinant and inverse of covariance matrix is avoided
+    when cov_factor.shape[1] << cov_factor.shape[0] thanks to [Woodbury matrix identity](https://en.wikipedia.org/wiki/Woodbury_matrix_identity)
+    and [matrix determinant lemma](https://en.wikipedia.org/wiki/Matrix_determinant_lemma).
+    Thanks to these formulas, we just need to compute the determinant and inverse
+    of the small size “capacitance” matrix:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE305]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE306]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE307]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE308]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE309]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE310]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE311]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE312]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE313]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE314]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE315]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE316]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE317]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE318]'
+  prefs: []
+  type: TYPE_PRE
+- en: MixtureSameFamily
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE319]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`Distribution`](#torch.distributions.distribution.Distribution "torch.distributions.distribution.Distribution")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The MixtureSameFamily distribution implements a (batch of) mixture distribution
+    where all component are from different parameterizations of the same distribution
+    type. It is parameterized by a Categorical “selecting distribution” (over k component)
+    and a component distribution, i.e., a Distribution with a rightmost batch shape
+    (equal to [k]) which indexes each (batch of) component.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Examples:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE320]'
+  prefs: []
+  type: TYPE_PRE
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**mixture_distribution** – torch.distributions.Categorical-like instance. Manages
+    the probability of selecting component. The number of categories must match the
+    rightmost batch dimension of the component_distribution. Must have either scalar
+    batch_shape or batch_shape matching component_distribution.batch_shape[:-1]'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**component_distribution** – torch.distributions.Distribution-like instance.
+    Right-most batch dimension indexes component.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE321]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE322]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE323]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE324]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE325]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE326]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE327]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE328]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE329]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE330]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE331]'
+  prefs: []
+  type: TYPE_PRE
+- en: Multinomial
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE332]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`Distribution`](#torch.distributions.distribution.Distribution "torch.distributions.distribution.Distribution")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Creates a Multinomial distribution parameterized by [`total_count`](#torch.distributions.multinomial.Multinomial.total_count
+    "torch.distributions.multinomial.Multinomial.total_count") and either [`probs`](#torch.distributions.multinomial.Multinomial.probs
+    "torch.distributions.multinomial.Multinomial.probs") or [`logits`](#torch.distributions.multinomial.Multinomial.logits
+    "torch.distributions.multinomial.Multinomial.logits") (but not both). The innermost
+    dimension of [`probs`](#torch.distributions.multinomial.Multinomial.probs "torch.distributions.multinomial.Multinomial.probs")
+    indexes over categories. All other dimensions index over batches.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that [`total_count`](#torch.distributions.multinomial.Multinomial.total_count
+    "torch.distributions.multinomial.Multinomial.total_count") need not be specified
+    if only [`log_prob()`](#torch.distributions.multinomial.Multinomial.log_prob "torch.distributions.multinomial.Multinomial.log_prob")
+    is called (see example below)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: The probs argument must be non-negative, finite and have a non-zero sum, and
+    it will be normalized to sum to 1 along the last dimension. [`probs`](#torch.distributions.multinomial.Multinomial.probs
+    "torch.distributions.multinomial.Multinomial.probs") will return this normalized
+    value. The logits argument will be interpreted as unnormalized log probabilities
+    and can therefore be any real number. It will likewise be normalized so that the
+    resulting probabilities sum to 1 along the last dimension. [`logits`](#torch.distributions.multinomial.Multinomial.logits
+    "torch.distributions.multinomial.Multinomial.logits") will return this normalized
+    value.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`sample()`](#torch.distributions.multinomial.Multinomial.sample "torch.distributions.multinomial.Multinomial.sample")
+    requires a single shared total_count for all parameters and samples.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[`log_prob()`](#torch.distributions.multinomial.Multinomial.log_prob "torch.distributions.multinomial.Multinomial.log_prob")
+    allows different total_count for each parameter and sample.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE333]'
+  prefs: []
+  type: TYPE_PRE
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**total_count** ([*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")) – number of trials'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**probs** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – event probabilities'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**logits** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – event log
+    probabilities (unnormalized)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE334]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE335]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE336]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE337]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE338]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE339]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE340]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE341]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE342]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE343]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE344]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE345]'
+  prefs: []
+  type: TYPE_PRE
+- en: MultivariateNormal
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE346]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`Distribution`](#torch.distributions.distribution.Distribution "torch.distributions.distribution.Distribution")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Creates a multivariate normal (also called Gaussian) distribution parameterized
+    by a mean vector and a covariance matrix.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The multivariate normal distribution can be parameterized either in terms of
+    a positive definite covariance matrix <math><semantics><mrow><mi mathvariant="bold">Σ</mi></mrow><annotation
+    encoding="application/x-tex">\mathbf{\Sigma}</annotation></semantics></math>Σ
+    or a positive definite precision matrix <math><semantics><mrow><msup><mi mathvariant="bold">Σ</mi><mrow><mo>−</mo><mn>1</mn></mrow></msup></mrow><annotation
+    encoding="application/x-tex">\mathbf{\Sigma}^{-1}</annotation></semantics></math>Σ−1
+    or a lower-triangular matrix <math><semantics><mrow><mi mathvariant="bold">L</mi></mrow><annotation
+    encoding="application/x-tex">\mathbf{L}</annotation></semantics></math>L with
+    positive-valued diagonal entries, such that <math><semantics><mrow><mi mathvariant="bold">Σ</mi><mo>=</mo><mi
+    mathvariant="bold">L</mi><msup><mi mathvariant="bold">L</mi><mi mathvariant="normal">⊤</mi></msup></mrow><annotation
+    encoding="application/x-tex">\mathbf{\Sigma} = \mathbf{L}\mathbf{L}^\top</annotation></semantics></math>Σ=LL⊤.
+    This triangular matrix can be obtained via e.g. Cholesky decomposition of the
+    covariance.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Example
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE347]'
+  prefs: []
+  type: TYPE_PRE
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**loc** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – mean of the
+    distribution'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**covariance_matrix** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor"))
+    – positive-definite covariance matrix'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**precision_matrix** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor"))
+    – positive-definite precision matrix'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**scale_tril** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – lower-triangular
+    factor of covariance, with positive-valued diagonal'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Only one of [`covariance_matrix`](#torch.distributions.multivariate_normal.MultivariateNormal.covariance_matrix
+    "torch.distributions.multivariate_normal.MultivariateNormal.covariance_matrix")
+    or [`precision_matrix`](#torch.distributions.multivariate_normal.MultivariateNormal.precision_matrix
+    "torch.distributions.multivariate_normal.MultivariateNormal.precision_matrix")
+    or [`scale_tril`](#torch.distributions.multivariate_normal.MultivariateNormal.scale_tril
+    "torch.distributions.multivariate_normal.MultivariateNormal.scale_tril") can be
+    specified.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Using [`scale_tril`](#torch.distributions.multivariate_normal.MultivariateNormal.scale_tril
+    "torch.distributions.multivariate_normal.MultivariateNormal.scale_tril") will
+    be more efficient: all computations internally are based on [`scale_tril`](#torch.distributions.multivariate_normal.MultivariateNormal.scale_tril
+    "torch.distributions.multivariate_normal.MultivariateNormal.scale_tril"). If [`covariance_matrix`](#torch.distributions.multivariate_normal.MultivariateNormal.covariance_matrix
+    "torch.distributions.multivariate_normal.MultivariateNormal.covariance_matrix")
+    or [`precision_matrix`](#torch.distributions.multivariate_normal.MultivariateNormal.precision_matrix
+    "torch.distributions.multivariate_normal.MultivariateNormal.precision_matrix")
+    is passed instead, it is only used to compute the corresponding lower triangular
+    matrices using a Cholesky decomposition.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE348]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE349]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE350]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE351]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE352]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE353]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE354]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE355]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE356]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE357]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE358]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE359]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE360]'
+  prefs: []
+  type: TYPE_PRE
+- en: NegativeBinomial
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE361]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`Distribution`](#torch.distributions.distribution.Distribution "torch.distributions.distribution.Distribution")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Creates a Negative Binomial distribution, i.e. distribution of the number of
+    successful independent and identical Bernoulli trials before `total_count` failures
+    are achieved. The probability of success of each Bernoulli trial is [`probs`](#torch.distributions.negative_binomial.NegativeBinomial.probs
+    "torch.distributions.negative_binomial.NegativeBinomial.probs").
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**total_count** ([*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)") *or* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor"))
+    – non-negative number of negative Bernoulli trials to stop, although the distribution
+    is still valid for real valued count'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**probs** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – Event probabilities
+    of success in the half open interval [0, 1)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**logits** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – Event log-odds
+    for probabilities of success'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE362]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE363]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE364]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE365]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE366]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE367]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE368]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE369]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE370]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE371]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE372]'
+  prefs: []
+  type: TYPE_PRE
+- en: Normal
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE373]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`ExponentialFamily`](#torch.distributions.exp_family.ExponentialFamily
+    "torch.distributions.exp_family.ExponentialFamily")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Creates a normal (also called Gaussian) distribution parameterized by `loc`
+    and `scale`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE374]'
+  prefs: []
+  type: TYPE_PRE
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**loc** ([*float*](https://docs.python.org/3/library/functions.html#float "(in
+    Python v3.12)") *or* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – mean
+    of the distribution (often referred to as mu)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**scale** ([*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)") *or* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor"))
+    – standard deviation of the distribution (often referred to as sigma)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE375]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE376]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE377]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE378]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE379]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE380]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE381]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE382]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE383]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE384]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE385]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE386]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE387]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE388]'
+  prefs: []
+  type: TYPE_PRE
+- en: OneHotCategorical
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE389]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`Distribution`](#torch.distributions.distribution.Distribution "torch.distributions.distribution.Distribution")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Creates a one-hot categorical distribution parameterized by [`probs`](#torch.distributions.one_hot_categorical.OneHotCategorical.probs
+    "torch.distributions.one_hot_categorical.OneHotCategorical.probs") or [`logits`](#torch.distributions.one_hot_categorical.OneHotCategorical.logits
+    "torch.distributions.one_hot_categorical.OneHotCategorical.logits").
+  prefs: []
+  type: TYPE_NORMAL
+- en: Samples are one-hot coded vectors of size `probs.size(-1)`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: The probs argument must be non-negative, finite and have a non-zero sum, and
+    it will be normalized to sum to 1 along the last dimension. [`probs`](#torch.distributions.one_hot_categorical.OneHotCategorical.probs
+    "torch.distributions.one_hot_categorical.OneHotCategorical.probs") will return
+    this normalized value. The logits argument will be interpreted as unnormalized
+    log probabilities and can therefore be any real number. It will likewise be normalized
+    so that the resulting probabilities sum to 1 along the last dimension. [`logits`](#torch.distributions.one_hot_categorical.OneHotCategorical.logits
+    "torch.distributions.one_hot_categorical.OneHotCategorical.logits") will return
+    this normalized value.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'See also: `torch.distributions.Categorical()` for specifications of [`probs`](#torch.distributions.one_hot_categorical.OneHotCategorical.probs
+    "torch.distributions.one_hot_categorical.OneHotCategorical.probs") and [`logits`](#torch.distributions.one_hot_categorical.OneHotCategorical.logits
+    "torch.distributions.one_hot_categorical.OneHotCategorical.logits").'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE390]'
+  prefs: []
+  type: TYPE_PRE
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**probs** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – event probabilities'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**logits** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – event log
+    probabilities (unnormalized)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE391]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE392]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE393]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE394]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE395]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE396]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE397]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE398]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE399]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE400]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE401]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE402]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE403]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE404]'
+  prefs: []
+  type: TYPE_PRE
+- en: Pareto
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE405]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`TransformedDistribution`](#torch.distributions.transformed_distribution.TransformedDistribution
+    "torch.distributions.transformed_distribution.TransformedDistribution")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Samples from a Pareto Type 1 distribution.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE406]'
+  prefs: []
+  type: TYPE_PRE
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**scale** ([*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)") *or* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor"))
+    – Scale parameter of the distribution'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**alpha** ([*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)") *or* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor"))
+    – Shape parameter of the distribution'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE407]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE408]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE409]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE410]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE411]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE412]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE413]'
+  prefs: []
+  type: TYPE_PRE
+- en: Poisson
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE414]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`ExponentialFamily`](#torch.distributions.exp_family.ExponentialFamily
+    "torch.distributions.exp_family.ExponentialFamily")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Creates a Poisson distribution parameterized by `rate`, the rate parameter.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Samples are nonnegative integers, with a pmf given by
+  prefs: []
+  type: TYPE_NORMAL
+- en: <math display="block"><semantics><mrow><msup><mrow><mi mathvariant="normal">r</mi><mi
+    mathvariant="normal">a</mi><mi mathvariant="normal">t</mi><mi mathvariant="normal">e</mi></mrow><mi>k</mi></msup><mfrac><msup><mi>e</mi><mrow><mo>−</mo><mrow><mi
+    mathvariant="normal">r</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">t</mi><mi
+    mathvariant="normal">e</mi></mrow></mrow></msup><mrow><mi>k</mi><mo stretchy="false">!</mo></mrow></mfrac></mrow><annotation
+    encoding="application/x-tex">\mathrm{rate}^k \frac{e^{-\mathrm{rate}}}{k!}</annotation></semantics></math>
+    ratekk!e−rate​
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE415]'
+  prefs: []
+  type: TYPE_PRE
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**rate** (*Number**,* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor"))
+    – the rate parameter'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE416]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE417]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE418]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE419]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE420]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE421]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE422]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE423]'
+  prefs: []
+  type: TYPE_PRE
+- en: RelaxedBernoulli
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE424]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`TransformedDistribution`](#torch.distributions.transformed_distribution.TransformedDistribution
+    "torch.distributions.transformed_distribution.TransformedDistribution")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Creates a RelaxedBernoulli distribution, parametrized by [`temperature`](#torch.distributions.relaxed_bernoulli.RelaxedBernoulli.temperature
+    "torch.distributions.relaxed_bernoulli.RelaxedBernoulli.temperature"), and either
+    [`probs`](#torch.distributions.relaxed_bernoulli.RelaxedBernoulli.probs "torch.distributions.relaxed_bernoulli.RelaxedBernoulli.probs")
+    or [`logits`](#torch.distributions.relaxed_bernoulli.RelaxedBernoulli.logits "torch.distributions.relaxed_bernoulli.RelaxedBernoulli.logits")
+    (but not both). This is a relaxed version of the Bernoulli distribution, so the
+    values are in (0, 1), and has reparametrizable samples.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE425]'
+  prefs: []
+  type: TYPE_PRE
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**temperature** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – relaxation
+    temperature'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**probs** (*Number**,* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor"))
+    – the probability of sampling 1'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**logits** (*Number**,* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor"))
+    – the log-odds of sampling 1'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE426]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE427]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE428]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE429]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE430]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE431]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE432]'
+  prefs: []
+  type: TYPE_PRE
+- en: LogitRelaxedBernoulli
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE433]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`Distribution`](#torch.distributions.distribution.Distribution "torch.distributions.distribution.Distribution")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Creates a LogitRelaxedBernoulli distribution parameterized by [`probs`](#torch.distributions.relaxed_bernoulli.LogitRelaxedBernoulli.probs
+    "torch.distributions.relaxed_bernoulli.LogitRelaxedBernoulli.probs") or [`logits`](#torch.distributions.relaxed_bernoulli.LogitRelaxedBernoulli.logits
+    "torch.distributions.relaxed_bernoulli.LogitRelaxedBernoulli.logits") (but not
+    both), which is the logit of a RelaxedBernoulli distribution.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Samples are logits of values in (0, 1). See [1] for more details.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**temperature** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – relaxation
+    temperature'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**probs** (*Number**,* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor"))
+    – the probability of sampling 1'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**logits** (*Number**,* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor"))
+    – the log-odds of sampling 1'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[1] The Concrete Distribution: A Continuous Relaxation of Discrete Random Variables
+    (Maddison et al, 2017)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[2] Categorical Reparametrization with Gumbel-Softmax (Jang et al, 2017)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE434]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE435]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE436]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE437]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE438]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE439]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE440]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE441]'
+  prefs: []
+  type: TYPE_PRE
+- en: RelaxedOneHotCategorical
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE442]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`TransformedDistribution`](#torch.distributions.transformed_distribution.TransformedDistribution
+    "torch.distributions.transformed_distribution.TransformedDistribution")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Creates a RelaxedOneHotCategorical distribution parametrized by [`temperature`](#torch.distributions.relaxed_categorical.RelaxedOneHotCategorical.temperature
+    "torch.distributions.relaxed_categorical.RelaxedOneHotCategorical.temperature"),
+    and either [`probs`](#torch.distributions.relaxed_categorical.RelaxedOneHotCategorical.probs
+    "torch.distributions.relaxed_categorical.RelaxedOneHotCategorical.probs") or [`logits`](#torch.distributions.relaxed_categorical.RelaxedOneHotCategorical.logits
+    "torch.distributions.relaxed_categorical.RelaxedOneHotCategorical.logits"). This
+    is a relaxed version of the `OneHotCategorical` distribution, so its samples are
+    on simplex, and are reparametrizable.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE443]'
+  prefs: []
+  type: TYPE_PRE
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**temperature** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – relaxation
+    temperature'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**probs** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – event probabilities'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**logits** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – unnormalized
+    log probability for each event'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE444]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE445]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE446]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE447]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE448]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE449]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE450]'
+  prefs: []
+  type: TYPE_PRE
+- en: StudentT
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE451]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`Distribution`](#torch.distributions.distribution.Distribution "torch.distributions.distribution.Distribution")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Creates a Student’s t-distribution parameterized by degree of freedom `df`,
+    mean `loc` and scale `scale`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE452]'
+  prefs: []
+  type: TYPE_PRE
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**df** ([*float*](https://docs.python.org/3/library/functions.html#float "(in
+    Python v3.12)") *or* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – degrees
+    of freedom'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**loc** ([*float*](https://docs.python.org/3/library/functions.html#float "(in
+    Python v3.12)") *or* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – mean
+    of the distribution'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**scale** ([*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)") *or* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor"))
+    – scale of the distribution'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE453]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE454]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE455]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE456]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE457]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE458]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE459]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE460]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE461]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE462]'
+  prefs: []
+  type: TYPE_PRE
+- en: TransformedDistribution
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE463]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`Distribution`](#torch.distributions.distribution.Distribution "torch.distributions.distribution.Distribution")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Extension of the Distribution class, which applies a sequence of Transforms
+    to a base distribution. Let f be the composition of transforms applied:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE464]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note that the `.event_shape` of a [`TransformedDistribution`](#torch.distributions.transformed_distribution.TransformedDistribution
+    "torch.distributions.transformed_distribution.TransformedDistribution") is the
+    maximum shape of its base distribution and its transforms, since transforms can
+    introduce correlations among events.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'An example for the usage of [`TransformedDistribution`](#torch.distributions.transformed_distribution.TransformedDistribution
+    "torch.distributions.transformed_distribution.TransformedDistribution") would
+    be:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE465]'
+  prefs: []
+  type: TYPE_PRE
+- en: For more examples, please look at the implementations of [`Gumbel`](#torch.distributions.gumbel.Gumbel
+    "torch.distributions.gumbel.Gumbel"), [`HalfCauchy`](#torch.distributions.half_cauchy.HalfCauchy
+    "torch.distributions.half_cauchy.HalfCauchy"), [`HalfNormal`](#torch.distributions.half_normal.HalfNormal
+    "torch.distributions.half_normal.HalfNormal"), [`LogNormal`](#torch.distributions.log_normal.LogNormal
+    "torch.distributions.log_normal.LogNormal"), [`Pareto`](#torch.distributions.pareto.Pareto
+    "torch.distributions.pareto.Pareto"), [`Weibull`](#torch.distributions.weibull.Weibull
+    "torch.distributions.weibull.Weibull"), [`RelaxedBernoulli`](#torch.distributions.relaxed_bernoulli.RelaxedBernoulli
+    "torch.distributions.relaxed_bernoulli.RelaxedBernoulli") and [`RelaxedOneHotCategorical`](#torch.distributions.relaxed_categorical.RelaxedOneHotCategorical
+    "torch.distributions.relaxed_categorical.RelaxedOneHotCategorical")
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE466]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE467]'
+  prefs: []
+  type: TYPE_PRE
+- en: Computes the cumulative distribution function by inverting the transform(s)
+    and computing the score of the base distribution.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE468]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE469]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE470]'
+  prefs: []
+  type: TYPE_PRE
+- en: Computes the inverse cumulative distribution function using transform(s) and
+    computing the score of the base distribution.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE471]'
+  prefs: []
+  type: TYPE_PRE
+- en: Scores the sample by inverting the transform(s) and computing the score using
+    the score of the base distribution and the log abs det jacobian.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE472]'
+  prefs: []
+  type: TYPE_PRE
+- en: Generates a sample_shape shaped reparameterized sample or sample_shape shaped
+    batch of reparameterized samples if the distribution parameters are batched. Samples
+    first from base distribution and applies transform() for every transform in the
+    list.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE473]'
+  prefs: []
+  type: TYPE_PRE
+- en: Generates a sample_shape shaped sample or sample_shape shaped batch of samples
+    if the distribution parameters are batched. Samples first from base distribution
+    and applies transform() for every transform in the list.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE474]'
+  prefs: []
+  type: TYPE_PRE
+- en: Uniform
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE475]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`Distribution`](#torch.distributions.distribution.Distribution "torch.distributions.distribution.Distribution")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Generates uniformly distributed random samples from the half-open interval `[low,
+    high)`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE476]'
+  prefs: []
+  type: TYPE_PRE
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**low** ([*float*](https://docs.python.org/3/library/functions.html#float "(in
+    Python v3.12)") *or* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – lower
+    range (inclusive).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**high** ([*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)") *or* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor"))
+    – upper range (exclusive).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE477]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE478]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE479]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE480]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE481]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE482]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE483]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE484]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE485]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE486]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE487]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE488]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE489]'
+  prefs: []
+  type: TYPE_PRE
+- en: VonMises
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE490]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`Distribution`](#torch.distributions.distribution.Distribution "torch.distributions.distribution.Distribution")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: A circular von Mises distribution.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This implementation uses polar coordinates. The `loc` and `value` args can be
+    any real number (to facilitate unconstrained optimization), but are interpreted
+    as angles modulo 2 pi.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example::'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE491]'
+  prefs: []
+  type: TYPE_PRE
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**loc** ([*torch.Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – an angle
+    in radians.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**concentration** ([*torch.Tensor*](tensors.html#torch.Tensor "torch.Tensor"))
+    – concentration parameter'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE492]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE493]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE494]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE495]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE496]'
+  prefs: []
+  type: TYPE_PRE
+- en: The provided mean is the circular one.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE497]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE498]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The sampling algorithm for the von Mises distribution is based on the following
+    paper: D.J. Best and N.I. Fisher, “Efficient simulation of the von Mises distribution.”
+    Applied Statistics (1979): 152-157.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Sampling is always done in double precision internally to avoid a hang in _rejection_sample()
+    for small values of the concentration, which starts to happen for single precision
+    around 1e-4 (see issue #88443).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE499]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE500]'
+  prefs: []
+  type: TYPE_PRE
+- en: The provided variance is the circular one.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Weibull
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE501]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`TransformedDistribution`](#torch.distributions.transformed_distribution.TransformedDistribution
+    "torch.distributions.transformed_distribution.TransformedDistribution")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Samples from a two-parameter Weibull distribution.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Example
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE502]'
+  prefs: []
+  type: TYPE_PRE
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**scale** ([*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)") *or* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor"))
+    – Scale parameter of distribution (lambda).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**concentration** ([*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)") *or* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor"))
+    – Concentration parameter of distribution (k/shape).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE503]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE504]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE505]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE506]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE507]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE508]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE509]'
+  prefs: []
+  type: TYPE_PRE
+- en: Wishart
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE510]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`ExponentialFamily`](#torch.distributions.exp_family.ExponentialFamily
+    "torch.distributions.exp_family.ExponentialFamily")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Creates a Wishart distribution parameterized by a symmetric positive definite
+    matrix <math><semantics><mrow><mi mathvariant="normal">Σ</mi></mrow><annotation
+    encoding="application/x-tex">\Sigma</annotation></semantics></math>Σ, or its Cholesky
+    decomposition <math><semantics><mrow><mi mathvariant="bold">Σ</mi><mo>=</mo><mi
+    mathvariant="bold">L</mi><msup><mi mathvariant="bold">L</mi><mi mathvariant="normal">⊤</mi></msup></mrow><annotation
+    encoding="application/x-tex">\mathbf{\Sigma} = \mathbf{L}\mathbf{L}^\top</annotation></semantics></math>Σ=LL⊤
+  prefs: []
+  type: TYPE_NORMAL
+- en: Example
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE511]'
+  prefs: []
+  type: TYPE_PRE
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**df** ([*float*](https://docs.python.org/3/library/functions.html#float "(in
+    Python v3.12)") *or* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – real-valued
+    parameter larger than the (dimension of Square matrix) - 1'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**covariance_matrix** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor"))
+    – positive-definite covariance matrix'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**precision_matrix** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor"))
+    – positive-definite precision matrix'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**scale_tril** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – lower-triangular
+    factor of covariance, with positive-valued diagonal'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Only one of [`covariance_matrix`](#torch.distributions.wishart.Wishart.covariance_matrix
+    "torch.distributions.wishart.Wishart.covariance_matrix") or [`precision_matrix`](#torch.distributions.wishart.Wishart.precision_matrix
+    "torch.distributions.wishart.Wishart.precision_matrix") or [`scale_tril`](#torch.distributions.wishart.Wishart.scale_tril
+    "torch.distributions.wishart.Wishart.scale_tril") can be specified. Using [`scale_tril`](#torch.distributions.wishart.Wishart.scale_tril
+    "torch.distributions.wishart.Wishart.scale_tril") will be more efficient: all
+    computations internally are based on [`scale_tril`](#torch.distributions.wishart.Wishart.scale_tril
+    "torch.distributions.wishart.Wishart.scale_tril"). If [`covariance_matrix`](#torch.distributions.wishart.Wishart.covariance_matrix
+    "torch.distributions.wishart.Wishart.covariance_matrix") or [`precision_matrix`](#torch.distributions.wishart.Wishart.precision_matrix
+    "torch.distributions.wishart.Wishart.precision_matrix") is passed instead, it
+    is only used to compute the corresponding lower triangular matrices using a Cholesky
+    decomposition. ‘torch.distributions.LKJCholesky’ is a restricted Wishart distribution.[1]'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**References**'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[1] Wang, Z., Wu, Y. and Chu, H., 2018\. On equivalence of the LKJ distribution
+    and the restricted Wishart distribution. [2] Sawyer, S., 2007\. Wishart Distributions
+    and Inverse-Wishart Sampling. [3] Anderson, T. W., 2003\. An Introduction to Multivariate
+    Statistical Analysis (3rd ed.). [4] Odell, P. L. & Feiveson, A. H., 1966\. A Numerical
+    Procedure to Generate a SampleCovariance Matrix. JASA, 61(313):199-203. [5] Ku,
+    Y.-C. & Bloomfield, P., 2010\. Generating Random Wishart Matrices with Fractional
+    Degrees of Freedom in OX.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE512]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE513]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE514]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE515]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE516]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE517]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE518]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE519]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE520]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE521]'
+  prefs: []
+  type: TYPE_PRE
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: In some cases, sampling algorithm based on Bartlett decomposition may return
+    singular matrix samples. Several tries to correct singular samples are performed
+    by default, but it may end up returning singular matrix samples. Singular samples
+    may return -inf values in .log_prob(). In those cases, the user should validate
+    the samples and either fix the value of df or adjust max_try_correction value
+    for argument in .rsample accordingly.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE522]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE523]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE524]'
+  prefs: []
+  type: TYPE_PRE
+- en: '## KL Divergence'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE525]'
+  prefs: []
+  type: TYPE_PRE
+- en: Compute Kullback-Leibler divergence <math><semantics><mrow><mi>K</mi><mi>L</mi><mo
+    stretchy="false">(</mo><mi>p</mi><mi mathvariant="normal">∥</mi><mi>q</mi><mo
+    stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">KL(p \|
+    q)</annotation></semantics></math>KL(p∥q) between two distributions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: <math display="block"><semantics><mrow><mi>K</mi><mi>L</mi><mo stretchy="false">(</mo><mi>p</mi><mi
+    mathvariant="normal">∥</mi><mi>q</mi><mo stretchy="false">)</mo><mo>=</mo><mo>∫</mo><mi>p</mi><mo
+    stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><mi>log</mi><mo>⁡</mo><mfrac><mrow><mi>p</mi><mo
+    stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo></mrow><mrow><mi>q</mi><mo
+    stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo></mrow></mfrac><mi>d</mi><mi>x</mi></mrow><annotation
+    encoding="application/x-tex">KL(p \| q) = \int p(x) \log\frac {p(x)} {q(x)} \,dx</annotation></semantics></math>KL(p∥q)=∫p(x)logq(x)p(x)​dx
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**p** ([*Distribution*](#torch.distributions.distribution.Distribution "torch.distributions.distribution.Distribution"))
+    – A `Distribution` object.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**q** ([*Distribution*](#torch.distributions.distribution.Distribution "torch.distributions.distribution.Distribution"))
+    – A `Distribution` object.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: A batch of KL divergences of shape batch_shape.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Tensor](tensors.html#torch.Tensor "torch.Tensor")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Raises
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[**NotImplementedError**](https://docs.python.org/3/library/exceptions.html#NotImplementedError
+    "(in Python v3.12)") – If the distribution types have not been registered via
+    [`register_kl()`](#torch.distributions.kl.register_kl "torch.distributions.kl.register_kl").'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'KL divergence is currently implemented for the following distribution pairs:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`Bernoulli` and `Bernoulli`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Bernoulli` and `Poisson`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Beta` and `Beta`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Beta` and `ContinuousBernoulli`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Beta` and `Exponential`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Beta` and `Gamma`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Beta` and `Normal`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Beta` and `Pareto`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Beta` and `Uniform`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Binomial` and `Binomial`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Categorical` and `Categorical`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Cauchy` and `Cauchy`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`ContinuousBernoulli` and `ContinuousBernoulli`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`ContinuousBernoulli` and `Exponential`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`ContinuousBernoulli` and `Normal`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`ContinuousBernoulli` and `Pareto`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`ContinuousBernoulli` and `Uniform`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Dirichlet` and `Dirichlet`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Exponential` and `Beta`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Exponential` and `ContinuousBernoulli`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Exponential` and `Exponential`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Exponential` and `Gamma`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Exponential` and `Gumbel`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Exponential` and `Normal`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Exponential` and `Pareto`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Exponential` and `Uniform`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`ExponentialFamily` and `ExponentialFamily`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Gamma` and `Beta`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Gamma` and `ContinuousBernoulli`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Gamma` and `Exponential`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Gamma` and `Gamma`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Gamma` and `Gumbel`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Gamma` and `Normal`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Gamma` and `Pareto`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Gamma` and `Uniform`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Geometric` and `Geometric`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Gumbel` and `Beta`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Gumbel` and `ContinuousBernoulli`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Gumbel` and `Exponential`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Gumbel` and `Gamma`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Gumbel` and `Gumbel`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Gumbel` and `Normal`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Gumbel` and `Pareto`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Gumbel` and `Uniform`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`HalfNormal` and `HalfNormal`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Independent` and `Independent`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Laplace` and `Beta`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Laplace` and `ContinuousBernoulli`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Laplace` and `Exponential`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Laplace` and `Gamma`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Laplace` and `Laplace`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Laplace` and `Normal`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Laplace` and `Pareto`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Laplace` and `Uniform`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`LowRankMultivariateNormal` and `LowRankMultivariateNormal`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`LowRankMultivariateNormal` and `MultivariateNormal`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`MultivariateNormal` and `LowRankMultivariateNormal`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`MultivariateNormal` and `MultivariateNormal`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Normal` and `Beta`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Normal` and `ContinuousBernoulli`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Normal` and `Exponential`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Normal` and `Gamma`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Normal` and `Gumbel`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Normal` and `Laplace`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Normal` and `Normal`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Normal` and `Pareto`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Normal` and `Uniform`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`OneHotCategorical` and `OneHotCategorical`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Pareto` and `Beta`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Pareto` and `ContinuousBernoulli`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Pareto` and `Exponential`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Pareto` and `Gamma`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Pareto` and `Normal`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Pareto` and `Pareto`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Pareto` and `Uniform`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Poisson` and `Bernoulli`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Poisson` and `Binomial`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Poisson` and `Poisson`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`TransformedDistribution` and `TransformedDistribution`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Uniform` and `Beta`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Uniform` and `ContinuousBernoulli`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Uniform` and `Exponential`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Uniform` and `Gamma`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Uniform` and `Gumbel`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Uniform` and `Normal`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Uniform` and `Pareto`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Uniform` and `Uniform`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE526]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Decorator to register a pairwise function with [`kl_divergence()`](#torch.distributions.kl.kl_divergence
+    "torch.distributions.kl.kl_divergence"). Usage:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE527]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Lookup returns the most specific (type,type) match ordered by subclass. If
+    the match is ambiguous, a RuntimeWarning is raised. For example to resolve the
+    ambiguous situation:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE528]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'you should register a third most-specific implementation, e.g.:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE529]'
+  prefs: []
+  type: TYPE_PRE
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**type_p** ([*type*](https://docs.python.org/3/library/functions.html#type
+    "(in Python v3.12)")) – A subclass of `Distribution`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**type_q** ([*type*](https://docs.python.org/3/library/functions.html#type
+    "(in Python v3.12)")) – A subclass of `Distribution`.  ## Transforms[](#module-torch.distributions.transforms
+    "Permalink to this heading")'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE530]'
+  prefs: []
+  type: TYPE_PRE
+- en: Transform via the mapping <math><semantics><mrow><mi>y</mi><mo>=</mo><mi mathvariant="normal">∣</mi><mi>x</mi><mi
+    mathvariant="normal">∣</mi></mrow><annotation encoding="application/x-tex">y =
+    |x|</annotation></semantics></math>y=∣x∣.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE531]'
+  prefs: []
+  type: TYPE_PRE
+- en: Transform via the pointwise affine mapping <math><semantics><mrow><mi>y</mi><mo>=</mo><mtext>loc</mtext><mo>+</mo><mtext>scale</mtext><mo>×</mo><mi>x</mi></mrow><annotation
+    encoding="application/x-tex">y = \text{loc} + \text{scale} \times x</annotation></semantics></math>y=loc+scale×x.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**loc** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor") *or* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")) – Location parameter.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**scale** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor") *or* [*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")) – Scale parameter.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**event_dim** ([*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")) – Optional size of event_shape. This should be zero for
+    univariate random variables, 1 for distributions over vectors, 2 for distributions
+    over matrices, etc.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE532]'
+  prefs: []
+  type: TYPE_PRE
+- en: Transform functor that applies a sequence of transforms tseq component-wise
+    to each submatrix at dim, of length lengths[dim], in a way compatible with [`torch.cat()`](generated/torch.cat.html#torch.cat
+    "torch.cat").
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE533]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE534]'
+  prefs: []
+  type: TYPE_PRE
+- en: Composes multiple transforms in a chain. The transforms being composed are responsible
+    for caching.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**parts** (list of [`Transform`](#torch.distributions.transforms.Transform
+    "torch.distributions.transforms.Transform")) – A list of transforms to compose.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**cache_size** ([*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")) – Size of cache. If zero, no caching is done. If one, the
+    latest single value is cached. Only 0 and 1 are supported.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE535]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Transforms an uncontrained real vector <math><semantics><mrow><mi>x</mi></mrow><annotation
+    encoding="application/x-tex">x</annotation></semantics></math>x with length <math><semantics><mrow><mi>D</mi><mo>∗</mo><mo
+    stretchy="false">(</mo><mi>D</mi><mo>−</mo><mn>1</mn><mo stretchy="false">)</mo><mi
+    mathvariant="normal">/</mi><mn>2</mn></mrow><annotation encoding="application/x-tex">D*(D-1)/2</annotation></semantics></math>D∗(D−1)/2
+    into the Cholesky factor of a D-dimension correlation matrix. This Cholesky factor
+    is a lower triangular matrix with positive diagonals and unit Euclidean norm for
+    each row. The transform is processed as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: First we convert x into a lower triangular matrix in row order.
+  prefs:
+  - PREF_BQ
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: 'For each row <math><semantics><mrow><msub><mi>X</mi><mi>i</mi></msub></mrow><annotation
+    encoding="application/x-tex">X_i</annotation></semantics></math>Xi​ of the lower
+    triangular part, we apply a *signed* version of class [`StickBreakingTransform`](#torch.distributions.transforms.StickBreakingTransform
+    "torch.distributions.transforms.StickBreakingTransform") to transform <math><semantics><mrow><msub><mi>X</mi><mi>i</mi></msub></mrow><annotation
+    encoding="application/x-tex">X_i</annotation></semantics></math>Xi​ into a unit
+    Euclidean length vector using the following steps: - Scales into the interval
+    <math><semantics><mrow><mo stretchy="false">(</mo><mo>−</mo><mn>1</mn><mo separator="true">,</mo><mn>1</mn><mo
+    stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">(-1, 1)</annotation></semantics></math>(−1,1)
+    domain: <math><semantics><mrow><msub><mi>r</mi><mi>i</mi></msub><mo>=</mo><mi>tanh</mi><mo>⁡</mo><mo
+    stretchy="false">(</mo><msub><mi>X</mi><mi>i</mi></msub><mo stretchy="false">)</mo></mrow><annotation
+    encoding="application/x-tex">r_i = \tanh(X_i)</annotation></semantics></math>ri​=tanh(Xi​).
+    - Transforms into an unsigned domain: <math><semantics><mrow><msub><mi>z</mi><mi>i</mi></msub><mo>=</mo><msubsup><mi>r</mi><mi>i</mi><mn>2</mn></msubsup></mrow><annotation
+    encoding="application/x-tex">z_i = r_i^2</annotation></semantics></math>zi​=ri2​.
+    - Applies <math><semantics><mrow><msub><mi>s</mi><mi>i</mi></msub><mo>=</mo><mi>S</mi><mi>t</mi><mi>i</mi><mi>c</mi><mi>k</mi><mi>B</mi><mi>r</mi><mi>e</mi><mi>a</mi><mi>k</mi><mi>i</mi><mi>n</mi><mi>g</mi><mi>T</mi><mi>r</mi><mi>a</mi><mi>n</mi><mi>s</mi><mi>f</mi><mi>o</mi><mi>r</mi><mi>m</mi><mo
+    stretchy="false">(</mo><msub><mi>z</mi><mi>i</mi></msub><mo stretchy="false">)</mo></mrow><annotation
+    encoding="application/x-tex">s_i = StickBreakingTransform(z_i)</annotation></semantics></math>si​=StickBreakingTransform(zi​).
+    - Transforms back into signed domain: <math><semantics><mrow><msub><mi>y</mi><mi>i</mi></msub><mo>=</mo><mi>s</mi><mi>i</mi><mi>g</mi><mi>n</mi><mo
+    stretchy="false">(</mo><msub><mi>r</mi><mi>i</mi></msub><mo stretchy="false">)</mo><mo>∗</mo><msqrt><msub><mi>s</mi><mi>i</mi></msub></msqrt></mrow><annotation
+    encoding="application/x-tex">y_i = sign(r_i) * \sqrt{s_i}</annotation></semantics></math>yi​=sign(ri​)∗si​​.'
+  prefs:
+  - PREF_BQ
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '[PRE536]'
+  prefs: []
+  type: TYPE_PRE
+- en: Transform via the cumulative distribution function of a probability distribution.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**distribution** ([*Distribution*](#torch.distributions.distribution.Distribution
+    "torch.distributions.distribution.Distribution")) – Distribution whose cumulative
+    distribution function to use for the transformation.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE537]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE538]'
+  prefs: []
+  type: TYPE_PRE
+- en: Transform via the mapping <math><semantics><mrow><mi>y</mi><mo>=</mo><mi>exp</mi><mo>⁡</mo><mo
+    stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo></mrow><annotation
+    encoding="application/x-tex">y = \exp(x)</annotation></semantics></math>y=exp(x).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE539]'
+  prefs: []
+  type: TYPE_PRE
+- en: Wrapper around another transform to treat `reinterpreted_batch_ndims`-many extra
+    of the right most dimensions as dependent. This has no effect on the forward or
+    backward transforms, but does sum out `reinterpreted_batch_ndims`-many of the
+    rightmost dimensions in `log_abs_det_jacobian()`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**base_transform** ([`Transform`](#torch.distributions.transforms.Transform
+    "torch.distributions.transforms.Transform")) – A base transform.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**reinterpreted_batch_ndims** ([*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")) – The number of extra rightmost dimensions to treat as dependent.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE540]'
+  prefs: []
+  type: TYPE_PRE
+- en: Transform from unconstrained matrices to lower-triangular matrices with nonnegative
+    diagonal entries.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This is useful for parameterizing positive definite matrices in terms of their
+    Cholesky factorization.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE541]'
+  prefs: []
+  type: TYPE_PRE
+- en: Transform from unconstrained matrices to positive-definite matrices.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE542]'
+  prefs: []
+  type: TYPE_PRE
+- en: Transform via the mapping <math><semantics><mrow><mi>y</mi><mo>=</mo><msup><mi>x</mi><mtext>exponent</mtext></msup></mrow><annotation
+    encoding="application/x-tex">y = x^{\text{exponent}}</annotation></semantics></math>y=xexponent.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE543]'
+  prefs: []
+  type: TYPE_PRE
+- en: Unit Jacobian transform to reshape the rightmost part of a tensor.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that `in_shape` and `out_shape` must have the same number of elements,
+    just as for [`torch.Tensor.reshape()`](generated/torch.Tensor.reshape.html#torch.Tensor.reshape
+    "torch.Tensor.reshape").
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**in_shape** (*torch.Size*) – The input event shape.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**out_shape** (*torch.Size*) – The output event shape.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE544]'
+  prefs: []
+  type: TYPE_PRE
+- en: Transform via the mapping <math><semantics><mrow><mi>y</mi><mo>=</mo><mfrac><mn>1</mn><mrow><mn>1</mn><mo>+</mo><mi>exp</mi><mo>⁡</mo><mo
+    stretchy="false">(</mo><mo>−</mo><mi>x</mi><mo stretchy="false">)</mo></mrow></mfrac></mrow><annotation
+    encoding="application/x-tex">y = \frac{1}{1 + \exp(-x)}</annotation></semantics></math>y=1+exp(−x)1​
+    and <math><semantics><mrow><mi>x</mi><mo>=</mo><mtext>logit</mtext><mo stretchy="false">(</mo><mi>y</mi><mo
+    stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">x = \text{logit}(y)</annotation></semantics></math>x=logit(y).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE545]'
+  prefs: []
+  type: TYPE_PRE
+- en: Transform via the mapping <math><semantics><mrow><mtext>Softplus</mtext><mo
+    stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><mo>=</mo><mi>log</mi><mo>⁡</mo><mo
+    stretchy="false">(</mo><mn>1</mn><mo>+</mo><mi>exp</mi><mo>⁡</mo><mo stretchy="false">(</mo><mi>x</mi><mo
+    stretchy="false">)</mo><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">\text{Softplus}(x)
+    = \log(1 + \exp(x))</annotation></semantics></math>Softplus(x)=log(1+exp(x)).
+    The implementation reverts to the linear function when <math><semantics><mrow><mi>x</mi><mo>></mo><mn>20</mn></mrow><annotation
+    encoding="application/x-tex">x > 20</annotation></semantics></math>x>20.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE546]'
+  prefs: []
+  type: TYPE_PRE
+- en: Transform via the mapping <math><semantics><mrow><mi>y</mi><mo>=</mo><mi>tanh</mi><mo>⁡</mo><mo
+    stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo></mrow><annotation
+    encoding="application/x-tex">y = \tanh(x)</annotation></semantics></math>y=tanh(x).
+  prefs: []
+  type: TYPE_NORMAL
+- en: It is equivalent to `` ComposeTransform([AffineTransform(0., 2.), SigmoidTransform(),
+    AffineTransform(-1., 2.)]) `` However this might not be numerically stable, thus
+    it is recommended to use TanhTransform instead.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note that one should use cache_size=1 when it comes to NaN/Inf values.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE547]'
+  prefs: []
+  type: TYPE_PRE
+- en: Transform from unconstrained space to the simplex via <math><semantics><mrow><mi>y</mi><mo>=</mo><mi>exp</mi><mo>⁡</mo><mo
+    stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo></mrow><annotation
+    encoding="application/x-tex">y = \exp(x)</annotation></semantics></math>y=exp(x)
+    then normalizing.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This is not bijective and cannot be used for HMC. However this acts mostly coordinate-wise
+    (except for the final normalization), and thus is appropriate for coordinate-wise
+    optimization algorithms.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE548]'
+  prefs: []
+  type: TYPE_PRE
+- en: Transform functor that applies a sequence of transforms tseq component-wise
+    to each submatrix at dim in a way compatible with [`torch.stack()`](generated/torch.stack.html#torch.stack
+    "torch.stack").
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE549]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE550]'
+  prefs: []
+  type: TYPE_PRE
+- en: Transform from unconstrained space to the simplex of one additional dimension
+    via a stick-breaking process.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'This transform arises as an iterated sigmoid transform in a stick-breaking
+    construction of the Dirichlet distribution: the first logit is transformed via
+    sigmoid to the first probability and the probability of everything else, and then
+    the process recurses.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: This is bijective and appropriate for use in HMC; however it mixes coordinates
+    together and is less appropriate for optimization.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE551]'
+  prefs: []
+  type: TYPE_PRE
+- en: Abstract class for invertable transformations with computable log det jacobians.
+    They are primarily used in `torch.distributions.TransformedDistribution`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Caching is useful for transforms whose inverses are either expensive or numerically
+    unstable. Note that care must be taken with memoized values since the autograd
+    graph may be reversed. For example while the following works with or without caching:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE552]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'However the following will error when caching due to dependency reversal:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE553]'
+  prefs: []
+  type: TYPE_PRE
+- en: Derived classes should implement one or both of `_call()` or `_inverse()`. Derived
+    classes that set bijective=True should also implement [`log_abs_det_jacobian()`](#torch.distributions.transforms.Transform.log_abs_det_jacobian
+    "torch.distributions.transforms.Transform.log_abs_det_jacobian").
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**cache_size** ([*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")) – Size of cache. If zero, no caching is done. If one, the
+    latest single value is cached. Only 0 and 1 are supported.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Variables
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**domain** ([`Constraint`](#torch.distributions.constraints.Constraint "torch.distributions.constraints.Constraint"))
+    – The constraint representing valid inputs to this transform.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**codomain** ([`Constraint`](#torch.distributions.constraints.Constraint "torch.distributions.constraints.Constraint"))
+    – The constraint representing valid outputs to this transform which are inputs
+    to the inverse transform.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**bijective** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")) – Whether this transform is bijective. A transform `t` is
+    bijective iff `t.inv(t(x)) == x` and `t(t.inv(y)) == y` for every `x` in the domain
+    and `y` in the codomain. Transforms that are not bijective should at least maintain
+    the weaker pseudoinverse properties `t(t.inv(t(x)) == t(x)` and `t.inv(t(t.inv(y)))
+    == t.inv(y)`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**sign** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
+    Python v3.12)") *or* [*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – For
+    bijective univariate transforms, this should be +1 or -1 depending on whether
+    transform is monotone increasing or decreasing.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE554]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns the inverse [`Transform`](#torch.distributions.transforms.Transform
+    "torch.distributions.transforms.Transform") of this transform. This should satisfy
+    `t.inv.inv is t`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE555]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns the sign of the determinant of the Jacobian, if applicable. In general
+    this only makes sense for bijective transforms.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE556]'
+  prefs: []
+  type: TYPE_PRE
+- en: Computes the log det jacobian log |dy/dx| given input and output.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE557]'
+  prefs: []
+  type: TYPE_PRE
+- en: Infers the shape of the forward computation, given the input shape. Defaults
+    to preserving shape.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE558]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Infers the shapes of the inverse computation, given the output shape. Defaults
+    to preserving shape.  ## Constraints[](#module-torch.distributions.constraints
+    "Permalink to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The following constraints are implemented:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`constraints.boolean`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`constraints.cat`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`constraints.corr_cholesky`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`constraints.dependent`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`constraints.greater_than(lower_bound)`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`constraints.greater_than_eq(lower_bound)`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`constraints.independent(constraint, reinterpreted_batch_ndims)`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`constraints.integer_interval(lower_bound, upper_bound)`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`constraints.interval(lower_bound, upper_bound)`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`constraints.less_than(upper_bound)`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`constraints.lower_cholesky`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`constraints.lower_triangular`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`constraints.multinomial`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`constraints.nonnegative`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`constraints.nonnegative_integer`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`constraints.one_hot`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`constraints.positive_integer`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`constraints.positive`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`constraints.positive_semidefinite`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`constraints.positive_definite`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`constraints.real_vector`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`constraints.real`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`constraints.simplex`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`constraints.symmetric`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`constraints.stack`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`constraints.square`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`constraints.symmetric`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`constraints.unit_interval`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE559]'
+  prefs: []
+  type: TYPE_PRE
+- en: Abstract base class for constraints.
+  prefs: []
+  type: TYPE_NORMAL
+- en: A constraint object represents a region over which a variable is valid, e.g.
+    within which a variable can be optimized.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Variables
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**is_discrete** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")) – Whether constrained space is discrete. Defaults to False.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**event_dim** ([*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")) – Number of rightmost dimensions that together define an
+    event. The [`check()`](#torch.distributions.constraints.Constraint.check "torch.distributions.constraints.Constraint.check")
+    method will remove this many dimensions when computing validity.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE560]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns a byte tensor of `sample_shape + batch_shape` indicating whether each
+    event in value satisfies this constraint.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE561]'
+  prefs: []
+  type: TYPE_PRE
+- en: alias of `_Cat`
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE562]'
+  prefs: []
+  type: TYPE_PRE
+- en: alias of `_DependentProperty`
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE563]'
+  prefs: []
+  type: TYPE_PRE
+- en: alias of `_GreaterThan`
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE564]'
+  prefs: []
+  type: TYPE_PRE
+- en: alias of `_GreaterThanEq`
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE565]'
+  prefs: []
+  type: TYPE_PRE
+- en: alias of `_IndependentConstraint`
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE566]'
+  prefs: []
+  type: TYPE_PRE
+- en: alias of `_IntegerInterval`
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE567]'
+  prefs: []
+  type: TYPE_PRE
+- en: alias of `_Interval`
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE568]'
+  prefs: []
+  type: TYPE_PRE
+- en: alias of `_HalfOpenInterval`
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE569]'
+  prefs: []
+  type: TYPE_PRE
+- en: alias of `_LessThan`
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE570]'
+  prefs: []
+  type: TYPE_PRE
+- en: alias of `_Multinomial`
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE571]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'alias of `_Stack`  ## Constraint Registry[](#module-torch.distributions.constraint_registry
+    "Permalink to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: PyTorch provides two global [`ConstraintRegistry`](#torch.distributions.constraint_registry.ConstraintRegistry
+    "torch.distributions.constraint_registry.ConstraintRegistry") objects that link
+    [`Constraint`](#torch.distributions.constraints.Constraint "torch.distributions.constraints.Constraint")
+    objects to [`Transform`](#torch.distributions.transforms.Transform "torch.distributions.transforms.Transform")
+    objects. These objects both input constraints and return transforms, but they
+    have different guarantees on bijectivity.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`biject_to(constraint)` looks up a bijective [`Transform`](#torch.distributions.transforms.Transform
+    "torch.distributions.transforms.Transform") from `constraints.real` to the given
+    `constraint`. The returned transform is guaranteed to have `.bijective = True`
+    and should implement `.log_abs_det_jacobian()`.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '`transform_to(constraint)` looks up a not-necessarily bijective [`Transform`](#torch.distributions.transforms.Transform
+    "torch.distributions.transforms.Transform") from `constraints.real` to the given
+    `constraint`. The returned transform is not guaranteed to implement `.log_abs_det_jacobian()`.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 'The `transform_to()` registry is useful for performing unconstrained optimization
+    on constrained parameters of probability distributions, which are indicated by
+    each distribution’s `.arg_constraints` dict. These transforms often overparameterize
+    a space in order to avoid rotation; they are thus more suitable for coordinate-wise
+    optimization algorithms like Adam:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE572]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The `biject_to()` registry is useful for Hamiltonian Monte Carlo, where samples
+    from a probability distribution with constrained `.support` are propagated in
+    an unconstrained space, and algorithms are typically rotation invariant.:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE573]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'An example where `transform_to` and `biject_to` differ is `constraints.simplex`:
+    `transform_to(constraints.simplex)` returns a [`SoftmaxTransform`](#torch.distributions.transforms.SoftmaxTransform
+    "torch.distributions.transforms.SoftmaxTransform") that simply exponentiates and
+    normalizes its inputs; this is a cheap and mostly coordinate-wise operation appropriate
+    for algorithms like SVI. In contrast, `biject_to(constraints.simplex)` returns
+    a [`StickBreakingTransform`](#torch.distributions.transforms.StickBreakingTransform
+    "torch.distributions.transforms.StickBreakingTransform") that bijects its input
+    down to a one-fewer-dimensional space; this a more expensive less numerically
+    stable transform but is needed for algorithms like HMC.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The `biject_to` and `transform_to` objects can be extended by user-defined
+    constraints and transforms using their `.register()` method either as a function
+    on singleton constraints:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE574]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'or as a decorator on parameterized constraints:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE575]'
+  prefs: []
+  type: TYPE_PRE
+- en: You can create your own registry by creating a new [`ConstraintRegistry`](#torch.distributions.constraint_registry.ConstraintRegistry
+    "torch.distributions.constraint_registry.ConstraintRegistry") object.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE576]'
+  prefs: []
+  type: TYPE_PRE
+- en: Registry to link constraints to transforms.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE577]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Registers a [`Constraint`](#torch.distributions.constraints.Constraint "torch.distributions.constraints.Constraint")
+    subclass in this registry. Usage:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE578]'
+  prefs: []
+  type: TYPE_PRE
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**constraint** (subclass of [`Constraint`](#torch.distributions.constraints.Constraint
+    "torch.distributions.constraints.Constraint")) – A subclass of [`Constraint`](#torch.distributions.constraints.Constraint
+    "torch.distributions.constraints.Constraint"), or a singleton object of the desired
+    class.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**factory** (*Callable*) – A callable that inputs a constraint object and returns
+    a [`Transform`](#torch.distributions.transforms.Transform "torch.distributions.transforms.Transform")
+    object.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL

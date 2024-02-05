@@ -1,0 +1,173 @@
+- en: Complex Numbers
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/docs/stable/complex_numbers.html](https://pytorch.org/docs/stable/complex_numbers.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Complex numbers are numbers that can be expressed in the form <math><semantics><mrow><mi>a</mi><mo>+</mo><mi>b</mi><mi>j</mi></mrow><annotation
+    encoding="application/x-tex">a + bj</annotation></semantics></math>a+bj, where
+    a and b are real numbers, and *j* is called the imaginary unit, which satisfies
+    the equation <math><semantics><mrow><msup><mi>j</mi><mn>2</mn></msup><mo>=</mo><mo>−</mo><mn>1</mn></mrow><annotation
+    encoding="application/x-tex">j^2 = -1</annotation></semantics></math>j2=−1. Complex
+    numbers frequently occur in mathematics and engineering, especially in topics
+    like signal processing. Traditionally many users and libraries (e.g., TorchAudio)
+    have handled complex numbers by representing the data in float tensors with shape
+    <math><semantics><mrow><mo stretchy="false">(</mo><mi mathvariant="normal">.</mi><mi
+    mathvariant="normal">.</mi><mi mathvariant="normal">.</mi><mo separator="true">,</mo><mn>2</mn><mo
+    stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">(..., 2)</annotation></semantics></math>(...,2)
+    where the last dimension contains the real and imaginary values.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tensors of complex dtypes provide a more natural user experience while working
+    with complex numbers. Operations on complex tensors (e.g., [`torch.mv()`](generated/torch.mv.html#torch.mv
+    "torch.mv"), [`torch.matmul()`](generated/torch.matmul.html#torch.matmul "torch.matmul"))
+    are likely to be faster and more memory efficient than operations on float tensors
+    mimicking them. Operations involving complex numbers in PyTorch are optimized
+    to use vectorized assembly instructions and specialized kernels (e.g. LAPACK,
+    cuBlas).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Spectral operations in the [torch.fft module](https://pytorch.org/docs/stable/fft.html#torch-fft)
+    support native complex tensors.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: Complex tensors is a beta feature and subject to change.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Creating Complex Tensors
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'We support two complex dtypes: torch.cfloat and torch.cdouble'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: The default dtype for complex tensors is determined by the default floating
+    point dtype. If the default floating point dtype is torch.float64 then complex
+    numbers are inferred to have a dtype of torch.complex128, otherwise they are assumed
+    to have a dtype of torch.complex64.
+  prefs: []
+  type: TYPE_NORMAL
+- en: All factory functions apart from [`torch.linspace()`](generated/torch.linspace.html#torch.linspace
+    "torch.linspace"), [`torch.logspace()`](generated/torch.logspace.html#torch.logspace
+    "torch.logspace"), and [`torch.arange()`](generated/torch.arange.html#torch.arange
+    "torch.arange") are supported for complex tensors.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Transition from the old representation[](#transition-from-the-old-representation
+    "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Users who currently worked around the lack of complex tensors with real tensors
+    of shape <math><semantics><mrow><mo stretchy="false">(</mo><mi mathvariant="normal">.</mi><mi
+    mathvariant="normal">.</mi><mi mathvariant="normal">.</mi><mo separator="true">,</mo><mn>2</mn><mo
+    stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">(..., 2)</annotation></semantics></math>(...,2)
+    can easily to switch using the complex tensors in their code using [`torch.view_as_complex()`](generated/torch.view_as_complex.html#torch.view_as_complex
+    "torch.view_as_complex") and [`torch.view_as_real()`](generated/torch.view_as_real.html#torch.view_as_real
+    "torch.view_as_real"). Note that these functions don’t perform any copy and return
+    a view of the input tensor.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Accessing real and imag
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The real and imaginary values of a complex tensor can be accessed using the
+    `real` and `imag`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Accessing real and imag attributes doesn’t allocate any memory, and in-place
+    updates on the real and imag tensors will update the original complex tensor.
+    Also, the returned real and imag tensors are not contiguous.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Angle and abs
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The angle and absolute values of a complex tensor can be computed using [`torch.angle()`](generated/torch.angle.html#torch.angle
+    "torch.angle") and [`torch.abs()`](generated/torch.abs.html#torch.abs "torch.abs").
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Linear Algebra
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Many linear algebra operations, like [`torch.matmul()`](generated/torch.matmul.html#torch.matmul
+    "torch.matmul"), [`torch.linalg.svd()`](generated/torch.linalg.svd.html#torch.linalg.svd
+    "torch.linalg.svd"), [`torch.linalg.solve()`](generated/torch.linalg.solve.html#torch.linalg.solve
+    "torch.linalg.solve") etc., support complex numbers. If you’d like to request
+    an operation we don’t currently support, please [search](https://github.com/pytorch/pytorch/issues?q=is%3Aissue+is%3Aopen+complex)
+    if an issue has already been filed and if not, [file one](https://github.com/pytorch/pytorch/issues/new/choose).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Serialization
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Complex tensors can be serialized, allowing data to be saved as complex values.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Autograd
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: PyTorch supports autograd for complex tensors. The gradient computed is the
+    Conjugate Wirtinger derivative, the negative of which is precisely the direction
+    of steepest descent used in Gradient Descent algorithm. Thus, all the existing
+    optimizers work out of the box with complex parameters. For more details, check
+    out the note [Autograd for Complex Numbers](notes/autograd.html#complex-autograd-doc).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We do not fully support the following subsystems:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Quantization
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: JIT
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Sparse Tensors
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Distributed
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: If any of these would help your use case, please [search](https://github.com/pytorch/pytorch/issues?q=is%3Aissue+is%3Aopen+complex)
+    if an issue has already been filed and if not, [file one](https://github.com/pytorch/pytorch/issues/new/choose).
+  prefs: []
+  type: TYPE_NORMAL

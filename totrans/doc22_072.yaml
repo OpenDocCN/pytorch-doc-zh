@@ -1,0 +1,775 @@
+- en: DDP Communication Hooks
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/docs/stable/ddp_comm_hooks.html](https://pytorch.org/docs/stable/ddp_comm_hooks.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: DDP communication hook is a generic interface to control how to communicate
+    gradients across workers by overriding the vanilla allreduce in [DistributedDataParallel](https://pytorch.org/docs/stable/generated/torch.nn.parallel.DistributedDataParallel.html#torch.nn.parallel.DistributedDataParallel.).
+    A few built-in communication hooks are provided, and users can easily apply any
+    of these hooks to optimize communication. Besides, the hook interface can also
+    support user-defined communication strategies for more advanced use cases.
+  prefs: []
+  type: TYPE_NORMAL
+- en: How to Use a Communication Hook?[](#how-to-use-a-communication-hook "Permalink
+    to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: To use a communication hook, the user just needs to let the DDP model register
+    the hook before the training loop as below.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`torch.nn.parallel.DistributedDataParallel.register_comm_hook()`](generated/torch.nn.parallel.DistributedDataParallel.html#torch.nn.parallel.DistributedDataParallel.register_comm_hook
+    "torch.nn.parallel.DistributedDataParallel.register_comm_hook")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: What Does a Communication Hook Operate On?[](#what-does-a-communication-hook-operate-on
+    "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: A communication hook provides a flexible way to allreduce gradients. Therefore,
+    it mainly operates on the gradients on each replica before allreduce, which are
+    bucketized to increase the overlap between communication and computation. Particularly,
+    [`torch.distributed.GradBucket`](#torch.distributed.GradBucket "torch.distributed.GradBucket")
+    represents a bucket of gradient tensors to be allreduced.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: This class mainly passes a flattened gradient tensor (returned by [`buffer()`](#torch.distributed.GradBucket.buffer
+    "torch.distributed.GradBucket.buffer")) to DDP communication hook. This tensor
+    can be further decomposed into a list of per-parameter tensors within this bucket
+    (returned by `get_per_parameter_tensors()`) to apply layer-wise operations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: Since the buckets are rebuilt after the first iteration, should not rely on
+    the indices at the beginning of training.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: The index of a bucket that stores gradients of a few contiguous layers. All
+    the gradients are bucketized.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: A flattened 1D `torch.Tensor` buffer, which can be further decomposed into a
+    list of per-parameter tensors within this bucket.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: A list of `torch.Tensor`. Each tensor in the list corresponds to a gradient.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: Whether this bucket is the last bucket to allreduce in an iteration. This also
+    means that this bucket corresponds to the first few layers in the forward pass.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: Replaces the tensor in the bucket with the input tensor buffer.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: A list of `torch.Tensor`. Each tensor in the list corresponds to a model parameter.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Default Communication Hooks[](#default-communication-hooks "Permalink to this
+    heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Default communication hooks are simple **stateless** hooks, so the input state
+    in `register_comm_hook` is either a process group or `None`. The input `bucket`
+    is a [`torch.distributed.GradBucket`](#torch.distributed.GradBucket "torch.distributed.GradBucket")
+    object.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: This DDP communication hook just calls `allreduce` using `GradBucket` tensors.
+    Once gradient tensors are aggregated across all workers, its `then` callback takes
+    the mean and returns the result. If user registers this hook, DDP results is expected
+    to be same as the case where no hook was registered. Hence, this won’t change
+    behavior of DDP and user can use this as a reference or modify this hook to log
+    useful information or any other purposes while unaffecting DDP behavior.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example::'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*Future*](futures.html#torch.futures.Future "torch.jit.Future")[[*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")]'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: This DDP communication hook implements a simple gradient compression approach
+    that casts `GradBucket` tensor to half-precision floating-point format (`torch.float16`)
+    and then divides it by the process group size. It allreduces those `float16` gradient
+    tensors. Once compressed gradient tensors are allreduced, the chained callback
+    `decompress` casts it back to the input data type (such as `float32`).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example::'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*Future*](futures.html#torch.futures.Future "torch.jit.Future")[[*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")]'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Warning: This API is experimental, and it requires NCCL version later than
+    2.9.6.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: This DDP communication hook implements a simple gradient compression approach
+    that casts `GradBucket` tensor to half-precision [Brain floating point format](https://en.wikipedia.org/wiki/Bfloat16_floating-point_format)
+    (`torch.bfloat16`) and then divides it by the process group size. It allreduces
+    those `bfloat16` gradient tensors. Once compressed gradient tensors are allreduced,
+    the chained callback `decompress` casts it back to the input data type (such as
+    `float32`).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example::'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*Future*](futures.html#torch.futures.Future "torch.jit.Future")[[*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")]'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Additionally, a communication hook wrapper is provided to support [`fp16_compress_hook()`](#torch.distributed.algorithms.ddp_comm_hooks.default_hooks.fp16_compress_hook
+    "torch.distributed.algorithms.ddp_comm_hooks.default_hooks.fp16_compress_hook")
+    or [`bf16_compress_hook()`](#torch.distributed.algorithms.ddp_comm_hooks.default_hooks.bf16_compress_hook
+    "torch.distributed.algorithms.ddp_comm_hooks.default_hooks.bf16_compress_hook")
+    as a wrapper, which can be combined with other communication hooks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: This wrapper casts the input gradient tensor of a given DDP communication hook
+    to half-precision floating point format (`torch.float16`), and casts the resulting
+    tensor of the given hook back to the input data type, such as `float32`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Therefore, `fp16_compress_hook` is equivalent to `fp16_compress_wrapper(allreduce_hook)`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example::'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*Callable*](https://docs.python.org/3/library/typing.html#typing.Callable
+    "(in Python v3.12)")[[[*Any*](https://docs.python.org/3/library/typing.html#typing.Any
+    "(in Python v3.12)"), [*GradBucket*](#torch.distributed.GradBucket "torch._C._distributed_c10d.GradBucket")],
+    [*Future*](futures.html#torch.futures.Future "torch.jit.Future")[[*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")]]'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Warning: This API is experimental, and it requires NCCL version later than
+    2.9.6.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: This wrapper casts the input gradient tensor of a given DDP communication hook
+    to half-precision Brain floating point format <https://en.wikipedia.org/wiki/Bfloat16_floating-point_format>
+    `_ (``torch.bfloat16`), and casts the resulting tensor of the given hook back
+    to the input data type, such as `float32`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Therefore, `bf16_compress_hook` is equivalent to `bf16_compress_wrapper(allreduce_hook)`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example::'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*Callable*](https://docs.python.org/3/library/typing.html#typing.Callable
+    "(in Python v3.12)")[[[*Any*](https://docs.python.org/3/library/typing.html#typing.Any
+    "(in Python v3.12)"), [*GradBucket*](#torch.distributed.GradBucket "torch._C._distributed_c10d.GradBucket")],
+    [*Future*](futures.html#torch.futures.Future "torch.jit.Future")[[*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")]]'
+  prefs: []
+  type: TYPE_NORMAL
+- en: PowerSGD Communication Hook[](#powersgd-communication-hook "Permalink to this
+    heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: PowerSGD ([Vogels et al., NeurIPS 2019](https://arxiv.org/abs/1905.13727)) is
+    a gradient compression algorithm, which can provide very high compression rates
+    and accelerate bandwidth-bound distributed training. This algorithm needs to maintain
+    both some hyperparameters and the internal state. Therefore, PowerSGD communication
+    hook is a **stateful** hook, and the user needs to provide a state object defined
+    as below.
+  prefs: []
+  type: TYPE_NORMAL
+- en: PowerSGD State
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: Stores both the algorithm’s hyperparameters and the internal state for all the
+    gradients during the training. Particularly, `matrix_approximation_rank` and `start_powerSGD_iter`
+    are the main hyperparameters that should be tuned by the user. For performance,
+    we suggest to keep binary hyperparameters `use_error_feedback` and `warm_start`
+    on.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`matrix_approximation_rank` controls the size of compressed low-rank tensors,
+    which determines the compression rate. The lower the rank, the stronger the compression.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 1.1\. If `matrix_approximation_rank` is too low, the full model quality will
+    need more training steps to reach or will never reach and yield loss in accuracy.
+  prefs:
+  - PREF_IND
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_IND
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: 1.2\. The increase of `matrix_approximation_rank` can substantially increase
+    the computation costs of the compression, and the accuracy may not be further
+    improved beyond a certain `matrix_approximation_rank` threshold.
+  prefs:
+  - PREF_IND
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: To tune `matrix_approximation_rank`, we suggest to start from 1 and increase
+    by factors of 2 (like an exponential grid search, 1, 2, 4, …), until a satisfactory
+    accuracy is reached. Typically only a small value 1-4 is used. For some NLP tasks
+    (as shown in Appendix D of the original paper), this value has been increased
+    to 32.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`start_powerSGD_iter` defers PowerSGD compression until step `start_powerSGD_iter`,
+    and vanilla allreduce runs prior to step `start_powerSGD_iter`. This hybrid scheme
+    of **vanilla allreduce + PowerSGD** can effectively improve the accuracy, even
+    a relatively small `matrix_approximation_rank` is used. This is because that,
+    the beginning of training phase is usually very sensitive to inaccurate gradients,
+    and compressing gradients too early may make the training quickly take a suboptimal
+    trajectory, which can result in an irrecoverable impact on the accuracy.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: To tune `start_powerSGD_iter`, we suggest to start with 10% of total training
+    steps, and increase it until a satisfactory accuracy is reached. If there is a
+    warm-up stage in the training, `start_powerSGD_iter` typically should be no less
+    than the number of warm-up steps.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`min_compression_rate` is the minimum compression rate required when a layer
+    is compressed. Due to the computation overheads incurred by the compression, a
+    tensor is worth compressing only if there can be sufficient saving in bandwidth,
+    where `(num_rows + num_cols) * matrix_approximation_rank * min_compression_rate
+    < num_rows * num_cols`. If the specified compression rate threshold cannot be
+    satisfied, the tensor will be directly allreduced without compression.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Compression statistics are logged every `compression_stats_logging_frequency`
+    iterations once PowerSGD compression starts.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`orthogonalization_epsilon` can be a very small value (e.g., 1e-8) added to
+    every normalized matrix column in orthogonalization step, to prevent div-by-zero
+    error if any column has all 0s. If this can already be prevented (e.g., by batch
+    normalization), an epsilon of 0 is recommended for accuracy.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '`batch_tensors_with_same_shape` controls whether to compress and decompress
+    tensors with same shape in a batched operation to achieve higher parallelism.
+    Note that you should also increase the bucket size (i.e., `bucket_cap_mb` arg
+    in DDP constructor) to make more same-shaped tensors appear in the same bucket,
+    however this may reduce the overlap between computation and communication, and
+    increase the memory footprint due to stacking the tensors of the same shape. Set
+    to `True` if the compression / decompression computation is a bottleneck.'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: If error feedback or warm-up is enabled, the minimum value of `start_powerSGD_iter`
+    allowed in DDP is 2. This is because there is another internal optimization that
+    rebuilds buckets at iteration 1 in DDP, and this can conflict with any tensor
+    memorized before the rebuild process.
+  prefs: []
+  type: TYPE_NORMAL
+- en: PowerSGD Hooks
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: PowerSGD typically requires extra memory of the same size as the model’s gradients
+    to enable error feedback, which can compensate for biased compressed communication
+    and improve accuracy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: PowerSGD hooks may conflict with [Apex automatic mixed precision package](https://github.com/NVIDIA/apex).
+    Please use PyTorch [native automatic mixed precision package](https://pytorch.org/docs/stable/amp.html)
+    instead.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'This DDP communication hook implements PowerSGD gradient compression algorithm
+    described in the [paper](https://arxiv.org/abs/1905.13727). Once gradient tensors
+    are aggregated across all workers, this hook applies compression as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Views the input flattened 1D gradient tensor as a list of per-parameter tensors,
+    and divides all the tensors into two groups:'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 1.1 The tensors that should be compressed before allreduce, because the compression
+    can give enough saving in bandwidth.
+  prefs:
+  - PREF_IND
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_IND
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: 1.2 Rest of the tensors will be directly allreduced without compression, including
+    all the vector tensors (for biases).
+  prefs:
+  - PREF_IND
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: 'Handles uncompressed tensors:'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 2.1\. Allocate contiguous memory for those uncompressed tensors, and allreduces
+    all the uncompressed tensors as a batch, without compression;
+  prefs:
+  - PREF_IND
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_IND
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: 2.2\. Copies the individual uncompressed tensors from the contiguous memory
+    back to the input tensor.
+  prefs:
+  - PREF_IND
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: 'Handles the tensors that should be compressed by PowerSGD compression:'
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: 3.1\. For each tensor M, creates two low-rank tensors P and Q for decomposing
+    M, such that M = PQ^T, where Q is initialized from a standard normal distribution
+    and orthogonalized;
+  prefs:
+  - PREF_IND
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_IND
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: 3.2\. Computes each P in Ps, which is equal to MQ;
+  prefs:
+  - PREF_IND
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_IND
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: 3.3\. Allreduces Ps as a batch;
+  prefs:
+  - PREF_IND
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_IND
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: 3.4\. Orthogonalizes each P in Ps;
+  prefs:
+  - PREF_IND
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_IND
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: 3.5\. Computes each Q in Qs, which is approximately equal to M^TP;
+  prefs:
+  - PREF_IND
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_IND
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: 3.6\. Allreduces Qs as a batch;
+  prefs:
+  - PREF_IND
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_IND
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: 3.7\. Computes each M among all the compressed tensors, which is approximately
+    equal to PQ^T.
+  prefs:
+  - PREF_IND
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Note that this communication hook enforces vanilla allreduce for the first `state.start_powerSGD_iter`
+    iterations. This not only gives the user more control over the tradeoff between
+    speedup and accuracy, but also helps abstract away some complexity of the internal
+    optimization of DDP for future communication hook developers.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**state** ([*PowerSGDState*](#torch.distributed.algorithms.ddp_comm_hooks.powerSGD_hook.PowerSGDState
+    "torch.distributed.algorithms.ddp_comm_hooks.powerSGD_hook.PowerSGDState")) –
+    State information to configure the compression rate and support error feedback,
+    warm start, etc. To tune the compression configs, mainly need to tune `matrix_approximation_rank`,
+    `start_powerSGD_iter` and `min_compression_rate`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**bucket** (*dist.GradBucket*) – Bucket that stores a 1D flattened gradient
+    tensor that batches multiple per-variable tensors. Note that since DDP comm hook
+    only supports single process single device mode, only exactly one tensor is stored
+    in this bucket.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: Future handler of the communication, which updates the gradients in place.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*Future*](futures.html#torch.futures.Future "torch.jit.Future")[[*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")]'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example::'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: This DDP communication hook implements a simplified PowerSGD gradient compression
+    algorithm described in the [paper](https://arxiv.org/abs/1905.13727). This variant
+    does not compress the gradients layer by layer, but instead compresses the flattened
+    input tensor that batches all the gradients. Therefore, it is **faster** than
+    [`powerSGD_hook()`](#torch.distributed.algorithms.ddp_comm_hooks.powerSGD_hook.powerSGD_hook
+    "torch.distributed.algorithms.ddp_comm_hooks.powerSGD_hook.powerSGD_hook"), but
+    usually results in a **much lower accuracy**, unless `matrix_approximation_rank`
+    is 1.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: Increasing `matrix_approximation_rank` here may not necessarily increase the
+    accuracy, because batching per-parameter tensors without column/row alignment
+    can destroy low-rank structure. Therefore, the user should always consider [`powerSGD_hook()`](#torch.distributed.algorithms.ddp_comm_hooks.powerSGD_hook.powerSGD_hook
+    "torch.distributed.algorithms.ddp_comm_hooks.powerSGD_hook.powerSGD_hook") first,
+    and only consider this variant when a satisfactory accuracy can be achieved when
+    `matrix_approximation_rank` is 1.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Once gradient tensors are aggregated across all workers, this hook applies
+    compression as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Views the input flattened 1D gradient tensor as a square-shaped tensor M with
+    0 paddings;
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Creates two low-rank tensors P and Q for decomposing M, such that M = PQ^T,
+    where Q is initialized from a standard normal distribution and orthogonalized;
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Computes P, which is equal to MQ;
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Allreduces P;
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Orthogonalizes P;
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Computes Q, which is approximately equal to M^TP;
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Allreduces Q;
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Computes M, which is approximately equal to PQ^T.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Truncates the input tensor to the original length.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Note that this communication hook enforces vanilla allreduce for the first `state.start_powerSGD_iter`
+    iterations. This not only gives the user more control over the tradeoff between
+    speedup and accuracy, but also helps abstract away some complexity of the internal
+    optimization of DDP for future communication hook developers.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Parameters
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**state** ([*PowerSGDState*](#torch.distributed.algorithms.ddp_comm_hooks.powerSGD_hook.PowerSGDState
+    "torch.distributed.algorithms.ddp_comm_hooks.powerSGD_hook.PowerSGDState")) –
+    State information to configure the compression rate and support error feedback,
+    warm start, etc. To tune the compression configs, mainly need to tune `matrix_approximation_rank`
+    and `start_powerSGD_iter`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**bucket** (*dist.GradBucket*) – Bucket that stores a 1D flattened gradient
+    tensor that batches multiple per-variable tensors. Note that since DDP comm hook
+    only supports single process single device mode, only exactly one tensor is stored
+    in this bucket.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Returns
+  prefs: []
+  type: TYPE_NORMAL
+- en: Future handler of the communication, which updates the gradients in place.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*Future*](futures.html#torch.futures.Future "torch.jit.Future")[[*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")]'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example::'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: Debugging Communication Hooks[](#debugging-communication-hooks "Permalink to
+    this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: As the name implies, debugging communication hooks are **only** used for debugging
+    and performance optimization purpose.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: Debugging communication hooks do not necessarily output the correct results.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: This DDP communication hook returns a future that wraps the input, so it is
+    a noop that does not incur any communication overheads.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This hook should **only** be used for headroom analysis of allreduce optimization,
+    instead of the normal gradient synchronization. For example, if only less than
+    10% speedup of training time can be observed after this hook is registered, it
+    usually implies that allreduce is not a performance bottleneck for this case.
+    Such instrumentation can be particularly useful if GPU traces cannot be easily
+    retrieved or the trace analysis is complicated some factors such as the overlap
+    between allreduce and computation or the desynchronization across ranks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example::'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: Return type
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[*Future*](futures.html#torch.futures.Future "torch.jit.Future")[[*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")]'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Checkpointing of Communication Hooks[](#checkpointing-of-communication-hooks
+    "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: A stateful communication hook can be saved as a part of model checkpointing
+    to enable trainer restarts. To make a hook serializable, `__setstate__` and `__getstate__`
+    should be defined.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`__getstate__` should exclude non-serializable attributes from a returned dictionary.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`__setstate__` should properly initialize non-serializable attributes, excluded
+    from a provided `state`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`PowerSGDState`](#torch.distributed.algorithms.ddp_comm_hooks.powerSGD_hook.PowerSGDState
+    "torch.distributed.algorithms.ddp_comm_hooks.powerSGD_hook.PowerSGDState") has
+    `__setstate__` and `__getstate__` implemented and can be used as a reference.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns a `Dict[str, Any]` which will be pickled and saved. `process_group`
+    is not serializable and excluded from a returned state.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE26]'
+  prefs: []
+  type: TYPE_PRE
+- en: Takes a provided `state` and retrieves `PowerSGDState`. `process_group` is set
+    to default.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Here is a simple, end-to-end example of saving and reloading PowerSGD state
+    and hook.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE27]'
+  prefs: []
+  type: TYPE_PRE
+- en: Acknowledgements
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Many thanks to PowerSGD paper author **Thijs Vogels** for the code review on
+    PowerSGD communication hook, as well as the [comparison experiments](https://observablehq.com/@tvogels/powersgd-benchmark),
+    which show that the performance of PowerSGD communication hook is on par with
+    the implementation in the original [paper](https://arxiv.org/abs/1905.13727).
+  prefs: []
+  type: TYPE_NORMAL
