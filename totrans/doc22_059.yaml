@@ -1,71 +1,101 @@
 - en: torch.hub
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: torch.hub
 - en: 原文：[https://pytorch.org/docs/stable/hub.html](https://pytorch.org/docs/stable/hub.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/docs/stable/hub.html](https://pytorch.org/docs/stable/hub.html)
 - en: Pytorch Hub is a pre-trained model repository designed to facilitate research
     reproducibility.
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: Pytorch Hub是一个旨在促进研究可重现性的预训练模型存储库。
 - en: Publishing models
+  id: totrans-3
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 发布模型
 - en: Pytorch Hub supports publishing pre-trained models(model definitions and pre-trained
     weights) to a GitHub repository by adding a simple `hubconf.py` file;
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: Pytorch Hub支持通过添加一个简单的`hubconf.py`文件将预训练模型（模型定义和预训练权重）发布到GitHub存储库；
 - en: '`hubconf.py` can have multiple entrypoints. Each entrypoint is defined as a
     python function (example: a pre-trained model you want to publish).'
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: '`hubconf.py`可以有多个入口点。每个入口点都定义为一个python函数（例如：您想要发布的预训练模型）。'
 - en: '[PRE0]'
+  id: totrans-6
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: How to implement an entrypoint?[](#how-to-implement-an-entrypoint "Permalink
     to this heading")
+  id: totrans-7
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 如何实现入口点？
 - en: Here is a code snippet specifies an entrypoint for `resnet18` model if we expand
     the implementation in `pytorch/vision/hubconf.py`. In most case importing the
     right function in `hubconf.py` is sufficient. Here we just want to use the expanded
     version as an example to show how it works. You can see the full script in [pytorch/vision
     repo](https://github.com/pytorch/vision/blob/master/hubconf.py)
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下是一个代码片段，如果我们在`pytorch/vision/hubconf.py`中扩展实现，则指定了`resnet18`模型的入口点。在大多数情况下，在`hubconf.py`中导入正确的函数就足够了。这里我们只是想使用扩展版本作为示例来展示它是如何工作的。您可以在[pytorch/vision存储库](https://github.com/pytorch/vision/blob/master/hubconf.py)中看到完整的脚本
 - en: '[PRE1]'
+  id: totrans-9
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: '`dependencies` variable is a **list** of package names required to **load**
     the model. Note this might be slightly different from dependencies required for
     training a model.'
+  id: totrans-10
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`dependencies`变量是加载模型所需的软件包名称的**列表**。请注意，这可能与训练模型所需的依赖项略有不同。'
 - en: '`args` and `kwargs` are passed along to the real callable function.'
+  id: totrans-11
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`args`和`kwargs`会传递给真正的可调用函数。'
 - en: Docstring of the function works as a help message. It explains what does the
     model do and what are the allowed positional/keyword arguments. It’s highly recommended
     to add a few examples here.
+  id: totrans-12
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 函数的文档字符串作为帮助消息。它解释了模型的功能以及允许的位置参数/关键字参数。在这里添加一些示例是非常推荐的。
 - en: Entrypoint function can either return a model(nn.module), or auxiliary tools
     to make the user workflow smoother, e.g. tokenizers.
+  id: totrans-13
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 入口点函数可以返回一个模型(nn.module)，或者辅助工具，以使用户工作流更顺畅，例如分词器。
 - en: Callables prefixed with underscore are considered as helper functions which
     won’t show up in [`torch.hub.list()`](#torch.hub.list "torch.hub.list").
+  id: totrans-14
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 以下划线为前缀的可调用函数被视为助手函数，不会显示在[`torch.hub.list()`](#torch.hub.list "torch.hub.list")中。
 - en: Pretrained weights can either be stored locally in the GitHub repo, or loadable
     by [`torch.hub.load_state_dict_from_url()`](#torch.hub.load_state_dict_from_url
     "torch.hub.load_state_dict_from_url"). If less than 2GB, it’s recommended to attach
@@ -73,526 +103,780 @@
     and use the url from the release. In the example above `torchvision.models.resnet.resnet18`
     handles `pretrained`, alternatively you can put the following logic in the entrypoint
     definition.
+  id: totrans-15
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 预训练权重可以存储在GitHub存储库中，也可以通过[`torch.hub.load_state_dict_from_url()`](#torch.hub.load_state_dict_from_url
+    "torch.hub.load_state_dict_from_url")加载。如果小于2GB，建议将其附加到[项目发布](https://help.github.com/en/articles/distributing-large-binaries)并使用发布中的url。在上面的示例中，`torchvision.models.resnet.resnet18`处理`pretrained`，或者您可以将以下逻辑放在入口点定义中。
 - en: '[PRE2]'
+  id: totrans-16
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Important Notice
+  id: totrans-17
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 重要通知
 - en: The published models should be at least in a branch/tag. It can’t be a random
     commit.
+  id: totrans-18
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 发布的模型应至少在一个分支/标签中。它不能是一个随机提交。
 - en: Loading models from Hub
+  id: totrans-19
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 从Hub加载模型
 - en: Pytorch Hub provides convenient APIs to explore all available models in hub
     through [`torch.hub.list()`](#torch.hub.list "torch.hub.list"), show docstring
     and examples through [`torch.hub.help()`](#torch.hub.help "torch.hub.help") and
     load the pre-trained models using [`torch.hub.load()`](#torch.hub.load "torch.hub.load").
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: Pytorch Hub提供了方便的API，通过[`torch.hub.list()`](#torch.hub.list "torch.hub.list")来探索hub中所有可用的模型，通过[`torch.hub.help()`](#torch.hub.help
+    "torch.hub.help")显示文档字符串和示例，以及使用[`torch.hub.load()`](#torch.hub.load "torch.hub.load")加载预训练模型。
 - en: '[PRE3]'
+  id: totrans-21
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: List all callable entrypoints available in the repo specified by `github`.
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 列出由`github`指定的存储库中可调用的所有入口点。
 - en: Parameters
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**github** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
     Python v3.12)")) – a string with format “repo_owner/repo_name[:ref]” with an optional
     ref (tag or branch). If `ref` is not specified, the default branch is assumed
     to be `main` if it exists, and otherwise `master`. Example: ‘pytorch/vision:0.10’'
+  id: totrans-24
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**github**（*str*） - 一个格式为“repo_owner/repo_name[:ref]”的字符串，带有可选的ref（标签或分支）。如果未指定`ref`，则假定默认分支为`main`（如果存在），否则为`master`。示例：‘pytorch/vision:0.10’'
 - en: '**force_reload** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")*,* *optional*) – whether to discard the existing cache and
     force a fresh download. Default is `False`.'
+  id: totrans-25
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**force_reload**（*bool*，可选） - 是否丢弃现有缓存并强制进行新下载。默认为`False`。'
 - en: '**skip_validation** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")*,* *optional*) – if `False`, torchhub will check that the
     branch or commit specified by the `github` argument properly belongs to the repo
     owner. This will make requests to the GitHub API; you can specify a non-default
     GitHub token by setting the `GITHUB_TOKEN` environment variable. Default is `False`.'
+  id: totrans-26
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**skip_validation**（*bool*，可选） - 如果为`False`，torchhub将检查由`github`参数指定的分支或提交是否正确属于存储库所有者。这将向GitHub
+    API发出请求；您可以通过设置`GITHUB_TOKEN`环境变量来指定非默认GitHub令牌。默认为`False`。'
 - en: '**trust_repo** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)") *or* *None*) –'
+  id: totrans-27
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**trust_repo**（*bool*，*str*或*None*） - '
 - en: '`"check"`, `True`, `False` or `None`. This parameter was introduced in v1.12
     and helps ensuring that users only run code from repos that they trust.'
+  id: totrans-28
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: “check”，`True`，`False`或`None`。此参数在v1.12中引入，有助于确保用户仅运行来自他们信任的存储库的代码。
 - en: If `False`, a prompt will ask the user whether the repo should be trusted.
+  id: totrans-29
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 如果为`False`，将提示用户是否应信任存储库。
 - en: If `True`, the repo will be added to the trusted list and loaded without requiring
     explicit confirmation.
+  id: totrans-30
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 如果为`True`，则将存储库添加到受信任列表中，并在不需要明确确认的情况下加载。
 - en: If `"check"`, the repo will be checked against the list of trusted repos in
     the cache. If it is not present in that list, the behaviour will fall back onto
     the `trust_repo=False` option.
+  id: totrans-31
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 如果是“check”，则将存储库与缓存中的受信任存储库列表进行检查。如果它不在该列表中，则行为将回退到`trust_repo=False`选项。
 - en: 'If `None`: this will raise a warning, inviting the user to set `trust_repo`
     to either `False`, `True` or `"check"`. This is only present for backward compatibility
     and will be removed in v2.0.'
+  id: totrans-32
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 如果为`None`：这将引发警告，邀请用户将`trust_repo`设置为`False`、`True`或“check”。这仅用于向后兼容，将在v2.0中删除。
 - en: Default is `None` and will eventually change to `"check"` in v2.0.
+  id: totrans-33
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 默认值为`None`，最终将在v2.0中更改为“check”。
 - en: Returns
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回
 - en: The available callables entrypoint
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 可用的可调用入口点
 - en: Return type
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[list](https://docs.python.org/3/library/stdtypes.html#list "(in Python v3.12)")'
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: '[列表](https://docs.python.org/3/library/stdtypes.html#list "(在Python v3.12中)")'
 - en: Example
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例
 - en: '[PRE4]'
+  id: totrans-39
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: '[PRE5]'
+  id: totrans-40
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: Show the docstring of entrypoint `model`.
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 显示入口点`model`的文档字符串。
 - en: Parameters
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**github** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
     Python v3.12)")) – a string with format <repo_owner/repo_name[:ref]> with an optional
     ref (a tag or a branch). If `ref` is not specified, the default branch is assumed
     to be `main` if it exists, and otherwise `master`. Example: ‘pytorch/vision:0.10’'
+  id: totrans-43
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**github**（[*str*](https://docs.python.org/3/library/stdtypes.html#str "(在Python
+    v3.12)")） - 一个格式为<repo_owner/repo_name[:ref]>的字符串，其中包含可选的ref（标签或分支）。如果未指定`ref`，则假定默认分支为`main`（如果存在），否则为`master`。示例：''pytorch/vision:0.10'''
 - en: '**model** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
     Python v3.12)")) – a string of entrypoint name defined in repo’s `hubconf.py`'
+  id: totrans-44
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**model**（[*str*](https://docs.python.org/3/library/stdtypes.html#str "(在Python
+    v3.12)")） - 在存储库的`hubconf.py`中定义的入口点名称的字符串'
 - en: '**force_reload** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")*,* *optional*) – whether to discard the existing cache and
     force a fresh download. Default is `False`.'
+  id: totrans-45
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**force_reload**（[*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(在Python v3.12)")，*可选*） - 是否丢弃现有缓存并强制进行新下载。默认值为`False`。'
 - en: '**skip_validation** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")*,* *optional*) – if `False`, torchhub will check that the
     ref specified by the `github` argument properly belongs to the repo owner. This
     will make requests to the GitHub API; you can specify a non-default GitHub token
     by setting the `GITHUB_TOKEN` environment variable. Default is `False`.'
+  id: totrans-46
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**skip_validation**（[*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")，*可选*） - 如果为`False`，torchhub将检查由`github`参数指定的引用是否正确属于存储库所有者。这将向GitHub
+    API发出请求；您可以通过设置`GITHUB_TOKEN`环境变量来指定非默认GitHub令牌。默认值为`False`。'
 - en: '**trust_repo** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)") *or* *None*) –'
+  id: totrans-47
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**trust_repo**（[*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")，[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")或*None*） -'
 - en: '`"check"`, `True`, `False` or `None`. This parameter was introduced in v1.12
     and helps ensuring that users only run code from repos that they trust.'
+  id: totrans-48
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: “check”，`True`，`False`或`None`。此参数在v1.12中引入，有助于确保用户仅运行来自他们信任的存储库的代码。
 - en: If `False`, a prompt will ask the user whether the repo should be trusted.
+  id: totrans-49
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 如果为`False`，将提示用户是否应信任存储库。
 - en: If `True`, the repo will be added to the trusted list and loaded without requiring
     explicit confirmation.
+  id: totrans-50
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 如果为`True`，则将存储库添加到受信任列表中，并在不需要明确确认的情况下加载。
 - en: If `"check"`, the repo will be checked against the list of trusted repos in
     the cache. If it is not present in that list, the behaviour will fall back onto
     the `trust_repo=False` option.
+  id: totrans-51
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 如果是“check”，则将存储库与缓存中的受信任存储库列表进行检查。如果它不在该列表中，则行为将回退到`trust_repo=False`选项。
 - en: 'If `None`: this will raise a warning, inviting the user to set `trust_repo`
     to either `False`, `True` or `"check"`. This is only present for backward compatibility
     and will be removed in v2.0.'
+  id: totrans-52
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 如果为`None`：这将引发警告，邀请用户将`trust_repo`设置为`False`、`True`或“check”。这仅用于向后兼容，将在v2.0中删除。
 - en: Default is `None` and will eventually change to `"check"` in v2.0.
+  id: totrans-53
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 默认值为`None`，最终将在v2.0中更改为“check”。
 - en: Example
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例
 - en: '[PRE6]'
+  id: totrans-55
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: '[PRE7]'
+  id: totrans-56
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: Load a model from a github repo or a local directory.
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: 从github存储库或本地目录加载模型。
 - en: 'Note: Loading a model is the typical use case, but this can also be used to
     for loading other objects such as tokenizers, loss functions, etc.'
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意：加载模型是典型用例，但也可用于加载其他对象，如分词器、损失函数等。
 - en: If `source` is ‘github’, `repo_or_dir` is expected to be of the form `repo_owner/repo_name[:ref]`
     with an optional ref (a tag or a branch).
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果`source`是'github'，则预期`repo_or_dir`应为形式为`repo_owner/repo_name[:ref]`的形式，其中包含可选的ref（标签或分支）。
 - en: If `source` is ‘local’, `repo_or_dir` is expected to be a path to a local directory.
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果`source`是'local'，则预期`repo_or_dir`是指向本地目录的路径。
 - en: Parameters
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**repo_or_dir** ([*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)")) – If `source` is ‘github’, this should correspond to a github
     repo with format `repo_owner/repo_name[:ref]` with an optional ref (tag or branch),
     for example ‘pytorch/vision:0.10’. If `ref` is not specified, the default branch
     is assumed to be `main` if it exists, and otherwise `master`. If `source` is ‘local’
     then it should be a path to a local directory.'
+  id: totrans-62
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**repo_or_dir**（[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(在Python v3.12)")） - 如果`source`是''github''，则应对应于格式为`repo_owner/repo_name[:ref]`的github存储库，其中包含可选的ref（标签或分支），例如''pytorch/vision:0.10''。如果未指定`ref`，则假定默认分支为`main`（如果存在），否则为`master`。如果`source`是''local''，则应为指向本地目录的路径。'
 - en: '**model** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
     Python v3.12)")) – the name of a callable (entrypoint) defined in the repo/dir’s
     `hubconf.py`.'
+  id: totrans-63
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '- `model`（[str](https://docs.python.org/3/library/stdtypes.html#str)）- 在repo/dir的`hubconf.py`中定义的可调用对象（入口点）的名称。'
 - en: '***args** (*optional*) – the corresponding args for callable `model`.'
+  id: totrans-64
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '- `args`（可选）- 可调用`model`的相应args。'
 - en: '**source** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
     Python v3.12)")*,* *optional*) – ‘github’ or ‘local’. Specifies how `repo_or_dir`
     is to be interpreted. Default is ‘github’.'
+  id: totrans-65
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '- `source`（[str](https://docs.python.org/3/library/stdtypes.html#str)、可选）-
+    ‘github’或‘local’。指定如何解释`repo_or_dir`。默认为‘github’。'
 - en: '**trust_repo** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)") *or* *None*) –'
+  id: totrans-66
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '- `trust_repo`（[bool](https://docs.python.org/3/library/functions.html#bool)、[str](https://docs.python.org/3/library/stdtypes.html#str)或`None`）-'
 - en: '`"check"`, `True`, `False` or `None`. This parameter was introduced in v1.12
     and helps ensuring that users only run code from repos that they trust.'
+  id: totrans-67
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: '- `"check"`、`True`、`False`或`None`。此参数在v1.12中引入，有助于确保用户仅运行他们信任的repo中的代码。'
 - en: If `False`, a prompt will ask the user whether the repo should be trusted.
+  id: totrans-68
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '- 如果为`False`，将提示用户是否应信任该repo。'
 - en: If `True`, the repo will be added to the trusted list and loaded without requiring
     explicit confirmation.
+  id: totrans-69
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '- 如果为`True`，将该repo添加到受信任列表中，并在不需要明确确认的情况下加载。'
 - en: If `"check"`, the repo will be checked against the list of trusted repos in
     the cache. If it is not present in that list, the behaviour will fall back onto
     the `trust_repo=False` option.
+  id: totrans-70
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '- 如果为`"check"`，将根据缓存中受信任repo的列表检查该repo。如果它不在该列表中，则行为将回退到`trust_repo=False`选项。'
 - en: 'If `None`: this will raise a warning, inviting the user to set `trust_repo`
     to either `False`, `True` or `"check"`. This is only present for backward compatibility
     and will be removed in v2.0.'
+  id: totrans-71
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '- 如果为`None`：这将引发警告，邀请用户将`trust_repo`设置为`False`、`True`或`"check"`。这仅用于向后兼容，将在v2.0中删除。'
 - en: Default is `None` and will eventually change to `"check"` in v2.0.
+  id: totrans-72
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: '- 默认为`None`，最终将在v2.0中更改为`"check"`。'
 - en: '**force_reload** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")*,* *optional*) – whether to force a fresh download of the
     github repo unconditionally. Does not have any effect if `source = ''local''`.
     Default is `False`.'
+  id: totrans-73
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '- `force_reload`（[bool](https://docs.python.org/3/library/functions.html#bool)、可选）-
+    是否无条件强制刷新下载github repo。如果`source = ''local''`，则没有任何效果。默认为`False`。'
 - en: '**verbose** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")*,* *optional*) – If `False`, mute messages about hitting
     local caches. Note that the message about first download cannot be muted. Does
     not have any effect if `source = ''local''`. Default is `True`.'
+  id: totrans-74
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '- `verbose`（[bool](https://docs.python.org/3/library/functions.html#bool)、可选）-
+    如果为`False`，则静音关于命中本地缓存的消息。请注意，无法静音关于首次下载的消息。如果`source = ''local''`，则没有任何效果。默认为`True`。'
 - en: '**skip_validation** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")*,* *optional*) – if `False`, torchhub will check that the
     branch or commit specified by the `github` argument properly belongs to the repo
     owner. This will make requests to the GitHub API; you can specify a non-default
     GitHub token by setting the `GITHUB_TOKEN` environment variable. Default is `False`.'
+  id: totrans-75
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '- `skip_validation`（[bool](https://docs.python.org/3/library/functions.html#bool)、可选）-
+    如果为`False`，torchhub将检查由`github`参数指定的分支或提交是否正确属于repo所有者。这将向GitHub API发出请求；您可以通过设置`GITHUB_TOKEN`环境变量来指定非默认GitHub令牌。默认为`False`。'
 - en: '****kwargs** (*optional*) – the corresponding kwargs for callable `model`.'
+  id: totrans-76
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '- `kwargs`（可选）- 可调用`model`的相应kwargs。'
 - en: Returns
+  id: totrans-77
   prefs: []
   type: TYPE_NORMAL
+  zh: '- 返回'
 - en: The output of the `model` callable when called with the given `*args` and `**kwargs`.
+  id: totrans-78
   prefs: []
   type: TYPE_NORMAL
+  zh: '- 使用给定的`*args`和`**kwargs`调用`model`可调用对象的输出。'
 - en: Example
+  id: totrans-79
   prefs: []
   type: TYPE_NORMAL
+  zh: '- 示例'
 - en: '[PRE8]'
+  id: totrans-80
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: '[PRE9]'
+  id: totrans-81
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: Download object at the given URL to a local path.
+  id: totrans-82
   prefs: []
   type: TYPE_NORMAL
+  zh: '- 将给定URL处的对象下载到本地路径。'
 - en: Parameters
+  id: totrans-83
   prefs: []
   type: TYPE_NORMAL
+  zh: '- 参数'
 - en: '**url** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
     v3.12)")) – URL of the object to download'
+  id: totrans-84
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '- `url`（[str](https://docs.python.org/3/library/stdtypes.html#str)）- 要下载的对象的URL'
 - en: '**dst** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
     v3.12)")) – Full path where object will be saved, e.g. `/tmp/temporary_file`'
+  id: totrans-85
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '- `dst`（[str](https://docs.python.org/3/library/stdtypes.html#str)）- 对象将被保存的完整路径，例如`/tmp/temporary_file`'
 - en: '**hash_prefix** ([*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)")*,* *optional*) – If not None, the SHA256 downloaded file
     should start with `hash_prefix`. Default: None'
+  id: totrans-86
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '- `hash_prefix`（[str](https://docs.python.org/3/library/stdtypes.html#str)、可选）-
+    如果不为None，则下载的SHA256文件应以`hash_prefix`开头。默认值：None'
 - en: '**progress** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")*,* *optional*) – whether or not to display a progress bar
     to stderr Default: True'
+  id: totrans-87
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '- `progress`（[bool](https://docs.python.org/3/library/functions.html#bool)、可选）-
+    是否在stderr上显示进度条。默认值：True'
 - en: Example
+  id: totrans-88
   prefs: []
   type: TYPE_NORMAL
+  zh: '- 示例'
 - en: '[PRE10]'
+  id: totrans-89
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: '[PRE11]'
+  id: totrans-90
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: Loads the Torch serialized object at the given URL.
+  id: totrans-91
   prefs: []
   type: TYPE_NORMAL
+  zh: '- 加载给定URL处的Torch序列化对象。'
 - en: If downloaded file is a zip file, it will be automatically decompressed.
+  id: totrans-92
   prefs: []
   type: TYPE_NORMAL
+  zh: '- 如果下载的文件是zip文件，它将自动解压缩。'
 - en: If the object is already present in model_dir, it’s deserialized and returned.
     The default value of `model_dir` is `<hub_dir>/checkpoints` where `hub_dir` is
     the directory returned by [`get_dir()`](#torch.hub.get_dir "torch.hub.get_dir").
+  id: totrans-93
   prefs: []
   type: TYPE_NORMAL
+  zh: '- 如果对象已经存在于`model_dir`中，则将其反序列化并返回。`model_dir`的默认值是`<hub_dir>/checkpoints`，其中`hub_dir`是由[`get_dir()`](#torch.hub.get_dir)返回的目录。'
 - en: Parameters
+  id: totrans-94
   prefs: []
   type: TYPE_NORMAL
+  zh: '- 参数'
 - en: '**url** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
     v3.12)")) – URL of the object to download'
+  id: totrans-95
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '- `url`（[str](https://docs.python.org/3/library/stdtypes.html#str)）- 要下载的对象的URL'
 - en: '**model_dir** ([*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)")*,* *optional*) – directory in which to save the object'
+  id: totrans-96
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '- `model_dir`（[str](https://docs.python.org/3/library/stdtypes.html#str)、可选）-
+    保存对象的目录'
 - en: '**map_location** (*optional*) – a function or a dict specifying how to remap
     storage locations (see torch.load)'
+  id: totrans-97
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**map_location** (*optional*) – 一个函数或指定如何重新映射存储位置的字典（参见torch.load）'
 - en: '**progress** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")*,* *optional*) – whether or not to display a progress bar
     to stderr. Default: True'
+  id: totrans-98
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**progress** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")*,* *optional*) – 是否在stderr上显示进度条。默认值：True'
 - en: '**check_hash** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")*,* *optional*) – If True, the filename part of the URL should
     follow the naming convention `filename-<sha256>.ext` where `<sha256>` is the first
     eight or more digits of the SHA256 hash of the contents of the file. The hash
     is used to ensure unique names and to verify the contents of the file. Default:
     False'
+  id: totrans-99
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**check_hash** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")*,* *optional*) – 如果为True，则URL的文件名部分应遵循命名约定`filename-<sha256>.ext`，其中`<sha256>`是文件内容的SHA256哈希的前八位或更多位数字。哈希用于确保唯一名称并验证文件的内容。默认值：False'
 - en: '**file_name** ([*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)")*,* *optional*) – name for the downloaded file. Filename from
     `url` will be used if not set.'
+  id: totrans-100
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**file_name** ([*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* *optional*) – 下载文件的名称。如果未设置，将使用`url`中的文件名。'
 - en: '**weights_only** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")*,* *optional*) – If True, only weights will be loaded and
     no complex pickled objects. Recommended for untrusted sources. See [`load()`](generated/torch.load.html#torch.load
     "torch.load") for more details.'
+  id: totrans-101
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**weights_only** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")*,* *optional*) – 如果为True，则仅加载权重，不加载复杂的pickled对象。建议用于不受信任的来源。查看[`load()`](generated/torch.load.html#torch.load
+    "torch.load")获取更多详细信息。'
 - en: Return type
+  id: totrans-102
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict "(in Python
     v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str "(in Python
     v3.12)"), [*Any*](https://docs.python.org/3/library/typing.html#typing.Any "(in
     Python v3.12)")]'
+  id: totrans-103
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict "(in Python
+    v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str "(in Python
+    v3.12)"), [*Any*](https://docs.python.org/3/library/typing.html#typing.Any "(in
+    Python v3.12)")]'
 - en: Example
+  id: totrans-104
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例
 - en: '[PRE12]'
+  id: totrans-105
   prefs: []
   type: TYPE_PRE
-- en: Running a loaded model:
+  zh: '[PRE12]'
+- en: 'Running a loaded model:'
+  id: totrans-106
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 运行加载的模型：
 - en: Note that `*args` and `**kwargs` in [`torch.hub.load()`](#torch.hub.load "torch.hub.load")
     are used to **instantiate** a model. After you have loaded a model, how can you
     find out what you can do with the model? A suggested workflow is
+  id: totrans-107
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，[`torch.hub.load()`](#torch.hub.load "torch.hub.load")中的`*args`和`**kwargs`用于**实例化**模型。加载模型后，如何找出可以对模型执行哪些操作？建议的工作流程是
 - en: '`dir(model)` to see all available methods of the model.'
+  id: totrans-108
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`dir(model)`查看模型的所有可用方法。'
 - en: '`help(model.foo)` to check what arguments `model.foo` takes to run'
+  id: totrans-109
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`help(model.foo)`来查看`model.foo`需要哪些参数才能运行'
 - en: To help users explore without referring to documentation back and forth, we
     strongly recommend repo owners make function help messages clear and succinct.
     It’s also helpful to include a minimal working example.
+  id: totrans-110
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了帮助用户在不断查阅文档的情况下探索，我们强烈建议仓库所有者使函数帮助消息清晰简洁。包含一个最小工作示例也是有帮助的。
 - en: Where are my downloaded models saved?[](#where-are-my-downloaded-models-saved
     "Permalink to this heading")
+  id: totrans-111
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 我的下载模型保存在哪里？[](#where-are-my-downloaded-models-saved "Permalink to this heading")
 - en: The locations are used in the order of
+  id: totrans-112
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用顺序为
 - en: Calling `hub.set_dir(<PATH_TO_HUB_DIR>)`
+  id: totrans-113
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 调用`hub.set_dir(<PATH_TO_HUB_DIR>)`
 - en: '`$TORCH_HOME/hub`, if environment variable `TORCH_HOME` is set.'
+  id: totrans-114
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 如果设置了环境变量`TORCH_HOME`，则为`$TORCH_HOME/hub`。
 - en: '`$XDG_CACHE_HOME/torch/hub`, if environment variable `XDG_CACHE_HOME` is set.'
+  id: totrans-115
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 如果设置了环境变量`XDG_CACHE_HOME`，则为`$XDG_CACHE_HOME/torch/hub`。
 - en: '`~/.cache/torch/hub`'
+  id: totrans-116
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`~/.cache/torch/hub`'
 - en: '[PRE13]'
+  id: totrans-117
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: Get the Torch Hub cache directory used for storing downloaded models & weights.
+  id: totrans-118
   prefs: []
   type: TYPE_NORMAL
+  zh: 获取用于存储下载模型和权重的Torch Hub缓存目录。
 - en: If [`set_dir()`](#torch.hub.set_dir "torch.hub.set_dir") is not called, default
     path is `$TORCH_HOME/hub` where environment variable `$TORCH_HOME` defaults to
     `$XDG_CACHE_HOME/torch`. `$XDG_CACHE_HOME` follows the X Design Group specification
     of the Linux filesystem layout, with a default value `~/.cache` if the environment
     variable is not set.
+  id: totrans-119
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果未调用[`set_dir()`](#torch.hub.set_dir "torch.hub.set_dir")，默认路径为`$TORCH_HOME/hub`，其中环境变量`$TORCH_HOME`默认为`$XDG_CACHE_HOME/torch`。`$XDG_CACHE_HOME`遵循Linux文件系统布局的X
+    Design Group规范，如果未设置环境变量，则默认值为`~/.cache`。
 - en: '[PRE14]'
+  id: totrans-120
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: Optionally set the Torch Hub directory used to save downloaded models & weights.
+  id: totrans-121
   prefs: []
   type: TYPE_NORMAL
+  zh: 可选设置用于保存下载模型和权重的Torch Hub目录。
 - en: Parameters
+  id: totrans-122
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**d** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
     v3.12)")) – path to a local folder to save downloaded models & weights.'
+  id: totrans-123
   prefs: []
   type: TYPE_NORMAL
+  zh: '**d** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
+    v3.12)")) – 保存下载模型和权重的本地文件夹路径。'
 - en: Caching logic
+  id: totrans-124
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 缓存逻辑
 - en: By default, we don’t clean up files after loading it. Hub uses the cache by
     default if it already exists in the directory returned by [`get_dir()`](#torch.hub.get_dir
     "torch.hub.get_dir").
+  id: totrans-125
   prefs: []
   type: TYPE_NORMAL
+  zh: 默认情况下，加载文件后我们不会清理文件。如果目录由[`get_dir()`](#torch.hub.get_dir "torch.hub.get_dir")返回，则Hub默认使用缓存。
 - en: Users can force a reload by calling `hub.load(..., force_reload=True)`. This
     will delete the existing GitHub folder and downloaded weights, reinitialize a
     fresh download. This is useful when updates are published to the same branch,
     users can keep up with the latest release.
+  id: totrans-126
   prefs: []
   type: TYPE_NORMAL
-- en: Known limitations:
+  zh: 用户可以通过调用`hub.load(..., force_reload=True)`来强制重新加载。这将删除现有的GitHub文件夹和下载的权重，重新初始化一个新的下载。当更新发布到同一分支时，用户可以跟上最新版本。
+- en: 'Known limitations:'
+  id: totrans-127
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 已知限制：
 - en: Torch hub works by importing the package as if it was installed. There are some
     side effects introduced by importing in Python. For example, you can see new items
     in Python caches `sys.modules` and `sys.path_importer_cache` which is normal Python
@@ -601,12 +885,16 @@
     a `model` subpackage). A workaround for these kinds of import errors is to remove
     the offending sub-package from the `sys.modules` dict; more details can be found
     in [this GitHub issue](https://github.com/pytorch/hub/issues/243#issuecomment-942403391).
+  id: totrans-128
   prefs: []
   type: TYPE_NORMAL
+  zh: Torch hub的工作方式是将包导入为已安装的包。在Python中导入会引入一些副作用。例如，您可以在Python缓存`sys.modules`和`sys.path_importer_cache`中看到新项目，这是正常的Python行为。这也意味着，如果从不同的存储库导入不同的模型时，如果这些存储库具有相同的子包名称（通常是`model`子包），您可能会遇到导入错误。对于这些类型的导入错误的一种解决方法是从`sys.modules`字典中删除有问题的子包；更多详细信息可以在[此GitHub问题](https://github.com/pytorch/hub/issues/243#issuecomment-942403391)中找到。
 - en: 'A known limitation that is worth mentioning here: users **CANNOT** load two
     different branches of the same repo in the **same python process**. It’s just
     like installing two packages with the same name in Python, which is not good.
     Cache might join the party and give you surprises if you actually try that. Of
     course it’s totally fine to load them in separate processes.'
+  id: totrans-129
   prefs: []
   type: TYPE_NORMAL
+  zh: 这里值得一提的一个已知限制是：用户**无法**在**同一个Python进程**中加载同一存储库的两个不同分支。这就像在Python中安装两个同名包一样，这是不好的。如果您真的尝试这样做，缓存可能会加入其中并给您带来惊喜。当然，在单独的进程中加载它们是完全可以的。
