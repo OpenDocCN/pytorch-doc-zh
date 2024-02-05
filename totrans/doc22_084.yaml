@@ -1,36 +1,54 @@
 - en: torch.utils.bottleneck
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: torch.utils.bottleneck
 - en: 原文：[https://pytorch.org/docs/stable/bottleneck.html](https://pytorch.org/docs/stable/bottleneck.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/docs/stable/bottleneck.html](https://pytorch.org/docs/stable/bottleneck.html)
 - en: torch.utils.bottleneck is a tool that can be used as an initial step for debugging
     bottlenecks in your program. It summarizes runs of your script with the Python
     profiler and PyTorch’s autograd profiler.
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: torch.utils.bottleneck是一个工具，可用作调试程序中瓶颈的初始步骤。它使用Python分析器和PyTorch的autograd分析器对脚本运行进行总结。
 - en: Run it on the command line with
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 在命令行上运行它
 - en: '[PRE0]'
+  id: totrans-4
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: where [args] are any number of arguments to script.py, or run `python -m torch.utils.bottleneck
     -h` for more usage instructions.
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: '[args]是传递给script.py的任意数量的参数，或者运行`python -m torch.utils.bottleneck -h`以获取更多用法说明。'
 - en: Warning
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: Because your script will be profiled, please ensure that it exits in a finite
     amount of time.
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于您的脚本将被分析，请确保它在有限的时间内退出。
 - en: Warning
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: 'Due to the asynchronous nature of CUDA kernels, when running against CUDA code,
     the cProfile output and CPU-mode autograd profilers may not show correct timings:
     the reported CPU time reports the amount of time used to launch the kernels but
@@ -38,19 +56,25 @@
     does a synchronize. Ops that do synchronize appear to be extremely expensive under
     regular CPU-mode profilers. In these case where timings are incorrect, the CUDA-mode
     autograd profiler may be helpful.'
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于CUDA内核的异步性质，当针对CUDA代码运行时，cProfile输出和CPU模式的autograd分析器可能不会显示正确的时间：报告的CPU时间报告了用于启动内核的时间，但不包括内核在GPU上执行的时间，除非操作进行同步。在常规CPU模式分析器下，执行同步的操作似乎非常昂贵。在这些时间不正确的情况下，CUDA模式的autograd分析器可能有所帮助。
 - en: Note
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: To decide which (CPU-only-mode or CUDA-mode) autograd profiler output to look
     at, you should first check if your script is CPU-bound (“CPU total time is much
     greater than CUDA total time”). If it is CPU-bound, looking at the results of
     the CPU-mode autograd profiler will help. If on the other hand your script spends
     most of its time executing on the GPU, then it makes sense to start looking for
     responsible CUDA operators in the output of the CUDA-mode autograd profiler.
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 要决定查看哪种（仅CPU模式还是CUDA模式）autograd分析器输出，请首先检查您的脚本是否受CPU限制（“CPU总时间远远大于CUDA总时间”）。如果是CPU受限的，查看CPU模式autograd分析器的结果将有所帮助。另一方面，如果您的脚本大部分时间在GPU上执行，则有意义的是开始查找CUDA模式autograd分析器输出中负责的CUDA运算符。
 - en: Of course the reality is much more complicated and your script might not be
     in one of those two extremes depending on the part of the model you’re evaluating.
     If the profiler outputs don’t help, you could try looking at the result of [`torch.autograd.profiler.emit_nvtx()`](autograd.html#torch.autograd.profiler.emit_nvtx
@@ -59,20 +83,32 @@
     Similarly, `Intel® VTune™ Profiler` helps to analyze performance on Intel platforms
     further with [`torch.autograd.profiler.emit_itt()`](autograd.html#torch.autograd.profiler.emit_itt
     "torch.autograd.profiler.emit_itt").
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: 当然，现实情况要复杂得多，根据您评估的模型部分，您的脚本可能不属于这两个极端之一。如果分析器的输出没有帮助，您可以尝试查看[`torch.autograd.profiler.emit_nvtx()`](autograd.html#torch.autograd.profiler.emit_nvtx
+    "torch.autograd.profiler.emit_nvtx")的结果，使用`nvprof`。但请注意，NVTX的开销非常高，通常会导致时间线严重倾斜。同样，`Intel®
+    VTune™ Profiler`可以通过[`torch.autograd.profiler.emit_itt()`](autograd.html#torch.autograd.profiler.emit_itt
+    "torch.autograd.profiler.emit_itt")进一步分析在Intel平台上的性能。
 - en: Warning
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: If you are profiling CUDA code, the first profiler that `bottleneck` runs (cProfile)
     will include the CUDA startup time (CUDA buffer allocation cost) in its time reporting.
     This should not matter if your bottlenecks result in code much slower than the
     CUDA startup time.
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您正在分析CUDA代码，`bottleneck`运行的第一个分析器（cProfile）将在其时间报告中包括CUDA启动时间（CUDA缓冲区分配成本）。如果您的瓶颈导致代码比CUDA启动时间慢得多，则这并不重要。
 - en: For more complicated uses of the profilers (like in a multi-GPU case), please
     see [https://docs.python.org/3/library/profile.html](https://docs.python.org/3/library/profile.html)
     or [`torch.autograd.profiler.profile()`](autograd.html#torch.autograd.profiler.profile
     "torch.autograd.profiler.profile") for more information.
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于分析器的更复杂用法（如在多GPU情况下），请参阅[https://docs.python.org/3/library/profile.html](https://docs.python.org/3/library/profile.html)或[`torch.autograd.profiler.profile()`](autograd.html#torch.autograd.profiler.profile
+    "torch.autograd.profiler.profile")获取更多信息。

@@ -1,122 +1,181 @@
 - en: torch.utils.data
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: torch.utils.data
 - en: 原文：[https://pytorch.org/docs/stable/data.html](https://pytorch.org/docs/stable/data.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/docs/stable/data.html](https://pytorch.org/docs/stable/data.html)
 - en: At the heart of PyTorch data loading utility is the [`torch.utils.data.DataLoader`](#torch.utils.data.DataLoader
     "torch.utils.data.DataLoader") class. It represents a Python iterable over a dataset,
     with support for
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch数据加载实用程序的核心是[`torch.utils.data.DataLoader`](#torch.utils.data.DataLoader
+    "torch.utils.data.DataLoader")类。它表示数据集的Python可迭代对象，支持
 - en: '[map-style and iterable-style datasets](#dataset-types),'
+  id: totrans-3
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[映射风格和可迭代风格数据集](#dataset-types)，'
 - en: '[customizing data loading order](#data-loading-order-and-sampler),'
+  id: totrans-4
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[自定义数据加载顺序](#data-loading-order-and-sampler)，'
 - en: '[automatic batching](#loading-batched-and-non-batched-data),'
+  id: totrans-5
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[自动批处理](#loading-batched-and-non-batched-data)，'
 - en: '[single- and multi-process data loading](#single-and-multi-process-data-loading),'
+  id: totrans-6
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[单进程和多进程数据加载](#single-and-multi-process-data-loading)，'
 - en: '[automatic memory pinning](#memory-pinning).'
+  id: totrans-7
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[自动内存固定](#memory-pinning)。'
 - en: 'These options are configured by the constructor arguments of a [`DataLoader`](#torch.utils.data.DataLoader
     "torch.utils.data.DataLoader"), which has signature:'
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 这些选项由[`DataLoader`](#torch.utils.data.DataLoader "torch.utils.data.DataLoader")的构造函数参数配置，其签名为：
 - en: '[PRE0]'
+  id: totrans-9
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: The sections below describe in details the effects and usages of these options.
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 下面的部分详细描述了这些选项的效果和用法。
 - en: Dataset Types
+  id: totrans-11
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 数据集类型
 - en: 'The most important argument of [`DataLoader`](#torch.utils.data.DataLoader
     "torch.utils.data.DataLoader") constructor is [`dataset`](utils.html#module-torch.utils.data.dataset
     "torch.utils.data.dataset"), which indicates a dataset object to load data from.
     PyTorch supports two different types of datasets:'
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`DataLoader`](#torch.utils.data.DataLoader "torch.utils.data.DataLoader")构造函数最重要的参数是[`dataset`](utils.html#module-torch.utils.data.dataset
+    "torch.utils.data.dataset")，表示要从中加载数据的数据集对象。PyTorch支持两种不同类型的数据集：'
 - en: '[map-style datasets](#map-style-datasets),'
+  id: totrans-13
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[映射风格数据集](#map-style-datasets)，'
 - en: '[iterable-style datasets](#iterable-style-datasets).'
+  id: totrans-14
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[可迭代风格数据集](#iterable-style-datasets)。'
 - en: Map-style datasets
+  id: totrans-15
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 映射风格数据集
 - en: A map-style dataset is one that implements the `__getitem__()` and `__len__()`
     protocols, and represents a map from (possibly non-integral) indices/keys to data
     samples.
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 映射风格数据集是实现了`__getitem__()`和`__len__()`协议的数据集，表示从（可能是非整数）索引/键到数据样本的映射。
 - en: For example, such a dataset, when accessed with `dataset[idx]`, could read the
     `idx`-th image and its corresponding label from a folder on the disk.
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 例如，这样一个数据集，当使用`dataset[idx]`访问时，可以从磁盘上的文件夹读取第`idx`个图像及其对应的标签。
 - en: See [`Dataset`](#torch.utils.data.Dataset "torch.utils.data.Dataset") for more
     details.
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: 更多详情请参阅[`Dataset`](#torch.utils.data.Dataset "torch.utils.data.Dataset")。
 - en: Iterable-style datasets
+  id: totrans-19
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 可迭代风格数据集
 - en: An iterable-style dataset is an instance of a subclass of [`IterableDataset`](#torch.utils.data.IterableDataset
     "torch.utils.data.IterableDataset") that implements the `__iter__()` protocol,
     and represents an iterable over data samples. This type of datasets is particularly
     suitable for cases where random reads are expensive or even improbable, and where
     the batch size depends on the fetched data.
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 可迭代风格数据集是[`IterableDataset`](#torch.utils.data.IterableDataset "torch.utils.data.IterableDataset")子类的实例，实现了`__iter__()`协议，表示数据样本的可迭代。这种类型的数据集特别适用于随机读取昂贵甚至不太可能的情况，批量大小取决于获取的数据。
 - en: For example, such a dataset, when called `iter(dataset)`, could return a stream
     of data reading from a database, a remote server, or even logs generated in real
     time.
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 例如，这样一个数据集，当调用`iter(dataset)`时，可以返回从数据库、远程服务器甚至实时生成的日志中读取的数据流。
 - en: See [`IterableDataset`](#torch.utils.data.IterableDataset "torch.utils.data.IterableDataset")
     for more details.
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 更多详情请参阅[`IterableDataset`](#torch.utils.data.IterableDataset "torch.utils.data.IterableDataset")。
 - en: Note
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: When using a [`IterableDataset`](#torch.utils.data.IterableDataset "torch.utils.data.IterableDataset")
     with [multi-process data loading](#multi-process-data-loading). The same dataset
     object is replicated on each worker process, and thus the replicas must be configured
     differently to avoid duplicated data. See [`IterableDataset`](#torch.utils.data.IterableDataset
     "torch.utils.data.IterableDataset") documentations for how to achieve this.
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 当使用带有[多进程数据加载](#multi-process-data-loading)的[`IterableDataset`](#torch.utils.data.IterableDataset
+    "torch.utils.data.IterableDataset")时。相同的数据集对象在每个工作进程上复制，因此必须对副本进行不同配置以避免重复数据。请参阅[`IterableDataset`](#torch.utils.data.IterableDataset
+    "torch.utils.data.IterableDataset")文档以了解如何实现此目的。
 - en: Data Loading Order and [`Sampler`](#torch.utils.data.Sampler "torch.utils.data.Sampler")[](#data-loading-order-and-sampler
     "Permalink to this heading")
+  id: totrans-25
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 数据加载顺序和[`Sampler`](#torch.utils.data.Sampler "torch.utils.data.Sampler")[](#data-loading-order-and-sampler
+    "跳转到此标题")
 - en: For [iterable-style datasets](#iterable-style-datasets), data loading order
     is entirely controlled by the user-defined iterable. This allows easier implementations
     of chunk-reading and dynamic batch size (e.g., by yielding a batched sample at
     each time).
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于[可迭代风格数据集](#iterable-style-datasets)，数据加载顺序完全由用户定义的可迭代对象控制。这允许更容易实现分块读取和动态批量大小（例如，每次产生一个批量样本）。
 - en: The rest of this section concerns the case with [map-style datasets](#map-style-datasets).
     [`torch.utils.data.Sampler`](#torch.utils.data.Sampler "torch.utils.data.Sampler")
     classes are used to specify the sequence of indices/keys used in data loading.
@@ -124,62 +183,86 @@
     case with stochastic gradient decent (SGD), a [`Sampler`](#torch.utils.data.Sampler
     "torch.utils.data.Sampler") could randomly permute a list of indices and yield
     each one at a time, or yield a small number of them for mini-batch SGD.
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 本节剩余部分涉及[映射风格数据集](#map-style-datasets)的情况。[`torch.utils.data.Sampler`](#torch.utils.data.Sampler
+    "torch.utils.data.Sampler")类用于指定数据加载中使用的索引/键的顺序。它们表示数据集索引的可迭代对象。例如，在随机梯度下降（SGD）的常见情况下，[`Sampler`](#torch.utils.data.Sampler
+    "torch.utils.data.Sampler")可以随机排列索引列表并逐个产生每个索引，或者为小批量SGD产生少量索引。
 - en: A sequential or shuffled sampler will be automatically constructed based on
     the `shuffle` argument to a [`DataLoader`](#torch.utils.data.DataLoader "torch.utils.data.DataLoader").
     Alternatively, users may use the [`sampler`](utils.html#module-torch.utils.data.sampler
     "torch.utils.data.sampler") argument to specify a custom [`Sampler`](#torch.utils.data.Sampler
     "torch.utils.data.Sampler") object that at each time yields the next index/key
     to fetch.
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: 基于传递给[`DataLoader`](#torch.utils.data.DataLoader“torch.utils.data.DataLoader”)的`shuffle`参数，将自动构建顺序或随机采样器。或者，用户可以使用[`sampler`](utils.html#module-torch.utils.data.sampler“torch.utils.data.sampler”)参数指定自定义[`Sampler`](#torch.utils.data.Sampler“torch.utils.data.Sampler”)对象，该对象在每次产生下一个索引/键以获取时。
 - en: A custom [`Sampler`](#torch.utils.data.Sampler "torch.utils.data.Sampler") that
     yields a list of batch indices at a time can be passed as the `batch_sampler`
     argument. Automatic batching can also be enabled via `batch_size` and `drop_last`
     arguments. See [the next section](#loading-batched-and-non-batched-data) for more
     details on this.
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 可以将一次产生一批批次索引列表的自定义[`Sampler`](#torch.utils.data.Sampler“torch.utils.data.Sampler”)作为`batch_sampler`参数传递。也可以通过`batch_size`和`drop_last`参数启用自动批处理。有关此内容的更多详细信息，请参见[下一节](#loading-batched-and-non-batched-data)。
 - en: Note
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Neither [`sampler`](utils.html#module-torch.utils.data.sampler "torch.utils.data.sampler")
     nor `batch_sampler` is compatible with iterable-style datasets, since such datasets
     have no notion of a key or an index.
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: 既不[`sampler`](utils.html#module-torch.utils.data.sampler“torch.utils.data.sampler”)也不`batch_sampler`与可迭代样式数据集兼容，因为这类数据集没有键或索引的概念。
 - en: Loading Batched and Non-Batched Data[](#loading-batched-and-non-batched-data
     "Permalink to this heading")
+  id: totrans-32
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 加载批量和非批量数据[]（＃加载批量和非批量数据“链接到此标题”）
 - en: '[`DataLoader`](#torch.utils.data.DataLoader "torch.utils.data.DataLoader")
     supports automatically collating individual fetched data samples into batches
     via arguments `batch_size`, `drop_last`, `batch_sampler`, and `collate_fn` (which
     has a default function).'
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`DataLoader`](#torch.utils.data.DataLoader“torch.utils.data.DataLoader”)支持通过参数`batch_size`，`drop_last`，`batch_sampler`和`collate_fn`（具有默认函数）自动整理单独获取的数据样本为批次。'
 - en: Automatic batching (default)[](#automatic-batching-default "Permalink to this
     heading")
+  id: totrans-34
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 自动批处理（默认）[]（＃自动批处理默认“链接到此标题”）
 - en: This is the most common case, and corresponds to fetching a minibatch of data
     and collating them into batched samples, i.e., containing Tensors with one dimension
     being the batch dimension (usually the first).
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 这是最常见的情况，对应于获取一批数据并将它们整理成批量样本，即包含张量的一个维度为批量维度（通常是第一个）。
 - en: When `batch_size` (default `1`) is not `None`, the data loader yields batched
     samples instead of individual samples. `batch_size` and `drop_last` arguments
     are used to specify how the data loader obtains batches of dataset keys. For map-style
     datasets, users can alternatively specify `batch_sampler`, which yields a list
     of keys at a time.
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 当`batch_size`（默认为`1`）不是`None`时，数据加载器产生批量样本而不是单个样本。`batch_size`和`drop_last`参数用于指定数据加载器如何获取数据集键的批次。对于映射样式数据集，用户可以选择指定`batch_sampler`，它一次产生一个键列表。
 - en: Note
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: The `batch_size` and `drop_last` arguments essentially are used to construct
     a `batch_sampler` from [`sampler`](utils.html#module-torch.utils.data.sampler
     "torch.utils.data.sampler"). For map-style datasets, the [`sampler`](utils.html#module-torch.utils.data.sampler
@@ -187,42 +270,62 @@
     the `shuffle` argument. For iterable-style datasets, the [`sampler`](utils.html#module-torch.utils.data.sampler
     "torch.utils.data.sampler") is a dummy infinite one. See [this section](#data-loading-order-and-sampler)
     on more details on samplers.
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: '`batch_size`和`drop_last`参数本质上用于从[`sampler`](utils.html#module-torch.utils.data.sampler“torch.utils.data.sampler”)构建`batch_sampler`。对于映射样式数据集，[`sampler`](utils.html#module-torch.utils.data.sampler“torch.utils.data.sampler”)由用户提供或基于`shuffle`参数构建。对于可迭代样式数据集，[`sampler`](utils.html#module-torch.utils.data.sampler“torch.utils.data.sampler”)是一个虚拟的无限循环。有关采样器的更多详细信息，请参见[此部分](#data-loading-order-and-sampler)。'
 - en: Note
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: When fetching from [iterable-style datasets](#iterable-style-datasets) with
     [multi-processing](#multi-process-data-loading), the `drop_last` argument drops
     the last non-full batch of each worker’s dataset replica.
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: 从[可迭代样式数据集](#iterable-style-datasets)中获取数据时，使用[多处理](#multi-process-data-loading)，`drop_last`参数会丢弃每个工作进程数据集副本的最后一个非完整批次。
 - en: After fetching a list of samples using the indices from sampler, the function
     passed as the `collate_fn` argument is used to collate lists of samples into batches.
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用来自采样器的索引获取样本列表后，作为`collate_fn`参数传递的函数用于将样本列表整理成批次。
 - en: 'In this case, loading from a map-style dataset is roughly equivalent with:'
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这种情况下，从映射样式数据集加载大致相当于：
 - en: '[PRE1]'
+  id: totrans-43
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: 'and loading from an iterable-style dataset is roughly equivalent with:'
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 从可迭代样式数据集加载大致相当于：
 - en: '[PRE2]'
+  id: totrans-45
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: A custom `collate_fn` can be used to customize collation, e.g., padding sequential
     data to max length of a batch. See [this section](#dataloader-collate-fn) on more
     about `collate_fn`.
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 可以使用自定义的`collate_fn`来自定义整理，例如，将顺序数据填充到批次的最大长度。有关`collate_fn`的更多信息，请参见[此部分](#dataloader-collate-fn)。
 - en: Disable automatic batching[](#disable-automatic-batching "Permalink to this
     heading")
+  id: totrans-47
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 禁用自动批处理[]（＃禁用自动批处理“链接到此标题”）
 - en: In certain cases, users may want to handle batching manually in dataset code,
     or simply load individual samples. For example, it could be cheaper to directly
     load batched data (e.g., bulk reads from a database or reading continuous chunks
@@ -231,107 +334,154 @@
     automatic batching (where `collate_fn` is used to collate the samples), but let
     the data loader directly return each member of the [`dataset`](utils.html#module-torch.utils.data.dataset
     "torch.utils.data.dataset") object.
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: 在某些情况下，用户可能希望在数据集代码中手动处理批处理，或者仅加载单个样本。例如，直接加载批量数据可能更便宜（例如，从数据库进行批量读取或读取连续的内存块），或者批处理大小取决于数据，或者程序设计为处理单个样本。在这些情况下，最好不使用自动批处理（其中`collate_fn`用于整理样本），而是让数据加载器直接返回[`dataset`](utils.html#module-torch.utils.data.dataset
+    "torch.utils.data.dataset")对象的每个成员。
 - en: When both `batch_size` and `batch_sampler` are `None` (default value for `batch_sampler`
     is already `None`), automatic batching is disabled. Each sample obtained from
     the [`dataset`](utils.html#module-torch.utils.data.dataset "torch.utils.data.dataset")
     is processed with the function passed as the `collate_fn` argument.
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: 当`batch_size`和`batch_sampler`都为`None`时（`batch_sampler`的默认值已经是`None`），自动批处理被禁用。从[`dataset`](utils.html#module-torch.utils.data.dataset
+    "torch.utils.data.dataset")获取的每个样本都会使用作为`collate_fn`参数传递的函数进行处理。
 - en: '**When automatic batching is disabled**, the default `collate_fn` simply converts
     NumPy arrays into PyTorch Tensors, and keeps everything else untouched.'
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: '**当禁用自动批处理时**，默认的`collate_fn`只是将NumPy数组转换为PyTorch张量，并保持其他所有内容不变。'
 - en: 'In this case, loading from a map-style dataset is roughly equivalent with:'
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这种情况下，从映射样式数据集加载大致等同于：
 - en: '[PRE3]'
+  id: totrans-52
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: 'and loading from an iterable-style dataset is roughly equivalent with:'
+  id: totrans-53
   prefs: []
   type: TYPE_NORMAL
+  zh: 从可迭代样式数据集加载大致等同于：
 - en: '[PRE4]'
+  id: totrans-54
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: See [this section](#dataloader-collate-fn) on more about `collate_fn`.
+  id: totrans-55
   prefs: []
   type: TYPE_NORMAL
+  zh: 查看关于`collate_fn`的更多信息[此部分](#dataloader-collate-fn)。
 - en: '### Working with `collate_fn`[](#working-with-collate-fn "Permalink to this
     heading")'
+  id: totrans-56
   prefs: []
   type: TYPE_NORMAL
+  zh: '### 使用`collate_fn`[](#working-with-collate-fn "跳转到此标题")'
 - en: The use of `collate_fn` is slightly different when automatic batching is enabled
     or disabled.
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: 当启用或禁用自动批处理时，使用`collate_fn`略有不同。
 - en: '**When automatic batching is disabled**, `collate_fn` is called with each individual
     data sample, and the output is yielded from the data loader iterator. In this
     case, the default `collate_fn` simply converts NumPy arrays in PyTorch tensors.'
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: '**当禁用自动批处理时**，`collate_fn`会对每个单独的数据样本进行调用，并且输出会从数据加载器迭代器中产生。在这种情况下，默认的`collate_fn`只是将NumPy数组转换为PyTorch张量。'
 - en: '**When automatic batching is enabled**, `collate_fn` is called with a list
     of data samples at each time. It is expected to collate the input samples into
     a batch for yielding from the data loader iterator. The rest of this section describes
     the behavior of the default `collate_fn` ([`default_collate()`](#torch.utils.data.default_collate
     "torch.utils.data.default_collate")).'
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: '**当启用自动批处理时**，`collate_fn`会在每次调用时传入一个数据样本列表。它预期将输入样本整理成一个批次以便从数据加载器迭代器中产生。本节的其余部分描述了默认`collate_fn`的行为（[`default_collate()`](#torch.utils.data.default_collate
+    "torch.utils.data.default_collate")）。'
 - en: 'For instance, if each data sample consists of a 3-channel image and an integral
     class label, i.e., each element of the dataset returns a tuple `(image, class_index)`,
     the default `collate_fn` collates a list of such tuples into a single tuple of
     a batched image tensor and a batched class label Tensor. In particular, the default
     `collate_fn` has the following properties:'
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: 例如，如果每个数据样本由一个3通道图像和一个整数类标签组成，即数据集的每个元素返回一个元组`(image, class_index)`，默认的`collate_fn`将这样的元组列表整理成一个批量图像张量和一个批量类标签张量的单个元组。特别是，默认的`collate_fn`具有以下属性：
 - en: It always prepends a new dimension as the batch dimension.
+  id: totrans-61
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 它总是在批处理维度之前添加一个新维度。
 - en: It automatically converts NumPy arrays and Python numerical values into PyTorch
     Tensors.
+  id: totrans-62
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 它会自动将NumPy数组和Python数值转换为PyTorch张量。
 - en: It preserves the data structure, e.g., if each sample is a dictionary, it outputs
     a dictionary with the same set of keys but batched Tensors as values (or lists
     if the values can not be converted into Tensors). Same for `list` s, `tuple` s,
     `namedtuple` s, etc.
+  id: totrans-63
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 它保留了数据结构，例如，如果每个样本是一个字典，它会输出一个具有相同键集的字典，但批量化的张量作为值（或者如果值无法转换为张量，则为列表）。对于`list`、`tuple`、`namedtuple`等也是一样的。
 - en: Users may use customized `collate_fn` to achieve custom batching, e.g., collating
     along a dimension other than the first, padding sequences of various lengths,
     or adding support for custom data types.
+  id: totrans-64
   prefs: []
   type: TYPE_NORMAL
+  zh: 用户可以使用定制的`collate_fn`来实现自定义的批处理，例如，沿着不同于第一个维度进行整理，填充不同长度的序列，或者添加对自定义数据类型的支持。
 - en: If you run into a situation where the outputs of [`DataLoader`](#torch.utils.data.DataLoader
     "torch.utils.data.DataLoader") have dimensions or type that is different from
     your expectation, you may want to check your `collate_fn`.
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您发现[`DataLoader`](#torch.utils.data.DataLoader "torch.utils.data.DataLoader")的输出维度或类型与您的期望不同，您可能需要检查您的`collate_fn`。
 - en: Single- and Multi-process Data Loading[](#single-and-multi-process-data-loading
     "Permalink to this heading")
+  id: totrans-66
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 单进程和多进程数据加载[](#single-and-multi-process-data-loading "跳转到此标题")
 - en: A [`DataLoader`](#torch.utils.data.DataLoader "torch.utils.data.DataLoader")
     uses single-process data loading by default.
+  id: totrans-67
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`DataLoader`](#torch.utils.data.DataLoader "torch.utils.data.DataLoader")默认使用单进程数据加载。'
 - en: Within a Python process, the [Global Interpreter Lock (GIL)](https://wiki.python.org/moin/GlobalInterpreterLock)
     prevents true fully parallelizing Python code across threads. To avoid blocking
     computation code with data loading, PyTorch provides an easy switch to perform
     multi-process data loading by simply setting the argument `num_workers` to a positive
     integer.
+  id: totrans-68
   prefs: []
   type: TYPE_NORMAL
+  zh: 在Python进程中，[全局解释器锁（GIL）](https://wiki.python.org/moin/GlobalInterpreterLock)阻止了真正将Python代码在线程间完全并行化。为了避免用数据加载阻塞计算代码，PyTorch提供了一个简单的开关，通过将参数`num_workers`设置为正整数来执行多进程数据加载。
 - en: Single-process data loading (default)[](#single-process-data-loading-default
     "Permalink to this heading")
+  id: totrans-69
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 单进程数据加载（默认）[](#single-process-data-loading-default "跳转到此标题的永久链接")
 - en: In this mode, data fetching is done in the same process a [`DataLoader`](#torch.utils.data.DataLoader
     "torch.utils.data.DataLoader") is initialized. Therefore, data loading may block
     computing. However, this mode may be preferred when resource(s) used for sharing
@@ -339,20 +489,28 @@
     the entire dataset is small and can be loaded entirely in memory. Additionally,
     single-process loading often shows more readable error traces and thus is useful
     for debugging.
+  id: totrans-70
   prefs: []
   type: TYPE_NORMAL
+  zh: 在此模式下，数据获取是在初始化[`DataLoader`](#torch.utils.data.DataLoader "torch.utils.data.DataLoader")的同一进程中完成的。因此，数据加载可能会阻塞计算。但是，当用于在进程之间共享数据的资源（例如共享内存、文件描述符）有限时，或者整个数据集很小且可以完全加载到内存中时，可能更喜欢此模式。此外，单进程加载通常显示更易读的错误跟踪，因此对于调试很有用。
 - en: Multi-process data loading[](#multi-process-data-loading "Permalink to this
     heading")
+  id: totrans-71
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 多进程数据加载[](#multi-process-data-loading "跳转到此标题的永久链接")
 - en: Setting the argument `num_workers` as a positive integer will turn on multi-process
     data loading with the specified number of loader worker processes.
+  id: totrans-72
   prefs: []
   type: TYPE_NORMAL
+  zh: 将参数`num_workers`设置为正整数将打开具有指定数量的加载器工作进程的多进程数据加载。
 - en: Warning
+  id: totrans-73
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: 'After several iterations, the loader worker processes will consume the same
     amount of CPU memory as the parent process for all Python objects in the parent
     process which are accessed from the worker processes. This can be problematic
@@ -363,8 +521,11 @@
     as Pandas, Numpy or PyArrow objects. Check out [issue #13246](https://github.com/pytorch/pytorch/issues/13246#issuecomment-905703662)
     for more details on why this occurs and example code for how to workaround these
     problems.'
+  id: totrans-74
   prefs: []
   type: TYPE_NORMAL
+  zh: 经过几次迭代，加载器工作进程将消耗与父进程中从工作进程访问的所有Python对象相同的CPU内存量。如果数据集包含大量数据（例如，在数据集构建时加载了非常大的文件名列表），和/或您使用了大量工作进程（总内存使用量为`工作进程数量
+    * 父进程大小`），这可能会有问题。最简单的解决方法是用Pandas、Numpy或PyArrow对象等非引用计数表示替换Python对象。查看[问题＃13246](https://github.com/pytorch/pytorch/issues/13246#issuecomment-905703662)以获取更多关于为什么会发生这种情况以及如何解决这些问题的示例代码。
 - en: In this mode, each time an iterator of a [`DataLoader`](#torch.utils.data.DataLoader
     "torch.utils.data.DataLoader") is created (e.g., when you call `enumerate(dataloader)`),
     `num_workers` worker processes are created. At this point, the [`dataset`](utils.html#module-torch.utils.data.dataset
@@ -372,8 +533,11 @@
     each worker, where they are used to initialize, and fetch data. This means that
     dataset access together with its internal IO, transforms (including `collate_fn`)
     runs in the worker process.
+  id: totrans-75
   prefs: []
   type: TYPE_NORMAL
+  zh: 在此模式下，每次创建[`DataLoader`](#torch.utils.data.DataLoader "torch.utils.data.DataLoader")的迭代器（例如，当调用`enumerate(dataloader)`时），将创建`num_workers`个工作进程。在这一点上，[`dataset`](utils.html#module-torch.utils.data.dataset
+    "torch.utils.data.dataset")、`collate_fn`和`worker_init_fn`被传递给每个工作进程，它们用于初始化和获取数据。这意味着数据集访问以及其内部IO、转换（包括`collate_fn`）在工作进程中运行。
 - en: '[`torch.utils.data.get_worker_info()`](#torch.utils.data.get_worker_info "torch.utils.data.get_worker_info")
     returns various useful information in a worker process (including the worker id,
     dataset replica, initial seed, etc.), and returns `None` in main process. Users
@@ -381,13 +545,17 @@
     configure each dataset replica, and to determine whether the code is running in
     a worker process. For example, this can be particularly helpful in sharding the
     dataset.'
+  id: totrans-76
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`torch.utils.data.get_worker_info()`](#torch.utils.data.get_worker_info "torch.utils.data.get_worker_info")在工作进程中返回各种有用信息（包括工作进程ID、数据集副本、初始种子等），在主进程中返回`None`。用户可以在数据集代码和/或`worker_init_fn`中使用此函数来单独配置每个数据集副本，并确定代码是否在工作进程中运行。例如，在对数据集进行分片时，这可能特别有帮助。'
 - en: For map-style datasets, the main process generates the indices using [`sampler`](utils.html#module-torch.utils.data.sampler
     "torch.utils.data.sampler") and sends them to the workers. So any shuffle randomization
     is done in the main process which guides loading by assigning indices to load.
+  id: totrans-77
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于映射式数据集，主进程使用[`sampler`](utils.html#module-torch.utils.data.sampler "torch.utils.data.sampler")生成索引并将其发送给工作进程。因此，任何洗牌随机化都是在主进程中完成的，主进程通过分配索引来指导加载。
 - en: For iterable-style datasets, since each worker process gets a replica of the
     [`dataset`](utils.html#module-torch.utils.data.dataset "torch.utils.data.dataset")
     object, naive multi-process loading will often result in duplicated data. Using
@@ -397,99 +565,146 @@
     documentations for how to achieve this. ) For similar reasons, in multi-process
     loading, the `drop_last` argument drops the last non-full batch of each worker’s
     iterable-style dataset replica.
+  id: totrans-78
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于可迭代式数据集，由于每个工作进程都会获得一个[`dataset`](utils.html#module-torch.utils.data.dataset
+    "torch.utils.data.dataset")对象的副本，天真的多进程加载通常会导致数据重复。使用[`torch.utils.data.get_worker_info()`](#torch.utils.data.get_worker_info
+    "torch.utils.data.get_worker_info")和/或`worker_init_fn`，用户可以独立配置每个副本。（请参阅[`IterableDataset`](#torch.utils.data.IterableDataset
+    "torch.utils.data.IterableDataset")文档以了解如何实现。）出于类似的原因，在多进程加载中，`drop_last`参数会删除每个工作进程的可迭代式数据集副本的最后一个非完整批次。
 - en: Workers are shut down once the end of the iteration is reached, or when the
     iterator becomes garbage collected.
+  id: totrans-79
   prefs: []
   type: TYPE_NORMAL
+  zh: 工作进程在迭代结束时关闭，或者当迭代器被垃圾回收时关闭。
 - en: Warning
+  id: totrans-80
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: It is generally not recommended to return CUDA tensors in multi-process loading
     because of many subtleties in using CUDA and sharing CUDA tensors in multiprocessing
     (see [CUDA in multiprocessing](notes/multiprocessing.html#multiprocessing-cuda-note)).
     Instead, we recommend using [automatic memory pinning](#memory-pinning) (i.e.,
     setting `pin_memory=True`), which enables fast data transfer to CUDA-enabled GPUs.
+  id: totrans-81
   prefs: []
   type: TYPE_NORMAL
+  zh: 通常不建议在多进程加载中返回CUDA张量，因为在使用CUDA和在多进程中共享CUDA张量时存在许多微妙之处（请参阅[CUDA在多进程中的使用](notes/multiprocessing.html#multiprocessing-cuda-note)）。相反，我们建议使用[自动内存固定](#memory-pinning)（即设置`pin_memory=True`），这样可以实现快速数据传输到支持CUDA的GPU。
 - en: Platform-specific behaviors[](#platform-specific-behaviors "Permalink to this
     heading")
+  id: totrans-82
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 平台特定行为[](#platform-specific-behaviors "跳转到此标题")
 - en: Since workers rely on Python [`multiprocessing`](https://docs.python.org/3/library/multiprocessing.html#module-multiprocessing
     "(in Python v3.12)"), worker launch behavior is different on Windows compared
     to Unix.
+  id: totrans-83
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于工作人员依赖于Python [`multiprocessing`](https://docs.python.org/3/library/multiprocessing.html#module-multiprocessing
+    "(在Python v3.12中)")，与Unix相比，在Windows上工作启动行为是不同的。
 - en: On Unix, `fork()` is the default [`multiprocessing`](https://docs.python.org/3/library/multiprocessing.html#module-multiprocessing
     "(in Python v3.12)") start method. Using `fork()`, child workers typically can
     access the [`dataset`](utils.html#module-torch.utils.data.dataset "torch.utils.data.dataset")
     and Python argument functions directly through the cloned address space.
+  id: totrans-84
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在Unix上，`fork()`是默认的[`multiprocessing`](https://docs.python.org/3/library/multiprocessing.html#module-multiprocessing
+    "(在Python v3.12中)")启动方法。使用`fork()`，子工作进程通常可以直接通过克隆的地址空间访问[`dataset`](utils.html#module-torch.utils.data.dataset
+    "torch.utils.data.dataset")和Python参数函数。
 - en: On Windows or MacOS, `spawn()` is the default [`multiprocessing`](https://docs.python.org/3/library/multiprocessing.html#module-multiprocessing
     "(in Python v3.12)") start method. Using `spawn()`, another interpreter is launched
     which runs your main script, followed by the internal worker function that receives
     the [`dataset`](utils.html#module-torch.utils.data.dataset "torch.utils.data.dataset"),
     `collate_fn` and other arguments through [`pickle`](https://docs.python.org/3/library/pickle.html#module-pickle
     "(in Python v3.12)") serialization.
+  id: totrans-85
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在Windows或MacOS上，`spawn()`是默认的[`multiprocessing`](https://docs.python.org/3/library/multiprocessing.html#module-multiprocessing
+    "(在Python v3.12中)")启动方法。使用`spawn()`，会启动另一个解释器来运行您的主脚本，然后是接收[`dataset`](utils.html#module-torch.utils.data.dataset
+    "torch.utils.data.dataset")、`collate_fn`和其他参数的内部工作函数，通过[`pickle`](https://docs.python.org/3/library/pickle.html#module-pickle
+    "(在Python v3.12中)")序列化。
 - en: 'This separate serialization means that you should take two steps to ensure
     you are compatible with Windows while using multi-process data loading:'
+  id: totrans-86
   prefs: []
   type: TYPE_NORMAL
+  zh: 这种单独的序列化意味着在使用多进程数据加载时，您应该采取两个步骤来确保与Windows兼容：
 - en: Wrap most of you main script’s code within `if __name__ == '__main__':` block,
     to make sure it doesn’t run again (most likely generating error) when each worker
     process is launched. You can place your dataset and [`DataLoader`](#torch.utils.data.DataLoader
     "torch.utils.data.DataLoader") instance creation logic here, as it doesn’t need
     to be re-executed in workers.
+  id: totrans-87
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 将大部分主脚本代码放在`if __name__ == '__main__':`块中，以确保在启动每个工作进程时不会再次运行（很可能会生成错误）。您可以在这里放置数据集和[`DataLoader`](#torch.utils.data.DataLoader
+    "torch.utils.data.DataLoader")实例创建逻辑，因为它不需要在工作进程中重新执行。
 - en: Make sure that any custom `collate_fn`, `worker_init_fn` or [`dataset`](utils.html#module-torch.utils.data.dataset
     "torch.utils.data.dataset") code is declared as top level definitions, outside
     of the `__main__` check. This ensures that they are available in worker processes.
     (this is needed since functions are pickled as references only, not `bytecode`.)
+  id: totrans-88
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 确保任何自定义的`collate_fn`、`worker_init_fn`或[`dataset`](utils.html#module-torch.utils.data.dataset
+    "torch.utils.data.dataset")代码被声明为顶层定义，放在`__main__`检查之外。这样可以确保它们在工作进程中可用。（这是因为函数只被序列化为引用，而不是`bytecode`。）
 - en: '#### Randomness in multi-process data loading[](#randomness-in-multi-process-data-loading
     "Permalink to this heading")'
+  id: totrans-89
   prefs: []
   type: TYPE_NORMAL
+  zh: '#### 多进程数据加载中的随机性[](#randomness-in-multi-process-data-loading "跳转到此标题")'
 - en: By default, each worker will have its PyTorch seed set to `base_seed + worker_id`,
     where `base_seed` is a long generated by main process using its RNG (thereby,
     consuming a RNG state mandatorily) or a specified `generator`. However, seeds
     for other libraries may be duplicated upon initializing workers, causing each
     worker to return identical random numbers. (See [this section](notes/faq.html#dataloader-workers-random-seed)
     in FAQ.).
+  id: totrans-90
   prefs: []
   type: TYPE_NORMAL
+  zh: 默认情况下，每个工作进程的PyTorch种子将设置为`base_seed + worker_id`，其中`base_seed`是由主进程使用其RNG生成的长整型（因此，强制消耗RNG状态）或指定的`generator`。然而，初始化工作进程时，其他库的种子可能会重复，导致每个工作进程返回相同的随机数。（请参阅FAQ中的[此部分](notes/faq.html#dataloader-workers-random-seed)。）
 - en: In `worker_init_fn`, you may access the PyTorch seed set for each worker with
     either [`torch.utils.data.get_worker_info().seed`](#torch.utils.data.get_worker_info
     "torch.utils.data.get_worker_info") or [`torch.initial_seed()`](generated/torch.initial_seed.html#torch.initial_seed
     "torch.initial_seed"), and use it to seed other libraries before data loading.
+  id: totrans-91
   prefs: []
   type: TYPE_NORMAL
+  zh: 在`worker_init_fn`中，您可以使用[`torch.utils.data.get_worker_info().seed`](#torch.utils.data.get_worker_info
+    "torch.utils.data.get_worker_info")或[`torch.initial_seed()`](generated/torch.initial_seed.html#torch.initial_seed
+    "torch.initial_seed")访问为每个工作进程设置的PyTorch种子，并在数据加载之前用它来为其他库设置种子。
 - en: Memory Pinning
+  id: totrans-92
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 内存固定
 - en: Host to GPU copies are much faster when they originate from pinned (page-locked)
     memory. See [Use pinned memory buffers](notes/cuda.html#cuda-memory-pinning) for
     more details on when and how to use pinned memory generally.
+  id: totrans-93
   prefs: []
   type: TYPE_NORMAL
+  zh: 当从固定（页锁定）内存发起主机到GPU的复制时，复制速度要快得多。有关何时以及如何通常使用固定内存，请参阅[使用固定内存缓冲区](notes/cuda.html#cuda-memory-pinning)以获取更多详细信息。
 - en: For data loading, passing `pin_memory=True` to a [`DataLoader`](#torch.utils.data.DataLoader
     "torch.utils.data.DataLoader") will automatically put the fetched data Tensors
     in pinned memory, and thus enables faster data transfer to CUDA-enabled GPUs.
+  id: totrans-94
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于数据加载，将`pin_memory=True`传递给[`DataLoader`](#torch.utils.data.DataLoader "torch.utils.data.DataLoader")将自动将获取的数据张量放在固定内存中，从而实现更快的数据传输到支持CUDA的GPU。
 - en: The default memory pinning logic only recognizes Tensors and maps and iterables
     containing Tensors. By default, if the pinning logic sees a batch that is a custom
     type (which will occur if you have a `collate_fn` that returns a custom batch
@@ -497,154 +712,215 @@
     not recognize them, and it will return that batch (or those elements) without
     pinning the memory. To enable memory pinning for custom batch or data type(s),
     define a `pin_memory()` method on your custom type(s).
+  id: totrans-95
   prefs: []
   type: TYPE_NORMAL
+  zh: 默认的内存固定逻辑仅识别张量和包含张量的映射和可迭代对象。默认情况下，如果固定逻辑看到一个批次是自定义类型（如果您有一个返回自定义批次类型的`collate_fn`，或者如果批次的每个元素是自定义类型），或者如果批次（或这些元素）是自定义类型，则固定逻辑将不会识别它们，并且将返回该批次（或这些元素）而不固定内存。要为自定义批次或数据类型启用内存固定，请在自定义类型上定义一个`pin_memory()`方法。
 - en: See the example below.
+  id: totrans-96
   prefs: []
   type: TYPE_NORMAL
+  zh: 请参见下面的示例。
 - en: 'Example:'
+  id: totrans-97
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例：
 - en: '[PRE5]'
+  id: totrans-98
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: '[PRE6]'
+  id: totrans-99
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: Data loader combines a dataset and a sampler, and provides an iterable over
     the given dataset.
+  id: totrans-100
   prefs: []
   type: TYPE_NORMAL
+  zh: 数据加载器结合了数据集和采样器，并提供了对给定数据集的可迭代对象。
 - en: The [`DataLoader`](#torch.utils.data.DataLoader "torch.utils.data.DataLoader")
     supports both map-style and iterable-style datasets with single- or multi-process
     loading, customizing loading order and optional automatic batching (collation)
     and memory pinning.
+  id: totrans-101
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`DataLoader`](#torch.utils.data.DataLoader "torch.utils.data.DataLoader")支持单进程或多进程加载的映射样式和可迭代样式数据集，自定义加载顺序以及可选的自动分批（整理）和内存固定。'
 - en: See [`torch.utils.data`](#module-torch.utils.data "torch.utils.data") documentation
     page for more details.
+  id: totrans-102
   prefs: []
   type: TYPE_NORMAL
+  zh: 请查看[`torch.utils.data`](#module-torch.utils.data "torch.utils.data")文档页面以获取更多详细信息。
 - en: Parameters
+  id: totrans-103
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**dataset** ([*Dataset*](#torch.utils.data.Dataset "torch.utils.data.Dataset"))
     – dataset from which to load the data.'
+  id: totrans-104
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**dataset**（*Dataset*）- 要从中加载数据的数据集。'
 - en: '**batch_size** ([*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")*,* *optional*) – how many samples per batch to load (default:
     `1`).'
+  id: totrans-105
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**batch_size**（*int*，可选）- 每批加载多少个样本（默认值：`1`）。'
 - en: '**shuffle** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")*,* *optional*) – set to `True` to have the data reshuffled
     at every epoch (default: `False`).'
+  id: totrans-106
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**shuffle**（*bool*，可选）- 设置为`True`以在每个时期重新洗牌数据（默认值：`False`）。'
 - en: '**sampler** ([*Sampler*](#torch.utils.data.Sampler "torch.utils.data.Sampler")
     *or* *Iterable**,* *optional*) – defines the strategy to draw samples from the
     dataset. Can be any `Iterable` with `__len__` implemented. If specified, `shuffle`
     must not be specified.'
+  id: totrans-107
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**sampler**（*Sampler*或*Iterable*，可选）- 定义从数据集中抽取样本的策略。可以是任何实现了`__len__`的`Iterable`。如果指定了，必须不指定`shuffle`。'
 - en: '**batch_sampler** ([*Sampler*](#torch.utils.data.Sampler "torch.utils.data.Sampler")
     *or* *Iterable**,* *optional*) – like [`sampler`](utils.html#module-torch.utils.data.sampler
     "torch.utils.data.sampler"), but returns a batch of indices at a time. Mutually
     exclusive with `batch_size`, `shuffle`, [`sampler`](utils.html#module-torch.utils.data.sampler
     "torch.utils.data.sampler"), and `drop_last`.'
+  id: totrans-108
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**batch_sampler**（*Sampler*或*Iterable*，可选）- 类似于[`sampler`](utils.html#module-torch.utils.data.sampler
+    "torch.utils.data.sampler")，但一次返回一批索引。与`batch_size`、`shuffle`、[`sampler`](utils.html#module-torch.utils.data.sampler
+    "torch.utils.data.sampler")和`drop_last`互斥。'
 - en: '**num_workers** ([*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")*,* *optional*) – how many subprocesses to use for data loading.
     `0` means that the data will be loaded in the main process. (default: `0`)'
+  id: totrans-109
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**num_workers**（*int*，可选）- 用于数据加载的子进程数。`0`表示数据将在主进程中加载。（默认值：`0`）'
 - en: '**collate_fn** (*Callable**,* *optional*) – merges a list of samples to form
     a mini-batch of Tensor(s). Used when using batched loading from a map-style dataset.'
+  id: totrans-110
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**collate_fn**（可调用，可选）- 将样本列表合并为一个Tensor(s)的小批量。在从映射样式数据集进行批量加载时使用。'
 - en: '**pin_memory** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")*,* *optional*) – If `True`, the data loader will copy Tensors
     into device/CUDA pinned memory before returning them. If your data elements are
     a custom type, or your `collate_fn` returns a batch that is a custom type, see
     the example below.'
+  id: totrans-111
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**pin_memory**（*bool*，可选）- 如果为`True`，数据加载器将在返回之前将张量复制到设备/CUDA固定内存中。如果您的数据元素是自定义类型，或者您的`collate_fn`返回一个自定义类型的批次，请参见下面的示例。'
 - en: '**drop_last** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")*,* *optional*) – set to `True` to drop the last incomplete
     batch, if the dataset size is not divisible by the batch size. If `False` and
     the size of dataset is not divisible by the batch size, then the last batch will
     be smaller. (default: `False`)'
+  id: totrans-112
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**drop_last**（*bool*，可选）- 设置为`True`以丢弃最后一个不完整的批次，如果数据集大小不是批次大小的整数倍。如果为`False`且数据集大小不是批次大小的整数倍，则最后一个批次将更小。（默认值：`False`）'
 - en: '**timeout** (*numeric**,* *optional*) – if positive, the timeout value for
     collecting a batch from workers. Should always be non-negative. (default: `0`)'
+  id: totrans-113
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**timeout**（数值，可选）- 如果为正数，则为从工作进程收集一批数据的超时值。应始终为非负数。（默认值：`0`）'
 - en: '**worker_init_fn** (*Callable**,* *optional*) – If not `None`, this will be
     called on each worker subprocess with the worker id (an int in `[0, num_workers
     - 1]`) as input, after seeding and before data loading. (default: `None`)'
+  id: totrans-114
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**worker_init_fn**（可调用，可选）- 如果不为`None`，则将在每个工作进程上调用此函数，输入为工作进程的工作ID（一个在`[0，num_workers
+    - 1]`中的整数），在种子和数据加载之后。 （默认值：`None`）'
 - en: '**multiprocessing_context** ([*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)") *or* *multiprocessing.context.BaseContext**,* *optional*)
     – If `None`, the default [multiprocessing context](https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods)
     of your operating system will be used. (default: `None`)'
+  id: totrans-115
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**multiprocessing_context**（*str*或*multiprocessing.context.BaseContext*，可选）-
+    如果为`None`，则将使用您操作系统的默认[多进程上下文](https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods)。（默认值：`None`）'
 - en: '**generator** ([*torch.Generator*](generated/torch.Generator.html#torch.Generator
     "torch.Generator")*,* *optional*) – If not `None`, this RNG will be used by RandomSampler
     to generate random indexes and multiprocessing to generate `base_seed` for workers.
     (default: `None`)'
+  id: totrans-116
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**generator**（*torch.Generator*，可选）- 如果不为`None`，则RandomSampler将使用此RNG生成随机索引，多进程将生成工作进程的`base_seed`。（默认值：`None`）'
 - en: '**prefetch_factor** ([*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")*,* *optional**,* *keyword-only arg*) – Number of batches
     loaded in advance by each worker. `2` means there will be a total of 2 * num_workers
     batches prefetched across all workers. (default value depends on the set value
     for num_workers. If value of num_workers=0 default is `None`. Otherwise, if value
     of `num_workers > 0` default is `2`).'
+  id: totrans-117
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**prefetch_factor**（*int*，可选，关键字参数）- 每个工作进程提前加载的批次数。`2`表示所有工作进程中将预取2*num_workers批次。
+    （默认值取决于num_workers的设置值。如果num_workers=0，默认值为`None`。否则，如果`num_workers > 0`，默认值为`2`）。'
 - en: '**persistent_workers** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")*,* *optional*) – If `True`, the data loader will not shut
     down the worker processes after a dataset has been consumed once. This allows
     to maintain the workers Dataset instances alive. (default: `False`)'
+  id: totrans-118
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**persistent_workers**（*bool*，可选）- 如果为`True`，数据加载器将在数据集被消耗一次后不关闭工作进程。这允许保持工作进程的数据集实例处于活动状态。（默认值：`False`）'
 - en: '**pin_memory_device** ([*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)")*,* *optional*) – the device to `pin_memory` to if `pin_memory`
     is `True`.'
+  id: totrans-119
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**pin_memory_device**（*str*，可选）- 如果`pin_memory`为`True`，则要将其`pin_memory`到的设备。'
 - en: Warning
+  id: totrans-120
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: If the `spawn` start method is used, `worker_init_fn` cannot be an unpicklable
     object, e.g., a lambda function. See [Multiprocessing best practices](notes/multiprocessing.html#multiprocessing-best-practices)
     on more details related to multiprocessing in PyTorch.
+  id: totrans-121
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果使用`spawn`启动方法，则`worker_init_fn`不能是一个不可序列化的对象，例如lambda函数。有关PyTorch中多进程的更多详细信息，请参见[多进程最佳实践](notes/multiprocessing.html#multiprocessing-best-practices)。
 - en: Warning
+  id: totrans-122
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: '`len(dataloader)` heuristic is based on the length of the sampler used. When
     [`dataset`](utils.html#module-torch.utils.data.dataset "torch.utils.data.dataset")
     is an [`IterableDataset`](#torch.utils.data.IterableDataset "torch.utils.data.IterableDataset"),
@@ -653,35 +929,52 @@
     This represents the best guess PyTorch can make because PyTorch trusts user [`dataset`](utils.html#module-torch.utils.data.dataset
     "torch.utils.data.dataset") code in correctly handling multi-process loading to
     avoid duplicate data.'
+  id: totrans-123
   prefs: []
   type: TYPE_NORMAL
+  zh: '`len(dataloader)`的启发式方法基于使用的采样器的长度。当[`dataset`](utils.html#module-torch.utils.data.dataset
+    "torch.utils.data.dataset")是一个[`IterableDataset`](#torch.utils.data.IterableDataset
+    "torch.utils.data.IterableDataset")时，它将根据`len(dataset) / batch_size`估算一个值，根据`drop_last`进行适当的四舍五入，而不考虑多进程加载配置。这代表PyTorch可以做出的最佳猜测，因为PyTorch信任用户[`dataset`](utils.html#module-torch.utils.data.dataset
+    "torch.utils.data.dataset")代码正确处理多进程加载以避免重复数据。'
 - en: However, if sharding results in multiple workers having incomplete last batches,
     this estimate can still be inaccurate, because (1) an otherwise complete batch
     can be broken into multiple ones and (2) more than one batch worth of samples
     can be dropped when `drop_last` is set. Unfortunately, PyTorch can not detect
     such cases in general.
+  id: totrans-124
   prefs: []
   type: TYPE_NORMAL
+  zh: 然而，如果分片导致多个工作进程具有不完整的最后批次，这个估计仍然可能不准确，因为（1）一个否则完整的批次可以被分成多个批次，（2）当设置`drop_last`时，可以丢弃超过一个批次的样本。不幸的是，PyTorch通常无法检测到这种情况。
 - en: See [Dataset Types](#dataset-types) for more details on these two types of datasets
     and how [`IterableDataset`](#torch.utils.data.IterableDataset "torch.utils.data.IterableDataset")
     interacts with [Multi-process data loading](#multi-process-data-loading).
+  id: totrans-125
   prefs: []
   type: TYPE_NORMAL
+  zh: 有关这两种数据集类型以及[`IterableDataset`](#torch.utils.data.IterableDataset "torch.utils.data.IterableDataset")如何与[多进程数据加载](#multi-process-data-loading)交互的更多详细信息，请参见[数据集类型](#dataset-types)。
 - en: Warning
+  id: totrans-126
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: See [Reproducibility](notes/randomness.html#reproducibility), and [My data loader
     workers return identical random numbers](notes/faq.html#dataloader-workers-random-seed),
     and [Randomness in multi-process data loading](#data-loading-randomness) notes
     for random seed related questions.
+  id: totrans-127
   prefs: []
   type: TYPE_NORMAL
+  zh: 有关随机种子相关问题，请参见[可重现性](notes/randomness.html#reproducibility)，以及[我的数据加载器工作进程返回相同的随机数](notes/faq.html#dataloader-workers-random-seed)，以及[多进程数据加载中的随机性](#data-loading-randomness)注释。
 - en: '[PRE7]'
+  id: totrans-128
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: An abstract class representing a [`Dataset`](#torch.utils.data.Dataset "torch.utils.data.Dataset").
+  id: totrans-129
   prefs: []
   type: TYPE_NORMAL
+  zh: 表示[`Dataset`](#torch.utils.data.Dataset "torch.utils.data.Dataset")的抽象类。
 - en: All datasets that represent a map from keys to data samples should subclass
     it. All subclasses should overwrite `__getitem__()`, supporting fetching a data
     sample for a given key. Subclasses could also optionally overwrite `__len__()`,
@@ -690,31 +983,47 @@
     "torch.utils.data.DataLoader"). Subclasses could also optionally implement `__getitems__()`,
     for speedup batched samples loading. This method accepts list of indices of samples
     of batch and returns list of samples.
+  id: totrans-130
   prefs: []
   type: TYPE_NORMAL
+  zh: 所有表示从键到数据样本的映射的数据集都应该是它的子类。所有子类都应该重写`__getitem__()`，支持为给定键获取数据样本。子类还可以选择重写`__len__()`，许多[`Sampler`](#torch.utils.data.Sampler
+    "torch.utils.data.Sampler")实现和[`DataLoader`](#torch.utils.data.DataLoader "torch.utils.data.DataLoader")的默认选项期望返回数据集的大小。子类还可以选择实现`__getitems__()`，以加快批量样本加载。此方法接受批次样本的索引列表，并返回样本列表。
 - en: Note
+  id: totrans-131
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: '[`DataLoader`](#torch.utils.data.DataLoader "torch.utils.data.DataLoader")
     by default constructs an index sampler that yields integral indices. To make it
     work with a map-style dataset with non-integral indices/keys, a custom sampler
     must be provided.'
+  id: totrans-132
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`DataLoader`](#torch.utils.data.DataLoader "torch.utils.data.DataLoader")
+    默认构造一个产生整数索引的索引采样器。要使其与具有非整数索引/键的映射样式数据集一起工作，必须提供自定义采样器。'
 - en: '[PRE8]'
+  id: totrans-133
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: An iterable Dataset.
+  id: totrans-134
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个可迭代的数据集。
 - en: All datasets that represent an iterable of data samples should subclass it.
     Such form of datasets is particularly useful when data come from a stream.
+  id: totrans-135
   prefs: []
   type: TYPE_NORMAL
+  zh: 所有表示数据样本可迭代的数据集都应该是它的子类。当数据来自流时，这种形式的数据集特别有用。
 - en: All subclasses should overwrite `__iter__()`, which would return an iterator
     of samples in this dataset.
+  id: totrans-136
   prefs: []
   type: TYPE_NORMAL
+  zh: 所有子类都应该重写`__iter__()`，它将返回此数据集中样本的迭代器。
 - en: When a subclass is used with [`DataLoader`](#torch.utils.data.DataLoader "torch.utils.data.DataLoader"),
     each item in the dataset will be yielded from the [`DataLoader`](#torch.utils.data.DataLoader
     "torch.utils.data.DataLoader") iterator. When `num_workers > 0`, each worker process
@@ -725,136 +1034,219 @@
     be used in either the dataset’s `__iter__()` method or the [`DataLoader`](#torch.utils.data.DataLoader
     "torch.utils.data.DataLoader") ‘s `worker_init_fn` option to modify each copy’s
     behavior.
+  id: totrans-137
   prefs: []
   type: TYPE_NORMAL
+  zh: 当子类与[`DataLoader`](#torch.utils.data.DataLoader "torch.utils.data.DataLoader")一起使用时，数据集中的每个项目将从[`DataLoader`](#torch.utils.data.DataLoader
+    "torch.utils.data.DataLoader")迭代器中产生。当`num_workers > 0`时，每个工作进程将有数据集对象的不同副本，因此通常希望配置每个副本以避免从工作进程返回重复数据。当在工作进程中调用时，[`get_worker_info()`](#torch.utils.data.get_worker_info
+    "torch.utils.data.get_worker_info")返回有关工作进程的信息。它可以在数据集的`__iter__()`方法或[`DataLoader`](#torch.utils.data.DataLoader
+    "torch.utils.data.DataLoader")的`worker_init_fn`选项中使用，以修改每个副本的行为。
 - en: 'Example 1: splitting workload across all workers in `__iter__()`:'
+  id: totrans-138
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例1：在`__iter__()`中将工作负载分配给所有工作进程：
 - en: '[PRE9]'
+  id: totrans-139
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: 'Example 2: splitting workload across all workers using `worker_init_fn`:'
+  id: totrans-140
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例2：使用`worker_init_fn`在所有工作进程之间分配工作负载：
 - en: '[PRE10]'
+  id: totrans-141
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: '[PRE11]'
+  id: totrans-142
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: Dataset wrapping tensors.
+  id: totrans-143
   prefs: []
   type: TYPE_NORMAL
+  zh: 包装张量的数据集。
 - en: Each sample will be retrieved by indexing tensors along the first dimension.
+  id: totrans-144
   prefs: []
   type: TYPE_NORMAL
+  zh: 每个样本将通过沿第一维度索引张量来检索。
 - en: Parameters
+  id: totrans-145
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '***tensors** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – tensors
     that have the same size of the first dimension.'
+  id: totrans-146
   prefs: []
   type: TYPE_NORMAL
+  zh: '***tensors** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")) - 具有相同第一维度大小的张量。'
 - en: '[PRE12]'
+  id: totrans-147
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: Dataset as a stacking of multiple datasets.
+  id: totrans-148
   prefs: []
   type: TYPE_NORMAL
+  zh: 数据集作为多个数据集的堆叠。
 - en: This class is useful to assemble different parts of complex input data, given
     as datasets.
+  id: totrans-149
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个类对于组装给定为数据集的复杂输入数据的不同部分很有用。
 - en: Example
+  id: totrans-150
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例
 - en: '[PRE13]'
+  id: totrans-151
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: Parameters
+  id: totrans-152
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '***args** ([*Dataset*](#torch.utils.data.Dataset "torch.utils.data.Dataset"))
     – Datasets for stacking returned as tuple.'
+  id: totrans-153
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '***args** ([*Dataset*](#torch.utils.data.Dataset "torch.utils.data.Dataset"))
+    - 作为元组返回的堆叠数据集。'
 - en: '****kwargs** ([*Dataset*](#torch.utils.data.Dataset "torch.utils.data.Dataset"))
     – Datasets for stacking returned as dict.'
+  id: totrans-154
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '****kwargs** ([*Dataset*](#torch.utils.data.Dataset "torch.utils.data.Dataset"))
+    - 作为字典返回的堆叠数据集。'
 - en: '[PRE14]'
+  id: totrans-155
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: Dataset as a concatenation of multiple datasets.
+  id: totrans-156
   prefs: []
   type: TYPE_NORMAL
+  zh: 数据集作为多个数据集的串联。
 - en: This class is useful to assemble different existing datasets.
+  id: totrans-157
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个类对于组装不同的现有数据集很有用。
 - en: Parameters
+  id: totrans-158
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**datasets** (*sequence*) – List of datasets to be concatenated'
+  id: totrans-159
   prefs: []
   type: TYPE_NORMAL
+  zh: '**datasets** (*序列*) - 要连接的数据集列表'
 - en: '[PRE15]'
+  id: totrans-160
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: Dataset for chaining multiple [`IterableDataset`](#torch.utils.data.IterableDataset
     "torch.utils.data.IterableDataset") s.
+  id: totrans-161
   prefs: []
   type: TYPE_NORMAL
+  zh: 用于链接多个[`IterableDataset`](#torch.utils.data.IterableDataset "torch.utils.data.IterableDataset")的数据集。
 - en: This class is useful to assemble different existing dataset streams. The chaining
     operation is done on-the-fly, so concatenating large-scale datasets with this
     class will be efficient.
+  id: totrans-162
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个类对于组装不同的现有数据集流很有用。链式操作是即时进行的，因此使用这个类连接大规模数据集将是高效的。
 - en: Parameters
+  id: totrans-163
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**datasets** (*iterable* *of* [*IterableDataset*](#torch.utils.data.IterableDataset
     "torch.utils.data.IterableDataset")) – datasets to be chained together'
+  id: totrans-164
   prefs: []
   type: TYPE_NORMAL
+  zh: '**datasets** (*可迭代的* [*IterableDataset*](#torch.utils.data.IterableDataset
+    "torch.utils.data.IterableDataset")) - 要链接在一起的数据集'
 - en: '[PRE16]'
+  id: totrans-165
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: Subset of a dataset at specified indices.
+  id: totrans-166
   prefs: []
   type: TYPE_NORMAL
+  zh: 指定索引处数据集的子集。
 - en: Parameters
+  id: totrans-167
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**dataset** ([*Dataset*](#torch.utils.data.Dataset "torch.utils.data.Dataset"))
     – The whole Dataset'
+  id: totrans-168
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**dataset** ([*Dataset*](#torch.utils.data.Dataset "torch.utils.data.Dataset"))
+    - 整个数据集'
 - en: '**indices** (*sequence*) – Indices in the whole set selected for subset'
+  id: totrans-169
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**indices** (*序列*) - 选择子集的整个集合中的索引'
 - en: '[PRE17]'
+  id: totrans-170
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: General collate function that handles collection type of element within each
     batch.
+  id: totrans-171
   prefs: []
   type: TYPE_NORMAL
+  zh: 处理每个批次中元素的集合类型的一般整理函数。
 - en: The function also opens function registry to deal with specific element types.
     default_collate_fn_map provides default collate functions for tensors, numpy arrays,
     numbers and strings.
+  id: totrans-172
   prefs: []
   type: TYPE_NORMAL
+  zh: 该函数还打开函数注册表以处理特定元素类型。default_collate_fn_map为张量、numpy数组、数字和字符串提供默认整理函数。
 - en: Parameters
+  id: totrans-173
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**batch** – a single batch to be collated'
+  id: totrans-174
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**batch** - 要整理的单个批次'
 - en: '**collate_fn_map** ([*Optional*](https://docs.python.org/3/library/typing.html#typing.Optional
     "(in Python v3.12)")*[*[*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict
     "(in Python v3.12)")*[*[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
@@ -867,547 +1259,833 @@
     dictionary, this function will go through each key of the dictionary in the insertion
     order to invoke the corresponding collate function if the element type is a subclass
     of the key.'
+  id: totrans-175
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**collate_fn_map** ([*可选*](https://docs.python.org/3/library/typing.html#typing.Optional
+    "(在 Python v3.12 中)")*[*[*字典*](https://docs.python.org/3/library/typing.html#typing.Dict
+    "(在 Python v3.12 中)")*[*[*联合*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(在 Python v3.12 中)")*[*[*类型*](https://docs.python.org/3/library/typing.html#typing.Type
+    "(在 Python v3.12 中)")*,* [*元组*](https://docs.python.org/3/library/typing.html#typing.Tuple
+    "(在 Python v3.12 中)")*[*[*类型*](https://docs.python.org/3/library/typing.html#typing.Type
+    "(在 Python v3.12 中)")*,* *...**]**]**,* [*可调用*](https://docs.python.org/3/library/typing.html#typing.Callable
+    "(在 Python v3.12 中)")*]**]*) – 可选字典，将元素类型映射到相应的聚合函数。如果元素类型不在此字典中，则此函数将按插入顺序遍历字典的每个键，以调用相应的聚合函数，如果元素类型是键的子类。'
 - en: Examples
+  id: totrans-176
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例
 - en: '[PRE18]'
+  id: totrans-177
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: Note
+  id: totrans-178
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Each collate function requires a positional argument for batch and a keyword
     argument for the dictionary of collate functions as collate_fn_map.
+  id: totrans-179
   prefs: []
   type: TYPE_NORMAL
+  zh: 每个聚合函数都需要一个用于批处理的位置参数和一个用于聚合函数字典的关键字参数作为 collate_fn_map。
 - en: '[PRE19]'
+  id: totrans-180
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE19]'
 - en: Take in a batch of data and put the elements within the batch into a tensor
     with an additional outer dimension - batch size.
+  id: totrans-181
   prefs: []
   type: TYPE_NORMAL
+  zh: 接收一批数据并将批次内的元素放入一个具有额外外部维度（批量大小）的张量中。
 - en: The exact output type can be a [`torch.Tensor`](tensors.html#torch.Tensor "torch.Tensor"),
     a Sequence of [`torch.Tensor`](tensors.html#torch.Tensor "torch.Tensor"), a Collection
     of [`torch.Tensor`](tensors.html#torch.Tensor "torch.Tensor"), or left unchanged,
     depending on the input type. This is used as the default function for collation
     when batch_size or batch_sampler is defined in [`DataLoader`](#torch.utils.data.DataLoader
     "torch.utils.data.DataLoader").
+  id: totrans-182
   prefs: []
   type: TYPE_NORMAL
+  zh: 确切的输出类型可以是 [`torch.Tensor`](tensors.html#torch.Tensor "torch.Tensor")、[`torch.Tensor`](tensors.html#torch.Tensor
+    "torch.Tensor") 序列、[`torch.Tensor`](tensors.html#torch.Tensor "torch.Tensor")
+    集合，或保持不变，具体取决于输入类型。当在 [`DataLoader`](#torch.utils.data.DataLoader "torch.utils.data.DataLoader")
+    中定义了 batch_size 或 batch_sampler 时，这将用作默认的聚合函数。
 - en: 'Here is the general input type (based on the type of the element within the
     batch) to output type mapping:'
+  id: totrans-183
   prefs: []
   type: TYPE_NORMAL
+  zh: 这是一般输入类型（基于批次内元素类型）到输出类型的映射：
 - en: '[`torch.Tensor`](tensors.html#torch.Tensor "torch.Tensor") -> [`torch.Tensor`](tensors.html#torch.Tensor
     "torch.Tensor") (with an added outer dimension batch size)'
+  id: totrans-184
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[`torch.Tensor`](tensors.html#torch.Tensor "torch.Tensor") -> [`torch.Tensor`](tensors.html#torch.Tensor
+    "torch.Tensor")（带有额外的外部维度批量大小）'
 - en: ''
+  id: totrans-185
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-186
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: NumPy Arrays -> [`torch.Tensor`](tensors.html#torch.Tensor "torch.Tensor")
+  id: totrans-187
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: NumPy 数组 -> [`torch.Tensor`](tensors.html#torch.Tensor "torch.Tensor")
 - en: ''
+  id: totrans-188
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-189
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: float -> [`torch.Tensor`](tensors.html#torch.Tensor "torch.Tensor")
+  id: totrans-190
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 浮点数 -> [`torch.Tensor`](tensors.html#torch.Tensor "torch.Tensor")
 - en: ''
+  id: totrans-191
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-192
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: int -> [`torch.Tensor`](tensors.html#torch.Tensor "torch.Tensor")
+  id: totrans-193
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 整数 -> [`torch.Tensor`](tensors.html#torch.Tensor "torch.Tensor")
 - en: ''
+  id: totrans-194
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-195
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: str -> str (unchanged)
+  id: totrans-196
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 字符串 -> 字符串（保持不变）
 - en: ''
+  id: totrans-197
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-198
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: bytes -> bytes (unchanged)
+  id: totrans-199
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 字节 -> 字节（保持不变）
 - en: ''
+  id: totrans-200
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-201
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: Mapping[K, V_i] -> Mapping[K, default_collate([V_1, V_2, …])]
+  id: totrans-202
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: Mapping[K, V_i] -> Mapping[K, default_collate([V_1, V_2, …])]
 - en: ''
+  id: totrans-203
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-204
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: NamedTuple[V1_i, V2_i, …] -> NamedTuple[default_collate([V1_1, V1_2, …]), default_collate([V2_1,
     V2_2, …]), …]
+  id: totrans-205
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: NamedTuple[V1_i, V2_i, …] -> NamedTuple[default_collate([V1_1, V1_2, …]), default_collate([V2_1,
+    V2_2, …]), …]
 - en: ''
+  id: totrans-206
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-207
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: Sequence[V1_i, V2_i, …] -> Sequence[default_collate([V1_1, V1_2, …]), default_collate([V2_1,
     V2_2, …]), …]
+  id: totrans-208
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: Sequence[V1_i, V2_i, …] -> Sequence[default_collate([V1_1, V1_2, …]), default_collate([V2_1,
+    V2_2, …]), …]
 - en: Parameters
+  id: totrans-209
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**batch** – a single batch to be collated'
+  id: totrans-210
   prefs: []
   type: TYPE_NORMAL
+  zh: '**batch** – 要聚合的单个批次'
 - en: Examples
+  id: totrans-211
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例
 - en: '[PRE20]'
+  id: totrans-212
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE20]'
 - en: '[PRE21]'
+  id: totrans-213
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE21]'
 - en: Convert each NumPy array element into a [`torch.Tensor`](tensors.html#torch.Tensor
     "torch.Tensor").
+  id: totrans-214
   prefs: []
   type: TYPE_NORMAL
+  zh: 将每个 NumPy 数组元素转换为 [`torch.Tensor`](tensors.html#torch.Tensor "torch.Tensor")。
 - en: If the input is a Sequence, Collection, or Mapping, it tries to convert each
     element inside to a [`torch.Tensor`](tensors.html#torch.Tensor "torch.Tensor").
     If the input is not an NumPy array, it is left unchanged. This is used as the
     default function for collation when both batch_sampler and batch_size are NOT
     defined in [`DataLoader`](#torch.utils.data.DataLoader "torch.utils.data.DataLoader").
+  id: totrans-215
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果输入是序列、集合或映射，则尝试将其中的每个元素转换为 [`torch.Tensor`](tensors.html#torch.Tensor "torch.Tensor")。如果输入不是
+    NumPy 数组，则保持不变。当 [`DataLoader`](#torch.utils.data.DataLoader "torch.utils.data.DataLoader")
+    中未定义 batch_sampler 和 batch_size 时，这将用作默认的聚合函数。
 - en: The general input type to output type mapping is similar to that of [`default_collate()`](#torch.utils.data.default_collate
     "torch.utils.data.default_collate"). See the description there for more details.
+  id: totrans-216
   prefs: []
   type: TYPE_NORMAL
+  zh: 一般的输入类型到输出类型的映射类似于 [`default_collate()`](#torch.utils.data.default_collate "torch.utils.data.default_collate")。有关更多详细信息，请参阅那里的描述。
 - en: Parameters
+  id: totrans-217
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**data** – a single data point to be converted'
+  id: totrans-218
   prefs: []
   type: TYPE_NORMAL
+  zh: '**data** – 要转换的单个数据点'
 - en: Examples
+  id: totrans-219
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例
 - en: '[PRE22]'
+  id: totrans-220
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE22]'
 - en: '[PRE23]'
+  id: totrans-221
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE23]'
 - en: Returns the information about the current [`DataLoader`](#torch.utils.data.DataLoader
     "torch.utils.data.DataLoader") iterator worker process.
+  id: totrans-222
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回有关当前 [`DataLoader`](#torch.utils.data.DataLoader "torch.utils.data.DataLoader")
+    迭代器工作进程的信息。
 - en: 'When called in a worker, this returns an object guaranteed to have the following
     attributes:'
+  id: totrans-223
   prefs: []
   type: TYPE_NORMAL
+  zh: 在工作进程中调用时，此函数返回一个对象，保证具有以下属性：
 - en: '`id`: the current worker id.'
+  id: totrans-224
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`id`: 当前工作进程 ID。'
 - en: '`num_workers`: the total number of workers.'
+  id: totrans-225
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`num_workers`: 总工作人员数量。'
 - en: '`seed`: the random seed set for the current worker. This value is determined
     by main process RNG and the worker id. See [`DataLoader`](#torch.utils.data.DataLoader
     "torch.utils.data.DataLoader")’s documentation for more details.'
+  id: totrans-226
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`seed`: 为当前工作进程设置的随机种子。此值由主进程 RNG 和工作进程 ID 确定。有关更多详细信息，请参阅 [`DataLoader`](#torch.utils.data.DataLoader
+    "torch.utils.data.DataLoader") 的文档。'
 - en: '[`dataset`](utils.html#module-torch.utils.data.dataset "torch.utils.data.dataset"):
     the copy of the dataset object in **this** process. Note that this will be a different
     object in a different process than the one in the main process.'
+  id: totrans-227
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[`dataset`](utils.html#module-torch.utils.data.dataset "torch.utils.data.dataset")：**此**进程中数据集对象的副本。请注意，这将与主进程中的对象不同。'
 - en: When called in the main process, this returns `None`.
+  id: totrans-228
   prefs: []
   type: TYPE_NORMAL
+  zh: 在主进程中调用时，返回`None`。
 - en: Note
+  id: totrans-229
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: When used in a `worker_init_fn` passed over to [`DataLoader`](#torch.utils.data.DataLoader
     "torch.utils.data.DataLoader"), this method can be useful to set up each worker
     process differently, for instance, using `worker_id` to configure the `dataset`
     object to only read a specific fraction of a sharded dataset, or use `seed` to
     seed other libraries used in dataset code.
+  id: totrans-230
   prefs: []
   type: TYPE_NORMAL
+  zh: 当在传递给[`DataLoader`](#torch.utils.data.DataLoader "torch.utils.data.DataLoader")的`worker_init_fn`中使用时，此方法可用于设置每个工作进程的不同设置，例如，使用`worker_id`来配置`dataset`对象，以仅读取分片数据集的特定部分，或使用`seed`来为数据集代码中使用的其他库设置种子。
 - en: Return type
+  id: totrans-231
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*Optional*](https://docs.python.org/3/library/typing.html#typing.Optional
     "(in Python v3.12)")[*WorkerInfo*]'
+  id: totrans-232
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*可选*](https://docs.python.org/3/library/typing.html#typing.Optional "(在Python
+    v3.12中)")[*WorkerInfo*]'
 - en: '[PRE24]'
+  id: totrans-233
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE24]'
 - en: Randomly split a dataset into non-overlapping new datasets of given lengths.
+  id: totrans-234
   prefs: []
   type: TYPE_NORMAL
+  zh: 将数据集随机拆分为给定长度的不重叠新数据集。
 - en: If a list of fractions that sum up to 1 is given, the lengths will be computed
     automatically as floor(frac * len(dataset)) for each fraction provided.
+  id: totrans-235
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果给定一组总和为1的分数列表，则长度将自动计算为每个提供的分数的floor(frac * len(dataset))。
 - en: After computing the lengths, if there are any remainders, 1 count will be distributed
     in round-robin fashion to the lengths until there are no remainders left.
+  id: totrans-236
   prefs: []
   type: TYPE_NORMAL
+  zh: 计算长度后，如果有任何余数，将一个计数以循环方式分配给长度，直到没有余数为止。
 - en: 'Optionally fix the generator for reproducible results, e.g.:'
+  id: totrans-237
   prefs: []
   type: TYPE_NORMAL
+  zh: 可选择地固定生成器以获得可重复的结果，例如：
 - en: Example
+  id: totrans-238
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例
 - en: '[PRE25]'
+  id: totrans-239
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE25]'
 - en: Parameters
+  id: totrans-240
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**dataset** ([*Dataset*](#torch.utils.data.Dataset "torch.utils.data.Dataset"))
     – Dataset to be split'
+  id: totrans-241
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**dataset** ([*数据集*](#torch.utils.data.Dataset "torch.utils.data.Dataset"))
+    – 要拆分的数据集'
 - en: '**lengths** (*sequence*) – lengths or fractions of splits to be produced'
+  id: totrans-242
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**lengths** (*序列*) – 要生成的拆分长度或分数'
 - en: '**generator** ([*Generator*](generated/torch.Generator.html#torch.Generator
     "torch.Generator")) – Generator used for the random permutation.'
+  id: totrans-243
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**generator** ([*生成器*](generated/torch.Generator.html#torch.Generator "torch.Generator"))
+    – 用于随机排列的生成器。'
 - en: Return type
+  id: totrans-244
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*List*](https://docs.python.org/3/library/typing.html#typing.List "(in Python
     v3.12)")[[*Subset*](#torch.utils.data.Subset "torch.utils.data.dataset.Subset")[*T*]]'
+  id: totrans-245
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*列表*](https://docs.python.org/3/library/typing.html#typing.List "(在Python
+    v3.12中)")[[*子集*](#torch.utils.data.Subset "torch.utils.data.dataset.Subset")[*T*]]'
 - en: '[PRE26]'
+  id: totrans-246
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE26]'
 - en: Base class for all Samplers.
+  id: totrans-247
   prefs: []
   type: TYPE_NORMAL
+  zh: 所有采样器的基类。
 - en: Every Sampler subclass has to provide an `__iter__()` method, providing a way
     to iterate over indices or lists of indices (batches) of dataset elements, and
     a `__len__()` method that returns the length of the returned iterators.
+  id: totrans-248
   prefs: []
   type: TYPE_NORMAL
+  zh: 每个采样器子类都必须提供一个`__iter__()`方法，提供一种迭代数据集元素索引或索引列表（批次）的方法，并且必须提供一个`__len__()`方法，返回返回的迭代器的长度。
 - en: Parameters
+  id: totrans-249
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**data_source** ([*Dataset*](#torch.utils.data.Dataset "torch.utils.data.Dataset"))
     – This argument is not used and will be removed in 2.2.0. You may still have custom
     implementation that utilizes it.'
+  id: totrans-250
   prefs: []
   type: TYPE_NORMAL
+  zh: '**data_source** ([*数据集*](#torch.utils.data.Dataset "torch.utils.data.Dataset"))
+    – 此参数未被使用，将在2.2.0中移除。您仍然可以有使用它的自定义实现。'
 - en: Example
+  id: totrans-251
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例
 - en: '[PRE27]'
+  id: totrans-252
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE27]'
 - en: Note
+  id: totrans-253
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: The `__len__()` method isn’t strictly required by [`DataLoader`](#torch.utils.data.DataLoader
     "torch.utils.data.DataLoader"), but is expected in any calculation involving the
     length of a [`DataLoader`](#torch.utils.data.DataLoader "torch.utils.data.DataLoader").
+  id: totrans-254
   prefs: []
   type: TYPE_NORMAL
+  zh: '`__len__()`方法在[`DataLoader`](#torch.utils.data.DataLoader "torch.utils.data.DataLoader")中并非严格要求，但在涉及计算[`DataLoader`](#torch.utils.data.DataLoader
+    "torch.utils.data.DataLoader")长度的任何计算中都是预期的。'
 - en: '[PRE28]'
+  id: totrans-255
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE28]'
 - en: Samples elements sequentially, always in the same order.
+  id: totrans-256
   prefs: []
   type: TYPE_NORMAL
+  zh: 按顺序抽取元素，始终按相同顺序。
 - en: Parameters
+  id: totrans-257
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**data_source** ([*Dataset*](#torch.utils.data.Dataset "torch.utils.data.Dataset"))
     – dataset to sample from'
+  id: totrans-258
   prefs: []
   type: TYPE_NORMAL
+  zh: '**data_source** ([*数据集*](#torch.utils.data.Dataset "torch.utils.data.Dataset"))
+    – 要从中抽样的数据集'
 - en: '[PRE29]'
+  id: totrans-259
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE29]'
 - en: Samples elements randomly. If without replacement, then sample from a shuffled
     dataset.
+  id: totrans-260
   prefs: []
   type: TYPE_NORMAL
+  zh: 随机抽取元素。如果不进行替换，则从打乱的数据集中抽样。
 - en: If with replacement, then user can specify `num_samples` to draw.
+  id: totrans-261
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果进行替换，则用户可以指定`num_samples`来抽取。
 - en: Parameters
+  id: totrans-262
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**data_source** ([*Dataset*](#torch.utils.data.Dataset "torch.utils.data.Dataset"))
     – dataset to sample from'
+  id: totrans-263
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**data_source** ([*数据集*](#torch.utils.data.Dataset "torch.utils.data.Dataset"))
+    – 要从中抽样的数据集'
 - en: '**replacement** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")) – samples are drawn on-demand with replacement if `True`,
     default=``False``'
+  id: totrans-264
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**replacement** ([*布尔值*](https://docs.python.org/3/library/functions.html#bool
+    "(在Python v3.12中)")) – 如果为`True`，则使用替换方式按需抽取样本，默认为``False``'
 - en: '**num_samples** ([*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")) – number of samples to draw, default=`len(dataset)`.'
+  id: totrans-265
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**num_samples** ([*整数*](https://docs.python.org/3/library/functions.html#int
+    "(在Python v3.12中)")) – 要抽取的样本数，默认为`len(dataset)`。'
 - en: '**generator** ([*Generator*](generated/torch.Generator.html#torch.Generator
     "torch.Generator")) – Generator used in sampling.'
+  id: totrans-266
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**generator** ([*生成器*](generated/torch.Generator.html#torch.Generator "torch.Generator"))
+    – 用于采样的生成器。'
 - en: '[PRE30]'
+  id: totrans-267
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE30]'
 - en: Samples elements randomly from a given list of indices, without replacement.
+  id: totrans-268
   prefs: []
   type: TYPE_NORMAL
+  zh: 从给定的索引列表中随机抽取元素，不进行替换。
 - en: Parameters
+  id: totrans-269
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**indices** (*sequence*) – a sequence of indices'
+  id: totrans-270
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**indices** (*序列*) – 一系列索引'
 - en: '**generator** ([*Generator*](generated/torch.Generator.html#torch.Generator
     "torch.Generator")) – Generator used in sampling.'
+  id: totrans-271
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**generator** ([*生成器*](generated/torch.Generator.html#torch.Generator "torch.Generator"))
+    – 用于采样的生成器。'
 - en: '[PRE31]'
+  id: totrans-272
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE31]'
 - en: Samples elements from `[0,..,len(weights)-1]` with given probabilities (weights).
+  id: totrans-273
   prefs: []
   type: TYPE_NORMAL
+  zh: 根据给定的概率（权重）从`[0,..,len(weights)-1]`中抽取元素。
 - en: Parameters
+  id: totrans-274
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**weights** (*sequence*) – a sequence of weights, not necessary summing up
     to one'
+  id: totrans-275
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**weights** (*序列*) – 一系列权重，不一定总和为一'
 - en: '**num_samples** ([*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")) – number of samples to draw'
+  id: totrans-276
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**num_samples** ([*整数*](https://docs.python.org/3/library/functions.html#int
+    "(在Python v3.12中)")) – 要抽取的样本数'
 - en: '**replacement** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")) – if `True`, samples are drawn with replacement. If not,
     they are drawn without replacement, which means that when a sample index is drawn
     for a row, it cannot be drawn again for that row.'
+  id: totrans-277
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**replacement** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(在 Python v3.12 中)")) – 如果为`True`，则使用替换抽取样本。如果不是，则不使用替换，这意味着当为一行抽取样本索引时，不能再次为该行抽取。'
 - en: '**generator** ([*Generator*](generated/torch.Generator.html#torch.Generator
     "torch.Generator")) – Generator used in sampling.'
+  id: totrans-278
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**generator** ([*Generator*](generated/torch.Generator.html#torch.Generator
+    "torch.Generator")) – 用于采样的生成器。'
 - en: Example
+  id: totrans-279
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例
 - en: '[PRE32]'
+  id: totrans-280
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE32]'
 - en: '[PRE33]'
+  id: totrans-281
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE33]'
 - en: Wraps another sampler to yield a mini-batch of indices.
+  id: totrans-282
   prefs: []
   type: TYPE_NORMAL
+  zh: 包装另一个采样器以产生索引的小批量。
 - en: Parameters
+  id: totrans-283
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**sampler** ([*Sampler*](#torch.utils.data.Sampler "torch.utils.data.Sampler")
     *or* *Iterable*) – Base sampler. Can be any iterable object'
+  id: totrans-284
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**sampler** ([*Sampler*](#torch.utils.data.Sampler "torch.utils.data.Sampler")
+    *或* *Iterable*) – 基本采样器。可以是任何可迭代对象'
 - en: '**batch_size** ([*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")) – Size of mini-batch.'
+  id: totrans-285
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**batch_size** ([*int*](https://docs.python.org/3/library/functions.html#int
+    "(在 Python v3.12 中)")*) – 小批量的大小。'
 - en: '**drop_last** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")) – If `True`, the sampler will drop the last batch if its
     size would be less than `batch_size`'
+  id: totrans-286
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**drop_last** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(在 Python v3.12 中)")*) – 如果为`True`，采样器将删除最后一个批次，如果其大小小于`batch_size`'
 - en: Example
+  id: totrans-287
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例
 - en: '[PRE34]'
+  id: totrans-288
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE34]'
 - en: '[PRE35]'
+  id: totrans-289
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE35]'
 - en: Sampler that restricts data loading to a subset of the dataset.
+  id: totrans-290
   prefs: []
   type: TYPE_NORMAL
+  zh: 限制数据加载到数据集的子集的采样器。
 - en: It is especially useful in conjunction with [`torch.nn.parallel.DistributedDataParallel`](generated/torch.nn.parallel.DistributedDataParallel.html#torch.nn.parallel.DistributedDataParallel
     "torch.nn.parallel.DistributedDataParallel"). In such a case, each process can
     pass a `DistributedSampler` instance as a [`DataLoader`](#torch.utils.data.DataLoader
     "torch.utils.data.DataLoader") sampler, and load a subset of the original dataset
     that is exclusive to it.
+  id: totrans-291
   prefs: []
   type: TYPE_NORMAL
+  zh: 与[`torch.nn.parallel.DistributedDataParallel`](generated/torch.nn.parallel.DistributedDataParallel.html#torch.nn.parallel.DistributedDataParallel
+    "torch.nn.parallel.DistributedDataParallel")结合使用特别有用。在这种情况下，每个进程可以将`DistributedSampler`实例作为[`DataLoader`](#torch.utils.data.DataLoader
+    "torch.utils.data.DataLoader")采样器传递，并加载原始数据集的专属子集。
 - en: Note
+  id: totrans-292
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Dataset is assumed to be of constant size and that any instance of it always
     returns the same elements in the same order.
+  id: totrans-293
   prefs: []
   type: TYPE_NORMAL
+  zh: 假定数据集大小恒定，并且它的任何实例始终以相同的顺序返回相同的元素。
 - en: Parameters
+  id: totrans-294
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**dataset** – Dataset used for sampling.'
+  id: totrans-295
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**dataset** – 用于采样的数据集。'
 - en: '**num_replicas** ([*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")*,* *optional*) – Number of processes participating in distributed
     training. By default, `world_size` is retrieved from the current distributed group.'
+  id: totrans-296
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**num_replicas** ([*int*](https://docs.python.org/3/library/functions.html#int
+    "(在 Python v3.12 中)")*,* *可选*) – 参与分布式训练的进程数量。默认情况下，`world_size`是从当前分布式组中检索的。'
 - en: '**rank** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
     Python v3.12)")*,* *optional*) – Rank of the current process within `num_replicas`.
     By default, `rank` is retrieved from the current distributed group.'
+  id: totrans-297
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**rank** ([*int*](https://docs.python.org/3/library/functions.html#int "(在
+    Python v3.12 中)")*,* *可选*) – `num_replicas`中当前进程的等级。默认情况下，`rank`是从当前分布式组中检索的。'
 - en: '**shuffle** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")*,* *optional*) – If `True` (default), sampler will shuffle
     the indices.'
+  id: totrans-298
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**shuffle** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(在 Python v3.12 中)")*,* *可选*) – 如果为`True`（默认），采样器将对索引进行洗牌。'
 - en: '**seed** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
     Python v3.12)")*,* *optional*) – random seed used to shuffle the sampler if `shuffle=True`.
     This number should be identical across all processes in the distributed group.
     Default: `0`.'
+  id: totrans-299
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**seed** ([*int*](https://docs.python.org/3/library/functions.html#int "(在
+    Python v3.12 中)")*,* *可选*) – 用于对采样器进行洗牌的随机种子，如果`shuffle=True`。这个数字应该在分布式组中的所有进程中是相同的。默认值：`0`。'
 - en: '**drop_last** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")*,* *optional*) – if `True`, then the sampler will drop the
     tail of the data to make it evenly divisible across the number of replicas. If
     `False`, the sampler will add extra indices to make the data evenly divisible
     across the replicas. Default: `False`.'
+  id: totrans-300
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**drop_last** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(在 Python v3.12 中)")*,* *可选*) – 如果为`True`，则采样器将删除数据的尾部，使其在副本数量上均匀可分。如果为`False`，则采样器将添加额外的索引，使数据在副本上均匀可分。默认值：`False`。'
 - en: Warning
+  id: totrans-301
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: In distributed mode, calling the `set_epoch()` method at the beginning of each
     epoch **before** creating the `DataLoader` iterator is necessary to make shuffling
     work properly across multiple epochs. Otherwise, the same ordering will be always
     used.
+  id: totrans-302
   prefs: []
   type: TYPE_NORMAL
+  zh: 在分布式模式下，在每个时期开始时调用`set_epoch()`方法 **之前** 创建`DataLoader`迭代器是必要的，以使在多个时期中正确地进行洗牌。否则，将始终使用相同的顺序。
 - en: 'Example:'
+  id: totrans-303
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例：
 - en: '[PRE36]'
+  id: totrans-304
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE36]'

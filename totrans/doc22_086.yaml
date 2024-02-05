@@ -1,53 +1,83 @@
 - en: torch.utils.cpp_extension
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: torch.utils.cpp_extension
 - en: 原文：[https://pytorch.org/docs/stable/cpp_extension.html](https://pytorch.org/docs/stable/cpp_extension.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/docs/stable/cpp_extension.html](https://pytorch.org/docs/stable/cpp_extension.html)
 - en: '[PRE0]'
+  id: totrans-2
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: Create a `setuptools.Extension` for C++.
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 为C++创建一个`setuptools.Extension`。
 - en: Convenience method that creates a `setuptools.Extension` with the bare minimum
     (but often sufficient) arguments to build a C++ extension.
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用最少的参数创建一个`setuptools.Extension`的便捷方法，用于构建C++扩展。
 - en: All arguments are forwarded to the `setuptools.Extension` constructor.
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 所有参数都会传递给`setuptools.Extension`构造函数。
 - en: Example
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例
 - en: '[PRE1]'
+  id: totrans-7
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: '[PRE2]'
+  id: totrans-8
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Create a `setuptools.Extension` for CUDA/C++.
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 为CUDA/C++创建一个`setuptools.Extension`。
 - en: Convenience method that creates a `setuptools.Extension` with the bare minimum
     (but often sufficient) arguments to build a CUDA/C++ extension. This includes
     the CUDA include path, library path and runtime library.
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用最少的参数创建一个`setuptools.Extension`的便捷方法，用于构建CUDA/C++扩展。这包括CUDA包含路径、库路径和运行时库。
 - en: All arguments are forwarded to the `setuptools.Extension` constructor.
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 所有参数都会传递给`setuptools.Extension`构造函数。
 - en: Example
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例
 - en: '[PRE3]'
+  id: totrans-13
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: 'Compute capabilities:'
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 计算能力：
 - en: By default the extension will be compiled to run on all archs of the cards visible
     during the building process of the extension, plus PTX. If down the road a new
     card is installed the extension may need to be recompiled. If a visible card has
@@ -55,16 +85,23 @@
     nvcc can build fully-compiled binaries, Pytorch will make nvcc fall back to building
     kernels with the newest version of PTX your nvcc does support (see below for details
     on PTX).
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 默认情况下，扩展将被编译以在构建过程中可见的所有卡的所有archs上运行，再加上PTX。如果将来安装了新的卡，可能需要重新编译扩展。如果可见卡的计算能力（CC）比您的nvcc可以完全编译的最新版本要新，Pytorch将使nvcc退回到使用您的nvcc支持的最新版本的PTX构建内核（有关PTX的详细信息，请参见下文）。
 - en: 'You can override the default behavior using TORCH_CUDA_ARCH_LIST to explicitly
     specify which CCs you want the extension to support:'
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可以使用TORCH_CUDA_ARCH_LIST来覆盖默认行为，明确指定扩展要支持的CCs：
 - en: '`TORCH_CUDA_ARCH_LIST="6.1 8.6" python build_my_extension.py` `TORCH_CUDA_ARCH_LIST="5.2
     6.0 6.1 7.0 7.5 8.0 8.6+PTX" python build_my_extension.py`'
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: '`TORCH_CUDA_ARCH_LIST="6.1 8.6" python build_my_extension.py` `TORCH_CUDA_ARCH_LIST="5.2
+    6.0 6.1 7.0 7.5 8.0 8.6+PTX" python build_my_extension.py`'
 - en: The +PTX option causes extension kernel binaries to include PTX instructions
     for the specified CC. PTX is an intermediate representation that allows kernels
     to runtime-compile for any CC >= the specified CC (for example, 8.6+PTX generates
@@ -75,36 +112,57 @@
     off specifying them individually. For example, if you want your extension to run
     on 8.0 and 8.6, “8.0+PTX” would work functionally because it includes PTX that
     can runtime-compile for 8.6, but “8.0 8.6” would be better.
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: +PTX选项会导致扩展内核二进制文件包含指定CC的PTX指令。PTX是一种中间表示，允许内核为任何CC >= 指定的CC（例如，8.6+PTX生成的PTX可以为任何具有CC
+    >= 8.6的GPU运行时编译）。这提高了二进制文件的向前兼容性。然而，依赖于旧的PTX来通过运行时编译为新的CC提供向前兼容性可能会在这些新的CC上略微降低性能。如果您知道要针对的GPU的确切CC(s)，最好是分别指定它们。例如，如果您希望您的扩展在8.0和8.6上运行，“8.0+PTX”在功能上可以工作，因为它包含了可以为8.6运行时编译的PTX，但“8.0
+    8.6”会更好。
 - en: Note that while it’s possible to include all supported archs, the more archs
     get included the slower the building process will be, as it will build a separate
     kernel image for each arch.
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，虽然可以包含所有支持的archs，但是包含的archs越多，构建过程就会变得越慢，因为它将为每个arch构建单独的内核映像。
 - en: Note that CUDA-11.5 nvcc will hit internal compiler error while parsing torch/extension.h
     on Windows. To workaround the issue, move python binding logic to pure C++ file.
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，CUDA-11.5 nvcc在Windows上解析torch/extension.h时会遇到内部编译器错误。为了解决这个问题，将Python绑定逻辑移动到纯C++文件中。
 - en: 'Example use:'
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例用法：
 - en: '#include <ATen/ATen.h> at::Tensor SigmoidAlphaBlendForwardCuda(….)'
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: '#include <ATen/ATen.h> at::Tensor SigmoidAlphaBlendForwardCuda(….)'
 - en: 'Instead of:'
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 而不是：
 - en: '#include <torch/extension.h> torch::Tensor SigmoidAlphaBlendForwardCuda(…)'
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: '#include <torch/extension.h> torch::Tensor SigmoidAlphaBlendForwardCuda(…)'
 - en: 'Currently open issue for nvcc bug: [https://github.com/pytorch/pytorch/issues/69460](https://github.com/pytorch/pytorch/issues/69460)
     Complete workaround code example: [https://github.com/facebookresearch/pytorch3d/commit/cb170ac024a949f1f9614ffe6af1c38d972f7d48](https://github.com/facebookresearch/pytorch3d/commit/cb170ac024a949f1f9614ffe6af1c38d972f7d48)'
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: 目前有一个关于nvcc bug的未解决问题：[https://github.com/pytorch/pytorch/issues/69460](https://github.com/pytorch/pytorch/issues/69460)
+    完整的解决方案代码示例：[https://github.com/facebookresearch/pytorch3d/commit/cb170ac024a949f1f9614ffe6af1c38d972f7d48](https://github.com/facebookresearch/pytorch3d/commit/cb170ac024a949f1f9614ffe6af1c38d972f7d48)
 - en: 'Relocatable device code linking:'
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 可重定位设备代码链接：
 - en: If you want to reference device symbols across compilation units (across object
     files), the object files need to be built with relocatable device code (-rdc=true
     or -dc). An exception to this rule is “dynamic parallelism” (nested kernel launches)
@@ -113,67 +171,97 @@
     Time Optimization) at the device code compilation step and dlink step help reduce
     the protentional perf degradation of -rdc. Note that it needs to be used at both
     steps to be useful.
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果要在编译单元之间引用设备符号（跨目标文件），则需要使用可重定位设备代码（-rdc=true或-dc）构建目标文件。这个规则的一个例外是“动态并行性”（嵌套内核启动），这在现在已经不太常用了。可重定位设备代码不太优化，因此只有在需要的目标文件上使用它时才需要使用。在设备代码编译步骤和dlink步骤中使用-dlto（设备链接时间优化）有助于减少-rdc的潜在性能降低。请注意，它需要在两个步骤中使用才能发挥作用。
 - en: 'If you have rdc objects you need to have an extra -dlink (device linking) step
     before the CPU symbol linking step. There is also a case where -dlink is used
     without -rdc: when an extension is linked against a static lib containing rdc-compiled
     objects like the [NVSHMEM library]([https://developer.nvidia.com/nvshmem](https://developer.nvidia.com/nvshmem)).'
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您有rdc对象，则需要在CPU符号链接步骤之前进行额外的-dlink（设备链接）步骤。还有一种情况是在没有-rdc时使用-dlink：当一个扩展链接到包含rdc编译对象的静态库时，比如[NVSHMEM库]（[https://developer.nvidia.com/nvshmem](https://developer.nvidia.com/nvshmem)）。
 - en: 'Note: Ninja is required to build a CUDA Extension with RDC linking.'
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意：构建CUDA扩展需要使用Ninja进行RDC链接。
 - en: Example
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例
 - en: '[PRE4]'
+  id: totrans-31
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: '[PRE5]'
+  id: totrans-32
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: A custom `setuptools` build extension .
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个自定义的`setuptools`构建扩展。
 - en: This `setuptools.build_ext` subclass takes care of passing the minimum required
     compiler flags (e.g. `-std=c++17`) as well as mixed C++/CUDA compilation (and
     support for CUDA files in general).
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个`setuptools.build_ext`子类负责传递最低要求的编译器标志（例如`-std=c++17`）以及混合C++/CUDA编译（以及对CUDA文件的支持）。
 - en: When using [`BuildExtension`](#torch.utils.cpp_extension.BuildExtension "torch.utils.cpp_extension.BuildExtension"),
     it is allowed to supply a dictionary for `extra_compile_args` (rather than the
     usual list) that maps from languages (`cxx` or `nvcc`) to a list of additional
     compiler flags to supply to the compiler. This makes it possible to supply different
     flags to the C++ and CUDA compiler during mixed compilation.
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 在使用[`BuildExtension`](#torch.utils.cpp_extension.BuildExtension "torch.utils.cpp_extension.BuildExtension")时，允许为`extra_compile_args`（而不是通常的列表）提供一个字典，将语言（`cxx`或`nvcc`）映射到要提供给编译器的附加编译器标志列表。这样可以在混合编译期间为C++和CUDA编译器提供不同的标志。
 - en: '`use_ninja` (bool): If `use_ninja` is `True` (default), then we attempt to
     build using the Ninja backend. Ninja greatly speeds up compilation compared to
     the standard `setuptools.build_ext`. Fallbacks to the standard distutils backend
     if Ninja is not available.'
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: '`use_ninja`（布尔值）：如果`use_ninja`为`True`（默认值），则我们尝试使用Ninja后端进行构建。与标准的`setuptools.build_ext`相比，Ninja大大加快了编译速度。如果Ninja不可用，则回退到标准的distutils后端。'
 - en: Note
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: 'By default, the Ninja backend uses #CPUS + 2 workers to build the extension.
     This may use up too many resources on some systems. One can control the number
     of workers by setting the MAX_JOBS environment variable to a non-negative number.'
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 默认情况下，Ninja后端使用#CPUS + 2个工作进程来构建扩展。这可能会在某些系统上使用过多资源。可以通过将MAX_JOBS环境变量设置为非负数来控制工作进程的数量。
 - en: '[PRE6]'
+  id: totrans-39
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: Load a PyTorch C++ extension just-in-time (JIT).
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: 即时加载PyTorch C++扩展（JIT）。
 - en: To load an extension, a Ninja build file is emitted, which is used to compile
     the given sources into a dynamic library. This library is subsequently loaded
     into the current Python process as a module and returned from this function, ready
     for use.
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 要加载一个扩展，将生成一个Ninja构建文件，用于将给定的源编译成动态库。然后将此库作为模块加载到当前Python进程中，并从此函数返回，准备供使用。
 - en: By default, the directory to which the build file is emitted and the resulting
     library compiled to is `<tmp>/torch_extensions/<name>`, where `<tmp>` is the temporary
     folder on the current platform and `<name>` the name of the extension. This location
@@ -182,15 +270,19 @@
     be compiled into subfolders of this directory. Second, if the `build_directory`
     argument to this function is supplied, it overrides the entire path, i.e. the
     library will be compiled into that folder directly.
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 默认情况下，生成的构建文件和编译后的库的目录是`<tmp>/torch_extensions/<name>`，其中`<tmp>`是当前平台上的临时文件夹，`<name>`是扩展的名称。可以通过两种方式覆盖此位置。首先，如果设置了`TORCH_EXTENSIONS_DIR`环境变量，则它将替换`<tmp>/torch_extensions`，并且所有扩展将被编译到此目录的子文件夹中。其次，如果提供了此函数的`build_directory`参数，则它将覆盖整个路径，即库将直接编译到该文件夹中。
 - en: To compile the sources, the default system compiler (`c++`) is used, which can
     be overridden by setting the `CXX` environment variable. To pass additional arguments
     to the compilation process, `extra_cflags` or `extra_ldflags` can be provided.
     For example, to compile your extension with optimizations, pass `extra_cflags=['-O3']`.
     You can also use `extra_cflags` to pass further include directories.
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: 要编译源文件，将使用默认的系统编译器（`c++`），可以通过设置`CXX`环境变量来覆盖。要向编译过程传递附加参数，可以提供`extra_cflags`或`extra_ldflags`。例如，要使用优化编译您的扩展，请传递`extra_cflags=['-O3']`。您还可以使用`extra_cflags`来传递更多的包含目录。
 - en: CUDA support with mixed compilation is provided. Simply pass CUDA source files
     (`.cu` or `.cuh`) along with other sources. Such files will be detected and compiled
     with nvcc rather than the C++ compiler. This includes passing the CUDA lib64 directory
@@ -198,130 +290,198 @@
     nvcc via `extra_cuda_cflags`, just like with `extra_cflags` for C++. Various heuristics
     for finding the CUDA install directory are used, which usually work fine. If not,
     setting the `CUDA_HOME` environment variable is the safest option.
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 提供了混合编译的CUDA支持。只需传递CUDA源文件（`.cu`或`.cuh`）以及其他源文件。这些文件将被检测并使用nvcc而不是C++编译器进行编译。这包括将CUDA
+    lib64目录作为库目录，并链接`cudart`。您可以通过`extra_cuda_cflags`向nvcc传递额外的标志，就像对C++使用`extra_cflags`一样。通常会使用各种启发式方法来查找CUDA安装目录，这通常可以正常工作。如果不行，设置`CUDA_HOME`环境变量是最安全的选择。
 - en: Parameters
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**name** – The name of the extension to build. This MUST be the same as the
     name of the pybind11 module!'
+  id: totrans-46
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**name** - 要构建的扩展的名称。这必须与pybind11模块的名称相同！'
 - en: '**sources** ([*Union*](https://docs.python.org/3/library/typing.html#typing.Union
     "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)")*,* [*List*](https://docs.python.org/3/library/typing.html#typing.List
     "(in Python v3.12)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)")*]**]*) – A list of relative or absolute paths to C++ source
     files.'
+  id: totrans-47
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**sources**（[*Union*](https://docs.python.org/3/library/typing.html#typing.Union
+    "(在Python v3.12中)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(在Python v3.12中)")*,* [*List*](https://docs.python.org/3/library/typing.html#typing.List
+    "(在Python v3.12中)")*[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(在Python v3.12中)")*]**]*) – 一个包含C++源文件的相对或绝对路径列表。'
 - en: '**extra_cflags** – optional list of compiler flags to forward to the build.'
+  id: totrans-48
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**extra_cflags** – 转发到构建的编译器标志的可选列表。'
 - en: '**extra_cuda_cflags** – optional list of compiler flags to forward to nvcc
     when building CUDA sources.'
+  id: totrans-49
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**extra_cuda_cflags** – 转发到构建CUDA源代码时传递给nvcc的编译器标志的可选列表。'
 - en: '**extra_ldflags** – optional list of linker flags to forward to the build.'
+  id: totrans-50
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**extra_ldflags** – 转发到构建的链接器标志的可选列表。'
 - en: '**extra_include_paths** – optional list of include directories to forward to
     the build.'
+  id: totrans-51
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**extra_include_paths** – 转发到构建的包含目录的可选列表。'
 - en: '**build_directory** – optional path to use as build workspace.'
+  id: totrans-52
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**build_directory** – 用作构建工作区的可选路径。'
 - en: '**verbose** – If `True`, turns on verbose logging of load steps.'
+  id: totrans-53
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**verbose** – 如果为`True`，则打开加载步骤的详细日志记录。'
 - en: '**with_cuda** ([*Optional*](https://docs.python.org/3/library/typing.html#typing.Optional
     "(in Python v3.12)")*[*[*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")*]*) – Determines whether CUDA headers and libraries are added
     to the build. If set to `None` (default), this value is automatically determined
     based on the existence of `.cu` or `.cuh` in `sources`. Set it to True` to force
     CUDA headers and libraries to be included.'
+  id: totrans-54
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**with_cuda**（[*可选*](https://docs.python.org/3/library/typing.html#typing.Optional
+    "(在Python v3.12中)")*[*[*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(在Python v3.12中)")*]*) – 确定是否将CUDA头文件和库添加到构建中。如果设置为`None`（默认值），则根据`sources`中是否存在`.cu`或`.cuh`自动确定此值。将其设置为True`以强制包含CUDA头文件和库。'
 - en: '**is_python_module** – If `True` (default), imports the produced shared library
     as a Python module. If `False`, behavior depends on `is_standalone`.'
+  id: totrans-55
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**is_python_module** – 如果为`True`（默认值），将生成的共享库导入为Python模块。如果为`False`，行为取决于`is_standalone`。'
 - en: '**is_standalone** – If `False` (default) loads the constructed extension into
     the process as a plain dynamic library. If `True`, build a standalone executable.'
+  id: totrans-56
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**is_standalone** – 如果为`False`（默认值），将构建的扩展程序加载到进程中作为普通动态库。如果为`True`，则构建一个独立的可执行文件。'
 - en: Returns
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回值
 - en: Returns the loaded PyTorch extension as a Python module.
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: 将加载的PyTorch扩展程序作为Python模块返回。
 - en: 'If `is_python_module` is `False` and `is_standalone` is `False`:'
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果`is_python_module`为`False`且`is_standalone`为`False`：
 - en: Returns nothing. (The shared library is loaded into the process as a side effect.)
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: 不返回任何内容。（共享库会作为副作用加载到进程中。）
 - en: If `is_standalone` is `True`.
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果`is_standalone`为`True`。
 - en: Return the path to the executable. (On Windows, TORCH_LIB_PATH is added to the
     PATH environment variable as a side effect.)
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回可执行文件的路径。（在Windows上，TORCH_LIB_PATH会作为副作用添加到PATH环境变量中。）
 - en: Return type
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: If `is_python_module` is `True`
+  id: totrans-64
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果`is_python_module`为`True`
 - en: Example
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例
 - en: '[PRE7]'
+  id: totrans-66
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: '[PRE8]'
+  id: totrans-67
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: Load a PyTorch C++ extension just-in-time (JIT) from string sources.
+  id: totrans-68
   prefs: []
   type: TYPE_NORMAL
+  zh: 从字符串源加载PyTorch C++扩展程序。
 - en: This function behaves exactly like [`load()`](#torch.utils.cpp_extension.load
     "torch.utils.cpp_extension.load"), but takes its sources as strings rather than
     filenames. These strings are stored to files in the build directory, after which
     the behavior of [`load_inline()`](#torch.utils.cpp_extension.load_inline "torch.utils.cpp_extension.load_inline")
     is identical to [`load()`](#torch.utils.cpp_extension.load "torch.utils.cpp_extension.load").
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: 此函数的行为与[`load()`](#torch.utils.cpp_extension.load "torch.utils.cpp_extension.load")完全相同，但是它将源代码作为字符串而不是文件名。这些字符串存储到构建目录中的文件中，之后[`load_inline()`](#torch.utils.cpp_extension.load_inline
+    "torch.utils.cpp.cpp_extension.load_inline")的行为与[`load()`](#torch.utils.cpp_extension.load
+    "torch.utils.cpp.cpp_extension.load")相同。
 - en: See [the tests](https://github.com/pytorch/pytorch/blob/master/test/test_cpp_extensions_jit.py)
     for good examples of using this function.
+  id: totrans-70
   prefs: []
   type: TYPE_NORMAL
+  zh: 查看[测试](https://github.com/pytorch/pytorch/blob/master/test/test_cpp_extensions_jit.py)以获取使用此函数的良好示例。
 - en: 'Sources may omit two required parts of a typical non-inline C++ extension:
     the necessary header includes, as well as the (pybind11) binding code. More precisely,
     strings passed to `cpp_sources` are first concatenated into a single `.cpp` file.
     This file is then prepended with `#include <torch/extension.h>`.'
+  id: totrans-71
   prefs: []
   type: TYPE_NORMAL
+  zh: 源代码可能省略典型非内联C++扩展程序的两个必需部分：必要的头文件包含以及（pybind11）绑定代码。更确切地说，传递给`cpp_sources`的字符串首先连接成一个单独的`.cpp`文件。然后在文件开头加上`#include
+    <torch/extension.h>`。
 - en: Furthermore, if the `functions` argument is supplied, bindings will be automatically
     generated for each function specified. `functions` can either be a list of function
     names, or a dictionary mapping from function names to docstrings. If a list is
     given, the name of each function is used as its docstring.
+  id: totrans-72
   prefs: []
   type: TYPE_NORMAL
+  zh: 此外，如果提供了`functions`参数，将自动生成每个指定函数的绑定。`functions`可以是函数名称列表，也可以是从函数名称到文档字符串的映射的字典。如果给出了列表，则每个函数的名称将用作其文档字符串。
 - en: The sources in `cuda_sources` are concatenated into a separate `.cu` file and
     prepended with `torch/types.h`, `cuda.h` and `cuda_runtime.h` includes. The `.cpp`
     and `.cu` files are compiled separately, but ultimately linked into a single library.
@@ -329,127 +489,197 @@
     bind to a CUDA kernel, you must create a C++ function that calls it, and either
     declare or define this C++ function in one of the `cpp_sources` (and include its
     name in `functions`).
+  id: totrans-73
   prefs: []
   type: TYPE_NORMAL
+  zh: '`cuda_sources`中的源代码被连接到单独的`.cu`文件中，并在前面加上`torch/types.h`、`cuda.h`和`cuda_runtime.h`包含。`.cpp`和`.cu`文件分别编译，但最终链接成一个单独的库。请注意，`cuda_sources`中的函数不会自动生成绑定。要绑定到CUDA内核，您必须创建一个调用它的C++函数，并在`cpp_sources`中声明或定义此C++函数（并将其名称包含在`functions`中）。'
 - en: See [`load()`](#torch.utils.cpp_extension.load "torch.utils.cpp_extension.load")
     for a description of arguments omitted below.
+  id: totrans-74
   prefs: []
   type: TYPE_NORMAL
+  zh: 有关下面省略的参数的描述，请参阅[`load()`](#torch.utils.cpp_extension.load "torch.utils.cpp_extension.load")。
 - en: Parameters
+  id: totrans-75
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**cpp_sources** – A string, or list of strings, containing C++ source code.'
+  id: totrans-76
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**cpp_sources** - 包含C++源代码的字符串或字符串列表。'
 - en: '**cuda_sources** – A string, or list of strings, containing CUDA source code.'
+  id: totrans-77
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**cuda_sources** - 包含CUDA源代码的字符串或字符串列表。'
 - en: '**functions** – A list of function names for which to generate function bindings.
     If a dictionary is given, it should map function names to docstrings (which are
     otherwise just the function names).'
+  id: totrans-78
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**函数** - 一个要生成函数绑定的函数名称列表。如果给定一个字典，它应该将函数名称映射到文档字符串（否则只是函数名称）。'
 - en: '**with_cuda** – Determines whether CUDA headers and libraries are added to
     the build. If set to `None` (default), this value is automatically determined
     based on whether `cuda_sources` is provided. Set it to `True` to force CUDA headers
     and libraries to be included.'
+  id: totrans-79
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**with_cuda** - 确定是否将CUDA头文件和库添加到构建中。如果设置为`None`（默认值），则此值将根据是否提供了`cuda_sources`自动确定。将其设置为`True`以强制包含CUDA头文件和库。'
 - en: '**with_pytorch_error_handling** – Determines whether pytorch error and warning
     macros are handled by pytorch instead of pybind. To do this, each function `foo`
     is called via an intermediary `_safe_foo` function. This redirection might cause
     issues in obscure cases of cpp. This flag should be set to `False` when this redirect
     causes issues.'
+  id: totrans-80
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**with_pytorch_error_handling** - 确定是否由pytorch处理pytorch错误和警告宏，而不是由pybind处理。为此，每个函数`foo`都通过一个中间函数`_safe_foo`调用。这种重定向可能会在cpp的一些复杂情况下引起问题。当此重定向引起问题时，应将此标志设置为`False`。'
 - en: Example
+  id: totrans-81
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例
 - en: '[PRE9]'
+  id: totrans-82
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: Note
+  id: totrans-83
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: 'By default, the Ninja backend uses #CPUS + 2 workers to build the extension.
     This may use up too many resources on some systems. One can control the number
     of workers by setting the MAX_JOBS environment variable to a non-negative number.'
+  id: totrans-84
   prefs: []
   type: TYPE_NORMAL
+  zh: 默认情况下，Ninja后端使用#CPUS + 2个工作进程来构建扩展。这可能会在某些系统上使用过多资源。可以通过将MAX_JOBS环境变量设置为非负数来控制工作进程的数量。
 - en: '[PRE10]'
+  id: totrans-85
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: Get the include paths required to build a C++ or CUDA extension.
+  id: totrans-86
   prefs: []
   type: TYPE_NORMAL
+  zh: 获取构建C++或CUDA扩展所需的包含路径。
 - en: Parameters
+  id: totrans-87
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**cuda** ([*bool*](https://docs.python.org/3/library/functions.html#bool "(in
     Python v3.12)")) – If True, includes CUDA-specific include paths.'
+  id: totrans-88
   prefs: []
   type: TYPE_NORMAL
+  zh: '**cuda**（[*bool*](https://docs.python.org/3/library/functions.html#bool "(在Python
+    v3.12中)")） - 如果为True，则包含特定于CUDA的包含路径。'
 - en: Returns
+  id: totrans-89
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回
 - en: A list of include path strings.
+  id: totrans-90
   prefs: []
   type: TYPE_NORMAL
+  zh: 包含包含路径字符串的列表。
 - en: Return type
+  id: totrans-91
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*List*](https://docs.python.org/3/library/typing.html#typing.List "(in Python
     v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str "(in Python
     v3.12)")]'
+  id: totrans-92
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*列表*](https://docs.python.org/3/library/typing.html#typing.List "(在Python
+    v3.12中)")[[str](https://docs.python.org/3/library/stdtypes.html#str "(在Python
+    v3.12中)")]'
 - en: '[PRE11]'
+  id: totrans-93
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: Determine if the given compiler is ABI-compatible with PyTorch alongside its
     version.
+  id: totrans-94
   prefs: []
   type: TYPE_NORMAL
+  zh: 确定给定编译器是否与PyTorch ABI兼容以及其版本。
 - en: Parameters
+  id: totrans-95
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**compiler** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
     Python v3.12)")) – The compiler executable name to check (e.g. `g++`). Must be
     executable in a shell process.'
+  id: totrans-96
   prefs: []
   type: TYPE_NORMAL
+  zh: '**编译器**（[*str*](https://docs.python.org/3/library/stdtypes.html#str "(在Python
+    v3.12中)")） - 要检查的编译器可执行文件名称（例如`g++`）。必须在shell进程中可执行。'
 - en: Returns
+  id: totrans-97
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回
 - en: A tuple that contains a boolean that defines if the compiler is (likely) ABI-incompatible
     with PyTorch, followed by a TorchVersion string that contains the compiler version
     separated by dots.
+  id: totrans-98
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个包含一个布尔值的元组，该布尔值定义编译器是否（可能）与PyTorch不兼容的ABI，后跟一个包含由点分隔的编译器版本的TorchVersion字符串。
 - en: Return type
+  id: totrans-99
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*Tuple*](https://docs.python.org/3/library/typing.html#typing.Tuple "(in Python
     v3.12)")[[bool](https://docs.python.org/3/library/functions.html#bool "(in Python
     v3.12)"), *TorchVersion*]'
+  id: totrans-100
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*元组*](https://docs.python.org/3/library/typing.html#typing.Tuple "(在Python
+    v3.12中)")[[bool](https://docs.python.org/3/library/functions.html#bool "(在Python
+    v3.12中)"), *TorchVersion*]'
 - en: '[PRE12]'
+  id: totrans-101
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: Raise `RuntimeError` if [ninja](https://ninja-build.org/) build system is not
     available on the system, does nothing otherwise.
+  id: totrans-102
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果系统上没有[ninja](https://ninja-build.org/)构建系统，则引发`RuntimeError`，否则不执行任何操作。
 - en: '[PRE13]'
+  id: totrans-103
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: Return `True` if the [ninja](https://ninja-build.org/) build system is available
     on the system, `False` otherwise.
+  id: totrans-104
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果系统上可用[ninja](https://ninja-build.org/)构建系统，则返回`True`，否则返回`False`。

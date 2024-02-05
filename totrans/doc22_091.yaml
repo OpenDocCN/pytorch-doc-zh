@@ -1,34 +1,50 @@
 - en: torch.utils.mobile_optimizer
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: torch.utils.mobile_optimizer
 - en: 原文：[https://pytorch.org/docs/stable/mobile_optimizer.html](https://pytorch.org/docs/stable/mobile_optimizer.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: '[https://pytorch.org/docs/stable/mobile_optimizer.html](https://pytorch.org/docs/stable/mobile_optimizer.html)'
 - en: Warning
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: This API is in beta and may change in the near future.
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 此 API 处于 beta 阶段，可能会在不久的将来更改。
 - en: 'Torch mobile supports `torch.utils.mobile_optimizer.optimize_for_mobile` utility
     to run a list of optimization pass with modules in eval mode. The method takes
     the following parameters: a torch.jit.ScriptModule object, a blocklisting optimization
     set, a preserved method list, and a backend.'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: Torch 移动支持 `torch.utils.mobile_optimizer.optimize_for_mobile` 实用程序，以在评估模式下运行一系列优化
+    pass。该方法接受以下参数：一个 torch.jit.ScriptModule 对象，一个 blocklisting 优化集，一个保留方法列表和一个后端。
 - en: 'For CPU Backend, by default, if optimization blocklist is None or empty, `optimize_for_mobile`
     will run the following optimizations:'
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于 CPU 后端，默认情况下，如果优化 blocklist 为 None 或为空，`optimize_for_mobile` 将运行以下优化：
 - en: '**Conv2D + BatchNorm fusion** (blocklisting option mobile_optimizer.MobileOptimizerType.CONV_BN_FUSION):
     This optimization pass folds `Conv2d-BatchNorm2d` into `Conv2d` in `forward` method
     of this module and all its submodules. The weight and bias of the `Conv2d` are
     correspondingly updated.'
+  id: totrans-6
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**Conv2D + BatchNorm 融合**（blocklisting 选项 `mobile_optimizer.MobileOptimizerType.CONV_BN_FUSION`）：此优化
+    pass 将 `Conv2d-BatchNorm2d` 折叠为此模块及其所有子模块的 `forward` 方法中的 `Conv2d`。`Conv2d` 的权重和偏置相应地更新。'
 - en: '**Insert and Fold prepacked ops** (blocklisting option mobile_optimizer.MobileOptimizerType.INSERT_FOLD_PREPACK_OPS):
     This optimization pass rewrites the graph to replace 2D convolutions and linear
     ops with their prepacked counterparts. Prepacked ops are stateful ops in that,
@@ -42,9 +58,16 @@
     output activations. Since 1 needs to be done only once, we fold the weight pre-packing
     such that it is done only once at model load time. This pass of the `optimize_for_mobile`
     does 1 and 2 and then folds, i.e. removes, weight pre-packing ops.'
+  id: totrans-7
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**插入和折叠预打包操作**（blocklisting 选项 `mobile_optimizer.MobileOptimizerType.INSERT_FOLD_PREPACK_OPS`）：此优化
+    pass 重写图形，用其预打包的对应物替换 2D 卷积和线性操作。预打包操作是有状态的操作，它们需要创建一些状态，例如权重预打包，并在操作执行期间使用此状态，即预打包权重。XNNPACK
+    是提供预打包操作的后端之一，其内核针对移动平台（如 ARM CPU）进行了优化。权重的预打包使内存访问更高效，从而实现更快的内核执行。目前，`optimize_for_mobile`
+    pass 重写图形，用 1) 为 XNNPACK conv2d/linear 操作预打包权重的操作和 2) 将预打包权重和激活作为输入并生成输出激活的操作替换
+    `Conv2D/Linear`。由于只需要执行 1 次，我们将权重预打包折叠，以便仅在模型加载时执行一次。`optimize_for_mobile` 的此
+    pass 执行 1 和 2，然后折叠，即删除，权重预打包操作。'
 - en: '**ReLU/Hardtanh fusion**: XNNPACK ops support fusion of clamping. That is clamping
     of output activation is done as part of the kernel, including for 2D convolution
     and linear op kernels. Thus clamping effectively comes for free. Thus any op that
@@ -52,88 +75,136 @@
     previous `Conv2D` or `linear` op in XNNPACK. This pass rewrites graph by finding
     `ReLU/hardtanh` ops that follow XNNPACK `Conv2D/linear` ops, written by the previous
     pass, and fuses them together.'
+  id: totrans-8
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**ReLU/Hardtanh 融合**：XNNPACK 操作支持夹紧的融合。也就是说，输出激活的夹紧作为内核的一部分完成，包括 2D 卷积和线性操作内核。因此，夹紧实际上是免费的。因此，任何可以表示为夹紧操作的操作，例如
+    `ReLU` 或 `hardtanh`，都可以与 XNNPACK 中的前一个 `Conv2D` 或 `linear` 操作融合。此 pass 通过查找跟随
+    XNNPACK `Conv2D/linear` 操作（由上一个 pass 编写）的 `ReLU/hardtanh` 操作，并将它们融合在一起来重写图形。'
 - en: '**Dropout removal** (blocklisting option mobile_optimizer.MobileOptimizerType.REMOVE_DROPOUT):
     This optimization pass removes `dropout` and `dropout_` nodes from this module
     when training is false.'
+  id: totrans-9
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**Dropout 移除**（blocklisting 选项 `mobile_optimizer.MobileOptimizerType.REMOVE_DROPOUT`）：此优化
+    pass 在训练为 false 时从此模块中移除 `dropout` 和 `dropout_` 节点。'
 - en: '**Conv packed params hoisting** (blocklisting option mobile_optimizer.MobileOptimizerType.HOIST_CONV_PACKED_PARAMS):
     This optimization pass moves convolution packed params to the root module, so
     that the convolution structs can be deleted. This decreases model size without
     impacting numerics.'
+  id: totrans-10
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**Conv packed params hoisting**（blocklisting 选项 `mobile_optimizer.MobileOptimizerType.HOIST_CONV_PACKED_PARAMS`）：此优化
+    pass 将卷积打包参数移动到根模块，以便删除卷积结构。这减少了模型大小，而不影响数值。'
 - en: '**Add/ReLU fusion** (blocklisting option mobile_optimizer.MobileOptimizerType.FUSE_ADD_RELU):
     This pass finds instances of `relu` ops that follow `add` ops and fuses them into
     a single `add_relu`.'
+  id: totrans-11
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**Add/ReLU 融合**（blocklisting 选项 `mobile_optimizer.MobileOptimizerType.FUSE_ADD_RELU`）：此
+    pass 查找跟随 `add` 操作的 `relu` 操作实例，并将它们融合为单个 `add_relu`。'
 - en: 'for Vulkan Backend, by default, if optimization blocklist is None or empty,
     `optimize_for_mobile` will run the following optimization:'
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于 Vulkan 后端，默认情况下，如果优化 blocklist 为 None 或为空，`optimize_for_mobile` 将运行以下优化：
 - en: '**Automatic GPU Transfer** (blocklisting option mobile_optimizer.MobileOptimizerType.VULKAN_AUTOMATIC_GPU_TRANSFER):
     This optimization pass rewrites the graph so that moving input and output data
     to and from the GPU becomes part of the model.'
+  id: totrans-13
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**自动 GPU 传输**（blocklisting 选项 `mobile_optimizer.MobileOptimizerType.VULKAN_AUTOMATIC_GPU_TRANSFER`）：此优化
+    pass 重写图形，使将输入和输出数据传输到和从 GPU 成为模型的一部分。'
 - en: '`optimize_for_mobile` will also invoke freeze_module pass which only preserves
     `forward` method. If you have other method to that needed to be preserved, add
     them into the preserved method list and pass into the method.'
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: '`optimize_for_mobile` 还会调用 `freeze_module` pass，该 pass 仅保留 `forward` 方法。如果您有其他需要保留的方法，请将它们添加到保留方法列表中并传递给该方法。'
 - en: '[PRE0]'
+  id: totrans-15
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: Optimize a torch script module for mobile deployment.
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 为移动部署优化 torch 脚本模块。
 - en: Parameters
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**script_module** ([*ScriptModule*](generated/torch.jit.ScriptModule.html#torch.jit.ScriptModule
     "torch.jit._script.ScriptModule")) – An instance of torch script module with type
     of ScriptModule.'
+  id: totrans-18
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**script_module**（[*ScriptModule*](generated/torch.jit.ScriptModule.html#torch.jit.ScriptModule
+    "torch.jit._script.ScriptModule")） - 一个具有ScriptModule类型的torch脚本模块的实例。'
 - en: '**optimization_blocklist** ([*Optional*](https://docs.python.org/3/library/typing.html#typing.Optional
     "(in Python v3.12)")*[*[*Set*](https://docs.python.org/3/library/typing.html#typing.Set
     "(in Python v3.12)")*[**_MobileOptimizerType**]**]*) – A set with type of MobileOptimizerType.
     When set is not passed, optimization method will run all the optimizer pass; otherwise,
     optimizer method will run the optimization pass that is not included inside optimization_blocklist.'
+  id: totrans-19
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**optimization_blocklist**（[*可选*](https://docs.python.org/3/library/typing.html#typing.Optional
+    "(在Python v3.12中)")*[*[*集合*](https://docs.python.org/3/library/typing.html#typing.Set
+    "(在Python v3.12中)")*[**_MobileOptimizerType**]**]*) - 一个具有MobileOptimizerType类型的集合。当未传递集合时，优化方法将运行所有优化器pass；否则，优化器方法将运行未包含在optimization_blocklist中的优化pass。'
 - en: '**preserved_methods** ([*Optional*](https://docs.python.org/3/library/typing.html#typing.Optional
     "(in Python v3.12)")*[*[*List*](https://docs.python.org/3/library/typing.html#typing.List
     "(in Python v3.12)")*]*) – A list of methods that needed to be preserved when
     freeze_module pass is invoked'
+  id: totrans-20
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**preserved_methods**（[*可选*](https://docs.python.org/3/library/typing.html#typing.Optional
+    "(在Python v3.12中)")*[*[*列表*](https://docs.python.org/3/library/typing.html#typing.List
+    "(在Python v3.12中)")*]*) - 在调用freeze_module pass时需要保留的方法列表'
 - en: '**backend** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
     Python v3.12)")) – Device type to use for running the result model (‘CPU’(default),
     ‘Vulkan’ or ‘Metal’).'
+  id: totrans-21
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**backend**（[*str*](https://docs.python.org/3/library/stdtypes.html#str "(在Python
+    v3.12中)")） - 用于运行结果模型的设备类型（‘CPU’（默认），‘Vulkan’或‘Metal’）。'
 - en: Returns
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回
 - en: A new optimized torch script module
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个新的优化过的torch脚本模块
 - en: Return type
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '*RecursiveScriptModule*'
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: '*RecursiveScriptModule*'

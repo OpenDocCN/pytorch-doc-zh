@@ -1,409 +1,558 @@
 - en: torch.utils.tensorboard
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: torch.utils.tensorboard
 - en: 原文：[https://pytorch.org/docs/stable/tensorboard.html](https://pytorch.org/docs/stable/tensorboard.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/docs/stable/tensorboard.html](https://pytorch.org/docs/stable/tensorboard.html)
 - en: Before going further, more details on TensorBoard can be found at [https://www.tensorflow.org/tensorboard/](https://www.tensorflow.org/tensorboard/)
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 在继续之前，可以在[https://www.tensorflow.org/tensorboard/](https://www.tensorflow.org/tensorboard/)找到有关TensorBoard的更多详细信息
 - en: Once you’ve installed TensorBoard, these utilities let you log PyTorch models
     and metrics into a directory for visualization within the TensorBoard UI. Scalars,
     images, histograms, graphs, and embedding visualizations are all supported for
     PyTorch models and tensors as well as Caffe2 nets and blobs.
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 安装了TensorBoard后，这些实用程序可以让您将PyTorch模型和指标记录到目录中，以便在TensorBoard UI中进行可视化。标量、图像、直方图、图形和嵌入可视化都支持PyTorch模型和张量，以及Caffe2网络和blob。
 - en: 'The SummaryWriter class is your main entry to log data for consumption and
     visualization by TensorBoard. For example:'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: SummaryWriter类是您记录数据以供TensorBoard消费和可视化的主要入口。例如：
 - en: '[PRE0]'
+  id: totrans-5
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: 'This can then be visualized with TensorBoard, which should be installable and
     runnable with:'
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后可以使用TensorBoard进行可视化，应该可以通过以下方式进行安装和运行：
 - en: '[PRE1]'
+  id: totrans-7
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Lots of information can be logged for one experiment. To avoid cluttering the
     UI and have better result clustering, we can group plots by naming them hierarchically.
     For example, “Loss/train” and “Loss/test” will be grouped together, while “Accuracy/train”
     and “Accuracy/test” will be grouped separately in the TensorBoard interface.
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 可以为一个实验记录大量信息。为了避免使UI混乱并获得更好的结果聚类，我们可以通过层次命名来对图进行分组。例如，“Loss/train”和“Loss/test”将被分组在一起，而“Accuracy/train”和“Accuracy/test”将在TensorBoard界面中分别分组。
 - en: '[PRE2]'
+  id: totrans-9
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: 'Expected result:'
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: '预期结果:'
 - en: '[![_images/hier_tags.png](../Images/58f4f40256d7b3e208ac29880d7a1053.png)](_images/hier_tags.png)'
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![_images/hier_tags.png](../Images/58f4f40256d7b3e208ac29880d7a1053.png)](_images/hier_tags.png)'
 - en: '[PRE3]'
+  id: totrans-12
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: Writes entries directly to event files in the log_dir to be consumed by TensorBoard.
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: 直接将条目写入log_dir中的事件文件，以供TensorBoard消费。
 - en: The SummaryWriter class provides a high-level API to create an event file in
     a given directory and add summaries and events to it. The class updates the file
     contents asynchronously. This allows a training program to call methods to add
     data to the file directly from the training loop, without slowing down training.
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: SummaryWriter类提供了一个高级API，用于在给定目录中创建事件文件并向其中添加摘要和事件。该类异步更新文件内容。这允许训练程序从训练循环中直接调用方法将数据添加到文件中，而不会减慢训练速度。
 - en: '[PRE4]'
+  id: totrans-15
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: Create a SummaryWriter that will write out events and summaries to the event
     file.
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 创建一个SummaryWriter，将事件和摘要写入事件文件。
 - en: Parameters
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**log_dir** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
     Python v3.12)")) – Save directory location. Default is runs/**CURRENT_DATETIME_HOSTNAME**,
     which changes after each run. Use hierarchical folder structure to compare between
     runs easily. e.g. pass in ‘runs/exp1’, ‘runs/exp2’, etc. for each new experiment
     to compare across them.'
+  id: totrans-18
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**log_dir**（[*str*](https://docs.python.org/3/library/stdtypes.html#str "(在Python
+    v3.12中)")） - 保存目录位置。默认为runs/**CURRENT_DATETIME_HOSTNAME**，每次运行后都会更改。使用分层文件夹结构可以轻松比较不同运行之间的差异。例如，对于每个新实验，传入‘runs/exp1’，‘runs/exp2’等，以便进行比较。'
 - en: '**comment** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
     Python v3.12)")) – Comment log_dir suffix appended to the default `log_dir`. If
     `log_dir` is assigned, this argument has no effect.'
+  id: totrans-19
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**comment**（[*str*](https://docs.python.org/3/library/stdtypes.html#str "(在Python
+    v3.12中)")） - 附加到默认`log_dir`的注释log_dir后缀。如果分配了`log_dir`，则此参数无效。'
 - en: '**purge_step** ([*int*](https://docs.python.org/3/library/functions.html#int
-    "(in Python v3.12)")) – When logging crashes at step $T+X$T+X and restarts
-    at step $T$T,
-    any events whose global_step larger or equal to $T$T will be purged
+    "(in Python v3.12)")) – When logging crashes at step $T+X$T+X and restarts at
+    step $T$T, any events whose global_step larger or equal to $T$T will be purged
     and hidden from TensorBoard. Note that crashed and resumed experiments should
     have the same `log_dir`.'
+  id: totrans-20
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**purge_step**（[*int*](https://docs.python.org/3/library/functions.html#int
+    "(在Python v3.12中)")） - 当日志在步骤$T+X$T+X处崩溃并在步骤$T$T处重新启动时，任何全局步骤大于或等于$T$T的事件将被清除并从TensorBoard中隐藏。请注意，崩溃和恢复的实验应该具有相同的`log_dir`。'
 - en: '**max_queue** ([*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")) – Size of the queue for pending events and summaries before
     one of the ‘add’ calls forces a flush to disk. Default is ten items.'
+  id: totrans-21
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**max_queue**（[*int*](https://docs.python.org/3/library/functions.html#int
+    "(在Python v3.12中)")） - 在一个‘add’调用强制刷新到磁盘之前，待处理事件和摘要队列的大小。默认为十个项目。'
 - en: '**flush_secs** ([*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")) – How often, in seconds, to flush the pending events and
     summaries to disk. Default is every two minutes.'
+  id: totrans-22
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**flush_secs**（[*int*](https://docs.python.org/3/library/functions.html#int
+    "(在Python v3.12中)")） - 多久刷新一次待处理事件和摘要到磁盘。默认为每两分钟一次。'
 - en: '**filename_suffix** ([*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)")) – Suffix added to all event filenames in the log_dir directory.
     More details on filename construction in tensorboard.summary.writer.event_file_writer.EventFileWriter.'
+  id: totrans-23
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**filename_suffix**（[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(在Python v3.12中)")） - 添加到log_dir目录中所有事件文件的后缀。有关文件名构造的更多详细信息，请参阅tensorboard.summary.writer.event_file_writer.EventFileWriter。'
 - en: 'Examples:'
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例：
 - en: '[PRE5]'
+  id: totrans-25
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: '[PRE6]'
+  id: totrans-26
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: Add scalar data to summary.
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 将标量数据添加到摘要。
 - en: Parameters
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**tag** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
     v3.12)")) – Data identifier'
+  id: totrans-29
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**标签**（[*str*](https://docs.python.org/3/library/stdtypes.html#str "(在Python
+    v3.12中)")） - 数据标识符'
 - en: '**scalar_value** ([*float*](https://docs.python.org/3/library/functions.html#float
     "(in Python v3.12)") *or* *string/blobname*) – Value to save'
+  id: totrans-30
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**scalar_value**（[*float*](https://docs.python.org/3/library/functions.html#float
+    "(在Python v3.12中)") *或* *string/blobname*） - 要保存的值'
 - en: '**global_step** ([*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")) – Global step value to record'
+  id: totrans-31
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**global_step**（[*int*](https://docs.python.org/3/library/functions.html#int
+    "(在Python v3.12中)")） - 要记录的全局步骤值'
 - en: '**walltime** ([*float*](https://docs.python.org/3/library/functions.html#float
     "(in Python v3.12)")) – Optional override default walltime (time.time()) with
     seconds after epoch of event'
+  id: totrans-32
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**walltime**（[*float*](https://docs.python.org/3/library/functions.html#float
+    "(在Python v3.12中)")） - 可选，用秒数替换默认的walltime（time.time()）事件后的纪元'
 - en: '**new_style** (*boolean*) – Whether to use new style (tensor field) or old
     style (simple_value field). New style could lead to faster data loading.'
+  id: totrans-33
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: 'Examples:'
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE7]'
+  id: totrans-35
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: 'Expected result:'
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
 - en: '[![_images/add_scalar.png](../Images/4141e5882a8a2676fa22ef39cd078e8a.png)](_images/add_scalar.png)'
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE8]'
+  id: totrans-38
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: Add many scalar data to summary.
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
 - en: '**main_tag** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
     Python v3.12)")) – The parent name for the tags'
+  id: totrans-41
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**tag_scalar_dict** ([*dict*](https://docs.python.org/3/library/stdtypes.html#dict
     "(in Python v3.12)")) – Key-value pair storing the tag and corresponding values'
+  id: totrans-42
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**global_step** ([*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")) – Global step value to record'
+  id: totrans-43
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**walltime** ([*float*](https://docs.python.org/3/library/functions.html#float
     "(in Python v3.12)")) – Optional override default walltime (time.time()) seconds
     after epoch of event'
+  id: totrans-44
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: 'Examples:'
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE9]'
+  id: totrans-46
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: 'Expected result:'
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
 - en: '[![_images/add_scalars.png](../Images/815894710cb8be2fb3e45b4dbe87c8a3.png)](_images/add_scalars.png)'
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE10]'
+  id: totrans-49
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: Add histogram to summary.
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
 - en: '**tag** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
     v3.12)")) – Data identifier'
+  id: totrans-52
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**values** ([*torch.Tensor*](tensors.html#torch.Tensor "torch.Tensor")*,* [*numpy.ndarray*](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray
     "(in NumPy v1.26)")*, or* *string/blobname*) – Values to build histogram'
+  id: totrans-53
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**global_step** ([*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")) – Global step value to record'
+  id: totrans-54
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**bins** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
     Python v3.12)")) – One of {‘tensorflow’,’auto’, ‘fd’, …}. This determines how
     the bins are made. You can find other options in: [https://docs.scipy.org/doc/numpy/reference/generated/numpy.histogram.html](https://docs.scipy.org/doc/numpy/reference/generated/numpy.histogram.html)'
+  id: totrans-55
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**walltime** ([*float*](https://docs.python.org/3/library/functions.html#float
     "(in Python v3.12)")) – Optional override default walltime (time.time()) seconds
     after epoch of event'
+  id: totrans-56
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: 'Examples:'
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE11]'
+  id: totrans-58
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: 'Expected result:'
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
 - en: '[![_images/add_histogram.png](../Images/d61cc1e0bc0bb484d5f77e9d34fd003b.png)](_images/add_histogram.png)'
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE12]'
+  id: totrans-61
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: Add image data to summary.
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
 - en: Note that this requires the `pillow` package.
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-64
   prefs: []
   type: TYPE_NORMAL
 - en: '**tag** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
     v3.12)")) – Data identifier'
+  id: totrans-65
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**img_tensor** ([*torch.Tensor*](tensors.html#torch.Tensor "torch.Tensor")*,*
     [*numpy.ndarray*](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray
     "(in NumPy v1.26)")*, or* *string/blobname*) – Image data'
+  id: totrans-66
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**global_step** ([*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")) – Global step value to record'
+  id: totrans-67
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**walltime** ([*float*](https://docs.python.org/3/library/functions.html#float
     "(in Python v3.12)")) – Optional override default walltime (time.time()) seconds
     after epoch of event'
+  id: totrans-68
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**dataformats** ([*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)")) – Image data format specification of the form CHW, HWC,
     HW, WH, etc.'
+  id: totrans-69
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: 'Shape:'
+  id: totrans-70
   prefs: []
   type: TYPE_NORMAL
-- en: 'img_tensor: Default is $(3, H, W)$(3,H,W).
-    You can use `torchvision.utils.make_grid()` to convert a batch of tensor into
-    3xHxW format or call `add_images` and let us do the job. Tensor with $(1, H,
-    W)$(1,H,W), $(H, W)$(H,W), $(H, W,
-    3)$(H,W,3) is also suitable as long as corresponding
-    `dataformats` argument is passed, e.g. `CHW`, `HWC`, `HW`.'
+- en: 'img_tensor: Default is $(3, H, W)$(3,H,W). You can use `torchvision.utils.make_grid()`
+    to convert a batch of tensor into 3xHxW format or call `add_images` and let us
+    do the job. Tensor with $(1, H, W)$(1,H,W), $(H, W)$(H,W), $(H, W, 3)$(H,W,3)
+    is also suitable as long as corresponding `dataformats` argument is passed, e.g.
+    `CHW`, `HWC`, `HW`.'
+  id: totrans-71
   prefs: []
   type: TYPE_NORMAL
 - en: 'Examples:'
+  id: totrans-72
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE13]'
+  id: totrans-73
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: 'Expected result:'
+  id: totrans-74
   prefs: []
   type: TYPE_NORMAL
 - en: '[![_images/add_image.png](../Images/e1f0afa1c1dc33a13af1b90b678262cf.png)](_images/add_image.png)'
+  id: totrans-75
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE14]'
+  id: totrans-76
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: Add batched image data to summary.
+  id: totrans-77
   prefs: []
   type: TYPE_NORMAL
 - en: Note that this requires the `pillow` package.
+  id: totrans-78
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-79
   prefs: []
   type: TYPE_NORMAL
 - en: '**tag** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
     v3.12)")) – Data identifier'
+  id: totrans-80
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**img_tensor** ([*torch.Tensor*](tensors.html#torch.Tensor "torch.Tensor")*,*
     [*numpy.ndarray*](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray
     "(in NumPy v1.26)")*, or* *string/blobname*) – Image data'
+  id: totrans-81
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**global_step** ([*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")) – Global step value to record'
+  id: totrans-82
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**walltime** ([*float*](https://docs.python.org/3/library/functions.html#float
     "(in Python v3.12)")) – Optional override default walltime (time.time()) seconds
     after epoch of event'
+  id: totrans-83
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**dataformats** ([*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)")) – Image data format specification of the form NCHW, NHWC,
     CHW, HWC, HW, WH, etc.'
+  id: totrans-84
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: 'Shape:'
+  id: totrans-85
   prefs: []
   type: TYPE_NORMAL
-- en: 'img_tensor: Default is $(N, 3,
-    H, W)$(N,3,H,W). If `dataformats` is specified,
+- en: 'img_tensor: Default is $(N, 3, H, W)$(N,3,H,W). If `dataformats` is specified,
     other shape will be accepted. e.g. NCHW or NHWC.'
+  id: totrans-86
   prefs: []
   type: TYPE_NORMAL
 - en: 'Examples:'
+  id: totrans-87
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE15]'
+  id: totrans-88
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: 'Expected result:'
+  id: totrans-89
   prefs: []
   type: TYPE_NORMAL
 - en: '[![_images/add_images.png](../Images/e4fd37001efd1121a008df6384d2fc6a.png)](_images/add_images.png)'
+  id: totrans-90
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE16]'
+  id: totrans-91
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: Render matplotlib figure into an image and add it to summary.
+  id: totrans-92
   prefs: []
   type: TYPE_NORMAL
 - en: Note that this requires the `matplotlib` package.
+  id: totrans-93
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-94
   prefs: []
   type: TYPE_NORMAL
 - en: '**tag** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
     v3.12)")) – Data identifier'
+  id: totrans-95
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**figure** ([*Union*](https://docs.python.org/3/library/typing.html#typing.Union
     "(in Python v3.12)")*[**Figure**,* [*List*](https://docs.python.org/3/library/typing.html#typing.List
     "(in Python v3.12)")*[**Figure**]**]*) – Figure or a list of figures'
+  id: totrans-96
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**global_step** ([*Optional*](https://docs.python.org/3/library/typing.html#typing.Optional
     "(in Python v3.12)")*[*[*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")*]*) – Global step value to record'
+  id: totrans-97
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**close** ([*bool*](https://docs.python.org/3/library/functions.html#bool "(in
     Python v3.12)")) – Flag to automatically close the figure'
+  id: totrans-98
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
@@ -411,435 +560,647 @@
     "(in Python v3.12)")*[*[*float*](https://docs.python.org/3/library/functions.html#float
     "(in Python v3.12)")*]*) – Optional override default walltime (time.time()) seconds
     after epoch of event'
+  id: totrans-99
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '[PRE17]'
+  id: totrans-100
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: Add video data to summary.
+  id: totrans-101
   prefs: []
   type: TYPE_NORMAL
 - en: Note that this requires the `moviepy` package.
+  id: totrans-102
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-103
   prefs: []
   type: TYPE_NORMAL
 - en: '**tag** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
     v3.12)")) – Data identifier'
+  id: totrans-104
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**vid_tensor** ([*torch.Tensor*](tensors.html#torch.Tensor "torch.Tensor"))
     – Video data'
+  id: totrans-105
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**global_step** ([*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")) – Global step value to record'
+  id: totrans-106
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**fps** ([*float*](https://docs.python.org/3/library/functions.html#float "(in
     Python v3.12)") *or* [*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")) – Frames per second'
+  id: totrans-107
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**walltime** ([*float*](https://docs.python.org/3/library/functions.html#float
     "(in Python v3.12)")) – Optional override default walltime (time.time()) seconds
     after epoch of event'
+  id: totrans-108
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: 'Shape:'
+  id: totrans-109
   prefs: []
   type: TYPE_NORMAL
-- en: 'vid_tensor: $(N, T, C, H, W)$(N,T,C,H,W).
-    The values should lie in [0, 255] for type uint8 or [0, 1] for type float.'
+- en: 'vid_tensor: $(N, T, C, H, W)$(N,T,C,H,W). The values should lie in [0, 255]
+    for type uint8 or [0, 1] for type float.'
+  id: totrans-110
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE18]'
+  id: totrans-111
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: Add audio data to summary.
+  id: totrans-112
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-113
   prefs: []
   type: TYPE_NORMAL
 - en: '**tag** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
     v3.12)")) – Data identifier'
+  id: totrans-114
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**snd_tensor** ([*torch.Tensor*](tensors.html#torch.Tensor "torch.Tensor"))
     – Sound data'
+  id: totrans-115
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**global_step** ([*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")) – Global step value to record'
+  id: totrans-116
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**sample_rate** ([*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")) – sample rate in Hz'
+  id: totrans-117
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**walltime** ([*float*](https://docs.python.org/3/library/functions.html#float
     "(in Python v3.12)")) – Optional override default walltime (time.time()) seconds
     after epoch of event'
+  id: totrans-118
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: 'Shape:'
+  id: totrans-119
   prefs: []
   type: TYPE_NORMAL
-- en: 'snd_tensor: $(1, L)$(1,L). The
-    values should lie between [-1, 1].'
+- en: 'snd_tensor: $(1, L)$(1,L). The values should lie between [-1, 1].'
+  id: totrans-120
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE19]'
+  id: totrans-121
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE19]'
 - en: Add text data to summary.
+  id: totrans-122
   prefs: []
   type: TYPE_NORMAL
 - en: Parameters
+  id: totrans-123
   prefs: []
   type: TYPE_NORMAL
 - en: '**tag** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
     v3.12)")) – Data identifier'
+  id: totrans-124
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
 - en: '**text_string** ([*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)")) – String to save'
+  id: totrans-125
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**text_string**（[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(在Python v3.12中)")） - 要保存的字符串'
 - en: '**global_step** ([*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")) – Global step value to record'
+  id: totrans-126
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**global_step**（[*int*](https://docs.python.org/3/library/functions.html#int
+    "(在Python v3.12中)")） - 要记录的全局步骤值'
 - en: '**walltime** ([*float*](https://docs.python.org/3/library/functions.html#float
     "(in Python v3.12)")) – Optional override default walltime (time.time()) seconds
     after epoch of event'
+  id: totrans-127
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**walltime**（[*float*](https://docs.python.org/3/library/functions.html#float
+    "(在Python v3.12中)")） - 可选覆盖默认的walltime（time.time()）事件纪元后的秒数'
 - en: 'Examples:'
+  id: totrans-128
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例：
 - en: '[PRE20]'
+  id: totrans-129
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE20]'
 - en: '[PRE21]'
+  id: totrans-130
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE21]'
 - en: Add graph data to summary.
+  id: totrans-131
   prefs: []
   type: TYPE_NORMAL
+  zh: 将图形数据添加到摘要。
 - en: Parameters
+  id: totrans-132
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**model** ([*torch.nn.Module*](generated/torch.nn.Module.html#torch.nn.Module
     "torch.nn.Module")) – Model to draw.'
+  id: totrans-133
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**model**（[*torch.nn.Module*](generated/torch.nn.Module.html#torch.nn.Module
+    "torch.nn.Module")） - 要绘制的模型。'
 - en: '**input_to_model** ([*torch.Tensor*](tensors.html#torch.Tensor "torch.Tensor")
     *or* [*list*](https://docs.python.org/3/library/stdtypes.html#list "(in Python
     v3.12)") *of* [*torch.Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – A
     variable or a tuple of variables to be fed.'
+  id: totrans-134
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**input_to_model**（[*torch.Tensor*](tensors.html#torch.Tensor "torch.Tensor")
+    *或* [*list*](https://docs.python.org/3/library/stdtypes.html#list "(在Python v3.12中)")
+    *of* [*torch.Tensor*](tensors.html#torch.Tensor "torch.Tensor")） - 要馈送的变量或变量元组。'
 - en: '**verbose** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")) – Whether to print graph structure in console.'
+  id: totrans-135
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**verbose**（[*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(在Python v3.12中)")） - 是否在控制台中打印图形结构。'
 - en: '**use_strict_trace** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")) – Whether to pass keyword argument strict to torch.jit.trace.
     Pass False when you want the tracer to record your mutable container types (list,
     dict)'
+  id: totrans-136
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**use_strict_trace**（[*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(在Python v3.12中)")） - 是否将关键字参数strict传递给torch.jit.trace。当您希望跟踪器记录您的可变容器类型（列表、字典）时，请传递False'
 - en: '[PRE22]'
+  id: totrans-137
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE22]'
 - en: Add embedding projector data to summary.
+  id: totrans-138
   prefs: []
   type: TYPE_NORMAL
+  zh: 将嵌入式投影仪数据添加到摘要。
 - en: Parameters
+  id: totrans-139
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**mat** ([*torch.Tensor*](tensors.html#torch.Tensor "torch.Tensor") *or* [*numpy.ndarray*](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray
     "(in NumPy v1.26)")) – A matrix which each row is the feature vector of the data
     point'
+  id: totrans-140
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**mat**（[*torch.Tensor*](tensors.html#torch.Tensor "torch.Tensor") *或* [*numpy.ndarray*](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray
+    "(在NumPy v1.26中)")） - 每行是数据点特征向量的矩阵'
 - en: '**metadata** ([*list*](https://docs.python.org/3/library/stdtypes.html#list
     "(in Python v3.12)")) – A list of labels, each element will be convert to string'
+  id: totrans-141
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**metadata**（[*list*](https://docs.python.org/3/library/stdtypes.html#list
+    "(在Python v3.12中)")） - 一个标签列表，每个元素将被转换为字符串'
 - en: '**label_img** ([*torch.Tensor*](tensors.html#torch.Tensor "torch.Tensor"))
     – Images correspond to each data point'
+  id: totrans-142
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**label_img**（[*torch.Tensor*](tensors.html#torch.Tensor "torch.Tensor")） -
+    图像对应于每个数据点'
 - en: '**global_step** ([*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")) – Global step value to record'
+  id: totrans-143
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**global_step**（[*int*](https://docs.python.org/3/library/functions.html#int
+    "(在Python v3.12中)")） - 要记录的全局步骤值'
 - en: '**tag** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
     v3.12)")) – Name for the embedding'
+  id: totrans-144
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**tag**（[*str*](https://docs.python.org/3/library/stdtypes.html#str "(在Python
+    v3.12中)")） - 嵌入的名称'
 - en: 'Shape:'
+  id: totrans-145
   prefs: []
   type: TYPE_NORMAL
-- en: 'mat: $(N, D)$(N,D),
-    where N is number of data and D is feature dimension'
+  zh: 形状：
+- en: 'mat: $(N, D)$(N,D), where N is number of data and D is feature dimension'
+  id: totrans-146
   prefs: []
   type: TYPE_NORMAL
-- en: 'label_img: $(N, C,
-    H, W)$(N,C,H,W)'
+  zh: mat：$(N, D)$(N,D)，其中N是数据的数量，D是特征维度
+- en: 'label_img: $(N, C, H, W)$(N,C,H,W)'
+  id: totrans-147
   prefs: []
   type: TYPE_NORMAL
+  zh: label_img：$(N, C, H, W)$(N,C,H,W)
 - en: 'Examples:'
+  id: totrans-148
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例：
 - en: '[PRE23]'
+  id: totrans-149
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE23]'
 - en: '[PRE24]'
+  id: totrans-150
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE24]'
 - en: Add precision recall curve.
+  id: totrans-151
   prefs: []
   type: TYPE_NORMAL
+  zh: 添加精度召回曲线。
 - en: Plotting a precision-recall curve lets you understand your model’s performance
     under different threshold settings. With this function, you provide the ground
     truth labeling (T/F) and prediction confidence (usually the output of your model)
     for each target. The TensorBoard UI will let you choose the threshold interactively.
+  id: totrans-152
   prefs: []
   type: TYPE_NORMAL
+  zh: 绘制精度-召回曲线可以让您了解模型在不同阈值设置下的性能。使用此函数，您为每个目标提供地面真实标签（T/F）和预测置信度（通常是您模型的输出）。TensorBoard
+    UI将允许您交互式选择阈值。
 - en: Parameters
+  id: totrans-153
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**tag** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
     v3.12)")) – Data identifier'
+  id: totrans-154
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**tag**（[*str*](https://docs.python.org/3/library/stdtypes.html#str "(在Python
+    v3.12中)")） - 数据标识符'
 - en: '**labels** ([*torch.Tensor*](tensors.html#torch.Tensor "torch.Tensor")*,* [*numpy.ndarray*](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray
     "(in NumPy v1.26)")*, or* *string/blobname*) – Ground truth data. Binary label
     for each element.'
+  id: totrans-155
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**labels**（[*torch.Tensor*](tensors.html#torch.Tensor "torch.Tensor")*，* [*numpy.ndarray*](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray
+    "(在NumPy v1.26中)")*，或* *string/blobname*） - 地面真实数据。每个元素的二进制标签。'
 - en: '**predictions** ([*torch.Tensor*](tensors.html#torch.Tensor "torch.Tensor")*,*
     [*numpy.ndarray*](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray
     "(in NumPy v1.26)")*, or* *string/blobname*) – The probability that an element
     be classified as true. Value should be in [0, 1]'
+  id: totrans-156
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**predictions**（[*torch.Tensor*](tensors.html#torch.Tensor "torch.Tensor")*，*
+    [*numpy.ndarray*](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray
+    "(在NumPy v1.26中)")*，或* *string/blobname*） - 元素被分类为真的概率。值应在[0, 1]之间'
 - en: '**global_step** ([*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")) – Global step value to record'
+  id: totrans-157
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**global_step**（[*int*](https://docs.python.org/3/library/functions.html#int
+    "(在Python v3.12中)")） - 要记录的全局步骤值'
 - en: '**num_thresholds** ([*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")) – Number of thresholds used to draw the curve.'
+  id: totrans-158
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**num_thresholds**（[*int*](https://docs.python.org/3/library/functions.html#int
+    "(在Python v3.12中)")） - 用于绘制曲线的阈值数量。'
 - en: '**walltime** ([*float*](https://docs.python.org/3/library/functions.html#float
     "(in Python v3.12)")) – Optional override default walltime (time.time()) seconds
     after epoch of event'
+  id: totrans-159
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**walltime**（[*float*](https://docs.python.org/3/library/functions.html#float
+    "(在Python v3.12中)")） - 可选覆盖默认的walltime（time.time()）事件纪元后的秒数'
 - en: 'Examples:'
+  id: totrans-160
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例：
 - en: '[PRE25]'
+  id: totrans-161
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE25]'
 - en: '[PRE26]'
+  id: totrans-162
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE26]'
 - en: Create special chart by collecting charts tags in ‘scalars’.
+  id: totrans-163
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过在“标量”中收集图表标签创建特殊图表。
 - en: 'NOTE: This function can only be called once for each SummaryWriter() object.'
+  id: totrans-164
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意：此函数每个SummaryWriter()对象只能调用一次。
 - en: Because it only provides metadata to tensorboard, the function can be called
     before or after the training loop.
+  id: totrans-165
   prefs: []
   type: TYPE_NORMAL
+  zh: 因为它只提供元数据给tensorboard，所以该函数可以在训练循环之前或之后调用。
 - en: Parameters
+  id: totrans-166
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**layout** ([*dict*](https://docs.python.org/3/library/stdtypes.html#dict "(in
     Python v3.12)")) – {categoryName: *charts*}, where *charts* is also a dictionary
     {chartName: *ListOfProperties*}. The first element in *ListOfProperties* is the
     chart’s type (one of **Multiline** or **Margin**) and the second element should
     be a list containing the tags you have used in add_scalar function, which will
     be collected into the new chart.'
+  id: totrans-167
   prefs: []
   type: TYPE_NORMAL
+  zh: '**layout**（[*dict*](https://docs.python.org/3/library/stdtypes.html#dict "(在Python
+    v3.12中)")) - {categoryName: *charts*}，其中*charts*也是一个字典{chartName: *ListOfProperties*}。*ListOfProperties*中的第一个元素是图表的类型（**Multiline**或**Margin**之一），第二个元素应该是一个包含您在add_scalar函数中使用的标签的列表，这些标签将被收集到新的图表中。'
 - en: 'Examples:'
+  id: totrans-168
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例：
 - en: '[PRE27]'
+  id: totrans-169
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE27]'
 - en: '[PRE28]'
+  id: totrans-170
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE28]'
 - en: Add meshes or 3D point clouds to TensorBoard.
+  id: totrans-171
   prefs: []
   type: TYPE_NORMAL
+  zh: 将网格或3D点云添加到TensorBoard。
 - en: The visualization is based on Three.js, so it allows users to interact with
     the rendered object. Besides the basic definitions such as vertices, faces, users
     can further provide camera parameter, lighting condition, etc. Please check [https://threejs.org/docs/index.html#manual/en/introduction/Creating-a-scene](https://threejs.org/docs/index.html#manual/en/introduction/Creating-a-scene)
     for advanced usage.
+  id: totrans-172
   prefs: []
   type: TYPE_NORMAL
+  zh: 可视化基于Three.js，因此允许用户与渲染的对象进行交互。除了基本定义如顶点、面外，用户还可以进一步提供相机参数、光照条件等。请查看[https://threejs.org/docs/index.html#manual/en/introduction/Creating-a-scene](https://threejs.org/docs/index.html#manual/en/introduction/Creating-a-scene)以获取高级用法。
 - en: Parameters
+  id: totrans-173
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**tag** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
     v3.12)")) – Data identifier'
+  id: totrans-174
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**tag**（[*str*](https://docs.python.org/3/library/stdtypes.html#str "(在Python
+    v3.12中)")) - 数据标识符'
 - en: '**vertices** ([*torch.Tensor*](tensors.html#torch.Tensor "torch.Tensor")) –
     List of the 3D coordinates of vertices.'
+  id: totrans-175
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**vertices**（[*torch.Tensor*](tensors.html#torch.Tensor "torch.Tensor")) -
+    顶点的3D坐标列表。'
 - en: '**colors** ([*torch.Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – Colors
     for each vertex'
+  id: totrans-176
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**colors**（[*torch.Tensor*](tensors.html#torch.Tensor "torch.Tensor")) - 每个顶点的颜色'
 - en: '**faces** ([*torch.Tensor*](tensors.html#torch.Tensor "torch.Tensor")) – Indices
     of vertices within each triangle. (Optional)'
+  id: totrans-177
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**faces**（[*torch.Tensor*](tensors.html#torch.Tensor "torch.Tensor")) - 每个三角形内顶点的索引。
+    (可选)'
 - en: '**config_dict** – Dictionary with ThreeJS classes names and configuration.'
+  id: totrans-178
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**config_dict** - 包含ThreeJS类名称和配置的字典。'
 - en: '**global_step** ([*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")) – Global step value to record'
+  id: totrans-179
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**global_step**（[*int*](https://docs.python.org/3/library/functions.html#int
+    "(在Python v3.12中)")) - 要记录的全局步骤值'
 - en: '**walltime** ([*float*](https://docs.python.org/3/library/functions.html#float
     "(in Python v3.12)")) – Optional override default walltime (time.time()) seconds
     after epoch of event'
+  id: totrans-180
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**walltime**（[*float*](https://docs.python.org/3/library/functions.html#float
+    "(在Python v3.12中)")) - 可选覆盖默认walltime（time.time()）事件后的秒数'
 - en: 'Shape:'
+  id: totrans-181
   prefs: []
   type: TYPE_NORMAL
-- en: 'vertices: $(B, N, 3)$(B,N,3).
-    (batch, number_of_vertices, channels)'
+  zh: 形状：
+- en: 'vertices: $(B, N, 3)$(B,N,3). (batch, number_of_vertices, channels)'
+  id: totrans-182
   prefs: []
   type: TYPE_NORMAL
-- en: 'colors: $(B, N, 3)$(B,N,3).
-    The values should lie in [0, 255] for type uint8 or [0, 1] for type float.'
+  zh: 顶点：$(B, N, 3)$(B,N,3)。 (批次，顶点数量，通道)
+- en: 'colors: $(B, N, 3)$(B,N,3). The values should lie in [0, 255] for type uint8
+    or [0, 1] for type float.'
+  id: totrans-183
   prefs: []
   type: TYPE_NORMAL
-- en: 'faces: $(B, N, 3)$(B,N,3).
-    The values should lie in [0, number_of_vertices] for type uint8.'
+  zh: 颜色：$(B, N, 3)$(B,N,3)。值应该在[0, 255]之间，对于uint8类型或[0, 1]之间，对于float类型。
+- en: 'faces: $(B, N, 3)$(B,N,3). The values should lie in [0, number_of_vertices]
+    for type uint8.'
+  id: totrans-184
   prefs: []
   type: TYPE_NORMAL
+  zh: 面：$(B, N, 3)$(B,N,3)。值应该在[0, 顶点数量]之间，对于uint8类型。
 - en: 'Examples:'
+  id: totrans-185
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例：
 - en: '[PRE29]'
+  id: totrans-186
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE29]'
 - en: '[PRE30]'
+  id: totrans-187
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE30]'
 - en: Add a set of hyperparameters to be compared in TensorBoard.
+  id: totrans-188
   prefs: []
   type: TYPE_NORMAL
+  zh: 添加一组要在TensorBoard中进行比较的超参数。
 - en: Parameters
+  id: totrans-189
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**hparam_dict** ([*dict*](https://docs.python.org/3/library/stdtypes.html#dict
     "(in Python v3.12)")) – Each key-value pair in the dictionary is the name of the
     hyper parameter and it’s corresponding value. The type of the value can be one
     of bool, string, float, int, or None.'
+  id: totrans-190
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**hparam_dict**（[*dict*](https://docs.python.org/3/library/stdtypes.html#dict
+    "(在Python v3.12中)")) - 字典中的每个键值对是超参数的名称及其对应的值。值的类型可以是bool、string、float、int或None中的一个。'
 - en: '**metric_dict** ([*dict*](https://docs.python.org/3/library/stdtypes.html#dict
     "(in Python v3.12)")) – Each key-value pair in the dictionary is the name of the
     metric and it’s corresponding value. Note that the key used here should be unique
     in the tensorboard record. Otherwise the value you added by `add_scalar` will
     be displayed in hparam plugin. In most cases, this is unwanted.'
+  id: totrans-191
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**metric_dict**（[*dict*](https://docs.python.org/3/library/stdtypes.html#dict
+    "(在Python v3.12中)")) - 字典中的每个键值对是指标的名称及其对应的值。请注意，此处使用的键应在tensorboard记录中是唯一的。否则，您通过`add_scalar`添加的值将显示在hparam插件中。在大多数情况下，这是不希望的。'
 - en: '**hparam_domain_discrete** – (Optional[Dict[str, List[Any]]]) A dictionary
     that contains names of the hyperparameters and all discrete values they can hold'
+  id: totrans-192
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**hparam_domain_discrete** - （Optional[Dict[str, List[Any]]）包含超参数名称及其所有离散值的字典'
 - en: '**run_name** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
     Python v3.12)")) – Name of the run, to be included as part of the logdir. If unspecified,
     will use current timestamp.'
+  id: totrans-193
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**run_name**（[*str*](https://docs.python.org/3/library/stdtypes.html#str "(在Python
+    v3.12中)")) - 运行的名称，将包含在logdir的一部分中。如果未指定，将使用当前时间戳。'
 - en: '**global_step** ([*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")) – Global step value to record'
+  id: totrans-194
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**global_step**（[*int*](https://docs.python.org/3/library/functions.html#int
+    "(在Python v3.12中)")) - 要记录的全局步骤值'
 - en: 'Examples:'
+  id: totrans-195
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例：
 - en: '[PRE31]'
+  id: totrans-196
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE31]'
 - en: 'Expected result:'
+  id: totrans-197
   prefs: []
   type: TYPE_NORMAL
+  zh: 预期结果：
 - en: '[![_images/add_hparam.png](../Images/dd8f9e83c6f7c7f46390b6069cc8e6de.png)](_images/add_hparam.png)'
+  id: totrans-198
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![_images/add_hparam.png](../Images/dd8f9e83c6f7c7f46390b6069cc8e6de.png)](_images/add_hparam.png)'
 - en: '[PRE32]'
+  id: totrans-199
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE32]'
 - en: Flushes the event file to disk.
+  id: totrans-200
   prefs: []
   type: TYPE_NORMAL
+  zh: 将事件文件刷新到磁盘。
 - en: Call this method to make sure that all pending events have been written to disk.
+  id: totrans-201
   prefs: []
   type: TYPE_NORMAL
+  zh: 调用此方法以确保所有待处理事件都已写入磁盘。
 - en: '[PRE33]'
+  id: totrans-202
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE33]'

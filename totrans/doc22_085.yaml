@@ -1,14 +1,20 @@
 - en: torch.utils.checkpoint
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: torch.utils.checkpoint
 - en: 原文：[https://pytorch.org/docs/stable/checkpoint.html](https://pytorch.org/docs/stable/checkpoint.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/docs/stable/checkpoint.html](https://pytorch.org/docs/stable/checkpoint.html)
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Checkpointing is implemented by rerunning a forward-pass segment for each checkpointed
     segment during backward. This can cause persistent states like the RNG state to
     be advanced than they would without checkpointing. By default, checkpointing includes
@@ -19,8 +25,10 @@
     compared to non-checkpointed passes is not required, supply `preserve_rng_state=False`
     to `checkpoint` or `checkpoint_sequential` to omit stashing and restoring the
     RNG state during each checkpoint.
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 检查点是通过在反向传播期间为每个检查点段重新运行一个前向传播段来实现的。这可能会导致持久状态（如RNG状态）比没有检查点更快地前进。默认情况下，检查点包含逻辑来调整RNG状态，使得使用RNG的检查点通过（例如通过dropout）与未检查点的通过相比具有确定性输出。存储和恢复RNG状态的逻辑可能会导致适度的性能损失，具体取决于检查点操作的运行时。如果不需要与未检查点的通过相比的确定性输出，请在`checkpoint`或`checkpoint_sequential`中提供`preserve_rng_state=False`以省略在每个检查点期间存储和恢复RNG状态。
 - en: The stashing logic saves and restores the RNG state for CPU and another device
     type (infer the device type from Tensor arguments excluding CPU tensors by `_infer_device_type`)
     to the `run_fn`. If there are multiple device, device state will only be saved
@@ -35,81 +43,115 @@
     a new device (“new” meaning not belonging to the set of [current device + devices
     of Tensor arguments]) within `run_fn`, deterministic output compared to non-checkpointed
     passes is never guaranteed.
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 存储逻辑会保存并恢复CPU和另一设备类型（通过`_infer_device_type`从张量参数中排除CPU张量推断设备类型）的RNG状态到`run_fn`。如果有多个设备，设备状态只会为单个设备类型的设备保存，其余设备将被忽略。因此，如果任何检查点函数涉及随机性，可能会导致梯度不正确。（请注意，如果检测到CUDA设备，则会优先考虑；否则，将选择遇到的第一个设备。）如果没有CPU张量，则将保存和恢复默认设备类型状态（默认值为cuda，可以通过`DefaultDeviceType`设置为其他设备）。然而，该逻辑无法预测用户是否会在`run_fn`内将张量移动到新设备。因此，如果您在`run_fn`内将张量移动到新设备（“新”意味着不属于[当前设备+张量参数的设备]集合），则与未检查点的通过相比，确定性输出永远无法保证。
 - en: '[PRE0]'
+  id: totrans-5
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: Checkpoint a model or part of the model.
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 检查点一个模型或模型的一部分。
 - en: Activation checkpointing is a technique that trades compute for memory. Instead
     of keeping tensors needed for backward alive until they are used in gradient computation
     during backward, forward computation in checkpointed regions omits saving tensors
     for backward and recomputes them during the backward pass. Activation checkpointing
     can be applied to any part of a model.
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 激活检查点是一种以计算换内存的技术。在检查点区域内，前向计算省略了为反向保留的张量，而是在反向传播期间重新计算它们。激活检查点可以应用于模型的任何部分。
 - en: There are currently two checkpointing implementations available, determined
     by the `use_reentrant` parameter. It is recommended that you use `use_reentrant=False`.
     Please refer the note below for a discussion of their differences.
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 目前有两种可用的检查点实现，由`use_reentrant`参数确定。建议您使用`use_reentrant=False`。请参考下面的注意事项以讨论它们之间的区别。
 - en: Warning
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: If the `function` invocation during the backward pass differs from the forward
     pass, e.g., due to a global variable, the checkpointed checkpointed version may
     not be equivalent, potentially causing an error being raised or leading to silently
     incorrect gradients.
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果在反向传播期间的`function`调用与正向传播不同，例如由于全局变量，那么被检查点化的版本可能不等价，可能会导致错误被引发或导致梯度错误地计算。
 - en: Warning
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: If you are using the `use_reentrant=True` variant (this is currently the default),
     please refer to the note below for important considerations and potential limitations.
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您使用的是`use_reentrant=True`变体（这是当前的默认值），请参考下面的注意事项以获取重要考虑因素和潜在限制。
 - en: Note
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: 'The reentrant variant of checkpoint (`use_reentrant=True`) and the non-reentrant
     variant of checkpoint (`use_reentrant=False`) differ in the following ways:'
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 检查点的可重入变体（`use_reentrant=True`）和非可重入变体（`use_reentrant=False`）在以下方面有所不同：
 - en: Non-reentrant checkpoint stops recomputation as soon as all needed intermediate
     activations have been recomputed. This feature is enabled by default, but can
     be disabled with `set_checkpoint_early_stop()`. Reentrant checkpoint always recomputes
     `function` in its entirety during the backward pass.
+  id: totrans-15
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 非可重入检查点在所有需要的中间激活重新计算后立即停止重新计算。此功能默认启用，但可以使用`set_checkpoint_early_stop()`禁用。可重入检查点在反向传播期间始终重新计算`function`的全部内容。
 - en: The reentrant variant does not record the autograd graph during the forward
     pass, as it runs with the forward pass under [`torch.no_grad()`](generated/torch.no_grad.html#torch.no_grad
     "torch.no_grad"). The non-reentrant version does record the autograd graph, allowing
     one to perform backward on the graph within checkpointed regions.
+  id: totrans-16
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 可重入变体在正向传播期间不记录自动求导图，因为它在[`torch.no_grad()`](generated/torch.no_grad.html#torch.no_grad
+    "torch.no_grad")下运行正向传播。非可重入版本记录自动求导图，允许在检查点区域内对图进行反向传播。
 - en: The reentrant checkpoint only supports the [`torch.autograd.backward()`](generated/torch.autograd.backward.html#torch.autograd.backward
     "torch.autograd.backward") API for the backward pass without its inputs argument,
     while the non-reentrant version supports all ways of performing the backward pass.
+  id: totrans-17
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 可重入检查点仅支持后向传递的[`torch.autograd.backward()`](generated/torch.autograd.backward.html#torch.autograd.backward
+    "torch.autograd.backward") API，不带其输入参数，而非可重入版本支持执行后向传递的所有方式。
 - en: At least one input and output must have `requires_grad=True` for the reentrant
     variant. If this condition is unmet, the checkpointed part of the model will not
     have gradients. The non-reentrant version does not have this requirement.
+  id: totrans-18
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 至少一个输入和输出必须具有`requires_grad=True`，以便支持可重入变体。如果不满足此条件，模型的被检查部分将没有梯度。非可重入版本不具有此要求。
 - en: The reentrant version does not consider tensors in nested structures (e.g.,
     custom objects, lists, dicts, etc) as participating in autograd, while the non-reentrant
     version does.
+  id: totrans-19
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 可重入版本不考虑嵌套结构中的张量（例如自定义对象、列表、字典等）是否参与自动梯度，而非可重入版本则考虑。
 - en: The reentrant checkpoint does not support checkpointed regions with detached
     tensors from the computational graph, whereas the non-reentrant version does.
     For the reentrant variant, if the checkpointed segment contains tensors detached
@@ -118,25 +160,36 @@
     makes all the outputs require gradients and this causes issues when a tensor is
     defined to have no gradient in the model. To avoid this, detach the tensors outside
     of the `checkpoint` function.
+  id: totrans-20
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 可重入检查点不支持从计算图中分离的张量的检查点区域，而非可重入版本支持。对于可重入变体，如果检查点段包含使用`detach()`分离的张量或使用[`torch.no_grad()`](generated/torch.no_grad.html#torch.no_grad
+    "torch.no_grad")的张量，后向传递将引发错误。这是因为`checkpoint`使所有输出都需要梯度，当在模型中定义张量为无梯度时会出现问题。为了避免这种情况，在`checkpoint`函数之外分离张量。
 - en: Parameters
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**function** – describes what to run in the forward pass of the model or part
     of the model. It should also know how to handle the inputs passed as the tuple.
     For example, in LSTM, if user passes `(activation, hidden)`, `function` should
     correctly use the first input as `activation` and the second input as `hidden`'
+  id: totrans-22
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**function** - 描述模型或模型部分前向传递中要运行的内容。它还应该知道如何处理作为元组传递的输入。例如，在LSTM中，如果用户传递了`(activation,
+    hidden)`，`function`应该正确地将第一个输入用作`activation`，第二个输入用作`hidden`'
 - en: '**preserve_rng_state** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")*,* *optional*) – Omit stashing and restoring the RNG state
     during each checkpoint. Default: `True`'
+  id: totrans-23
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**preserve_rng_state** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")*,* *optional*) - 在每个检查点期间省略保存和恢复RNG状态。默认值：`True`'
 - en: '**use_reentrant** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")*,* *optional*) – Use checkpointing implementation that requires
     re-entrant autograd. If `use_reentrant=False` is specified, `checkpoint` will
@@ -144,16 +197,21 @@
     to support additional functionality, such as working as expected with `torch.autograd.grad`
     and support for keyword arguments input into the checkpointed function. Note that
     future versions of PyTorch will default to `use_reentrant=False`. Default: `True`'
+  id: totrans-24
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**use_reentrant** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")*,* *optional*) - 使用需要可重入自动梯度的检查点实现。如果指定了`use_reentrant=False`，`checkpoint`将使用不需要可重入自动梯度的实现。这允许`checkpoint`支持额外功能，例如与`torch.autograd.grad`正常工作以及支持输入到被检查函数的关键字参数。请注意，未来版本的PyTorch将默认为`use_reentrant=False`。默认值：`True`'
 - en: '**context_fn** (*Callable**,* *optional*) – A callable returning a tuple of
     two context managers. The function and its recomputation will be run under the
     first and second context managers respectively. This argument is only supported
     if `use_reentrant=False`.'
+  id: totrans-25
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**context_fn** (*Callable**,* *optional*) - 返回两个上下文管理器元组的可调用函数。函数及其重新计算将分别在第一个和第二个上下文管理器下运行。只有在`use_reentrant=False`时才支持此参数。'
 - en: '**determinism_check** ([*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)")*,* *optional*) – A string specifying the determinism check
     to perform. By default it is set to `"default"` which compares the shapes, dtypes,
@@ -162,70 +220,104 @@
     Please open an issue if you would like to see more determinism checks. This argument
     is only supported if `use_reentrant=False`, if `use_reentrant=True`, the determinism
     check is always disabled.'
+  id: totrans-26
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**determinism_check** ([*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* *optional*) - 指定要执行的确定性检查的字符串。默认情况下设置为`"default"`，它会将重新计算的张量的形状、数据类型和设备与保存的张量进行比较。要关闭此检查，请指定`"none"`。目前这是唯一支持的两个值。如果您希望看到更多确定性检查，请提出问题。只有在`use_reentrant=False`时支持此参数，如果`use_reentrant=True`，则确定性检查始终被禁用。'
 - en: '**debug** ([*bool*](https://docs.python.org/3/library/functions.html#bool "(in
     Python v3.12)")*,* *optional*) – If `True`, error messages will also include a
     trace of the operators ran during the original forward computation as well as
     the recomputation. This argument is only supported if `use_reentrant=False`.'
+  id: totrans-27
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**debug** ([*bool*](https://docs.python.org/3/library/functions.html#bool "(in
+    Python v3.12)")*,* *optional*) - 如果为`True`，错误消息还将包括原始前向计算期间运行的操作的跟踪，以及重新计算。只有在`use_reentrant=False`时支持此参数。'
 - en: '**args** – tuple containing inputs to the `function`'
+  id: totrans-28
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**args** - 包含传递给`function`的输入的元组'
 - en: Returns
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回
 - en: Output of running `function` on `*args`
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 在`*args`上运行`function`的输出
 - en: '[PRE1]'
+  id: totrans-31
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Checkpoint a sequential model to save memory.
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 检查点一个顺序模型以节省内存。
 - en: Sequential models execute a list of modules/functions in order (sequentially).
     Therefore, we can divide such a model in various segments and checkpoint each
     segment. All segments except the last will not store the intermediate activations.
     The inputs of each checkpointed segment will be saved for re-running the segment
     in the backward pass.
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: 顺序模型按顺序执行一系列模块/函数。因此，我们可以将这样的模型分成各个段，并对每个段进行检查点。除最后一个外，所有段都不会存储中间激活。每个检查点段的输入将被保存以便在反向传播中重新运行该段。
 - en: Warning
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: If you are using the `use_reentrant=True` variant (this is the default), please
     see :func:`~torch.utils.checkpoint.checkpoint` for the important considerations
     and limitations of this variant. It is recommended that you use ``use_reentrant=False`.
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您使用`use_reentrant=True`变体（这是默认值），请参阅：func:`~torch.utils.checkpoint.checkpoint`以获取此变体的重要注意事项和限制。建议您使用`use_reentrant=False`。
 - en: Parameters
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**functions** – A [`torch.nn.Sequential`](generated/torch.nn.Sequential.html#torch.nn.Sequential
     "torch.nn.Sequential") or the list of modules or functions (comprising the model)
     to run sequentially.'
+  id: totrans-37
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**functions** - 一个[`torch.nn.Sequential`](generated/torch.nn.Sequential.html#torch.nn.Sequential
+    "torch.nn.Sequential")或者要依次运行的模块或函数列表（组成模型）。'
 - en: '**segments** – Number of chunks to create in the model'
+  id: totrans-38
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**segments** - 要在模型中创建的块数'
 - en: '**input** – A Tensor that is input to `functions`'
+  id: totrans-39
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**input** - 作为`functions`输入的张量'
 - en: '**preserve_rng_state** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")*,* *optional*) – Omit stashing and restoring the RNG state
     during each checkpoint. Default: `True`'
+  id: totrans-40
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**preserve_rng_state**（[*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")，可选） - 在每个检查点期间省略保存和恢复RNG状态。默认值：`True`'
 - en: '**use_reentrant** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")*,* *optional*) – Use checkpointing implementation that requires
     re-entrant autograd. If `use_reentrant=False` is specified, `checkpoint` will
@@ -233,36 +325,57 @@
     to support additional functionality, such as working as expected with `torch.autograd.grad`
     and support for keyword arguments input into the checkpointed function. Default:
     `True`'
+  id: totrans-41
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**use_reentrant**（[*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")，可选） - 使用需要可重入自动求导的检查点实现。如果指定了`use_reentrant=False`，`checkpoint`将使用不需要可重入自动求导的实现。这允许`checkpoint`支持额外的功能，例如与`torch.autograd.grad`正常工作以及支持传递给检查点函数的关键字参数。默认值：`True`'
 - en: Returns
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回值
 - en: Output of running `functions` sequentially on `*inputs`
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: 在`*inputs`上依次运行`functions`的输出
 - en: Example
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例
 - en: '[PRE2]'
+  id: totrans-45
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: '[PRE3]'
+  id: totrans-46
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: Context manager that sets whether checkpoint should print additional debug information
     when running. See the `debug` flag for [`checkpoint()`](#torch.utils.checkpoint.checkpoint
     "torch.utils.checkpoint.checkpoint") for more information. Note that when set,
     this context manager overrides the value of `debug` passed to checkpoint. To defer
     to the local setting, pass `None` to this context.
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: 上下文管理器，设置检查点在运行时是否应该打印额外的调试信息。有关更多信息，请参阅[`checkpoint()`](#torch.utils.checkpoint.checkpoint
+    "torch.utils.checkpoint.checkpoint")中的`debug`标志。请注意，当设置时，此上下文管理器会覆盖传递给检查点的`debug`值。要推迟到本地设置，请将`None`传递给此上下文。
 - en: Parameters
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**enabled** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")) – Whether checkpoint should print debug information. Default
     is ‘None’.'
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: '**enabled**（[*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")） - 检查点是否应该打印调试信息。默认值为''None''。'
