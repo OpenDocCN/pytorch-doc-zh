@@ -1,73 +1,110 @@
 - en: CUDA semantics
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: CUDA语义
 - en: 原文：[https://pytorch.org/docs/stable/notes/cuda.html](https://pytorch.org/docs/stable/notes/cuda.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/docs/stable/notes/cuda.html](https://pytorch.org/docs/stable/notes/cuda.html)
 - en: '[`torch.cuda`](../cuda.html#module-torch.cuda "torch.cuda") is used to set
     up and run CUDA operations. It keeps track of the currently selected GPU, and
     all CUDA tensors you allocate will by default be created on that device. The selected
     device can be changed with a [`torch.cuda.device`](../generated/torch.cuda.device.html#torch.cuda.device
     "torch.cuda.device") context manager.'
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`torch.cuda`](../cuda.html#module-torch.cuda "torch.cuda")用于设置和运行CUDA操作。它跟踪当前选择的GPU，您分配的所有CUDA张量默认将在该设备上创建。所选设备可以通过[`torch.cuda.device`](../generated/torch.cuda.device.html#torch.cuda.device
+    "torch.cuda.device")上下文管理器更改。'
 - en: However, once a tensor is allocated, you can do operations on it irrespective
     of the selected device, and the results will be always placed on the same device
     as the tensor.
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 然而，一旦分配了张量，您可以对其进行操作，而不管所选设备如何，结果将始终放置在与张量相同的设备上。
 - en: Cross-GPU operations are not allowed by default, with the exception of [`copy_()`](../generated/torch.Tensor.copy_.html#torch.Tensor.copy_
     "torch.Tensor.copy_") and other methods with copy-like functionality such as [`to()`](../generated/torch.Tensor.to.html#torch.Tensor.to
     "torch.Tensor.to") and [`cuda()`](../generated/torch.Tensor.cuda.html#torch.Tensor.cuda
     "torch.Tensor.cuda"). Unless you enable peer-to-peer memory access, any attempts
     to launch ops on tensors spread across different devices will raise an error.
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 默认情况下不允许跨GPU操作，除了[`copy_()`](../generated/torch.Tensor.copy_.html#torch.Tensor.copy_
+    "torch.Tensor.copy_")和其他具有类似复制功能的方法，如[`to()`](../generated/torch.Tensor.to.html#torch.Tensor.to
+    "torch.Tensor.to")和[`cuda()`](../generated/torch.Tensor.cuda.html#torch.Tensor.cuda
+    "torch.Tensor.cuda")。除非启用对等内存访问，否则任何尝试在不同设备上分布的张量上启动操作的尝试都将引发错误。
 - en: 'Below you can find a small example showcasing this:'
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下是一个展示示例：
 - en: '[PRE0]'
+  id: totrans-6
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: '## TensorFloat-32 (TF32) on Ampere (and later) devices[](#tensorfloat-32-tf32-on-ampere-and-later-devices
     "Permalink to this heading")'
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: '## Ampere（以及更高版本）设备上的TensorFloat-32（TF32）[](#tensorfloat-32-tf32-on-ampere-and-later-devices
+    "跳转到此标题的永久链接")'
 - en: Starting in PyTorch 1.7, there is a new flag called allow_tf32. This flag defaults
     to True in PyTorch 1.7 to PyTorch 1.11, and False in PyTorch 1.12 and later. This
     flag controls whether PyTorch is allowed to use the TensorFloat32 (TF32) tensor
     cores, available on NVIDIA GPUs since Ampere, internally to compute matmul (matrix
     multiplies and batched matrix multiplies) and convolutions.
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 从PyTorch 1.7开始，有一个名为allow_tf32的新标志。在PyTorch 1.7到PyTorch 1.11中，默认为True，在PyTorch
+    1.12及以后为False。该标志控制PyTorch是否允许在NVIDIA GPU上使用TensorFloat32（TF32）张量核心来计算matmul（矩阵乘法和批量矩阵乘法）和卷积。
 - en: TF32 tensor cores are designed to achieve better performance on matmul and convolutions
     on torch.float32 tensors by rounding input data to have 10 bits of mantissa, and
     accumulating results with FP32 precision, maintaining FP32 dynamic range.
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: TF32张量核心旨在通过将输入数据四舍五入为10位尾数，并使用FP32精度累积结果，保持FP32动态范围，从而在torch.float32张量上实现更好的matmul和卷积性能。
 - en: 'matmuls and convolutions are controlled separately, and their corresponding
     flags can be accessed at:'
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: matmuls和卷积是分别控制的，它们对应的标志可以在以下位置访问：
 - en: '[PRE1]'
+  id: totrans-11
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: The precision of matmuls can also be set more broadly (limited not just to CUDA)
     via `set_float_32_matmul_precision()`. Note that besides matmuls and convolutions
     themselves, functions and nn modules that internally uses matmuls or convolutions
     are also affected. These include nn.Linear, nn.Conv*, cdist, tensordot, affine
     grid and grid sample, adaptive log softmax, GRU and LSTM.
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: matmuls的精度也可以更广泛地设置（不仅限于CUDA），通过`set_float_32_matmul_precision()`。请注意，除了matmuls和卷积本身，内部使用matmuls或卷积的函数和nn模块也会受到影响。这些包括nn.Linear、nn.Conv*、cdist、tensordot、affine
+    grid和grid sample、adaptive log softmax、GRU和LSTM。
 - en: 'To get an idea of the precision and speed, see the example code and benchmark
     data (on A100) below:'
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: 要了解精度和速度的概念，请参见下面的示例代码和基准数据（在A100上）：
 - en: '[PRE2]'
+  id: totrans-14
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: 'From the above example, we can see that with TF32 enabled, the speed is ~7x
     faster on A100, and that relative error compared to double precision is approximately
     2 orders of magnitude larger. Note that the exact ratio of TF32 to single precision
@@ -75,149 +112,227 @@
     bandwidth to compute as well as the ratio of TF32 to FP32 matmul throughput may
     vary from generation to generation or model to model. If full FP32 precision is
     needed, users can disable TF32 by:'
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 从上面的例子可以看出，启用TF32后，在A100上速度快约7倍，与双精度相比的相对误差大约大2个数量级。请注意，TF32与单精度速度的确切比率取决于硬件生成，例如内存带宽与计算的比率以及TF32与FP32
+    matmul吞吐量的比率可能会因世代或模型而异。如果需要完整的FP32精度，用户可以通过禁用TF32来实现：
 - en: '[PRE3]'
+  id: totrans-16
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: To toggle the TF32 flags off in C++, you can do
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 要在C++中关闭TF32标志，可以执行以下操作：
 - en: '[PRE4]'
+  id: totrans-18
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: 'For more information about TF32, see:'
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 有关TF32的更多信息，请参见：
 - en: '[TensorFloat-32](https://blogs.nvidia.com/blog/2020/05/14/tensorfloat-32-precision-format/)'
+  id: totrans-20
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[TensorFloat-32](https://blogs.nvidia.com/blog/2020/05/14/tensorfloat-32-precision-format/)'
 - en: '[CUDA 11](https://devblogs.nvidia.com/cuda-11-features-revealed/)'
+  id: totrans-21
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[CUDA 11](https://devblogs.nvidia.com/cuda-11-features-revealed/)'
 - en: '[Ampere architecture](https://devblogs.nvidia.com/nvidia-ampere-architecture-in-depth/)  ##
     Reduced Precision Reduction in FP16 GEMMs[](#reduced-precision-reduction-in-fp16-gemms
     "Permalink to this heading")'
+  id: totrans-22
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[Ampere架构](https://devblogs.nvidia.com/nvidia-ampere-architecture-in-depth/)  ##
+    FP16 GEMMs中的降低精度缩减[](#reduced-precision-reduction-in-fp16-gemms "跳转到此标题的永久链接")'
 - en: fp16 GEMMs are potentially done with some intermediate reduced precision reductions
     (e.g., in fp16 rather than fp32). These selective reductions in precision can
     allow for higher performance on certain workloads (particularly those with a large
     k dimension) and GPU architectures at the cost of numerical precision and potential
     for overflow.
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: fp16 GEMMs可能使用一些中间降低精度的缩减（例如在fp16而不是fp32中）。这些选择性的精度降低可以在某些工作负载（特别是具有大k维度的工作负载）和GPU架构上实现更高的性能，但会牺牲数值精度和可能会发生溢出。
 - en: 'Some example benchmark data on V100:'
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: V100上的一些示例基准数据：
 - en: '[PRE5]'
+  id: totrans-25
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: 'If full precision reductions are needed, users can disable reduced precision
     reductions in fp16 GEMMs with:'
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果需要完整精度降低，用户可以通过以下方式在 fp16 GEMMs 中禁用减少精度降低：
 - en: '[PRE6]'
+  id: totrans-27
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: To toggle the reduced precision reduction flags in C++, one can do
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: 要在 C++ 中切换减少精度降低标志，可以执行
 - en: '[PRE7]  ## Reduced Precision Reduction in BF16 GEMMs[](#reduced-precision-reduction-in-bf16-gemms
     "Permalink to this heading")'
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: '[PRE7]  ## 减少 BF16 GEMMs 中的精度降低'
 - en: A similar flag (as above) exists for BFloat16 GEMMs. Note that this switch is
     set to True by default for BF16, if you observe numerical instability in your
     workload, you may wish to set it to False.
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 类似的标志（如上所述）也适用于 BFloat16 GEMMs。请注意，此开关默认设置为 True 用于 BF16，如果您在工作负载中观察到数值不稳定性，可能希望将其设置为
+    False。
 - en: 'If reduced precision reductions are not desired, users can disable reduced
     precision reductions in bf16 GEMMs with:'
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果不需要减少精度降低，用户可以通过以下方式禁用 bf16 GEMMs 中的减少精度降低：
 - en: '[PRE8]'
+  id: totrans-32
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: To toggle the reduced precision reduction flags in C++, one can do
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: 要在 C++ 中切换减少精度降低标志，可以执行
 - en: '[PRE9]'
+  id: totrans-34
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: Asynchronous execution
+  id: totrans-35
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 异步执行
 - en: By default, GPU operations are asynchronous. When you call a function that uses
     the GPU, the operations are *enqueued* to the particular device, but not necessarily
     executed until later. This allows us to execute more computations in parallel,
     including operations on CPU or other GPUs.
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 默认情况下，GPU 操作是异步的。当调用使用 GPU 的函数时，操作会*排队*到特定设备，但不一定会立即执行。这使我们能够并行执行更多计算，包括在 CPU
+    或其他 GPU 上的操作。
 - en: In general, the effect of asynchronous computation is invisible to the caller,
     because (1) each device executes operations in the order they are queued, and
     (2) PyTorch automatically performs necessary synchronization when copying data
     between CPU and GPU or between two GPUs. Hence, computation will proceed as if
     every operation was executed synchronously.
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 总的来说，异步计算的效果对调用者是不可见的，因为（1）每个设备按照排队的顺序执行操作，（2）PyTorch 在 CPU 和 GPU 之间或两个 GPU
+    之间复制数据时会自动执行必要的同步。因此，计算将继续进行，就好像每个操作都是同步执行的。
 - en: You can force synchronous computation by setting environment variable `CUDA_LAUNCH_BLOCKING=1`.
     This can be handy when an error occurs on the GPU. (With asynchronous execution,
     such an error isn’t reported until after the operation is actually executed, so
     the stack trace does not show where it was requested.)
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 可以通过设置环境变量`CUDA_LAUNCH_BLOCKING=1`来强制同步计算。当 GPU 上发生错误时，这可能会很方便。（使用异步执行时，直到操作实际执行后才报告此类错误，因此堆栈跟踪不显示请求位置。）
 - en: 'A consequence of the asynchronous computation is that time measurements without
     synchronizations are not accurate. To get precise measurements, one should either
     call [`torch.cuda.synchronize()`](../generated/torch.cuda.synchronize.html#torch.cuda.synchronize
     "torch.cuda.synchronize") before measuring, or use [`torch.cuda.Event`](../generated/torch.cuda.Event.html#torch.cuda.Event
     "torch.cuda.Event") to record times as following:'
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 异步计算的一个后果是，没有同步的时间测量不准确。为了获得精确的测量结果，应在测量之前调用 [`torch.cuda.synchronize()`](../generated/torch.cuda.synchronize.html#torch.cuda.synchronize
+    "torch.cuda.synchronize")，或者使用 [`torch.cuda.Event`](../generated/torch.cuda.Event.html#torch.cuda.Event
+    "torch.cuda.Event") 记录时间如下：
 - en: '[PRE10]'
+  id: totrans-40
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: As an exception, several functions such as [`to()`](../generated/torch.Tensor.to.html#torch.Tensor.to
     "torch.Tensor.to") and [`copy_()`](../generated/torch.Tensor.copy_.html#torch.Tensor.copy_
     "torch.Tensor.copy_") admit an explicit `non_blocking` argument, which lets the
     caller bypass synchronization when it is unnecessary. Another exception is CUDA
     streams, explained below.
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 作为例外，一些函数（如[`to()`](../generated/torch.Tensor.to.html#torch.Tensor.to "torch.Tensor.to")
+    和 [`copy_()`](../generated/torch.Tensor.copy_.html#torch.Tensor.copy_ "torch.Tensor.copy_")）允许显式的
+    `non_blocking` 参数，让调用者在不必要时绕过同步。另一个例外是 CUDA 流，下面会解释。
 - en: CUDA streams
+  id: totrans-42
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: CUDA 流
 - en: 'A [CUDA stream](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#streams)
     is a linear sequence of execution that belongs to a specific device. You normally
     do not need to create one explicitly: by default, each device uses its own “default”
     stream.'
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: '[CUDA 流](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#streams)
+    是属于特定设备的线性执行序列。通常情况下，您不需要显式创建一个：默认情况下，每个设备使用自己的“默认”流。'
 - en: 'Operations inside each stream are serialized in the order they are created,
     but operations from different streams can execute concurrently in any relative
     order, unless explicit synchronization functions (such as [`synchronize()`](../generated/torch.cuda.synchronize.html#torch.cuda.synchronize
     "torch.cuda.synchronize") or [`wait_stream()`](../generated/torch.cuda.Stream.html#torch.cuda.Stream.wait_stream
     "torch.cuda.Stream.wait_stream")) are used. For example, the following code is
     incorrect:'
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 每个流内部的操作按创建顺序串行化，但来自不同流的操作可以以任何相对顺序并发执行，除非使用显式同步函数（如[`synchronize()`](../generated/torch.cuda.synchronize.html#torch.cuda.synchronize
+    "torch.cuda.synchronize") 或 [`wait_stream()`](../generated/torch.cuda.Stream.html#torch.cuda.Stream.wait_stream
+    "torch.cuda.Stream.wait_stream")）。例如，以下代码是不正确的：
 - en: '[PRE11]'
+  id: totrans-45
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: 'When the “current stream” is the default stream, PyTorch automatically performs
     necessary synchronization when data is moved around, as explained above. However,
     when using non-default streams, it is the user’s responsibility to ensure proper
     synchronization. The fixed version of this example is:'
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 当“当前流”是默认流时，PyTorch 在数据移动时会自动执行必要的同步，如上所述。但是，当使用非默认流时，用户有责任确保适当的同步。此示例的修复版本如下：
 - en: '[PRE12]'
+  id: totrans-47
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: There are two new additions. The [`torch.cuda.Stream.wait_stream()`](../generated/torch.cuda.Stream.html#torch.cuda.Stream.wait_stream
     "torch.cuda.Stream.wait_stream") call ensures that the `normal_()` execution has
     finished before we start running `sum(A)` on a side stream. The [`torch.Tensor.record_stream()`](../generated/torch.Tensor.record_stream.html#torch.Tensor.record_stream
@@ -228,30 +343,45 @@
     from running in parallel with other work on the default stream.) See the documentation
     for [`torch.Tensor.record_stream()`](../generated/torch.Tensor.record_stream.html#torch.Tensor.record_stream
     "torch.Tensor.record_stream") on more details on when to use one or another.
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: 有两个新的添加。[`torch.cuda.Stream.wait_stream()`](../generated/torch.cuda.Stream.html#torch.cuda.Stream.wait_stream
+    "torch.cuda.Stream.wait_stream")调用确保`normal_()`执行完成后，我们开始在侧流上运行`sum(A)`。[`torch.Tensor.record_stream()`](../generated/torch.Tensor.record_stream.html#torch.Tensor.record_stream
+    "torch.Tensor.record_stream")（有关更多详细信息，请参见）确保在`sum(A)`完成之前我们不会释放A。您还可以在以后的某个时间点手动等待流`torch.cuda.default_stream(cuda).wait_stream(s)`（请注意，立即等待是没有意义的，因为这将阻止流执行与默认流上的其他工作并行运行）。有关何时使用其中一个的更多详细信息，请参阅[`torch.Tensor.record_stream()`](../generated/torch.Tensor.record_stream.html#torch.Tensor.record_stream
+    "torch.Tensor.record_stream")的文档。
 - en: 'Note that this synchronization is necessary even when there is no read dependency,
     e.g., as seen in this example:'
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，即使没有读取依赖关系，例如在这个例子中看到的情况下，这种同步也是必要的：
 - en: '[PRE13]'
+  id: totrans-50
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: Despite the computation on `s` not reading the contents of `A` and no other
     uses of `A`, it is still necessary to synchronize, because `A` may correspond
     to memory reallocated by the CUDA caching allocator, with pending operations from
     the old (deallocated) memory.
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
+  zh: 尽管`s`上的计算不读取`A`的内容，也没有其他对`A`的使用，但仍然需要同步，因为`A`可能对应于由CUDA缓存分配器重新分配的内存，其中包含来自旧（已释放）内存的挂起操作。
 - en: '### Stream semantics of backward passes[](#stream-semantics-of-backward-passes
     "Permalink to this heading")'
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
+  zh: '### 反向传递的流语义[](#stream-semantics-of-backward-passes "跳转到此标题")'
 - en: Each backward CUDA op runs on the same stream that was used for its corresponding
     forward op. If your forward pass runs independent ops in parallel on different
     streams, this helps the backward pass exploit that same parallelism.
+  id: totrans-53
   prefs: []
   type: TYPE_NORMAL
+  zh: 每个反向CUDA操作都在用于其对应的前向操作的相同流上运行。如果您的前向传递在不同流上并行运行独立操作，这有助于反向传递利用相同的并行性。
 - en: The stream semantics of a backward call with respect to surrounding ops are
     the same as for any other call. The backward pass inserts internal syncs to ensure
     this even when backward ops run on multiple streams as described in the previous
@@ -263,50 +393,80 @@
     "torch.autograd.backward"), [`autograd.grad(..., grad_outputs=initial_grads)`](../generated/torch.autograd.grad.html#torch.autograd.grad
     "torch.autograd.grad"), or [`tensor.backward(..., gradient=initial_grad)`](../generated/torch.Tensor.backward.html#torch.Tensor.backward
     "torch.Tensor.backward")), the acts of
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: 关于周围操作的反向调用的流语义与任何其他调用的流语义相同。在反向传递中，即使反向操作在多个流上运行，也会插入内部同步，以确保这一点，如前一段所述。更具体地说，当调用[`autograd.backward`](../generated/torch.autograd.backward.html#torch.autograd.backward
+    "torch.autograd.backward"), [`autograd.grad`](../generated/torch.autograd.grad.html#torch.autograd.grad
+    "torch.autograd.grad"), 或 [`tensor.backward`](../generated/torch.Tensor.backward.html#torch.Tensor.backward
+    "torch.Tensor.backward")，并可选择将CUDA张量作为初始梯度（例如，[`autograd.backward(..., grad_tensors=initial_grads)`](../generated/torch.autograd.backward.html#torch.autograd.backward
+    "torch.autograd.backward"), [`autograd.grad(..., grad_outputs=initial_grads)`](../generated/torch.autograd.grad.html#torch.autograd.grad
+    "torch.autograd.grad"), 或 [`tensor.backward(..., gradient=initial_grad)`](../generated/torch.Tensor.backward.html#torch.Tensor.backward
+    "torch.Tensor.backward"))时，
 - en: optionally populating initial gradient(s),
+  id: totrans-55
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 可选择填充初始梯度，
 - en: invoking the backward pass, and
+  id: totrans-56
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 调用反向传递，并
 - en: using the gradients
+  id: totrans-57
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 使用梯度
 - en: 'have the same stream-semantics relationship as any group of ops:'
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: 具有与任何一组操作相同的流语义关系：
 - en: '[PRE14]'
+  id: totrans-59
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: 'BC note: Using grads on the default stream[](#bc-note-using-grads-on-the-default-stream
     "Permalink to this heading")'
+  id: totrans-60
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: BC注意：在默认流上使用梯度[](#bc-note-using-grads-on-the-default-stream "跳转到此标题")
 - en: 'In prior versions of PyTorch (1.9 and earlier), the autograd engine always
     synced the default stream with all backward ops, so the following pattern:'
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: 在PyTorch的早期版本（1.9及更早版本）中，自动求导引擎总是将默认流与所有反向操作同步，因此以下模式：
 - en: '[PRE15]'
+  id: totrans-62
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: 'was safe as long as `use grads` happened on the default stream. In present
     PyTorch, that pattern is no longer safe. If `backward()` and `use grads` are in
     different stream contexts, you must sync the streams:'
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: 只要`使用梯度`发生在默认流上，就是安全的。在当前的PyTorch中，该模式不再安全。如果`backward()`和`使用梯度`在不同的流上下文中，您必须同步这些流：
 - en: '[PRE16]'
+  id: totrans-64
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: 'even if `use grads` is on the default stream.  ## Memory management[](#memory-management
     "Permalink to this heading")'
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: 即使`使用梯度`在默认流上。## 内存管理[](#memory-management "跳转到此标题")
 - en: PyTorch uses a caching memory allocator to speed up memory allocations. This
     allows fast memory deallocation without device synchronizations. However, the
     unused memory managed by the allocator will still show as if used in `nvidia-smi`.
@@ -321,43 +481,71 @@
     that those can be used by other GPU applications. However, the occupied GPU memory
     by tensors will not be freed so it can not increase the amount of GPU memory available
     for PyTorch.
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch 使用缓存内存分配器加速内存分配。这允许快速内存释放而无需设备同步。但是，分配器管理的未使用内存仍会显示为在 `nvidia-smi` 中使用。您可以使用
+    [`memory_allocated()`](../generated/torch.cuda.memory_allocated.html#torch.cuda.memory_allocated
+    "torch.cuda.memory_allocated") 和 [`max_memory_allocated()`](../generated/torch.cuda.max_memory_allocated.html#torch.cuda.max_memory_allocated
+    "torch.cuda.max_memory_allocated") 监视张量占用的内存，并使用 [`memory_reserved()`](../generated/torch.cuda.memory_reserved.html#torch.cuda.memory_reserved
+    "torch.cuda.memory_reserved") 和 [`max_memory_reserved()`](../generated/torch.cuda.max_memory_reserved.html#torch.cuda.max_memory_reserved
+    "torch.cuda.max_memory_reserved") 监视缓存分配器管理的总内存量。调用 [`empty_cache()`](../generated/torch.cuda.empty_cache.html#torch.cuda.empty_cache
+    "torch.cuda.empty_cache") 释放 PyTorch 中所有**未使用**的缓存内存，以便其他 GPU 应用程序可以使用。但是，张量占用的
+    GPU 内存不会被释放，因此不能增加供 PyTorch 使用的 GPU 内存量。
 - en: To better understand how CUDA memory is being used over time, [Understanding
     CUDA Memory Usage](../torch_cuda_memory.html#torch-cuda-memory) describes tools
     for capturing and visualizing traces of memory use.
+  id: totrans-67
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了更好地了解 CUDA 内存如何随时间变化，[了解 CUDA 内存使用情况](../torch_cuda_memory.html#torch-cuda-memory)
+    描述了捕获和可视化内存使用痕迹的工具。
 - en: For more advanced users, we offer more comprehensive memory benchmarking via
     [`memory_stats()`](../generated/torch.cuda.memory_stats.html#torch.cuda.memory_stats
     "torch.cuda.memory_stats"). We also offer the capability to capture a complete
     snapshot of the memory allocator state via [`memory_snapshot()`](../generated/torch.cuda.memory_snapshot.html#torch.cuda.memory_snapshot
     "torch.cuda.memory_snapshot"), which can help you understand the underlying allocation
     patterns produced by your code.
+  id: totrans-68
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于更高级的用户，我们通过 [`memory_stats()`](../generated/torch.cuda.memory_stats.html#torch.cuda.memory_stats
+    "torch.cuda.memory_stats") 提供更全面的内存基准测试。我们还提供通过 [`memory_snapshot()`](../generated/torch.cuda.memory_snapshot.html#torch.cuda.memory_snapshot
+    "torch.cuda.memory_snapshot") 捕获内存分配器状态的完整快照的功能，这可以帮助您了解代码产生的底层分配模式。
 - en: '### Environment variables'
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: '### 环境变量'
 - en: Use of a caching allocator can interfere with memory checking tools such as
     `cuda-memcheck`. To debug memory errors using `cuda-memcheck`, set `PYTORCH_NO_CUDA_MEMORY_CACHING=1`
     in your environment to disable caching.
+  id: totrans-70
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用缓存分配器可能会干扰 `cuda-memcheck` 等内存检查工具。要使用 `cuda-memcheck` 调试内存错误，请在环境中设置 `PYTORCH_NO_CUDA_MEMORY_CACHING=1`
+    以禁用缓存。
 - en: 'The behavior of the caching allocator can be controlled via the environment
     variable `PYTORCH_CUDA_ALLOC_CONF`. The format is `PYTORCH_CUDA_ALLOC_CONF=<option>:<value>,<option2>:<value2>...`
     Available options:'
+  id: totrans-71
   prefs: []
   type: TYPE_NORMAL
+  zh: 缓存分配器的行为可以通过环境变量 `PYTORCH_CUDA_ALLOC_CONF` 进行控制。格式为 `PYTORCH_CUDA_ALLOC_CONF=<option>:<value>,<option2>:<value2>...`
+    可用选项：
 - en: '`backend` allows selecting the underlying allocator implementation. Currently,
     valid options are `native`, which uses PyTorch’s native implementation, and `cudaMallocAsync`,
     which uses [CUDA’s built-in asynchronous allocator](https://developer.nvidia.com/blog/using-cuda-stream-ordered-memory-allocator-part-1/).
     `cudaMallocAsync` requires CUDA 11.4 or newer. The default is `native`. `backend`
     applies to all devices used by the process, and can’t be specified on a per-device
     basis.'
+  id: totrans-72
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`backend` 允许选择底层分配器的实现。目前，有效选项有 `native`，使用 PyTorch 的原生实现，以及 `cudaMallocAsync`，使用
+    [CUDA 内置的异步分配器](https://developer.nvidia.com/blog/using-cuda-stream-ordered-memory-allocator-part-1/)。`cudaMallocAsync`
+    需要 CUDA 11.4 或更新版本。默认值是 `native`。`backend` 适用于进程使用的所有设备，不能针对每个设备指定。'
 - en: '`max_split_size_mb` prevents the native allocator from splitting blocks larger
     than this size (in MB). This can reduce fragmentation and may allow some borderline
     workloads to complete without running out of memory. Performance cost can range
@@ -369,9 +557,14 @@
     and showing a large amount of inactive split blocks. `max_split_size_mb` is only
     meaningful with `backend:native`. With `backend:cudaMallocAsync`, `max_split_size_mb`
     is ignored.'
+  id: totrans-73
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`max_split_size_mb` 防止原生分配器分割大于此大小（以 MB 为单位）的块。这可以减少碎片化，并可能使一些边缘工作负载在不耗尽内存的情况下完成。性能成本可能从‘零’到‘可观’不等，取决于分配模式。默认值为无限制，即所有块都可以分割。[`memory_stats()`](../generated/torch.cuda.memory_stats.html#torch.cuda.memory_stats
+    "torch.cuda.memory_stats") 和 [`memory_summary()`](../generated/torch.cuda.memory_summary.html#torch.cuda.memory_summary
+    "torch.cuda.memory_summary") 方法对调整很有用。此选项应作为最后的手段用于因‘内存不足’而中止的工作负载，并显示大量非活动分割块。`max_split_size_mb`
+    仅在 `backend:native` 时有意义。对于 `backend:cudaMallocAsync`，`max_split_size_mb` 将被忽略。'
 - en: '`roundup_power2_divisions` helps with rounding the requested allocation size
     to nearest power-2 division and making better use of the blocks. In the native
     CUDACachingAllocator, the sizes are rounded up in multiple of blocks size of 512,
@@ -390,9 +583,11 @@
     8 divisions for any larger allocations, set the knob value to: [256:1,512:2,1024:4,>:8].
     `roundup_power2_divisions` is only meaningful with `backend:native`. With `backend:cudaMallocAsync`,
     `roundup_power2_divisions` is ignored.'
+  id: totrans-74
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`roundup_power2_divisions`有助于将请求的分配大小四舍五入到最接近的2的幂次方，并更好地利用块。在原生CUDACachingAllocator中，大小会被四舍五入到512的倍数块大小，因此对于较小的大小效果很好。然而，对于大型相邻分配来说，这可能效率低下，因为每个分配都会进入不同大小的块，并且这些块的重复使用被最小化。这可能会产生大量未使用的块，并浪费GPU内存容量。此选项使分配大小四舍五入到最接近的2的幂次方。例如，如果我们需要将大小为1200四舍五入，如果分割数为4，那么大小1200位于1024和2048之间，如果在它们之间进行4次分割，值为1024、1280、1536和1792。因此，大小为1200的分配将被四舍五入为1280，作为最接近2的幂次方的上限。指定一个值应用于所有分配大小，或指定一个键值对数组，为每个2的幂次方间隔单独设置2的幂次方分割。例如，为所有小于256MB的分配设置1个分割，为256MB至512MB之间的分配设置2个分割，为512MB至1GB之间的分配设置4个分割，为任何更大的分配设置8个分割，将旋钮值设置为：[256:1,512:2,1024:4,>:8]。`roundup_power2_divisions`仅在`backend:native`时有意义。在`backend:cudaMallocAsync`中，`roundup_power2_divisions`会被忽略。'
 - en: '`garbage_collection_threshold` helps actively reclaiming unused GPU memory
     to avoid triggering expensive sync-and-reclaim-all operation (release_cached_blocks),
     which can be unfavorable to latency-critical GPU applications (e.g., servers).
@@ -403,9 +598,11 @@
     reused. The threshold value should be between greater than 0.0 and less than 1.0.
     `garbage_collection_threshold` is only meaningful with `backend:native`. With
     `backend:cudaMallocAsync`, `garbage_collection_threshold` is ignored.'
+  id: totrans-75
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`garbage_collection_threshold`有助于主动回收未使用的GPU内存，以避免触发昂贵的同步和回收所有操作（release_cached_blocks），这可能对延迟关键的GPU应用（例如服务器）不利。设置此阈值（例如0.8）后，如果GPU内存容量使用超过阈值（即分配给GPU应用程序的总内存的80%），分配器将开始回收GPU内存块。该算法更倾向于首先释放旧的和未使用的块，以避免释放正在被活跃重复使用的块。阈值应该在大于0.0且小于1.0之间。`garbage_collection_threshold`仅在`backend:native`时有意义。在`backend:cudaMallocAsync`中，`garbage_collection_threshold`会被忽略。'
 - en: '`expandable_segments` (experimental, default: False) If set to True, this setting
     instructs the allocator to create CUDA allocations that can later be expanded
     to better handle cases where a job changing allocation sizes frequently, such
@@ -430,9 +627,14 @@
     now no way to recover the slices of memory that are free at the end of existing
     segments. With models 50+ layers deep, this pattern might repeat 50+ times creating
     many slivers.'
+  id: totrans-76
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`expandable_segments`（实验性，默认值：False）如果设置为True，则此设置指示分配器创建可以稍后扩展的CUDA分配，以更好地处理频繁更改分配大小的情况，例如具有不断更改批量大小的作业。通常对于大型（>2MB）分配，分配器调用cudaMalloc以获取与用户请求的大小相同的分配。将来，如果这些分配的部分是空闲的，它们可以被重用于其他请求。当程序多次请求完全相同大小的请求或者是该大小的倍数时，这种方法效果很好。许多深度学习模型遵循这种行为。然而，一个常见的例外是当批量大小从一次迭代到下一次略微变化时，例如在批量推理中。当程序最初以批量大小N运行时，它将进行适合该大小的分配。如果将来以大小N
+    - 1运行，则现有的分配仍然足够大。但是，如果以大小N + 1运行，则将不得不进行稍微更大的新分配。并非所有张量的大小都相同。有些可能是(N + 1)*A，而其他可能是(N
+    + 1)*A*B，其中A和B是模型中的一些非批量维度。因为分配器在足够大时重用现有的分配，一些(N + 1)*A的分配实际上将适合已经存在的N*B*A段中，尽管不完全。随着模型的运行，它将部分填充所有这些段，留下这些段末尾的无法使用的空闲内存片段。在某个时刻，分配器将需要cudaMalloc一个新的(N
+    + 1)*A*B段。如果没有足够的内存，现在没有办法恢复现有段末尾的空闲内存片段。对于50层以上的模型，这种模式可能重复50多次，创建许多碎片。'
 - en: expandable_segments allows the allocator to create a segment initially and then
     expand its size later when more memory is needed. Instead of making one segment
     per allocation, it tries to make one segment (per stream) that grows as necessary.
@@ -440,58 +642,83 @@
     segment until it fills up. Then more memory is requested and appended to the end
     of the segment. This process does not create as many slivers of unusable memory,
     so it is more likely to succeed at finding this memory.
+  id: totrans-77
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: expandable_segments允许分配器最初创建一个段，然后在需要更多内存时扩展其大小。它尝试创建一个（每个流）随需增长的段，而不是每次分配一个段。现在当N
+    + 1的情况发生时，分配将很好地平铺到一个大段中，直到填满。然后请求更多内存并附加到段的末尾。这个过程不会创建太多无法使用的内存碎片，因此更有可能成功找到这些内存。
 - en: pinned_use_cuda_host_register option is a boolean flag that determines whether
     to use the CUDA API’s cudaHostRegister function for allocating pinned memory instead
     of the default cudaHostAlloc. When set to True, the memory is allocated using
     regular malloc and then pages are mapped to the memory before calling cudaHostRegister.
     This pre-mapping of pages helps reduce the lock time during the execution of cudaHostRegister.
+  id: totrans-78
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: pinned_use_cuda_host_register选项是一个布尔标志，用于确定是否使用CUDA API的cudaHostRegister函数来分配固定内存，而不是默认的cudaHostAlloc。当设置为True时，内存是使用常规malloc分配的，然后在调用cudaHostRegister之前将页面映射到内存。这种页面的预映射有助于减少执行cudaHostRegister期间的锁定时间。
 - en: pinned_num_register_threads option is only valid when pinned_use_cuda_host_register
     is set to True. By default, one thread is used to map the pages. This option allows
     using more threads to parallelize the page mapping operations to reduce the overall
     allocation time of pinned memory. A good value for this option is 8 based on benchmarking
     results.
+  id: totrans-79
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 当pinned_use_cuda_host_register设置为True时，pinned_num_register_threads选项才有效。默认情况下，使用一个线程来映射页面。此选项允许使用更多线程并行化页面映射操作，以减少固定内存的总分配时间。根据基准测试结果，此选项的一个良好值为8。
 - en: Note
+  id: totrans-80
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: 'Some stats reported by the [CUDA memory management API](../cuda.html#cuda-memory-management-api)
     are specific to `backend:native`, and are not meaningful with `backend:cudaMallocAsync`.
     See each function’s docstring for details.  ## Using custom memory allocators
     for CUDA'
+  id: totrans-81
   prefs: []
   type: TYPE_NORMAL
+  zh: 一些由[CUDA内存管理API](../cuda.html#cuda-memory-management-api)报告的统计数据是特定于`backend:native`的，并且在`backend:cudaMallocAsync`中没有意义。有关详细信息，请参阅每个函数的文档字符串。##
+    为CUDA使用自定义内存分配器
 - en: It is possible to define allocators as simple functions in C/C++ and compile
     them as a shared library, the code below shows a basic allocator that just traces
     all the memory operations.
+  id: totrans-82
   prefs: []
   type: TYPE_NORMAL
+  zh: 可以将分配器定义为C/C++中的简单函数，并将它们编译为共享库，下面的代码展示了一个基本的分配器，只是跟踪所有内存操作。
 - en: '[PRE17]'
+  id: totrans-83
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: This can be used in python through the [`torch.cuda.memory.CUDAPluggableAllocator`](../generated/torch.cuda.CUDAPluggableAllocator.html#torch.cuda.CUDAPluggableAllocator
     "torch.cuda.memory.CUDAPluggableAllocator"). The user is responsible for supplying
     the path to the .so file and the name of the alloc/free functions that match the
     signatures specified above.
+  id: totrans-84
   prefs: []
   type: TYPE_NORMAL
+  zh: 这可以通过[`torch.cuda.memory.CUDAPluggableAllocator`](../generated/torch.cuda.CUDAPluggableAllocator.html#torch.cuda.CUDAPluggableAllocator
+    "torch.cuda.memory.CUDAPluggableAllocator")在Python中使用。用户负责提供与上述签名匹配的.so文件路径和alloc/free函数的名称。
 - en: '[PRE18]'
+  id: totrans-85
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: '[PRE19]'
+  id: totrans-86
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE19]'
 - en: cuBLAS workspaces
+  id: totrans-87
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: cuBLAS工作空间
 - en: For each combination of cuBLAS handle and CUDA stream, a cuBLAS workspace will
     be allocated if that handle and stream combination executes a cuBLAS kernel that
     requires a workspace. In order to avoid repeatedly allocating workspaces, these
@@ -501,94 +728,137 @@
     the default workspace size per allocation is `CUBLAS_WORKSPACE_CONFIG=:4096:2:16:8`
     which specifies a total size of `2 * 4096 + 8 * 16 KiB`. To force cuBLAS to avoid
     using workspaces, set `CUBLAS_WORKSPACE_CONFIG=:0:0`.
+  id: totrans-88
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于每个cuBLAS句柄和CUDA流的组合，如果该句柄和流组合执行需要工作空间的cuBLAS内核，则将分配一个cuBLAS工作空间。为了避免重复分配工作空间，除非调用`torch._C._cuda_clearCublasWorkspaces()`，否则这些工作空间不会被释放。每次分配的工作空间大小可以通过环境变量`CUBLAS_WORKSPACE_CONFIG`指定，格式为`:[SIZE]:[COUNT]`。例如，默认每次分配的工作空间大小为`CUBLAS_WORKSPACE_CONFIG=:4096:2:16:8`，指定总大小为`2
+    * 4096 + 8 * 16 KiB`。要强制cuBLAS避免使用工作空间，请设置`CUBLAS_WORKSPACE_CONFIG=:0:0`。
 - en: '## cuFFT plan cache'
+  id: totrans-89
   prefs: []
   type: TYPE_NORMAL
+  zh: '## cuFFT计划缓存'
 - en: For each CUDA device, an LRU cache of cuFFT plans is used to speed up repeatedly
     running FFT methods (e.g., [`torch.fft.fft()`](../generated/torch.fft.fft.html#torch.fft.fft
     "torch.fft.fft")) on CUDA tensors of same geometry with same configuration. Because
     some cuFFT plans may allocate GPU memory, these caches have a maximum capacity.
+  id: totrans-90
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于每个CUDA设备，使用cuFFT计划的LRU缓存来加速重复运行FFT方法（例如[`torch.fft.fft()`](../generated/torch.fft.fft.html#torch.fft.fft
+    "torch.fft.fft")）在具有相同几何形状和相同配置的CUDA张量上。因为一些cuFFT计划可能分配GPU内存，这些缓存具有最大容量。
 - en: 'You may control and query the properties of the cache of current device with
     the following APIs:'
+  id: totrans-91
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可以使用以下API来控制和查询当前设备缓存的属性：
 - en: '`torch.backends.cuda.cufft_plan_cache.max_size` gives the capacity of the cache
     (default is 4096 on CUDA 10 and newer, and 1023 on older CUDA versions). Setting
     this value directly modifies the capacity.'
+  id: totrans-92
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`torch.backends.cuda.cufft_plan_cache.max_size`给出缓存的容量（在CUDA 10及更新版本上默认为4096，在旧版本的CUDA上为1023）。直接设置此值会修改容量。'
 - en: '`torch.backends.cuda.cufft_plan_cache.size` gives the number of plans currently
     residing in the cache.'
+  id: totrans-93
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`torch.backends.cuda.cufft_plan_cache.size`给出当前驻留在缓存中的计划数量。'
 - en: '`torch.backends.cuda.cufft_plan_cache.clear()` clears the cache.'
+  id: totrans-94
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`torch.backends.cuda.cufft_plan_cache.clear()`清除缓存。'
 - en: 'To control and query plan caches of a non-default device, you can index the
     `torch.backends.cuda.cufft_plan_cache` object with either a [`torch.device`](../tensor_attributes.html#torch.device
     "torch.device") object or a device index, and access one of the above attributes.
     E.g., to set the capacity of the cache for device `1`, one can write `torch.backends.cuda.cufft_plan_cache[1].max_size
     = 10`.  ## Just-in-Time Compilation[](#just-in-time-compilation "Permalink to
     this heading")'
+  id: totrans-95
   prefs: []
   type: TYPE_NORMAL
+  zh: 要控制和查询非默认设备的计划缓存，可以使用`torch.backends.cuda.cufft_plan_cache`对象与[`torch.device`](../tensor_attributes.html#torch.device
+    "torch.device")对象或设备索引进行索引，并访问上述属性之一。例如，要设置设备`1`的缓存容量，可以编写`torch.backends.cuda.cufft_plan_cache[1].max_size
+    = 10`。## 即时编译
 - en: PyTorch just-in-time compiles some operations, like torch.special.zeta, when
     performed on CUDA tensors. This compilation can be time consuming (up to a few
     seconds depending on your hardware and software) and may occur multiple times
     for a single operator since many PyTorch operators actually select from a variety
     of kernels, each of which must be compiled once, depending on their input. This
     compilation occurs once per process, or just once if a kernel cache is used.
+  id: totrans-96
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch会在CUDA张量上执行一些操作时，如torch.special.zeta，进行即时编译。这种编译可能会耗时（取决于您的硬件和软件，最多几秒钟），并且对于单个运算符可能会多次发生，因为许多PyTorch运算符实际上会从各种内核中选择，每个内核必须根据其输入编译一次。这种编译每个进程只发生一次，或者如果使用内核缓存，则只发生一次。
 - en: By default, PyTorch creates a kernel cache in $XDG_CACHE_HOME/torch/kernels
     if XDG_CACHE_HOME is defined and $HOME/.cache/torch/kernels if it’s not (except
     on Windows, where the kernel cache is not yet supported). The caching behavior
     can be directly controlled with two environment variables. If USE_PYTORCH_KERNEL_CACHE
     is set to 0 then no cache will be used, and if PYTORCH_KERNEL_CACHE_PATH is set
     then that path will be used as a kernel cache instead of the default location.
+  id: totrans-97
   prefs: []
   type: TYPE_NORMAL
+  zh: 默认情况下，如果定义了XDG_CACHE_HOME，则PyTorch会在$XDG_CACHE_HOME/torch/kernels中创建一个内核缓存，如果没有定义则在$HOME/.cache/torch/kernels中创建（在Windows上，内核缓存尚不受支持）。缓存行为可以直接通过两个环境变量进行控制。如果将USE_PYTORCH_KERNEL_CACHE设置为0，则不会使用任何缓存，如果设置了PYTORCH_KERNEL_CACHE_PATH，则该路径将用作内核缓存的位置，而不是默认位置。
 - en: Best practices
+  id: totrans-98
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 最佳实践
 - en: Device-agnostic code
+  id: totrans-99
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 与设备无关的代码
 - en: Due to the structure of PyTorch, you may need to explicitly write device-agnostic
     (CPU or GPU) code; an example may be creating a new tensor as the initial hidden
     state of a recurrent neural network.
+  id: totrans-100
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于PyTorch的结构，您可能需要明确编写与设备无关（CPU或GPU）的代码；一个示例可能是创建一个新张量作为循环神经网络的初始隐藏状态。
 - en: The first step is to determine whether the GPU should be used or not. A common
     pattern is to use Python’s `argparse` module to read in user arguments, and have
     a flag that can be used to disable CUDA, in combination with [`is_available()`](../generated/torch.cuda.is_available.html#torch.cuda.is_available
     "torch.cuda.is_available"). In the following, `args.device` results in a [`torch.device`](../tensor_attributes.html#torch.device
     "torch.device") object that can be used to move tensors to CPU or CUDA.
+  id: totrans-101
   prefs: []
   type: TYPE_NORMAL
+  zh: 第一步是确定是否应该使用GPU。一个常见的模式是使用Python的`argparse`模块读取用户参数，并有一个可以用来禁用CUDA的标志，结合[`is_available()`](../generated/torch.cuda.is_available.html#torch.cuda.is_available
+    "torch.cuda.is_available")。在下面的示例中，`args.device`会产生一个[`torch.device`](../tensor_attributes.html#torch.device
+    "torch.device")对象，可以用来将张量移动到CPU或CUDA。
 - en: '[PRE20]'
+  id: totrans-102
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE20]'
 - en: Note
+  id: totrans-103
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: When assessing the availability of CUDA in a given environment ([`is_available()`](../generated/torch.cuda.is_available.html#torch.cuda.is_available
     "torch.cuda.is_available")), PyTorch’s default behavior is to call the CUDA Runtime
     API method [cudaGetDeviceCount](https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__DEVICE.html#group__CUDART__DEVICE_1g18808e54893cfcaafefeab31a73cc55f).
     Because this call in turn initializes the CUDA Driver API (via [cuInit](https://docs.nvidia.com/cuda/cuda-driver-api/group__CUDA__INITIALIZE.html#group__CUDA__INITIALIZE_1g0a2f1517e1bd8502c7194c3a8c134bc3))
     if it is not already initialized, subsequent forks of a process that has run [`is_available()`](../generated/torch.cuda.is_available.html#torch.cuda.is_available
     "torch.cuda.is_available") will fail with a CUDA initialization error.
+  id: totrans-104
   prefs: []
   type: TYPE_NORMAL
+  zh: 在给定环境中评估CUDA的可用性时（[`is_available()`](../generated/torch.cuda.is_available.html#torch.cuda.is_available
+    "torch.cuda.is_available")），PyTorch的默认行为是调用CUDA Runtime API方法[cudaGetDeviceCount](https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__DEVICE.html#group__CUDART__DEVICE_1g18808e54893cfcaafefeab31a73cc55f)。因为这个调用反过来会初始化CUDA
+    Driver API（通过[cuInit](https://docs.nvidia.com/cuda/cuda-driver-api/group__CUDA__INITIALIZE.html#group__CUDA__INITIALIZE_1g0a2f1517e1bd8502c7194c3a8c134bc3)），如果尚未初始化，那么运行[`is_available()`](../generated/torch.cuda.is_available.html#torch.cuda.is_available
+    "torch.cuda.is_available")的进程的后续分叉将因CUDA初始化错误而失败。
 - en: One can set `PYTORCH_NVML_BASED_CUDA_CHECK=1` in your environment before importing
     PyTorch modules that execute [`is_available()`](../generated/torch.cuda.is_available.html#torch.cuda.is_available
     "torch.cuda.is_available") (or before executing it directly) in order to direct
@@ -597,115 +867,179 @@
     If the NVML-based assessment is successful (i.e. NVML discovery/initialization
     does not fail), [`is_available()`](../generated/torch.cuda.is_available.html#torch.cuda.is_available
     "torch.cuda.is_available") calls will not poison subsequent forks.
+  id: totrans-105
   prefs: []
   type: TYPE_NORMAL
+  zh: 可以在导入执行[`is_available()`](../generated/torch.cuda.is_available.html#torch.cuda.is_available
+    "torch.cuda.is_available")的PyTorch模块之前（或直接执行之前）在环境中设置`PYTORCH_NVML_BASED_CUDA_CHECK=1`，以便指导[`is_available()`](../generated/torch.cuda.is_available.html#torch.cuda.is_available
+    "torch.cuda.is_available")尝试基于NVML的评估（[nvmlDeviceGetCount_v2](https://docs.nvidia.com/deploy/nvml-api/group__nvmlDeviceQueries.html#group__nvmlDeviceQueries_1ga93623b195bff04bbe3490ca33c8a42d)）。如果基于NVML的评估成功（即NVML发现/初始化不失败），[`is_available()`](../generated/torch.cuda.is_available.html#torch.cuda.is_available
+    "torch.cuda.is_available")调用将不会影响后续的分叉。
 - en: If NVML discovery/initialization fails, [`is_available()`](../generated/torch.cuda.is_available.html#torch.cuda.is_available
     "torch.cuda.is_available") will fallback to the standard CUDA Runtime API assessment
     and the aforementioned fork constraint will apply.
+  id: totrans-106
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果NVML发现/初始化失败，[`is_available()`](../generated/torch.cuda.is_available.html#torch.cuda.is_available
+    "torch.cuda.is_available")将回退到标准的CUDA Runtime API评估，并且前面提到的分叉约束将适用。
 - en: Note that the above NVML-based CUDA availability assessment provides a weaker
     guarantee than the default CUDA Runtime API approach (which requires CUDA initialization
     to succeed). In some circumstances, the NVML-based check may succeed while later
     CUDA initialization fails.
+  id: totrans-107
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，上述基于NVML的CUDA可用性评估提供的保证比默认的CUDA Runtime API方法更弱（需要CUDA初始化成功）。在某些情况下，基于NVML的检查可能成功，而后续的CUDA初始化失败。
 - en: Now that we have `args.device`, we can use it to create a Tensor on the desired
     device.
+  id: totrans-108
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们有了`args.device`，我们可以使用它在所需的设备上创建一个张量。
 - en: '[PRE21]'
+  id: totrans-109
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE21]'
 - en: 'This can be used in a number of cases to produce device agnostic code. Below
     is an example when using a dataloader:'
+  id: totrans-110
   prefs: []
   type: TYPE_NORMAL
+  zh: 这可以在许多情况下用于生成设备无关的代码。以下是在使用数据加载器时的示例：
 - en: '[PRE22]'
+  id: totrans-111
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE22]'
 - en: When working with multiple GPUs on a system, you can use the `CUDA_VISIBLE_DEVICES`
     environment flag to manage which GPUs are available to PyTorch. As mentioned above,
     to manually control which GPU a tensor is created on, the best practice is to
     use a [`torch.cuda.device`](../generated/torch.cuda.device.html#torch.cuda.device
     "torch.cuda.device") context manager.
+  id: totrans-112
   prefs: []
   type: TYPE_NORMAL
+  zh: 在系统上使用多个GPU时，可以使用`CUDA_VISIBLE_DEVICES`环境标志来管理PyTorch可用的GPU。如上所述，要手动控制在哪个GPU上创建张量的最佳实践是使用[`torch.cuda.device`](../generated/torch.cuda.device.html#torch.cuda.device
+    "torch.cuda.device")上下文管理器。
 - en: '[PRE23]'
+  id: totrans-113
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE23]'
 - en: If you have a tensor and would like to create a new tensor of the same type
     on the same device, then you can use a `torch.Tensor.new_*` method (see [`torch.Tensor`](../tensors.html#torch.Tensor
     "torch.Tensor")). Whilst the previously mentioned `torch.*` factory functions
     ([Creation Ops](../torch.html#tensor-creation-ops)) depend on the current GPU
     context and the attributes arguments you pass in, `torch.Tensor.new_*` methods
     preserve the device and other attributes of the tensor.
+  id: totrans-114
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您有一个张量，并希望在同一设备上创建相同类型的新张量，则可以使用`torch.Tensor.new_*`方法（参见[`torch.Tensor`](../tensors.html#torch.Tensor
+    "torch.Tensor")）。虽然先前提到的`torch.*`工厂函数（[Creation Ops](../torch.html#tensor-creation-ops)）依赖于当前GPU上下文和您传递的属性参数，`torch.Tensor.new_*`方法会保留张量的设备和其他属性。
 - en: This is the recommended practice when creating modules in which new tensors
     need to be created internally during the forward pass.
+  id: totrans-115
   prefs: []
   type: TYPE_NORMAL
+  zh: 这是在创建模块时的推荐做法，其中在前向传递期间需要在内部创建新张量。
 - en: '[PRE24]'
+  id: totrans-116
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE24]'
 - en: If you want to create a tensor of the same type and size of another tensor,
     and fill it with either ones or zeros, [`ones_like()`](../generated/torch.ones_like.html#torch.ones_like
     "torch.ones_like") or [`zeros_like()`](../generated/torch.zeros_like.html#torch.zeros_like
     "torch.zeros_like") are provided as convenient helper functions (which also preserve
     [`torch.device`](../tensor_attributes.html#torch.device "torch.device") and [`torch.dtype`](../tensor_attributes.html#torch.dtype
     "torch.dtype") of a Tensor).
+  id: totrans-117
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您想创建一个与另一个张量相同类型和大小的张量，并用1或0填充它，[`ones_like()`](../generated/torch.ones_like.html#torch.ones_like
+    "torch.ones_like")或[`zeros_like()`](../generated/torch.zeros_like.html#torch.zeros_like
+    "torch.zeros_like")提供了方便的辅助函数（还保留了张量的[`torch.device`](../tensor_attributes.html#torch.device
+    "torch.device")和[`torch.dtype`](../tensor_attributes.html#torch.dtype "torch.dtype")）。
 - en: '[PRE25]'
+  id: totrans-118
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE25]'
 - en: '### Use pinned memory buffers[](#use-pinned-memory-buffers "Permalink to this
     heading")'
+  id: totrans-119
   prefs: []
   type: TYPE_NORMAL
+  zh: '### 使用固定内存缓冲区[](#use-pinned-memory-buffers "Permalink to this heading")'
 - en: Warning
+  id: totrans-120
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: This is an advanced tip. If you overuse pinned memory, it can cause serious
     problems when running low on RAM, and you should be aware that pinning is often
     an expensive operation.
+  id: totrans-121
   prefs: []
   type: TYPE_NORMAL
+  zh: 这是一个高级提示。如果过度使用固定内存，当内存不足时可能会导致严重问题，您应该意识到固定通常是一个昂贵的操作。
 - en: Host to GPU copies are much faster when they originate from pinned (page-locked)
     memory. CPU tensors and storages expose a [`pin_memory()`](../generated/torch.Tensor.pin_memory.html#torch.Tensor.pin_memory
     "torch.Tensor.pin_memory") method, that returns a copy of the object, with data
     put in a pinned region.
+  id: totrans-122
   prefs: []
   type: TYPE_NORMAL
+  zh: 主机到GPU的拷贝速度在源自固定（锁页）内存时要快得多。CPU张量和存储提供了一个[`pin_memory()`](../generated/torch.Tensor.pin_memory.html#torch.Tensor.pin_memory
+    "torch.Tensor.pin_memory")方法，返回一个数据放在固定区域的对象副本。
 - en: Also, once you pin a tensor or storage, you can use asynchronous GPU copies.
     Just pass an additional `non_blocking=True` argument to a [`to()`](../generated/torch.Tensor.to.html#torch.Tensor.to
     "torch.Tensor.to") or a [`cuda()`](../generated/torch.Tensor.cuda.html#torch.Tensor.cuda
     "torch.Tensor.cuda") call. This can be used to overlap data transfers with computation.
+  id: totrans-123
   prefs: []
   type: TYPE_NORMAL
+  zh: 此外，一旦您固定了一个张量或存储，您可以使用异步GPU拷贝。只需在[`to()`](../generated/torch.Tensor.to.html#torch.Tensor.to
+    "torch.Tensor.to")或[`cuda()`](../generated/torch.Tensor.cuda.html#torch.Tensor.cuda
+    "torch.Tensor.cuda")调用中传递一个额外的`non_blocking=True`参数。这可以用来重叠数据传输和计算。
 - en: 'You can make the [`DataLoader`](../data.html#torch.utils.data.DataLoader "torch.utils.data.DataLoader")
     return batches placed in pinned memory by passing `pin_memory=True` to its constructor.  ###
     Use nn.parallel.DistributedDataParallel instead of multiprocessing or nn.DataParallel[](#use-nn-parallel-distributeddataparallel-instead-of-multiprocessing-or-nn-dataparallel
     "Permalink to this heading")'
+  id: totrans-124
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可以通过在其构造函数中传递`pin_memory=True`来使[`DataLoader`](../data.html#torch.utils.data.DataLoader
+    "torch.utils.data.DataLoader")返回放置在固定内存中的批次。### 使用nn.parallel.DistributedDataParallel而不是多进程或nn.DataParallel[](#use-nn-parallel-distributeddataparallel-instead-of-multiprocessing-or-nn-dataparallel
+    "Permalink to this heading")
 - en: Most use cases involving batched inputs and multiple GPUs should default to
     using [`DistributedDataParallel`](../generated/torch.nn.parallel.DistributedDataParallel.html#torch.nn.parallel.DistributedDataParallel
     "torch.nn.parallel.DistributedDataParallel") to utilize more than one GPU.
+  id: totrans-125
   prefs: []
   type: TYPE_NORMAL
+  zh: 大多数涉及批量输入和多个GPU的用例应默认使用[`DistributedDataParallel`](../generated/torch.nn.parallel.DistributedDataParallel.html#torch.nn.parallel.DistributedDataParallel
+    "torch.nn.parallel.DistributedDataParallel")来利用多个GPU。
 - en: There are significant caveats to using CUDA models with [`multiprocessing`](../multiprocessing.html#module-torch.multiprocessing
     "torch.multiprocessing"); unless care is taken to meet the data handling requirements
     exactly, it is likely that your program will have incorrect or undefined behavior.
+  id: totrans-126
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用CUDA模型与[`multiprocessing`](../multiprocessing.html#module-torch.multiprocessing
+    "torch.multiprocessing")存在重要注意事项；除非确切满足数据处理要求，否则您的程序可能会出现不正确或未定义的行为。
 - en: It is recommended to use [`DistributedDataParallel`](../generated/torch.nn.parallel.DistributedDataParallel.html#torch.nn.parallel.DistributedDataParallel
     "torch.nn.parallel.DistributedDataParallel"), instead of [`DataParallel`](../generated/torch.nn.DataParallel.html#torch.nn.DataParallel
     "torch.nn.DataParallel") to do multi-GPU training, even if there is only a single
     node.
+  id: totrans-127
   prefs: []
   type: TYPE_NORMAL
+  zh: 建议使用[`DistributedDataParallel`](../generated/torch.nn.parallel.DistributedDataParallel.html#torch.nn.parallel.DistributedDataParallel
+    "torch.nn.parallel.DistributedDataParallel")来进行多GPU训练，而不是[`DataParallel`](../generated/torch.nn.DataParallel.html#torch.nn.DataParallel
+    "torch.nn.DataParallel")，即使只有一个节点。
 - en: 'The difference between [`DistributedDataParallel`](../generated/torch.nn.parallel.DistributedDataParallel.html#torch.nn.parallel.DistributedDataParallel
     "torch.nn.parallel.DistributedDataParallel") and [`DataParallel`](../generated/torch.nn.DataParallel.html#torch.nn.DataParallel
     "torch.nn.DataParallel") is: [`DistributedDataParallel`](../generated/torch.nn.parallel.DistributedDataParallel.html#torch.nn.parallel.DistributedDataParallel
@@ -714,37 +1048,56 @@
     "torch.nn.DataParallel") uses multithreading. By using multiprocessing, each GPU
     has its dedicated process, this avoids the performance overhead caused by GIL
     of Python interpreter.'
+  id: totrans-128
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`DistributedDataParallel`](../generated/torch.nn.parallel.DistributedDataParallel.html#torch.nn.parallel.DistributedDataParallel
+    "torch.nn.parallel.DistributedDataParallel")和[`DataParallel`](../generated/torch.nn.DataParallel.html#torch.nn.DataParallel
+    "torch.nn.DataParallel")之间的区别是：[`DistributedDataParallel`](../generated/torch.nn.parallel.DistributedDataParallel.html#torch.nn.parallel.DistributedDataParallel
+    "torch.nn.parallel.DistributedDataParallel")使用多进程，其中为每个GPU创建一个进程，而[`DataParallel`](../generated/torch.nn.DataParallel.html#torch.nn.DataParallel
+    "torch.nn.DataParallel")使用多线程。通过使用多进程，每个GPU都有其专用进程，这避免了Python解释器的GIL引起的性能开销。'
 - en: 'If you use [`DistributedDataParallel`](../generated/torch.nn.parallel.DistributedDataParallel.html#torch.nn.parallel.DistributedDataParallel
     "torch.nn.parallel.DistributedDataParallel"), you could use torch.distributed.launch
     utility to launch your program, see [Third-party backends](../distributed.html#distributed-launch).  ##
     CUDA Graphs'
+  id: totrans-129
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您使用[`DistributedDataParallel`](../generated/torch.nn.parallel.DistributedDataParallel.html#torch.nn.parallel.DistributedDataParallel
+    "torch.nn.parallel.DistributedDataParallel")，您可以使用torch.distributed.launch实用程序来启动您的程序，请参阅[第三方后端](../distributed.html#distributed-launch)。##
+    CUDA图
 - en: A CUDA graph is a record of the work (mostly kernels and their arguments) that
     a CUDA stream and its dependent streams perform. For general principles and details
     on the underlying CUDA API, see [Getting Started with CUDA Graphs](https://developer.nvidia.com/blog/cuda-graphs/)
     and the [Graphs section](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#cuda-graphs)
     of the CUDA C Programming Guide.
+  id: totrans-130
   prefs: []
   type: TYPE_NORMAL
+  zh: CUDA图是CUDA流及其依赖流执行的工作记录（主要是内核及其参数）。有关基础CUDA API的一般原则和详细信息，请参阅[使用CUDA图入门](https://developer.nvidia.com/blog/cuda-graphs/)和CUDA
+    C编程指南的[图形部分](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#cuda-graphs)。
 - en: PyTorch supports the construction of CUDA graphs using [stream capture](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#creating-a-graph-using-stream-capture),
     which puts a CUDA stream in *capture mode*. CUDA work issued to a capturing stream
     doesn’t actually run on the GPU. Instead, the work is recorded in a graph.
+  id: totrans-131
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch支持使用[流捕获](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#creating-a-graph-using-stream-capture)构建CUDA图，这将使CUDA流处于*捕获模式*。发送到捕获流的CUDA工作实际上不会在GPU上运行。相反，工作将记录在图中。
 - en: After capture, the graph can be *launched* to run the GPU work as many times
     as needed. Each replay runs the same kernels with the same arguments. For pointer
     arguments this means the same memory addresses are used. By filling input memory
     with new data (e.g., from a new batch) before each replay, you can rerun the same
     work on new data.
+  id: totrans-132
   prefs: []
   type: TYPE_NORMAL
+  zh: 捕获后，可以*启动*图以多次运行GPU工作。每次重播都会使用相同的内核和相同的参数运行相同的内核。对于指针参数，这意味着使用相同的内存地址。通过在每次重播之前用新数据（例如来自新批次）填充输入内存，可以在新数据上重新运行相同的工作。
 - en: Why CUDA Graphs?
+  id: totrans-133
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 为什么使用CUDA图？
 - en: Replaying a graph sacrifices the dynamic flexibility of typical eager execution
     in exchange for **greatly reduced CPU overhead**. A graph’s arguments and kernels
     are fixed, so a graph replay skips all layers of argument setup and kernel dispatch,
@@ -752,29 +1105,44 @@
     the entire graph’s work to the GPU with a single call to [cudaGraphLaunch](https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__GRAPH.html#group__CUDART__GRAPH_1g1accfe1da0c605a577c22d9751a09597).
     Kernels in a replay also execute slightly faster on the GPU, but eliding CPU overhead
     is the main benefit.
+  id: totrans-134
   prefs: []
   type: TYPE_NORMAL
+  zh: 重播图牺牲了典型急切执行的动态灵活性，以换取**大大减少的CPU开销**。图的参数和内核是固定的，因此图的重播跳过了所有层的参数设置和内核调度，包括Python、C++和CUDA驱动程序开销。在幕后，重播通过单个调用[cudaGraphLaunch](https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__GRAPH.html#group__CUDART__GRAPH_1g1accfe1da0c605a577c22d9751a09597)将整个图的工作提交给GPU。重播中的内核在GPU上执行速度稍快，但省略CPU开销是主要好处。
 - en: You should try CUDA graphs if all or part of your network is graph-safe (usually
     this means static shapes and static control flow, but see the other [constraints](#capture-constraints))
     and you suspect its runtime is at least somewhat CPU-limited.
+  id: totrans-135
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您的网络的全部或部分是图形安全的（通常意味着静态形状和静态控制流，但请参阅其他[约束](#capture-constraints)），并且您怀疑其运行时至少在某种程度上受到CPU限制，则应尝试CUDA图。
 - en: PyTorch API
+  id: totrans-136
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: PyTorch API
 - en: Warning
+  id: totrans-137
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: This API is in beta and may change in future releases.
+  id: totrans-138
   prefs: []
   type: TYPE_NORMAL
+  zh: 此API处于beta阶段，可能会在未来版本中更改。
 - en: PyTorch exposes graphs via a raw [`torch.cuda.CUDAGraph`](../generated/torch.cuda.CUDAGraph.html#torch.cuda.CUDAGraph
     "torch.cuda.CUDAGraph") class and two convenience wrappers, [`torch.cuda.graph`](../generated/torch.cuda.graph.html#torch.cuda.graph
     "torch.cuda.graph") and [`torch.cuda.make_graphed_callables`](../generated/torch.cuda.make_graphed_callables.html#torch.cuda.make_graphed_callables
     "torch.cuda.make_graphed_callables").
+  id: totrans-139
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch通过原始[`torch.cuda.CUDAGraph`](../generated/torch.cuda.CUDAGraph.html#torch.cuda.CUDAGraph
+    "torch.cuda.CUDAGraph")类和两个方便的包装器[`torch.cuda.graph`](../generated/torch.cuda.graph.html#torch.cuda.graph
+    "torch.cuda.graph")和[`torch.cuda.make_graphed_callables`](../generated/torch.cuda.make_graphed_callables.html#torch.cuda.make_graphed_callables
+    "torch.cuda.make_graphed_callables")公开图形。
 - en: '[`torch.cuda.graph`](../generated/torch.cuda.graph.html#torch.cuda.graph "torch.cuda.graph")
     is a simple, versatile context manager that captures CUDA work in its context.
     Before capture, warm up the workload to be captured by running a few eager iterations.
@@ -783,224 +1151,335 @@
     to tensors that hold input and output data during capture. To run the graph on
     new input data, copy new data to the capture’s input tensor(s), replay the graph,
     then read the new output from the capture’s output tensor(s). Example:'
+  id: totrans-140
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`torch.cuda.graph`](../generated/torch.cuda.graph.html#torch.cuda.graph "torch.cuda.graph")是一个简单、多功能的上下文管理器，可以在其上下文中捕获CUDA工作。在捕获之前，通过运行几个急切迭代来预热要捕获的工作负载。预热必须在侧流上进行。由于图在每次重播时都从相同的内存地址读取和写入，因此在捕获期间必须保持对保存输入和输出数据的张量的长期引用。要在新输入数据上运行图，请将新数据复制到捕获的输入张量中，重播图，然后从捕获的输出张量中读取新输出。示例：'
 - en: '[PRE26]'
+  id: totrans-141
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE26]'
 - en: See [Whole-network capture](#whole-network-capture), [Usage with torch.cuda.amp](#graphs-with-amp),
     and [Usage with multiple streams](#multistream-capture) for realistic and advanced
     patterns.
+  id: totrans-142
   prefs: []
   type: TYPE_NORMAL
+  zh: 查看[整个网络捕获](#whole-network-capture)，[与torch.cuda.amp一起使用](#graphs-with-amp)，以及[使用多个流](#multistream-capture)以获取现实和高级模式。
 - en: '[`make_graphed_callables`](../generated/torch.cuda.make_graphed_callables.html#torch.cuda.make_graphed_callables
     "torch.cuda.make_graphed_callables") is more sophisticated. [`make_graphed_callables`](../generated/torch.cuda.make_graphed_callables.html#torch.cuda.make_graphed_callables
     "torch.cuda.make_graphed_callables") accepts Python functions and [`torch.nn.Module`](../generated/torch.nn.Module.html#torch.nn.Module
     "torch.nn.Module")s. For each passed function or Module, it creates separate graphs
     of the forward-pass and backward-pass work. See [Partial-network capture](#partial-network-capture).'
+  id: totrans-143
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`make_graphed_callables`](../generated/torch.cuda.make_graphed_callables.html#torch.cuda.make_graphed_callables
+    "torch.cuda.make_graphed_callables")更为复杂。[`make_graphed_callables`](../generated/torch.cuda.make_graphed_callables.html#torch.cuda.make_graphed_callables
+    "torch.cuda.make_graphed_callables")接受Python函数和[`torch.nn.Module`](../generated/torch.nn.Module.html#torch.nn.Module
+    "torch.nn.Module")。对于每个传递的函数或模块，它会创建前向传递和反向传递工作的单独图。请参阅[部分网络捕获](#partial-network-capture)。'
 - en: '#### Constraints'
+  id: totrans-144
   prefs: []
   type: TYPE_NORMAL
+  zh: '#### 约束'
 - en: A set of ops is *capturable* if it doesn’t violate any of the following constraints.
+  id: totrans-145
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果一组操作是*可捕获*的，则不会违反以下任何约束。
 - en: Constraints apply to all work in a [`torch.cuda.graph`](../generated/torch.cuda.graph.html#torch.cuda.graph
     "torch.cuda.graph") context and all work in the forward and backward passes of
     any callable you pass to [`torch.cuda.make_graphed_callables()`](../generated/torch.cuda.make_graphed_callables.html#torch.cuda.make_graphed_callables
     "torch.cuda.make_graphed_callables").
+  id: totrans-146
   prefs: []
   type: TYPE_NORMAL
+  zh: 约束条件适用于[`torch.cuda.graph`](../generated/torch.cuda.graph.html#torch.cuda.graph
+    "torch.cuda.graph")上下文中的所有工作，以及您传递给[`torch.cuda.make_graphed_callables()`](../generated/torch.cuda.make_graphed_callables.html#torch.cuda.make_graphed_callables
+    "torch.cuda.make_graphed_callables")的任何可调用对象的前向和后向传递中的所有工作。
 - en: 'Violating any of these will likely cause a runtime error:'
+  id: totrans-147
   prefs: []
   type: TYPE_NORMAL
+  zh: 违反任何这些规则可能会导致运行时错误：
 - en: Capture must occur on a non-default stream. (This is only a concern if you use
     the raw [`CUDAGraph.capture_begin`](../generated/torch.cuda.CUDAGraph.html#torch.cuda.CUDAGraph.capture_begin
     "torch.cuda.CUDAGraph.capture_begin") and [`CUDAGraph.capture_end`](../generated/torch.cuda.CUDAGraph.html#torch.cuda.CUDAGraph.capture_end
     "torch.cuda.CUDAGraph.capture_end") calls. [`graph`](../generated/torch.cuda.graph.html#torch.cuda.graph
     "torch.cuda.graph") and [`make_graphed_callables()`](../generated/torch.cuda.make_graphed_callables.html#torch.cuda.make_graphed_callables
     "torch.cuda.make_graphed_callables") set a side stream for you.)
+  id: totrans-148
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 捕获必须发生在非默认流上。（只有在使用原始[`CUDAGraph.capture_begin`](../generated/torch.cuda.CUDAGraph.html#torch.cuda.CUDAGraph.capture_begin
+    "torch.cuda.CUDAGraph.capture_begin")和[`CUDAGraph.capture_end`](../generated/torch.cuda.CUDAGraph.html#torch.cuda.CUDAGraph.capture_end
+    "torch.cuda.CUDAGraph.capture_end")调用时才需要关注。[`graph`](../generated/torch.cuda.graph.html#torch.cuda.graph
+    "torch.cuda.graph")和[`make_graphed_callables()`](../generated/torch.cuda.make_graphed_callables.html#torch.cuda.make_graphed_callables
+    "torch.cuda.make_graphed_callables")会为您设置一个侧边流。）
 - en: Ops that synchronize the CPU with the GPU (e.g., `.item()` calls) are prohibited.
+  id: totrans-149
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 禁止与GPU同步的操作（例如`.item()`调用）。
 - en: CUDA RNG ops are allowed, but must use default generators. For example, explicitly
     constructing a new [`torch.Generator`](../generated/torch.Generator.html#torch.Generator
     "torch.Generator") instance and passing it as the `generator` argument to an RNG
     function is prohibited.
+  id: totrans-150
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 允许CUDA RNG操作，但必须使用默认生成器。例如，明确构造一个新的[`torch.Generator`](../generated/torch.Generator.html#torch.Generator
+    "torch.Generator")实例，并将其作为`generator`参数传递给RNG函数是被禁止的。
 - en: 'Violating any of these will likely cause silent numerical errors or undefined
     behavior:'
+  id: totrans-151
   prefs: []
   type: TYPE_NORMAL
+  zh: 违反任何这些规则可能会导致潜在的数值错误或未定义行为：
 - en: Within a process, only one capture may be underway at a time.
+  id: totrans-152
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在一个进程中，一次只能进行一次捕获。
 - en: No non-captured CUDA work may run in this process (on any thread) while capture
     is underway.
+  id: totrans-153
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在进行捕获时，此进程中不得运行任何未捕获的CUDA工作（在任何线程上）。
 - en: CPU work is not captured. If the captured ops include CPU work, that work will
     be elided during replay.
+  id: totrans-154
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 不会捕获CPU工作。如果捕获的操作包括CPU工作，则在重放过程中将省略该工作。
 - en: Every replay reads from and writes to the same (virtual) memory addresses.
+  id: totrans-155
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 每次重放都从同一（虚拟）内存地址读取和写入。
 - en: Dynamic control flow (based on CPU or GPU data) is prohibited.
+  id: totrans-156
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 禁止动态控制流（基于CPU或GPU数据）。
 - en: Dynamic shapes are prohibited. The graph assumes every tensor in the captured
     op sequence has the same size and layout in every replay.
+  id: totrans-157
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 禁止动态形状。图假定捕获的操作序列中的每个张量在每次重放中都具有相同的大小和布局。
 - en: Using multiple streams in a capture is allowed, but there are [restrictions](#multistream-capture).
+  id: totrans-158
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 允许在捕获中使用多个流，但有[限制](#multistream-capture)。
 - en: Non-constraints
+  id: totrans-159
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 非约束条件
 - en: Once captured, the graph may be replayed on any stream.
+  id: totrans-160
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 一旦捕获，图可以在任何流上重放。
 - en: '### Whole-network capture'
+  id: totrans-161
   prefs: []
   type: TYPE_NORMAL
+  zh: '### 整个网络捕获'
 - en: 'If your entire network is capturable, you can capture and replay an entire
     iteration:'
+  id: totrans-162
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您的整个网络是可捕获的，您可以捕获和重放整个迭代：
 - en: '[PRE27]  ### Partial-network capture[](#partial-network-capture "Permalink
     to this heading")'
+  id: totrans-163
   prefs: []
   type: TYPE_NORMAL
+  zh: '[PRE27]  ### 部分网络捕获[](#partial-network-capture "Permalink to this heading")'
 - en: If some of your network is unsafe to capture (e.g., due to dynamic control flow,
     dynamic shapes, CPU syncs, or essential CPU-side logic), you can run the unsafe
     part(s) eagerly and use [`torch.cuda.make_graphed_callables()`](../generated/torch.cuda.make_graphed_callables.html#torch.cuda.make_graphed_callables
     "torch.cuda.make_graphed_callables") to graph only the capture-safe part(s).
+  id: totrans-164
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您的网络中有一部分不安全可捕获（例如，由于动态控制流、动态形状、CPU同步或基本的CPU端逻辑），您可以急切地运行不安全的部分，并使用[`torch.cuda.make_graphed_callables()`](../generated/torch.cuda.make_graphed_callables.html#torch.cuda.make_graphed_callables
+    "torch.cuda.make_graphed_callables")仅对可捕获的部分进行图形化处理。
 - en: By default, callables returned by [`make_graphed_callables()`](../generated/torch.cuda.make_graphed_callables.html#torch.cuda.make_graphed_callables
     "torch.cuda.make_graphed_callables") are autograd-aware, and can be used in the
     training loop as direct replacements for the functions or [`nn.Module`](../generated/torch.nn.Module.html#torch.nn.Module
     "torch.nn.Module")s you passed.
+  id: totrans-165
   prefs: []
   type: TYPE_NORMAL
+  zh: 默认情况下，由[`make_graphed_callables()`](../generated/torch.cuda.make_graphed_callables.html#torch.cuda.make_graphed_callables
+    "torch.cuda.make_graphed_callables")返回的可调用对象是自动求导感知的，并且可以在训练循环中直接替换您传递的函数或[`nn.Module`](../generated/torch.nn.Module.html#torch.nn.Module
+    "torch.nn.Module")。
 - en: '[`make_graphed_callables()`](../generated/torch.cuda.make_graphed_callables.html#torch.cuda.make_graphed_callables
     "torch.cuda.make_graphed_callables") internally creates [`CUDAGraph`](../generated/torch.cuda.CUDAGraph.html#torch.cuda.CUDAGraph
     "torch.cuda.CUDAGraph") objects, runs warmup iterations, and maintains static
     inputs and outputs as needed. Therefore (unlike with [`torch.cuda.graph`](../generated/torch.cuda.graph.html#torch.cuda.graph
     "torch.cuda.graph")) you don’t need to handle those manually.'
+  id: totrans-166
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`make_graphed_callables()`](../generated/torch.cuda.make_graphed_callables.html#torch.cuda.make_graphed_callables
+    "torch.cuda.make_graphed_callables")在内部创建[`CUDAGraph`](../generated/torch.cuda.CUDAGraph.html#torch.cuda.CUDAGraph
+    "torch.cuda.CUDAGraph")对象，运行预热迭代，并根据需要维护静态输入和输出。因此（与[`torch.cuda.graph`](../generated/torch.cuda.graph.html#torch.cuda.graph
+    "torch.cuda.graph")不同），您无需手动处理这些。'
 - en: 'In the following example, data-dependent dynamic control flow means the network
     isn’t capturable end-to-end, but [`make_graphed_callables()`](../generated/torch.cuda.make_graphed_callables.html#torch.cuda.make_graphed_callables
     "torch.cuda.make_graphed_callables") lets us capture and run graph-safe sections
     as graphs regardless:'
+  id: totrans-167
   prefs: []
   type: TYPE_NORMAL
+  zh: '在以下示例中，数据相关的动态控制流意味着网络不能端到端捕获，但[`make_graphed_callables()`](../generated/torch.cuda.make_graphed_callables.html#torch.cuda.make_graphed_callables
+    "torch.cuda.make_graphed_callables")让我们能够捕获和运行图安全的部分作为图形:'
 - en: '[PRE28]  ### Usage with torch.cuda.amp[](#usage-with-torch-cuda-amp "Permalink
     to this heading")'
+  id: totrans-168
   prefs: []
   type: TYPE_NORMAL
+  zh: '[PRE28]  ### 与torch.cuda.amp一起使用[](#usage-with-torch-cuda-amp "跳转到此标题")'
 - en: 'For typical optimizers, [`GradScaler.step`](../amp.html#torch.cuda.amp.GradScaler.step
     "torch.cuda.amp.GradScaler.step") syncs the CPU with the GPU, which is prohibited
     during capture. To avoid errors, either use [partial-network capture](#partial-network-capture),
     or (if forward, loss, and backward are capture-safe) capture forward, loss, and
     backward but not the optimizer step:'
+  id: totrans-169
   prefs: []
   type: TYPE_NORMAL
+  zh: '对于典型的优化器，[`GradScaler.step`](../amp.html#torch.cuda.amp.GradScaler.step "torch.cuda.amp.GradScaler.step")会将CPU与GPU同步，这在捕获过程中是被禁止的。为了避免错误，要么使用[部分网络捕获](#partial-network-capture)，要么（如果前向、损失和反向是捕获安全的）捕获前向、损失和反向，但不捕获优化器步骤:'
 - en: '[PRE29]  ### Usage with multiple streams[](#usage-with-multiple-streams "Permalink
     to this heading")'
+  id: totrans-170
   prefs: []
   type: TYPE_NORMAL
+  zh: '[PRE29]  ### 与多个流一起使用[](#usage-with-multiple-streams "跳转到此标题")'
 - en: 'Capture mode automatically propagates to any streams that sync with a capturing
     stream. Within capture, you may expose parallelism by issuing calls to different
     streams, but the overall stream dependency DAG must branch out from the initial
     capturing stream after capture begins and rejoin the initial stream before capture
     ends:'
+  id: totrans-171
   prefs: []
   type: TYPE_NORMAL
+  zh: '捕获模式会自动传播到与捕获流同步的任何流。在捕获过程中，您可以通过向不同流发出调用来暴露并行性，但整体流依赖DAG必须从初始捕获流开始分支，并在捕获开始后重新加入初始流，然后在捕获结束前重新加入初始流:'
 - en: '[PRE30]'
+  id: totrans-172
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE30]'
 - en: Note
+  id: totrans-173
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: 'To avoid confusion for power users looking at replays in nsight systems or
     nvprof: Unlike eager execution, the graph interprets a nontrivial stream DAG in
     capture as a hint, not a command. During replay, the graph may reorganize independent
     ops onto different streams or enqueue them in a different order (while respecting
     your original DAG’s overall dependencies).'
+  id: totrans-174
   prefs: []
   type: TYPE_NORMAL
+  zh: '为了避免对在nsight系统或nvprof中查看重播的高级用户造成困惑: 与急切执行不同，图形在捕获中将非平凡的流DAG解释为提示，而不是命令。在重播过程中，图形可能会将独立操作重新组织到不同的流中，或以不同的顺序排队（同时尊重您原始DAG的整体依赖关系）。'
 - en: Usage with DistributedDataParallel[](#usage-with-distributeddataparallel "Permalink
     to this heading")
+  id: totrans-175
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 使用DistributedDataParallel[](#usage-with-distributeddataparallel "跳转到此标题")
 - en: NCCL < 2.9.6
+  id: totrans-176
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: NCCL < 2.9.6
 - en: NCCL versions earlier than 2.9.6 don’t allow collectives to be captured. You
     must use [partial-network capture](#partial-network-capture), which defers allreduces
     to happen outside graphed sections of backward.
+  id: totrans-177
   prefs: []
   type: TYPE_NORMAL
+  zh: 早于2.9.6的NCCL版本不允许捕获集合。您必须使用[部分网络捕获](#partial-network-capture)，将所有reduce推迟到反向的图形化部分之外。
 - en: Call [`make_graphed_callables()`](../generated/torch.cuda.make_graphed_callables.html#torch.cuda.make_graphed_callables
     "torch.cuda.make_graphed_callables") on graphable network sections *before* wrapping
     the network with DDP.
+  id: totrans-178
   prefs: []
   type: TYPE_NORMAL
+  zh: 在使用DDP包装网络之前，在可图形化的网络部分上调用[`make_graphed_callables()`](../generated/torch.cuda.make_graphed_callables.html#torch.cuda.make_graphed_callables
+    "torch.cuda.make_graphed_callables")。
 - en: NCCL >= 2.9.6
+  id: totrans-179
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: NCCL >= 2.9.6
 - en: NCCL versions 2.9.6 or later allow collectives in the graph. Approaches that
     capture an [entire backward pass](#whole-network-capture) are a viable option,
     but need three setup steps.
+  id: totrans-180
   prefs: []
   type: TYPE_NORMAL
+  zh: NCCL版本2.9.6或更高版本允许图中的集合。捕获整个反向传播的方法是一个可行的选择，但需要三个设置步骤。
 - en: 'Disable DDP’s internal async error handling:'
+  id: totrans-181
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: '禁用DDP的内部异步错误处理:'
 - en: '[PRE31]'
+  id: totrans-182
   prefs:
   - PREF_IND
   type: TYPE_PRE
+  zh: '[PRE31]'
 - en: 'Before full-backward capture, DDP must be constructed in a side-stream context:'
+  id: totrans-183
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: '在完全反向捕获之前，DDP必须在侧流上下文中构建:'
 - en: '[PRE32]'
+  id: totrans-184
   prefs:
   - PREF_IND
   type: TYPE_PRE
+  zh: '[PRE32]'
 - en: Your warmup must run at least 11 DDP-enabled eager iterations before capture.
+  id: totrans-185
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
-- en: '### Graph memory management[](#graph-memory-management "Permalink to this
-    heading")'
+  zh: 在捕获之前，您的预热必须至少运行11次启用DDP的急切迭代。
+- en: '### Graph memory management[](#graph-memory-management "Permalink to this heading")'
+  id: totrans-186
   prefs: []
   type: TYPE_NORMAL
+  zh: '### 图内存管理[](#graph-memory-management "跳转到此标题")'
 - en: A captured graph acts on the same virtual addresses every time it replays. If
     PyTorch frees the memory, a later replay can hit an illegal memory access. If
     PyTorch reassigns the memory to new tensors, the replay can corrupt the values
@@ -1010,47 +1489,71 @@
     from a graph-private memory pool. The private pool stays alive until its [`CUDAGraph`](../generated/torch.cuda.CUDAGraph.html#torch.cuda.CUDAGraph
     "torch.cuda.CUDAGraph") object and all tensors created during capture go out of
     scope.
+  id: totrans-187
   prefs: []
   type: TYPE_NORMAL
+  zh: 捕获的图形在每次重播时都会作用于相同的虚拟地址。如果PyTorch释放内存，后续的重播可能会导致非法内存访问。如果PyTorch将内存重新分配给新张量，重播可能会破坏这些张量看到的值。因此，图形使用的虚拟地址必须在重播过程中保留给图形。PyTorch缓存分配器通过检测捕获正在进行并从图形私有内存池中满足捕获的分配来实现这一点。私有池会一直保持活动，直到其[`CUDAGraph`](../generated/torch.cuda.CUDAGraph.html#torch.cuda.CUDAGraph
+    "torch.cuda.CUDAGraph")对象和捕获期间创建的所有张量超出范围。
 - en: Private pools are maintained automatically. By default, the allocator creates
     a separate private pool for each capture. If you capture multiple graphs, this
     conservative approach ensures graph replays never corrupt each other’s values,
     but sometimes needlessly wastes memory.
+  id: totrans-188
   prefs: []
   type: TYPE_NORMAL
+  zh: 私有池会自动维护。默认情况下，分配器为每个捕获创建一个单独的私有池。如果捕获多个图形，这种保守的方法确保图形重播永远不会破坏彼此的值，但有时会不必要地浪费内存。
 - en: Sharing memory across captures[](#sharing-memory-across-captures "Permalink
     to this heading")
+  id: totrans-189
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 跨捕获共享内存[](#sharing-memory-across-captures "跳转到此标题")
 - en: To economize the memory stashed in private pools, [`torch.cuda.graph`](../generated/torch.cuda.graph.html#torch.cuda.graph
     "torch.cuda.graph") and [`torch.cuda.make_graphed_callables()`](../generated/torch.cuda.make_graphed_callables.html#torch.cuda.make_graphed_callables
     "torch.cuda.make_graphed_callables") optionally allow different captures to share
     the same private pool. It’s safe for a set of graphs to share a private pool if
     you know they’ll always be replayed in the same order they were captured, and
     never be replayed concurrently.
+  id: totrans-190
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了节省存储在私有池中的内存，[`torch.cuda.graph`](../generated/torch.cuda.graph.html#torch.cuda.graph
+    "torch.cuda.graph") 和 [`torch.cuda.make_graphed_callables()`](../generated/torch.cuda.make_graphed_callables.html#torch.cuda.make_graphed_callables
+    "torch.cuda.make_graphed_callables") 可选地允许不同的捕获共享同一个私有池。如果你知道一组图形将始终按照它们被捕获的顺序重播，并且永远不会同时重播，那么共享一个私有池是安全的。
 - en: '[`torch.cuda.graph`](../generated/torch.cuda.graph.html#torch.cuda.graph "torch.cuda.graph")’s
     `pool` argument is a hint to use a particular private pool, and can be used to
     share memory across graphs as shown:'
+  id: totrans-191
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`torch.cuda.graph`](../generated/torch.cuda.graph.html#torch.cuda.graph "torch.cuda.graph")
+    的 `pool` 参数是使用特定私有池的提示，并且可以用于跨图形共享内存，如下所示：'
 - en: '[PRE33]'
+  id: totrans-192
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE33]'
 - en: With [`torch.cuda.make_graphed_callables()`](../generated/torch.cuda.make_graphed_callables.html#torch.cuda.make_graphed_callables
     "torch.cuda.make_graphed_callables"), if you want to graph several callables and
     you know they’ll always run in the same order (and never concurrently) pass them
     as a tuple in the same order they’ll run in the live workload, and [`make_graphed_callables()`](../generated/torch.cuda.make_graphed_callables.html#torch.cuda.make_graphed_callables
     "torch.cuda.make_graphed_callables") will capture their graphs using a shared
     private pool.
+  id: totrans-193
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用 [`torch.cuda.make_graphed_callables()`](../generated/torch.cuda.make_graphed_callables.html#torch.cuda.make_graphed_callables
+    "torch.cuda.make_graphed_callables")，如果你想要为多个可调用对象创建图形，并且知道它们将始终按照相同顺序运行（并且永远不会同时运行），请将它们作为元组传递，按照实际工作负载中将要运行的顺序，[`make_graphed_callables()`](../generated/torch.cuda.make_graphed_callables.html#torch.cuda.make_graphed_callables
+    "torch.cuda.make_graphed_callables") 将使用共享的私有池捕获它们的图形。
 - en: If, in the live workload, your callables will run in an order that occasionally
     changes, or if they’ll run concurrently, passing them as a tuple to a single invocation
     of [`make_graphed_callables()`](../generated/torch.cuda.make_graphed_callables.html#torch.cuda.make_graphed_callables
     "torch.cuda.make_graphed_callables") is not allowed. Instead, you must call [`make_graphed_callables()`](../generated/torch.cuda.make_graphed_callables.html#torch.cuda.make_graphed_callables
     "torch.cuda.make_graphed_callables") separately for each one.
+  id: totrans-194
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果在实际工作负载中，你的可调用对象将按照偶尔变化的顺序运行，或者将同时运行，那么将它们作为元组传递给单个 [`make_graphed_callables()`](../generated/torch.cuda.make_graphed_callables.html#torch.cuda.make_graphed_callables
+    "torch.cuda.make_graphed_callables") 调用是不允许的。相反，你必须为每个可调用对象单独调用 [`make_graphed_callables()`](../generated/torch.cuda.make_graphed_callables.html#torch.cuda.make_graphed_callables
+    "torch.cuda.make_graphed_callables")。

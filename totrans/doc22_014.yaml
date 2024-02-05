@@ -1,86 +1,126 @@
 - en: Extending PyTorch
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 扩展PyTorch
 - en: 原文：[https://pytorch.org/docs/stable/notes/extending.html](https://pytorch.org/docs/stable/notes/extending.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/docs/stable/notes/extending.html](https://pytorch.org/docs/stable/notes/extending.html)
 - en: In this note we’ll cover ways of extending [`torch.nn`](../nn.html#module-torch.nn
     "torch.nn"), [`torch.autograd`](../autograd.html#module-torch.autograd "torch.autograd"),
     [`torch`](../torch.html#module-torch "torch"), and writing custom C++ extensions.
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本说明中，我们将介绍扩展[`torch.nn`](../nn.html#module-torch.nn "torch.nn")、[`torch.autograd`](../autograd.html#module-torch.autograd
+    "torch.autograd")、[`torch`](../torch.html#module-torch "torch")以及编写自定义C++扩展的方法。
 - en: '## Extending [`torch.autograd`](../autograd.html#module-torch.autograd "torch.autograd")[](#extending-torch-autograd
     "Permalink to this heading")'
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: '## 扩展[`torch.autograd`](../autograd.html#module-torch.autograd "torch.autograd")[](#extending-torch-autograd
+    "跳转到此标题的永久链接")'
 - en: Adding operations to [`autograd`](../autograd.html#module-torch.autograd "torch.autograd")
     requires implementing a new [`Function`](../autograd.html#torch.autograd.Function
     "torch.autograd.Function") subclass for each operation. Recall that Functions
     are what [`autograd`](../autograd.html#module-torch.autograd "torch.autograd")
     uses to encode the operation history and compute gradients.
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 向[`autograd`](../autograd.html#module-torch.autograd "torch.autograd")添加操作需要为每个操作实现一个新的[`Function`](../autograd.html#torch.autograd.Function
+    "torch.autograd.Function")子类。请记住，`autograd`使用`Function`来编码操作历史并计算梯度。
 - en: The first part of this doc is focused on backward mode AD as it is the most
     widely used feature. A section at the end discusses the extensions for forward
     mode AD.
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 本文档的第一部分侧重于反向模式自动微分，因为它是最广泛使用的功能。文末的一节讨论了前向模式自动微分的扩展。
 - en: When to use
+  id: totrans-6
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 何时使用
 - en: In general, implement a custom function if you want to perform computations
     in your model that are not differentiable or rely on non-PyTorch libraries (e.g.,
     NumPy), but still wish for your operation to chain with other ops and work with
     the autograd engine.
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 一般来说，如果您想在模型中执行不可微分的计算或依赖于非PyTorch库（例如NumPy），但仍希望您的操作与其他操作链接并与autograd引擎一起工作，则实现自定义函数。
 - en: 'In some situations, custom functions can also be used to improve performance
     and memory usage: If you implemented your forward and backward passes using a
     [C++ extension](https://pytorch.org/tutorials/advanced/cpp_extension.html), you
     can wrap them in [`Function`](../autograd.html#torch.autograd.Function "torch.autograd.Function")
     to interface with the autograd engine. If you’d like to reduce the number of buffers
     saved for the backward pass, custom functions can be used to combine ops together.'
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 在某些情况下，自定义函数也可以用于提高性能和内存使用：如果您使用[C++扩展](https://pytorch.org/tutorials/advanced/cpp_extension.html)实现了前向和反向传递，您可以将它们包装在[`Function`](../autograd.html#torch.autograd.Function
+    "torch.autograd.Function")中，以与autograd引擎进行交互。如果您想减少为反向传播保存的缓冲区数量，可以使用自定义函数将操作组合在一起。
 - en: When not to use
+  id: totrans-9
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 何时不使用
 - en: If you can already write your function in terms of PyTorch’s built-in ops, its
     backward graph is (most likely) already able to be recorded by autograd. In this
     case, you do not need to implement the backward function yourself. Consider using
     a plain old Python function.
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您已经可以使用PyTorch内置操作编写函数，则其反向图（很可能）已经能够被autograd记录。在这种情况下，您不需要自己实现反向函数。考虑使用普通的Python函数。
 - en: If you need to maintain state, i.e., trainable parameters, you should (also)
     use a custom module. See the section below for more information on extending [`torch.nn`](../nn.html#module-torch.nn
     "torch.nn").
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您需要保持状态，即可训练参数，您应该（也）使用自定义模块。有关在[`torch.nn`](../nn.html#module-torch.nn "torch.nn")上扩展的更多信息，请参阅下面的部分。
 - en: If you’d like to alter the gradients during the backward pass or perform a side
     effect, consider registering a [tensor](https://pytorch.org/docs/stable/generated/torch.Tensor.register_hook.html#torch.Tensor.register_hook)
     or [Module](https://pytorch.org/docs/stable/notes/modules.html#module-hooks) hook.
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您想在反向传播过程中更改梯度或执行副作用，请考虑注册一个[tensor](https://pytorch.org/docs/stable/generated/torch.Tensor.register_hook.html#torch.Tensor.register_hook)或[Module](https://pytorch.org/docs/stable/notes/modules.html#module-hooks)
+    hook。
 - en: How to use
+  id: totrans-13
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 如何使用
 - en: 'Take the following steps: 1\. Subclass [`Function`](../autograd.html#torch.autograd.Function
     "torch.autograd.Function") and implement the [`forward()`](../generated/torch.autograd.Function.forward.html#torch.autograd.Function.forward
     "torch.autograd.Function.forward"), (optional) `setup_context()` and [`backward()`](../generated/torch.autograd.Function.backward.html#torch.autograd.Function.backward
     "torch.autograd.Function.backward") methods. 2\. Call the proper methods on the
     ctx argument. 3\. Declare whether your function supports [double backward](https://pytorch.org/tutorials/intermediate/custom_function_double_backward_tutorial.html).
     4\. Validate whether your gradients are correct using gradcheck.'
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 按照以下步骤进行：1. 子类化[`Function`](../autograd.html#torch.autograd.Function "torch.autograd.Function")并实现[`forward()`](../generated/torch.autograd.Function.forward.html#torch.autograd.Function.forward
+    "torch.autograd.Function.forward")，（可选）`setup_context()`和[`backward()`](../generated/torch.autograd.Function.backward.html#torch.autograd.Function.backward
+    "torch.autograd.Function.backward")方法。2. 在ctx参数上调用适当的方法。3. 声明您的函数是否支持[双向传播](https://pytorch.org/tutorials/intermediate/custom_function_double_backward_tutorial.html)。4.
+    使用gradcheck验证您的梯度是否正确。
 - en: '**Step 1:** After subclassing [`Function`](../autograd.html#torch.autograd.Function
     "torch.autograd.Function"), you’ll need to define 3 methods:'
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: '**步骤1：**在子类化[`Function`](../autograd.html#torch.autograd.Function "torch.autograd.Function")后，您需要定义3个方法：'
 - en: '[`forward()`](../generated/torch.autograd.Function.forward.html#torch.autograd.Function.forward
     "torch.autograd.Function.forward") is the code that performs the operation. It
     can take as many arguments as you want, with some of them being optional, if you
@@ -94,9 +134,17 @@
     to the docs of [`Function`](../autograd.html#torch.autograd.Function "torch.autograd.Function")
     to find descriptions of useful methods that can be called only from [`forward()`](../generated/torch.autograd.Function.forward.html#torch.autograd.Function.forward
     "torch.autograd.Function.forward").'
+  id: totrans-16
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[`forward()`](../generated/torch.autograd.Function.forward.html#torch.autograd.Function.forward
+    "torch.autograd.Function.forward") 是执行操作的代码。它可以接受任意数量的参数，其中一些是可选的，如果您指定了默认值。这里接受所有类型的
+    Python 对象。跟踪历史记录的 `Tensor` 参数（即具有 `requires_grad=True` 的参数）在调用之前将被转换为不跟踪历史记录的参数，并且它们的使用将在图中注册。请注意，此逻辑不会遍历列表/字典/任何其他数据结构，只会考虑直接作为调用参数的张量。您可以返回单个
+    `Tensor` 输出，或者如果有多个输出，则可以返回张量的 [`tuple`](https://docs.python.org/3/library/stdtypes.html#tuple
+    "(in Python v3.12)")。此外，请参考 [`Function`](../autograd.html#torch.autograd.Function
+    "torch.autograd.Function") 的文档，以查找只能从 [`forward()`](../generated/torch.autograd.Function.forward.html#torch.autograd.Function.forward
+    "torch.autograd.Function.forward") 中调用的有用方法的描述。'
 - en: '`setup_context()` (optional). One can either write a “combined” [`forward()`](../generated/torch.autograd.Function.forward.html#torch.autograd.Function.forward
     "torch.autograd.Function.forward") that accepts a `ctx` object or (as of PyTorch
     2.0) a separate [`forward()`](../generated/torch.autograd.Function.forward.html#torch.autograd.Function.forward
@@ -109,9 +157,17 @@
     native operations work and therefore more composable with various PyTorch subsystems.
     See [Combined or separate forward() and setup_context()](#combining-forward-context)
     for more details.'
+  id: totrans-17
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`setup_context()`（可选）。可以编写一个接受 `ctx` 对象的“组合” [`forward()`](../generated/torch.autograd.Function.forward.html#torch.autograd.Function.forward
+    "torch.autograd.Function.forward") 或（从 PyTorch 2.0 开始）一个不接受 `ctx` 的单独 [`forward()`](../generated/torch.autograd.Function.forward.html#torch.autograd.Function.forward
+    "torch.autograd.Function.forward") 和一个 `setup_context()` 方法，在其中进行 `ctx` 修改。[`forward()`](../generated/torch.autograd.Function.forward.html#torch.autograd.Function.forward
+    "torch.autograd.Function.forward") 应该包含计算，而 `setup_context()` 应该只负责 `ctx` 的修改（不包含任何计算）。一般来说，单独的
+    [`forward()`](../generated/torch.autograd.Function.forward.html#torch.autograd.Function.forward
+    "torch.autograd.Function.forward") 和 `setup_context()` 更接近于 PyTorch 原生操作的工作方式，因此更具有与各种
+    PyTorch 子系统的可组合性。有关更多详细信息，请参见[组合或分离的 forward() 和 setup_context()](#combining-forward-context)。'
 - en: '[`backward()`](../generated/torch.autograd.Function.backward.html#torch.autograd.Function.backward
     "torch.autograd.Function.backward") (or `vjp()`) defines the gradient formula.
     It will be given as many `Tensor` arguments as there were outputs, with each of
@@ -124,37 +180,57 @@
     "torch.autograd.Function.forward") you can return more gradients than there were
     inputs, as long as they’re all [`None`](https://docs.python.org/3/library/constants.html#None
     "(in Python v3.12)").'
+  id: totrans-18
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[`backward()`](../generated/torch.autograd.Function.backward.html#torch.autograd.Function.backward
+    "torch.autograd.Function.backward")（或 `vjp()`）定义了梯度公式。它将作为输出的数量给出与之对应的梯度的 `Tensor`
+    参数，每个参数表示相对于该输出的梯度。重要的是绝对不要就地修改这些参数。它应该返回与输入的数量相同的张量，每个张量包含相对于其对应输入的梯度。如果您的输入不需要梯度（`needs_input_grad`
+    是一个布尔值元组，指示每个输入是否需要梯度计算），或者是非 `Tensor` 对象，您可以返回 `python:None`。此外，如果您在 [`forward()`](../generated/torch.autograd.Function.forward.html#torch.autograd.Function.forward
+    "torch.autograd.Function.forward") 中有可选参数，您可以返回比输入数量更多的梯度，只要它们都是 [`None`](https://docs.python.org/3/library/constants.html#None
+    "(in Python v3.12)")。'
 - en: '**Step 2:** It is your responsibility to use the functions in `ctx` properly
     in order to ensure that the new [`Function`](../autograd.html#torch.autograd.Function
     "torch.autograd.Function") works properly with the autograd engine.'
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: '**步骤 2：** 您有责任正确使用 `ctx` 中的函数，以确保新的 [`Function`](../autograd.html#torch.autograd.Function
+    "torch.autograd.Function") 与自动求导引擎正常工作。'
 - en: '[`save_for_backward()`](../generated/torch.autograd.function.FunctionCtx.save_for_backward.html#torch.autograd.function.FunctionCtx.save_for_backward
     "torch.autograd.function.FunctionCtx.save_for_backward") must be used to save
     any tensors to be used in the backward pass. Non-tensors should be stored directly
     on ctx. If tensors that are neither input nor output are saved for backward your
     [`Function`](../autograd.html#torch.autograd.Function "torch.autograd.Function")
     may not support double backward (see step 3).'
+  id: totrans-20
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[`save_for_backward()`](../generated/torch.autograd.function.FunctionCtx.save_for_backward.html#torch.autograd.function.FunctionCtx.save_for_backward
+    "torch.autograd.function.FunctionCtx.save_for_backward")必须用于保存在反向传播中使用的任何张量。非张量应直接存储在ctx上。如果保存了既不是输入也不是输出的张量以进行反向传播，您的[`Function`](../autograd.html#torch.autograd.Function
+    "torch.autograd.Function")可能不支持双向传播（参见步骤3）。'
 - en: '[`mark_dirty()`](../generated/torch.autograd.function.FunctionCtx.mark_dirty.html#torch.autograd.function.FunctionCtx.mark_dirty
     "torch.autograd.function.FunctionCtx.mark_dirty") must be used to mark any input
     that is modified inplace by the forward function.'
+  id: totrans-21
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[`mark_dirty()`](../generated/torch.autograd.function.FunctionCtx.mark_dirty.html#torch.autograd.function.FunctionCtx.mark_dirty
+    "torch.autograd.function.FunctionCtx.mark_dirty")必须用于标记由前向函数就地修改的任何输入。'
 - en: '[`mark_non_differentiable()`](../generated/torch.autograd.function.FunctionCtx.mark_non_differentiable.html#torch.autograd.function.FunctionCtx.mark_non_differentiable
     "torch.autograd.function.FunctionCtx.mark_non_differentiable") must be used to
     tell the engine if an output is not differentiable. By default all output tensors
     that are of differentiable type will be set to require gradient. Tensors of non-differentiable
     type (i.e., integral types) are never marked as requiring gradients.'
+  id: totrans-22
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[`mark_non_differentiable()`](../generated/torch.autograd.function.FunctionCtx.mark_non_differentiable.html#torch.autograd.function.FunctionCtx.mark_non_differentiable
+    "torch.autograd.function.FunctionCtx.mark_non_differentiable")必须用于告诉引擎输出是否不可微分。默认情况下，所有可微分类型的输出张量都将被设置为需要梯度。不可微分类型的张量（即整数类型）永远不会被标记为需要梯度。'
 - en: '[`set_materialize_grads()`](../generated/torch.autograd.function.FunctionCtx.set_materialize_grads.html#torch.autograd.function.FunctionCtx.set_materialize_grads
     "torch.autograd.function.FunctionCtx.set_materialize_grads") can be used to tell
     the autograd engine to optimize gradient computations in the cases where the output
@@ -164,54 +240,80 @@
     filled with zeros prior to calling backward, and so your code will need to handle
     such objects as if they were tensors filled with zeros. The default value of this
     setting is True.'
+  id: totrans-23
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[`set_materialize_grads()`](../generated/torch.autograd.function.FunctionCtx.set_materialize_grads.html#torch.autograd.function.FunctionCtx.set_materialize_grads
+    "torch.autograd.function.FunctionCtx.set_materialize_grads")可用于告诉自动求导引擎在输出不依赖于输入的情况下优化梯度计算，方法是不将传递给反向函数的梯度张量实例化。也就是说，如果设置为False，Python中的None对象或C++中的“未定义张量”（对于其defined()为False的张量x）将不会在调用反向传播之前转换为填充了零的张量，因此您的代码将需要处理这些对象，就好像它们是填充了零的张量一样。此设置的默认值为True。'
 - en: '**Step 3:** If your [`Function`](../autograd.html#torch.autograd.Function "torch.autograd.Function")
     does not support double backward you should explicitly declare this by decorating
     backward with the `once_differentiable()`. With this decorator, attempts to perform
     double backward through your function will produce an error. See our double backward
     tutorial for more information on double backward.'
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: '**步骤3：** 如果您的[`Function`](../autograd.html#torch.autograd.Function "torch.autograd.Function")不支持双向传播，您应该通过在反向传播中使用`once_differentiable()`来显式声明这一点。使用这个装饰器，尝试通过您的函数执行双向传播将产生错误。有关双向传播的更多信息，请参阅我们的双向传播教程。'
 - en: '**Step 4:** It is recommended that you use [`torch.autograd.gradcheck()`](../autograd.html#module-torch.autograd.gradcheck
     "torch.autograd.gradcheck") to check whether your backward function correctly
     computes gradients of the forward by computing the Jacobian matrix using your
     backward function and comparing the value element-wise with the Jacobian computed
     numerically using finite-differencing.'
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: '**步骤4：** 建议您使用[`torch.autograd.gradcheck()`](../autograd.html#module-torch.autograd.gradcheck
+    "torch.autograd.gradcheck")来检查您的反向函数是否正确计算了前向梯度，方法是使用您的反向函数计算雅可比矩阵，并将其值逐个元素与使用有限差分数值计算的雅可比矩阵进行比较。'
 - en: Example
+  id: totrans-26
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 示例
 - en: 'Below you can find code for a `Linear` function, with additional comments:'
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 下面您可以找到一个`Linear`函数的代码，附加了注释：
 - en: '[PRE0]'
+  id: totrans-28
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: 'Now, to make it easier to use these custom ops, we recommend either aliasing
     them or wrapping them in a function. Wrapping in a function lets us support default
     arguments and keyword arguments:'
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在，为了更容易使用这些自定义操作，我们建议要么给它们取别名，要么将它们包装在一个函数中。将其包装在一个函数中可以让我们支持默认参数和关键字参数：
 - en: '[PRE1]'
+  id: totrans-30
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: 'Here, we give an additional example of a function that is parametrized by non-Tensor
     arguments:'
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这里，我们给出了一个通过非张量参数进行参数化的函数的额外示例：
 - en: '[PRE2]'
+  id: totrans-32
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: 'And here, we optimize the above example by calling set_materialize_grads(False):'
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这里，我们通过调用set_materialize_grads(False)来优化上面的示例：
 - en: '[PRE3]'
+  id: totrans-34
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: 'If you need any “intermediate” Tensors computed in [`forward()`](../generated/torch.autograd.Function.forward.html#torch.autograd.Function.forward
     "torch.autograd.Function.forward") to be saved, either they must be returned as
     outputs, or combine `forward` and `setup_context()` (see [Combined or separate
@@ -219,14 +321,21 @@
     if you want gradients to flow through those intermediate values, you need to define
     the gradient formula for them (see also [the double backward tutorial](https://pytorch.org/tutorials/intermediate/custom_function_double_backward_tutorial.html)
     ):'
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您需要在[`forward()`](../generated/torch.autograd.Function.forward.html#torch.autograd.Function.forward
+    "torch.autograd.Function.forward")中计算的“中间”张量被保存，要么它们必须作为输出返回，要么结合`forward`和`setup_context()`（参见[合并或分开forward()和setup_context()](#combining-forward-context)）。请注意，这意味着如果您希望梯度通过这些中间值流动，您需要为它们定义梯度公式（也请参阅[双向传播教程](https://pytorch.org/tutorials/intermediate/custom_function_double_backward_tutorial.html)）：
 - en: '[PRE4]'
+  id: totrans-36
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: Note
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Inputs to `backward`, i.e., `grad_output`, can also be tensors that track history.
     So if `backward` is implemented with differentiable operations, (e.g., invocation
     of another custom [`Function`](../autograd.html#torch.autograd.Function "torch.autograd.Function")),
@@ -235,42 +344,63 @@
     in the `ctx` won’t have gradients flowing back for them. If you need gradients
     to flow back for a Tensor saved in the `ctx`, you should make it an output of
     the custom `Function` and save it with `save_for_backward`.
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 传递给`backward`的输入，即`grad_output`，也可以是跟踪历史记录的张量。因此，如果`backward`是通过可微操作实现的（例如，调用另一个自定义[`Function`](../autograd.html#torch.autograd.Function
+    "torch.autograd.Function")），高阶导数将起作用。在这种情况下，使用`save_for_backward`保存的张量也可以在反向中使用，并且梯度会回流，但在`ctx`中保存的张量不会有梯度回流。如果您需要梯度回流到在`ctx`中保存的张量，您应该将其作为自定义`Function`的输出并使用`save_for_backward`保存它。
 - en: 'You probably want to check if the backward method you implemented actually
     computes the derivatives of your function. It is possible by comparing with numerical
     approximations using small finite differences:'
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可能希望检查您实现的反向方法是否实际计算了函数的导数。可以通过使用小的有限差分进行数值近似来进行比较：
 - en: '[PRE5]'
+  id: totrans-40
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: See [Numerical gradient checking](../autograd.html#grad-check) for more details
     on finite-difference gradient comparisons. If your function is used in higher
     order derivatives (differentiating the backward pass) you can use the `gradgradcheck`
     function from the same package to check higher order derivatives.
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 有关有限差分梯度比较的更多详细信息，请参见[数值梯度检查](../autograd.html#grad-check)。如果您的函数用于高阶导数（对反向传递进行微分），则可以使用同一软件包中的`gradgradcheck`函数来检查高阶导数。
 - en: '### Combined or separate [`forward()`](../generated/torch.autograd.Function.forward.html#torch.autograd.Function.forward
     "torch.autograd.Function.forward") and `setup_context()`[](#combined-or-separate-forward-and-setup-context
     "Permalink to this heading")'
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: '### 合并或单独的[`forward()`](../generated/torch.autograd.Function.forward.html#torch.autograd.Function.forward
+    "torch.autograd.Function.forward")和`setup_context()`[](#combined-or-separate-forward-and-setup-context
+    "Permalink to this heading")'
 - en: 'There are two main ways to define [`Function`](../autograd.html#torch.autograd.Function
     "torch.autograd.Function"). Either:'
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: 有两种主要方法来定义[`Function`](../autograd.html#torch.autograd.Function "torch.autograd.Function")。要么：
 - en: define a [`forward()`](../generated/torch.autograd.Function.forward.html#torch.autograd.Function.forward
     "torch.autograd.Function.forward") that combines the forward compute logic with
     `setup_context()`
+  id: totrans-44
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 定义一个结合了前向计算逻辑和`setup_context()`的[`forward()`](../generated/torch.autograd.Function.forward.html#torch.autograd.Function.forward
+    "torch.autograd.Function.forward")
 - en: (as of PyTorch 2.0) define a separate [`forward()`](../generated/torch.autograd.Function.forward.html#torch.autograd.Function.forward
     "torch.autograd.Function.forward") and `setup_context()`
+  id: totrans-45
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: （截至PyTorch 2.0）定义一个单独的[`forward()`](../generated/torch.autograd.Function.forward.html#torch.autograd.Function.forward
+    "torch.autograd.Function.forward")和`setup_context()`
 - en: 'We recommend the second option (separate [`forward()`](../generated/torch.autograd.Function.forward.html#torch.autograd.Function.forward
     "torch.autograd.Function.forward") and `setup_context()`) because that is closer
     to how PyTorch native operations are implemented and it composes with [`torch.func`](../func.api.html#module-torch.func
@@ -278,39 +408,65 @@
     combining [`forward()`](../generated/torch.autograd.Function.forward.html#torch.autograd.Function.forward
     "torch.autograd.Function.forward") with `setup_context()`: leads to more flexibility
     since you are able to save intermediates without returning them as output.'
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们推荐第二种选项（单独的[`forward()`](../generated/torch.autograd.Function.forward.html#torch.autograd.Function.forward
+    "torch.autograd.Function.forward")和`setup_context()`），因为这更接近PyTorch原生操作的实现方式，并且与[`torch.func`](../func.api.html#module-torch.func
+    "torch.func")转换组合。但是，我们计划支持两种方法；结合[`forward()`](../generated/torch.autograd.Function.forward.html#torch.autograd.Function.forward
+    "torch.autograd.Function.forward")和`setup_context()`：会更加灵活，因为您可以保存中间结果而无需将它们作为输出返回。
 - en: Please see the previous section for how to define [`Function`](../autograd.html#torch.autograd.Function
     "torch.autograd.Function") with separate [`forward()`](../generated/torch.autograd.Function.forward.html#torch.autograd.Function.forward
     "torch.autograd.Function.forward") and `setup_context()`.
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: 有关如何定义具有单独[`forward()`](../generated/torch.autograd.Function.forward.html#torch.autograd.Function.forward
+    "torch.autograd.Function.forward")和`setup_context()`的[`Function`](../autograd.html#torch.autograd.Function
+    "torch.autograd.Function")的详细信息，请参见前一节。
 - en: 'Here is an example of how to define a [`Function`](../autograd.html#torch.autograd.Function
     "torch.autograd.Function") with combined [`forward()`](../generated/torch.autograd.Function.forward.html#torch.autograd.Function.forward
     "torch.autograd.Function.forward") and `setup_context()`:'
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下是如何定义一个带有合并[`forward()`](../generated/torch.autograd.Function.forward.html#torch.autograd.Function.forward
+    "torch.autograd.Function.forward")和`setup_context()`的[`Function`](../autograd.html#torch.autograd.Function
+    "torch.autograd.Function")的示例：
 - en: '[PRE6]  ### Forward mode AD'
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: '[PRE6]  ### 正向模式 AD'
 - en: Overriding the forward mode AD formula has a very similar API with some different
     subtleties. You can implement the [`jvp()`](../generated/torch.autograd.Function.jvp.html#torch.autograd.Function.jvp
     "torch.autograd.Function.jvp") function.
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: 覆盖正向模式 AD 公式具有非常相似的 API，但有一些不同的微妙之处。您可以实现[`jvp()`](../generated/torch.autograd.Function.jvp.html#torch.autograd.Function.jvp
+    "torch.autograd.Function.jvp")函数。
 - en: It will be given as many `Tensor` arguments as there were inputs, with each
     of them representing gradient w.r.t. that input. It should return as many tensors
     as there were outputs, with each of them containing the gradient w.r.t. its corresponding
     output. The [`jvp()`](../generated/torch.autograd.Function.jvp.html#torch.autograd.Function.jvp
     "torch.autograd.Function.jvp") will be called just after the [`forward()`](../generated/torch.autograd.Function.forward.html#torch.autograd.Function.forward
     "torch.autograd.Function.forward") method, before the `apply()` returns.
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
+  zh: 它将被给予与输入相同数量的`Tensor`参数，每个参数代表相对于该输入的梯度。它应返回与输出相同数量的张量，每个张量包含相对于其对应输出的梯度。[`jvp()`](../generated/torch.autograd.Function.jvp.html#torch.autograd.Function.jvp
+    "torch.autograd.Function.jvp")将在[`forward()`](../generated/torch.autograd.Function.forward.html#torch.autograd.Function.forward
+    "torch.autograd.Function.forward")方法之后，在`apply()`返回之前调用。
 - en: '[`jvp()`](../generated/torch.autograd.Function.jvp.html#torch.autograd.Function.jvp
     "torch.autograd.Function.jvp") has a few subtle differences with the [`backward()`](../generated/torch.autograd.Function.backward.html#torch.autograd.Function.backward
     "torch.autograd.Function.backward") function:'
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`jvp()`](../generated/torch.autograd.Function.jvp.html#torch.autograd.Function.jvp
+    "torch.autograd.Function.jvp")与[`backward()`](../generated/torch.autograd.Function.backward.html#torch.autograd.Function.backward
+    "torch.autograd.Function.backward")函数有一些微妙的区别：'
 - en: You can use the ctx to pass any data from the [`forward()`](../generated/torch.autograd.Function.forward.html#torch.autograd.Function.forward
     "torch.autograd.Function.forward") to the [`jvp()`](../generated/torch.autograd.Function.jvp.html#torch.autograd.Function.jvp
     "torch.autograd.Function.jvp") function. If that state will not be needed for
@@ -318,15 +474,24 @@
     "torch.autograd.Function.backward"), you can explicitly free it by doing `del
     ctx.foo` at the end of the [`jvp()`](../generated/torch.autograd.Function.jvp.html#torch.autograd.Function.jvp
     "torch.autograd.Function.jvp") function.
+  id: totrans-53
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 您可以使用ctx将任何数据从[`forward()`](../generated/torch.autograd.Function.forward.html#torch.autograd.Function.forward
+    "torch.autograd.Function.forward")传递到[`jvp()`](../generated/torch.autograd.Function.jvp.html#torch.autograd.Function.jvp
+    "torch.autograd.Function.jvp")函数。如果该状态在[`backward()`](../generated/torch.autograd.Function.backward.html#torch.autograd.Function.backward
+    "torch.autograd.Function.backward")中不需要，您可以在[`jvp()`](../generated/torch.autograd.Function.jvp.html#torch.autograd.Function.jvp
+    "torch.autograd.Function.jvp")函数末尾通过`del ctx.foo`显式释放它。
 - en: The implementation of [`jvp()`](../generated/torch.autograd.Function.jvp.html#torch.autograd.Function.jvp
     "torch.autograd.Function.jvp") must be backward differentiable or explicitly check
     that none of the given forward mode gradient has `requires_grad` set.
+  id: totrans-54
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[`jvp()`](../generated/torch.autograd.Function.jvp.html#torch.autograd.Function.jvp
+    "torch.autograd.Function.jvp")的实现必须是反向可微的，或者明确检查给定的前向模式梯度中是否有`requires_grad`设置。'
 - en: The [`jvp()`](../generated/torch.autograd.Function.jvp.html#torch.autograd.Function.jvp
     "torch.autograd.Function.jvp") function must match the view/inplace behavior of
     [`forward()`](../generated/torch.autograd.Function.forward.html#torch.autograd.Function.forward
@@ -334,52 +499,77 @@
     inplace, then the `i` th gradient must be updated inplace. Similarly, if the `j`
     th output is a view of the `k` th input. Then the returned `j` th output gradient
     must be a view of the given `k` th input gradient.
+  id: totrans-55
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[`jvp()`](../generated/torch.autograd.Function.jvp.html#torch.autograd.Function.jvp
+    "torch.autograd.Function.jvp")函数必须匹配[`forward()`](../generated/torch.autograd.Function.forward.html#torch.autograd.Function.forward
+    "torch.autograd.Function.forward")的视图/原地行为。例如，如果第`i`个输入被原地修改，则第`i`个梯度必须被原地更新。同样，如果第`j`个输出是第`k`个输入的视图。那么返回的第`j`个输出梯度必须是给定第`k`个输入梯度的视图。'
 - en: Because the user cannot specify which gradient needs to be computed, the [`jvp()`](../generated/torch.autograd.Function.jvp.html#torch.autograd.Function.jvp
     "torch.autograd.Function.jvp") function should always compute gradients for all
     the outputs.
+  id: totrans-56
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 因为用户无法指定需要计算哪个梯度，[`jvp()`](../generated/torch.autograd.Function.jvp.html#torch.autograd.Function.jvp
+    "torch.autograd.Function.jvp")函数应始终计算所有输出的梯度。
 - en: The forward mode gradients do respect the flag set by [`set_materialize_grads()`](../generated/torch.autograd.function.FunctionCtx.set_materialize_grads.html#torch.autograd.function.FunctionCtx.set_materialize_grads
     "torch.autograd.function.FunctionCtx.set_materialize_grads") and you can get None
     input gradients when this is disabled.
+  id: totrans-57
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 前向模式梯度确实遵守[`set_materialize_grads()`](../generated/torch.autograd.function.FunctionCtx.set_materialize_grads.html#torch.autograd.function.FunctionCtx.set_materialize_grads
+    "torch.autograd.function.FunctionCtx.set_materialize_grads")设置的标志，当禁用时，您可以获得None输入梯度。
 - en: '[`torch.func`](../func.api.html#module-torch.func "torch.func") transforms
     and/or [`torch.vmap()`](../generated/torch.vmap.html#torch.vmap "torch.vmap")[](#torch-func-transforms-and-or-torch-vmap
     "Permalink to this heading")'
+  id: totrans-58
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: '[`torch.func`](../func.api.html#module-torch.func "torch.func")转换和/或[`torch.vmap()`](../generated/torch.vmap.html#torch.vmap
+    "torch.vmap")[](#torch-func-transforms-and-or-torch-vmap "跳转到此标题的永久链接")'
 - en: Please see [Extending torch.func with autograd.Function](extending.func.html#func-autograd-function)
     for details.
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: 有关详细信息，请参阅[使用autograd.Function扩展torch.func](extending.func.html#func-autograd-function)。
 - en: Extending [`torch.nn`](../nn.html#module-torch.nn "torch.nn")[](#extending-torch-nn
     "Permalink to this heading")
+  id: totrans-60
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 扩展[`torch.nn`](../nn.html#module-torch.nn "torch.nn")[](#extending-torch-nn
+    "跳转到此标题的永久链接")
 - en: '[`nn`](../nn.html#module-torch.nn "torch.nn") exports two kinds of interfaces
     - modules and their functional versions. You can extend it in both ways, but we
     recommend using modules for all kinds of layers, that hold any parameters or buffers,
     and recommend using a functional form parameter-less operations like activation
     functions, pooling, etc.'
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`nn`](../nn.html#module-torch.nn "torch.nn")导出两种接口 - 模块及其功能版本。您可以以两种方式扩展它，但我们建议对所有包含任何参数或缓冲区的层使用模块，并建议对参数为空的操作（如激活函数、池化等）使用功能形式。'
 - en: Adding a functional version of an operation is already fully covered in the
     section above.
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
+  zh: 在上面的部分中已经完全涵盖了添加操作的功能版本。
 - en: Adding a [`Module`](../generated/torch.nn.Module.html#torch.nn.Module "torch.nn.Module")[](#adding-a-module
     "Permalink to this heading")
+  id: totrans-63
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 添加一个[`Module`](../generated/torch.nn.Module.html#torch.nn.Module "torch.nn.Module")[](#adding-a-module
+    "跳转到此标题的永久链接")
 - en: 'Since [`nn`](../nn.html#module-torch.nn "torch.nn") heavily utilizes [`autograd`](../autograd.html#module-torch.autograd
     "torch.autograd"), adding a new [`Module`](../generated/torch.nn.Module.html#torch.nn.Module
     "torch.nn.Module") requires implementing a [`Function`](../autograd.html#torch.autograd.Function
@@ -387,37 +577,57 @@
     From now on let’s assume that we want to implement a `Linear` module and we have
     the function implemented as in the listing above. There’s very little code required
     to add this. Now, there are two functions that need to be implemented:'
+  id: totrans-64
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于[`nn`](../nn.html#module-torch.nn "torch.nn")大量使用[`autograd`](../autograd.html#module-torch.autograd
+    "torch.autograd")，添加一个新的[`Module`](../generated/torch.nn.Module.html#torch.nn.Module
+    "torch.nn.Module")需要实现一个执行操作并能计算梯度的[`Function`](../autograd.html#torch.autograd.Function
+    "torch.autograd.Function")。从现在开始，让我们假设我们想要实现一个`Linear`模块，并且我们已经按照上面的列表实现了该函数。添加这个需要非常少的代码。现在，需要实现两个函数：
 - en: '`__init__` (*optional*) - takes in arguments such as kernel sizes, numbers
     of features, etc. and initializes parameters and buffers.'
+  id: totrans-65
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`__init__`（*可选*）- 接受参数，如内核大小、特征数量等，并初始化参数和缓冲区。'
 - en: '[`forward()`](../generated/torch.nn.Module.html#torch.nn.Module.forward "torch.nn.Module.forward")
     - instantiates a [`Function`](../autograd.html#torch.autograd.Function "torch.autograd.Function")
     and uses it to perform the operation. It’s very similar to a functional wrapper
     shown above.'
+  id: totrans-66
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[`forward()`](../generated/torch.nn.Module.html#torch.nn.Module.forward "torch.nn.Module.forward")
+    - 实例化一个[`Function`](../autograd.html#torch.autograd.Function "torch.autograd.Function")并使用它执行操作。它与上面显示的功能包装器非常相似。'
 - en: 'This is how a `Linear` module can be implemented:'
+  id: totrans-67
   prefs: []
   type: TYPE_NORMAL
+  zh: 这是如何实现`Linear`模块的方法：
 - en: '[PRE7]'
+  id: totrans-68
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: '## Extending [`torch`](../torch.html#module-torch "torch") Python API[](#extending-torch-python-api
     "Permalink to this heading")'
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: '## 扩展[`torch`](../torch.html#module-torch "torch") Python API[](#extending-torch-python-api
+    "Permalink to this heading")'
 - en: You can create custom types that emulate `Tensor` by defining a custom class
     with methods that match `Tensor`. But what if you want to be able to pass these
     types to functions like [`torch.add()`](../generated/torch.add.html#torch.add
     "torch.add") in the top-level [`torch`](../torch.html#module-torch "torch") namespace
     that accept `Tensor` operands?
+  id: totrans-70
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可以通过定义一个具有与`Tensor`匹配的方法的自定义类来创建模拟`Tensor`的自定义类型。但是如果您希望能够将这些类型传递给像[`torch.add()`](../generated/torch.add.html#torch.add
+    "torch.add")这样的顶层[`torch`](../torch.html#module-torch "torch")命名空间中接受`Tensor`操作数的函数，该怎么办？
 - en: If your custom Python type defines a method named `__torch_function__`, PyTorch
     will invoke your `__torch_function__` implementation when an instance of your
     custom class is passed to a function in the [`torch`](../torch.html#module-torch
@@ -427,53 +637,79 @@
     make use of your custom type with existing PyTorch workflows that they have already
     written for `Tensor`. This works with “duck” types that are unrelated to `Tensor`
     as well as user-defined subclasses of `Tensor`.
+  id: totrans-71
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您的自定义Python类型定义了一个名为`__torch_function__`的方法，PyTorch将在将您的自定义类的实例传递给[`torch`](../torch.html#module-torch
+    "torch")命名空间中的函数时调用您的`__torch_function__`实现。这使得可以为[`torch`](../torch.html#module-torch
+    "torch")命名空间中的任何函数定义自定义实现，您的`__torch_function__`实现可以调用这些函数，使您的用户能够利用已经为`Tensor`编写的现有PyTorch工作流程来使用您的自定义类型。这适用于与`Tensor`无关的“鸭子”类型以及`Tensor`的用户定义子类。
 - en: Extending [`torch`](../torch.html#module-torch "torch") with a `Tensor`-like
     type
+  id: totrans-72
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 使用类似`Tensor`的类型扩展[`torch`](../torch.html#module-torch "torch")
 - en: Note
+  id: totrans-73
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: This functionality is inspired by the NumPy `__array_function__` protocol. See
     [the NumPy documentation](https://numpy.org/doc/stable/user/basics.dispatch.html#basics-dispatch)
     and [NEP-0018](https://numpy.org/neps/nep-0018-array-function-protocol.html) for
     more details.
+  id: totrans-74
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个功能受到了NumPy `__array_function__`协议的启发。有关更多详细信息，请参阅[NumPy文档](https://numpy.org/doc/stable/user/basics.dispatch.html#basics-dispatch)和[NEP-0018](https://numpy.org/neps/nep-0018-array-function-protocol.html)。
 - en: 'To make this concrete, let’s begin with a simple example that illustrates the
     API dispatch mechanism. We’ll create a custom type that represents a 2D scalar
     tensor, parametrized by the order `N` and value along the diagonal entries, `value`:'
+  id: totrans-75
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了具体化这一点，让我们从一个简单的示例开始，说明API分发机制。我们将创建一个自定义类型，表示一个二维标量张量，由对角线条目的顺序`N`和值`value`参数化：
 - en: '[PRE8]'
+  id: totrans-76
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: 'This first iteration of the design isn’t very useful. The main functionality
     of `ScalarTensor` is to provide a more compact string representation of a scalar
     tensor than in the base tensor class:'
+  id: totrans-77
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个设计的第一个迭代并不是非常有用。`ScalarTensor`的主要功能是提供比基本张量类更紧凑的标量张量的字符串表示：
 - en: '[PRE9]'
+  id: totrans-78
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: 'If we try to use this object with the [`torch`](../torch.html#module-torch
     "torch") API, we will run into issues:'
+  id: totrans-79
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果我们尝试使用[`torch`](../torch.html#module-torch "torch") API中的这个对象，我们将遇到问题：
 - en: '[PRE10]'
+  id: totrans-80
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: 'Adding a `__torch_function__` implementation to `ScalarTensor` makes it possible
     for the above operation to succeed. Let’s re-do our implementation, this time
     adding a `__torch_function__` implementation:'
+  id: totrans-81
   prefs: []
   type: TYPE_NORMAL
+  zh: 向`ScalarTensor`添加一个`__torch_function__`实现使得上述操作能够成功。让我们重新实现我们的代码，这次添加一个`__torch_function__`实现：
 - en: '[PRE11]'
+  id: totrans-82
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: 'The `__torch_function__` method takes four arguments: `func`, a reference to
     the torch API function that is being overridden, `types`, the list of types of
     Tensor-likes that implement `__torch_function__`, `args`, the tuple of arguments
@@ -481,112 +717,166 @@
     the function. It uses a global dispatch table named `HANDLED_FUNCTIONS` to store
     custom implementations. The keys of this dictionary are functions in the `torch`
     namespace and the values are implementations for `ScalarTensor`.'
+  id: totrans-83
   prefs: []
   type: TYPE_NORMAL
+  zh: '`__torch_function__`方法接受四个参数：`func`，被覆盖的torch API函数的引用，`types`，实现`__torch_function__`的Tensor-like类型的类型列表，`args`，传递给函数的参数元组，以及`kwargs`，传递给函数的关键字参数字典。它使用一个名为`HANDLED_FUNCTIONS`的全局分发表来存储自定义实现。这个字典的键是`torch`命名空间中的函数，值是`ScalarTensor`的实现。'
 - en: Note
+  id: totrans-84
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Using a global dispatch table is not a mandated part of the `__torch_function__`
     API, it is just a useful design pattern for structuring your override implementations.
+  id: totrans-85
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用全局分派表不是`__torch_function__` API的强制部分，它只是一种有用的设计模式，用于构建您的覆盖实现。
 - en: 'This class definition isn’t quite enough to make `torch.mean` do the right
     thing when we pass it a `ScalarTensor` – we also need to define an implementation
     for `torch.mean` for `ScalarTensor` operands and add the implementation to the
     `HANDLED_FUNCTIONS` dispatch table dictionary. One way of doing this is to define
     a decorator:'
+  id: totrans-86
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个类定义并不足以使`torch.mean`在我们传递`ScalarTensor`时执行正确的操作 - 我们还需要为`ScalarTensor`操作数定义一个`torch.mean`实现，并将该实现添加到`HANDLED_FUNCTIONS`分派表字典中。一种方法是定义一个装饰器：
 - en: '[PRE12]'
+  id: totrans-87
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: 'which can be applied to the implementation of our override:'
+  id: totrans-88
   prefs: []
   type: TYPE_NORMAL
+  zh: 这可以应用于我们覆盖的实现：
 - en: '[PRE13]'
+  id: totrans-89
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: 'With this change we can now use `torch.mean` with `ScalarTensor`:'
+  id: totrans-90
   prefs: []
   type: TYPE_NORMAL
+  zh: 有了这个改变，我们现在可以使用`ScalarTensor`来使用`torch.mean`：
 - en: '[PRE14]'
+  id: totrans-91
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: 'Of course `torch.mean` is an example of the simplest kind of function to override
     since it only takes one operand. We can use the same machinery to override a function
     that takes more than one operand, any one of which might be a tensor or tensor-like
     that defines `__torch_function__`, for example for [`torch.add()`](../generated/torch.add.html#torch.add
     "torch.add"):'
+  id: totrans-92
   prefs: []
   type: TYPE_NORMAL
+  zh: 当然，`torch.mean`是最简单的覆盖函数的一个例子，因为它只接受一个操作数。我们可以使用相同的机制来覆盖接受多个操作数的函数，其中任何一个可能是定义了`__torch_function__`的张量或类似张量，例如[`torch.add()`](../generated/torch.add.html#torch.add
+    "torch.add")：
 - en: '[PRE15]'
+  id: totrans-93
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: 'This version has a fast path for when both operands are `ScalarTensor` instances
     and also a slower path which degrades to converting the data to tensors when either
     operand is not a `ScalarTensor`. That makes the override function correctly when
     either operand is a `ScalarTensor` or a regular `Tensor`:'
+  id: totrans-94
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个版本对于两个操作数都是`ScalarTensor`实例时有一个快速路径，还有一个较慢的路径，当任一操作数不是`ScalarTensor`时会将数据转换为张量。这使得覆盖函数在任一操作数是`ScalarTensor`或常规`Tensor`时都能正确运行：
 - en: '[PRE16]'
+  id: totrans-95
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: 'Note that our implementation of `add` does not take `alpha` or `out` as keyword
     arguments like [`torch.add()`](../generated/torch.add.html#torch.add "torch.add")
     does:'
+  id: totrans-96
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，我们的`add`实现不像[`torch.add()`](../generated/torch.add.html#torch.add "torch.add")那样将`alpha`或`out`作为关键字参数：
 - en: '[PRE17]'
+  id: totrans-97
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: For speed and flexibility the `__torch_function__` dispatch mechanism does not
     check that the signature of an override function matches the signature of the
     function being overrided in the [`torch`](../torch.html#module-torch "torch")
     API. For some applications ignoring optional arguments would be fine but to ensure
     full compatibility with `Tensor`, user implementations of torch API functions
     should take care to exactly emulate the API of the function that is being overrided.
+  id: totrans-98
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了速度和灵活性，`__torch_function__`分派机制不会检查覆盖函数的签名是否与在[`torch`](../torch.html#module-torch
+    "torch") API中被覆盖的函数的签名匹配。对于一些应用程序，忽略可选参数可能是可以的，但为了确保与`Tensor`的完全兼容性，torch API函数的用户实现应该确保精确模拟被覆盖的函数的API。
 - en: 'Functions in the [`torch`](../torch.html#module-torch "torch") API that do
     not have explicit overrides will return `NotImplemented` from `__torch_function__`.
     If all operands with `__torch_function__` defined on them return `NotImplemented`,
     PyTorch will raise a `TypeError`. This means that most of the time operations
     that do not have explicit overrides for a type will raise a `TypeError` when an
     instance of such a type is passed:'
+  id: totrans-99
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`torch`](../torch.html#module-torch "torch") API中没有显式覆盖的函数将从`__torch_function__`返回`NotImplemented`。如果所有具有在其上定义了`__torch_function__`的操作数都返回`NotImplemented`，PyTorch将引发`TypeError`。这意味着大多数情况下，对于没有特定类型的显式覆盖的操作，当传递这种类型的实例时将引发`TypeError`：'
 - en: '[PRE18]'
+  id: totrans-100
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: In practice this means that if you would like to implement your overrides using
     a `__torch_function__` implementation along these lines, you will need to explicitly
     implement the full [`torch`](../torch.html#module-torch "torch") API or the entire
     subset of the API that you care about for your use case. This may be a tall order
     as the full [`torch`](../torch.html#module-torch "torch") API is quite extensive.
+  id: totrans-101
   prefs: []
   type: TYPE_NORMAL
+  zh: 实际上，这意味着如果您想要使用类似这样的`__torch_function__`实现来实现您的覆盖，您将需要显式实现完整的[`torch`](../torch.html#module-torch
+    "torch") API或您关心的用例的整个API子集。这可能是一个很大的挑战，因为完整的[`torch`](../torch.html#module-torch
+    "torch") API非常广泛。
 - en: 'Another option is to not return `NotImplemented` for operations that are not
     handled but to instead pass a `Tensor` to the original [`torch`](../torch.html#module-torch
     "torch") function when no override is available. For example, if we change our
     implementation of `__torch_function__` for `ScalarTensor` to the one below:'
+  id: totrans-102
   prefs: []
   type: TYPE_NORMAL
+  zh: 另一个选择是对于未处理的操作不返回`NotImplemented`，而是在没有可用覆盖时将`Tensor`传递给原始[`torch`](../torch.html#module-torch
+    "torch")函数。例如，如果我们将`ScalarTensor`的`__torch_function__`实现更改为以下内容：
 - en: '[PRE19]'
+  id: totrans-103
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE19]'
 - en: 'Then [`torch.mul()`](../generated/torch.mul.html#torch.mul "torch.mul") will
     work correctly, although the return type will always be a `Tensor` rather than
     a `ScalarTensor`, even if both operands are `ScalarTensor` instances:'
+  id: totrans-104
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后[`torch.mul()`](../generated/torch.mul.html#torch.mul "torch.mul")将正常工作，尽管返回类型始终是`Tensor`而不是`ScalarTensor`，即使两个操作数都是`ScalarTensor`实例：
 - en: '[PRE20]'
+  id: totrans-105
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE20]'
 - en: Also see the `MetadataTensor` example below for another variation on this pattern
     but instead always returns a `MetadataTensor` to propagate metadata through operations
     in the [`torch`](../torch.html#module-torch "torch") API.
+  id: totrans-106
   prefs: []
   type: TYPE_NORMAL
+  zh: 另请参见下面的`MetadataTensor`示例，以了解这种模式的另一种变体，但是始终返回`MetadataTensor`以通过[`torch`](../torch.html#module-torch
+    "torch") API中的操作传播元数据。
 - en: The `__torch_function__` protocol is designed for full coverage of the API,
     partial coverage may lead to undesirable results, in particular, certain functions
     raising a `TypeError`. This is especially true for subclasses, where all three
@@ -594,51 +884,73 @@
     if they return exactly the same result. Failing to do this may also lead to infinite
     recursion. If one requires the implementation of a function from `torch.Tensor`
     subclasses, they must use `super().__torch_function__` inside their implementation.
+  id: totrans-107
   prefs: []
   type: TYPE_NORMAL
+  zh: '`__torch_function__`协议旨在完全覆盖API，部分覆盖可能会导致不良结果，特别是某些函数引发`TypeError`。这对于子类尤其重要，其中torch.add、torch.Tensor.__add__和torch.Tensor.add这三个函数必须被覆盖，即使它们返回完全相同的结果。未能这样做也可能导致无限递归。如果需要从`torch.Tensor`子类实现一个函数，他们必须在实现中使用`super().__torch_function__`。'
 - en: Subclassing `torch.Tensor`
+  id: totrans-108
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 子类化`torch.Tensor`
 - en: 'As of version 1.7.0, methods on `torch.Tensor` and functions in public `torch.*`
     namespaces applied on `torch.Tensor` subclasses will return subclass instances
     instead of `torch.Tensor` instances:'
+  id: totrans-109
   prefs: []
   type: TYPE_NORMAL
+  zh: 从1.7.0版本开始，在`torch.Tensor`上的方法和公共`torch.*`命名空间中应用于`torch.Tensor`子类的函数将返回子类实例而不是`torch.Tensor`实例：
 - en: '[PRE21]'
+  id: totrans-110
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE21]'
 - en: 'If multiple subclasses exist, the lowest one in the hierarchy will be chosen
     by default. If there is no unique way to determine such a case, then a `TypeError`
     is raised:'
+  id: totrans-111
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果存在多个子类，则默认选择层次结构中最低的子类。如果没有唯一确定这种情况的方法，则会引发`TypeError`：
 - en: '[PRE22]'
+  id: totrans-112
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE22]'
 - en: 'If one wishes to have a global override for all tensor methods, one can use
     `__torch_function__`. Here is an example that logs all function/method calls:'
+  id: totrans-113
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果希望对所有张量方法进行全局覆盖，可以使用`__torch_function__`。以下是一个记录所有函数/方法调用的示例：
 - en: '[PRE23]'
+  id: totrans-114
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE23]'
 - en: However, if one instead wishes to override a method on the Tensor subclass,
     there one can do so either by directly overriding the method (by defining it for
     a subclass), or by using `__torch_function__` and matching with `func`.
+  id: totrans-115
   prefs: []
   type: TYPE_NORMAL
+  zh: 但是，如果希望在Tensor子类上覆盖一个方法，可以直接覆盖该方法（为子类定义它），或者使用`__torch_function__`并与`func`匹配。
 - en: One should be careful within `__torch_function__` for subclasses to always call
     `super().__torch_function__(func, ...)` instead of `func` directly, as was the
     case before version 1.7.0\. Failing to do this may cause `func` to recurse back
     into `__torch_function__` and therefore cause infinite recursion.
+  id: totrans-116
   prefs: []
   type: TYPE_NORMAL
+  zh: 在子类的`__torch_function__`中，应该始终调用`super().__torch_function__(func, ...)`而不是直接调用`func`，这是在1.7.0版本之前的情况。未能这样做可能导致`func`递归回到`__torch_function__`，从而导致无限递归。
 - en: Extending [`torch`](../torch.html#module-torch "torch") with a `Tensor` wrapper
     type
+  id: totrans-117
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 使用`Tensor`包装类型扩展[`torch`](../torch.html#module-torch "torch")
 - en: 'Another useful case is a type that wraps a `Tensor`, either as an attribute
     or via subclassing. Below we implement a special case of this sort of type, a
     `MetadataTensor` that attaches a dictionary of metadata to a `Tensor` that is
@@ -647,69 +959,97 @@
     "torch") API, we do not need to individually implement each override so we can
     make the `__torch_function__` implementation more permissive about what operations
     are allowed:'
+  id: totrans-118
   prefs: []
   type: TYPE_NORMAL
+  zh: 另一个有用的情况是一个类型包装了一个`Tensor`，可以作为属性或通过子类化。下面我们实现了这种类型的一个特殊情况，一个`MetadataTensor`，它将元数据字典附加到通过[`torch`](../torch.html#module-torch
+    "torch")操作传播的`Tensor`上。由于这是对完整[`torch`](../torch.html#module-torch "torch") API的一种通用包装，我们不需要单独实现每个覆盖，因此可以使`__torch_function__`实现更宽松，允许进行更多操作：
 - en: '[PRE24]'
+  id: totrans-119
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE24]'
 - en: 'This simple implementation won’t necessarily work with every function in the
     [`torch`](../torch.html#module-torch "torch") API but it is good enough to capture
     most common operations:'
+  id: totrans-120
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个简单的实现不一定适用于[`torch`](../torch.html#module-torch "torch") API中的每个函数，但足以捕捉大多数常见操作：
 - en: '[PRE25]'
+  id: totrans-121
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE25]'
 - en: Operations on multiple types that define `__torch_function__`[](#operations-on-multiple-types-that-define-torch-function
     "Permalink to this heading")
+  id: totrans-122
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 在定义了`__torch_function__`的多个类型上进行操作
 - en: 'It is possible to use the torch API with multiple distinct types that each
     have a `__torch_function__` implementation, but special care must be taken. In
     such a case the rules are:'
+  id: totrans-123
   prefs: []
   type: TYPE_NORMAL
+  zh: 可以使用具有各自`__torch_function__`实现的多个不同类型的torch API，但必须特别小心。在这种情况下，规则是：
 - en: 'The dispatch operation gathers all distinct implementations of `__torch_function__`
     for each operand and calls them in order: subclasses before superclasses, and
     otherwise left to right in the operator expression.'
+  id: totrans-124
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 调度操作会收集每个操作数的所有不同的`__torch_function__`实现，并按顺序调用它们：子类优先于超类，否则按照操作符表达式中的从左到右顺序。
 - en: If any value other than `NotImplemented` is returned, that value is returned
     as the result. Implementations can register that they do not implement an operation
     by returning `NotImplemented`.
+  id: totrans-125
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 如果返回的值不是`NotImplemented`，则将该值作为结果返回。实现可以通过返回`NotImplemented`来注册他们不实现的操作。
 - en: If all of the `__torch_function__` implementations return `NotImplemented`,
     PyTorch raises a `TypeError`.
+  id: totrans-126
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 如果所有的`__torch_function__`实现都返回`NotImplemented`，PyTorch会引发`TypeError`。
 - en: Testing Coverage of Overrides for the PyTorch API[](#testing-coverage-of-overrides-for-the-pytorch-api
     "Permalink to this heading")
+  id: totrans-127
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 测试PyTorch API的覆盖范围
 - en: One troublesome aspect of implementing `__torch_function__` is that if some
     operations do and others do not have overrides, users will at best see an inconsistent
     experience, or at worst will see errors raised at runtime when they use a function
     that does not have an override. To ease this process, PyTorch provides a developer-facing
     API for ensuring full support for `__torch_function__` overrides. This API is
     private and may be subject to changes without warning in the future.
+  id: totrans-128
   prefs: []
   type: TYPE_NORMAL
+  zh: 实现`__torch_function__`的一个麻烦之处在于，如果某些操作有覆盖而其他操作没有覆盖，用户最多会看到不一致的体验，或者在运行时使用没有覆盖的函数时会看到错误。为了简化这个过程，PyTorch提供了一个面向开发者的API，用于确保对`__torch_function__`覆盖的全面支持。这个API是私有的，可能在未来会发生变化而没有警告。
 - en: 'First, to get a listing of all overridable functions, use `torch.overrides._get_overridable_functions`.
     This returns a dictionary whose keys are namespaces in the `PyTorch` Python API
     and whose values are a list of functions in that namespace that can be overridden.
     For example, let’s print the names of the first 5 functions in `torch.nn.functional`
     that can be overridden:'
+  id: totrans-129
   prefs: []
   type: TYPE_NORMAL
+  zh: 首先，要获取所有可重写函数的列表，请使用`torch.overrides._get_overridable_functions`。这将返回一个字典，其键是`PyTorch`
+    Python API中的命名空间，其值是该命名空间中可以被覆盖的函数列表。例如，让我们打印`torch.nn.functional`中可以被覆盖的前5个函数的名称：
 - en: '[PRE26]'
+  id: totrans-130
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE26]'
 - en: 'This listing of functions makes it possible to iterate over all overridable
     functions, however in practice this is not enough to write tests for all of these
     functions without laboriously and manually copying the signature of each function
@@ -718,24 +1058,34 @@
     to dummy lambda functions that have the same signature as the original function
     but unconditionally return -1\. These functions are most useful to use with `inspect`
     to analyze the function signature of the original `PyTorch` function:'
+  id: totrans-131
   prefs: []
   type: TYPE_NORMAL
+  zh: 这些函数的列表使得可以迭代所有可重写的函数，然而在实践中，这并不足以为所有这些函数编写测试，而不是费力地手动复制每个测试的每个函数的签名。为了简化这个过程，`torch.overrides._get_testing_overrides`函数返回一个字典，将`PyTorch`
+    API中可重写的函数映射到具有与原始函数相同签名的虚拟lambda函数，但无条件返回-1。这些函数最有用的用法是与`inspect`一起使用，以分析原始`PyTorch`函数的函数签名：
 - en: '[PRE27]'
+  id: totrans-132
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE27]'
 - en: 'Finally, `torch.overrides.get_ignored_functions` returns a tuple of functions
     that explicitly cannot be overrided by `__torch_function__`. This list can be
     useful to confirm that a function that isn’t present in the dictionary returned
     by `get_overridable_functions` cannot be overridden.  ## Extending [`torch`](../torch.html#module-torch
     "torch") native API'
+  id: totrans-133
   prefs: []
   type: TYPE_NORMAL
+  zh: 最后，`torch.overrides.get_ignored_functions`返回一个函数元组，这些函数明确不能被`__torch_function__`覆盖。这个列表可以用来确认通过`get_overridable_functions`返回的字典中不存在的函数不能被覆盖。##
+    扩展[`torch`](../torch.html#module-torch "torch")本机API
 - en: While `__torch_function__` allows one to effectively extend PyTorch’s pure Python
     components’ behavior, it does not allow one to extend the parts of PyTorch implemented
     in C++. To that end, a `Tensor` subclass can also define `__torch_dispatch__`
     which will be able to override the behavior at the C++ level.
+  id: totrans-134
   prefs: []
   type: TYPE_NORMAL
+  zh: 虽然`__torch_function__`允许有效地扩展PyTorch的纯Python组件的行为，但它不允许扩展用C++实现的PyTorch的部分。为此，`Tensor`子类还可以定义`__torch_dispatch__`，它将能够在C++级别覆盖行为。
 - en: To effectively use this feature, it is important to know how the native part
     of PyTorch is implemented. The most important component there is what we call
     the “dispatcher” (the best description can be found in this [blog post](http://blog.ezyang.com/2020/09/lets-talk-about-the-pytorch-dispatcher/)
@@ -752,34 +1102,48 @@
     kernel for CUDA which will launch the right CUDA kernel and return the final result.
     On the way out, autograd will attach the graph to the output and, finally, autocast
     will have a chance to do any update it needs on exit.
+  id: totrans-135
   prefs: []
   type: TYPE_NORMAL
+  zh: 要有效地使用这个功能，重要的是要了解PyTorch的本机部分是如何实现的。那里最重要的组件是我们称之为“调度程序”（最好的描述可以在这篇[博文](http://blog.ezyang.com/2020/09/lets-talk-about-the-pytorch-dispatcher/)中找到，尽管它略显过时）。正如其名称所示，它负责为特定函数调用调用正确的后端函数。例如，当调用`torch.add(a,
+    b)`时，调度程序将检查两个参数，找出应该为这个特定调用使用哪个“特征”（自动微分、自动转换、功能化等）和哪个“后端”（CPU、CUDA、MPS等），最后调用所有正确的内核。内核经常做的一件事是“重新调度”。例如，当在GPU上运行神经网络时，第一个调用将是处理任何潜在自动转换逻辑并重新调度的自动转换内核。接下来的特性将是自动微分，它将正确地创建自动微分图，然后重新调度。最后，我们到达CUDA的后端内核，它将启动正确的CUDA内核并返回最终结果。在退出时，自动微分将把图附加到输出上，最后，自动转换将有机会在退出时进行任何必要的更新。
 - en: 'One configuration of the dispatcher is the order in which all these feature
     and backend keys are called. The latest list and their order can be found in `DispatchKey.h`
     inside the `DispatchKey` enum. For the purpose of extending torch, the important
     subset of the ordering for this discussion is:'
+  id: totrans-136
   prefs: []
   type: TYPE_NORMAL
+  zh: 调度程序的一个配置是调用所有这些特征和后端键的顺序。最新的列表及其顺序可以在`DispatchKey.h`文件中的`DispatchKey`枚举中找到。为了扩展torch，本讨论中排序的重要子集是：
 - en: vmap -> Autocast -> Autograd -> ZeroTensor -> Neg/Conj -> Functionalize -> Python
     -> Backends
+  id: totrans-137
   prefs: []
   type: TYPE_NORMAL
+  zh: vmap -> Autocast -> Autograd -> ZeroTensor -> Neg/Conj -> Functionalize -> Python
+    -> Backends
 - en: The most important key for the purpose of this discussion is `Python` as every
     Tensor subclass with the `__torch_dispatch__` method defined will call into this
     feature. It is from there that the user-defined method is called and where the
     behavior can be overwritten arbitrarily. From there, calling the provided `func`
     again will perform a “redispatch”.
+  id: totrans-138
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于本讨论的目的，最重要的键是`Python`，因为每个定义了`__torch_dispatch__`方法的`Tensor`子类将调用这个特性。用户定义的方法将从这里调用，行为可以任意重写。从那里，再次调用提供的`func`将执行“重新调度”。
 - en: 'Some important implications of this implementation are:'
+  id: totrans-139
   prefs: []
   type: TYPE_NORMAL
+  zh: 这种实现的一些重要影响是：
 - en: This code runs “below all features”. It is thus only responsible, like a regular
     backend, for generating the output value of each Tensor (and can, and should,
     ignore all advanced features like autograd, autocast, etc).
+  id: totrans-140
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 这段代码“在所有功能之下”运行。因此，它只负责生成每个张量的输出值（可以，也应该，忽略所有高级功能，如自动求导、自动转换等），就像常规后端一样。
 - en: If any high level feature implements a given function without redispatching,
     it will never reach the `Python` key and so the `__torch_dispatch__` callback
     will never be triggered. This happens in particular for CompositeImplicitAutograd
@@ -787,24 +1151,31 @@
     is because a CompositeImplicitAutograd function specifies its autograd formula
     by implicitly calling other native ops, so at the Autograd level, the function
     is decomposed into its native ops and those are evaluated instead.
+  id: totrans-141
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 如果任何高级功能实现了给定的函数而没有重新调度，它将永远不会到达`Python`键，因此`__torch_dispatch__`回调将永远不会被触发。这特别发生在CompositeImplicitAutograd函数中，这些函数在自动求导级别上进行评估而不进行重新调度。这是因为CompositeImplicitAutograd函数通过隐式调用其他本地操作来指定其自动求导公式，因此在自动求导级别上，函数被分解为其本地操作，而这些操作被评估。
 - en: When calling back to Python and when wrapping the results, the same conversions
     are used as the regular PyTorch Python/C++ binding. In particular, some objects
     cannot be represented in Python and need special handling (undefined Tensors for
     example become None).
+  id: totrans-142
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在回调到Python并包装结果时，与常规PyTorch Python/C++绑定相同的转换被使用。特别是，一些对象无法在Python中表示，需要特殊处理（例如未定义的张量变为None）。
 - en: Our native functions are lazily populated as `torch.ops.{namespace}.{func_name}.{overload_name}`
     as callable Python objects to enable easily interacting with them from Python.
     The `func` object given to `__torch_dispatch__` is always an entry from this namespace.
     This namespace can be used to directly call native ops and bypass the usual Python
     API and binding code.
+  id: totrans-143
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 我们的本地函数是惰性填充的，作为可调用的Python对象，以便从Python轻松与它们交互，命名空间为`torch.ops.{namespace}.{func_name}.{overload_name}`。给定给`__torch_dispatch__`的`func`对象始终是来自此命名空间的条目。这个命名空间可以用于直接调用本地操作，绕过通常的Python
+    API和绑定代码。
 - en: 'In a similar way where `__torch_function__` is able to interpose on all of
     torch’s Python API and Tensor methods, `__torch_dispatch__` is able intercepting
     all calls into the aten native API. Note that all methods on Tensors are converted
@@ -815,68 +1186,100 @@
     implementation alongside specified features are then automatically registered
     via codegen. Some more exotic functions or features are also registered in other
     places in the C++ codebase or in user-defined C++ extensions.'
+  id: totrans-144
   prefs: []
   type: TYPE_NORMAL
+  zh: 类似于`__torch_function__`能够介入torch的所有Python API和Tensor方法，`__torch_dispatch__`能够拦截所有对aten本地API的调用。请注意，在进入调度程序之前，所有张量上的方法都会转换为函数调用，因此在这里会显示为函数调用：`torch.add(a,
+    2)`和`a + 2`将导致完全相同的aten调用。这些函数的大部分在`native_functions.yaml`中定义，该文件指定了这些函数的属性以及它们的后端实现。它们的实现以及指定的特性随后会通过codegen自动注册。一些更奇特的函数或特性也会在C++代码库的其他位置或用户定义的C++扩展中注册。
 - en: It is also possible to add new native functions using [`torch.library`](../library.html#module-torch.library
     "torch.library"). This Python feature allows defining and/or adding new implementations
     to native functions. This can be used to add missing kernels, replace existing
     ones or define brand new native functions.
+  id: totrans-145
   prefs: []
   type: TYPE_NORMAL
+  zh: 还可以使用[`torch.library`](../library.html#module-torch.library "torch.library")添加新的本地函数。这个Python特性允许定义和/或添加新的实现到本地函数。这可以用于添加缺失的内核、替换现有的内核或定义全新的本地函数。
 - en: You can find many examples of `__torch_dispatch__`-based subclasses in the [subclass
     zoo](https://github.com/albanD/subclass_zoo) repo.
+  id: totrans-146
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可以在[subclass zoo](https://github.com/albanD/subclass_zoo)存储库中找到许多基于`__torch_dispatch__`的子类的示例。
 - en: Extending all [`torch`](../torch.html#module-torch "torch") API with Modes[](#extending-all-torch-api-with-modes
     "Permalink to this heading")
+  id: totrans-147
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 通过Modes扩展所有[`torch`](../torch.html#module-torch "torch") API[](#extending-all-torch-api-with-modes
+    "Permalink to this heading")。
 - en: Unfortunately, there are functions that do not take Tensor inputs. This means
     that the subclass approach described above cannot be used to override the behavior
     of all of PyTorch’s functions. Also, if the use case requires to intercept every
     function call, changing every Tensor to be a subclass can be overly intrusive.
+  id: totrans-148
   prefs: []
   type: TYPE_NORMAL
+  zh: 不幸的是，有些函数不接受张量输入。这意味着上面描述的子类方法无法用于覆盖PyTorch的所有函数的行为。此外，如果用例要求拦截每个函数调用，将每个张量更改为子类可能会过于侵入性。
 - en: To address this use case, we introduced the concept of “Mode”. These exist for
     `__torch_function__` and `__torch_dispatch__` overrides, are created by subclassing
     respectively `torch.overrides.TorchFunctionMode` and `torch.utils._python_dispatch.TorchDispatchMode`,
     and are used as a context manager.
+  id: totrans-149
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了解决这种用例，我们引入了“模式”概念。这些模式用于`__torch_function__`和`__torch_dispatch__`覆盖，分别通过继承`torch.overrides.TorchFunctionMode`和`torch.utils._python_dispatch.TorchDispatchMode`创建，并用作上下文管理器。
 - en: To simplify the description of how it interacts with subclasses and other modes,
     whenever the context manager for a mode is entered, every function behaves as
     if there was an extra Tensor argument at the beginning of the argument list with
     the mode as a subclass. This means in particular that all modes handlers will
     be called before any subclass handler and that modes corresponding to the inner
     context manager will always run first.
+  id: totrans-150
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了简化它与子类和其他模式的交互的描述，每当进入模式的上下文管理器时，每个函数的行为都会像在参数列表的开头有一个额外的张量参数，其中包含子类作为模式。这意味着特别是所有模式处理程序将在任何子类处理程序之前调用，并且与内部上下文管理器对应的模式将始终首先运行。
 - en: It is also important to note that within a given mode handler, this specific
     mode is disabled and can be re-enabled manually by doing `with self:`.
+  id: totrans-151
   prefs: []
   type: TYPE_NORMAL
+  zh: 在给定的模式处理程序中，需要注意的是，该特定模式被禁用，可以通过`with self:`手动重新启用。
 - en: 'Here is an example that shows logging modes of each type:'
+  id: totrans-152
   prefs: []
   type: TYPE_NORMAL
+  zh: 这里是一个示例，显示每种类型的日志记录模式：
 - en: '[PRE28]'
+  id: totrans-153
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE28]'
 - en: 'Which prints the following, with extra comments:'
+  id: totrans-154
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下打印内容，并附有额外的注释：
 - en: '[PRE29]'
+  id: totrans-155
   prefs: []
   type: TYPE_PRE
-- en: Writing custom C++ extensions[](#writing-custom-c-extensions "Permalink to
-    this heading")
+  zh: '[PRE29]'
+- en: Writing custom C++ extensions[](#writing-custom-c-extensions "Permalink to this
+    heading")
+  id: totrans-156
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 编写自定义C++扩展[](#writing-custom-c-extensions "跳转到此标题的永久链接")
 - en: See this [PyTorch tutorial](https://pytorch.org/tutorials/advanced/cpp_extension.html)
     for a detailed explanation and examples.
+  id: totrans-157
   prefs: []
   type: TYPE_NORMAL
+  zh: 查看这个[PyTorch教程](https://pytorch.org/tutorials/advanced/cpp_extension.html)以获取详细解释和示例。
 - en: Documentations are available at [torch.utils.cpp_extension](../cpp_extension.html).
+  id: totrans-158
   prefs: []
   type: TYPE_NORMAL
+  zh: 文档可在[torch.utils.cpp_extension](../cpp_extension.html)找到。
