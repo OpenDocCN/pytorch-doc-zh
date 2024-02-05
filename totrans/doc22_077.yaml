@@ -1,41 +1,61 @@
 - en: torch.masked
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: torch.masked
 - en: 原文：[https://pytorch.org/docs/stable/masked.html](https://pytorch.org/docs/stable/masked.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: '[https://pytorch.org/docs/stable/masked.html](https://pytorch.org/docs/stable/masked.html)'
 - en: '## Introduction'
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: '## 介绍'
 - en: Motivation
+  id: totrans-3
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 动机
 - en: Warning
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: The PyTorch API of masked tensors is in the prototype stage and may or may not
     change in the future.
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: Masked张量的PyTorch API处于原型阶段，未来可能会发生变化。
 - en: 'MaskedTensor serves as an extension to [`torch.Tensor`](tensors.html#torch.Tensor
     "torch.Tensor") that provides the user with the ability to:'
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: MaskedTensor作为[`torch.Tensor`](tensors.html#torch.Tensor "torch.Tensor")的扩展，为用户提供以下功能：
 - en: use any masked semantics (e.g. variable length tensors, nan* operators, etc.)
+  id: totrans-7
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 使用任何掩码语义（例如，可变长度张量，nan*运算符等）。
 - en: differentiate between 0 and NaN gradients
+  id: totrans-8
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 区分0和NaN梯度
 - en: various sparse applications (see tutorial below)
+  id: totrans-9
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 各种稀疏应用（请参见下面的教程）
 - en: “Specified” and “unspecified” have a long history in PyTorch without formal
     semantics and certainly without consistency; indeed, MaskedTensor was born out
     of a build up of issues that the vanilla [`torch.Tensor`](tensors.html#torch.Tensor
@@ -45,362 +65,598 @@
     turn, this should further unlock [sparsity’s](https://pytorch.org/docs/stable/sparse.html)
     potential, enable safer and more consistent operators, and provide a smoother
     and more intuitive experience for users and developers alike.
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: “指定”和“未指定”在PyTorch中有着悠久的历史，没有正式的语义，当然也没有一致性；事实上，MaskedTensor是在积累了一系列问题之后诞生的，这些问题普通的[`torch.Tensor`](tensors.html#torch.Tensor
+    "torch.Tensor")类无法正确解决。因此，MaskedTensor的主要目标是成为PyTorch中“指定”和“未指定”值的真相来源，使其成为一等公民而不是一个事后想法。这应该进一步释放[稀疏性](https://pytorch.org/docs/stable/sparse.html)的潜力，实现更安全和更一致的运算符，并为用户和开发人员提供更流畅、更直观的体验。
 - en: What is a MaskedTensor?
+  id: totrans-11
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 什么是MaskedTensor？
 - en: A MaskedTensor is a tensor subclass that consists of 1) an input (data), and
     2) a mask. The mask tells us which entries from the input should be included or
     ignored.
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: MaskedTensor是一个张量子类，由1）输入（数据）和2）掩码组成。掩码告诉我们应该包含或忽略输入中的哪些条目。
 - en: 'By way of example, suppose that we wanted to mask out all values that are equal
     to 0 (represented by the gray) and take the max:'
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: 举例来说，假设我们想要掩盖所有等于0的值（用灰色表示）并取最大值：
 - en: '[![_images/tensor_comparison.jpg](../Images/f5788f266e7378201824743b6b1b7283.png)](_images/tensor_comparison.jpg)'
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![_images/tensor_comparison.jpg](../Images/f5788f266e7378201824743b6b1b7283.png)](_images/tensor_comparison.jpg)'
 - en: On top is the vanilla tensor example while the bottom is MaskedTensor where
     all the 0’s are masked out. This clearly yields a different result depending on
     whether we have the mask, but this flexible structure allows the user to systematically
     ignore any elements they’d like during computation.
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 顶部是普通张量示例，底部是MaskedTensor，其中所有的0都被掩盖了。这显然会产生不同的结果，取决于我们是否有掩码，但这种灵活的结构允许用户在计算过程中系统地忽略任何他们想要的元素。
 - en: 'There are already a number of existing tutorials that we’ve written to help
     users onboard, such as:'
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们已经撰写了许多现有的教程，以帮助用户入门，例如：
 - en: '[Overview - the place to start for new users, discusses how to use MaskedTensors
     and why they’re useful](https://pytorch.org/tutorials/prototype/maskedtensor_overview)'
+  id: totrans-17
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[概述 - 新用户的起点，讨论如何使用MaskedTensors以及它们的用处](https://pytorch.org/tutorials/prototype/maskedtensor_overview)'
 - en: '[Sparsity - MaskedTensor supports sparse COO and CSR data and mask Tensors](https://pytorch.org/tutorials/prototype/maskedtensor_sparsity)'
+  id: totrans-18
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[稀疏性 - MaskedTensor支持稀疏的COO和CSR数据以及掩码张量](https://pytorch.org/tutorials/prototype/maskedtensor_sparsity)'
 - en: '[Adagrad sparse semantics - a practical example of how MaskedTensor can simplify
     sparse semantics and implementations](https://pytorch.org/tutorials/prototype/maskedtensor_adagrad)'
+  id: totrans-19
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[Adagrad稀疏语义 - 一个实际示例，展示了MaskedTensor如何简化稀疏语义和实现](https://pytorch.org/tutorials/prototype/maskedtensor_adagrad)'
 - en: '[Advanced semantics - discussion on why certain decisions were made (e.g. requiring
     masks to match for binary/reduction operations), differences with NumPy’s MaskedArray,
     and reduction semantics](https://pytorch.org/tutorials/prototype/maskedtensor_advanced_semantics)'
+  id: totrans-20
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[高级语义 - 讨论为什么做出某些决定（例如，要求掩码匹配二进制/缩减操作，与NumPy的MaskedArray的区别以及缩减语义）](https://pytorch.org/tutorials/prototype/maskedtensor_advanced_semantics)'
 - en: Supported Operators
+  id: totrans-21
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 支持的运算符
 - en: Unary Operators
+  id: totrans-22
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 一元运算符
 - en: 'Unary operators are operators that only contain only a single input. Applying
     them to MaskedTensors is relatively straightforward: if the data is masked out
     at a given index, we apply the operator, otherwise we’ll continue to mask out
     the data.'
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 一元运算符是只包含单个输入的运算符。将它们应用于MaskedTensors相对简单：如果在给定索引处数据被掩盖，我们应用运算符，否则我们将继续掩盖数据。
 - en: 'The available unary operators are:'
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 可用的一元运算符有：
 - en: '| [`abs`](generated/torch.abs.html#torch.abs "torch.abs") | Computes the absolute
     value of each element in `input`. |'
+  id: totrans-25
   prefs: []
   type: TYPE_TB
+  zh: '| [`abs`](generated/torch.abs.html#torch.abs "torch.abs") | 计算`input`中每个元素的绝对值。
+    |'
 - en: '| [`absolute`](generated/torch.absolute.html#torch.absolute "torch.absolute")
     | Alias for [`torch.abs()`](generated/torch.abs.html#torch.abs "torch.abs") |'
+  id: totrans-26
   prefs: []
   type: TYPE_TB
+  zh: '| [`absolute`](generated/torch.absolute.html#torch.absolute "torch.absolute")
+    | [`torch.abs()`](generated/torch.abs.html#torch.abs "torch.abs")的别名 |'
 - en: '| [`acos`](generated/torch.acos.html#torch.acos "torch.acos") | Computes the
     inverse cosine of each element in `input`. |'
+  id: totrans-27
   prefs: []
   type: TYPE_TB
+  zh: '| [`acos`](generated/torch.acos.html#torch.acos "torch.acos") | 计算`input`中每个元素的反余弦。
+    |'
 - en: '| [`arccos`](generated/torch.arccos.html#torch.arccos "torch.arccos") | Alias
     for [`torch.acos()`](generated/torch.acos.html#torch.acos "torch.acos"). |'
+  id: totrans-28
   prefs: []
   type: TYPE_TB
+  zh: '| [`arccos`](generated/torch.arccos.html#torch.arccos "torch.arccos") | [`torch.acos()`](generated/torch.acos.html#torch.acos
+    "torch.acos")的别名。 |'
 - en: '| [`acosh`](generated/torch.acosh.html#torch.acosh "torch.acosh") | Returns
     a new tensor with the inverse hyperbolic cosine of the elements of `input`. |'
+  id: totrans-29
   prefs: []
   type: TYPE_TB
+  zh: '| [`acosh`](generated/torch.acosh.html#torch.acosh "torch.acosh") | 返回一个新的张量，其中包含`input`元素的反双曲余弦。
+    |'
 - en: '| [`arccosh`](generated/torch.arccosh.html#torch.arccosh "torch.arccosh") |
     Alias for [`torch.acosh()`](generated/torch.acosh.html#torch.acosh "torch.acosh").
     |'
+  id: totrans-30
   prefs: []
   type: TYPE_TB
+  zh: '| [`arccosh`](generated/torch.arccosh.html#torch.arccosh "torch.arccosh") |
+    [`torch.acosh()`](generated/torch.acosh.html#torch.acosh "torch.acosh")的别名。 |'
 - en: '| [`angle`](generated/torch.angle.html#torch.angle "torch.angle") | Computes
     the element-wise angle (in radians) of the given `input` tensor. |'
+  id: totrans-31
   prefs: []
   type: TYPE_TB
+  zh: '| [`angle`](generated/torch.angle.html#torch.angle "torch.angle") | 计算给定`input`张量的逐元素角度（弧度）。
+    |'
 - en: '| [`asin`](generated/torch.asin.html#torch.asin "torch.asin") | Returns a new
     tensor with the arcsine of the elements of `input`. |'
+  id: totrans-32
   prefs: []
   type: TYPE_TB
+  zh: '| [`asin`](generated/torch.asin.html#torch.asin "torch.asin") | 返回一个新张量，其中元素是`input`的反正弦。
+    |'
 - en: '| [`arcsin`](generated/torch.arcsin.html#torch.arcsin "torch.arcsin") | Alias
     for [`torch.asin()`](generated/torch.asin.html#torch.asin "torch.asin"). |'
+  id: totrans-33
   prefs: []
   type: TYPE_TB
+  zh: '| [`arcsin`](generated/torch.arcsin.html#torch.arcsin "torch.arcsin") | [`torch.asin()`](generated/torch.asin.html#torch.asin
+    "torch.asin")的别名。 |'
 - en: '| [`asinh`](generated/torch.asinh.html#torch.asinh "torch.asinh") | Returns
     a new tensor with the inverse hyperbolic sine of the elements of `input`. |'
+  id: totrans-34
   prefs: []
   type: TYPE_TB
+  zh: '| [`asinh`](generated/torch.asinh.html#torch.asinh "torch.asinh") | 返回一个新张量，其中元素是`input`的反双曲正弦。
+    |'
 - en: '| [`arcsinh`](generated/torch.arcsinh.html#torch.arcsinh "torch.arcsinh") |
     Alias for [`torch.asinh()`](generated/torch.asinh.html#torch.asinh "torch.asinh").
     |'
+  id: totrans-35
   prefs: []
   type: TYPE_TB
+  zh: '| [`arcsinh`](generated/torch.arcsinh.html#torch.arcsinh "torch.arcsinh") |
+    [`torch.asinh()`](generated/torch.asinh.html#torch.asinh "torch.asinh")的别名。 |'
 - en: '| [`atan`](generated/torch.atan.html#torch.atan "torch.atan") | Returns a new
     tensor with the arctangent of the elements of `input`. |'
+  id: totrans-36
   prefs: []
   type: TYPE_TB
+  zh: '| [`atan`](generated/torch.atan.html#torch.atan "torch.atan") | 返回一个新张量，其中元素是`input`的反正切。
+    |'
 - en: '| [`arctan`](generated/torch.arctan.html#torch.arctan "torch.arctan") | Alias
     for [`torch.atan()`](generated/torch.atan.html#torch.atan "torch.atan"). |'
+  id: totrans-37
   prefs: []
   type: TYPE_TB
+  zh: '| [`arctan`](generated/torch.arctan.html#torch.arctan "torch.arctan") | [`torch.atan()`](generated/torch.atan.html#torch.atan
+    "torch.atan")的别名。 |'
 - en: '| [`atanh`](generated/torch.atanh.html#torch.atanh "torch.atanh") | Returns
     a new tensor with the inverse hyperbolic tangent of the elements of `input`. |'
+  id: totrans-38
   prefs: []
   type: TYPE_TB
+  zh: '| [`atanh`](generated/torch.atanh.html#torch.atanh "torch.atanh") | 返回一个新张量，其中元素是`input`的反双曲正切。
+    |'
 - en: '| [`arctanh`](generated/torch.arctanh.html#torch.arctanh "torch.arctanh") |
     Alias for [`torch.atanh()`](generated/torch.atanh.html#torch.atanh "torch.atanh").
     |'
+  id: totrans-39
   prefs: []
   type: TYPE_TB
+  zh: '| [`arctanh`](generated/torch.arctanh.html#torch.arctanh "torch.arctanh") |
+    [`torch.atanh()`](generated/torch.atanh.html#torch.atanh "torch.atanh")的别名。 |'
 - en: '| [`bitwise_not`](generated/torch.bitwise_not.html#torch.bitwise_not "torch.bitwise_not")
     | Computes the bitwise NOT of the given input tensor. |'
+  id: totrans-40
   prefs: []
   type: TYPE_TB
+  zh: '| [`bitwise_not`](generated/torch.bitwise_not.html#torch.bitwise_not "torch.bitwise_not")
+    | 计算给定输入张量的按位取反。 |'
 - en: '| [`ceil`](generated/torch.ceil.html#torch.ceil "torch.ceil") | Returns a new
     tensor with the ceil of the elements of `input`, the smallest integer greater
     than or equal to each element. |'
+  id: totrans-41
   prefs: []
   type: TYPE_TB
+  zh: '| [`ceil`](generated/torch.ceil.html#torch.ceil "torch.ceil") | 返回一个新张量，其中元素是`input`的上取整，即大于或等于每个元素的最小整数。
+    |'
 - en: '| [`clamp`](generated/torch.clamp.html#torch.clamp "torch.clamp") | Clamps
     all elements in `input` into the range [ [`min`](generated/torch.min.html#torch.min
     "torch.min"), [`max`](generated/torch.max.html#torch.max "torch.max") ]. |'
+  id: totrans-42
   prefs: []
   type: TYPE_TB
+  zh: '| [`clamp`](generated/torch.clamp.html#torch.clamp "torch.clamp") | 将`input`中的所有元素夹紧到[
+    [`min`](generated/torch.min.html#torch.min "torch.min"), [`max`](generated/torch.max.html#torch.max
+    "torch.max") ]范围内。 |'
 - en: '| [`clip`](generated/torch.clip.html#torch.clip "torch.clip") | Alias for [`torch.clamp()`](generated/torch.clamp.html#torch.clamp
     "torch.clamp"). |'
+  id: totrans-43
   prefs: []
   type: TYPE_TB
+  zh: '| [`clip`](generated/torch.clip.html#torch.clip "torch.clip") | [`torch.clamp()`](generated/torch.clamp.html#torch.clamp
+    "torch.clamp")的别名。 |'
 - en: '| [`conj_physical`](generated/torch.conj_physical.html#torch.conj_physical
     "torch.conj_physical") | Computes the element-wise conjugate of the given `input`
     tensor. |'
+  id: totrans-44
   prefs: []
   type: TYPE_TB
+  zh: '| [`conj_physical`](generated/torch.conj_physical.html#torch.conj_physical
+    "torch.conj_physical") | 计算给定`input`张量的逐元素共轭。 |'
 - en: '| [`cos`](generated/torch.cos.html#torch.cos "torch.cos") | Returns a new tensor
     with the cosine of the elements of `input`. |'
+  id: totrans-45
   prefs: []
   type: TYPE_TB
+  zh: '| [`cos`](generated/torch.cos.html#torch.cos "torch.cos") | 返回一个新张量，其中元素是`input`的余弦。
+    |'
 - en: '| [`cosh`](generated/torch.cosh.html#torch.cosh "torch.cosh") | Returns a new
     tensor with the hyperbolic cosine of the elements of `input`. |'
+  id: totrans-46
   prefs: []
   type: TYPE_TB
+  zh: '| [`cosh`](generated/torch.cosh.html#torch.cosh "torch.cosh") | 返回一个新张量，其中元素是`input`的双曲余弦。
+    |'
 - en: '| [`deg2rad`](generated/torch.deg2rad.html#torch.deg2rad "torch.deg2rad") |
     Returns a new tensor with each of the elements of `input` converted from angles
     in degrees to radians. |'
+  id: totrans-47
   prefs: []
   type: TYPE_TB
+  zh: '| [`deg2rad`](generated/torch.deg2rad.html#torch.deg2rad "torch.deg2rad") |
+    返回一个新张量，其中`input`的每个元素从角度转换为弧度。 |'
 - en: '| [`digamma`](generated/torch.digamma.html#torch.digamma "torch.digamma") |
     Alias for [`torch.special.digamma()`](special.html#torch.special.digamma "torch.special.digamma").
     |'
+  id: totrans-48
   prefs: []
   type: TYPE_TB
+  zh: '| [`digamma`](generated/torch.digamma.html#torch.digamma "torch.digamma") |
+    [`torch.special.digamma()`](special.html#torch.special.digamma "torch.special.digamma")的别名。
+    |'
 - en: '| [`erf`](generated/torch.erf.html#torch.erf "torch.erf") | Alias for [`torch.special.erf()`](special.html#torch.special.erf
     "torch.special.erf"). |'
+  id: totrans-49
   prefs: []
   type: TYPE_TB
+  zh: '| [`erf`](generated/torch.erf.html#torch.erf "torch.erf") | [`torch.special.erf()`](special.html#torch.special.erf
+    "torch.special.erf")的别名。 |'
 - en: '| [`erfc`](generated/torch.erfc.html#torch.erfc "torch.erfc") | Alias for [`torch.special.erfc()`](special.html#torch.special.erfc
     "torch.special.erfc"). |'
+  id: totrans-50
   prefs: []
   type: TYPE_TB
+  zh: '| [`erfc`](generated/torch.erfc.html#torch.erfc "torch.erfc") | [`torch.special.erfc()`](special.html#torch.special.erfc
+    "torch.special.erfc")的别名。 |'
 - en: '| [`erfinv`](generated/torch.erfinv.html#torch.erfinv "torch.erfinv") | Alias
     for [`torch.special.erfinv()`](special.html#torch.special.erfinv "torch.special.erfinv").
     |'
+  id: totrans-51
   prefs: []
   type: TYPE_TB
+  zh: '| [`erfinv`](generated/torch.erfinv.html#torch.erfinv "torch.erfinv") | [`torch.special.erfinv()`](special.html#torch.special.erfinv
+    "torch.special.erfinv")的别名。 |'
 - en: '| [`exp`](generated/torch.exp.html#torch.exp "torch.exp") | Returns a new tensor
     with the exponential of the elements of the input tensor `input`. |'
+  id: totrans-52
   prefs: []
   type: TYPE_TB
+  zh: '| [`exp`](generated/torch.exp.html#torch.exp "torch.exp") | 返回一个新张量，其中元素是输入张量`input`的指数。
+    |'
 - en: '| [`exp2`](generated/torch.exp2.html#torch.exp2 "torch.exp2") | Alias for [`torch.special.exp2()`](special.html#torch.special.exp2
     "torch.special.exp2"). |'
+  id: totrans-53
   prefs: []
   type: TYPE_TB
+  zh: '| [`exp2`](generated/torch.exp2.html#torch.exp2 "torch.exp2") | [`torch.special.exp2()`](special.html#torch.special.exp2
+    "torch.special.exp2")的别名。 |'
 - en: '| [`expm1`](generated/torch.expm1.html#torch.expm1 "torch.expm1") | Alias for
     [`torch.special.expm1()`](special.html#torch.special.expm1 "torch.special.expm1").
     |'
+  id: totrans-54
   prefs: []
   type: TYPE_TB
+  zh: '| [`expm1`](generated/torch.expm1.html#torch.expm1 "torch.expm1") | [`torch.special.expm1()`](special.html#torch.special.expm1
+    "torch.special.expm1")的别名。 |'
 - en: '| [`fix`](generated/torch.fix.html#torch.fix "torch.fix") | Alias for [`torch.trunc()`](generated/torch.trunc.html#torch.trunc
     "torch.trunc") |'
+  id: totrans-55
   prefs: []
   type: TYPE_TB
+  zh: '| [`fix`](generated/torch.fix.html#torch.fix "torch.fix") | [`torch.trunc()`](generated/torch.trunc.html#torch.trunc
+    "torch.trunc")的别名。 |'
 - en: '| [`floor`](generated/torch.floor.html#torch.floor "torch.floor") | Returns
     a new tensor with the floor of the elements of `input`, the largest integer less
     than or equal to each element. |'
+  id: totrans-56
   prefs: []
   type: TYPE_TB
+  zh: '| [`floor`](generated/torch.floor.html#torch.floor "torch.floor") | 返回一个新的张量，其中每个元素的下限，即小于或等于每个元素的最大整数。
+    |'
 - en: '| [`frac`](generated/torch.frac.html#torch.frac "torch.frac") | Computes the
     fractional portion of each element in `input`. |'
+  id: totrans-57
   prefs: []
   type: TYPE_TB
+  zh: '| [`frac`](generated/torch.frac.html#torch.frac "torch.frac") | 计算`input`中每个元素的小数部分。
+    |'
 - en: '| [`lgamma`](generated/torch.lgamma.html#torch.lgamma "torch.lgamma") | Computes
     the natural logarithm of the absolute value of the gamma function on `input`.
     |'
+  id: totrans-58
   prefs: []
   type: TYPE_TB
+  zh: '| [`lgamma`](generated/torch.lgamma.html#torch.lgamma "torch.lgamma") | 计算`input`上伽玛函数的绝对值的自然对数。
+    |'
 - en: '| [`log`](generated/torch.log.html#torch.log "torch.log") | Returns a new tensor
     with the natural logarithm of the elements of `input`. |'
+  id: totrans-59
   prefs: []
   type: TYPE_TB
+  zh: '| [`log`](generated/torch.log.html#torch.log "torch.log") | 返回一个新的张量，其中每个元素的自然对数。
+    |'
 - en: '| [`log10`](generated/torch.log10.html#torch.log10 "torch.log10") | Returns
     a new tensor with the logarithm to the base 10 of the elements of `input`. |'
+  id: totrans-60
   prefs: []
   type: TYPE_TB
+  zh: '| [`log10`](generated/torch.log10.html#torch.log10 "torch.log10") | 返回一个新的张量，其中每个元素的以10为底的对数。
+    |'
 - en: '| [`log1p`](generated/torch.log1p.html#torch.log1p "torch.log1p") | Returns
     a new tensor with the natural logarithm of (1 + `input`). |'
+  id: totrans-61
   prefs: []
   type: TYPE_TB
+  zh: '| [`log1p`](generated/torch.log1p.html#torch.log1p "torch.log1p") | 返回一个新的张量，其中每个元素的自然对数(1
+    + `input`)。 |'
 - en: '| [`log2`](generated/torch.log2.html#torch.log2 "torch.log2") | Returns a new
     tensor with the logarithm to the base 2 of the elements of `input`. |'
+  id: totrans-62
   prefs: []
   type: TYPE_TB
+  zh: '| [`log2`](generated/torch.log2.html#torch.log2 "torch.log2") | 返回一个新的张量，其中每个元素的以2为底的对数。
+    |'
 - en: '| [`logit`](generated/torch.logit.html#torch.logit "torch.logit") | Alias for
     [`torch.special.logit()`](special.html#torch.special.logit "torch.special.logit").
     |'
+  id: totrans-63
   prefs: []
   type: TYPE_TB
+  zh: '| [`logit`](generated/torch.logit.html#torch.logit "torch.logit") | [`torch.special.logit()`](special.html#torch.special.logit
+    "torch.special.logit")的别名。 |'
 - en: '| [`i0`](generated/torch.i0.html#torch.i0 "torch.i0") | Alias for [`torch.special.i0()`](special.html#torch.special.i0
     "torch.special.i0"). |'
+  id: totrans-64
   prefs: []
   type: TYPE_TB
+  zh: '| [`i0`](generated/torch.i0.html#torch.i0 "torch.i0") | [`torch.special.i0()`](special.html#torch.special.i0
+    "torch.special.i0")的别名。 |'
 - en: '| [`isnan`](generated/torch.isnan.html#torch.isnan "torch.isnan") | Returns
     a new tensor with boolean elements representing if each element of `input` is
     NaN or not. |'
+  id: totrans-65
   prefs: []
   type: TYPE_TB
+  zh: '| [`isnan`](generated/torch.isnan.html#torch.isnan "torch.isnan") | 返回一个新的张量，其中布尔元素表示`input`的每个元素是否为NaN。
+    |'
 - en: '| [`nan_to_num`](generated/torch.nan_to_num.html#torch.nan_to_num "torch.nan_to_num")
     | Replaces `NaN`, positive infinity, and negative infinity values in `input` with
     the values specified by `nan`, `posinf`, and `neginf`, respectively. |'
+  id: totrans-66
   prefs: []
   type: TYPE_TB
+  zh: '| [`nan_to_num`](generated/torch.nan_to_num.html#torch.nan_to_num "torch.nan_to_num")
+    | 用`nan`、`posinf`和`neginf`指定的值替换`input`中的`NaN`、正无穷大和负无穷大值。 |'
 - en: '| [`neg`](generated/torch.neg.html#torch.neg "torch.neg") | Returns a new tensor
     with the negative of the elements of `input`. |'
+  id: totrans-67
   prefs: []
   type: TYPE_TB
+  zh: '| [`neg`](generated/torch.neg.html#torch.neg "torch.neg") | 返回一个新的张量，其中每个元素的负值。
+    |'
 - en: '| [`negative`](generated/torch.negative.html#torch.negative "torch.negative")
     | Alias for [`torch.neg()`](generated/torch.neg.html#torch.neg "torch.neg") |'
+  id: totrans-68
   prefs: []
   type: TYPE_TB
+  zh: '| [`negative`](generated/torch.negative.html#torch.negative "torch.negative")
+    | [`torch.neg()`](generated/torch.neg.html#torch.neg "torch.neg")的别名。 |'
 - en: '| [`positive`](generated/torch.positive.html#torch.positive "torch.positive")
     | Returns `input`. |'
+  id: totrans-69
   prefs: []
   type: TYPE_TB
+  zh: '| [`positive`](generated/torch.positive.html#torch.positive "torch.positive")
+    | 返回`input`。 |'
 - en: '| [`pow`](generated/torch.pow.html#torch.pow "torch.pow") | Takes the power
     of each element in `input` with `exponent` and returns a tensor with the result.
     |'
+  id: totrans-70
   prefs: []
   type: TYPE_TB
+  zh: '| [`pow`](generated/torch.pow.html#torch.pow "torch.pow") | 将`input`中的每个元素与`exponent`的幂相乘，并返回结果张量。
+    |'
 - en: '| [`rad2deg`](generated/torch.rad2deg.html#torch.rad2deg "torch.rad2deg") |
     Returns a new tensor with each of the elements of `input` converted from angles
     in radians to degrees. |'
+  id: totrans-71
   prefs: []
   type: TYPE_TB
+  zh: '| [`rad2deg`](generated/torch.rad2deg.html#torch.rad2deg "torch.rad2deg") |
+    返回一个新的张量，其中`input`的每个元素从弧度转换为角度。 |'
 - en: '| [`reciprocal`](generated/torch.reciprocal.html#torch.reciprocal "torch.reciprocal")
     | Returns a new tensor with the reciprocal of the elements of `input` |'
+  id: totrans-72
   prefs: []
   type: TYPE_TB
+  zh: '| [`reciprocal`](generated/torch.reciprocal.html#torch.reciprocal "torch.reciprocal")
+    | 返回一个新的张量，其中每个元素的倒数。 |'
 - en: '| [`round`](generated/torch.round.html#torch.round "torch.round") | Rounds
     elements of `input` to the nearest integer. |'
+  id: totrans-73
   prefs: []
   type: TYPE_TB
+  zh: '| [`round`](generated/torch.round.html#torch.round "torch.round") | 将`input`的元素四舍五入到最近的整数。
+    |'
 - en: '| [`rsqrt`](generated/torch.rsqrt.html#torch.rsqrt "torch.rsqrt") | Returns
     a new tensor with the reciprocal of the square-root of each of the elements of
     `input`. |'
+  id: totrans-74
   prefs: []
   type: TYPE_TB
+  zh: '| [`rsqrt`](generated/torch.rsqrt.html#torch.rsqrt "torch.rsqrt") | 返回一个新的张量，其中每个元素的倒数的平方根。
+    |'
 - en: '| [`sigmoid`](generated/torch.sigmoid.html#torch.sigmoid "torch.sigmoid") |
     Alias for [`torch.special.expit()`](special.html#torch.special.expit "torch.special.expit").
     |'
+  id: totrans-75
   prefs: []
   type: TYPE_TB
+  zh: '| [`sigmoid`](generated/torch.sigmoid.html#torch.sigmoid "torch.sigmoid") |
+    [`torch.special.expit()`](special.html#torch.special.expit "torch.special.expit")的别名。
+    |'
 - en: '| [`sign`](generated/torch.sign.html#torch.sign "torch.sign") | Returns a new
     tensor with the signs of the elements of `input`. |'
+  id: totrans-76
   prefs: []
   type: TYPE_TB
+  zh: '| [`sign`](generated/torch.sign.html#torch.sign "torch.sign") | 返回一个新的张量，其中每个元素的符号。
+    |'
 - en: '| [`sgn`](generated/torch.sgn.html#torch.sgn "torch.sgn") | This function is
     an extension of torch.sign() to complex tensors. |'
+  id: totrans-77
   prefs: []
   type: TYPE_TB
+  zh: '| [`sgn`](generated/torch.sgn.html#torch.sgn "torch.sgn") | 这个函数是对复数张量的torch.sign()的扩展。
+    |'
 - en: '| [`signbit`](generated/torch.signbit.html#torch.signbit "torch.signbit") |
     Tests if each element of `input` has its sign bit set or not. |'
+  id: totrans-78
   prefs: []
   type: TYPE_TB
+  zh: '| [`signbit`](generated/torch.signbit.html#torch.signbit "torch.signbit") |
+    检查`input`的每个元素是否设置了符号位。 |'
 - en: '| [`sin`](generated/torch.sin.html#torch.sin "torch.sin") | Returns a new tensor
     with the sine of the elements of `input`. |'
+  id: totrans-79
   prefs: []
   type: TYPE_TB
+  zh: '| [`sin`](generated/torch.sin.html#torch.sin "torch.sin") | 返回一个新的张量，其中每个元素的正弦值。
+    |'
 - en: '| [`sinc`](generated/torch.sinc.html#torch.sinc "torch.sinc") | Alias for [`torch.special.sinc()`](special.html#torch.special.sinc
     "torch.special.sinc"). |'
+  id: totrans-80
   prefs: []
   type: TYPE_TB
+  zh: '| [`sinc`](generated/torch.sinc.html#torch.sinc "torch.sinc") | [`torch.special.sinc()`](special.html#torch.special.sinc
+    "torch.special.sinc")的别名。 |'
 - en: '| [`sinh`](generated/torch.sinh.html#torch.sinh "torch.sinh") | Returns a new
     tensor with the hyperbolic sine of the elements of `input`. |'
+  id: totrans-81
   prefs: []
   type: TYPE_TB
+  zh: '| [`sinh`](generated/torch.sinh.html#torch.sinh "torch.sinh") | 返回一个新的张量，其中包含`input`元素的双曲正弦。
+    |'
 - en: '| [`sqrt`](generated/torch.sqrt.html#torch.sqrt "torch.sqrt") | Returns a new
     tensor with the square-root of the elements of `input`. |'
+  id: totrans-82
   prefs: []
   type: TYPE_TB
+  zh: '| [`sqrt`](generated/torch.sqrt.html#torch.sqrt "torch.sqrt") | 返回一个新的张量，其中包含`input`元素的平方根。
+    |'
 - en: '| [`square`](generated/torch.square.html#torch.square "torch.square") | Returns
     a new tensor with the square of the elements of `input`. |'
+  id: totrans-83
   prefs: []
   type: TYPE_TB
+  zh: '| [`square`](generated/torch.square.html#torch.square "torch.square") | 返回一个新的张量，其中包含`input`元素的平方。
+    |'
 - en: '| [`tan`](generated/torch.tan.html#torch.tan "torch.tan") | Returns a new tensor
     with the tangent of the elements of `input`. |'
+  id: totrans-84
   prefs: []
   type: TYPE_TB
+  zh: '| [`tan`](generated/torch.tan.html#torch.tan "torch.tan") | 返回一个新的张量，其中包含`input`元素的正切。
+    |'
 - en: '| [`tanh`](generated/torch.tanh.html#torch.tanh "torch.tanh") | Returns a new
     tensor with the hyperbolic tangent of the elements of `input`. |'
+  id: totrans-85
   prefs: []
   type: TYPE_TB
+  zh: '| [`tanh`](generated/torch.tanh.html#torch.tanh "torch.tanh") | 返回一个新的张量，其中包含`input`元素的双曲正切。
+    |'
 - en: '| [`trunc`](generated/torch.trunc.html#torch.trunc "torch.trunc") | Returns
     a new tensor with the truncated integer values of the elements of `input`. |'
+  id: totrans-86
   prefs: []
   type: TYPE_TB
+  zh: '| [`trunc`](generated/torch.trunc.html#torch.trunc "torch.trunc") | 返回一个新的张量，其中包含`input`元素的截断整数值。
+    |'
 - en: 'The available inplace unary operators are all of the above **except**:'
+  id: totrans-87
   prefs: []
   type: TYPE_NORMAL
+  zh: 可用的就地一元运算符是上述所有内容**除外**：
 - en: '| [`angle`](generated/torch.angle.html#torch.angle "torch.angle") | Computes
     the element-wise angle (in radians) of the given `input` tensor. |'
+  id: totrans-88
   prefs: []
   type: TYPE_TB
+  zh: '| [`angle`](generated/torch.angle.html#torch.angle "torch.angle") | 计算给定`input`张量的逐元素角度（弧度）。
+    |'
 - en: '| [`positive`](generated/torch.positive.html#torch.positive "torch.positive")
     | Returns `input`. |'
+  id: totrans-89
   prefs: []
   type: TYPE_TB
+  zh: '| [`positive`](generated/torch.positive.html#torch.positive "torch.positive")
+    | 返回`input`。 |'
 - en: '| [`signbit`](generated/torch.signbit.html#torch.signbit "torch.signbit") |
     Tests if each element of `input` has its sign bit set or not. |'
+  id: totrans-90
   prefs: []
   type: TYPE_TB
+  zh: '| [`signbit`](generated/torch.signbit.html#torch.signbit "torch.signbit") |
+    检查`input`的每个元素是否设置了符号位。 |'
 - en: '| [`isnan`](generated/torch.isnan.html#torch.isnan "torch.isnan") | Returns
     a new tensor with boolean elements representing if each element of `input` is
     NaN or not. |'
+  id: totrans-91
   prefs: []
   type: TYPE_TB
+  zh: '| [`isnan`](generated/torch.isnan.html#torch.isnan "torch.isnan") | 返回一个新的张量，其中的布尔元素表示`input`的每个元素是否为NaN。
+    |'
 - en: Binary Operators
+  id: totrans-92
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 二元运算符
 - en: As you may have seen in the tutorial, `MaskedTensor` also has binary operations
     implemented with the caveat that the masks in the two MaskedTensors must match
     or else an error will be raised. As noted in the error, if you need support for
@@ -408,370 +664,625 @@
     please open an issue on GitHub. For now, we have decided to go with the most conservative
     implementation to ensure that users know exactly what is going on and are being
     intentional about their decisions with masked semantics.
+  id: totrans-93
   prefs: []
   type: TYPE_NORMAL
+  zh: 正如您在教程中看到的，`MaskedTensor`也实现了二元操作，但需要注意的是，两个MaskedTensor中的掩码必须匹配，否则将引发错误。正如错误中所指出的，如果您需要支持特定运算符或提出了它们应该如何行为的语义，请在GitHub上提出问题。目前，我们决定采用最保守的实现方式，以确保用户完全了解正在发生的情况，并且在使用掩码语义时是有意识的。
 - en: 'The available binary operators are:'
+  id: totrans-94
   prefs: []
   type: TYPE_NORMAL
+  zh: 可用的二元运算符有：
 - en: '| [`add`](generated/torch.add.html#torch.add "torch.add") | Adds `other`, scaled
     by `alpha`, to `input`. |'
+  id: totrans-95
   prefs: []
   type: TYPE_TB
+  zh: '| [`add`](generated/torch.add.html#torch.add "torch.add") | 将`other`按`alpha`缩放后加到`input`上。
+    |'
 - en: '| [`atan2`](generated/torch.atan2.html#torch.atan2 "torch.atan2") | Element-wise
-    arctangent of $\text{input}_{i} / \text{other}_{i}$inputi​/otheri​
-    with consideration of the quadrant. |'
+    arctangent of $\text{input}_{i} / \text{other}_{i}$inputi​/otheri​ with consideration
+    of the quadrant. |'
+  id: totrans-96
   prefs: []
   type: TYPE_TB
+  zh: '| [`atan2`](generated/torch.atan2.html#torch.atan2 "torch.atan2") | 考虑象限的$\text{input}_{i}
+    / \text{other}_{i}$inputi​/otheri​的逐元素反正切。 |'
 - en: '| [`arctan2`](generated/torch.arctan2.html#torch.arctan2 "torch.arctan2") |
     Alias for [`torch.atan2()`](generated/torch.atan2.html#torch.atan2 "torch.atan2").
     |'
+  id: totrans-97
   prefs: []
   type: TYPE_TB
+  zh: '| [`arctan2`](generated/torch.arctan2.html#torch.arctan2 "torch.arctan2") |
+    [`torch.atan2()`](generated/torch.atan2.html#torch.atan2 "torch.atan2")的别名。 |'
 - en: '| [`bitwise_and`](generated/torch.bitwise_and.html#torch.bitwise_and "torch.bitwise_and")
     | Computes the bitwise AND of `input` and `other`. |'
+  id: totrans-98
   prefs: []
   type: TYPE_TB
+  zh: '| [`bitwise_and`](generated/torch.bitwise_and.html#torch.bitwise_and "torch.bitwise_and")
+    | 计算`input`和`other`的按位与。 |'
 - en: '| [`bitwise_or`](generated/torch.bitwise_or.html#torch.bitwise_or "torch.bitwise_or")
     | Computes the bitwise OR of `input` and `other`. |'
+  id: totrans-99
   prefs: []
   type: TYPE_TB
+  zh: '| [`bitwise_or`](generated/torch.bitwise_or.html#torch.bitwise_or "torch.bitwise_or")
+    | 计算`input`和`other`的按位或。 |'
 - en: '| [`bitwise_xor`](generated/torch.bitwise_xor.html#torch.bitwise_xor "torch.bitwise_xor")
     | Computes the bitwise XOR of `input` and `other`. |'
+  id: totrans-100
   prefs: []
   type: TYPE_TB
+  zh: '| [`bitwise_xor`](generated/torch.bitwise_xor.html#torch.bitwise_xor "torch.bitwise_xor")
+    | 计算`input`和`other`的按位异或。 |'
 - en: '| [`bitwise_left_shift`](generated/torch.bitwise_left_shift.html#torch.bitwise_left_shift
     "torch.bitwise_left_shift") | Computes the left arithmetic shift of `input` by
     `other` bits. |'
+  id: totrans-101
   prefs: []
   type: TYPE_TB
+  zh: '| [`bitwise_left_shift`](generated/torch.bitwise_left_shift.html#torch.bitwise_left_shift
+    "torch.bitwise_left_shift") | 计算`input`左移`other`位的算术左移。 |'
 - en: '| [`bitwise_right_shift`](generated/torch.bitwise_right_shift.html#torch.bitwise_right_shift
     "torch.bitwise_right_shift") | Computes the right arithmetic shift of `input`
     by `other` bits. |'
+  id: totrans-102
   prefs: []
   type: TYPE_TB
+  zh: '| [`bitwise_right_shift`](generated/torch.bitwise_right_shift.html#torch.bitwise_right_shift
+    "torch.bitwise_right_shift") | 计算`input`右移`other`位的算术右移。 |'
 - en: '| [`div`](generated/torch.div.html#torch.div "torch.div") | Divides each element
     of the input `input` by the corresponding element of `other`. |'
+  id: totrans-103
   prefs: []
   type: TYPE_TB
+  zh: '| [`div`](generated/torch.div.html#torch.div "torch.div") | 将输入`input`的每个元素除以对应的`other`元素。
+    |'
 - en: '| [`divide`](generated/torch.divide.html#torch.divide "torch.divide") | Alias
     for [`torch.div()`](generated/torch.div.html#torch.div "torch.div"). |'
+  id: totrans-104
   prefs: []
   type: TYPE_TB
+  zh: '| [`divide`](generated/torch.divide.html#torch.divide "torch.divide") | [`torch.div()`](generated/torch.div.html#torch.div
+    "torch.div")的别名。 |'
 - en: '| [`floor_divide`](generated/torch.floor_divide.html#torch.floor_divide "torch.floor_divide")
     |  |'
+  id: totrans-105
   prefs: []
   type: TYPE_TB
+  zh: '| [`floor_divide`](generated/torch.floor_divide.html#torch.floor_divide "torch.floor_divide")
+    |  |'
 - en: '| [`fmod`](generated/torch.fmod.html#torch.fmod "torch.fmod") | Applies C++''s
     [std::fmod](https://en.cppreference.com/w/cpp/numeric/math/fmod) entrywise. |'
+  id: totrans-106
   prefs: []
   type: TYPE_TB
+  zh: '| [`fmod`](generated/torch.fmod.html#torch.fmod "torch.fmod") | 应用C++的[std::fmod](https://en.cppreference.com/w/cpp/numeric/math/fmod)逐元素。
+    |'
 - en: '| [`logaddexp`](generated/torch.logaddexp.html#torch.logaddexp "torch.logaddexp")
     | Logarithm of the sum of exponentiations of the inputs. |'
+  id: totrans-107
   prefs: []
   type: TYPE_TB
+  zh: '| [`logaddexp`](generated/torch.logaddexp.html#torch.logaddexp "torch.logaddexp")
+    | 输入指数的和的对数。 |'
 - en: '| [`logaddexp2`](generated/torch.logaddexp2.html#torch.logaddexp2 "torch.logaddexp2")
     | Logarithm of the sum of exponentiations of the inputs in base-2. |'
+  id: totrans-108
   prefs: []
   type: TYPE_TB
+  zh: '| [`logaddexp2`](generated/torch.logaddexp2.html#torch.logaddexp2 "torch.logaddexp2")
+    | 以2为底的输入指数的和的对数。 |'
 - en: '| [`mul`](generated/torch.mul.html#torch.mul "torch.mul") | Multiplies `input`
     by `other`. |'
+  id: totrans-109
   prefs: []
   type: TYPE_TB
+  zh: '| [`mul`](generated/torch.mul.html#torch.mul "torch.mul") | 将`input`乘以`other`。
+    |'
 - en: '| [`multiply`](generated/torch.multiply.html#torch.multiply "torch.multiply")
     | Alias for [`torch.mul()`](generated/torch.mul.html#torch.mul "torch.mul"). |'
+  id: totrans-110
   prefs: []
   type: TYPE_TB
+  zh: '| [`multiply`](generated/torch.multiply.html#torch.multiply "torch.multiply")
+    | [`torch.mul()`](generated/torch.mul.html#torch.mul "torch.mul")的别名。 |'
 - en: '| [`nextafter`](generated/torch.nextafter.html#torch.nextafter "torch.nextafter")
     | Return the next floating-point value after `input` towards `other`, elementwise.
     |'
+  id: totrans-111
   prefs: []
   type: TYPE_TB
+  zh: '| [`nextafter`](generated/torch.nextafter.html#torch.nextafter "torch.nextafter")
+    | 返回`input`向`other`方向的下一个浮点值，逐元素。 |'
 - en: '| [`remainder`](generated/torch.remainder.html#torch.remainder "torch.remainder")
     | Computes [Python''s modulus operation](https://docs.python.org/3/reference/expressions.html#binary-arithmetic-operations)
     entrywise. |'
+  id: totrans-112
   prefs: []
   type: TYPE_TB
+  zh: '| [`remainder`](generated/torch.remainder.html#torch.remainder "torch.remainder")
+    | 逐个计算[Python的模运算](https://docs.python.org/3/reference/expressions.html#binary-arithmetic-operations)。
+    |'
 - en: '| [`sub`](generated/torch.sub.html#torch.sub "torch.sub") | Subtracts `other`,
     scaled by `alpha`, from `input`. |'
+  id: totrans-113
   prefs: []
   type: TYPE_TB
+  zh: '| [`sub`](generated/torch.sub.html#torch.sub "torch.sub") | 从`input`中减去`other`，乘以`alpha`。
+    |'
 - en: '| [`subtract`](generated/torch.subtract.html#torch.subtract "torch.subtract")
     | Alias for [`torch.sub()`](generated/torch.sub.html#torch.sub "torch.sub"). |'
+  id: totrans-114
   prefs: []
   type: TYPE_TB
+  zh: '| [`subtract`](generated/torch.subtract.html#torch.subtract "torch.subtract")
+    | [`torch.sub()`](generated/torch.sub.html#torch.sub "torch.sub")的别名。 |'
 - en: '| [`true_divide`](generated/torch.true_divide.html#torch.true_divide "torch.true_divide")
     | Alias for [`torch.div()`](generated/torch.div.html#torch.div "torch.div") with
     `rounding_mode=None`. |'
+  id: totrans-115
   prefs: []
   type: TYPE_TB
+  zh: '| [`true_divide`](generated/torch.true_divide.html#torch.true_divide "torch.true_divide")
+    | [`torch.div()`](generated/torch.div.html#torch.div "torch.div")的别名，`rounding_mode=None`。
+    |'
 - en: '| [`eq`](generated/torch.eq.html#torch.eq "torch.eq") | Computes element-wise
     equality |'
+  id: totrans-116
   prefs: []
   type: TYPE_TB
+  zh: '| [`eq`](generated/torch.eq.html#torch.eq "torch.eq") | 逐元素计算相等性。 |'
 - en: '| [`ne`](generated/torch.ne.html#torch.ne "torch.ne") | Computes $\text{input}
     \neq \text{other}$input=other element-wise. |'
+  id: totrans-117
   prefs: []
   type: TYPE_TB
-- en: '| [`le`](generated/torch.le.html#torch.le "torch.le") | Computes $\text{input} \leq \text{other}$input≤other
-    element-wise. |'
+  zh: '| [`ne`](generated/torch.ne.html#torch.ne "torch.ne") | 逐元素计算 $\text{input}
+    \neq \text{other}$。 |'
+- en: '| [`le`](generated/torch.le.html#torch.le "torch.le") | Computes $\text{input}
+    \leq \text{other}$input≤other element-wise. |'
+  id: totrans-118
   prefs: []
   type: TYPE_TB
-- en: '| [`ge`](generated/torch.ge.html#torch.ge "torch.ge") | Computes $\text{input} \geq \text{other}$input≥other
-    element-wise. |'
+  zh: '| [`le`](generated/torch.le.html#torch.le "torch.le") | 逐元素计算 $\text{input}
+    \leq \text{other}$。 |'
+- en: '| [`ge`](generated/torch.ge.html#torch.ge "torch.ge") | Computes $\text{input}
+    \geq \text{other}$input≥other element-wise. |'
+  id: totrans-119
   prefs: []
   type: TYPE_TB
+  zh: '| [`ge`](generated/torch.ge.html#torch.ge "torch.ge") | 逐元素计算 $\text{input}
+    \geq \text{other}$。 |'
 - en: '| [`greater`](generated/torch.greater.html#torch.greater "torch.greater") |
     Alias for [`torch.gt()`](generated/torch.gt.html#torch.gt "torch.gt"). |'
+  id: totrans-120
   prefs: []
   type: TYPE_TB
+  zh: '| [`greater`](generated/torch.greater.html#torch.greater "torch.greater") |
+    [`torch.gt()`](generated/torch.gt.html#torch.gt "torch.gt")的别名。 |'
 - en: '| [`greater_equal`](generated/torch.greater_equal.html#torch.greater_equal
     "torch.greater_equal") | Alias for [`torch.ge()`](generated/torch.ge.html#torch.ge
     "torch.ge"). |'
+  id: totrans-121
   prefs: []
   type: TYPE_TB
-- en: '| [`gt`](generated/torch.gt.html#torch.gt "torch.gt") | Computes $\text{input} > \text{other}$input>other
-    element-wise. |'
+  zh: '| [`greater_equal`](generated/torch.greater_equal.html#torch.greater_equal
+    "torch.greater_equal") | [`torch.ge()`](generated/torch.ge.html#torch.ge "torch.ge")的别名。
+    |'
+- en: '| [`gt`](generated/torch.gt.html#torch.gt "torch.gt") | Computes $\text{input}
+    > \text{other}$input>other element-wise. |'
+  id: totrans-122
   prefs: []
   type: TYPE_TB
+  zh: '| [`gt`](generated/torch.gt.html#torch.gt "torch.gt") | 逐元素计算 $\text{input}
+    > \text{other}$。 |'
 - en: '| [`less_equal`](generated/torch.less_equal.html#torch.less_equal "torch.less_equal")
     | Alias for [`torch.le()`](generated/torch.le.html#torch.le "torch.le"). |'
+  id: totrans-123
   prefs: []
   type: TYPE_TB
-- en: '| [`lt`](generated/torch.lt.html#torch.lt "torch.lt") | Computes $\text{input} < \text{other}$input<other
-    element-wise. |'
+  zh: '| [`less_equal`](generated/torch.less_equal.html#torch.less_equal "torch.less_equal")
+    | [`torch.le()`](generated/torch.le.html#torch.le "torch.le")的别名。 |'
+- en: '| [`lt`](generated/torch.lt.html#torch.lt "torch.lt") | Computes $\text{input}
+    < \text{other}$input<other element-wise. |'
+  id: totrans-124
   prefs: []
   type: TYPE_TB
+  zh: '| [`lt`](generated/torch.lt.html#torch.lt "torch.lt") | 逐元素计算 $\text{input}
+    < \text{other}$。 |'
 - en: '| [`less`](generated/torch.less.html#torch.less "torch.less") | Alias for [`torch.lt()`](generated/torch.lt.html#torch.lt
     "torch.lt"). |'
+  id: totrans-125
   prefs: []
   type: TYPE_TB
+  zh: '| [`less`](generated/torch.less.html#torch.less "torch.less") | [`torch.lt()`](generated/torch.lt.html#torch.lt
+    "torch.lt")的别名。 |'
 - en: '| [`maximum`](generated/torch.maximum.html#torch.maximum "torch.maximum") |
     Computes the element-wise maximum of `input` and `other`. |'
+  id: totrans-126
   prefs: []
   type: TYPE_TB
+  zh: '| [`maximum`](generated/torch.maximum.html#torch.maximum "torch.maximum") |
+    计算`input`和`other`的逐元素最大值。 |'
 - en: '| [`minimum`](generated/torch.minimum.html#torch.minimum "torch.minimum") |
     Computes the element-wise minimum of `input` and `other`. |'
+  id: totrans-127
   prefs: []
   type: TYPE_TB
+  zh: '| [`minimum`](generated/torch.minimum.html#torch.minimum "torch.minimum") |
+    计算`input`和`other`的逐元素最小值。 |'
 - en: '| [`fmax`](generated/torch.fmax.html#torch.fmax "torch.fmax") | Computes the
     element-wise maximum of `input` and `other`. |'
+  id: totrans-128
   prefs: []
   type: TYPE_TB
+  zh: '| [`fmax`](generated/torch.fmax.html#torch.fmax "torch.fmax") | 计算`input`和`other`的逐元素最大值。
+    |'
 - en: '| [`fmin`](generated/torch.fmin.html#torch.fmin "torch.fmin") | Computes the
     element-wise minimum of `input` and `other`. |'
+  id: totrans-129
   prefs: []
   type: TYPE_TB
+  zh: '| [`fmin`](generated/torch.fmin.html#torch.fmin "torch.fmin") | 计算`input`和`other`的逐元素最小值。
+    |'
 - en: '| [`not_equal`](generated/torch.not_equal.html#torch.not_equal "torch.not_equal")
     | Alias for [`torch.ne()`](generated/torch.ne.html#torch.ne "torch.ne"). |'
+  id: totrans-130
   prefs: []
   type: TYPE_TB
+  zh: '| [`not_equal`](generated/torch.not_equal.html#torch.not_equal "torch.not_equal")
+    | [`torch.ne()`](generated/torch.ne.html#torch.ne "torch.ne")的别名。 |'
 - en: 'The available inplace binary operators are all of the above **except**:'
+  id: totrans-131
   prefs: []
   type: TYPE_NORMAL
+  zh: 除以下所有可用的就地二元运算符之外：
 - en: '| [`logaddexp`](generated/torch.logaddexp.html#torch.logaddexp "torch.logaddexp")
     | Logarithm of the sum of exponentiations of the inputs. |'
+  id: totrans-132
   prefs: []
   type: TYPE_TB
+  zh: '| [`logaddexp`](generated/torch.logaddexp.html#torch.logaddexp "torch.logaddexp")
+    | 输入指数的和的对数。 |'
 - en: '| [`logaddexp2`](generated/torch.logaddexp2.html#torch.logaddexp2 "torch.logaddexp2")
     | Logarithm of the sum of exponentiations of the inputs in base-2. |'
+  id: totrans-133
   prefs: []
   type: TYPE_TB
+  zh: '| [`logaddexp2`](generated/torch.logaddexp2.html#torch.logaddexp2 "torch.logaddexp2")
+    | 以2为底的输入指数的和的对数。 |'
 - en: '| [`equal`](generated/torch.equal.html#torch.equal "torch.equal") | `True`
     if two tensors have the same size and elements, `False` otherwise. |'
+  id: totrans-134
   prefs: []
   type: TYPE_TB
+  zh: '| [`equal`](generated/torch.equal.html#torch.equal "torch.equal") | 如果两个张量大小和元素相同，则为`True`，否则为`False`。
+    |'
 - en: '| [`fmin`](generated/torch.fmin.html#torch.fmin "torch.fmin") | Computes the
     element-wise minimum of `input` and `other`. |'
+  id: totrans-135
   prefs: []
   type: TYPE_TB
+  zh: '| [`fmin`](generated/torch.fmin.html#torch.fmin "torch.fmin") | 计算`input`和`other`的逐元素最小值。
+    |'
 - en: '| [`minimum`](generated/torch.minimum.html#torch.minimum "torch.minimum") |
     Computes the element-wise minimum of `input` and `other`. |'
+  id: totrans-136
   prefs: []
   type: TYPE_TB
+  zh: '| [`minimum`](generated/torch.minimum.html#torch.minimum "torch.minimum") |
+    计算`input`和`other`的逐元素最小值。 |'
 - en: '| [`fmax`](generated/torch.fmax.html#torch.fmax "torch.fmax") | Computes the
     element-wise maximum of `input` and `other`. |'
+  id: totrans-137
   prefs: []
   type: TYPE_TB
+  zh: '| [`fmax`](generated/torch.fmax.html#torch.fmax "torch.fmax") | 计算`input`和`other`的逐元素最大值。
+    |'
 - en: Reductions
+  id: totrans-138
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 缩减
 - en: The following reductions are available (with autograd support). For more information,
     the [Overview](https://pytorch.org/tutorials/prototype/maskedtensor_overview.html)
     tutorial details some examples of reductions, while the [Advanced semantics](https://pytorch.org/tutorials/prototype/maskedtensor_advanced_semantics.html)
     tutorial has some further in-depth discussions about how we decided on certain
     reduction semantics.
+  id: totrans-139
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下缩减操作可用（支持自动微分）。有关更多信息，请参阅[概述](https://pytorch.org/tutorials/prototype/maskedtensor_overview.html)教程详细介绍了一些缩减的示例，而[高级语义](https://pytorch.org/tutorials/prototype/maskedtensor_advanced_semantics.html)教程则对我们如何决定某些缩减语义进行了更深入的讨论。
 - en: '| [`sum`](generated/torch.sum.html#torch.sum "torch.sum") | Returns the sum
     of all elements in the `input` tensor. |'
+  id: totrans-140
   prefs: []
   type: TYPE_TB
+  zh: '| [`sum`](generated/torch.sum.html#torch.sum "torch.sum") | 返回`input`张量中所有元素的总和。
+    |'
 - en: '| [`mean`](generated/torch.mean.html#torch.mean "torch.mean") | Returns the
     mean value of all elements in the `input` tensor. |'
+  id: totrans-141
   prefs: []
   type: TYPE_TB
+  zh: '| [`mean`](generated/torch.mean.html#torch.mean "torch.mean") | 返回`input`张量中所有元素的平均值。
+    |'
 - en: '| [`amin`](generated/torch.amin.html#torch.amin "torch.amin") | Returns the
     minimum value of each slice of the `input` tensor in the given dimension(s) `dim`.
     |'
+  id: totrans-142
   prefs: []
   type: TYPE_TB
+  zh: '| [`amin`](generated/torch.amin.html#torch.amin "torch.amin") | 返回给定维度`dim`中`input`张量的每个切片的最小值。
+    |'
 - en: '| [`amax`](generated/torch.amax.html#torch.amax "torch.amax") | Returns the
     maximum value of each slice of the `input` tensor in the given dimension(s) `dim`.
     |'
+  id: totrans-143
   prefs: []
   type: TYPE_TB
+  zh: '| [`amax`](generated/torch.amax.html#torch.amax "torch.amax") | 返回给定维度`dim`中`input`张量的每个切片的最大值。
+    |'
 - en: '| [`argmin`](generated/torch.argmin.html#torch.argmin "torch.argmin") | Returns
     the indices of the minimum value(s) of the flattened tensor or along a dimension
     |'
+  id: totrans-144
   prefs: []
   type: TYPE_TB
+  zh: '| [`argmin`](generated/torch.argmin.html#torch.argmin "torch.argmin") | 返回展平张量的最小值的索引或沿某个维度的最小值的索引。
+    |'
 - en: '| [`argmax`](generated/torch.argmax.html#torch.argmax "torch.argmax") | Returns
     the indices of the maximum value of all elements in the `input` tensor. |'
+  id: totrans-145
   prefs: []
   type: TYPE_TB
+  zh: '| [`argmax`](generated/torch.argmax.html#torch.argmax "torch.argmax") | 返回`input`张量中所有元素的最大值的索引。
+    |'
 - en: '| [`prod`](generated/torch.prod.html#torch.prod "torch.prod") | Returns the
     product of all elements in the `input` tensor. |'
+  id: totrans-146
   prefs: []
   type: TYPE_TB
+  zh: '| [`prod`](generated/torch.prod.html#torch.prod "torch.prod") | 返回`input`张量中所有元素的乘积。
+    |'
 - en: '| [`all`](generated/torch.all.html#torch.all "torch.all") | Tests if all elements
     in `input` evaluate to True. |'
+  id: totrans-147
   prefs: []
   type: TYPE_TB
+  zh: '| [`all`](generated/torch.all.html#torch.all "torch.all") | 测试`input`中的所有元素是否都为True。
+    |'
 - en: '| [`norm`](generated/torch.norm.html#torch.norm "torch.norm") | Returns the
     matrix norm or vector norm of a given tensor. |'
+  id: totrans-148
   prefs: []
   type: TYPE_TB
+  zh: '| [`norm`](generated/torch.norm.html#torch.norm "torch.norm") | 返回给定张量的矩阵范数或向量范数。
+    |'
 - en: '| [`var`](generated/torch.var.html#torch.var "torch.var") | Calculates the
     variance over the dimensions specified by `dim`. |'
+  id: totrans-149
   prefs: []
   type: TYPE_TB
+  zh: '| [`var`](generated/torch.var.html#torch.var "torch.var") | 计算由`dim`指定的维度上的方差。
+    |'
 - en: '| [`std`](generated/torch.std.html#torch.std "torch.std") | Calculates the
     standard deviation over the dimensions specified by `dim`. |'
+  id: totrans-150
   prefs: []
   type: TYPE_TB
+  zh: '| [`std`](generated/torch.std.html#torch.std "torch.std") | 计算由`dim`指定的维度上的标准差。
+    |'
 - en: View and select functions
+  id: totrans-151
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 视图和选择函数
 - en: 'We’ve included a number of view and select functions as well; intuitively,
     these operators will apply to both the data and the mask and then wrap the result
     in a `MaskedTensor`. For a quick example, consider [`select()`](generated/torch.select.html#torch.select
     "torch.select"):'
+  id: totrans-152
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们还包括了一些视图和选择函数；直观地说，这些运算符将同时应用于数据和掩码，然后将结果包装在`MaskedTensor`中。举个快速的例子，考虑[`select()`](generated/torch.select.html#torch.select
+    "torch.select")：
 - en: '[PRE0]'
+  id: totrans-153
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: 'The following ops are currently supported:'
+  id: totrans-154
   prefs: []
   type: TYPE_NORMAL
+  zh: 目前支持以下操作：
 - en: '| [`atleast_1d`](generated/torch.atleast_1d.html#torch.atleast_1d "torch.atleast_1d")
     | Returns a 1-dimensional view of each input tensor with zero dimensions. |'
+  id: totrans-155
   prefs: []
   type: TYPE_TB
+  zh: '| [`atleast_1d`](generated/torch.atleast_1d.html#torch.atleast_1d "torch.atleast_1d")
+    | 返回每个输入张量的零维度的一维视图。 |'
 - en: '| [`broadcast_tensors`](generated/torch.broadcast_tensors.html#torch.broadcast_tensors
     "torch.broadcast_tensors") | Broadcasts the given tensors according to [Broadcasting
     semantics](notes/broadcasting.html#broadcasting-semantics). |'
+  id: totrans-156
   prefs: []
   type: TYPE_TB
+  zh: '| [`broadcast_tensors`](generated/torch.broadcast_tensors.html#torch.broadcast_tensors
+    "torch.broadcast_tensors") | 根据[广播语义](notes/broadcasting.html#broadcasting-semantics)广播给定的张量。
+    |'
 - en: '| [`broadcast_to`](generated/torch.broadcast_to.html#torch.broadcast_to "torch.broadcast_to")
     | Broadcasts `input` to the shape `shape`. |'
+  id: totrans-157
   prefs: []
   type: TYPE_TB
+  zh: '| [`broadcast_to`](generated/torch.broadcast_to.html#torch.broadcast_to "torch.broadcast_to")
+    | 将`input`广播到形状`shape`。 |'
 - en: '| [`cat`](generated/torch.cat.html#torch.cat "torch.cat") | Concatenates the
     given sequence of `seq` tensors in the given dimension. |'
+  id: totrans-158
   prefs: []
   type: TYPE_TB
+  zh: '| [`cat`](generated/torch.cat.html#torch.cat "torch.cat") | 在给定维度中连接给定序列`seq`的张量。
+    |'
 - en: '| [`chunk`](generated/torch.chunk.html#torch.chunk "torch.chunk") | Attempts
     to split a tensor into the specified number of chunks. |'
+  id: totrans-159
   prefs: []
   type: TYPE_TB
+  zh: '| [`chunk`](generated/torch.chunk.html#torch.chunk "torch.chunk") | 尝试将张量分割为指定数量的块。
+    |'
 - en: '| [`column_stack`](generated/torch.column_stack.html#torch.column_stack "torch.column_stack")
     | Creates a new tensor by horizontally stacking the tensors in `tensors`. |'
+  id: totrans-160
   prefs: []
   type: TYPE_TB
+  zh: '| [`column_stack`](generated/torch.column_stack.html#torch.column_stack "torch.column_stack")
+    | 通过水平堆叠`tensors`中的张量创建一个新张量。 |'
 - en: '| [`dsplit`](generated/torch.dsplit.html#torch.dsplit "torch.dsplit") | Splits
     `input`, a tensor with three or more dimensions, into multiple tensors depthwise
     according to `indices_or_sections`. |'
+  id: totrans-161
   prefs: []
   type: TYPE_TB
+  zh: '| [`dsplit`](generated/torch.dsplit.html#torch.dsplit "torch.dsplit") | 根据`indices_or_sections`将具有三个或更多维度的`input`张量沿深度方向分割为多个张量。
+    |'
 - en: '| [`flatten`](generated/torch.flatten.html#torch.flatten "torch.flatten") |
     Flattens `input` by reshaping it into a one-dimensional tensor. |'
+  id: totrans-162
   prefs: []
   type: TYPE_TB
+  zh: '| [`flatten`](generated/torch.flatten.html#torch.flatten "torch.flatten") |
+    通过将其重塑为一维张量来展平`input`。 |'
 - en: '| [`hsplit`](generated/torch.hsplit.html#torch.hsplit "torch.hsplit") | Splits
     `input`, a tensor with one or more dimensions, into multiple tensors horizontally
     according to `indices_or_sections`. |'
+  id: totrans-163
   prefs: []
   type: TYPE_TB
+  zh: '| [`hsplit`](generated/torch.hsplit.html#torch.hsplit "torch.hsplit") | 根据`indices_or_sections`在水平方向上将具有一个或多个维度的`input`张量分割成多个张量。
+    |'
 - en: '| [`hstack`](generated/torch.hstack.html#torch.hstack "torch.hstack") | Stack
     tensors in sequence horizontally (column wise). |'
+  id: totrans-164
   prefs: []
   type: TYPE_TB
+  zh: '| [`hstack`](generated/torch.hstack.html#torch.hstack "torch.hstack") | 水平（列方向）顺序堆叠张量。
+    |'
 - en: '| [`kron`](generated/torch.kron.html#torch.kron "torch.kron") | Computes the
-    Kronecker product, denoted by $\otimes$⊗, of `input`
-    and `other`. |'
+    Kronecker product, denoted by $\otimes$⊗, of `input` and `other`. |'
+  id: totrans-165
   prefs: []
   type: TYPE_TB
+  zh: '| [`kron`](generated/torch.kron.html#torch.kron "torch.kron") | 计算`input`和`other`的Kronecker积，用$\otimes$⊗表示。
+    |'
 - en: '| [`meshgrid`](generated/torch.meshgrid.html#torch.meshgrid "torch.meshgrid")
     | Creates grids of coordinates specified by the 1D inputs in attr:tensors. |'
+  id: totrans-166
   prefs: []
   type: TYPE_TB
+  zh: '| [`meshgrid`](generated/torch.meshgrid.html#torch.meshgrid "torch.meshgrid")
+    | 创建由attr:tensors中的1D输入指定的坐标网格。 |'
 - en: '| [`narrow`](generated/torch.narrow.html#torch.narrow "torch.narrow") | Returns
     a new tensor that is a narrowed version of `input` tensor. |'
+  id: totrans-167
   prefs: []
   type: TYPE_TB
+  zh: '| [`narrow`](generated/torch.narrow.html#torch.narrow "torch.narrow") | 返回一个`input`张量的缩小版本的新张量。
+    |'
 - en: '| [`ravel`](generated/torch.ravel.html#torch.ravel "torch.ravel") | Return
     a contiguous flattened tensor. |'
+  id: totrans-168
   prefs: []
   type: TYPE_TB
+  zh: '| [`ravel`](generated/torch.ravel.html#torch.ravel "torch.ravel") | 返回一个连续的扁平化张量。
+    |'
 - en: '| [`select`](generated/torch.select.html#torch.select "torch.select") | Slices
     the `input` tensor along the selected dimension at the given index. |'
+  id: totrans-169
   prefs: []
   type: TYPE_TB
+  zh: '| [`select`](generated/torch.select.html#torch.select "torch.select") | 沿着给定索引在所选维度上切片`input`张量。
+    |'
 - en: '| [`split`](generated/torch.split.html#torch.split "torch.split") | Splits
     the tensor into chunks. |'
+  id: totrans-170
   prefs: []
   type: TYPE_TB
+  zh: '| [`split`](generated/torch.split.html#torch.split "torch.split") | 将张量分割成块。
+    |'
 - en: '| [`t`](generated/torch.t.html#torch.t "torch.t") | Expects `input` to be <=
     2-D tensor and transposes dimensions 0 and 1. |'
+  id: totrans-171
   prefs: []
   type: TYPE_TB
+  zh: '| [`t`](generated/torch.t.html#torch.t "torch.t") | 期望`input`是<= 2-D张量，并转置维度0和1。
+    |'
 - en: '| [`transpose`](generated/torch.transpose.html#torch.transpose "torch.transpose")
     | Returns a tensor that is a transposed version of `input`. |'
+  id: totrans-172
   prefs: []
   type: TYPE_TB
+  zh: '| [`transpose`](generated/torch.transpose.html#torch.transpose "torch.transpose")
+    | 返回一个`input`的转置版本的张量。 |'
 - en: '| [`vsplit`](generated/torch.vsplit.html#torch.vsplit "torch.vsplit") | Splits
     `input`, a tensor with two or more dimensions, into multiple tensors vertically
     according to `indices_or_sections`. |'
+  id: totrans-173
   prefs: []
   type: TYPE_TB
+  zh: '| [`vsplit`](generated/torch.vsplit.html#torch.vsplit "torch.vsplit") | 根据`indices_or_sections`在垂直方向上将具有两个或更多维度的`input`张量分割成多个张量。
+    |'
 - en: '| [`vstack`](generated/torch.vstack.html#torch.vstack "torch.vstack") | Stack
     tensors in sequence vertically (row wise). |'
+  id: totrans-174
   prefs: []
   type: TYPE_TB
+  zh: '| [`vstack`](generated/torch.vstack.html#torch.vstack "torch.vstack") | 垂直（行方向）顺序堆叠张量。
+    |'
 - en: '| [`Tensor.expand`](generated/torch.Tensor.expand.html#torch.Tensor.expand
     "torch.Tensor.expand") | Returns a new view of the `self` tensor with singleton
     dimensions expanded to a larger size. |'
+  id: totrans-175
   prefs: []
   type: TYPE_TB
+  zh: '| [`Tensor.expand`](generated/torch.Tensor.expand.html#torch.Tensor.expand
+    "torch.Tensor.expand") | 返回一个视图，将`self`张量中的单例维度扩展到更大的尺寸。 |'
 - en: '| [`Tensor.expand_as`](generated/torch.Tensor.expand_as.html#torch.Tensor.expand_as
     "torch.Tensor.expand_as") | Expand this tensor to the same size as `other`. |'
+  id: totrans-176
   prefs: []
   type: TYPE_TB
+  zh: '| [`Tensor.expand_as`](generated/torch.Tensor.expand_as.html#torch.Tensor.expand_as
+    "torch.Tensor.expand_as") | 将此张量扩展到与`other`相同的大小。 |'
 - en: '| [`Tensor.reshape`](generated/torch.Tensor.reshape.html#torch.Tensor.reshape
     "torch.Tensor.reshape") | Returns a tensor with the same data and number of elements
     as `self` but with the specified shape. |'
+  id: totrans-177
   prefs: []
   type: TYPE_TB
+  zh: '| [`Tensor.reshape`](generated/torch.Tensor.reshape.html#torch.Tensor.reshape
+    "torch.Tensor.reshape") | 返回一个与`self`具有相同数据和元素数量但具有指定形状的张量。 |'
 - en: '| [`Tensor.reshape_as`](generated/torch.Tensor.reshape_as.html#torch.Tensor.reshape_as
     "torch.Tensor.reshape_as") | Returns this tensor as the same shape as `other`.
     |'
+  id: totrans-178
   prefs: []
   type: TYPE_TB
+  zh: '| [`Tensor.reshape_as`](generated/torch.Tensor.reshape_as.html#torch.Tensor.reshape_as
+    "torch.Tensor.reshape_as") | 将此张量重塑为与`other`相同的形状。 |'
 - en: '| [`Tensor.view`](generated/torch.Tensor.view.html#torch.Tensor.view "torch.Tensor.view")
     | Returns a new tensor with the same data as the `self` tensor but of a different
     `shape`. |'
+  id: totrans-179
   prefs: []
   type: TYPE_TB
+  zh: '| [`Tensor.view`](generated/torch.Tensor.view.html#torch.Tensor.view "torch.Tensor.view")
+    | 返回一个与`self`张量具有相同数据但形状不同的新张量。 |'

@@ -1,83 +1,122 @@
 - en: Pipeline Parallelism
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 管道并行
 - en: 原文：[https://pytorch.org/docs/stable/pipeline.html](https://pytorch.org/docs/stable/pipeline.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/docs/stable/pipeline.html](https://pytorch.org/docs/stable/pipeline.html)
 - en: Pipeline parallelism was original introduced in the [Gpipe](https://arxiv.org/abs/1811.06965)
     paper and is an efficient technique to train large models on multiple GPUs.
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 管道并行最初在[Gpipe](https://arxiv.org/abs/1811.06965)论文中提出，并且是一种有效的技术，用于在多个GPU上训练大型模型。
 - en: Warning
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: Pipeline Parallelism is experimental and subject to change.
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 管道并行是实验性的，可能会发生变化。
 - en: Model Parallelism using multiple GPUs[](#model-parallelism-using-multiple-gpus
     "Permalink to this heading")
+  id: totrans-5
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 使用多个GPU的模型并行[](#model-parallelism-using-multiple-gpus "此标题的永久链接")
 - en: 'Typically for large models which don’t fit on a single GPU, model parallelism
     is employed where certain parts of the model are placed on different GPUs. Although,
     if this is done naively for sequential models, the training process suffers from
     GPU under utilization since only one GPU is active at one time as shown in the
     figure below:'
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 通常对于无法放入单个GPU的大型模型，会采用模型并行，其中模型的某些部分被放置在不同的GPU上。然而，如果对于顺序模型进行简单划分，训练过程会因GPU的低利用率而受到影响，因为如下图所示，一次只有一个GPU处于活动状态：
 - en: '![_images/no_pipe.png](../Images/b9cf9a633037f50f7bc1ebee273078d5.png)'
+  id: totrans-7
   prefs: []
   type: TYPE_IMG
+  zh: '![_images/no_pipe.png](../Images/b9cf9a633037f50f7bc1ebee273078d5.png)'
 - en: The figure represents a model with 4 layers placed on 4 different GPUs (vertical
     axis). The horizontal axis represents training this model through time demonstrating
     that only 1 GPU is utilized at a time ([image source](https://arxiv.org/abs/1811.06965)).[](#id2
     "Permalink to this image")
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 该图表示一个具有4层的模型，这些层分布在4个不同的GPU上（垂直轴）。水平轴表示通过时间训练该模型，演示了每次只有1个GPU被利用（[图片来源](https://arxiv.org/abs/1811.06965)）。[](#id2
+    "此图片的永久链接")
 - en: Pipelined Execution
+  id: totrans-9
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 管道化执行
 - en: 'To alleviate this problem, pipeline parallelism splits the input minibatch
     into multiple microbatches and pipelines the execution of these microbatches across
     multiple GPUs. This is outlined in the figure below:'
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了缓解这个问题，管道并行将输入的小批量数据分成多个微批量数据，并将这些微批量数据的执行在多个GPU上进行管道化。如下图所示：
 - en: '![_images/pipe.png](../Images/ef057fe1265f513c363e3e4cdc5a1cf7.png)'
+  id: totrans-11
   prefs: []
   type: TYPE_IMG
+  zh: '![_images/pipe.png](../Images/ef057fe1265f513c363e3e4cdc5a1cf7.png)'
 - en: The figure represents a model with 4 layers placed on 4 different GPUs (vertical
     axis). The horizontal axis represents training this model through time demonstrating
     that the GPUs are utilized much more efficiently. However, there still exists
     a bubble (as demonstrated in the figure) where certain GPUs are not utilized.
     ([image source](https://arxiv.org/abs/1811.06965)).[](#id3 "Permalink to this
     image")
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: 该图表示一个具有4层的模型，这些层分布在4个不同的GPU上（垂直轴）。水平轴表示通过时间训练该模型，演示了GPU的利用效率更高。然而，仍然存在一个气泡（如图所示），其中某些GPU未被利用。([图片来源](https://arxiv.org/abs/1811.06965)).[](#id3
+    "此图片的永久链接")
 - en: Pipe APIs in PyTorch
+  id: totrans-13
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: PyTorch中的Pipe API
 - en: '[PRE0]'
+  id: totrans-14
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: Wraps an arbitrary [`nn.Sequential`](generated/torch.nn.Sequential.html#torch.nn.Sequential
     "torch.nn.Sequential") module to train on using synchronous pipeline parallelism.
     If the module requires lots of memory and doesn’t fit on a single GPU, pipeline
     parallelism is a useful technique to employ for training.
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 将任意[`nn.Sequential`](generated/torch.nn.Sequential.html#torch.nn.Sequential
+    "torch.nn.Sequential")模块包装起来，以便使用同步管道并行训练。如果模块需要大量内存且无法放入单个GPU中，则管道并行是一种有用的训练技术。
 - en: The implementation is based on the [torchgpipe](https://arxiv.org/abs/2004.09910)
     paper.
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 该实现基于[torchgpipe](https://arxiv.org/abs/2004.09910)论文。
 - en: Pipe combines pipeline parallelism with checkpointing to reduce peak memory
     required to train while minimizing device under-utilization.
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: Pipe将管道并行与检查点结合起来，以减少训练所需的峰值内存，同时最大程度地减少设备的低利用率。
 - en: You should place all the modules on the appropriate devices and wrap them into
     an [`nn.Sequential`](generated/torch.nn.Sequential.html#torch.nn.Sequential "torch.nn.Sequential")
     module defining the desired order of execution. If a module does not contain any
@@ -85,321 +124,505 @@
     input tensors to the module are moved to CPU before execution. This behavior can
     be overridden by the `WithDevice` wrapper which can be used to explicitly specify
     which device a module should run on.
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: 您应该将所有模块放在适当的设备上，并将它们包装成一个[`nn.Sequential`](generated/torch.nn.Sequential.html#torch.nn.Sequential
+    "torch.nn.Sequential")模块，定义所需的执行顺序。如果一个模块不包含任何参数/缓冲区，则假定该模块应在CPU上执行，并且在执行之前，将模块的适当输入张量移动到CPU。此行为可以通过`WithDevice`包装器覆盖，该包装器可用于明确指定模块应在哪个设备上运行。
 - en: Parameters
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**module** ([`nn.Sequential`](generated/torch.nn.Sequential.html#torch.nn.Sequential
     "torch.nn.Sequential")) – sequential module to be parallelized using pipelining.
     Each module in the sequence has to have all of its parameters on a single device.
     Each module in the sequence has to either be an nn.Module or [`nn.Sequential`](generated/torch.nn.Sequential.html#torch.nn.Sequential
     "torch.nn.Sequential") (to combine multiple sequential modules on a single device)'
+  id: totrans-20
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**module**（[`nn.Sequential`](generated/torch.nn.Sequential.html#torch.nn.Sequential
+    "torch.nn.Sequential")）- 要使用管道并行化的顺序模块。序列中的每个模块都必须将其所有参数放在单个设备上。序列中的每个模块都必须是nn.Module或[`nn.Sequential`](generated/torch.nn.Sequential.html#torch.nn.Sequential
+    "torch.nn.Sequential")（用于在单个设备上组合多个顺序模块）'
 - en: '**chunks** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
     Python v3.12)")) – number of micro-batches (default: `1`)'
+  id: totrans-21
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**chunks**（[*int*](https://docs.python.org/3/library/functions.html#int "(在Python
+    v3.12中)")）- 微批量的数量（默认值：`1`）'
 - en: '**checkpoint** ([*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)")) – when to enable checkpointing, one of `''always''`, `''except_last''`,
     or `''never''` (default: `''except_last''`). `''never''` disables checkpointing
     completely, `''except_last''` enables checkpointing for all micro-batches except
     the last one and `''always''` enables checkpointing for all micro-batches.'
+  id: totrans-22
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**checkpoint**（[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(在Python v3.12中)")）- 何时启用检查点，可以是`''always''`、`''except_last''`或`''never''`之一（默认值：`''except_last''`）。`''never''`完全禁用检查点，`''except_last''`对除最后一个微批量之外的所有微批量启用检查点，`''always''`对所有微批量启用检查点。'
 - en: '**deferred_batch_norm** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")) – whether to use deferred `BatchNorm` moving statistics
     (default: [`False`](https://docs.python.org/3/library/constants.html#False "(in
     Python v3.12)")). If set to [`True`](https://docs.python.org/3/library/constants.html#True
     "(in Python v3.12)"), we track statistics across multiple micro-batches to update
     the running statistics per mini-batch.'
+  id: totrans-23
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**deferred_batch_norm** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(在Python v3.12中)")) – 是否使用延迟的`BatchNorm`移动统计信息（默认值：[`False`](https://docs.python.org/3/library/constants.html#False
+    "(在Python v3.12中)")). 如果设置为[`True`](https://docs.python.org/3/library/constants.html#True
+    "(在Python v3.12中)"), 我们跟踪跨多个微批次的统计信息，以更新每个小批次的运行统计信息。'
 - en: Raises
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 引发
 - en: '[**TypeError**](https://docs.python.org/3/library/exceptions.html#TypeError
     "(in Python v3.12)") – the module is not a [`nn.Sequential`](generated/torch.nn.Sequential.html#torch.nn.Sequential
     "torch.nn.Sequential").'
+  id: totrans-25
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[**TypeError**](https://docs.python.org/3/library/exceptions.html#TypeError
+    "(在Python v3.12中)") – 模块不是[`nn.Sequential`](generated/torch.nn.Sequential.html#torch.nn.Sequential
+    "torch.nn.Sequential")。'
 - en: '[**ValueError**](https://docs.python.org/3/library/exceptions.html#ValueError
     "(in Python v3.12)") – invalid arguments'
+  id: totrans-26
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[**ValueError**](https://docs.python.org/3/library/exceptions.html#ValueError
+    "(在Python v3.12中)") – 无效参数'
 - en: 'Example::'
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: '示例::'
 - en: Pipeline of two FC layers across GPUs 0 and 1.
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: 跨GPU 0和1的两个FC层的管道。
 - en: '[PRE1]'
+  id: totrans-29
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Note
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: You can wrap a [`Pipe`](#torch.distributed.pipeline.sync.Pipe "torch.distributed.pipeline.sync.Pipe")
     model with [`torch.nn.parallel.DistributedDataParallel`](generated/torch.nn.parallel.DistributedDataParallel.html#torch.nn.parallel.DistributedDataParallel
     "torch.nn.parallel.DistributedDataParallel") only when the checkpoint parameter
     of [`Pipe`](#torch.distributed.pipeline.sync.Pipe "torch.distributed.pipeline.sync.Pipe")
     is `'never'`.
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可以使用[`torch.nn.parallel.DistributedDataParallel`](generated/torch.nn.parallel.DistributedDataParallel.html#torch.nn.parallel.DistributedDataParallel
+    "torch.nn.parallel.DistributedDataParallel")将[`Pipe`](#torch.distributed.pipeline.sync.Pipe
+    "torch.distributed.pipeline.sync.Pipe")模型包装起来，只有当[`Pipe`](#torch.distributed.pipeline.sync.Pipe
+    "torch.distributed.pipeline.sync.Pipe")的检查点参数为`'never'`时才能这样做。
 - en: Note
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: '[`Pipe`](#torch.distributed.pipeline.sync.Pipe "torch.distributed.pipeline.sync.Pipe")
     only supports intra-node pipelining currently, but will be expanded to support
     inter-node pipelining in the future. The forward function returns an `RRef` to
     allow for inter-node pipelining in the future, where the output might be on a
     remote host. For intra-node pipelining you can use `local_value()` to retrieve
     the output locally.'
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`Pipe`](#torch.distributed.pipeline.sync.Pipe "torch.distributed.pipeline.sync.Pipe")目前仅支持节点内流水线处理，但将来将扩展为支持节点间流水线处理。前向函数返回一个`RRef`，以便将来进行节点间流水线处理，其中输出可能位于远程主机上。对于节点内流水线处理，您可以使用`local_value()`在本地检索输出。'
 - en: Warning
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: '[`Pipe`](#torch.distributed.pipeline.sync.Pipe "torch.distributed.pipeline.sync.Pipe")
     is experimental and subject to change.'
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`Pipe`](#torch.distributed.pipeline.sync.Pipe "torch.distributed.pipeline.sync.Pipe")是实验性的，可能会发生变化。'
 - en: '[PRE2]'
+  id: totrans-36
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Processes a single input mini-batch through the pipe and returns an `RRef` pointing
     to the output. [`Pipe`](#torch.distributed.pipeline.sync.Pipe "torch.distributed.pipeline.sync.Pipe")
     is a fairly transparent module wrapper. It doesn’t modify the input and output
     signature of the underlying module. But there’s type restriction. Input and output
     have to contain at least one tensor. This restriction is applied at partition
     boundaries too.
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过管道处理单个输入小批次并返回指向输出的`RRef`。[`Pipe`](#torch.distributed.pipeline.sync.Pipe "torch.distributed.pipeline.sync.Pipe")是一个相当透明的模块包装器。它不修改底层模块的输入和输出签名。但有类型限制。输入和输出必须至少包含一个张量。此限制也适用于分区边界。
 - en: The sequence of inputs are fed into the first stage of the pipeline as `*inputs`.
     As a result the positional args for this function should match the positional
     args for the first stage of the pipeline. The same condition applies for output
     of one stage of the pipeline which is the input for the next stage.
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 输入序列被馈送到管道的第一个阶段作为`*inputs`。因此，此函数的位置参数应与管道第一个阶段的位置参数匹配。对于管道的一个阶段的输出作为下一个阶段的输入也适用相同条件。
 - en: The input tensor is split into multiple micro-batches based on the `chunks`
     parameter used to initialize [`Pipe`](#torch.distributed.pipeline.sync.Pipe "torch.distributed.pipeline.sync.Pipe").
     The batch size is assumed to be the first dimension of the tensor and if the batch
     size is less than `chunks`, the number of micro-batches is equal to the batch
     size.
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 根据用于初始化[`Pipe`](#torch.distributed.pipeline.sync.Pipe "torch.distributed.pipeline.sync.Pipe")的`chunks`参数，将输入张量分成多个微批次。假定批量大小是张量的第一个维度，如果批量大小小于`chunks`，则微批次的数量等于批量大小。
 - en: Only tensors are split into multiple micro-batches, non-Tensor inputs are just
     replicated as-is in each micro-batch. For non-Tensor outputs in the last stage
     of the pipeline, they are aggregated as a `List` and returned the user. For example,
     if you have 2 micro-batches returning the integer 5, the user would receive the
     consolidated output of [5, 5]
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: 只有张量会被分成多个微批次，非张量输入只会在每个微批次中按原样复制。对于管道的最后阶段中的非张量输出，它们将作为`List`聚合并返回给用户。例如，如果有2个微批次返回整数5，则用户将收到[5,
+    5]的合并输出
 - en: All the input tensors need to be on the same device as the first partition of
     the pipeline.
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 所有输入张量都需要与管道的第一个分区位于同一设备上。
 - en: If a tensor is wrapped with the `NoChunk` wrapper, the tensor is not split across
     micro-batches and is replicated as-is similar to non-tensors.
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果张量使用`NoChunk`包装器包装，那么该张量不会在微批次之间分割，并且会按原样复制，类似于非张量。
 - en: Parameters
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**inputs** – input mini-batch'
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: '**inputs** – 输入小批次'
 - en: Returns
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回
 - en: '`RRef` to the output of the mini-batch'
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 指向小批次输出的`RRef`
 - en: Raises
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: 引发
 - en: '[**TypeError**](https://docs.python.org/3/library/exceptions.html#TypeError
     "(in Python v3.12)") – input doesn’t contain at least one tensor'
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: '[**TypeError**](https://docs.python.org/3/library/exceptions.html#TypeError
+    "(在Python v3.12中)") – 输入不包含至少一个张量'
 - en: Return type
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '*RRef*'
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: '*RRef*'
 - en: Skip connections
+  id: totrans-51
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 跳过连接
 - en: Certain models like [ResNeXt](https://pytorch.org/hub/pytorch_vision_resnext/)
     are not completely sequential and have skip connections between layers. Naively
     implementing as part of pipeline parallelism would imply that we need to copy
     outputs for certain layers through multiple GPUs till we eventually reach the
     GPU where the layer for the skip connection resides. To avoid this copy overhead,
     we provide APIs below to stash and pop Tensors in different layers of the model.
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
+  zh: 像[ResNeXt](https://pytorch.org/hub/pytorch_vision_resnext/)这样的某些模型并不完全是顺序的，它们在层之间有跳过连接。简单地作为管道并行的一部分实现会意味着我们需要通过多个
+    GPU 复制某些层的输出，直到最终到达包含跳过连接层的 GPU。为了避免这种复制开销，我们提供以下 API 来在模型的不同层中存储和弹出张量。
 - en: '[PRE3]'
+  id: totrans-53
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: Define a decorator to create [`nn.Module`](generated/torch.nn.Module.html#torch.nn.Module
     "torch.nn.Module") with skip connections.
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: 定义一个装饰器来创建带有跳过连接的[`nn.Module`](generated/torch.nn.Module.html#torch.nn.Module
+    "torch.nn.Module")。
 - en: These decorated modules are called “skippable”. This functionality works perfectly
     fine even when the module is not wrapped by [`Pipe`](#torch.distributed.pipeline.sync.Pipe
     "torch.distributed.pipeline.sync.Pipe").
+  id: totrans-55
   prefs: []
   type: TYPE_NORMAL
+  zh: 这些装饰模块称为“可跳过的”。即使模块没有被[`Pipe`](#torch.distributed.pipeline.sync.Pipe "torch.distributed.pipeline.sync.Pipe")
+    包装，此功能也能正常工作。
 - en: Each skip tensor is managed by its name. Before manipulating skip tensors, a
     skippable module must statically declare the names for skip tensors by stash and/or
     pop parameters. Skip tensors with pre-declared name can be stashed by `yield stash(name,
     tensor)` or popped by `tensor = yield pop(name)`.
+  id: totrans-56
   prefs: []
   type: TYPE_NORMAL
+  zh: 每个跳过张量都由其名称管理。在操作跳过张量之前，可跳过模块必须通过存储和/或弹出参数静态声明跳过张量的名称。具有预先声明名称的跳过张量可以通过 `yield
+    stash(name, tensor)` 存储或通过 `tensor = yield pop(name)` 弹出。
 - en: 'Here is an example with three layers. A skip tensor named “1to3” is stashed
     and popped at the first and last layer, respectively:'
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: 这是一个具有三层的示例。一个名为“1to3”的跳过张量在第一层和最后一层分别存储和弹出：
 - en: '[PRE4]'
+  id: totrans-58
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: 'One skippable module can stash or pop multiple skip tensors:'
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个可跳过的模块可以存储或弹出多个跳过张量：
 - en: '[PRE5]'
+  id: totrans-60
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: Every skip tensor must be associated with exactly one pair of stash and pop.
     [`Pipe`](#torch.distributed.pipeline.sync.Pipe "torch.distributed.pipeline.sync.Pipe")
     checks this restriction automatically when wrapping a module. You can also check
     the restriction by [`verify_skippables()`](#torch.distributed.pipeline.sync.skip.skippable.verify_skippables
     "torch.distributed.pipeline.sync.skip.skippable.verify_skippables") without [`Pipe`](#torch.distributed.pipeline.sync.Pipe
     "torch.distributed.pipeline.sync.Pipe").
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: 每个跳过张量必须与一对存储和弹出完全关联。[`Pipe`](#torch.distributed.pipeline.sync.Pipe "torch.distributed.pipeline.sync.Pipe")
+    在包装模块时会自动检查此限制。您还可以通过[`verify_skippables()`](#torch.distributed.pipeline.sync.skip.skippable.verify_skippables
+    "torch.distributed.pipeline.sync.skip.skippable.verify_skippables") 而不使用[`Pipe`](#torch.distributed.pipeline.sync.Pipe
+    "torch.distributed.pipeline.sync.Pipe") 来检查此限制。
 - en: Return type
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*Callable*](https://docs.python.org/3/library/typing.html#typing.Callable
     "(in Python v3.12)")[[[*Type*](https://docs.python.org/3/library/typing.html#typing.Type
     "(in Python v3.12)")[[*Module*](generated/torch.nn.Module.html#torch.nn.Module
     "torch.nn.modules.module.Module")]], [*Type*](https://docs.python.org/3/library/typing.html#typing.Type
     "(in Python v3.12)")[*Skippable*]]'
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*Callable*](https://docs.python.org/3/library/typing.html#typing.Callable
+    "(在 Python v3.12 中)")[[[*Type*](https://docs.python.org/3/library/typing.html#typing.Type
+    "(在 Python v3.12 中)")[[*Module*](generated/torch.nn.Module.html#torch.nn.Module
+    "torch.nn.modules.module.Module")]], [*Type*](https://docs.python.org/3/library/typing.html#typing.Type
+    "(在 Python v3.12 中)")[*Skippable*]]'
 - en: '[PRE6]'
+  id: totrans-64
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: The command to stash a skip tensor.
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: 存储跳过张量的命令。
 - en: '[PRE7]'
+  id: totrans-66
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: Parameters
+  id: totrans-67
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**name** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
     Python v3.12)")) – name of skip tensor'
+  id: totrans-68
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**name** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(在 Python
+    v3.12 中)")) – 跳过张量的名称'
 - en: '**input** ([*torch.Tensor*](tensors.html#torch.Tensor "torch.Tensor") *or*
     *None*) – tensor to pass to the skip connection'
+  id: totrans-69
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**input** ([*torch.Tensor*](tensors.html#torch.Tensor "torch.Tensor") *或* *None*)
+    – 传递给跳过连接的张量'
 - en: '[PRE8]'
+  id: totrans-70
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: The command to pop a skip tensor.
+  id: totrans-71
   prefs: []
   type: TYPE_NORMAL
+  zh: 弹出跳过张量的命令。
 - en: '[PRE9]'
+  id: totrans-72
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: Parameters
+  id: totrans-73
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**name** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
     Python v3.12)")) – name of skip tensor'
+  id: totrans-74
   prefs: []
   type: TYPE_NORMAL
+  zh: '**name** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(在 Python
+    v3.12 中)")) – 跳过张量的名称'
 - en: Returns
+  id: totrans-75
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回
 - en: the skip tensor previously stashed by another layer under the same name
+  id: totrans-76
   prefs: []
   type: TYPE_NORMAL
+  zh: 之前由同一名称下的另一层存储的跳过张量
 - en: Return type
+  id: totrans-77
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: None
+  id: totrans-78
   prefs: []
   type: TYPE_NORMAL
+  zh: 无
 - en: '[PRE10]'
+  id: totrans-79
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: Verify if the underlying skippable modules satisfy integrity.
+  id: totrans-80
   prefs: []
   type: TYPE_NORMAL
+  zh: 验证底层可跳过模块是否满足完整性。
 - en: Every skip tensor must have only one pair of stash and pop. If there are one
     or more unmatched pairs, it will raise [`TypeError`](https://docs.python.org/3/library/exceptions.html#TypeError
     "(in Python v3.12)") with the detailed messages.
+  id: totrans-81
   prefs: []
   type: TYPE_NORMAL
+  zh: 每个跳过张量必须只有一对存储和弹出。如果有一个或多个不匹配的对，它将引发[`TypeError`](https://docs.python.org/3/library/exceptions.html#TypeError
+    "(在 Python v3.12 中)") 并附带详细消息。
 - en: 'Here are a few failure cases. [`verify_skippables()`](#torch.distributed.pipeline.sync.skip.skippable.verify_skippables
     "torch.distributed.pipeline.sync.skip.skippable.verify_skippables") will report
     failure for these cases:'
+  id: totrans-82
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下是一些失败案例。[`verify_skippables()`](#torch.distributed.pipeline.sync.skip.skippable.verify_skippables
+    "torch.distributed.pipeline.sync.skip.skippable.verify_skippables") 将报告这些案例的失败：
 - en: '[PRE11]'
+  id: totrans-83
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: To use the same name for multiple skip tensors, they must be isolated by different
     namespaces. See `isolate()`.
+  id: totrans-84
   prefs: []
   type: TYPE_NORMAL
+  zh: 要为多个跳过张量使用相同的名称，它们必须通过不同的命名空间隔离。参见 `isolate()`。
 - en: Raises
+  id: totrans-85
   prefs: []
   type: TYPE_NORMAL
+  zh: 引发
 - en: '[**TypeError**](https://docs.python.org/3/library/exceptions.html#TypeError
     "(in Python v3.12)") – one or more pairs of stash and pop are not matched.'
+  id: totrans-86
   prefs: []
   type: TYPE_NORMAL
+  zh: '[**TypeError**](https://docs.python.org/3/library/exceptions.html#TypeError
+    "(在 Python v3.12 中)") – 一个或多个存储和弹出不匹配的对。'
 - en: Tutorials
+  id: totrans-87
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 教程
 - en: 'The following tutorials give a good overview of how to use the [`Pipe`](#torch.distributed.pipeline.sync.Pipe
     "torch.distributed.pipeline.sync.Pipe") API to train your models with the rest
     of the components that PyTorch provides:'
+  id: totrans-88
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下教程提供了如何使用[`Pipe`](#torch.distributed.pipeline.sync.Pipe "torch.distributed.pipeline.sync.Pipe")
+    API 来训练模型以及 PyTorch 提供的其他组件的概述：
 - en: '[Training Transformer models using Pipeline Parallelism](https://pytorch.org/tutorials/intermediate/pipeline_tutorial.html)'
+  id: totrans-89
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[使用管道并行训练 Transformer 模型](https://pytorch.org/tutorials/intermediate/pipeline_tutorial.html)'
 - en: '[Training Transformer models using Distributed Data Parallel and Pipeline Parallelism](https://pytorch.org/tutorials/advanced/ddp_pipeline.html)'
+  id: totrans-90
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[使用分布式数据并行和管道并行训练Transformer模型](https://pytorch.org/tutorials/advanced/ddp_pipeline.html)'
 - en: Acknowledgements
+  id: totrans-91
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 致谢
 - en: The implementation for pipeline parallelism is based on [fairscale’s pipe implementation](https://github.com/facebookresearch/fairscale/tree/main/fairscale/nn/pipe)
     and [torchgpipe](https://github.com/kakaobrain/torchgpipe). We would like to thank
     both teams for their contributions and guidance towards bringing pipeline parallelism
     into PyTorch.
+  id: totrans-92
   prefs: []
   type: TYPE_NORMAL
+  zh: 管道并行实现基于[fairscale的管道实现](https://github.com/facebookresearch/fairscale/tree/main/fairscale/nn/pipe)和[torchgpipe](https://github.com/kakaobrain/torchgpipe)。我们要感谢两个团队对于他们在将管道并行引入PyTorch方面的贡献和指导。

@@ -1,103 +1,128 @@
 - en: torch.sparse
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
 - en: 原文：[https://pytorch.org/docs/stable/sparse.html](https://pytorch.org/docs/stable/sparse.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
 - en: Warning
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
 - en: The PyTorch API of sparse tensors is in beta and may change in the near future.
     We highly welcome feature requests, bug reports and general suggestions as GitHub
     issues.
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
-- en: Why and when to use sparsity[](#why-and-when-to-use-sparsity "Permalink to
-    this heading")
+- en: Why and when to use sparsity[](#why-and-when-to-use-sparsity "Permalink to this
+    heading")
+  id: totrans-4
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
 - en: By default PyTorch stores [`torch.Tensor`](tensors.html#torch.Tensor "torch.Tensor")
     stores elements contiguously physical memory. This leads to efficient implementations
     of various array processing algorithms that require fast access to elements.
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
 - en: Now, some users might decide to represent data such as graph adjacency matrices,
     pruned weights or points clouds by Tensors whose *elements are mostly zero valued*.
     We recognize these are important applications and aim to provide performance optimizations
     for these use cases via sparse storage formats.
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
 - en: Various sparse storage formats such as COO, CSR/CSC, semi-structured, LIL, etc.
     have been developed over the years. While they differ in exact layouts, they all
     compress data through efficient representation of zero valued elements. We call
     the uncompressed values *specified* in contrast to *unspecified*, compressed elements.
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
 - en: By compressing repeat zeros sparse storage formats aim to save memory and computational
     resources on various CPUs and GPUs. Especially for high degrees of sparsity or
     highly structured sparsity this can have significant performance implications.
     As such sparse storage formats can be seen as a performance optimization.
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
 - en: Like many other performance optimization sparse storage formats are not always
     advantageous. When trying sparse formats for your use case you might find your
     execution time to increase rather than decrease.
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
 - en: Please feel encouraged to open a GitHub issue if you analytically expected to
     see a stark increase in performance but measured a degradation instead. This helps
     us prioritize the implementation of efficient kernels and wider performance optimizations.
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
 - en: We make it easy to try different sparsity layouts, and convert between them,
     without being opinionated on what’s best for your particular application.
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
 - en: Functionality overview
+  id: totrans-12
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
 - en: We want it to be straightforward to construct a sparse Tensor from a given dense
     Tensor by providing conversion routines for each layout.
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
 - en: In the next example we convert a 2D Tensor with default dense (strided) layout
     to a 2D Tensor backed by the COO memory layout. Only values and indices of non-zero
     elements are stored in this case.
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE0]'
+  id: totrans-15
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: PyTorch currently supports [COO](#sparse-coo-docs), [CSR](#sparse-csr-docs),
     [CSC](#sparse-csc-docs), [BSR](#sparse-bsr-docs), and [BSC](#sparse-bsc-docs).
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
 - en: 'We also have a prototype implementation to support :ref: semi-structured sparsity<sparse-semi-structured-docs>.
     Please see the references for more details.'
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
 - en: Note that we provide slight generalizations of these formats.
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
 - en: 'Batching: Devices such as GPUs require batching for optimal performance and
     thus we support batch dimensions.'
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
 - en: We currently offer a very simple version of batching where each component of
     a sparse format itself is batched. This also requires the same number of specified
     elements per batch entry. In this example we construct a 3D (batched) CSR Tensor
     from a 3D dense Tensor.
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE1]'
+  id: totrans-21
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: 'Dense dimensions: On the other hand, some data such as Graph embeddings might
     be better viewed as sparse collections of vectors instead of scalars.'
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
 - en: In this example we create a 3D Hybrid COO Tensor with 2 sparse and 1 dense dimension
@@ -107,614 +132,898 @@
     per row instead of one per element. But it also increases the amount of storage
     for the values. Since only rows that are *entirely* zero can be emitted and the
     presence of any non-zero valued elements cause the entire row to be stored.
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
 - en: '[PRE2]'
+  id: totrans-24
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Operator overview
+  id: totrans-25
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 操作符概述
 - en: Fundamentally, operations on Tensor with sparse storage formats behave the same
     as operations on Tensor with strided (or other) storage formats. The particularities
     of storage, that is the physical layout of the data, influences the performance
     of an operation but should not influence the semantics.
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 基本上，对具有稀疏存储格式的张量的操作与对具有步进（或其他）存储格式的张量的操作行为相同。存储的特殊性，即数据的物理布局，影响操作的性能，但不应影响语义。
 - en: We are actively increasing operator coverage for sparse tensors. Users should
     not expect support same level of support as for dense Tensors yet. See our [operator](#sparse-ops-docs)
     documentation for a list.
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们正在积极增加稀疏张量的操作符覆盖范围。用户不应期望与密集张量相同级别的支持。请查看我们的[操作符](#sparse-ops-docs)文档以获取列表。
 - en: '[PRE3]'
+  id: totrans-28
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: As shown in the example above, we don’t support non-zero preserving unary operators
     such as cos. The output of a non-zero preserving unary operation will not be able
     to take advantage of sparse storage formats to the same extent as the input and
     potentially result in a catastrophic increase in memory. We instead rely on the
     user to explicitly convert to a dense Tensor first and then run the operation.
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 如上例所示，我们不支持诸如cos之类的非零保留一元运算符。非零保留一元操作的输出将无法像输入那样充分利用稀疏存储格式，并可能导致内存的灾难性增加。我们依赖用户首先显式转换为密集张量，然后运行操作。
 - en: '[PRE4]'
+  id: totrans-30
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: We are aware that some users want to ignore compressed zeros for operations
     such as cos instead of preserving the exact semantics of the operation. For this
     we can point to torch.masked and its MaskedTensor, which is in turn also backed
     and powered by sparse storage formats and kernels.
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们知道一些用户希望忽略压缩的零值，而不是保留操作的确切语义，例如cos。对于这一点，我们可以指向torch.masked及其MaskedTensor，后者也由稀疏存储格式和核支持。
 - en: Also note that, for now, the user doesn’t have a choice of the output layout.
     For example, adding a sparse Tensor to a regular strided Tensor results in a strided
     Tensor. Some users might prefer for this to stay a sparse layout, because they
     know the result will still be sufficiently sparse.
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 还要注意，目前用户无法选择输出布局。例如，将稀疏张量添加到常规步进张量会导致步进张量。一些用户可能希望保持稀疏布局，因为他们知道结果仍然足够稀疏。
 - en: '[PRE5]'
+  id: totrans-33
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: We acknowledge that access to kernels that can efficiently produce different
     output layouts can be very useful. A subsequent operation might significantly
     benefit from receiving a particular layout. We are working on an API to control
     the result layout and recognize it is an important feature to plan a more optimal
     path of execution for any given model.
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们承认，能够高效产生不同输出布局的核对于后续操作可能非常有用。后续操作可能会极大地受益于接收特定布局。我们正在开发一个API来控制结果布局，并认识到这是一个重要功能，可以为任何给定模型规划更优化的执行路径。
 - en: '## Sparse Semi-Structured Tensors[](#sparse-semi-structured-tensors "Permalink
     to this heading")'
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 稀疏半结构张量
 - en: Warning
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: Sparse semi-structured tensors are currently a prototype feature and subject
     to change. Please feel free to open an issue to report a bug or if you have feedback
     to share.
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 稀疏半结构张量目前是一个原型功能，可能会发生变化。请随时提出问题以报告错误或分享反馈。
 - en: Semi-Structured sparsity is a sparse data layout that was first introduced in
     NVIDIA’s Ampere architecture. It is also referred to as **fine-grained structured
     sparsity** or **2:4 structured sparsity**.
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 半结构稀疏性是首次在NVIDIA的Ampere架构中引入的稀疏数据布局。它也被称为**细粒度结构稀疏性**或**2:4结构稀疏性**。
 - en: This sparse layout stores n elements out of every 2n elements, with n being
     determined by the width of the Tensor’s data type (dtype). The most frequently
     used dtype is float16, where n=2, thus the term “2:4 structured sparsity.”
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 这种稀疏布局存储每2n个元素中的n个元素，其中n由张量的数据类型（dtype）的宽度确定。最常用的dtype是float16，其中n=2，因此术语“2:4结构稀疏性”。
 - en: Semi-structured sparsity is explained in greater detail in [this NVIDIA blog
     post](https://developer.nvidia.com/blog/exploiting-ampere-structured-sparsity-with-cusparselt).
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: 半结构稀疏性在[NVIDIA博客文章](https://developer.nvidia.com/blog/exploiting-ampere-structured-sparsity-with-cusparselt)中有更详细的解释。
 - en: In PyTorch, semi-structured sparsity is implemented via a Tensor subclass. By
     subclassing, we can override `__torch_dispatch__` , allowing us to use faster
     sparse kernels when performing matrix multiplication. We can also store the tensor
     in it’s compressed form inside the subclass to reduce memory overhead.
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 在PyTorch中，半结构稀疏性是通过张量子类实现的。通过子类化，我们可以重写`__torch_dispatch__`，从而在执行矩阵乘法时使用更快的稀疏核。我们还可以将张量存储在子类中的压缩形式中，以减少内存开销。
 - en: In this compressed form, the sparse tensor is stored by retaining only the *specified*
     elements and some metadata, which encodes the mask.
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这种压缩形式中，稀疏张量仅保留*指定*元素和一些元数据，用于编码掩码。
 - en: Note
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: The specified elements and metadata mask of a semi-structured sparse tensor
     are stored together in a single flat compressed tensor. They are appended to each
     other to form a contiguous chunk of memory.
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 半结构稀疏张量的指定元素和元数据掩码一起存储在一个单一的扁平压缩张量中。它们被附加在一起形成一个连续的内存块。
 - en: compressed tensor = [ specified elements of original tensor | metadata_mask
     ]
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: 压缩张量 = [原始张量的指定元素 | 元数据掩码]
 - en: For an original tensor of size (r, c) we expect the first m * k // 2 elements
     to be the kept elements and the rest of the tensor is metadata.
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于大小为(r, c)的原始张量，我们期望前m * k // 2个元素是保留的元素，剩下的张量是元数据。
 - en: In order to make it easier for the user to view the specified elements and mask,
     one can use `.indices()` and `.values()` to access the mask and specified elements
     respectively.
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了让用户更容易查看指定元素和掩码，可以使用`.indices()`和`.values()`分别访问掩码和指定元素。
 - en: '`.values()` returns the specified elements in a tensor of size (r, c//2) and
     with the same dtype as the dense matrix.'
+  id: totrans-48
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`.values()`返回大小为(r, c//2)的张量中的指定元素，并具有与密集矩阵相同的数据类型。'
 - en: '`.indices()` returns the metadata_mask in a tensor of size (r, c//2 ) and with
     element type `torch.int16` if dtype is torch.float16 or torch.bfloat16, and element
     type `torch.int32` if dtype is torch.int8.'
+  id: totrans-49
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`.indices()`返回一个大小为(r, c//2)的张量，元素类型为`torch.int16`（如果dtype为torch.float16或torch.bfloat16），元素类型为`torch.int32`（如果dtype为torch.int8）。'
 - en: For 2:4 sparse tensors, the metadata overhead is minor - just 2 bits per specified
     element.
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于2:4稀疏张量，元数据开销很小 - 每个指定元素只有2位。
 - en: Note
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: It’s important to note that `torch.float32` is only supported for 1:2 sparsity.
     Therefore, it does not follow the same formula as above.
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
+  zh: 重要的是要注意，`torch.float32`仅支持1:2稀疏性。因此，它不遵循上述相同的公式。
 - en: Here, we break down how to calculate the compression ratio ( size dense / size
     sparse) of a 2:4 sparse tensor.
+  id: totrans-53
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这里，我们分解如何计算2:4稀疏张量的压缩比（稠密大小/稀疏大小）。
 - en: Let (r, c) = tensor.shape and e = bitwidth(tensor.dtype), so e = 16 for `torch.float16`
     and `torch.bfloat16` and e = 8 for `torch.int8`.
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
-- en: $M_{dense}
-    = r \times c \times e \\ M_{sparse} = M_{specified} + M_{metadata} = r \times
-    \frac{c}{2} \times e + r \times \frac{c}{2} \times 2 = \frac{rce}{2} + rc =rce(\frac{1}{2}
-    +\frac{1}{e})$ Mdense​=r×c×eMsparse​=Mspecified​+Mmetadata​=r×2c​×e+r×2c​×2=2rce​+rc=rce(21​+e1​)
+  zh: 设(r, c) = 张量形状，e = 位宽(张量数据类型)，因此对于`torch.float16`和`torch.bfloat16`，e = 16，对于`torch.int8`，e
+    = 8。
+- en: $M_{dense} = r \times c \times e \\ M_{sparse} = M_{specified} + M_{metadata}
+    = r \times \frac{c}{2} \times e + r \times \frac{c}{2} \times 2 = \frac{rce}{2}
+    + rc =rce(\frac{1}{2} +\frac{1}{e})$ Mdense​=r×c×eMsparse​=Mspecified​+Mmetadata​=r×2c​×e+r×2c​×2=2rce​+rc=rce(21​+e1​)
+  id: totrans-55
   prefs: []
   type: TYPE_NORMAL
+  zh: $M_{dense} = r \times c \times e \\ M_{sparse} = M_{specified} + M_{metadata}
+    = r \times \frac{c}{2} \times e + r \times \frac{c}{2} \times 2 = \frac{rce}{2}
+    + rc =rce(\frac{1}{2} +\frac{1}{e})$ Mdense​=r×c×eMsparse​=Mspecified​+Mmetadata​=r×2c​×e+r×2c​×2=2rce​+rc=rce(21​+e1​)
 - en: Using these calculations, we can determine the total memory footprint for both
     the original dense and the new sparse representation.
+  id: totrans-56
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用这些计算，我们可以确定原始稠密表示和新稀疏表示的总内存占用量。
 - en: This gives us a simple formula for the compression ratio, which is dependent
     only on the bitwidth of the tensor datatype.
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
-- en: $C = \frac{M_{sparse}}{M_{dense}} = \frac{1}{2} +
-    \frac{1}{e}$ C=Mdense​Msparse​​=21​+e1​
+  zh: 这为我们提供了一个简单的压缩比公式，仅取决于张量数据类型的位宽。
+- en: $C = \frac{M_{sparse}}{M_{dense}} = \frac{1}{2} + \frac{1}{e}$ C=Mdense​Msparse​​=21​+e1​
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: $C = \frac{M_{sparse}}{M_{dense}} = \frac{1}{2} + \frac{1}{e}$ C=Mdense​Msparse​​=21​+e1​
 - en: By using this formula, we find that the compression ratio is 56.25% for `torch.float16`
     or `torch.bfloat16`, and 62.5% for `torch.int8`.
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过使用这个公式，我们发现对于`torch.float16`或`torch.bfloat16`，压缩比为56.25%，对于`torch.int8`，压缩比为62.5%。
 - en: Constructing Sparse Semi-Structured Tensors[](#constructing-sparse-semi-structured-tensors
     "Permalink to this heading")
+  id: totrans-60
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 构建稀疏半结构张量
 - en: You can transform a dense tensor into a sparse semi-structured tensor by simply
     using the `torch.to_sparse_semi_structured` function.
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可以通过简单使用`torch.to_sparse_semi_structured`函数将稠密张量转换为稀疏半结构张量。
 - en: Please also note that we only support CUDA tensors since hardware compatibility
     for semi-structured sparsity is limited to NVIDIA GPUs.
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，由于硬件兼容性有限，我们仅支持CUDA张量用于半结构稀疏性的NVIDIA GPU。
 - en: The following datatypes are supported for semi-structured sparsity. Note that
     each datatype has its own shape constraints and compression factor.
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下数据类型支持半结构稀疏性。请注意，每种数据类型都有自己的形状约束和压缩因子。
 - en: '| PyTorch dtype | Shape Constraints | Compression Factor | Sparsity Pattern
     |'
+  id: totrans-64
   prefs: []
   type: TYPE_TB
+  zh: '| PyTorch数据类型 | 形状约束 | 压缩因子 | 稀疏模式 |'
 - en: '| --- | --- | --- | --- |'
+  id: totrans-65
   prefs: []
   type: TYPE_TB
+  zh: '| --- | --- | --- | --- |'
 - en: '| `torch.float16` | Tensor must be 2D and (r, c) must both be a positive multiple
     of 64 | 9/16 | 2:4 |'
+  id: totrans-66
   prefs: []
   type: TYPE_TB
+  zh: '| `torch.float16` | 张量必须是2D且(r, c)都必须是64的正倍数 | 9/16 | 2:4 |'
 - en: '| `torch.bfloat16` | Tensor must be 2D and (r, c) must both be a positive multiple
     of 64 | 9/16 | 2:4 |'
+  id: totrans-67
   prefs: []
   type: TYPE_TB
+  zh: '| `torch.bfloat16` | 张量必须是2D且(r, c)都必须是64的正倍数 | 9/16 | 2:4 |'
 - en: '| `torch.int8` | Tensor must be 2D and (r, c) must both be a positive multiple
     of 128 | 10/16 | 2:4 |'
+  id: totrans-68
   prefs: []
   type: TYPE_TB
+  zh: '| `torch.int8` | 张量必须是2D且(r, c)都必须是128的正倍数 | 10/16 | 2:4 |'
 - en: To construct a semi-structured sparse tensor, start by creating a regular dense
     tensor that adheres to a 2:4 (or semi-structured) sparse format. To do this we
     tile a small 1x4 strip to create a 16x16 dense float16 tensor. Afterwards, we
     can call `to_sparse_semi_structured` function to compress it for accelerated inference.
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: 要构建一个半结构稀疏张量，首先创建一个符合2:4（或半结构）稀疏格式的常规稠密张量。为此，我们将一个小的1x4条带平铺，创建一个16x16的稠密float16张量。之后，我们可以调用`to_sparse_semi_structured`函数对其进行压缩以加速推断。
 - en: '[PRE6]'
+  id: totrans-70
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: Sparse Semi-Structured Tensor Operations[](#sparse-semi-structured-tensor-operations
     "Permalink to this heading")
+  id: totrans-71
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 稀疏半结构张量操作
 - en: 'Currently, the following operations are supported for semi-structured sparse
     tensors:'
+  id: totrans-72
   prefs: []
   type: TYPE_NORMAL
+  zh: 目前，以下操作支持半结构稀疏张量：
 - en: torch.addmm(bias, dense, sparse.t())
+  id: totrans-73
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: torch.addmm(偏置, 稠密, 稀疏.t())
 - en: torch.mm(dense, sparse)
+  id: totrans-74
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: torch.mm(稠密, 稀疏)
 - en: torch.mm(sparse, dense)
+  id: totrans-75
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: torch.mm(稀疏, 稠密)
 - en: aten.linear.default(dense, sparse, bias)
+  id: totrans-76
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: aten.linear.default(稠密, 稀疏, 偏置)
 - en: aten.t.default(sparse)
+  id: totrans-77
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: aten.t.default(稀疏)
 - en: aten.t.detach(sparse)
+  id: totrans-78
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: aten.t.detach(稀疏)
 - en: 'To use these ops, simply pass the output of `to_sparse_semi_structured(tensor)`
     instead of using `tensor` once your tensor has 0s in a semi-structured sparse
     format, like this:'
+  id: totrans-79
   prefs: []
   type: TYPE_NORMAL
+  zh: 要使用这些操作，只需在您的张量以半结构稀疏格式具有0时，将`to_sparse_semi_structured(tensor)`的输出传递给`tensor`，就像这样：
 - en: '[PRE7]'
+  id: totrans-80
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: Accelerating nn.Linear with semi-structured sparsity[](#accelerating-nn-linear-with-semi-structured-sparsity
     "Permalink to this heading")
+  id: totrans-81
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 使用半结构稀疏性加速nn.Linear
 - en: 'You can accelerate the linear layers in your model if the weights are already
     semi-structured sparse with just a few lines of code:'
+  id: totrans-82
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果权重已经是半结构稀疏的，您可以通过几行代码加速模型中的线性层：
 - en: '[PRE8]  ## Sparse COO tensors'
+  id: totrans-83
   prefs: []
   type: TYPE_NORMAL
+  zh: '[PRE8]  ## 稀疏COO张量'
 - en: PyTorch implements the so-called Coordinate format, or COO format, as one of
     the storage formats for implementing sparse tensors. In COO format, the specified
     elements are stored as tuples of element indices and the corresponding values.
     In particular,
+  id: totrans-84
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch实现了所谓的坐标格式，或COO格式，作为实现稀疏张量的存储格式之一。在COO格式中，指定的元素存储为元素索引和相应值的元组。特别是，
 - en: the indices of specified elements are collected in `indices` tensor of size
     `(ndim, nse)` and with element type `torch.int64`,
+  id: totrans-85
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 指定元素的索引被收集在大小为(ndim, nse)的`indices`张量中，元素类型为`torch.int64`，
 - en: ''
+  id: totrans-86
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-87
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: the corresponding values are collected in `values` tensor of size `(nse,)` and
     with an arbitrary integer or floating point number element type,
+  id: totrans-88
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 相应的值被收集在大小为`(nse,)`的`values`张量中，并且具有任意整数或浮点数元素类型，
 - en: where `ndim` is the dimensionality of the tensor and `nse` is the number of
     specified elements.
+  id: totrans-89
   prefs: []
   type: TYPE_NORMAL
+  zh: 其中`ndim`是张量的维度，`nse`是指定元素的数量。
 - en: Note
+  id: totrans-90
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: The memory consumption of a sparse COO tensor is at least `(ndim * 8 + <size
     of element type in bytes>) * nse` bytes (plus a constant overhead from storing
     other tensor data).
+  id: totrans-91
   prefs: []
   type: TYPE_NORMAL
+  zh: 稀疏COO张量的内存消耗至少为`(ndim * 8 + <元素类型大小（字节）>) * nse`字节（加上存储其他张量数据的恒定开销）。
 - en: The memory consumption of a strided tensor is at least `product(<tensor shape>)
     * <size of element type in bytes>`.
+  id: totrans-92
   prefs: []
   type: TYPE_NORMAL
+  zh: 分块张量的内存消耗至少为`product(<张量形状>) * <元素类型大小（字节）>`。
 - en: For example, the memory consumption of a 10 000 x 10 000 tensor with 100 000
     non-zero 32-bit floating point numbers is at least `(2 * 8 + 4) * 100 000 = 2
     000 000` bytes when using COO tensor layout and `10 000 * 10 000 * 4 = 400 000
     000` bytes when using the default strided tensor layout. Notice the 200 fold memory
     saving from using the COO storage format.
+  id: totrans-93
   prefs: []
   type: TYPE_NORMAL
+  zh: 例如，一个大小为10,000 x 10,000的张量，包含100,000个非零的32位浮点数时，至少消耗的内存为`(2 * 8 + 4) * 100,000
+    = 2,000,000`字节，使用COO张量布局时，而使用默认的分块张量布局时为`10,000 * 10,000 * 4 = 400,000,000`字节。注意使用COO存储格式可以节省200倍的内存。
 - en: Construction
+  id: totrans-94
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 构造
 - en: A sparse COO tensor can be constructed by providing the two tensors of indices
     and values, as well as the size of the sparse tensor (when it cannot be inferred
     from the indices and values tensors) to a function [`torch.sparse_coo_tensor()`](generated/torch.sparse_coo_tensor.html#torch.sparse_coo_tensor
     "torch.sparse_coo_tensor").
+  id: totrans-95
   prefs: []
   type: TYPE_NORMAL
+  zh: 稀疏的COO张量可以通过提供索引和数值的两个张量，以及稀疏张量的大小（当无法从索引和数值张量中推断出时），传递给[`torch.sparse_coo_tensor()`](generated/torch.sparse_coo_tensor.html#torch.sparse_coo_tensor
+    "torch.sparse_coo_tensor")函数来构建。
 - en: 'Suppose we want to define a sparse tensor with the entry 3 at location (0,
     2), entry 4 at location (1, 0), and entry 5 at location (1, 2). Unspecified elements
     are assumed to have the same value, fill value, which is zero by default. We would
     then write:'
+  id: totrans-96
   prefs: []
   type: TYPE_NORMAL
+  zh: 假设我们想要定义一个稀疏张量，位置(0, 2)处的条目为3，位置(1, 0)处的条目为4，位置(1, 2)处的条目为5。未指定的元素假定具有相同的值，填充值，默认为零。我们会这样写：
 - en: '[PRE9]'
+  id: totrans-97
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: 'Note that the input `i` is NOT a list of index tuples. If you want to write
     your indices this way, you should transpose before passing them to the sparse
     constructor:'
+  id: totrans-98
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，输入的`i`不是索引元组的列表。如果想以这种方式编写索引，应在传递给稀疏构造函数之前进行转置：
 - en: '[PRE10]'
+  id: totrans-99
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: 'An empty sparse COO tensor can be constructed by specifying its size only:'
+  id: totrans-100
   prefs: []
   type: TYPE_NORMAL
+  zh: 可以通过仅指定其大小来构建一个空的稀疏COO张量：
 - en: '[PRE11]'
+  id: totrans-101
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: '### Sparse hybrid COO tensors[](#sparse-hybrid-coo-tensors "Permalink to this
     heading")'
+  id: totrans-102
   prefs: []
   type: TYPE_NORMAL
+  zh: '### 稀疏混合COO张量[](#sparse-hybrid-coo-tensors "跳转到此标题的永久链接")'
 - en: PyTorch implements an extension of sparse tensors with scalar values to sparse
     tensors with (contiguous) tensor values. Such tensors are called hybrid tensors.
+  id: totrans-103
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch实现了将标量值的稀疏张量扩展为具有（连续）张量值的稀疏张量。这样的张量被称为混合张量。
 - en: 'PyTorch hybrid COO tensor extends the sparse COO tensor by allowing the `values`
     tensor to be a multi-dimensional tensor so that we have:'
+  id: totrans-104
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch混合COO张量通过允许`values`张量为多维张量来扩展稀疏COO张量，因此我们有：
 - en: the indices of specified elements are collected in `indices` tensor of size
     `(sparse_dims, nse)` and with element type `torch.int64`,
+  id: totrans-105
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 指定元素的索引被收集在大小为`(sparse_dims, nse)`且元素类型为`torch.int64`的`indices`张量中，
 - en: ''
+  id: totrans-106
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-107
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: the corresponding (tensor) values are collected in `values` tensor of size `(nse,
     dense_dims)` and with an arbitrary integer or floating point number element type.
+  id: totrans-108
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 相应的（张量）值被收集在大小为`(nse, dense_dims)`的`values`张量中，并且具有任意整数或浮点数元素类型。
 - en: Note
+  id: totrans-109
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: We use (M + K)-dimensional tensor to denote a N-dimensional sparse hybrid tensor,
     where M and K are the numbers of sparse and dense dimensions, respectively, such
     that M + K == N holds.
+  id: totrans-110
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们使用(M + K)维张量来表示N维稀疏混合张量，其中M和K分别是稀疏和密集维度的数量，使得M + K == N成立。
 - en: Suppose we want to create a (2 + 1)-dimensional tensor with the entry [3, 4]
     at location (0, 2), entry [5, 6] at location (1, 0), and entry [7, 8] at location
     (1, 2). We would write
+  id: totrans-111
   prefs: []
   type: TYPE_NORMAL
+  zh: 假设我们想要创建一个(2 + 1)维张量，位置(0, 2)处的条目为[3, 4]，位置(1, 0)处的条目为[5, 6]，位置(1, 2)处的条目为[7,
+    8]。我们会这样写
 - en: '[PRE12]'
+  id: totrans-112
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: '[PRE13]'
+  id: totrans-113
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: 'In general, if `s` is a sparse COO tensor and `M = s.sparse_dim()`, `K = s.dense_dim()`,
     then we have the following invariants:'
+  id: totrans-114
   prefs: []
   type: TYPE_NORMAL
+  zh: 一般来说，如果`s`是一个稀疏COO张量，`M = s.sparse_dim()`，`K = s.dense_dim()`，那么我们有以下不变性：
 - en: '`M + K == len(s.shape) == s.ndim` - dimensionality of a tensor is the sum of
     the number of sparse and dense dimensions,'
+  id: totrans-115
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`M + K == len(s.shape) == s.ndim` - 张量的维度是稀疏和密集维度数量的总和，'
 - en: ''
+  id: totrans-116
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-117
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: '`s.indices().shape == (M, nse)` - sparse indices are stored explicitly,'
+  id: totrans-118
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`s.indices().shape == (M, nse)` - 稀疏索引被显式存储，'
 - en: ''
+  id: totrans-119
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-120
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: '`s.values().shape == (nse,) + s.shape[M : M + K]` - the values of a hybrid
     tensor are K-dimensional tensors,'
+  id: totrans-121
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`s.values().shape == (nse,) + s.shape[M : M + K]` - 混合张量的值是K维张量，'
 - en: ''
+  id: totrans-122
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-123
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: '`s.values().layout == torch.strided` - values are stored as strided tensors.'
+  id: totrans-124
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`s.values().layout == torch.strided` - 值以分块张量的形式存储。'
 - en: Note
+  id: totrans-125
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Dense dimensions always follow sparse dimensions, that is, mixing of dense and
     sparse dimensions is not supported.
+  id: totrans-126
   prefs: []
   type: TYPE_NORMAL
+  zh: 密集维度总是跟在稀疏维度后面，也就是不支持混合密集和稀疏维度。
 - en: Note
+  id: totrans-127
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: 'To be sure that a constructed sparse tensor has consistent indices, values,
     and size, the invariant checks can be enabled per tensor creation via `check_invariants=True`
     keyword argument, or globally using [`torch.sparse.check_sparse_tensor_invariants`](generated/torch.sparse.check_sparse_tensor_invariants.html#torch.sparse.check_sparse_tensor_invariants
     "torch.sparse.check_sparse_tensor_invariants") context manager instance. By default,
     the sparse tensor invariants checks are disabled.  ### Uncoalesced sparse COO
     tensors'
+  id: totrans-128
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了确保构建的稀疏张量具有一致的索引、数值和大小，可以通过`check_invariants=True`关键字参数在每个张量创建时启用不变性检查，或者全局使用[`torch.sparse.check_sparse_tensor_invariants`](generated/torch.sparse.check_sparse_tensor_invariants.html#torch.sparse.check_sparse_tensor_invariants
+    "torch.sparse.check_sparse_tensor_invariants")上下文管理器实例。默认情况下，稀疏张量的不变性检查是禁用的。###
+    未合并的稀疏COO张量
 - en: 'PyTorch sparse COO tensor format permits sparse *uncoalesced* tensors, where
     there may be duplicate coordinates in the indices; in this case, the interpretation
     is that the value at that index is the sum of all duplicate value entries. For
     example, one can specify multiple values, `3` and `4`, for the same index `1`,
     that leads to an 1-D uncoalesced tensor:'
+  id: totrans-129
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch稀疏COO张量格式允许稀疏*未合并*张量，在索引中可能存在重复坐标；在这种情况下，该索引处的值被解释为所有重复值条目的总和。例如，可以为相同索引`1`指定多个值`3`和`4`，这导致一个1-D未合并张量：
 - en: '[PRE14]'
+  id: totrans-130
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: 'while the coalescing process will accumulate the multi-valued elements into
     a single value using summation:'
+  id: totrans-131
   prefs: []
   type: TYPE_NORMAL
+  zh: 而合并过程将使用求和将多值元素累积为单个值：
 - en: '[PRE15]'
+  id: totrans-132
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: 'In general, the output of [`torch.Tensor.coalesce()`](generated/torch.Tensor.coalesce.html#torch.Tensor.coalesce
     "torch.Tensor.coalesce") method is a sparse tensor with the following properties:'
+  id: totrans-133
   prefs: []
   type: TYPE_NORMAL
+  zh: 一般来说，[`torch.Tensor.coalesce()`](generated/torch.Tensor.coalesce.html#torch.Tensor.coalesce
+    "torch.Tensor.coalesce")方法的输出是具有以下属性的稀疏张量：
 - en: the indices of specified tensor elements are unique,
+  id: totrans-134
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 指定张量元素的索引是唯一的，
 - en: the indices are sorted in lexicographical order,
+  id: totrans-135
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 索引按字典顺序排序，
 - en: '[`torch.Tensor.is_coalesced()`](generated/torch.Tensor.is_coalesced.html#torch.Tensor.is_coalesced
     "torch.Tensor.is_coalesced") returns `True`.'
+  id: totrans-136
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[`torch.Tensor.is_coalesced()`](generated/torch.Tensor.is_coalesced.html#torch.Tensor.is_coalesced
+    "torch.Tensor.is_coalesced") 返回 `True`。'
 - en: Note
+  id: totrans-137
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: For the most part, you shouldn’t have to care whether or not a sparse tensor
     is coalesced or not, as most operations will work identically given a sparse coalesced
     or uncoalesced tensor.
+  id: totrans-138
   prefs: []
   type: TYPE_NORMAL
+  zh: 在大多数情况下，您不必关心稀疏张量是否已合并，因为大多数操作将在给定稀疏合并或未合并张量时完全相同。
 - en: However, some operations can be implemented more efficiently on uncoalesced
     tensors, and some on coalesced tensors.
+  id: totrans-139
   prefs: []
   type: TYPE_NORMAL
+  zh: 然而，一些操作在未合并张量上实现效率更高，一些操作在合并张量上实现效率更高。
 - en: 'For instance, addition of sparse COO tensors is implemented by simply concatenating
     the indices and values tensors:'
+  id: totrans-140
   prefs: []
   type: TYPE_NORMAL
+  zh: 例如，稀疏COO张量的加法是通过简单地连接索引和值张量来实现的：
 - en: '[PRE16]'
+  id: totrans-141
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: If you repeatedly perform an operation that can produce duplicate entries (e.g.,
     [`torch.Tensor.add()`](generated/torch.Tensor.add.html#torch.Tensor.add "torch.Tensor.add")),
     you should occasionally coalesce your sparse tensors to prevent them from growing
     too large.
+  id: totrans-142
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果反复执行可能产生重复条目的操作（例如，[`torch.Tensor.add()`](generated/torch.Tensor.add.html#torch.Tensor.add
+    "torch.Tensor.add"))，应偶尔合并稀疏张量以防止它们变得过大。
 - en: On the other hand, the lexicographical ordering of indices can be advantageous
     for implementing algorithms that involve many element selection operations, such
     as slicing or matrix products.
+  id: totrans-143
   prefs: []
   type: TYPE_NORMAL
+  zh: 另一方面，索引的字典顺序对于实现涉及许多元素选择操作的算法（例如切片或矩阵乘积）可能是有利的。
 - en: Working with sparse COO tensors[](#working-with-sparse-coo-tensors "Permalink
     to this heading")
+  id: totrans-144
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 使用稀疏COO张量进行工作
 - en: 'Let’s consider the following example:'
+  id: totrans-145
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们考虑以下示例：
 - en: '[PRE17]'
+  id: totrans-146
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: 'As mentioned above, a sparse COO tensor is a [`torch.Tensor`](tensors.html#torch.Tensor
     "torch.Tensor") instance and to distinguish it from the Tensor instances that
     use some other layout, on can use [`torch.Tensor.is_sparse`](generated/torch.Tensor.is_sparse.html#torch.Tensor.is_sparse
     "torch.Tensor.is_sparse") or `torch.Tensor.layout` properties:'
+  id: totrans-147
   prefs: []
   type: TYPE_NORMAL
+  zh: 如上所述，稀疏COO张量是一个[`torch.Tensor`](tensors.html#torch.Tensor "torch.Tensor")实例，为了区分它与使用其他布局的张量实例，可以使用[`torch.Tensor.is_sparse`](generated/torch.Tensor.is_sparse.html#torch.Tensor.is_sparse
+    "torch.Tensor.is_sparse")或`torch.Tensor.layout`属性：
 - en: '[PRE18]'
+  id: totrans-148
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: 'The number of sparse and dense dimensions can be acquired using methods [`torch.Tensor.sparse_dim()`](generated/torch.Tensor.sparse_dim.html#torch.Tensor.sparse_dim
     "torch.Tensor.sparse_dim") and [`torch.Tensor.dense_dim()`](generated/torch.Tensor.dense_dim.html#torch.Tensor.dense_dim
     "torch.Tensor.dense_dim"), respectively. For instance:'
+  id: totrans-149
   prefs: []
   type: TYPE_NORMAL
+  zh: 可以使用方法[`torch.Tensor.sparse_dim()`](generated/torch.Tensor.sparse_dim.html#torch.Tensor.sparse_dim
+    "torch.Tensor.sparse_dim")和[`torch.Tensor.dense_dim()`](generated/torch.Tensor.dense_dim.html#torch.Tensor.dense_dim
+    "torch.Tensor.dense_dim")分别获取稀疏和密集维度的数量。例如：
 - en: '[PRE19]'
+  id: totrans-150
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE19]'
 - en: If `s` is a sparse COO tensor then its COO format data can be acquired using
     methods [`torch.Tensor.indices()`](generated/torch.Tensor.indices.html#torch.Tensor.indices
     "torch.Tensor.indices") and [`torch.Tensor.values()`](generated/torch.Tensor.values.html#torch.Tensor.values
     "torch.Tensor.values").
+  id: totrans-151
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果`s`是一个稀疏COO张量，则可以使用方法[`torch.Tensor.indices()`](generated/torch.Tensor.indices.html#torch.Tensor.indices
+    "torch.Tensor.indices")和[`torch.Tensor.values()`](generated/torch.Tensor.values.html#torch.Tensor.values
+    "torch.Tensor.values")获取其COO格式数据。
 - en: Note
+  id: totrans-152
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: 'Currently, one can acquire the COO format data only when the tensor instance
     is coalesced:'
+  id: totrans-153
   prefs: []
   type: TYPE_NORMAL
+  zh: 目前，只有当张量实例已合并时才能获取COO格式数据：
 - en: '[PRE20]'
+  id: totrans-154
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE20]'
 - en: 'For acquiring the COO format data of an uncoalesced tensor, use `torch.Tensor._values()`
     and `torch.Tensor._indices()`:'
+  id: totrans-155
   prefs: []
   type: TYPE_NORMAL
+  zh: 要获取未合并张量的COO格式数据，请使用`torch.Tensor._values()`和`torch.Tensor._indices()`：
 - en: '[PRE21]'
+  id: totrans-156
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE21]'
 - en: Warning
+  id: totrans-157
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: Calling `torch.Tensor._values()` will return a *detached* tensor. To track gradients,
     `torch.Tensor.coalesce().values()` must be used instead.
+  id: totrans-158
   prefs: []
   type: TYPE_NORMAL
+  zh: 调用`torch.Tensor._values()`将返回一个*分离*张量。要跟踪梯度，必须使用`torch.Tensor.coalesce().values()`。
 - en: 'Constructing a new sparse COO tensor results a tensor that is not coalesced:'
+  id: totrans-159
   prefs: []
   type: TYPE_NORMAL
+  zh: 构造一个新的稀疏COO张量会导致一个未合并的张量：
 - en: '[PRE22]'
+  id: totrans-160
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE22]'
 - en: 'but one can construct a coalesced copy of a sparse COO tensor using the [`torch.Tensor.coalesce()`](generated/torch.Tensor.coalesce.html#torch.Tensor.coalesce
     "torch.Tensor.coalesce") method:'
+  id: totrans-161
   prefs: []
   type: TYPE_NORMAL
+  zh: 但可以使用[`torch.Tensor.coalesce()`](generated/torch.Tensor.coalesce.html#torch.Tensor.coalesce
+    "torch.Tensor.coalesce")方法构造稀疏COO张量的合并副本：
 - en: '[PRE23]'
+  id: totrans-162
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE23]'
 - en: 'When working with uncoalesced sparse COO tensors, one must take into an account
     the additive nature of uncoalesced data: the values of the same indices are the
     terms of a sum that evaluation gives the value of the corresponding tensor element.
@@ -723,23 +1032,35 @@
     `c * (a + b) == c * a + c * b` holds. However, any nonlinear operation, say, a
     square root, cannot be implemented by applying the operation to uncoalesced data
     because `sqrt(a + b) == sqrt(a) + sqrt(b)` does not hold in general.'
+  id: totrans-163
   prefs: []
   type: TYPE_NORMAL
+  zh: 在处理未压缩稀疏COO张量时，必须考虑未压缩数据的可加性：相同索引的值是一个求和的项，其求值给出对应张量元素的值。例如，对稀疏未压缩张量进行标量乘法可以通过将所有未压缩值与标量相乘来实现，因为
+    `c * (a + b) == c * a + c * b` 成立。然而，任何非线性操作，比如平方根，不能通过将操作应用于未压缩数据来实现，因为一般情况下
+    `sqrt(a + b) == sqrt(a) + sqrt(b)` 不成立。
 - en: 'Slicing (with positive step) of a sparse COO tensor is supported only for dense
     dimensions. Indexing is supported for both sparse and dense dimensions:'
+  id: totrans-164
   prefs: []
   type: TYPE_NORMAL
+  zh: 对稀疏COO张量进行切片（带有正步长）仅支持密集维度。索引支持稀疏和密集维度：
 - en: '[PRE24]'
+  id: totrans-165
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE24]'
 - en: 'In PyTorch, the fill value of a sparse tensor cannot be specified explicitly
     and is assumed to be zero in general. However, there exists operations that may
     interpret the fill value differently. For instance, [`torch.sparse.softmax()`](generated/torch.sparse.softmax.html#torch.sparse.softmax
     "torch.sparse.softmax") computes the softmax with the assumption that the fill
     value is negative infinity.  ## Sparse Compressed Tensors[](#sparse-compressed-tensors
     "Permalink to this heading")'
+  id: totrans-166
   prefs: []
   type: TYPE_NORMAL
+  zh: 在PyTorch中，稀疏张量的填充值不能被明确指定，一般假定为零。然而，存在一些操作可能会以不同方式解释填充值。例如，[`torch.sparse.softmax()`](generated/torch.sparse.softmax.html#torch.sparse.softmax
+    "torch.sparse.softmax") 计算softmax时假定填充值为负无穷。## 稀疏压缩张量[](#sparse-compressed-tensors
+    "跳转到此标题的永久链接")
 - en: Sparse Compressed Tensors represents a class of sparse tensors that have a common
     feature of compressing the indices of a certain dimension using an encoding that
     enables certain optimizations on linear algebra kernels of sparse compressed tensors.
@@ -747,58 +1068,87 @@
     format that PyTorch sparse compressed tensors extend with the support of sparse
     tensor batches, allowing multi-dimensional tensor values, and storing sparse tensor
     values in dense blocks.
+  id: totrans-167
   prefs: []
   type: TYPE_NORMAL
+  zh: 稀疏压缩张量代表一类稀疏张量，其共同特征是使用编码压缩某个维度的索引，从而在稀疏压缩张量的线性代数核上实现某些优化。这种编码基于[压缩稀疏行（CSR）](https://en.wikipedia.org/wiki/Sparse_matrix#Compressed_sparse_row_(CSR,_CRS_or_Yale_format))格式，PyTorch稀疏压缩张量扩展了对稀疏张量批次的支持，允许多维张量值，并将稀疏张量值存储在密集块中。
 - en: Note
+  id: totrans-168
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: We use (B + M + K)-dimensional tensor to denote a N-dimensional sparse compressed
     hybrid tensor, where B, M, and K are the numbers of batch, sparse, and dense dimensions,
     respectively, such that `B + M + K == N` holds. The number of sparse dimensions
     for sparse compressed tensors is always two, `M == 2`.
+  id: totrans-169
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们使用（B + M + K）维张量来表示一个N维稀疏压缩混合张量，其中B、M和K分别是批次、稀疏和密集维度的数量，满足 `B + M + K == N`。稀疏压缩张量的稀疏维度总是两个，`M
+    == 2`。
 - en: Note
+  id: totrans-170
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: 'We say that an indices tensor `compressed_indices` uses CSR encoding if the
     following invariants are satisfied:'
+  id: totrans-171
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果满足以下不变性，我们说一个索引张量 `compressed_indices` 使用CSR编码：
 - en: '`compressed_indices` is a contiguous strided 32 or 64 bit integer tensor'
+  id: totrans-172
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`compressed_indices` 是一个连续的步进为32位或64位整数张量'
 - en: '`compressed_indices` shape is `(*batchsize, compressed_dim_size + 1)` where
     `compressed_dim_size` is the number of compressed dimensions (e.g. rows or columns)'
+  id: totrans-173
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`compressed_indices` 的形状是 `(*batchsize, compressed_dim_size + 1)`，其中 `compressed_dim_size`
+    是压缩维度的数量（例如行或列）'
 - en: '`compressed_indices[..., 0] == 0` where `...` denotes batch indices'
+  id: totrans-174
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`compressed_indices[..., 0] == 0` 其中 `...` 表示批次索引'
 - en: '`compressed_indices[..., compressed_dim_size] == nse` where `nse` is the number
     of specified elements'
+  id: totrans-175
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`compressed_indices[..., compressed_dim_size] == nse` 其中 `nse` 是指定元素的数量'
 - en: '`0 <= compressed_indices[..., i] - compressed_indices[..., i - 1] <= plain_dim_size`
     for `i=1, ..., compressed_dim_size`, where `plain_dim_size` is the number of plain
     dimensions (orthogonal to compressed dimensions, e.g. columns or rows).'
+  id: totrans-176
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 对于 `i=1, ..., compressed_dim_size`，`0 <= compressed_indices[..., i] - compressed_indices[...,
+    i - 1] <= plain_dim_size`，其中 `plain_dim_size` 是平面维度的数量（与压缩维度正交，例如列或行）。
 - en: To be sure that a constructed sparse tensor has consistent indices, values,
     and size, the invariant checks can be enabled per tensor creation via `check_invariants=True`
     keyword argument, or globally using [`torch.sparse.check_sparse_tensor_invariants`](generated/torch.sparse.check_sparse_tensor_invariants.html#torch.sparse.check_sparse_tensor_invariants
     "torch.sparse.check_sparse_tensor_invariants") context manager instance. By default,
     the sparse tensor invariants checks are disabled.
+  id: totrans-177
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了确保构建的稀疏张量具有一致的索引、值和大小，可以通过 `check_invariants=True` 关键字参数在每个张量创建时启用不变性检查，或者使用
+    [`torch.sparse.check_sparse_tensor_invariants`](generated/torch.sparse.check_sparse_tensor_invariants.html#torch.sparse.check_sparse_tensor_invariants
+    "torch.sparse.check_sparse_tensor_invariants") 上下文管理器实例进行全局设置。默认情况下，稀疏张量的不变性检查是禁用的。
 - en: Note
+  id: totrans-178
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: The generalization of sparse compressed layouts to N-dimensional tensors can
     lead to some confusion regarding the count of specified elements. When a sparse
     compressed tensor contains batch dimensions the number of specified elements will
@@ -813,320 +1163,446 @@
     derived from the compression of a 2-dimensional matrix. Batch dimensions are treated
     as stacking of sparse matrices, dense dimensions change the meaning of the element
     from a simple scalar value to an array with its own dimensions.
+  id: totrans-179
   prefs: []
   type: TYPE_NORMAL
+  zh: 将稀疏压缩布局推广到N维张量可能会导致对指定元素数量的混淆。当稀疏压缩张量包含批量维度时，指定元素的数量将对应于每个批量的这些元素的数量。当稀疏压缩张量具有密集维度时，考虑的元素现在是K维数组。对于块稀疏压缩布局，2-D块被视为被指定的元素。以一个具有长度为`b`的批量维度和块形状为`p,
+    q`的3维块稀疏张量为例。如果这个张量有`n`个指定元素，那么实际上我们有每批`n`个块被指定。这个张量将具有形状为`(b, n, p, q)`的`values`。指定元素数量的这种解释来自于所有稀疏压缩布局都源自于2维矩阵的压缩。批量维度被视为稀疏矩阵的堆叠，密集维度改变了元素的含义，从简单的标量值变为具有自己维度的数组。
 - en: '### Sparse CSR Tensor'
+  id: totrans-180
   prefs: []
   type: TYPE_NORMAL
+  zh: '### 稀疏CSR张量'
 - en: The primary advantage of the CSR format over the COO format is better use of
     storage and much faster computation operations such as sparse matrix-vector multiplication
     using MKL and MAGMA backends.
+  id: totrans-181
   prefs: []
   type: TYPE_NORMAL
+  zh: CSR格式相对于COO格式的主要优势是更好地利用存储和更快的计算操作，例如使用MKL和MAGMA后端的稀疏矩阵-向量乘法。
 - en: 'In the simplest case, a (0 + 2 + 0)-dimensional sparse CSR tensor consists
     of three 1-D tensors: `crow_indices`, `col_indices` and `values`:'
+  id: totrans-182
   prefs: []
   type: TYPE_NORMAL
+  zh: 在最简单的情况下，一个(0 + 2 + 0)维稀疏CSR张量由三个1-D张量组成：`crow_indices`、`col_indices`和`values`：
 - en: The `crow_indices` tensor consists of compressed row indices. This is a 1-D
     tensor of size `nrows + 1` (the number of rows plus 1). The last element of `crow_indices`
     is the number of specified elements, `nse`. This tensor encodes the index in `values`
     and `col_indices` depending on where the given row starts. Each successive number
     in the tensor subtracted by the number before it denotes the number of elements
     in a given row.
+  id: totrans-183
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`crow_indices`张量包含压缩的行索引。这是一个大小为`nrows + 1`（行数加1）的1-D张量。`crow_indices`的最后一个元素是指定元素的数量`nse`。该张量根据给定行的起始位置在`values`和`col_indices`中编码索引。张量中的每个连续数字减去前一个数字表示给定行中元素的数量。'
 - en: ''
+  id: totrans-184
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-185
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: The `col_indices` tensor contains the column indices of each element. This is
     a 1-D tensor of size `nse`.
+  id: totrans-186
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`col_indices`张量包含每个元素的列索引。这是一个大小为`nse`的1-D张量。'
 - en: ''
+  id: totrans-187
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-188
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: The `values` tensor contains the values of the CSR tensor elements. This is
     a 1-D tensor of size `nse`.
+  id: totrans-189
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`values`张量包含CSR张量元素的值。这是一个大小为`nse`的1-D张量。'
 - en: Note
+  id: totrans-190
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: The index tensors `crow_indices` and `col_indices` should have element type
     either `torch.int64` (default) or `torch.int32`. If you want to use MKL-enabled
     matrix operations, use `torch.int32`. This is as a result of the default linking
     of pytorch being with MKL LP64, which uses 32 bit integer indexing.
+  id: totrans-191
   prefs: []
   type: TYPE_NORMAL
+  zh: 索引张量`crow_indices`和`col_indices`的元素类型应为`torch.int64`（默认）或`torch.int32`。如果要使用MKL启用的矩阵操作，请使用`torch.int32`。这是由于pytorch的默认链接是与使用32位整数索引的MKL
+    LP64链接。
 - en: In the general case, the (B + 2 + K)-dimensional sparse CSR tensor consists
     of two (B + 1)-dimensional index tensors `crow_indices` and `col_indices`, and
     of (1 + K)-dimensional `values` tensor such that
+  id: totrans-192
   prefs: []
   type: TYPE_NORMAL
+  zh: 在一般情况下，(B + 2 + K)维稀疏CSR张量由两个(B + 1)维索引张量`crow_indices`和`col_indices`以及(1 +
+    K)维`values`张量组成，使得
 - en: '`crow_indices.shape == (*batchsize, nrows + 1)`'
+  id: totrans-193
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`crow_indices.shape == (*batchsize, nrows + 1)`'
 - en: ''
+  id: totrans-194
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-195
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: '`col_indices.shape == (*batchsize, nse)`'
+  id: totrans-196
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`col_indices.shape == (*batchsize, nse)`'
 - en: ''
+  id: totrans-197
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-198
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: '`values.shape == (nse, *densesize)`'
+  id: totrans-199
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`values.shape == (nse, *densesize)`'
 - en: while the shape of the sparse CSR tensor is `(*batchsize, nrows, ncols, *densesize)`
     where `len(batchsize) == B` and `len(densesize) == K`.
+  id: totrans-200
   prefs: []
   type: TYPE_NORMAL
+  zh: 稀疏CSR张量的形状为`(*batchsize, nrows, ncols, *densesize)`，其中`len(batchsize) == B`且`len(densesize)
+    == K`。
 - en: Note
+  id: totrans-201
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: 'The batches of sparse CSR tensors are dependent: the number of specified elements
     in all batches must be the same. This somewhat artificial constraint allows efficient
     storage of the indices of different CSR batches.'
+  id: totrans-202
   prefs: []
   type: TYPE_NORMAL
+  zh: 稀疏CSR张量的批次是相关的：所有批次中指定元素的数量必须相同。这种有点人为的约束允许有效地存储不同CSR批次的索引。
 - en: Note
+  id: totrans-203
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: 'The number of sparse and dense dimensions can be acquired using [`torch.Tensor.sparse_dim()`](generated/torch.Tensor.sparse_dim.html#torch.Tensor.sparse_dim
     "torch.Tensor.sparse_dim") and [`torch.Tensor.dense_dim()`](generated/torch.Tensor.dense_dim.html#torch.Tensor.dense_dim
     "torch.Tensor.dense_dim") methods. The batch dimensions can be computed from the
     tensor shape: `batchsize = tensor.shape[:-tensor.sparse_dim() - tensor.dense_dim()]`.'
+  id: totrans-204
   prefs: []
   type: TYPE_NORMAL
+  zh: 稀疏和密集维度的数量可以使用[`torch.Tensor.sparse_dim()`](generated/torch.Tensor.sparse_dim.html#torch.Tensor.sparse_dim
+    "torch.Tensor.sparse_dim")和[`torch.Tensor.dense_dim()`](generated/torch.Tensor.dense_dim.html#torch.Tensor.dense_dim
+    "torch.Tensor.dense_dim")方法获得。批量维度可以从张量形状中计算得到：`batchsize = tensor.shape[:-tensor.sparse_dim()
+    - tensor.dense_dim()]`。
 - en: Note
+  id: totrans-205
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: The memory consumption of a sparse CSR tensor is at least `(nrows * 8 + (8 +
     <size of element type in bytes> * prod(densesize)) * nse) * prod(batchsize)` bytes
     (plus a constant overhead from storing other tensor data).
+  id: totrans-206
   prefs: []
   type: TYPE_NORMAL
+  zh: 稀疏CSR张量的内存消耗至少为`(nrows * 8 + (8 + <元素类型大小字节> * prod(densesize)) * nse) * prod(batchsize)`字节（加上存储其他张量数据的恒定开销）。
 - en: With the same example data of [the note in sparse COO format introduction](#sparse-coo-docs),
     the memory consumption of a 10 000 x 10 000 tensor with 100 000 non-zero 32-bit
     floating point numbers is at least `(10000 * 8 + (8 + 4 * 1) * 100 000) * 1 =
     1 280 000` bytes when using CSR tensor layout. Notice the 1.6 and 310 fold savings
     from using CSR storage format compared to using the COO and strided formats, respectively.
+  id: totrans-207
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用[稀疏COO格式介绍中的示例数据](#sparse-coo-docs)相同，一个包含 100 000 个非零32位浮点数的 10 000 x 10
+    000 张量的内存消耗至少为`(10000 * 8 + (8 + 4 * 1) * 100 000) * 1 = 1 280 000`字节，使用CSR张量布局。请注意，与使用COO和分步格式相比，使用CSR存储格式可以节省1.6倍和310倍的存储空间。
 - en: Construction of CSR tensors[](#construction-of-csr-tensors "Permalink to this
     heading")
+  id: totrans-208
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 构造CSR张量[](#construction-of-csr-tensors "跳转到此标题")
 - en: Sparse CSR tensors can be directly constructed by using the [`torch.sparse_csr_tensor()`](generated/torch.sparse_csr_tensor.html#torch.sparse_csr_tensor
     "torch.sparse_csr_tensor") function. The user must supply the row and column indices
     and values tensors separately where the row indices must be specified using the
     CSR compression encoding. The `size` argument is optional and will be deduced
     from the `crow_indices` and `col_indices` if it is not present.
+  id: totrans-209
   prefs: []
   type: TYPE_NORMAL
+  zh: 可以直接使用[`torch.sparse_csr_tensor()`](generated/torch.sparse_csr_tensor.html#torch.sparse_csr_tensor
+    "torch.sparse_csr_tensor")函数构造稀疏CSR张量。用户必须分别提供行索引和列索引以及值张量，其中行索引必须使用CSR压缩编码指定。如果没有提供`size`参数，则将从`crow_indices`和`col_indices`中推断出`size`。
 - en: '[PRE25]'
+  id: totrans-210
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE25]'
 - en: Note
+  id: totrans-211
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: The values of sparse dimensions in deduced `size` is computed from the size
     of `crow_indices` and the maximal index value in `col_indices`. If the number
     of columns needs to be larger than in the deduced `size` then the `size` argument
     must be specified explicitly.
+  id: totrans-212
   prefs: []
   type: TYPE_NORMAL
+  zh: 推断的`size`中稀疏维度的值是从`crow_indices`的大小和`col_indices`中的最大索引值计算而来的。如果列数需要大于推断的`size`中的列数，则必须明确指定`size`参数。
 - en: 'The simplest way of constructing a 2-D sparse CSR tensor from a strided or
     sparse COO tensor is to use [`torch.Tensor.to_sparse_csr()`](generated/torch.Tensor.to_sparse_csr.html#torch.Tensor.to_sparse_csr
     "torch.Tensor.to_sparse_csr") method. Any zeros in the (strided) tensor will be
     interpreted as missing values in the sparse tensor:'
+  id: totrans-213
   prefs: []
   type: TYPE_NORMAL
+  zh: 从分步或稀疏COO张量构造2-D稀疏CSR张量的最简单方法是使用[`torch.Tensor.to_sparse_csr()`](generated/torch.Tensor.to_sparse_csr.html#torch.Tensor.to_sparse_csr
+    "torch.Tensor.to_sparse_csr")方法。在（分步）张量中的任何零将被解释为稀疏张量中的缺失值：
 - en: '[PRE26]'
+  id: totrans-214
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE26]'
 - en: CSR Tensor Operations
+  id: totrans-215
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: CSR张量操作
 - en: The sparse matrix-vector multiplication can be performed with the `tensor.matmul()`
     method. This is currently the only math operation supported on CSR tensors.
+  id: totrans-216
   prefs: []
   type: TYPE_NORMAL
+  zh: 稀疏矩阵-向量乘法可以使用`tensor.matmul()`方法执行。这是目前CSR张量上支持的唯一数学运算。
 - en: '[PRE27]  ### Sparse CSC Tensor'
+  id: totrans-217
   prefs: []
   type: TYPE_NORMAL
+  zh: '[PRE27]  ### 稀疏CSC张量'
 - en: The sparse CSC (Compressed Sparse Column) tensor format implements the CSC format
     for storage of 2 dimensional tensors with an extension to supporting batches of
     sparse CSC tensors and values being multi-dimensional tensors.
+  id: totrans-218
   prefs: []
   type: TYPE_NORMAL
+  zh: 稀疏CSC（压缩稀疏列）张量格式实现了CSC格式，用于存储具有扩展支持批量稀疏CSC张量和值为多维张量的二维张量。
 - en: Note
+  id: totrans-219
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Sparse CSC tensor is essentially a transpose of the sparse CSR tensor when the
     transposition is about swapping the sparse dimensions.
+  id: totrans-220
   prefs: []
   type: TYPE_NORMAL
+  zh: 稀疏CSC张量在转置时本质上是稀疏CSR张量的转置，转置是关于交换稀疏维度的。
 - en: 'Similarly to [sparse CSR tensors](#sparse-csr-docs), a sparse CSC tensor consists
     of three tensors: `ccol_indices`, `row_indices` and `values`:'
+  id: totrans-221
   prefs: []
   type: TYPE_NORMAL
+  zh: 与[稀疏CSR张量](#sparse-csr-docs)类似，稀疏CSC张量由三个张量组成：`ccol_indices`、`row_indices`和`values`。
 - en: The `ccol_indices` tensor consists of compressed column indices. This is a (B
     + 1)-D tensor of shape `(*batchsize, ncols + 1)`. The last element is the number
     of specified elements, `nse`. This tensor encodes the index in `values` and `row_indices`
     depending on where the given column starts. Each successive number in the tensor
     subtracted by the number before it denotes the number of elements in a given column.
+  id: totrans-222
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`ccol_indices`张量包含压缩的列索引。这是一个形状为`(*batchsize, ncols + 1)`的(B + 1)-D张量。最后一个元素是指定元素的数量`nse`。该张量根据给定列开始的位置编码`values`和`row_indices`的索引。张量中的每个连续数字减去前一个数字表示给定列中元素的数量。'
 - en: ''
+  id: totrans-223
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-224
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: The `row_indices` tensor contains the row indices of each element. This is a
     (B + 1)-D tensor of shape `(*batchsize, nse)`.
+  id: totrans-225
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`row_indices`张量包含每个元素的行索引。这是一个形状为`(*batchsize, nse)`的(B + 1)-D张量。'
 - en: ''
+  id: totrans-226
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-227
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: The `values` tensor contains the values of the CSC tensor elements. This is
     a (1 + K)-D tensor of shape `(nse, *densesize)`.
+  id: totrans-228
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`values`张量包含CSC张量元素的值。这是一个形状为`(nse, *densesize)`的(1 + K)-D张量。'
 - en: Construction of CSC tensors[](#construction-of-csc-tensors "Permalink to this
     heading")
+  id: totrans-229
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: CSC张量的构造[](#construction-of-csc-tensors "跳转到此标题")
 - en: Sparse CSC tensors can be directly constructed by using the [`torch.sparse_csc_tensor()`](generated/torch.sparse_csc_tensor.html#torch.sparse_csc_tensor
     "torch.sparse_csc_tensor") function. The user must supply the row and column indices
     and values tensors separately where the column indices must be specified using
     the CSR compression encoding. The `size` argument is optional and will be deduced
     from the `row_indices` and `ccol_indices` tensors if it is not present.
+  id: totrans-230
   prefs: []
   type: TYPE_NORMAL
+  zh: 可以直接使用[`torch.sparse_csc_tensor()`](generated/torch.sparse_csc_tensor.html#torch.sparse_csc_tensor
+    "torch.sparse_csc_tensor")函数构造稀疏CSC张量。用户必须分别提供行索引和列索引以及值张量，其中列索引必须使用CSR压缩编码指定。如果没有提供`size`参数，则将从`row_indices`和`ccol_indices`张量中推断出`size`。
 - en: '[PRE28]'
+  id: totrans-231
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE28]'
 - en: Note
+  id: totrans-232
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: The sparse CSC tensor constructor function has the compressed column indices
     argument before the row indices argument.
+  id: totrans-233
   prefs: []
   type: TYPE_NORMAL
+  zh: 稀疏CSC张量的构造函数在行索引参数之前有压缩的列索引参数。
 - en: 'The (0 + 2 + 0)-dimensional sparse CSC tensors can be constructed from any
     two-dimensional tensor using [`torch.Tensor.to_sparse_csc()`](generated/torch.Tensor.to_sparse_csc.html#torch.Tensor.to_sparse_csc
     "torch.Tensor.to_sparse_csc") method. Any zeros in the (strided) tensor will be
     interpreted as missing values in the sparse tensor:'
+  id: totrans-234
   prefs: []
   type: TYPE_NORMAL
+  zh: (0 + 2 + 0)-维稀疏CSC张量可以使用[`torch.Tensor.to_sparse_csc()`](generated/torch.Tensor.to_sparse_csc.html#torch.Tensor.to_sparse_csc
+    "torch.Tensor.to_sparse_csc")方法从任何二维张量构造。在（分步）张量中的任何零将被解释为稀疏张量中的缺失值：
 - en: '[PRE29]  ### Sparse BSR Tensor'
+  id: totrans-235
   prefs: []
   type: TYPE_NORMAL
+  zh: '[PRE29]  ### 稀疏的BSR张量'
 - en: The sparse BSR (Block compressed Sparse Row) tensor format implements the BSR
     format for storage of two-dimensional tensors with an extension to supporting
     batches of sparse BSR tensors and values being blocks of multi-dimensional tensors.
+  id: totrans-236
   prefs: []
   type: TYPE_NORMAL
+  zh: 稀疏的BSR（块压缩稀疏行）张量格式实现了BSR格式，用于存储二维张量，并扩展支持稀疏BSR张量的批处理和值为多维张量块的情况。
 - en: 'A sparse BSR tensor consists of three tensors: `crow_indices`, `col_indices`
     and `values`:'
+  id: totrans-237
   prefs: []
   type: TYPE_NORMAL
+  zh: 稀疏的BSR张量由三个张量组成：`crow_indices`、`col_indices`和`values`：
 - en: The `crow_indices` tensor consists of compressed row indices. This is a (B +
     1)-D tensor of shape `(*batchsize, nrowblocks + 1)`. The last element is the number
     of specified blocks, `nse`. This tensor encodes the index in `values` and `col_indices`
     depending on where the given column block starts. Each successive number in the
     tensor subtracted by the number before it denotes the number of blocks in a given
     row.
+  id: totrans-238
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`crow_indices`张量包含压缩的行索引。这是一个形状为`(*batchsize, nrowblocks + 1)`的(B + 1)-D张量。最后一个元素是指定块的数量`nse`。该张量根据给定列块的起始位置编码`values`和`col_indices`中的索引。张量中的每个连续数字减去前一个数字表示给定行中块的数量。'
 - en: ''
+  id: totrans-239
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-240
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: The `col_indices` tensor contains the column block indices of each element.
     This is a (B + 1)-D tensor of shape `(*batchsize, nse)`.
+  id: totrans-241
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`col_indices`张量包含每个元素的列块索引。这是一个形状为`(*batchsize, nse)`的(B + 1)-D张量。'
 - en: ''
+  id: totrans-242
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-243
   prefs:
   - PREF_BQ
   - PREF_IND
@@ -1134,75 +1610,102 @@
 - en: The `values` tensor contains the values of the sparse BSR tensor elements collected
     into two-dimensional blocks. This is a (1 + 2 + K)-D tensor of shape `(nse, nrowblocks,
     ncolblocks, *densesize)`.
+  id: totrans-244
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`values`张量包含稀疏的BSR张量元素的值，收集到二维块中。这是一个形状为`(nse, nrowblocks, ncolblocks, *densesize)`的(1
+    + 2 + K)-D张量。'
 - en: Construction of BSR tensors[](#construction-of-bsr-tensors "Permalink to this
     heading")
+  id: totrans-245
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 构建BSR张量[](#construction-of-bsr-tensors "跳转到此标题的永久链接")
 - en: Sparse BSR tensors can be directly constructed by using the [`torch.sparse_bsr_tensor()`](generated/torch.sparse_bsr_tensor.html#torch.sparse_bsr_tensor
     "torch.sparse_bsr_tensor") function. The user must supply the row and column block
     indices and values tensors separately where the row block indices must be specified
     using the CSR compression encoding. The `size` argument is optional and will be
     deduced from the `crow_indices` and `col_indices` tensors if it is not present.
+  id: totrans-246
   prefs: []
   type: TYPE_NORMAL
+  zh: 稀疏的BSR张量可以直接通过使用[`torch.sparse_bsr_tensor()`](generated/torch.sparse_bsr_tensor.html#torch.sparse_bsr_tensor
+    "torch.sparse_bsr_tensor")函数来构建。用户必须分别提供行和列块索引以及数值张量，其中行块索引必须使用CSR压缩编码指定。如果没有提供`size`参数，它将从`crow_indices`和`col_indices`张量中推断出来。
 - en: '[PRE30]'
+  id: totrans-247
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE30]'
 - en: 'The (0 + 2 + 0)-dimensional sparse BSR tensors can be constructed from any
     two-dimensional tensor using [`torch.Tensor.to_sparse_bsr()`](generated/torch.Tensor.to_sparse_bsr.html#torch.Tensor.to_sparse_bsr
     "torch.Tensor.to_sparse_bsr") method that also requires the specification of the
     values block size:'
+  id: totrans-248
   prefs: []
   type: TYPE_NORMAL
+  zh: 可以使用[`torch.Tensor.to_sparse_bsr()`](generated/torch.Tensor.to_sparse_bsr.html#torch.Tensor.to_sparse_bsr
+    "torch.Tensor.to_sparse_bsr")方法从任何二维张量构建(0 + 2 + 0)-维稀疏的BSR张量，该方法还需要指定值块大小：
 - en: '[PRE31]  ### Sparse BSC Tensor'
+  id: totrans-249
   prefs: []
   type: TYPE_NORMAL
+  zh: '[PRE31]  ### 稀疏的BSC张量'
 - en: The sparse BSC (Block compressed Sparse Column) tensor format implements the
     BSC format for storage of two-dimensional tensors with an extension to supporting
     batches of sparse BSC tensors and values being blocks of multi-dimensional tensors.
+  id: totrans-250
   prefs: []
   type: TYPE_NORMAL
+  zh: 稀疏的BSC（块压缩稀疏列）张量格式实现了BSC格式，用于存储二维张量，并扩展支持稀疏BSC张量的批处理和值为多维张量块的情况。
 - en: 'A sparse BSC tensor consists of three tensors: `ccol_indices`, `row_indices`
     and `values`:'
+  id: totrans-251
   prefs: []
   type: TYPE_NORMAL
+  zh: 稀疏的BSC张量由三个张量组成：`ccol_indices`、`row_indices`和`values`：
 - en: The `ccol_indices` tensor consists of compressed column indices. This is a (B
     + 1)-D tensor of shape `(*batchsize, ncolblocks + 1)`. The last element is the
     number of specified blocks, `nse`. This tensor encodes the index in `values` and
     `row_indices` depending on where the given row block starts. Each successive number
     in the tensor subtracted by the number before it denotes the number of blocks
     in a given column.
+  id: totrans-252
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`ccol_indices`张量包含压缩的列索引。这是一个形状为`(*batchsize, ncolblocks + 1)`的(B + 1)-D张量。最后一个元素是指定块的数量`nse`。该张量根据给定行块的起始位置编码`values`和`row_indices`中的索引。张量中的每个连续数字减去前一个数字表示给定列中块的数量。'
 - en: ''
+  id: totrans-253
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-254
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: The `row_indices` tensor contains the row block indices of each element. This
     is a (B + 1)-D tensor of shape `(*batchsize, nse)`.
+  id: totrans-255
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`row_indices`张量包含每个元素的行块索引。这是一个形状为`(*batchsize, nse)`的(B + 1)-D张量。'
 - en: ''
+  id: totrans-256
   prefs:
   - PREF_BQ
   - PREF_IND
   type: TYPE_NORMAL
 - en: ''
+  id: totrans-257
   prefs:
   - PREF_BQ
   - PREF_IND
@@ -1210,42 +1713,58 @@
 - en: The `values` tensor contains the values of the sparse BSC tensor elements collected
     into two-dimensional blocks. This is a (1 + 2 + K)-D tensor of shape `(nse, nrowblocks,
     ncolblocks, *densesize)`.
+  id: totrans-258
   prefs:
   - PREF_BQ
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`values`张量包含稀疏的BSC张量元素的值，收集到二维块中。这是一个形状为`(nse, nrowblocks, ncolblocks, *densesize)`的(1
+    + 2 + K)-D张量。'
 - en: Construction of BSC tensors[](#construction-of-bsc-tensors "Permalink to this
     heading")
+  id: totrans-259
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 构建BSC张量[](#construction-of-bsc-tensors "跳转到此标题的永久链接")
 - en: Sparse BSC tensors can be directly constructed by using the [`torch.sparse_bsc_tensor()`](generated/torch.sparse_bsc_tensor.html#torch.sparse_bsc_tensor
     "torch.sparse_bsc_tensor") function. The user must supply the row and column block
     indices and values tensors separately where the column block indices must be specified
     using the CSR compression encoding. The `size` argument is optional and will be
     deduced from the `ccol_indices` and `row_indices` tensors if it is not present.
+  id: totrans-260
   prefs: []
   type: TYPE_NORMAL
+  zh: 稀疏的BSC张量可以直接通过使用[`torch.sparse_bsc_tensor()`](generated/torch.sparse_bsc_tensor.html#torch.sparse_bsc_tensor
+    "torch.sparse_bsc_tensor")函数来构建。用户必须分别提供行和列块索引以及数值张量，其中列块索引必须使用CSR压缩编码指定。如果没有提供`size`参数，它将从`ccol_indices`和`row_indices`张量中推断出来。
 - en: '[PRE32]'
+  id: totrans-261
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE32]'
 - en: Tools for working with sparse compressed tensors[](#tools-for-working-with-sparse-compressed-tensors
     "Permalink to this heading")
+  id: totrans-262
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 用于处理稀疏压缩张量的工具[](#tools-for-working-with-sparse-compressed-tensors "跳转到此标题的永久链接")
 - en: 'All sparse compressed tensors — CSR, CSC, BSR, and BSC tensors — are conceptionally
     very similar in that their indices data is split into two parts: so-called compressed
     indices that use the CSR encoding, and so-called plain indices that are orthogonal
     to the compressed indices. This allows various tools on these tensors to share
     the same implementations that are parameterized by tensor layout.'
+  id: totrans-263
   prefs: []
   type: TYPE_NORMAL
+  zh: 所有稀疏压缩张量 — CSR、CSC、BSR 和 BSC 张量 — 在概念上非常相似，它们的索引数据分为两部分：所谓的压缩索引使用 CSR 编码，而所谓的普通索引与压缩索引正交。这使得这些张量上的各种工具可以共享相同的实现，这些实现由张量布局参数化。
 - en: Construction of sparse compressed tensors[](#construction-of-sparse-compressed-tensors
     "Permalink to this heading")
+  id: totrans-264
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 稀疏压缩张量的构造[](#construction-of-sparse-compressed-tensors "Permalink to this heading")
 - en: 'Sparse CSR, CSC, BSR, and CSC tensors can be constructed by using [`torch.sparse_compressed_tensor()`](generated/torch.sparse_compressed_tensor.html#torch.sparse_compressed_tensor
     "torch.sparse_compressed_tensor") function that have the same interface as the
     above discussed constructor functions [`torch.sparse_csr_tensor()`](generated/torch.sparse_csr_tensor.html#torch.sparse_csr_tensor
@@ -1257,265 +1776,448 @@
     tensors using the same input data by specifying the corresponding layout parameter
     to the [`torch.sparse_compressed_tensor()`](generated/torch.sparse_compressed_tensor.html#torch.sparse_compressed_tensor
     "torch.sparse_compressed_tensor") function:'
+  id: totrans-265
   prefs: []
   type: TYPE_NORMAL
+  zh: CSR、CSC、BSR 和 CSC 张量可以通过使用 [`torch.sparse_compressed_tensor()`](generated/torch.sparse_compressed_tensor.html#torch.sparse_compressed_tensor
+    "torch.sparse_compressed_tensor") 函数构建，该函数具有与上述讨论的构造函数 [`torch.sparse_csr_tensor()`](generated/torch.sparse_csr_tensor.html#torch.sparse_csr_tensor
+    "torch.sparse_csr_tensor")、[`torch.sparse_csc_tensor()`](generated/torch.sparse_csc_tensor.html#torch.sparse_csc_tensor
+    "torch.sparse_csc_tensor")、[`torch.sparse_bsr_tensor()`](generated/torch.sparse_bsr_tensor.html#torch.sparse_bsr_tensor
+    "torch.sparse_bsr_tensor") 和 [`torch.sparse_bsc_tensor()`](generated/torch.sparse_bsc_tensor.html#torch.sparse_bsc_tensor
+    "torch.sparse_bsc_tensor") 相同的接口，但需要额外的 `layout` 参数。以下示例说明了使用相同输入数据通过指定相应的布局参数来构建
+    CSR 和 CSC 张量的方法，该参数传递给 [`torch.sparse_compressed_tensor()`](generated/torch.sparse_compressed_tensor.html#torch.sparse_compressed_tensor
+    "torch.sparse_compressed_tensor") 函数：
 - en: '[PRE33]  ## Supported operations[](#supported-operations "Permalink to this
     heading")'
+  id: totrans-266
   prefs: []
   type: TYPE_NORMAL
+  zh: '[PRE33]  ## 支持的操作[](#supported-operations "Permalink to this heading")'
 - en: Linear Algebra operations
+  id: totrans-267
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 线性代数操作
 - en: The following table summarizes supported Linear Algebra operations on sparse
     matrices where the operands layouts may vary. Here `T[layout]` denotes a tensor
     with a given layout. Similarly, `M[layout]` denotes a matrix (2-D PyTorch tensor),
     and `V[layout]` denotes a vector (1-D PyTorch tensor). In addition, `f` denotes
     a scalar (float or 0-D PyTorch tensor), `*` is element-wise multiplication, and
     `@` is matrix multiplication.
+  id: totrans-268
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下表格总结了在稀疏矩阵上支持的线性代数操作，其中操作数的布局可能会有所不同。这里 `T[layout]` 表示具有给定布局的张量。类似地，`M[layout]`
+    表示矩阵（2-D PyTorch 张量），`V[layout]` 表示向量（1-D PyTorch 张量）。此外，`f` 表示标量（浮点数或 0-D PyTorch
+    张量），`*` 表示逐元素乘法，`@` 表示矩阵乘法。
 - en: '| PyTorch operation | Sparse grad? | Layout signature |'
+  id: totrans-269
   prefs: []
   type: TYPE_TB
+  zh: '| PyTorch 操作 | 稀疏梯度？ | 布局签名 |'
 - en: '| --- | --- | --- |'
+  id: totrans-270
   prefs: []
   type: TYPE_TB
+  zh: '| --- | --- | --- |'
 - en: '| [`torch.mv()`](generated/torch.mv.html#torch.mv "torch.mv") | no | `M[sparse_coo]
     @ V[strided] -> V[strided]` |'
+  id: totrans-271
   prefs: []
   type: TYPE_TB
+  zh: '| [`torch.mv()`](generated/torch.mv.html#torch.mv "torch.mv") | 否 | `M[sparse_coo]
+    @ V[strided] -> V[strided]` |'
 - en: '| [`torch.mv()`](generated/torch.mv.html#torch.mv "torch.mv") | no | `M[sparse_csr]
     @ V[strided] -> V[strided]` |'
+  id: totrans-272
   prefs: []
   type: TYPE_TB
+  zh: '| [`torch.mv()`](generated/torch.mv.html#torch.mv "torch.mv") | 否 | `M[sparse_csr]
+    @ V[strided] -> V[strided]` |'
 - en: '| [`torch.matmul()`](generated/torch.matmul.html#torch.matmul "torch.matmul")
     | no | `M[sparse_coo] @ M[strided] -> M[strided]` |'
+  id: totrans-273
   prefs: []
   type: TYPE_TB
+  zh: '| [`torch.matmul()`](generated/torch.matmul.html#torch.matmul "torch.matmul")
+    | 否 | `M[sparse_coo] @ M[strided] -> M[strided]` |'
 - en: '| [`torch.matmul()`](generated/torch.matmul.html#torch.matmul "torch.matmul")
     | no | `M[sparse_csr] @ M[strided] -> M[strided]` |'
+  id: totrans-274
   prefs: []
   type: TYPE_TB
+  zh: '| [`torch.matmul()`](generated/torch.matmul.html#torch.matmul "torch.matmul")
+    | 否 | `M[sparse_csr] @ M[strided] -> M[strided]` |'
 - en: '| [`torch.matmul()`](generated/torch.matmul.html#torch.matmul "torch.matmul")
     | no | `M[SparseSemiStructured] @ M[strided] -> M[strided]` |'
+  id: totrans-275
   prefs: []
   type: TYPE_TB
+  zh: '| [`torch.matmul()`](generated/torch.matmul.html#torch.matmul "torch.matmul")
+    | 否 | `M[SparseSemiStructured] @ M[strided] -> M[strided]` |'
 - en: '| [`torch.matmul()`](generated/torch.matmul.html#torch.matmul "torch.matmul")
     | no | `M[strided] @ M[SparseSemiStructured] -> M[strided]` |'
+  id: totrans-276
   prefs: []
   type: TYPE_TB
+  zh: '| [`torch.matmul()`](generated/torch.matmul.html#torch.matmul "torch.matmul")
+    | 否 | `M[strided] @ M[SparseSemiStructured] -> M[strided]` |'
 - en: '| [`torch.mm()`](generated/torch.mm.html#torch.mm "torch.mm") | no | `M[sparse_coo]
     @ M[strided] -> M[strided]` |'
+  id: totrans-277
   prefs: []
   type: TYPE_TB
+  zh: '| [`torch.mm()`](generated/torch.mm.html#torch.mm "torch.mm") | 否 | `M[sparse_coo]
+    @ M[strided] -> M[strided]` |'
 - en: '| [`torch.mm()`](generated/torch.mm.html#torch.mm "torch.mm") | no | `M[SparseSemiStructured]
     @ M[strided] -> M[strided]` |'
+  id: totrans-278
   prefs: []
   type: TYPE_TB
+  zh: '| [`torch.mm()`](generated/torch.mm.html#torch.mm "torch.mm") | 否 | `M[SparseSemiStructured]
+    @ M[strided] -> M[strided]` |'
 - en: '| [`torch.mm()`](generated/torch.mm.html#torch.mm "torch.mm") | no | `M[strided]
     @ M[SparseSemiStructured] -> M[strided]` |'
+  id: totrans-279
   prefs: []
   type: TYPE_TB
+  zh: '| [`torch.mm()`](generated/torch.mm.html#torch.mm "torch.mm") | 否 | `M[strided]
+    @ M[SparseSemiStructured] -> M[strided]` |'
 - en: '| [`torch.sparse.mm()`](generated/torch.sparse.mm.html#torch.sparse.mm "torch.sparse.mm")
     | yes | `M[sparse_coo] @ M[strided] -> M[strided]` |'
+  id: totrans-280
   prefs: []
   type: TYPE_TB
+  zh: '| [`torch.sparse.mm()`](generated/torch.sparse.mm.html#torch.sparse.mm "torch.sparse.mm")
+    | 是 | `M[sparse_coo] @ M[strided] -> M[strided]` |'
 - en: '| [`torch.smm()`](generated/torch.smm.html#torch.smm "torch.smm") | no | `M[sparse_coo]
     @ M[strided] -> M[sparse_coo]` |'
+  id: totrans-281
   prefs: []
   type: TYPE_TB
+  zh: '| [`torch.smm()`](generated/torch.smm.html#torch.smm "torch.smm") | 否 | `M[sparse_coo]
+    @ M[strided] -> M[sparse_coo]` |'
 - en: '| [`torch.hspmm()`](generated/torch.hspmm.html#torch.hspmm "torch.hspmm") |
     no | `M[sparse_coo] @ M[strided] -> M[hybrid sparse_coo]` |'
+  id: totrans-282
   prefs: []
   type: TYPE_TB
+  zh: '| [`torch.hspmm()`](generated/torch.hspmm.html#torch.hspmm "torch.hspmm") |
+    否 | `M[sparse_coo] @ M[strided] -> M[hybrid sparse_coo]` |'
 - en: '| [`torch.bmm()`](generated/torch.bmm.html#torch.bmm "torch.bmm") | no | `T[sparse_coo]
     @ T[strided] -> T[strided]` |'
+  id: totrans-283
   prefs: []
   type: TYPE_TB
+  zh: '| [`torch.bmm()`](generated/torch.bmm.html#torch.bmm "torch.bmm") | 否 | `T[sparse_coo]
+    @ T[strided] -> T[strided]` |'
 - en: '| [`torch.addmm()`](generated/torch.addmm.html#torch.addmm "torch.addmm") |
     no | `f * M[strided] + f * (M[sparse_coo] @ M[strided]) -> M[strided]` |'
+  id: totrans-284
   prefs: []
   type: TYPE_TB
+  zh: '| [`torch.addmm()`](generated/torch.addmm.html#torch.addmm "torch.addmm") |
+    否 | `f * M[strided] + f * (M[sparse_coo] @ M[strided]) -> M[strided]` |'
 - en: '| [`torch.addmm()`](generated/torch.addmm.html#torch.addmm "torch.addmm") |
     no | `f * M[strided] + f * (M[SparseSemiStructured] @ M[strided]) -> M[strided]`
     |'
+  id: totrans-285
   prefs: []
   type: TYPE_TB
+  zh: '| [`torch.addmm()`](generated/torch.addmm.html#torch.addmm "torch.addmm") |
+    否 | `f * M[strided] + f * (M[SparseSemiStructured] @ M[strided]) -> M[strided]`
+    |'
 - en: '| [`torch.addmm()`](generated/torch.addmm.html#torch.addmm "torch.addmm") |
     no | `f * M[strided] + f * (M[strided] @ M[SparseSemiStructured]) -> M[strided]`
     |'
+  id: totrans-286
   prefs: []
   type: TYPE_TB
+  zh: '| [`torch.addmm()`](generated/torch.addmm.html#torch.addmm "torch.addmm") |
+    否 | `f * M[strided] + f * (M[strided] @ M[SparseSemiStructured]) -> M[strided]`
+    |'
 - en: '| [`torch.sparse.addmm()`](generated/torch.sparse.addmm.html#torch.sparse.addmm
     "torch.sparse.addmm") | yes | `f * M[strided] + f * (M[sparse_coo] @ M[strided])
     -> M[strided]` |'
+  id: totrans-287
   prefs: []
   type: TYPE_TB
+  zh: '| [`torch.sparse.addmm()`](generated/torch.sparse.addmm.html#torch.sparse.addmm
+    "torch.sparse.addmm") | 是 | `f * M[strided] + f * (M[sparse_coo] @ M[strided])
+    -> M[strided]` |'
 - en: '| [`torch.sspaddmm()`](generated/torch.sspaddmm.html#torch.sspaddmm "torch.sspaddmm")
     | no | `f * M[sparse_coo] + f * (M[sparse_coo] @ M[strided]) -> M[sparse_coo]`
     |'
+  id: totrans-288
   prefs: []
   type: TYPE_TB
+  zh: '| [`torch.sspaddmm()`](generated/torch.sspaddmm.html#torch.sspaddmm "torch.sspaddmm")
+    | 否 | `f * M[sparse_coo] + f * (M[sparse_coo] @ M[strided]) -> M[sparse_coo]`
+    |'
 - en: '| [`torch.lobpcg()`](generated/torch.lobpcg.html#torch.lobpcg "torch.lobpcg")
     | no | `GENEIG(M[sparse_coo]) -> M[strided], M[strided]` |'
+  id: totrans-289
   prefs: []
   type: TYPE_TB
+  zh: '| [`torch.lobpcg()`](generated/torch.lobpcg.html#torch.lobpcg "torch.lobpcg")
+    | 否 | `GENEIG(M[sparse_coo]) -> M[strided], M[strided]` |'
 - en: '| [`torch.pca_lowrank()`](generated/torch.pca_lowrank.html#torch.pca_lowrank
     "torch.pca_lowrank") | yes | `PCA(M[sparse_coo]) -> M[strided], M[strided], M[strided]`
     |'
+  id: totrans-290
   prefs: []
   type: TYPE_TB
+  zh: '| [`torch.pca_lowrank()`](generated/torch.pca_lowrank.html#torch.pca_lowrank
+    "torch.pca_lowrank") | 是 | `PCA(M[sparse_coo]) -> M[strided], M[strided], M[strided]`
+    |'
 - en: '| [`torch.svd_lowrank()`](generated/torch.svd_lowrank.html#torch.svd_lowrank
     "torch.svd_lowrank") | yes | `SVD(M[sparse_coo]) -> M[strided], M[strided], M[strided]`
     |'
+  id: totrans-291
   prefs: []
   type: TYPE_TB
+  zh: '| [`torch.svd_lowrank()`](generated/torch.svd_lowrank.html#torch.svd_lowrank
+    "torch.svd_lowrank") | 是 | `SVD(M[sparse_coo]) -> M[strided], M[strided], M[strided]`
+    |'
 - en: where “Sparse grad?” column indicates if the PyTorch operation supports backward
     with respect to sparse matrix argument. All PyTorch operations, except [`torch.smm()`](generated/torch.smm.html#torch.smm
     "torch.smm"), support backward with respect to strided matrix arguments.
+  id: totrans-292
   prefs: []
   type: TYPE_NORMAL
+  zh: “Sparse grad?”列指示PyTorch操作是否支持对稀疏矩阵参数进行反向传播。除了[`torch.smm()`](generated/torch.smm.html#torch.smm
+    "torch.smm")之外，所有PyTorch操作都支持对分步矩阵参数进行反向传播。
 - en: Note
+  id: totrans-293
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Currently, PyTorch does not support matrix multiplication with the layout signature
     `M[strided] @ M[sparse_coo]`. However, applications can still compute this using
     the matrix relation `D @ S == (S.t() @ D.t()).t()`.
+  id: totrans-294
   prefs: []
   type: TYPE_NORMAL
+  zh: 目前，PyTorch不支持使用布局签名`M[strided] @ M[sparse_coo]`进行矩阵乘法。然而，应用程序仍然可以使用矩阵关系`D @
+    S == (S.t() @ D.t()).t()`来计算这个。
 - en: Tensor methods and sparse
+  id: totrans-295
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 张量方法和稀疏
 - en: 'The following Tensor methods are related to sparse tensors:'
+  id: totrans-296
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下张量方法与稀疏张量相关：
 - en: '| [`Tensor.is_sparse`](generated/torch.Tensor.is_sparse.html#torch.Tensor.is_sparse
     "torch.Tensor.is_sparse") | Is `True` if the Tensor uses sparse COO storage layout,
     `False` otherwise. |'
+  id: totrans-297
   prefs: []
   type: TYPE_TB
+  zh: '| [`Tensor.is_sparse`](generated/torch.Tensor.is_sparse.html#torch.Tensor.is_sparse
+    "torch.Tensor.is_sparse") | 如果张量使用稀疏COO存储布局，则返回`True`，否则返回`False`。 |'
 - en: '| [`Tensor.is_sparse_csr`](generated/torch.Tensor.is_sparse_csr.html#torch.Tensor.is_sparse_csr
     "torch.Tensor.is_sparse_csr") | Is `True` if the Tensor uses sparse CSR storage
     layout, `False` otherwise. |'
+  id: totrans-298
   prefs: []
   type: TYPE_TB
+  zh: '| [`Tensor.is_sparse_csr`](generated/torch.Tensor.is_sparse_csr.html#torch.Tensor.is_sparse_csr
+    "torch.Tensor.is_sparse_csr") | 如果张量使用稀疏CSR存储布局，则返回`True`，否则返回`False`。 |'
 - en: '| [`Tensor.dense_dim`](generated/torch.Tensor.dense_dim.html#torch.Tensor.dense_dim
     "torch.Tensor.dense_dim") | Return the number of dense dimensions in a [sparse
     tensor](#sparse-docs) `self`. |'
+  id: totrans-299
   prefs: []
   type: TYPE_TB
+  zh: '| [`Tensor.dense_dim`](generated/torch.Tensor.dense_dim.html#torch.Tensor.dense_dim
+    "torch.Tensor.dense_dim") | 返回[sparse tensor](#sparse-docs) `self`中的稠密维度数量。 |'
 - en: '| [`Tensor.sparse_dim`](generated/torch.Tensor.sparse_dim.html#torch.Tensor.sparse_dim
     "torch.Tensor.sparse_dim") | Return the number of sparse dimensions in a [sparse
     tensor](#sparse-docs) `self`. |'
+  id: totrans-300
   prefs: []
   type: TYPE_TB
+  zh: '| [`Tensor.sparse_dim`](generated/torch.Tensor.sparse_dim.html#torch.Tensor.sparse_dim
+    "torch.Tensor.sparse_dim") | 返回[sparse tensor](#sparse-docs) `self`中的稀疏维度数量。 |'
 - en: '| [`Tensor.sparse_mask`](generated/torch.Tensor.sparse_mask.html#torch.Tensor.sparse_mask
     "torch.Tensor.sparse_mask") | Returns a new [sparse tensor](#sparse-docs) with
     values from a strided tensor `self` filtered by the indices of the sparse tensor
     `mask`. |'
+  id: totrans-301
   prefs: []
   type: TYPE_TB
+  zh: '| [`Tensor.sparse_mask`](generated/torch.Tensor.sparse_mask.html#torch.Tensor.sparse_mask
+    "torch.Tensor.sparse_mask") | 返回一个由稀疏张量`mask`的索引过滤的分步张量`self`的新[稀疏张量](#sparse-docs)。
+    |'
 - en: '| [`Tensor.to_sparse`](generated/torch.Tensor.to_sparse.html#torch.Tensor.to_sparse
     "torch.Tensor.to_sparse") | Returns a sparse copy of the tensor. |'
+  id: totrans-302
   prefs: []
   type: TYPE_TB
+  zh: '| [`Tensor.to_sparse`](generated/torch.Tensor.to_sparse.html#torch.Tensor.to_sparse
+    "torch.Tensor.to_sparse") | 返回张量的稀疏副本。 |'
 - en: '| [`Tensor.to_sparse_coo`](generated/torch.Tensor.to_sparse_coo.html#torch.Tensor.to_sparse_coo
     "torch.Tensor.to_sparse_coo") | Convert a tensor to [coordinate format](#sparse-coo-docs).
     |'
+  id: totrans-303
   prefs: []
   type: TYPE_TB
+  zh: '| [`Tensor.to_sparse_coo`](generated/torch.Tensor.to_sparse_coo.html#torch.Tensor.to_sparse_coo
+    "torch.Tensor.to_sparse_coo") | 将张量转换为[坐标格式](#sparse-coo-docs)。 |'
 - en: '| [`Tensor.to_sparse_csr`](generated/torch.Tensor.to_sparse_csr.html#torch.Tensor.to_sparse_csr
     "torch.Tensor.to_sparse_csr") | Convert a tensor to compressed row storage format
     (CSR). |'
+  id: totrans-304
   prefs: []
   type: TYPE_TB
+  zh: '| [`Tensor.to_sparse_csr`](generated/torch.Tensor.to_sparse_csr.html#torch.Tensor.to_sparse_csr
+    "torch.Tensor.to_sparse_csr") | 将张量转换为压缩行存储格式（CSR）。 |'
 - en: '| [`Tensor.to_sparse_csc`](generated/torch.Tensor.to_sparse_csc.html#torch.Tensor.to_sparse_csc
     "torch.Tensor.to_sparse_csc") | Convert a tensor to compressed column storage
     (CSC) format. |'
+  id: totrans-305
   prefs: []
   type: TYPE_TB
+  zh: '| [`Tensor.to_sparse_csc`](generated/torch.Tensor.to_sparse_csc.html#torch.Tensor.to_sparse_csc
+    "torch.Tensor.to_sparse_csc") | 将张量转换为压缩列存储（CSC）格式。 |'
 - en: '| [`Tensor.to_sparse_bsr`](generated/torch.Tensor.to_sparse_bsr.html#torch.Tensor.to_sparse_bsr
     "torch.Tensor.to_sparse_bsr") | Convert a tensor to a block sparse row (BSR) storage
     format of given blocksize. |'
+  id: totrans-306
   prefs: []
   type: TYPE_TB
+  zh: '| [`Tensor.to_sparse_bsr`](generated/torch.Tensor.to_sparse_bsr.html#torch.Tensor.to_sparse_bsr
+    "torch.Tensor.to_sparse_bsr") | 将张量转换为给定块大小的块稀疏行（BSR）存储格式。 |'
 - en: '| [`Tensor.to_sparse_bsc`](generated/torch.Tensor.to_sparse_bsc.html#torch.Tensor.to_sparse_bsc
     "torch.Tensor.to_sparse_bsc") | Convert a tensor to a block sparse column (BSC)
     storage format of given blocksize. |'
+  id: totrans-307
   prefs: []
   type: TYPE_TB
+  zh: '| [`Tensor.to_sparse_bsc`](generated/torch.Tensor.to_sparse_bsc.html#torch.Tensor.to_sparse_bsc
+    "torch.Tensor.to_sparse_bsc") | 将张量转换为给定块大小的块稀疏列（BSC）存储格式。 |'
 - en: '| [`Tensor.to_dense`](generated/torch.Tensor.to_dense.html#torch.Tensor.to_dense
     "torch.Tensor.to_dense") | Creates a strided copy of `self` if `self` is not a
     strided tensor, otherwise returns `self`. |'
+  id: totrans-308
   prefs: []
   type: TYPE_TB
+  zh: '| [`Tensor.to_dense`](generated/torch.Tensor.to_dense.html#torch.Tensor.to_dense
+    "torch.Tensor.to_dense") | 如果`self`不是分步张量，则创建`self`的分步副本，否则返回`self`。 |'
 - en: '| [`Tensor.values`](generated/torch.Tensor.values.html#torch.Tensor.values
     "torch.Tensor.values") | Return the values tensor of a [sparse COO tensor](#sparse-coo-docs).
     |'
+  id: totrans-309
   prefs: []
   type: TYPE_TB
+  zh: '| [`Tensor.values`](generated/torch.Tensor.values.html#torch.Tensor.values
+    "torch.Tensor.values") | 返回[稀疏COO张量](#sparse-coo-docs)的值张量。 |'
 - en: 'The following Tensor methods are specific to sparse COO tensors:'
+  id: totrans-310
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下张量方法特定于稀疏COO张量：
 - en: '| [`Tensor.coalesce`](generated/torch.Tensor.coalesce.html#torch.Tensor.coalesce
     "torch.Tensor.coalesce") | Returns a coalesced copy of `self` if `self` is an
     [uncoalesced tensor](#sparse-uncoalesced-coo-docs). |'
+  id: totrans-311
   prefs: []
   type: TYPE_TB
+  zh: '| [`Tensor.coalesce`](generated/torch.Tensor.coalesce.html#torch.Tensor.coalesce
+    "torch.Tensor.coalesce") | 如果`self`是[未合并的张量](#sparse-uncoalesced-coo-docs)，则返回`self`的合并副本。
+    |'
 - en: '| [`Tensor.sparse_resize_`](generated/torch.Tensor.sparse_resize_.html#torch.Tensor.sparse_resize_
     "torch.Tensor.sparse_resize_") | Resizes `self` [sparse tensor](#sparse-docs)
     to the desired size and the number of sparse and dense dimensions. |'
+  id: totrans-312
   prefs: []
   type: TYPE_TB
+  zh: '| [`Tensor.sparse_resize_`](generated/torch.Tensor.sparse_resize_.html#torch.Tensor.sparse_resize_
+    "torch.Tensor.sparse_resize_") | 调整`self`[稀疏张量](#sparse-docs)到所需大小和稀疏和密集维度的数量。
+    |'
 - en: '| [`Tensor.sparse_resize_and_clear_`](generated/torch.Tensor.sparse_resize_and_clear_.html#torch.Tensor.sparse_resize_and_clear_
     "torch.Tensor.sparse_resize_and_clear_") | Removes all specified elements from
     a [sparse tensor](#sparse-docs) `self` and resizes `self` to the desired size
     and the number of sparse and dense dimensions. |'
+  id: totrans-313
   prefs: []
   type: TYPE_TB
+  zh: '| [`Tensor.sparse_resize_and_clear_`](generated/torch.Tensor.sparse_resize_and_clear_.html#torch.Tensor.sparse_resize_and_clear_
+    "torch.Tensor.sparse_resize_and_clear_") | 从[稀疏张量](#sparse-docs)`self`中删除所有指定元素，并将`self`调整为所需大小和稀疏和密集维度的数量。
+    |'
 - en: '| [`Tensor.is_coalesced`](generated/torch.Tensor.is_coalesced.html#torch.Tensor.is_coalesced
     "torch.Tensor.is_coalesced") | Returns `True` if `self` is a [sparse COO tensor](#sparse-coo-docs)
     that is coalesced, `False` otherwise. |'
+  id: totrans-314
   prefs: []
   type: TYPE_TB
+  zh: '| [`Tensor.is_coalesced`](generated/torch.Tensor.is_coalesced.html#torch.Tensor.is_coalesced
+    "torch.Tensor.is_coalesced") | 如果`self`是已合并的[稀疏COO张量](#sparse-coo-docs)，则返回`True`，否则返回`False`。
+    |'
 - en: '| [`Tensor.indices`](generated/torch.Tensor.indices.html#torch.Tensor.indices
     "torch.Tensor.indices") | Return the indices tensor of a [sparse COO tensor](#sparse-coo-docs).
     |'
+  id: totrans-315
   prefs: []
   type: TYPE_TB
+  zh: '| [`Tensor.indices`](generated/torch.Tensor.indices.html#torch.Tensor.indices
+    "torch.Tensor.indices") | 返回[稀疏COO张量](#sparse-coo-docs)的索引张量。 |'
 - en: 'The following methods are specific to [sparse CSR tensors](#sparse-csr-docs)
     and [sparse BSR tensors](#sparse-bsr-docs):'
+  id: totrans-316
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下方法特定于[稀疏CSR张量](#sparse-csr-docs)和[稀疏BSR张量](#sparse-bsr-docs)：
 - en: '| [`Tensor.crow_indices`](generated/torch.Tensor.crow_indices.html#torch.Tensor.crow_indices
     "torch.Tensor.crow_indices") | Returns the tensor containing the compressed row
     indices of the `self` tensor when `self` is a sparse CSR tensor of layout `sparse_csr`.
     |'
+  id: totrans-317
   prefs: []
   type: TYPE_TB
+  zh: '| [`Tensor.crow_indices`](generated/torch.Tensor.crow_indices.html#torch.Tensor.crow_indices
+    "torch.Tensor.crow_indices") | 返回包含`self`张量的压缩行索引的张量，当`self`是布局为`sparse_csr`的稀疏CSR张量时。
+    |'
 - en: '| [`Tensor.col_indices`](generated/torch.Tensor.col_indices.html#torch.Tensor.col_indices
     "torch.Tensor.col_indices") | Returns the tensor containing the column indices
     of the `self` tensor when `self` is a sparse CSR tensor of layout `sparse_csr`.
     |'
+  id: totrans-318
   prefs: []
   type: TYPE_TB
+  zh: '| [`Tensor.col_indices`](generated/torch.Tensor.col_indices.html#torch.Tensor.col_indices
+    "torch.Tensor.col_indices") | 返回包含`self`张量的列索引的张量，当`self`是布局为`sparse_csr`的稀疏CSR张量时。
+    |'
 - en: 'The following methods are specific to [sparse CSC tensors](#sparse-csc-docs)
     and [sparse BSC tensors](#sparse-bsc-docs):'
+  id: totrans-319
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下方法特定于[稀疏CSC张量](#sparse-csc-docs)和[稀疏BSC张量](#sparse-bsc-docs)：
 - en: '| [`Tensor.row_indices`](generated/torch.Tensor.row_indices.html#torch.Tensor.row_indices
     "torch.Tensor.row_indices") |  |'
+  id: totrans-320
   prefs: []
   type: TYPE_TB
+  zh: '| [`Tensor.row_indices`](generated/torch.Tensor.row_indices.html#torch.Tensor.row_indices
+    "torch.Tensor.row_indices") |  |'
 - en: '| [`Tensor.ccol_indices`](generated/torch.Tensor.ccol_indices.html#torch.Tensor.ccol_indices
     "torch.Tensor.ccol_indices") |  |'
+  id: totrans-321
   prefs: []
   type: TYPE_TB
+  zh: '| [`Tensor.ccol_indices`](generated/torch.Tensor.ccol_indices.html#torch.Tensor.ccol_indices
+    "torch.Tensor.ccol_indices") |  |'
 - en: 'The following Tensor methods support sparse COO tensors:'
+  id: totrans-322
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下张量方法支持稀疏COO张量：
 - en: '[`add()`](generated/torch.Tensor.add.html#torch.Tensor.add "torch.Tensor.add")
     [`add_()`](generated/torch.Tensor.add_.html#torch.Tensor.add_ "torch.Tensor.add_")
     [`addmm()`](generated/torch.Tensor.addmm.html#torch.Tensor.addmm "torch.Tensor.addmm")
@@ -1565,104 +2267,216 @@
     "torch.Tensor.transpose") [`transpose_()`](generated/torch.Tensor.transpose_.html#torch.Tensor.transpose_
     "torch.Tensor.transpose_") [`zero_()`](generated/torch.Tensor.zero_.html#torch.Tensor.zero_
     "torch.Tensor.zero_")'
+  id: totrans-323
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`add()`](generated/torch.Tensor.add.html#torch.Tensor.add "torch.Tensor.add")
+    [`add_()`](generated/torch.Tensor.add_.html#torch.Tensor.add_ "torch.Tensor.add_")
+    [`addmm()`](generated/torch.Tensor.addmm.html#torch.Tensor.addmm "torch.Tensor.addmm")
+    [`addmm_()`](generated/torch.Tensor.addmm_.html#torch.Tensor.addmm_ "torch.Tensor.addmm_")
+    [`any()`](generated/torch.Tensor.any.html#torch.Tensor.any "torch.Tensor.any")
+    [`asin()`](generated/torch.Tensor.asin.html#torch.Tensor.asin "torch.Tensor.asin")
+    [`asin_()`](generated/torch.Tensor.asin_.html#torch.Tensor.asin_ "torch.Tensor.asin_")
+    [`arcsin()`](generated/torch.Tensor.arcsin.html#torch.Tensor.arcsin "torch.Tensor.arcsin")
+    [`arcsin_()`](generated/torch.Tensor.arcsin_.html#torch.Tensor.arcsin_ "torch.Tensor.arcsin_")
+    [`bmm()`](generated/torch.Tensor.bmm.html#torch.Tensor.bmm "torch.Tensor.bmm")
+    [`clone()`](generated/torch.Tensor.clone.html#torch.Tensor.clone "torch.Tensor.clone")
+    [`deg2rad()`](generated/torch.Tensor.deg2rad.html#torch.Tensor.deg2rad "torch.Tensor.deg2rad")
+    `deg2rad_()` [`detach()`](generated/torch.Tensor.detach.html#torch.Tensor.detach
+    "torch.Tensor.detach") [`detach_()`](generated/torch.Tensor.detach_.html#torch.Tensor.detach_
+    "torch.Tensor.detach_") [`dim()`](generated/torch.Tensor.dim.html#torch.Tensor.dim
+    "torch.Tensor.dim") [`div()`](generated/torch.Tensor.div.html#torch.Tensor.div
+    "torch.Tensor.div") [`div_()`](generated/torch.Tensor.div_.html#torch.Tensor.div_
+    "torch.Tensor.div_") [`floor_divide()`](generated/torch.Tensor.floor_divide.html#torch.Tensor.floor_divide
+    "torch.Tensor.floor_divide") [`floor_divide_()`](generated/torch.Tensor.floor_divide_.html#torch.Tensor.floor_divide_
+    "torch.Tensor.floor_divide_") [`get_device()`](generated/torch.Tensor.get_device.html#torch.Tensor.get_device
+    "torch.Tensor.get_device") [`index_select()`](generated/torch.Tensor.index_select.html#torch.Tensor.index_select
+    "torch.Tensor.index_select") [`isnan()`](generated/torch.Tensor.isnan.html#torch.Tensor.isnan
+    "torch.Tensor.isnan") [`log1p()`](generated/torch.Tensor.log1p.html#torch.Tensor.log1p
+    "torch.Tensor.log1p") [`log1p_()`](generated/torch.Tensor.log1p_.html#torch.Tensor.log1p_
+    "torch.Tensor.log1p_") [`mm()`](generated/torch.Tensor.mm.html#torch.Tensor.mm
+    "torch.Tensor.mm") [`mul()`](generated/torch.Tensor.mul.html#torch.Tensor.mul
+    "torch.Tensor.mul") [`mul_()`](generated/torch.Tensor.mul_.html#torch.Tensor.mul_
+    "torch.Tensor.mul_") [`mv()`](generated/torch.Tensor.mv.html#torch.Tensor.mv "torch.Tensor.mv")
+    [`narrow_copy()`](generated/torch.Tensor.narrow_copy.html#torch.Tensor.narrow_copy
+    "torch.Tensor.narrow_copy") [`neg()`](generated/torch.Tensor.neg.html#torch.Tensor.neg
+    "torch.Tensor.neg") [`neg_()`](generated/torch.Tensor.neg_.html#torch.Tensor.neg_
+    "torch.Tensor.neg_") [`negative()`](generated/torch.Tensor.negative.html#torch.Tensor.negative
+    "torch.Tensor.negative") [`negative_()`](generated/torch.Tensor.negative_.html#torch.Tensor.negative_
+    "torch.Tensor.negative_") [`numel()`](generated/torch.Tensor.numel.html#torch.Tensor.numel
+    "torch.Tensor.numel") [`rad2deg()`](generated/torch.Tensor.rad2deg.html#torch.Tensor.rad2deg
+    "torch.Tensor.rad2deg") `rad2deg_()` [`resize_as_()`](generated/torch.Tensor.resize_as_.html#torch.Tensor.resize_as_
+    "torch.Tensor.resize_as_") [`size()`](generated/torch.Tensor.size.html#torch.Tensor.size
+    "torch.Tensor.size") [`pow()`](generated/torch.Tensor.pow.html#torch.Tensor.pow
+    "torch.Tensor.pow") [`sqrt()`](generated/torch.Tensor.sqrt.html#torch.Tensor.sqrt
+    "torch.Tensor.sqrt") [`square()`](generated/torch.Tensor.square.html#torch.Tensor.square
+    "torch.Tensor.square") [`smm()`](generated/torch.Tensor.smm.html#torch.Tensor.smm
+    "torch.Tensor.smm") [`sspaddmm()`](generated/torch.Tensor.sspaddmm.html#torch.Tensor.sspaddmm
+    "torch.Tensor.sspaddmm") [`sub()`](generated/torch.Tensor.sub.html#torch.Tensor.sub
+    "torch.Tensor.sub") [`sub_()`](generated/torch.Tensor.sub_.html#torch.Tensor.sub_
+    "torch.Tensor.sub_") [`t()`](generated/torch.Tensor.t.html#torch.Tensor.t "torch.Tensor.t")
+    [`t_()`](generated/torch.Tensor.t_.html#torch.Tensor.t_ "torch.Tensor.t_") [`transpose()`](generated/torch.Tensor.transpose.html#torch.Tensor.transpose
+    "torch.Tensor.transpose") [`transpose_()`](generated/torch.Tensor.transpose_.html#torch.Tensor.transpose_
+    "torch.Tensor.transpose_") [`zero_()`](generated/torch.Tensor.zero_.html#torch.Tensor.zero_
+    "torch.Tensor.zero_")'
 - en: Torch functions specific to sparse Tensors[](#torch-functions-specific-to-sparse-tensors
     "Permalink to this heading")
+  id: totrans-324
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 针对稀疏张量的Torch函数[](#torch-functions-specific-to-sparse-tensors "跳转到此标题")
 - en: '| [`sparse_coo_tensor`](generated/torch.sparse_coo_tensor.html#torch.sparse_coo_tensor
     "torch.sparse_coo_tensor") | Constructs a [sparse tensor in COO(rdinate) format](#sparse-coo-docs)
     with specified values at the given `indices`. |'
+  id: totrans-325
   prefs: []
   type: TYPE_TB
+  zh: '| [`sparse_coo_tensor`](generated/torch.sparse_coo_tensor.html#torch.sparse_coo_tensor
+    "torch.sparse_coo_tensor") | 使用给定的`indices`构造一个[COO（坐标）格式的稀疏张量](#sparse-coo-docs)，其中包含指定的值。
+    |'
 - en: '| [`sparse_csr_tensor`](generated/torch.sparse_csr_tensor.html#torch.sparse_csr_tensor
     "torch.sparse_csr_tensor") | Constructs a [sparse tensor in CSR (Compressed Sparse
     Row)](#sparse-csr-docs) with specified values at the given `crow_indices` and
     `col_indices`. |'
+  id: totrans-326
   prefs: []
   type: TYPE_TB
+  zh: '| [`sparse_csr_tensor`](generated/torch.sparse_csr_tensor.html#torch.sparse_csr_tensor
+    "torch.sparse_csr_tensor") | 使用给定的`crow_indices`和`col_indices`构造一个[CSR（压缩稀疏行）格式的稀疏张量](#sparse-csr-docs)，其中包含指定的值。
+    |'
 - en: '| [`sparse_csc_tensor`](generated/torch.sparse_csc_tensor.html#torch.sparse_csc_tensor
     "torch.sparse_csc_tensor") | Constructs a [sparse tensor in CSC (Compressed Sparse
     Column)](#sparse-csc-docs) with specified values at the given `ccol_indices` and
     `row_indices`. |'
+  id: totrans-327
   prefs: []
   type: TYPE_TB
+  zh: '| [`sparse_csc_tensor`](generated/torch.sparse_csc_tensor.html#torch.sparse_csc_tensor
+    "torch.sparse_csc_tensor") | 使用给定的`ccol_indices`和`row_indices`构造一个[CSC（压缩稀疏列）格式的稀疏张量](#sparse-csc-docs)，其中包含指定的值。
+    |'
 - en: '| [`sparse_bsr_tensor`](generated/torch.sparse_bsr_tensor.html#torch.sparse_bsr_tensor
     "torch.sparse_bsr_tensor") | Constructs a [sparse tensor in BSR (Block Compressed
     Sparse Row))](#sparse-bsr-docs) with specified 2-dimensional blocks at the given
     `crow_indices` and `col_indices`. |'
+  id: totrans-328
   prefs: []
   type: TYPE_TB
+  zh: '| [`sparse_bsr_tensor`](generated/torch.sparse_bsr_tensor.html#torch.sparse_bsr_tensor
+    "torch.sparse_bsr_tensor") | 使用给定的`crow_indices`和`col_indices`构造一个[BSR（块压缩稀疏行）格式的稀疏张量](#sparse-bsr-docs)，其中包含指定的二维块。
+    |'
 - en: '| [`sparse_bsc_tensor`](generated/torch.sparse_bsc_tensor.html#torch.sparse_bsc_tensor
     "torch.sparse_bsc_tensor") | Constructs a [sparse tensor in BSC (Block Compressed
     Sparse Column))](#sparse-bsc-docs) with specified 2-dimensional blocks at the
     given `ccol_indices` and `row_indices`. |'
+  id: totrans-329
   prefs: []
   type: TYPE_TB
+  zh: '| [`sparse_bsc_tensor`](generated/torch.sparse_bsc_tensor.html#torch.sparse_bsc_tensor
+    "torch.sparse_bsc_tensor") | 使用给定的`ccol_indices`和`row_indices`构造一个[BSC（块压缩稀疏列）格式的稀疏张量](#sparse-bsc-docs)，其中包含指定的二维块。
+    |'
 - en: '| [`sparse_compressed_tensor`](generated/torch.sparse_compressed_tensor.html#torch.sparse_compressed_tensor
     "torch.sparse_compressed_tensor") | Constructs a [sparse tensor in Compressed
     Sparse format - CSR, CSC, BSR, or BSC -](#sparse-compressed-docs) with specified
     values at the given `compressed_indices` and `plain_indices`. |'
+  id: totrans-330
   prefs: []
   type: TYPE_TB
+  zh: '| [`sparse_compressed_tensor`](generated/torch.sparse_compressed_tensor.html#torch.sparse_compressed_tensor
+    "torch.sparse_compressed_tensor") | 使用给定的`compressed_indices`和`plain_indices`构造一个[压缩稀疏格式的张量
+    - CSR、CSC、BSR或BSC -](#sparse-compressed-docs)，其中包含指定的值。 |'
 - en: '| [`sparse.sum`](generated/torch.sparse.sum.html#torch.sparse.sum "torch.sparse.sum")
     | Return the sum of each row of the given sparse tensor. |'
+  id: totrans-331
   prefs: []
   type: TYPE_TB
+  zh: '| [`sparse.sum`](generated/torch.sparse.sum.html#torch.sparse.sum "torch.sparse.sum")
+    | 返回给定稀疏张量每行的和。 |'
 - en: '| [`sparse.addmm`](generated/torch.sparse.addmm.html#torch.sparse.addmm "torch.sparse.addmm")
     | This function does exact same thing as [`torch.addmm()`](generated/torch.addmm.html#torch.addmm
     "torch.addmm") in the forward, except that it supports backward for sparse COO
     matrix `mat1`. |'
+  id: totrans-332
   prefs: []
   type: TYPE_TB
+  zh: '| [`sparse.addmm`](generated/torch.sparse.addmm.html#torch.sparse.addmm "torch.sparse.addmm")
+    | 此函数在前向传播中与[`torch.addmm()`](generated/torch.addmm.html#torch.addmm "torch.addmm")完全相同，只是它支持稀疏COO矩阵
+    `mat1` 的反向传播。 |'
 - en: '| [`sparse.sampled_addmm`](generated/torch.sparse.sampled_addmm.html#torch.sparse.sampled_addmm
     "torch.sparse.sampled_addmm") | Performs a matrix multiplication of the dense
     matrices `mat1` and `mat2` at the locations specified by the sparsity pattern
     of `input`. |'
+  id: totrans-333
   prefs: []
   type: TYPE_TB
+  zh: '| [`sparse.sampled_addmm`](generated/torch.sparse.sampled_addmm.html#torch.sparse.sampled_addmm
+    "torch.sparse.sampled_addmm") | 在`input`的稀疏模式指定的位置上，对密集矩阵`mat1`和`mat2`执行矩阵乘法。
+    |'
 - en: '| [`sparse.mm`](generated/torch.sparse.mm.html#torch.sparse.mm "torch.sparse.mm")
     | Performs a matrix multiplication of the sparse matrix `mat1` |'
+  id: totrans-334
   prefs: []
   type: TYPE_TB
+  zh: '| [`sparse.mm`](generated/torch.sparse.mm.html#torch.sparse.mm "torch.sparse.mm")
+    | 对稀疏矩阵 `mat1` 执行矩阵乘法。 |'
 - en: '| [`sspaddmm`](generated/torch.sspaddmm.html#torch.sspaddmm "torch.sspaddmm")
     | Matrix multiplies a sparse tensor `mat1` with a dense tensor `mat2`, then adds
     the sparse tensor `input` to the result. |'
+  id: totrans-335
   prefs: []
   type: TYPE_TB
+  zh: '| [`sspaddmm`](generated/torch.sspaddmm.html#torch.sspaddmm "torch.sspaddmm")
+    | 将稀疏张量 `mat1` 与密集张量 `mat2` 相乘，然后将稀疏张量 `input` 加到结果中。 |'
 - en: '| [`hspmm`](generated/torch.hspmm.html#torch.hspmm "torch.hspmm") | Performs
     a matrix multiplication of a [sparse COO matrix](#sparse-coo-docs) `mat1` and
     a strided matrix `mat2`. |'
+  id: totrans-336
   prefs: []
   type: TYPE_TB
+  zh: '| [`hspmm`](generated/torch.hspmm.html#torch.hspmm "torch.hspmm") | 对一个[稀疏COO矩阵](#sparse-coo-docs)
+    `mat1` 和一个分块矩阵 `mat2` 执行矩阵乘法。 |'
 - en: '| [`smm`](generated/torch.smm.html#torch.smm "torch.smm") | Performs a matrix
     multiplication of the sparse matrix `input` with the dense matrix `mat`. |'
+  id: totrans-337
   prefs: []
   type: TYPE_TB
+  zh: '| [`smm`](generated/torch.smm.html#torch.smm "torch.smm") | 对稀疏矩阵 `input` 和密集矩阵
+    `mat` 执行矩阵乘法。 |'
 - en: '| [`sparse.softmax`](generated/torch.sparse.softmax.html#torch.sparse.softmax
     "torch.sparse.softmax") | Applies a softmax function. |'
+  id: totrans-338
   prefs: []
   type: TYPE_TB
+  zh: '| [`sparse.softmax`](generated/torch.sparse.softmax.html#torch.sparse.softmax
+    "torch.sparse.softmax") | 应用softmax函数。 |'
 - en: '| [`sparse.log_softmax`](generated/torch.sparse.log_softmax.html#torch.sparse.log_softmax
     "torch.sparse.log_softmax") | Applies a softmax function followed by logarithm.
     |'
+  id: totrans-339
   prefs: []
   type: TYPE_TB
+  zh: '| [`sparse.log_softmax`](generated/torch.sparse.log_softmax.html#torch.sparse.log_softmax
+    "torch.sparse.log_softmax") | 应用softmax函数后跟对数函数。 |'
 - en: '| [`sparse.spdiags`](generated/torch.sparse.spdiags.html#torch.sparse.spdiags
     "torch.sparse.spdiags") | Creates a sparse 2D tensor by placing the values from
     rows of `diagonals` along specified diagonals of the output |'
+  id: totrans-340
   prefs: []
   type: TYPE_TB
+  zh: '| [`sparse.spdiags`](generated/torch.sparse.spdiags.html#torch.sparse.spdiags
+    "torch.sparse.spdiags") | 通过将`diagonals`的行值沿输出的指定对角线放置，创建一个稀疏的二维张量。 |'
 - en: Other functions
+  id: totrans-341
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 其他函数
 - en: 'The following [`torch`](torch.html#module-torch "torch") functions support
     sparse tensors:'
+  id: totrans-342
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下[`torch`](torch.html#module-torch "torch")函数支持稀疏张量：
 - en: '[`cat()`](generated/torch.cat.html#torch.cat "torch.cat") [`dstack()`](generated/torch.dstack.html#torch.dstack
     "torch.dstack") [`empty()`](generated/torch.empty.html#torch.empty "torch.empty")
     [`empty_like()`](generated/torch.empty_like.html#torch.empty_like "torch.empty_like")
@@ -1679,41 +2493,76 @@
     "torch.unsqueeze") [`vstack()`](generated/torch.vstack.html#torch.vstack "torch.vstack")
     [`zeros()`](generated/torch.zeros.html#torch.zeros "torch.zeros") [`zeros_like()`](generated/torch.zeros_like.html#torch.zeros_like
     "torch.zeros_like")'
+  id: totrans-343
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`cat()`](generated/torch.cat.html#torch.cat "torch.cat") [`dstack()`](generated/torch.dstack.html#torch.dstack
+    "torch.dstack") [`empty()`](generated/torch.empty.html#torch.empty "torch.empty")
+    [`empty_like()`](generated/torch.empty_like.html#torch.empty_like "torch.empty_like")
+    [`hstack()`](generated/torch.hstack.html#torch.hstack "torch.hstack") [`index_select()`](generated/torch.index_select.html#torch.index_select
+    "torch.index_select") [`is_complex()`](generated/torch.is_complex.html#torch.is_complex
+    "torch.is_complex") [`is_floating_point()`](generated/torch.is_floating_point.html#torch.is_floating_point
+    "torch.is_floating_point") [`is_nonzero()`](generated/torch.is_nonzero.html#torch.is_nonzero
+    "torch.is_nonzero") `is_same_size()` `is_signed()` [`is_tensor()`](generated/torch.is_tensor.html#torch.is_tensor
+    "torch.is_tensor") [`lobpcg()`](generated/torch.lobpcg.html#torch.lobpcg "torch.lobpcg")
+    [`mm()`](generated/torch.mm.html#torch.mm "torch.mm") `native_norm()` [`pca_lowrank()`](generated/torch.pca_lowrank.html#torch.pca_lowrank
+    "torch.pca_lowrank") [`select()`](generated/torch.select.html#torch.select "torch.select")
+    [`stack()`](generated/torch.stack.html#torch.stack "torch.stack") [`svd_lowrank()`](generated/torch.svd_lowrank.html#torch.svd_lowrank
+    "torch.svd_lowrank") [`unsqueeze()`](generated/torch.unsqueeze.html#torch.unsqueeze
+    "torch.unsqueeze") [`vstack()`](generated/torch.vstack.html#torch.vstack "torch.vstack")
+    [`zeros()`](generated/torch.zeros.html#torch.zeros "torch.zeros") [`zeros_like()`](generated/torch.zeros_like.html#torch.zeros_like
+    "torch.zeros_like")'
 - en: 'To manage checking sparse tensor invariants, see:'
+  id: totrans-344
   prefs: []
   type: TYPE_NORMAL
+  zh: 要管理检查稀疏张量不变性，请参见：
 - en: '| [`sparse.check_sparse_tensor_invariants`](generated/torch.sparse.check_sparse_tensor_invariants.html#torch.sparse.check_sparse_tensor_invariants
     "torch.sparse.check_sparse_tensor_invariants") | A tool to control checking sparse
     tensor invariants. |'
+  id: totrans-345
   prefs: []
   type: TYPE_TB
+  zh: '[`sparse.check_sparse_tensor_invariants`](generated/torch.sparse.check_sparse_tensor_invariants.html#torch.sparse.check_sparse_tensor_invariants
+    "torch.sparse.check_sparse_tensor_invariants") | 用于控制检查稀疏张量不变性的工具。'
 - en: 'To use sparse tensors with [`gradcheck()`](autograd.html#module-torch.autograd.gradcheck
     "torch.autograd.gradcheck") function, see:'
+  id: totrans-346
   prefs: []
   type: TYPE_NORMAL
+  zh: 要在[`gradcheck()`](autograd.html#module-torch.autograd.gradcheck "torch.autograd.gradcheck")函数中使用稀疏张量，请参见：
 - en: '| [`sparse.as_sparse_gradcheck`](generated/torch.sparse.as_sparse_gradcheck.html#torch.sparse.as_sparse_gradcheck
     "torch.sparse.as_sparse_gradcheck") | Decorate function, to extend gradcheck for
     sparse tensors. |'
+  id: totrans-347
   prefs: []
   type: TYPE_TB
+  zh: '[`sparse.as_sparse_gradcheck`](generated/torch.sparse.as_sparse_gradcheck.html#torch.sparse.as_sparse_gradcheck
+    "torch.sparse.as_sparse_gradcheck") | 装饰函数，用于扩展稀疏张量的 gradcheck。'
 - en: Unary functions
+  id: totrans-348
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 一元函数
 - en: We aim to support all zero-preserving unary functions.
+  id: totrans-349
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们的目标是支持所有保持零值的一元函数。
 - en: If you find that we are missing a zero-preserving unary function that you need,
     please feel encouraged to open an issue for a feature request. As always please
     kindly try the search function first before opening an issue.
+  id: totrans-350
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您发现我们缺少您需要的保持零值的一元函数，请随时鼓励您为功能请求打开问题。在打开问题之前，请务必先尝试搜索功能。
 - en: The following operators currently support sparse COO/CSR/CSC/BSR/CSR tensor
     inputs.
+  id: totrans-351
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下运算符目前支持稀疏 COO/CSR/CSC/BSR/CSR 张量输入。
 - en: '[`abs()`](generated/torch.abs.html#torch.abs "torch.abs") [`asin()`](generated/torch.asin.html#torch.asin
     "torch.asin") [`asinh()`](generated/torch.asinh.html#torch.asinh "torch.asinh")
     [`atan()`](generated/torch.atan.html#torch.atan "torch.atan") [`atanh()`](generated/torch.atanh.html#torch.atanh
@@ -1733,5 +2582,25 @@
     "torch.isneginf") [`isnan()`](generated/torch.isnan.html#torch.isnan "torch.isnan")
     [`erf()`](generated/torch.erf.html#torch.erf "torch.erf") [`erfinv()`](generated/torch.erfinv.html#torch.erfinv
     "torch.erfinv")'
+  id: totrans-352
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`abs()`](generated/torch.abs.html#torch.abs "torch.abs") [`asin()`](generated/torch.asin.html#torch.asin
+    "torch.asin") [`asinh()`](generated/torch.asinh.html#torch.asinh "torch.asinh")
+    [`atan()`](generated/torch.atan.html#torch.atan "torch.atan") [`atanh()`](generated/torch.atanh.html#torch.atanh
+    "torch.atanh") [`ceil()`](generated/torch.ceil.html#torch.ceil "torch.ceil") [`conj_physical()`](generated/torch.conj_physical.html#torch.conj_physical
+    "torch.conj_physical") [`floor()`](generated/torch.floor.html#torch.floor "torch.floor")
+    [`log1p()`](generated/torch.log1p.html#torch.log1p "torch.log1p") [`neg()`](generated/torch.neg.html#torch.neg
+    "torch.neg") [`round()`](generated/torch.round.html#torch.round "torch.round")
+    [`sin()`](generated/torch.sin.html#torch.sin "torch.sin") [`sinh()`](generated/torch.sinh.html#torch.sinh
+    "torch.sinh") [`sign()`](generated/torch.sign.html#torch.sign "torch.sign") [`sgn()`](generated/torch.sgn.html#torch.sgn
+    "torch.sgn") [`signbit()`](generated/torch.signbit.html#torch.signbit "torch.signbit")
+    [`tan()`](generated/torch.tan.html#torch.tan "torch.tan") [`tanh()`](generated/torch.tanh.html#torch.tanh
+    "torch.tanh") [`trunc()`](generated/torch.trunc.html#torch.trunc "torch.trunc")
+    [`expm1()`](generated/torch.expm1.html#torch.expm1 "torch.expm1") [`sqrt()`](generated/torch.sqrt.html#torch.sqrt
+    "torch.sqrt") [`angle()`](generated/torch.angle.html#torch.angle "torch.angle")
+    [`isinf()`](generated/torch.isinf.html#torch.isinf "torch.isinf") [`isposinf()`](generated/torch.isposinf.html#torch.isposinf
+    "torch.isposinf") [`isneginf()`](generated/torch.isneginf.html#torch.isneginf
+    "torch.isneginf") [`isnan()`](generated/torch.isnan.html#torch.isnan "torch.isnan")
+    [`erf()`](generated/torch.erf.html#torch.erf "torch.erf") [`erfinv()`](generated/torch.erfinv.html#torch.erfinv
+    "torch.erfinv")'

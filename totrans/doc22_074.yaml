@@ -1,22 +1,32 @@
 - en: Quantization
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 量化
 - en: 原文：[https://pytorch.org/docs/stable/quantization.html](https://pytorch.org/docs/stable/quantization.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/docs/stable/quantization.html](https://pytorch.org/docs/stable/quantization.html)
 - en: Warning
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: Quantization is in beta and subject to change.
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
-- en: Introduction to Quantization[](#introduction-to-quantization "Permalink to
-    this heading")
+  zh: 量化处于测试阶段，可能会有变化。
+- en: Introduction to Quantization[](#introduction-to-quantization "Permalink to this
+    heading")
+  id: totrans-4
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 量化简介[](#introduction-to-quantization "跳转到此标题的永久链接")
 - en: Quantization refers to techniques for performing computations and storing tensors
     at lower bitwidths than floating point precision. A quantized model executes some
     or all of the operations on tensors with reduced precision rather than full precision
@@ -27,8 +37,10 @@
     Hardware support for INT8 computations is typically 2 to 4 times faster compared
     to FP32 compute. Quantization is primarily a technique to speed up inference and
     only the forward pass is supported for quantized operators.
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 量化是指在执行计算和存储张量时使用比浮点精度更低的比特宽度的技术。量化模型在张量上执行一些或所有操作时，使用降低的精度而不是完整精度（浮点）值。这样可以实现更紧凑的模型表示，并在许多硬件平台上使用高性能的矢量化操作。PyTorch支持INT8量化，相比典型的FP32模型，可以将模型大小减小4倍，内存带宽需求减小4倍。与FP32计算相比，硬件对INT8计算的支持通常快2到4倍。量化主要是一种加速推断的技术，只支持量化操作符的前向传播。
 - en: PyTorch supports multiple approaches to quantizing a deep learning model. In
     most cases the model is trained in FP32 and then the model is converted to INT8\.
     In addition, PyTorch also supports quantization aware training, which models quantization
@@ -36,28 +48,38 @@
     Note that the entire computation is carried out in floating point. At the end
     of quantization aware training, PyTorch provides conversion functions to convert
     the trained model into lower precision.
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch支持多种量化深度学习模型的方法。在大多数情况下，模型在FP32中训练，然后将模型转换为INT8。此外，PyTorch还支持量化感知训练，该训练模型在前向和后向传递中使用伪量化模块模拟量化误差。请注意，整个计算过程都是在浮点数中进行的。在量化感知训练结束时，PyTorch提供转换函数将训练好的模型转换为较低精度。
 - en: At lower level, PyTorch provides a way to represent quantized tensors and perform
     operations with them. They can be used to directly construct models that perform
     all or part of the computation in lower precision. Higher-level APIs are provided
     that incorporate typical workflows of converting FP32 model to lower precision
     with minimal accuracy loss.
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 在较低级别，PyTorch提供了一种表示量化张量并对其进行操作的方法。它们可以用于直接构建在较低精度中执行全部或部分计算的模型。还提供了更高级别的API，其中包含将FP32模型转换为较低精度的典型工作流程，以最小化精度损失。
 - en: Quantization API Summary
+  id: totrans-8
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 量化API摘要
 - en: 'PyTorch provides three different modes of quantization: Eager Mode Quantization,
     FX Graph Mode Quantization (maintainence) and PyTorch 2 Export Quantization.'
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch提供三种不同的量化模式：Eager模式量化，FX图模式量化（维护）和PyTorch 2导出量化。
 - en: Eager Mode Quantization is a beta feature. User needs to do fusion and specify
     where quantization and dequantization happens manually, also it only supports
     modules and not functionals.
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: Eager模式量化是一个测试功能。用户需要手动进行融合并指定量化和去量化发生的位置，它只支持模块而不支持功能。
 - en: FX Graph Mode Quantization is an automated quantization workflow in PyTorch,
     and currently it’s a prototype feature, it is in maintainence mode since we have
     PyTorch 2 Export Quantization. It improves upon Eager Mode Quantization by adding
@@ -70,8 +92,10 @@
     domain libraries with FX Graph Mode Quantization. For arbitrary models we’ll provide
     general guidelines, but to actually make it work, users might need to be familiar
     with `torch.fx`, especially on how to make a model symbolically traceable.
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: FX图模式量化是PyTorch中的自动量化工作流程，目前是一个原型功能，自从我们有了PyTorch 2导出量化以来，它处于维护模式。它通过添加对功能的支持和自动化量化过程来改进Eager模式量化，尽管人们可能需要重构模型以使其与FX图模式量化兼容（使用`torch.fx`进行符号跟踪）。请注意，FX图模式量化不适用于任意模型，因为模型可能无法进行符号跟踪，我们将把它集成到领域库中，如torchvision，用户将能够使用FX图模式量化对支持的领域库中的模型进行量化。对于任意模型，我们将提供一般性指导，但要使其正常工作，用户可能需要熟悉`torch.fx`，特别是如何使模型进行符号跟踪。
 - en: PyTorch 2 Export Quantization is the new full graph mode quantization workflow,
     released as prototype feature in PyTorch 2.1\. With PyTorch 2, we are moving to
     a better solution for full program capture (torch.export) since it can capture
@@ -89,175 +113,266 @@
     reference quantized model representation that can represent quantized computation
     with integer operations that maps closer to actual quantized computations that
     happens in hardware.
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch 2导出量化是新的完整图模式量化工作流程，作为PyTorch 2.1原型功能发布。随着PyTorch 2的推出，我们正在转向更好的解决方案，用于完整程序捕获（torch.export），因为与FX图模式量化使用的程序捕获解决方案（torch.fx.symbolic_trace）相比，它可以捕获更高比例（14K模型上的88.8%比14K模型上的72.7%）。torch.export仍然存在一些限制，涉及到一些Python结构，并需要用户参与以支持导出模型中的动态性，但总体而言，它是对以前的程序捕获解决方案的改进。PyTorch
+    2导出量化是为torch.export捕获的模型构建的，考虑到建模用户和后端开发人员的灵活性和生产力。其主要特点是（1）可编程API，用于配置如何对模型进行量化，可以扩展到更多用例（2）简化的用户体验，用于建模用户和后端开发人员，因为他们只需要与一个对象（量化器）交互，表达用户关于如何量化模型以及后端支持的意图（3）可选的参考量化模型表示，可以用整数操作表示量化计算，更接近硬件中实际发生的量化计算。
 - en: New users of quantization are encouraged to try out PyTorch 2 Export Quantization
     first, if it does not work well, user can try eager mode quantization.
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: 鼓励新用户首先尝试PyTorch 2导出量化，如果效果不佳，用户可以尝试急切模式量化。
 - en: 'The following table compares the differences between Eager Mode Quantization,
     FX Graph Mode Quantization and PyTorch 2 Export Quantization:'
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下表格比较了急切模式量化、FX图模式量化和PyTorch 2导出量化之间的区别：
 - en: '|  | Eager Mode Quantization | FX Graph Mode Quantization | PyTorch 2 Export
     Quantization |'
+  id: totrans-15
   prefs: []
   type: TYPE_TB
+  zh: '|  | 急切模式量化 | FX图模式量化 | PyTorch 2导出量化 |'
 - en: '| Release Status | beta | prototype (maintainence) | prototype |'
+  id: totrans-16
   prefs: []
   type: TYPE_TB
+  zh: '| 发布状态 | beta | 原型（维护） | 原型 |'
 - en: '| Operator Fusion | Manual | Automatic | Automatic |'
+  id: totrans-17
   prefs: []
   type: TYPE_TB
+  zh: '| 运算符融合 | 手动 | 自动 | 自动 |'
 - en: '| Quant/DeQuant Placement | Manual | Automatic | Automatic |'
+  id: totrans-18
   prefs: []
   type: TYPE_TB
+  zh: '| 量化/去量化放置 | 手动 | 自动 | 自动 |'
 - en: '| Quantizing Modules | Supported | Supported | Supported |'
+  id: totrans-19
   prefs: []
   type: TYPE_TB
+  zh: '| 量化模块 | 支持 | 支持 | 支持 |'
 - en: '| Quantizing Functionals/Torch Ops | Manual | Automatic | Supported |'
+  id: totrans-20
   prefs: []
   type: TYPE_TB
+  zh: '| 量化功能/Torch操作 | 手动 | 自动 | 支持 |'
 - en: '| Support for Customization | Limited Support | Fully Supported | Fully Supported
     |'
+  id: totrans-21
   prefs: []
   type: TYPE_TB
+  zh: '| 自定义支持 | 有限支持 | 完全支持 | 完全支持 |'
 - en: '| Quantization Mode Support | Post Training Quantization: Static, Dynamic,
     Weight OnlyQuantization Aware Training: Static | Post Training Quantization: Static,
     Dynamic, Weight OnlyQuantization Aware Training: Static | Defined by Backend Specific
     Quantizer |'
+  id: totrans-22
   prefs: []
   type: TYPE_TB
+  zh: '| 量化模式支持 | 训练后量化：静态、动态、仅权重量化感知训练：静态 | 训练后量化：静态、动态、仅权重量化感知训练：静态 | 由后端特定量化器定义
+    |'
 - en: '| Input/Output Model Type | `torch.nn.Module` | `torch.nn.Module` (May need
     some refactors to make the model compatible with FX Graph Mode Quantization) |
     `torch.fx.GraphModule` (captured by `torch.export` |'
+  id: totrans-23
   prefs: []
   type: TYPE_TB
+  zh: '| 输入/输出模型类型 | `torch.nn.Module` | `torch.nn.Module`（可能需要一些重构以使模型与FX图模式量化兼容）
+    | `torch.fx.GraphModule`（由`torch.export`捕获） |'
 - en: 'There are three types of quantization supported:'
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 支持三种类型的量化：
 - en: dynamic quantization (weights quantized with activations read/stored in floating
     point and quantized for compute)
+  id: totrans-25
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 动态量化（权重量化，激活以浮点数读取/存储并量化计算）
 - en: static quantization (weights quantized, activations quantized, calibration required
     post training)
+  id: totrans-26
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 静态量化（权重量化，激活量化，训练后需要校准）
 - en: static quantization aware training (weights quantized, activations quantized,
     quantization numerics modeled during training)
+  id: totrans-27
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 静态量化感知训练（权重量化，激活量化，训练期间建模量化数值）
 - en: Please see our [Introduction to Quantization on PyTorch](https://pytorch.org/blog/introduction-to-quantization-on-pytorch/)
     blog post for a more comprehensive overview of the tradeoffs between these quantization
     types.
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: 请查看我们的[PyTorch量化介绍](https://pytorch.org/blog/introduction-to-quantization-on-pytorch/)博客文章，了解这些量化类型之间的权衡更全面的概述。
 - en: Operator coverage varies between dynamic and static quantization and is captured
     in the table below.
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 动态量化和静态量化的运算符覆盖范围不同，详见下表。
 - en: '|  | Static Quantization | Dynamic Quantization |'
+  id: totrans-30
   prefs: []
   type: TYPE_TB
+  zh: '|  | 静态量化 | 动态量化 |'
 - en: '| nn.Linearnn.Conv1d/2d/3d | YY | YN |'
+  id: totrans-31
   prefs: []
   type: TYPE_TB
+  zh: '| nn.Linearnn.Conv1d/2d/3d | YY | YN |'
 - en: '| nn.LSTMnn.GRU | Y (throughcustom modules)N | YY |'
+  id: totrans-32
   prefs: []
   type: TYPE_TB
+  zh: '| nn.LSTMnn.GRU | Y（通过自定义模块）N | YY |'
 - en: '| nn.RNNCellnn.GRUCellnn.LSTMCell | NNN | YYY |'
+  id: totrans-33
   prefs: []
   type: TYPE_TB
+  zh: '| nn.RNNCellnn.GRUCellnn.LSTMCell | NNN | YYY |'
 - en: '| nn.EmbeddingBag | Y (activations are in fp32) | Y |'
+  id: totrans-34
   prefs: []
   type: TYPE_TB
+  zh: '| nn.EmbeddingBag | Y（激活为fp32） | Y |'
 - en: '| nn.Embedding | Y | Y |'
+  id: totrans-35
   prefs: []
   type: TYPE_TB
+  zh: '| nn.Embedding | Y | Y |'
 - en: '| nn.MultiheadAttention | Y (through custom modules) | Not supported |'
+  id: totrans-36
   prefs: []
   type: TYPE_TB
+  zh: '| nn.MultiheadAttention | Y（通过自定义模块） | 不支持 |'
 - en: '| Activations | Broadly supported | Un-changed, computations stay in fp32 |'
+  id: totrans-37
   prefs: []
   type: TYPE_TB
+  zh: '| 激活 | 广泛支持 | 保持不变，计算保持在fp32中 |'
 - en: Eager Mode Quantization
+  id: totrans-38
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 急切模式量化
 - en: For a general introduction to the quantization flow, including different types
     of quantization, please take a look at [General Quantization Flow](#general-quantization-flow).
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 有关量化流程的一般介绍，包括不同类型的量化，请参阅[一般量化流程](#general-quantization-flow)。
 - en: Post Training Dynamic Quantization[](#post-training-dynamic-quantization "Permalink
     to this heading")
+  id: totrans-40
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 训练后动态量化[](#post-training-dynamic-quantization "跳转到此标题")
 - en: This is the simplest to apply form of quantization where the weights are quantized
     ahead of time but the activations are dynamically quantized during inference.
     This is used for situations where the model execution time is dominated by loading
     weights from memory rather than computing the matrix multiplications. This is
     true for LSTM and Transformer type models with small batch size.
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 这是最简单的量化形式，其中权重在预先量化，但激活在推断期间动态量化。这适用于模型执行时间主要由从内存加载权重而不是计算矩阵乘法所主导的情况。这对于批量大小较小的LSTM和Transformer类型模型是真实的。
 - en: 'Diagram:'
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 图表：
 - en: '[PRE0]'
+  id: totrans-43
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: 'PTDQ API Example:'
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 'PTDQ API示例:'
 - en: '[PRE1]'
+  id: totrans-45
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: To learn more about dynamic quantization please see our [dynamic quantization
     tutorial](https://pytorch.org/tutorials/recipes/recipes/dynamic_quantization.html).
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 要了解更多关于动态量化的信息，请参阅我们的[动态量化教程](https://pytorch.org/tutorials/recipes/recipes/dynamic_quantization.html)。
 - en: Post Training Static Quantization[](#post-training-static-quantization "Permalink
     to this heading")
+  id: totrans-47
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 后训练静态量化[](#post-training-static-quantization "跳转到此标题")
 - en: Post Training Static Quantization (PTQ static) quantizes the weights and activations
     of the model. It fuses activations into preceding layers where possible. It requires
     calibration with a representative dataset to determine optimal quantization parameters
     for activations. Post Training Static Quantization is typically used when both
     memory bandwidth and compute savings are important with CNNs being a typical use
     case.
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: 后训练静态量化（PTQ静态）量化模型的权重和激活。它将激活融合到可能的前置层中。它需要使用代表性数据集进行校准，以确定激活的最佳量化参数。后训练静态量化通常用于CNN是典型用例的情况下，其中内存带宽和计算节省都很重要。
 - en: We may need to modify the model before applying post training static quantization.
     Please see [Model Preparation for Eager Mode Static Quantization](#model-preparation-for-eager-mode-static-quantization).
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: 在应用后训练静态量化之前，我们可能需要修改模型。请参阅[急切模式静态量化的模型准备](#model-preparation-for-eager-mode-static-quantization)。
 - en: 'Diagram:'
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: 图表：
 - en: '[PRE2]'
+  id: totrans-51
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: 'PTSQ API Example:'
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
+  zh: PTSQ API示例：
 - en: '[PRE3]'
+  id: totrans-53
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: To learn more about static quantization, please see the [static quantization
     tutorial](https://pytorch.org/tutorials/advanced/static_quantization_tutorial.html).
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: 要了解更多关于静态量化的信息，请参阅[静态量化教程](https://pytorch.org/tutorials/advanced/static_quantization_tutorial.html)。
 - en: Quantization Aware Training for Static Quantization[](#quantization-aware-training-for-static-quantization
     "Permalink to this heading")
+  id: totrans-55
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 静态量化的量化感知训练[](#quantization-aware-training-for-static-quantization "跳转到此标题")
 - en: Quantization Aware Training (QAT) models the effects of quantization during
     training allowing for higher accuracy compared to other quantization methods.
     We can do QAT for static, dynamic or weight only quantization. During training,
@@ -266,172 +381,250 @@
     INT8\. After model conversion, weights and activations are quantized, and activations
     are fused into the preceding layer where possible. It is commonly used with CNNs
     and yields a higher accuracy compared to static quantization.
+  id: totrans-56
   prefs: []
   type: TYPE_NORMAL
+  zh: 量化感知训练（QAT）在训练期间模拟量化的效果，从而使准确性比其他量化方法更高。我们可以对静态、动态或仅权重量化进行QAT。在训练期间，所有计算都是在浮点数中进行的，通过fake_quant模块模拟量化的效果，通过夹紧和四舍五入来模拟INT8的效果。在模型转换后，权重和激活被量化，并且激活被融合到可能的前置层中。它通常与CNN一起使用，并且与静态量化相比，准确性更高。
 - en: We may need to modify the model before applying post training static quantization.
     Please see [Model Preparation for Eager Mode Static Quantization](#model-preparation-for-eager-mode-static-quantization).
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: 在应用后训练静态量化之前，我们可能需要修改模型。请参阅[急切模式静态量化的模型准备](#model-preparation-for-eager-mode-static-quantization)。
 - en: 'Diagram:'
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: 图表：
 - en: '[PRE4]'
+  id: totrans-59
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: 'QAT API Example:'
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: QAT API示例：
 - en: '[PRE5]'
+  id: totrans-61
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: To learn more about quantization aware training, please see the [QAT tutorial](https://pytorch.org/tutorials/advanced/static_quantization_tutorial.html).
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
+  zh: 要了解更多关于量化感知训练，请参阅[QAT教程](https://pytorch.org/tutorials/advanced/static_quantization_tutorial.html)。
 - en: Model Preparation for Eager Mode Static Quantization[](#model-preparation-for-eager-mode-static-quantization
     "Permalink to this heading")
+  id: totrans-63
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 急切模式静态量化的模型准备[](#model-preparation-for-eager-mode-static-quantization "跳转到此标题")
 - en: 'It is necessary to currently make some modifications to the model definition
     prior to Eager mode quantization. This is because currently quantization works
     on a module by module basis. Specifically, for all quantization techniques, the
     user needs to:'
+  id: totrans-64
   prefs: []
   type: TYPE_NORMAL
+  zh: 目前在进行急切模式量化之前需要对模型定义进行一些修改。这是因为目前量化是基于模块的。具体来说，对于所有量化技术，用户需要：
 - en: Convert any operations that require output requantization (and thus have additional
     parameters) from functionals to module form (for example, using `torch.nn.ReLU`
     instead of `torch.nn.functional.relu`).
+  id: totrans-65
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 将需要输出重新量化的操作（因此具有额外参数）从功能形式转换为模块形式（例如，使用`torch.nn.ReLU`而不是`torch.nn.functional.relu`）。
 - en: Specify which parts of the model need to be quantized either by assigning `.qconfig`
     attributes on submodules or by specifying `qconfig_mapping`. For example, setting
     `model.conv1.qconfig = None` means that the `model.conv` layer will not be quantized,
     and setting `model.linear1.qconfig = custom_qconfig` means that the quantization
     settings for `model.linear1` will be using `custom_qconfig` instead of the global
     qconfig.
+  id: totrans-66
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 指定模型的哪些部分需要量化，可以通过在子模块上分配`.qconfig`属性或通过指定`qconfig_mapping`来实现。例如，设置`model.conv1.qconfig
+    = None`意味着`model.conv`层不会被量化，设置`model.linear1.qconfig = custom_qconfig`意味着`model.linear1`的量化设置将使用`custom_qconfig`而不是全局qconfig。
 - en: 'For static quantization techniques which quantize activations, the user needs
     to do the following in addition:'
+  id: totrans-67
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于量化激活的静态量化技术，用户需要额外执行以下操作：
 - en: Specify where activations are quantized and de-quantized. This is done using
     [`QuantStub`](generated/torch.ao.quantization.QuantStub.html#torch.ao.quantization.QuantStub
     "torch.ao.quantization.QuantStub") and [`DeQuantStub`](generated/torch.ao.quantization.DeQuantStub.html#torch.ao.quantization.DeQuantStub
     "torch.ao.quantization.DeQuantStub") modules.
+  id: totrans-68
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 指定激活量化和去量化的位置。这是使用[`QuantStub`](generated/torch.ao.quantization.QuantStub.html#torch.ao.quantization.QuantStub“torch.ao.quantization.QuantStub”)和[`DeQuantStub`](generated/torch.ao.quantization.DeQuantStub.html#torch.ao.quantization.DeQuantStub“torch.ao.quantization.DeQuantStub”)模块完成的。
 - en: Use [`FloatFunctional`](generated/torch.ao.nn.quantized.FloatFunctional.html#torch.ao.nn.quantized.FloatFunctional
     "torch.ao.nn.quantized.FloatFunctional") to wrap tensor operations that require
     special handling for quantization into modules. Examples are operations like `add`
     and `cat` which require special handling to determine output quantization parameters.
+  id: totrans-69
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 使用[`FloatFunctional`](generated/torch.ao.nn.quantized.FloatFunctional.html#torch.ao.nn.quantized.FloatFunctional“torch.ao.nn.quantized.FloatFunctional”)将需要特殊处理以进行量化的张量操作包装成模块。例如，需要特殊处理以确定输出量化参数的操作如`add`和`cat`。
 - en: 'Fuse modules: combine operations/modules into a single module to obtain higher
     accuracy and performance. This is done using the [`fuse_modules()`](generated/torch.ao.quantization.fuse_modules.fuse_modules.html#torch.ao.quantization.fuse_modules.fuse_modules
     "torch.ao.quantization.fuse_modules.fuse_modules") API, which takes in lists of
     modules to be fused. We currently support the following fusions: [Conv, Relu],
     [Conv, BatchNorm], [Conv, BatchNorm, Relu], [Linear, Relu]'
+  id: totrans-70
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 融合模块：将操作/模块组合成单个模块以获得更高的准确性和性能。这是使用[`fuse_modules()`](generated/torch.ao.quantization.fuse_modules.fuse_modules.html#torch.ao.quantization.fuse_modules.fuse_modules“torch.ao.quantization.fuse_modules.fuse_modules”)API完成的，该API接受要融合的模块列表。我们目前支持以下融合：[Conv,
+    Relu]，[Conv, BatchNorm]，[Conv, BatchNorm, Relu]，[Linear, Relu]
 - en: (Prototype - maintaince mode) FX Graph Mode Quantization[](#prototype-maintaince-mode-fx-graph-mode-quantization
     "Permalink to this heading")
+  id: totrans-71
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: （原型-维护模式）FX图模式量化[]（＃prototype-maintaince-mode-fx-graph-mode-quantization“跳转到此标题”）
 - en: There are multiple quantization types in post training quantization (weight
     only, dynamic and static) and the configuration is done through qconfig_mapping
     (an argument of the prepare_fx function).
+  id: totrans-72
   prefs: []
   type: TYPE_NORMAL
+  zh: 后训练量化中有多种量化类型（仅权重、动态和静态），配置通过qconfig_mapping（prepare_fx函数的参数）完成。
 - en: 'FXPTQ API Example:'
+  id: totrans-73
   prefs: []
   type: TYPE_NORMAL
+  zh: FXPTQ API示例：
 - en: '[PRE6]'
+  id: totrans-74
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: 'Please follow the tutorials below to learn more about FX Graph Mode Quantization:'
+  id: totrans-75
   prefs: []
   type: TYPE_NORMAL
+  zh: 请按照以下教程了解有关FX图模式量化的更多信息：
 - en: '[User Guide on Using FX Graph Mode Quantization](https://pytorch.org/tutorials/prototype/fx_graph_mode_quant_guide.html)'
+  id: totrans-76
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[使用FX图模式量化的用户指南](https://pytorch.org/tutorials/prototype/fx_graph_mode_quant_guide.html)'
 - en: '[FX Graph Mode Post Training Static Quantization](https://pytorch.org/tutorials/prototype/fx_graph_mode_ptq_static.html)'
+  id: totrans-77
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[FX图模式后训练静态量化](https://pytorch.org/tutorials/prototype/fx_graph_mode_ptq_static.html)'
 - en: '[FX Graph Mode Post Training Dynamic Quantization](https://pytorch.org/tutorials/prototype/fx_graph_mode_ptq_dynamic.html)'
+  id: totrans-78
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[FX图模式后训练动态量化](https://pytorch.org/tutorials/prototype/fx_graph_mode_ptq_dynamic.html)'
 - en: (Prototype) PyTorch 2 Export Quantization[](#prototype-pytorch-2-export-quantization
     "Permalink to this heading")
+  id: totrans-79
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: （原型）PyTorch 2导出量化[]（＃prototype-pytorch-2-export-quantization“跳转到此标题”）
 - en: 'API Example:'
+  id: totrans-80
   prefs: []
   type: TYPE_NORMAL
+  zh: API示例：
 - en: '[PRE7]'
+  id: totrans-81
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: 'Please follow these tutorials to get started on PyTorch 2 Export Quantization:'
+  id: totrans-82
   prefs: []
   type: TYPE_NORMAL
+  zh: 请按照以下教程开始PyTorch 2导出量化：
 - en: 'Modeling Users:'
+  id: totrans-83
   prefs: []
   type: TYPE_NORMAL
+  zh: 建模用户：
 - en: '[PyTorch 2 Export Post Training Quantization](https://pytorch.org/tutorials/prototype/pt2e_quant_ptq.html)'
+  id: totrans-84
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[PyTorch 2导出后训练量化](https://pytorch.org/tutorials/prototype/pt2e_quant_ptq.html)'
 - en: '[PyTorch 2 Export Post Training Quantization with X86 Backend through Inductor](https://pytorch.org/tutorials/prototype/pt2e_quant_ptq_x86_inductor.html)'
+  id: totrans-85
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[通过电感器在X86后端进行PyTorch 2导出后训练量化](https://pytorch.org/tutorials/prototype/pt2e_quant_ptq_x86_inductor.html)'
 - en: '[PyTorch 2 Export Quantization Aware Training](https://pytorch.org/tutorials/prototype/pt2e_quant_qat.html)'
+  id: totrans-86
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[PyTorch 2导出量化感知训练](https://pytorch.org/tutorials/prototype/pt2e_quant_qat.html)'
 - en: 'Backend Developers (please check out all Modeling Users docs as well):'
+  id: totrans-87
   prefs: []
   type: TYPE_NORMAL
+  zh: 后端开发人员（请查看所有建模用户文档）：
 - en: '[How to Write a Quantizer for PyTorch 2 Export Quantization](https://pytorch.org/tutorials/prototype/pt2e_quantizer.html)'
+  id: totrans-88
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[如何为PyTorch 2导出量化器编写量化器](https://pytorch.org/tutorials/prototype/pt2e_quantizer.html)'
 - en: Quantization Stack
+  id: totrans-89
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 量化堆栈
 - en: 'Quantization is the process to convert a floating point model to a quantized
     model. So at high level the quantization stack can be split into two parts: 1).
     The building blocks or abstractions for a quantized model 2). The building blocks
     or abstractions for the quantization flow that converts a floating point model
     to a quantized model'
+  id: totrans-90
   prefs: []
   type: TYPE_NORMAL
+  zh: 量化是将浮点模型转换为量化模型的过程。因此，在高层次上，量化堆栈可以分为两部分：1）用于量化模型的构建块或抽象 2）用于将浮点模型转换为量化模型的量化流的构建块或抽象
 - en: Quantized Model
+  id: totrans-91
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 量化模型
 - en: Quantized Tensor
+  id: totrans-92
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 量化张量
 - en: In order to do quantization in PyTorch, we need to be able to represent quantized
     data in Tensors. A Quantized Tensor allows for storing quantized data (represented
     as int8/uint8/int32) along with quantization parameters like scale and zero_point.
     Quantized Tensors allow for many useful operations making quantized arithmetic
     easy, in addition to allowing for serialization of data in a quantized format.
+  id: totrans-93
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了在PyTorch中进行量化，我们需要能够在张量中表示量化数据。量化张量允许存储量化数据（表示为int8/uint8/int32）以及量化参数，如比例和零点。量化张量允许进行许多有用的操作，使量化算术变得容易，同时允许以量化格式序列化数据。
 - en: PyTorch supports both per tensor and per channel symmetric and asymmetric quantization.
     Per tensor means that all the values within the tensor are quantized the same
     way with the same quantization parameters. Per channel means that for each dimension,
@@ -439,403 +632,572 @@
     with different quantization parameters. This allows for less error in converting
     tensors to quantized values since outlier values would only impact the channel
     it was in, instead of the entire Tensor.
+  id: totrans-94
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch支持对称和非对称的每个张量和每个通道量化。每个张量意味着张量中的所有值以相同的方式使用相同的量化参数进行量化。每个通道意味着对于每个维度，通常是张量的通道维度，张量中的值使用不同的量化参数进行量化。这样可以减少将张量转换为量化值时的误差，因为异常值只会影响它所在的通道，而不是整个张量。
 - en: The mapping is performed by converting the floating point tensors using
+  id: totrans-95
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过将浮点张量转换为
 - en: '[![_images/math-quantizer-equation.png](../Images/161907b1eaa52e48f126f8041595a277.png)](_images/math-quantizer-equation.png)'
+  id: totrans-96
   prefs: []
   type: TYPE_NORMAL
+  zh: '[！[_images/math-quantizer-equation.png]（../Images/161907b1eaa52e48f126f8041595a277.png）]（_images/math-quantizer-equation.png）'
 - en: Note that, we ensure that zero in floating point is represented with no error
     after quantization, thereby ensuring that operations like padding do not cause
     additional quantization error.
+  id: totrans-97
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，我们确保在量化后浮点数中的零不会出现错误，从而确保像填充这样的操作不会导致额外的量化误差。
 - en: 'Here are a few key attributes for quantized Tensor:'
+  id: totrans-98
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下是量化张量的一些关键属性：
 - en: 'QScheme (torch.qscheme): a enum that specifies the way we quantize the Tensor'
+  id: totrans-99
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: QScheme（torch.qscheme）：指定我们量化张量的方式的枚举
 - en: torch.per_tensor_affine
+  id: totrans-100
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: torch.per_tensor_affine
 - en: torch.per_tensor_symmetric
+  id: totrans-101
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: torch.per_tensor_symmetric
 - en: torch.per_channel_affine
+  id: totrans-102
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: torch.per_channel_affine
 - en: torch.per_channel_symmetric
+  id: totrans-103
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: torch.per_channel_symmetric
 - en: 'dtype (torch.dtype): data type of the quantized Tensor'
+  id: totrans-104
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: dtype（torch.dtype）：量化张量的数据类型
 - en: torch.quint8
+  id: totrans-105
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: torch.quint8
 - en: torch.qint8
+  id: totrans-106
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: torch.qint8
 - en: torch.qint32
+  id: totrans-107
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: torch.qint32
 - en: torch.float16
+  id: totrans-108
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: torch.float16
 - en: 'quantization parameters (varies based on QScheme): parameters for the chosen
     way of quantization'
+  id: totrans-109
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 量化参数（根据QScheme的不同而变化）：所选量化方式的参数
 - en: torch.per_tensor_affine would have quantization parameters of
+  id: totrans-110
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: torch.per_tensor_affine将具有量化参数
 - en: scale (float)
+  id: totrans-111
   prefs:
   - PREF_IND
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 比例（浮点数）
 - en: zero_point (int)
+  id: totrans-112
   prefs:
   - PREF_IND
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 零点（整数）
 - en: torch.per_channel_affine would have quantization parameters of
+  id: totrans-113
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: torch.per_channel_affine将具有量化参数
 - en: per_channel_scales (list of float)
+  id: totrans-114
   prefs:
   - PREF_IND
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 每通道比例（浮点数列表）
 - en: per_channel_zero_points (list of int)
+  id: totrans-115
   prefs:
   - PREF_IND
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 每通道零点（整数列表）
 - en: axis (int)
+  id: totrans-116
   prefs:
   - PREF_IND
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 轴（整数）
 - en: Quantize and Dequantize
+  id: totrans-117
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 量化和去量化
 - en: The input and output of a model are floating point Tensors, but activations
     in the quantized model are quantized, so we need operators to convert between
     floating point and quantized Tensors.
+  id: totrans-118
   prefs: []
   type: TYPE_NORMAL
+  zh: 模型的输入和输出是浮点张量，但量化模型中的激活是量化的，因此我们需要运算符在浮点张量和量化张量之间进行转换。
 - en: Quantize (float -> quantized)
+  id: totrans-119
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 量化（浮点->量化）
 - en: torch.quantize_per_tensor(x, scale, zero_point, dtype)
+  id: totrans-120
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: torch.quantize_per_tensor(x，scale，zero_point，dtype）
 - en: torch.quantize_per_channel(x, scales, zero_points, axis, dtype)
+  id: totrans-121
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: torch.quantize_per_channel(x，scales，zero_points，axis，dtype）
 - en: torch.quantize_per_tensor_dynamic(x, dtype, reduce_range)
+  id: totrans-122
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: torch.quantize_per_tensor_dynamic(x，dtype，reduce_range)
 - en: to(torch.float16)
+  id: totrans-123
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: to(torch.float16)
 - en: Dequantize (quantized -> float)
+  id: totrans-124
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 去量化（量化->浮点）
 - en: quantized_tensor.dequantize() - calling dequantize on a torch.float16 Tensor
     will convert the Tensor back to torch.float
+  id: totrans-125
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: quantized_tensor.dequantize() - 在torch.float16张量上调用dequantize将张量转换回torch.float
 - en: torch.dequantize(x)
+  id: totrans-126
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: torch.dequantize(x)
 - en: Quantized Operators/Modules[](#quantized-operators-modules "Permalink to this
     heading")
+  id: totrans-127
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 量化运算符/模块[]（＃量化运算符模块“到此标题的永久链接”）
 - en: Quantized Operator are the operators that takes quantized Tensor as inputs,
     and outputs a quantized Tensor.
+  id: totrans-128
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 量化运算符是将量化张量作为输入的运算符，并输出量化张量。
 - en: Quantized Modules are PyTorch Modules that performs quantized operations. They
     are typically defined for weighted operations like linear and conv.
+  id: totrans-129
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 量化模块是执行量化操作的PyTorch模块。它们通常用于加权操作，如线性和卷积。
 - en: Quantized Engine
+  id: totrans-130
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 量化引擎
 - en: When a quantized model is executed, the qengine (torch.backends.quantized.engine)
     specifies which backend is to be used for execution. It is important to ensure
     that the qengine is compatible with the quantized model in terms of value range
     of quantized activation and weights.
+  id: totrans-131
   prefs: []
   type: TYPE_NORMAL
+  zh: 当执行量化模型时，qengine（torch.backends.quantized.engine）指定要用于执行的后端。重要的是要确保qengine与量化模型在量化激活和权重的值范围方面是兼容的。
 - en: Quantization Flow
+  id: totrans-132
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 量化流程
 - en: Observer and FakeQuantize
+  id: totrans-133
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 观察器和FakeQuantize
 - en: 'Observer are PyTorch Modules used to:'
+  id: totrans-134
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 观察器是PyTorch模块，用于：
 - en: collect tensor statistics like min value and max value of the Tensor passing
     through the observer
+  id: totrans-135
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 收集张量统计信息，如通过观察器传递的张量的最小值和最大值
 - en: and calculate quantization parameters based on the collected tensor statistics
+  id: totrans-136
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 并根据收集的张量统计数据计算量化参数
 - en: 'FakeQuantize are PyTorch Modules used to:'
+  id: totrans-137
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: FakeQuantize是PyTorch模块，用于：
 - en: simulate quantization (performing quantize/dequantize) for a Tensor in the network
+  id: totrans-138
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在网络中为张量模拟量化（执行量化/去量化）
 - en: it can calculate quantization parameters based on the collected statistics from
     observer, or it can learn the quantization parameters as well
+  id: totrans-139
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 它可以根据观察器收集的统计数据计算量化参数，也可以学习量化参数
 - en: QConfig
+  id: totrans-140
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: QConfig
 - en: QConfig is a namedtuple of Observer or FakeQuantize Module class that can are
     configurable with qscheme, dtype etc. it is used to configure how an operator
     should be observed
+  id: totrans-141
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: QConfig是Observer或FakeQuantize模块类的命名元组，可以配置qscheme、dtype等。它用于配置如何观察运算符
 - en: Quantization configuration for an operator/module
+  id: totrans-142
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 运算符/模块的量化配置
 - en: different types of Observer/FakeQuantize
+  id: totrans-143
   prefs:
   - PREF_IND
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 不同类型的观察器/FakeQuantize
 - en: dtype
+  id: totrans-144
   prefs:
   - PREF_IND
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: dtype
 - en: qscheme
+  id: totrans-145
   prefs:
   - PREF_IND
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: qscheme
 - en: 'quant_min/quant_max: can be used to simulate lower precision Tensors'
+  id: totrans-146
   prefs:
   - PREF_IND
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: quant_min/quant_max：可用于模拟低精度张量
 - en: Currently supports configuration for activation and weight
+  id: totrans-147
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 当前支持激活和权重的配置
 - en: We insert input/weight/output observer based on the qconfig that is configured
     for a given operator or module
+  id: totrans-148
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 我们根据为给定运算符或模块配置的qconfig插入输入/权重/输出观察器
 - en: General Quantization Flow
+  id: totrans-149
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 一般量化流程
 - en: In general, the flow is the following
+  id: totrans-150
   prefs: []
   type: TYPE_NORMAL
+  zh: 一般来说，流程如下
 - en: prepare
+  id: totrans-151
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 准备
 - en: insert Observer/FakeQuantize modules based on user specified qconfig
+  id: totrans-152
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 基于用户指定的 qconfig 插入 Observer/FakeQuantize 模块
 - en: calibrate/train (depending on post training quantization or quantization aware
     training)
+  id: totrans-153
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 校准/训练（取决于后训练量化或量化感知训练）
 - en: allow Observers to collect statistics or FakeQuantize modules to learn the quantization
     parameters
+  id: totrans-154
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 允许 Observer 收集统计信息或 FakeQuantize 模块学习量化参数
 - en: convert
+  id: totrans-155
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 转换
 - en: convert a calibrated/trained model to a quantized model
+  id: totrans-156
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 将校准/训练好的模型转换为量化模型
 - en: 'There are different modes of quantization, they can be classified in two ways:'
+  id: totrans-157
   prefs: []
   type: TYPE_NORMAL
+  zh: 有不同的量化模式，它们可以按两种方式分类：
 - en: 'In terms of where we apply the quantization flow, we have:'
+  id: totrans-158
   prefs: []
   type: TYPE_NORMAL
+  zh: 在我们应用量化流程的位置方面，我们有：
 - en: Post Training Quantization (apply quantization after training, quantization
     parameters are calculated based on sample calibration data)
+  id: totrans-159
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 后训练量化（在训练后应用量化，量化参数是基于样本校准数据计算的）
 - en: Quantization Aware Training (simulate quantization during training so that the
     quantization parameters can be learned together with the model using training
     data)
+  id: totrans-160
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 量化感知训练（在训练过程中模拟量化，以便量化参数可以与使用训练数据训练的模型一起学习）
 - en: 'And in terms of how we quantize the operators, we can have:'
+  id: totrans-161
   prefs: []
   type: TYPE_NORMAL
+  zh: 在我们量化运算符的方式方面，我们可以有：
 - en: Weight Only Quantization (only weight is statically quantized)
+  id: totrans-162
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 仅权重量化（仅权重是静态量化的）
 - en: Dynamic Quantization (weight is statically quantized, activation is dynamically
     quantized)
+  id: totrans-163
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 动态量化（权重静态量化，激活动态量化）
 - en: Static Quantization (both weight and activations are statically quantized)
+  id: totrans-164
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 静态量化（权重和激活均为静态量化）
 - en: We can mix different ways of quantizing operators in the same quantization flow.
     For example, we can have post training quantization that has both statically and
     dynamically quantized operators.
+  id: totrans-165
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们可以在同一量化流程中混合不同的量化运算符方式。例如，我们可以有后训练量化，其中既有静态量化的运算符，也有动态量化的运算符。
 - en: Quantization Support Matrix[](#quantization-support-matrix "Permalink to this
     heading")
+  id: totrans-166
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 量化支持矩阵[](#quantization-support-matrix "跳转到此标题")
 - en: Quantization Mode Support
+  id: totrans-167
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 量化模式支持
 - en: '|  | Quantization Mode | Dataset Requirement | Works Best For | Accuracy |
     Notes |'
+  id: totrans-168
   prefs: []
   type: TYPE_TB
+  zh: '|  | 量化模式 | 数据集要求 | 最适用于 | 精度 | 注释 |'
 - en: '| Post Training Quantization | Dynamic/Weight Only Quantization | activation
     dynamically quantized (fp16, int8) or not quantized, weight statically quantized
     (fp16, int8, in4) | None | LSTM, MLP, Embedding, Transformer | good | Easy to
     use, close to static quantization when performance is compute or memory bound
     due to weights |'
+  id: totrans-169
   prefs: []
   type: TYPE_TB
+  zh: '| 后训练量化 | 动态/仅权重量化 | 激活动态量化（fp16，int8）或未量化，权重静态量化（fp16，int8，in4） | 无 | LSTM，MLP，嵌入，Transformer
+    | 良好 | 在性能受计算或内存限制的情况下，易于使用，接近静态量化时的性能 |'
 - en: '| Static Quantization | activation and weights statically quantized (int8)
     | calibration dataset | CNN | good | Provides best perf, may have big impact on
     accuracy, good for hardwares that only support int8 computation |'
+  id: totrans-170
   prefs: []
   type: TYPE_TB
+  zh: '| 静态量化 | 激活和权重静态量化（int8） | 校准数据集 | CNN | 良好 | 提供最佳性能，可能对精度有很大影响，适用于仅支持 int8
+    计算的硬件 |'
 - en: '| Quantization Aware Training | Dynamic Quantization | activation and weight
     are fake quantized | fine-tuning dataset | MLP, Embedding | best | Limited support
     for now |'
+  id: totrans-171
   prefs: []
   type: TYPE_TB
+  zh: '| 量化感知训练 | 动态量化 | 激活和权重均为虚假量化 | 微调数据集 | MLP，嵌入 | 最佳 | 目前支持有限 |'
 - en: '| Static Quantization | activation and weight are fake quantized | fine-tuning
     dataset | CNN, MLP, Embedding | best | Typically used when static quantization
     leads to bad accuracy, and used to close the accuracy gap |'
+  id: totrans-172
   prefs: []
   type: TYPE_TB
+  zh: '| 静态量化 | 激活和权重均为虚假量化 | 微调数据集 | CNN，MLP，嵌入 | 最佳 | 通常在静态量化导致精度下降时使用，并用于缩小精度差距
+    |'
 - en: Please see our [Introduction to Quantization on Pytorch](https://pytorch.org/blog/introduction-to-quantization-on-pytorch/)
     blog post for a more comprehensive overview of the tradeoffs between these quantization
     types.
+  id: totrans-173
   prefs: []
   type: TYPE_NORMAL
+  zh: 请查看我们的[Pytorch 量化简介](https://pytorch.org/blog/introduction-to-quantization-on-pytorch/)博客文章，以获取更全面的这些量化类型之间权衡的概述。
 - en: Quantization Flow Support
+  id: totrans-174
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 量化流程支持
 - en: 'PyTorch provides two modes of quantization: Eager Mode Quantization and FX
     Graph Mode Quantization.'
+  id: totrans-175
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch 提供两种量化模式：Eager Mode Quantization 和 FX Graph Mode Quantization。
 - en: Eager Mode Quantization is a beta feature. User needs to do fusion and specify
     where quantization and dequantization happens manually, also it only supports
     modules and not functionals.
+  id: totrans-176
   prefs: []
   type: TYPE_NORMAL
+  zh: Eager Mode Quantization 是一个测试功能。用户需要手动进行融合并指定量化和去量化发生的位置，它仅支持模块而不支持功能。
 - en: FX Graph Mode Quantization is an automated quantization framework in PyTorch,
     and currently it’s a prototype feature. It improves upon Eager Mode Quantization
     by adding support for functionals and automating the quantization process, although
@@ -848,267 +1210,396 @@
     we’ll provide general guidelines, but to actually make it work, users might need
     to be familiar with `torch.fx`, especially on how to make a model symbolically
     traceable.
+  id: totrans-177
   prefs: []
   type: TYPE_NORMAL
+  zh: FX Graph Mode Quantization 是 PyTorch 中的自动量化框架，目前是一个原型功能。它通过添加对功能的支持和自动化量化过程来改进
+    Eager Mode Quantization，尽管人们可能需要重构模型以使其与 FX Graph Mode Quantization 兼容（通过 `torch.fx`
+    进行符号跟踪）。请注意，FX Graph Mode Quantization 不适用于任意模型，因为模型可能无法进行符号跟踪，我们将把它集成到领域库中，如
+    torchvision，并且用户将能够使用 FX Graph Mode Quantization 对类似于受支持领域库中的模型进行量化。对于任意模型，我们将提供一般性指导，但要使其正常工作，用户可能需要熟悉
+    `torch.fx`，特别是如何使模型符号可跟踪。
 - en: New users of quantization are encouraged to try out FX Graph Mode Quantization
     first, if it does not work, user may try to follow the guideline of [using FX
     Graph Mode Quantization](https://pytorch.org/tutorials/prototype/fx_graph_mode_quant_guide.html)
     or fall back to eager mode quantization.
+  id: totrans-178
   prefs: []
   type: TYPE_NORMAL
+  zh: 鼓励量化的新用户首先尝试FX图模式量化，如果不起作用，用户可以尝试遵循[使用FX图模式量化](https://pytorch.org/tutorials/prototype/fx_graph_mode_quant_guide.html)的指南或回退到急切模式量化。
 - en: 'The following table compares the differences between Eager Mode Quantization
     and FX Graph Mode Quantization:'
+  id: totrans-179
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下表格比较了急切模式量化和FX图模式量化之间的差异。
 - en: '|  | Eager Mode Quantization | FX Graph Mode Quantization |'
+  id: totrans-180
   prefs: []
   type: TYPE_TB
+  zh: '|  | 急切模式量化 | FX图模式量化 |'
 - en: '| Release Status | beta | prototype |'
+  id: totrans-181
   prefs: []
   type: TYPE_TB
+  zh: '| 发布状态 | beta | 原型 |'
 - en: '| Operator Fusion | Manual | Automatic |'
+  id: totrans-182
   prefs: []
   type: TYPE_TB
+  zh: '| 运算符融合 | 手动 | 自动 |'
 - en: '| Quant/DeQuant Placement | Manual | Automatic |'
+  id: totrans-183
   prefs: []
   type: TYPE_TB
+  zh: '| 量化/去量化放置 | 手动 | 自动 |'
 - en: '| Quantizing Modules | Supported | Supported |'
+  id: totrans-184
   prefs: []
   type: TYPE_TB
+  zh: '| 量化模块 | 支持 | 支持 |'
 - en: '| Quantizing Functionals/Torch Ops | Manual | Automatic |'
+  id: totrans-185
   prefs: []
   type: TYPE_TB
+  zh: '| 量化功能/火炬操作 | 手动 | 自动 |'
 - en: '| Support for Customization | Limited Support | Fully Supported |'
+  id: totrans-186
   prefs: []
   type: TYPE_TB
+  zh: '| 定制支持 | 有限支持 | 完全支持 |'
 - en: '| Quantization Mode Support | Post Training Quantization: Static, Dynamic,
     Weight OnlyQuantization Aware Training: Static | Post Training Quantization: Static,
     Dynamic, Weight OnlyQuantization Aware Training: Static |'
+  id: totrans-187
   prefs: []
   type: TYPE_TB
+  zh: '| 量化模式支持 | 后训练量化：静态，动态，仅权重量化感知训练：静态 | 后训练量化：静态，动态，仅权重量化感知训练：静态 |'
 - en: '| Input/Output Model Type | `torch.nn.Module` | `torch.nn.Module` (May need
     some refactors to make the model compatible with FX Graph Mode Quantization) |'
+  id: totrans-188
   prefs: []
   type: TYPE_TB
+  zh: '| 输入/输出模型类型 | `torch.nn.Module` | `torch.nn.Module`（可能需要一些重构以使模型与FX图模式量化兼容）
+    |'
 - en: Backend/Hardware Support
+  id: totrans-189
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 后端/硬件支持
 - en: '| Hardware | Kernel Library | Eager Mode Quantization | FX Graph Mode Quantization
     | Quantization Mode Support |'
+  id: totrans-190
   prefs: []
   type: TYPE_TB
+  zh: '| 硬件 | 内核库 | 急切模式量化 | FX图模式量化 | 量化模式支持 |'
 - en: '| server CPU | fbgemm/onednn | Supported | All Supported |'
+  id: totrans-191
   prefs: []
   type: TYPE_TB
+  zh: '| 服务器CPU | fbgemm/onednn | 支持 | 所有支持 |'
 - en: '| mobile CPU | qnnpack/xnnpack |'
+  id: totrans-192
   prefs: []
   type: TYPE_TB
+  zh: '| 移动CPU | qnnpack/xnnpack |'
 - en: '| server GPU | TensorRT (early prototype) | Not support this it requires a
     graph | Supported | Static Quantization |'
+  id: totrans-193
   prefs: []
   type: TYPE_TB
+  zh: '| 服务器GPU | TensorRT（早期原型） | 不支持，需要图形 | 支持 | 静态量化 |'
 - en: 'Today, PyTorch supports the following backends for running quantized operators
     efficiently:'
+  id: totrans-194
   prefs: []
   type: TYPE_NORMAL
+  zh: 今天，PyTorch支持以下用于高效运行量化运算符的后端：
 - en: x86 CPUs with AVX2 support or higher (without AVX2 some operations have inefficient
     implementations), via x86 optimized by [fbgemm](https://github.com/pytorch/FBGEMM)
     and [onednn](https://github.com/oneapi-src/oneDNN) (see the details at [RFC](https://github.com/pytorch/pytorch/issues/83888))
+  id: totrans-195
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 具有AVX2支持或更高版本的x86 CPU（没有AVX2，某些操作具有低效的实现），通过由[fbgemm](https://github.com/pytorch/FBGEMM)和[onednn](https://github.com/oneapi-src/oneDNN)优化的x86（请参阅[RFC](https://github.com/pytorch/pytorch/issues/83888)中的详细信息）
 - en: ARM CPUs (typically found in mobile/embedded devices), via [qnnpack](https://github.com/pytorch/pytorch/tree/main/aten/src/ATen/native/quantized/cpu/qnnpack)
+  id: totrans-196
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: ARM CPU（通常在移动/嵌入式设备中找到），通过[qnnpack](https://github.com/pytorch/pytorch/tree/main/aten/src/ATen/native/quantized/cpu/qnnpack)
 - en: (early prototype) support for NVidia GPU via [TensorRT](https://developer.nvidia.com/tensorrt)
     through fx2trt (to be open sourced)
+  id: totrans-197
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
-- en: Note for native CPU backends[](#note-for-native-cpu-backends "Permalink to
-    this heading")
+  zh: （早期原型）通过[fx2trt](https://developer.nvidia.com/tensorrt)支持NVidia GPU
+- en: Note for native CPU backends[](#note-for-native-cpu-backends "Permalink to this
+    heading")
+  id: totrans-198
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 本机CPU后端注意事项[](#note-for-native-cpu-backends "跳转到此标题")
 - en: We expose both x86 and qnnpack with the same native pytorch quantized operators,
     so we need additional flag to distinguish between them. The corresponding implementation
     of x86 and qnnpack is chosen automatically based on the PyTorch build mode, though
     users have the option to override this by setting torch.backends.quantization.engine
     to x86 or qnnpack.
+  id: totrans-199
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们同时暴露了x86和qnnpack，使用相同的本机pytorch量化运算符，因此我们需要额外的标志来区分它们。根据PyTorch构建模式自动选择x86和qnnpack的相应实现，尽管用户可以通过将torch.backends.quantization.engine设置为x86或qnnpack来覆盖此设置。
 - en: 'When preparing a quantized model, it is necessary to ensure that qconfig and
     the engine used for quantized computations match the backend on which the model
     will be executed. The qconfig controls the type of observers used during the quantization
     passes. The qengine controls whether x86 or qnnpack specific packing function
     is used when packing weights for linear and convolution functions and modules.
     For example:'
+  id: totrans-200
   prefs: []
   type: TYPE_NORMAL
+  zh: 在准备量化模型时，必须确保qconfig和用于量化计算的引擎与将执行模型的后端匹配。qconfig控制量化过程中使用的观察者类型。qengine控制在为线性和卷积函数和模块打包权重时使用x86还是qnnpack特定的打包函数。例如：
 - en: 'Default settings for x86:'
+  id: totrans-201
   prefs: []
   type: TYPE_NORMAL
+  zh: x86的默认设置：
 - en: '[PRE8]'
+  id: totrans-202
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: 'Default settings for qnnpack:'
+  id: totrans-203
   prefs: []
   type: TYPE_NORMAL
+  zh: qnnpack的默认设置：
 - en: '[PRE9]'
+  id: totrans-204
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: Operator Support
+  id: totrans-205
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 运算符支持
 - en: Operator coverage varies between dynamic and static quantization and is captured
     in the table below. Note that for FX Graph Mode Quantization, the corresponding
     functionals are also supported.
+  id: totrans-206
   prefs: []
   type: TYPE_NORMAL
+  zh: 动态和静态量化之间的运算符覆盖范围在下表中捕获。请注意，对于FX图模式量化，相应的功能也受支持。
 - en: '|  | Static Quantization | Dynamic Quantization |'
+  id: totrans-207
   prefs: []
   type: TYPE_TB
+  zh: '|  | 静态量化 | 动态量化 |'
 - en: '| nn.Linearnn.Conv1d/2d/3d | YY | YN |'
+  id: totrans-208
   prefs: []
   type: TYPE_TB
+  zh: '| nn.Linear | YY | YN |'
 - en: '| nn.LSTMnn.GRU | NN | YY |'
+  id: totrans-209
   prefs: []
   type: TYPE_TB
+  zh: '| nn.LSTMnn.GRU | NN | YY |'
 - en: '| nn.RNNCellnn.GRUCellnn.LSTMCell | NNN | YYY |'
+  id: totrans-210
   prefs: []
   type: TYPE_TB
+  zh: '| nn.RNNCellnn.GRUCellnn.LSTMCell | NNN | YYY |'
 - en: '| nn.EmbeddingBag | Y (activations are in fp32) | Y |'
+  id: totrans-211
   prefs: []
   type: TYPE_TB
+  zh: '| nn.EmbeddingBag | Y（激活在fp32中） | Y |'
 - en: '| nn.Embedding | Y | Y |'
+  id: totrans-212
   prefs: []
   type: TYPE_TB
+  zh: '| nn.Embedding | Y | Y |'
 - en: '| nn.MultiheadAttention | Not Supported | Not supported |'
+  id: totrans-213
   prefs: []
   type: TYPE_TB
+  zh: '| nn.MultiheadAttention | 不支持 | 不支持 |'
 - en: '| Activations | Broadly supported | Un-changed, computations stay in fp32 |'
+  id: totrans-214
   prefs: []
   type: TYPE_TB
+  zh: '| 激活 | 广泛支持 | 保持不变，计算保持在fp32中 |'
 - en: 'Note: this will be updated with some information generated from native backend_config_dict
     soon.'
+  id: totrans-215
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意：这将很快更新一些从本机backend_config_dict生成的信息。
 - en: Quantization API Reference[](#quantization-api-reference "Permalink to this
     heading")
+  id: totrans-216
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 量化API参考[](#quantization-api-reference "跳转到此标题")
 - en: The [Quantization API Reference](quantization-support.html) contains documentation
     of quantization APIs, such as quantization passes, quantized tensor operations,
     and supported quantized modules and functions.
+  id: totrans-217
   prefs: []
   type: TYPE_NORMAL
+  zh: '[量化API参考](quantization-support.html)包含有关量化API的文档，例如量化传递、量化张量操作以及支持的量化模块和函数。'
 - en: Quantization Backend Configuration[](#quantization-backend-configuration "Permalink
     to this heading")
+  id: totrans-218
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 量化后端配置
 - en: The [Quantization Backend Configuration](quantization-backend-configuration.html)
     contains documentation on how to configure the quantization workflows for various
     backends.
+  id: totrans-219
   prefs: []
   type: TYPE_NORMAL
+  zh: '[量化后端配置](quantization-backend-configuration.html)包含有关如何为各种后端配置量化工作流程的文档。'
 - en: Quantization Accuracy Debugging[](#quantization-accuracy-debugging "Permalink
     to this heading")
+  id: totrans-220
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 量化精度调试
 - en: The [Quantization Accuracy Debugging](quantization-accuracy-debugging.html)
     contains documentation on how to debug quantization accuracy.
+  id: totrans-221
   prefs: []
   type: TYPE_NORMAL
+  zh: '[量化精度调试](quantization-accuracy-debugging.html)包含有关如何调试量化精度的文档。'
 - en: Quantization Customizations[](#quantization-customizations "Permalink to this
     heading")
+  id: totrans-222
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 量化定制
 - en: While default implementations of observers to select the scale factor and bias
     based on observed tensor data are provided, developers can provide their own quantization
     functions. Quantization can be applied selectively to different parts of the model
     or configured differently for different parts of the model.
+  id: totrans-223
   prefs: []
   type: TYPE_NORMAL
+  zh: 尽管提供了默认的观察者实现来根据观察到的张量数据选择比例因子和偏差，但开发人员可以提供自己的量化函数。量化可以选择性地应用于模型的不同部分，或者为模型的不同部分进行不同的配置。
 - en: We also provide support for per channel quantization for **conv1d()**, **conv2d()**,
     **conv3d()** and **linear()**.
+  id: totrans-224
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们还为**conv1d()**、**conv2d()**、**conv3d()**和**linear()**提供了通道量化支持。
 - en: Quantization workflows work by adding (e.g. adding observers as `.observer`
     submodule) or replacing (e.g. converting `nn.Conv2d` to `nn.quantized.Conv2d`)
     submodules in the model’s module hierarchy. It means that the model stays a regular
     `nn.Module`-based instance throughout the process and thus can work with the rest
     of PyTorch APIs.
+  id: totrans-225
   prefs: []
   type: TYPE_NORMAL
+  zh: 量化工作流程通过向模型的模块层次结构添加（例如，将观察者添加为`.observer`子模块）或替换（例如，将`nn.Conv2d`转换为`nn.quantized.Conv2d`）子模块来实现。这意味着模型在整个过程中保持常规的基于`nn.Module`的实例，因此可以与PyTorch的其余API一起使用。
 - en: Quantization Custom Module API[](#quantization-custom-module-api "Permalink
     to this heading")
+  id: totrans-226
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 量化定制模块API
 - en: 'Both Eager mode and FX graph mode quantization APIs provide a hook for the
     user to specify module quantized in a custom way, with user defined logic for
     observation and quantization. The user needs to specify:'
+  id: totrans-227
   prefs: []
   type: TYPE_NORMAL
+  zh: Eager模式和FX图模式的量化API提供了一个钩子，供用户以自定义方式指定模块的量化，具有用户定义的观察和量化逻辑。用户需要指定：
 - en: The Python type of the source fp32 module (existing in the model)
+  id: totrans-228
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 源fp32模块的Python类型（存在于模型中）
 - en: The Python type of the observed module (provided by user). This module needs
     to define a from_float function which defines how the observed module is created
     from the original fp32 module.
+  id: totrans-229
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 观察模块的Python类型（由用户提供）。该模块需要定义一个`from_float`函数，该函数定义了如何从原始fp32模块创建观察模块。
 - en: The Python type of the quantized module (provided by user). This module needs
     to define a from_observed function which defines how the quantized module is created
     from the observed module.
+  id: totrans-230
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 量化模块的Python类型（由用户提供）。该模块需要定义一个`from_observed`函数，该函数定义了如何从观察到的模块创建量化模块。
 - en: A configuration describing (1), (2), (3) above, passed to the quantization APIs.
+  id: totrans-231
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 描述（1）、（2）、（3）的配置，传递给量化API。
 - en: 'The framework will then do the following:'
+  id: totrans-232
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后框架将执行以下操作：
 - en: during the prepare module swaps, it will convert every module of type specified
     in (1) to the type specified in (2), using the from_float function of the class
     in (2).
+  id: totrans-233
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 在准备模块交换期间，它将使用（2）中类的`from_float`函数，将（1）中指定类型的每个模块转换为（2）中指定类型。
 - en: during the convert module swaps, it will convert every module of type specified
     in (2) to the type specified in (3), using the from_observed function of the class
     in (3).
+  id: totrans-234
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 在转换模块交换期间，它将使用（3）中的类的`from_observed`函数，将（2）中指定类型的每个模块转换为（3）中指定类型。
 - en: Currently, there is a requirement that ObservedCustomModule will have a single
     Tensor output, and an observer will be added by the framework (not by the user)
     on that output. The observer will be stored under the activation_post_process
     key as an attribute of the custom module instance. Relaxing these restrictions
     may be done at a future time.
+  id: totrans-235
   prefs: []
   type: TYPE_NORMAL
+  zh: 目前，ObservedCustomModule将具有单个张量输出的要求，并且观察者将由框架（而不是用户）添加到该输出上。观察者将作为自定义模块实例的属性存储在`activation_post_process`键下。在未来可能会放宽这些限制。
 - en: 'Custom API Example:'
+  id: totrans-236
   prefs: []
   type: TYPE_NORMAL
+  zh: 自定义API示例：
 - en: '[PRE10]'
+  id: totrans-237
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: Best Practices
+  id: totrans-238
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 最佳实践
 - en: 1\. If you are using the `x86` backend, we need to use 7 bits instead of 8 bits.
     Make sure you reduce the range for the `quant\_min`, `quant\_max`, e.g. if `dtype`
     is `torch.quint8`, make sure to set a custom `quant_min` to be `0` and `quant_max`
@@ -1117,151 +1608,229 @@
     we already set this correctly if you call the torch.ao.quantization.get_default_qconfig(backend)
     or torch.ao.quantization.get_default_qat_qconfig(backend) function to get the
     default `qconfig` for `x86` or `qnnpack` backend
+  id: totrans-239
   prefs: []
   type: TYPE_NORMAL
+  zh: 1. 如果您正在使用`x86`后端，我们需要使用7位而不是8位。确保您减少`quant_min`、`quant_max`的范围，例如，如果`dtype`是`torch.quint8`，请确保将自定义的`quant_min`设置为`0`，`quant_max`设置为`127`（`255`
+    / `2`）；如果`dtype`是`torch.qint8`，请确保将自定义的`quant_min`设置为`-64`（`-128` / `2`），`quant_max`设置为`63`（`127`
+    / `2`），如果您调用`torch.ao.quantization.get_default_qconfig(backend)`或`torch.ao.quantization.get_default_qat_qconfig(backend)`函数来获取`x86`或`qnnpack`后端的默认`qconfig`，我们已经正确设置了这些。
 - en: 2\. If `onednn` backend is selected, 8 bits for activation will be used in the
     default qconfig mapping `torch.ao.quantization.get_default_qconfig_mapping('onednn')`
     and default qconfig `torch.ao.quantization.get_default_qconfig('onednn')`. It
     is recommended to be used on CPUs with Vector Neural Network Instruction (VNNI)
     support. Otherwise, setting `reduce_range` to True of the activation’s observer
     to get better accuracy on CPUs without VNNI support.
+  id: totrans-240
   prefs: []
   type: TYPE_NORMAL
+  zh: 2. 如果选择了`onednn`后端，将在默认的qconfig映射`torch.ao.quantization.get_default_qconfig_mapping('onednn')`和默认的qconfig`torch.ao.quantization.get_default_qconfig('onednn')`中使用8位激活。建议在支持向量神经网络指令（VNNI）的CPU上使用。否则，将激活的观察者的`reduce_range`设置为True，以在没有VNNI支持的CPU上获得更好的准确性。
 - en: Frequently Asked Questions[](#frequently-asked-questions "Permalink to this
     heading")
+  id: totrans-241
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 常见问题[](#frequently-asked-questions "跳转到此标题的永久链接")
 - en: 'How can I do quantized inference on GPU?:'
+  id: totrans-242
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 如何在GPU上进行量化推断?：
 - en: We don’t have official GPU support yet, but this is an area of active development,
     you can find more information [here](https://github.com/pytorch/pytorch/issues/87395)
+  id: totrans-243
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 我们目前还没有官方的GPU支持，但这是一个积极开发的领域，您可以在[这里](https://github.com/pytorch/pytorch/issues/87395)找到更多信息
 - en: Where can I get ONNX support for my quantized model?
+  id: totrans-244
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 我如何为我的量化模型获得ONNX支持?
 - en: 'If you get errors exporting the model (using APIs under `torch.onnx`), you
     may open an issue in the PyTorch repository. Prefix the issue title with `[ONNX]`
     and tag the issue as `module: onnx`.'
+  id: totrans-245
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: '如果在导出模型时出现错误（使用`torch.onnx`下的API），您可以在PyTorch存储库中打开一个问题。在问题标题前加上`[ONNX]`并将问题标记为`module:
+    onnx`。'
 - en: If you encounter issues with ONNX Runtime, open an issue at [GitHub - microsoft/onnxruntime](https://github.com/microsoft/onnxruntime/issues/).
+  id: totrans-246
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 如果您在ONNX Runtime中遇到问题，请在[GitHub - microsoft/onnxruntime](https://github.com/microsoft/onnxruntime/issues/)上打开一个问题。
 - en: 'How can I use quantization with LSTM’s?:'
+  id: totrans-247
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 如何在LSTM中使用量化?：
 - en: 'LSTM is supported through our custom module api in both eager mode and fx graph
     mode quantization. Examples can be found at Eager Mode: [pytorch/test_quantized_op.py
     TestQuantizedOps.test_custom_module_lstm](https://github.com/pytorch/pytorch/blob/9b88dcf248e717ca6c3f8c5e11f600825547a561/test/quantization/core/test_quantized_op.py#L2782)
     FX Graph Mode: [pytorch/test_quantize_fx.py TestQuantizeFx.test_static_lstm](https://github.com/pytorch/pytorch/blob/9b88dcf248e717ca6c3f8c5e11f600825547a561/test/quantization/fx/test_quantize_fx.py#L4116)'
+  id: totrans-248
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: LSTM通过我们的自定义模块API在急切模式和fx图模式量化中得到支持。示例可以在急切模式中找到：[pytorch/test_quantized_op.py
+    TestQuantizedOps.test_custom_module_lstm](https://github.com/pytorch/pytorch/blob/9b88dcf248e717ca6c3f8c5e11f600825547a561/test/quantization/core/test_quantized_op.py#L2782)
+    FX图模式中：[pytorch/test_quantize_fx.py TestQuantizeFx.test_static_lstm](https://github.com/pytorch/pytorch/blob/9b88dcf248e717ca6c3f8c5e11f600825547a561/test/quantization/fx/test_quantize_fx.py#L4116)
 - en: Common Errors
+  id: totrans-249
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 常见错误
 - en: Passing a non-quantized Tensor into a quantized kernel[](#passing-a-non-quantized-tensor-into-a-quantized-kernel
     "Permalink to this heading")
+  id: totrans-250
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 将一个非量化的张量传递给一个量化的内核[](#passing-a-non-quantized-tensor-into-a-quantized-kernel
+    "跳转到此标题的永久链接")
 - en: 'If you see an error similar to:'
+  id: totrans-251
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您看到类似以下错误：
 - en: '[PRE11]'
+  id: totrans-252
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: 'This means that you are trying to pass a non-quantized Tensor to a quantized
     kernel. A common workaround is to use `torch.ao.quantization.QuantStub` to quantize
     the tensor. This needs to be done manually in Eager mode quantization. An e2e
     example:'
+  id: totrans-253
   prefs: []
   type: TYPE_NORMAL
+  zh: 这意味着您正在尝试将一个非量化的张量传递给一个量化的内核。一个常见的解决方法是使用`torch.ao.quantization.QuantStub`来对张量进行量化。这在Eager模式量化中需要手动完成。一个端到端的例子：
 - en: '[PRE12]'
+  id: totrans-254
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: Passing a quantized Tensor into a non-quantized kernel[](#passing-a-quantized-tensor-into-a-non-quantized-kernel
     "Permalink to this heading")
+  id: totrans-255
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 将一个量化的张量传递给一个非量化的内核[](#passing-a-quantized-tensor-into-a-non-quantized-kernel
+    "跳转到此标题的永久链接")
 - en: 'If you see an error similar to:'
+  id: totrans-256
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您看到类似以下错误：
 - en: '[PRE13]'
+  id: totrans-257
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: 'This means that you are trying to pass a quantized Tensor to a non-quantized
     kernel. A common workaround is to use `torch.ao.quantization.DeQuantStub` to dequantize
     the tensor. This needs to be done manually in Eager mode quantization. An e2e
     example:'
+  id: totrans-258
   prefs: []
   type: TYPE_NORMAL
+  zh: 这意味着您正在尝试将一个量化的张量传递给一个非量化的内核。一个常见的解决方法是使用`torch.ao.quantization.DeQuantStub`来对张量进行去量化。这在Eager模式量化中需要手动完成。一个端到端的例子：
 - en: '[PRE14]'
+  id: totrans-259
   prefs: []
   type: TYPE_PRE
-- en: Saving and Loading Quantized models[](#saving-and-loading-quantized-models
-    "Permalink to this heading")
+  zh: '[PRE14]'
+- en: Saving and Loading Quantized models[](#saving-and-loading-quantized-models "Permalink
+    to this heading")
+  id: totrans-260
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 保存和加载量化模型[](#saving-and-loading-quantized-models "跳转到此标题的永久链接")
 - en: 'When calling `torch.load` on a quantized model, if you see an error like:'
+  id: totrans-261
   prefs: []
   type: TYPE_NORMAL
+  zh: 在对一个量化模型调用`torch.load`时，如果出现类似以下错误：
 - en: '[PRE15]'
+  id: totrans-262
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: 'This is because directly saving and loading a quantized model using `torch.save`
     and `torch.load` is not supported. To save/load quantized models, the following
     ways can be used:'
+  id: totrans-263
   prefs: []
   type: TYPE_NORMAL
+  zh: 这是因为直接使用`torch.save`和`torch.load`保存和加载一个量化模型是不受支持的。要保存/加载量化模型，可以使用以下方法：
 - en: Saving/Loading the quantized model state_dict
+  id: totrans-264
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 保存/加载量化模型的state_dict
 - en: 'An example:'
+  id: totrans-265
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个例子：
 - en: '[PRE16]'
+  id: totrans-266
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: Saving/Loading scripted quantized models using `torch.jit.save` and `torch.jit.load`
+  id: totrans-267
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 使用`torch.jit.save`和`torch.jit.load`保存/加载脚本化的量化模型
 - en: 'An example:'
+  id: totrans-268
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个例子：
 - en: '[PRE17]'
+  id: totrans-269
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: Symbolic Trace Error when using FX Graph Mode Quantization[](#symbolic-trace-error-when-using-fx-graph-mode-quantization
     "Permalink to this heading")
+  id: totrans-270
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 在使用FX图模式量化时出现符号跟踪错误[](#symbolic-trace-error-when-using-fx-graph-mode-quantization
+    "跳转到此标题的永久链接")
 - en: 'Symbolic traceability is a requirement for [(Prototype - maintaince mode) FX
     Graph Mode Quantization](#prototype-maintaince-mode-fx-graph-mode-quantization),
     so if you pass a PyTorch Model that is not symbolically traceable to torch.ao.quantization.prepare_fx
     or torch.ao.quantization.prepare_qat_fx, we might see an error like the following:'
+  id: totrans-271
   prefs: []
   type: TYPE_NORMAL
+  zh: 符号跟踪是[(原型-维护模式) FX图模式量化](#prototype-maintaince-mode-fx-graph-mode-quantization)的要求，因此如果您传递一个不能被符号跟踪的PyTorch模型到torch.ao.quantization.prepare_fx或torch.ao.quantization.prepare_qat_fx，我们可能会看到以下类似的错误：
 - en: '[PRE18]'
+  id: totrans-272
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: Please take a look at [Limitations of Symbolic Tracing](https://pytorch.org/docs/2.0/fx.html#limitations-of-symbolic-tracing)
     and use - [User Guide on Using FX Graph Mode Quantization](https://pytorch.org/tutorials/prototype/fx_graph_mode_quant_guide.html)
     to workaround the problem.
+  id: totrans-273
   prefs: []
   type: TYPE_NORMAL
+  zh: 请查看[符号跟踪的限制](https://pytorch.org/docs/2.0/fx.html#limitations-of-symbolic-tracing)并使用-[使用FX图模式量化的用户指南](https://pytorch.org/tutorials/prototype/fx_graph_mode_quant_guide.html)来解决问题。

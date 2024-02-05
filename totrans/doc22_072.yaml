@@ -1,304 +1,470 @@
 - en: DDP Communication Hooks
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: DDP通信钩子
 - en: 原文：[https://pytorch.org/docs/stable/ddp_comm_hooks.html](https://pytorch.org/docs/stable/ddp_comm_hooks.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/docs/stable/ddp_comm_hooks.html](https://pytorch.org/docs/stable/ddp_comm_hooks.html)
 - en: DDP communication hook is a generic interface to control how to communicate
     gradients across workers by overriding the vanilla allreduce in [DistributedDataParallel](https://pytorch.org/docs/stable/generated/torch.nn.parallel.DistributedDataParallel.html#torch.nn.parallel.DistributedDataParallel.).
     A few built-in communication hooks are provided, and users can easily apply any
     of these hooks to optimize communication. Besides, the hook interface can also
     support user-defined communication strategies for more advanced use cases.
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: DDP通信钩子是一个通用接口，通过覆盖[DistributedDataParallel](https://pytorch.org/docs/stable/generated/torch.nn.parallel.DistributedDataParallel.html#torch.nn.parallel.DistributedDataParallel.)中的基本allreduce来控制如何在工作进程之间通信梯度。提供了一些内置的通信钩子，用户可以轻松应用其中任何一个来优化通信。此外，该钩子接口还可以支持用户定义的通信策略，以满足更高级的用例需求。
 - en: How to Use a Communication Hook?[](#how-to-use-a-communication-hook "Permalink
     to this heading")
+  id: totrans-3
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 如何使用通信钩子？[](#how-to-use-a-communication-hook "跳转到此标题的永久链接")
 - en: To use a communication hook, the user just needs to let the DDP model register
     the hook before the training loop as below.
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 要使用通信钩子，用户只需在训练循环之前让DDP模型注册钩子，如下所示。
 - en: '[`torch.nn.parallel.DistributedDataParallel.register_comm_hook()`](generated/torch.nn.parallel.DistributedDataParallel.html#torch.nn.parallel.DistributedDataParallel.register_comm_hook
     "torch.nn.parallel.DistributedDataParallel.register_comm_hook")'
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`torch.nn.parallel.DistributedDataParallel.register_comm_hook()`](generated/torch.nn.parallel.DistributedDataParallel.html#torch.nn.parallel.DistributedDataParallel.register_comm_hook
+    "torch.nn.parallel.DistributedDataParallel.register_comm_hook")'
 - en: What Does a Communication Hook Operate On?[](#what-does-a-communication-hook-operate-on
     "Permalink to this heading")
+  id: totrans-6
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 通信钩子操作的是什么？[](#what-does-a-communication-hook-operate-on "跳转到此标题的永久链接")
 - en: A communication hook provides a flexible way to allreduce gradients. Therefore,
     it mainly operates on the gradients on each replica before allreduce, which are
     bucketized to increase the overlap between communication and computation. Particularly,
     [`torch.distributed.GradBucket`](#torch.distributed.GradBucket "torch.distributed.GradBucket")
     represents a bucket of gradient tensors to be allreduced.
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 通信钩子提供了一种灵活的方式来allreduce梯度。因此，它主要在每个副本上的梯度上操作，然后进行allreduce，这些梯度被分桶以增加通信和计算之间的重叠。特别地，[`torch.distributed.GradBucket`](#torch.distributed.GradBucket
+    "torch.distributed.GradBucket")表示要进行allreduce的梯度张量的一个桶。
 - en: '[PRE0]'
+  id: totrans-8
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: This class mainly passes a flattened gradient tensor (returned by [`buffer()`](#torch.distributed.GradBucket.buffer
     "torch.distributed.GradBucket.buffer")) to DDP communication hook. This tensor
     can be further decomposed into a list of per-parameter tensors within this bucket
     (returned by `get_per_parameter_tensors()`) to apply layer-wise operations.
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个类主要将一个扁平化的梯度张量（由[`buffer()`](#torch.distributed.GradBucket.buffer "torch.distributed.GradBucket.buffer")返回）传递给DDP通信钩子。这个张量可以进一步分解为此桶中每个参数张量的列表（由`get_per_parameter_tensors()`返回），以应用逐层操作。
 - en: '[PRE1]'
+  id: totrans-10
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Warning
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: Since the buckets are rebuilt after the first iteration, should not rely on
     the indices at the beginning of training.
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于桶在第一次迭代后被重建，因此不应依赖于训练开始时的索引。
 - en: Returns
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回值
 - en: The index of a bucket that stores gradients of a few contiguous layers. All
     the gradients are bucketized.
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 存储少数连续层梯度的桶的索引。所有梯度都被分桶。
 - en: '[PRE2]'
+  id: totrans-15
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Returns
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回值
 - en: A flattened 1D `torch.Tensor` buffer, which can be further decomposed into a
     list of per-parameter tensors within this bucket.
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个扁平化的1D `torch.Tensor` 缓冲区，可以进一步分解为此桶中每个参数张量的列表。
 - en: '[PRE3]'
+  id: totrans-18
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: Returns
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回值
 - en: A list of `torch.Tensor`. Each tensor in the list corresponds to a gradient.
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个`torch.Tensor`列表。列表中的每个张量对应一个梯度。
 - en: '[PRE4]'
+  id: totrans-21
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: Returns
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回值
 - en: Whether this bucket is the last bucket to allreduce in an iteration. This also
     means that this bucket corresponds to the first few layers in the forward pass.
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个桶是否是迭代中最后一个要进行allreduce的桶。这也意味着这个桶对应于前向传播中的前几层。
 - en: '[PRE5]'
+  id: totrans-24
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: Replaces the tensor in the bucket with the input tensor buffer.
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: 用输入张量缓冲区替换桶中的张量。
 - en: '[PRE6]'
+  id: totrans-26
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: Returns
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回值
 - en: A list of `torch.Tensor`. Each tensor in the list corresponds to a model parameter.
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个`torch.Tensor`列表。列表中的每个张量对应一个模型参数。
 - en: Default Communication Hooks[](#default-communication-hooks "Permalink to this
     heading")
+  id: totrans-29
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 默认通信钩子[](#default-communication-hooks "跳转到此标题的永久链接")
 - en: Default communication hooks are simple **stateless** hooks, so the input state
     in `register_comm_hook` is either a process group or `None`. The input `bucket`
     is a [`torch.distributed.GradBucket`](#torch.distributed.GradBucket "torch.distributed.GradBucket")
     object.
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 默认通信钩子是简单的**无状态**钩子，因此`register_comm_hook`中的输入状态要么是一个进程组，要么是`None`。输入`bucket`是一个[`torch.distributed.GradBucket`](#torch.distributed.GradBucket
+    "torch.distributed.GradBucket")对象。
 - en: '[PRE7]'
+  id: totrans-31
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: This DDP communication hook just calls `allreduce` using `GradBucket` tensors.
     Once gradient tensors are aggregated across all workers, its `then` callback takes
     the mean and returns the result. If user registers this hook, DDP results is expected
     to be same as the case where no hook was registered. Hence, this won’t change
     behavior of DDP and user can use this as a reference or modify this hook to log
     useful information or any other purposes while unaffecting DDP behavior.
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个DDP通信钩子只是使用`GradBucket`张量调用`allreduce`。一旦梯度张量在所有工作进程中聚合，它的`then`回调会取平均值并返回结果。如果用户注册了这个钩子，DDP的结果预计与未注册钩子的情况相同。因此，这不会改变DDP的行为，用户可以将其用作参考或修改此钩子以记录有用信息或其他目的，同时不影响DDP的行为。
 - en: 'Example::'
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: '示例::'
 - en: '[PRE8]'
+  id: totrans-34
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: Return type
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*Future*](futures.html#torch.futures.Future "torch.jit.Future")[[*Tensor*](tensors.html#torch.Tensor
     "torch.Tensor")]'
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*Future*](futures.html#torch.futures.Future "torch.jit.Future")[[*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")]'
 - en: '[PRE9]'
+  id: totrans-37
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: This DDP communication hook implements a simple gradient compression approach
     that casts `GradBucket` tensor to half-precision floating-point format (`torch.float16`)
     and then divides it by the process group size. It allreduces those `float16` gradient
     tensors. Once compressed gradient tensors are allreduced, the chained callback
     `decompress` casts it back to the input data type (such as `float32`).
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个DDP通信钩子实现了一种简单的梯度压缩方法，将`GradBucket`张量转换为半精度浮点格式（`torch.float16`），然后将其除以进程组大小。它对这些`float16`梯度张量进行全局归约。一旦压缩的梯度张量全部归约，链式回调`decompress`将其转换回输入数据类型（如`float32`）。
 - en: 'Example::'
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: '示例::'
 - en: '[PRE10]'
+  id: totrans-40
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: Return type
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*Future*](futures.html#torch.futures.Future "torch.jit.Future")[[*Tensor*](tensors.html#torch.Tensor
     "torch.Tensor")]'
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*Future*](futures.html#torch.futures.Future "torch.jit.Future")[[*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")]'
 - en: '[PRE11]'
+  id: totrans-43
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: 'Warning: This API is experimental, and it requires NCCL version later than
     2.9.6.'
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告：此API是实验性的，需要NCCL版本高于2.9.6。
 - en: This DDP communication hook implements a simple gradient compression approach
     that casts `GradBucket` tensor to half-precision [Brain floating point format](https://en.wikipedia.org/wiki/Bfloat16_floating-point_format)
     (`torch.bfloat16`) and then divides it by the process group size. It allreduces
     those `bfloat16` gradient tensors. Once compressed gradient tensors are allreduced,
     the chained callback `decompress` casts it back to the input data type (such as
     `float32`).
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个DDP通信钩子实现了一种简单的梯度压缩方法，将`GradBucket`张量转换为半精度[Brain浮点格式](https://en.wikipedia.org/wiki/Bfloat16_floating-point_format)
+    (`torch.bfloat16`)，然后将其除以进程组大小。它对这些`bfloat16`梯度张量进行全局归约。一旦压缩的梯度张量全部归约，链式回调`decompress`将其转换回输入数据类型（如`float32`）。
 - en: 'Example::'
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: '示例::'
 - en: '[PRE12]'
+  id: totrans-47
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: Return type
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*Future*](futures.html#torch.futures.Future "torch.jit.Future")[[*Tensor*](tensors.html#torch.Tensor
     "torch.Tensor")]'
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*Future*](futures.html#torch.futures.Future "torch.jit.Future")[[*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")]'
 - en: Additionally, a communication hook wrapper is provided to support [`fp16_compress_hook()`](#torch.distributed.algorithms.ddp_comm_hooks.default_hooks.fp16_compress_hook
     "torch.distributed.algorithms.ddp_comm_hooks.default_hooks.fp16_compress_hook")
     or [`bf16_compress_hook()`](#torch.distributed.algorithms.ddp_comm_hooks.default_hooks.bf16_compress_hook
     "torch.distributed.algorithms.ddp_comm_hooks.default_hooks.bf16_compress_hook")
     as a wrapper, which can be combined with other communication hooks.
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: 此外，提供了一个通信钩子包装器，支持[`fp16_compress_hook()`](#torch.distributed.algorithms.ddp_comm_hooks.default_hooks.fp16_compress_hook
+    "torch.distributed.algorithms.ddp_comm_hooks.default_hooks.fp16_compress_hook")或[`bf16_compress_hook()`](#torch.distributed.algorithms.ddp_comm_hooks.default_hooks.bf16_compress_hook
+    "torch.distributed.algorithms.ddp_comm_hooks.default_hooks.bf16_compress_hook")作为一个包装器，可以与其他通信钩子组合使用。
 - en: '[PRE13]'
+  id: totrans-51
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: This wrapper casts the input gradient tensor of a given DDP communication hook
     to half-precision floating point format (`torch.float16`), and casts the resulting
     tensor of the given hook back to the input data type, such as `float32`.
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个包装器将给定DDP通信钩子的输入梯度张量转换为半精度浮点格式（`torch.float16`），并将给定钩子的结果张量转换回输入数据类型，如`float32`。
 - en: Therefore, `fp16_compress_hook` is equivalent to `fp16_compress_wrapper(allreduce_hook)`.
+  id: totrans-53
   prefs: []
   type: TYPE_NORMAL
+  zh: 因此，`fp16_compress_hook`等同于`fp16_compress_wrapper(allreduce_hook)`。
 - en: 'Example::'
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: '示例::'
 - en: '[PRE14]'
+  id: totrans-55
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: Return type
+  id: totrans-56
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*Callable*](https://docs.python.org/3/library/typing.html#typing.Callable
     "(in Python v3.12)")[[[*Any*](https://docs.python.org/3/library/typing.html#typing.Any
     "(in Python v3.12)"), [*GradBucket*](#torch.distributed.GradBucket "torch._C._distributed_c10d.GradBucket")],
     [*Future*](futures.html#torch.futures.Future "torch.jit.Future")[[*Tensor*](tensors.html#torch.Tensor
     "torch.Tensor")]]'
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*Callable*](https://docs.python.org/3/library/typing.html#typing.Callable
+    "(in Python v3.12)")[[[*Any*](https://docs.python.org/3/library/typing.html#typing.Any
+    "(in Python v3.12)"), [*GradBucket*](#torch.distributed.GradBucket "torch._C._distributed_c10d.GradBucket")],
+    [*Future*](futures.html#torch.futures.Future "torch.jit.Future")[[*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")]]'
 - en: '[PRE15]'
+  id: totrans-58
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: 'Warning: This API is experimental, and it requires NCCL version later than
     2.9.6.'
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告：此API是实验性的，需要NCCL版本高于2.9.6。
 - en: This wrapper casts the input gradient tensor of a given DDP communication hook
     to half-precision Brain floating point format <https://en.wikipedia.org/wiki/Bfloat16_floating-point_format>
     `_ (``torch.bfloat16`), and casts the resulting tensor of the given hook back
     to the input data type, such as `float32`.
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个包装器将给定DDP通信钩子的输入梯度张量转换为半精度Brain浮点格式<https://en.wikipedia.org/wiki/Bfloat16_floating-point_format>
+    `_（`torch.bfloat16`），并将给定钩子的结果张量转换回输入数据类型，如`float32`。
 - en: Therefore, `bf16_compress_hook` is equivalent to `bf16_compress_wrapper(allreduce_hook)`.
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: 因此，`bf16_compress_hook`等同于`bf16_compress_wrapper(allreduce_hook)`。
 - en: 'Example::'
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
+  zh: '示例::'
 - en: '[PRE16]'
+  id: totrans-63
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: Return type
+  id: totrans-64
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*Callable*](https://docs.python.org/3/library/typing.html#typing.Callable
     "(in Python v3.12)")[[[*Any*](https://docs.python.org/3/library/typing.html#typing.Any
     "(in Python v3.12)"), [*GradBucket*](#torch.distributed.GradBucket "torch._C._distributed_c10d.GradBucket")],
     [*Future*](futures.html#torch.futures.Future "torch.jit.Future")[[*Tensor*](tensors.html#torch.Tensor
     "torch.Tensor")]]'
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*Callable*](https://docs.python.org/3/library/typing.html#typing.Callable
+    "(in Python v3.12)")[[[*Any*](https://docs.python.org/3/library/typing.html#typing.Any
+    "(in Python v3.12)"), [*GradBucket*](#torch.distributed.GradBucket "torch._C._distributed_c10d.GradBucket")],
+    [*Future*](futures.html#torch.futures.Future "torch.jit.Future")[[*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")]]'
 - en: PowerSGD Communication Hook[](#powersgd-communication-hook "Permalink to this
     heading")
+  id: totrans-66
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: PowerSGD通信钩子[](#powersgd-communication-hook "跳转到此标题")
 - en: PowerSGD ([Vogels et al., NeurIPS 2019](https://arxiv.org/abs/1905.13727)) is
     a gradient compression algorithm, which can provide very high compression rates
     and accelerate bandwidth-bound distributed training. This algorithm needs to maintain
     both some hyperparameters and the internal state. Therefore, PowerSGD communication
     hook is a **stateful** hook, and the user needs to provide a state object defined
     as below.
+  id: totrans-67
   prefs: []
   type: TYPE_NORMAL
+  zh: PowerSGD（[Vogels等人，NeurIPS 2019](https://arxiv.org/abs/1905.13727)）是一种梯度压缩算法，可以提供非常高的压缩率，并加速带宽受限的分布式训练。该算法需要维护一些超参数和内部状态。因此，PowerSGD通信钩子是一个**有状态**的钩子，用户需要提供以下定义的状态对象。
 - en: PowerSGD State
+  id: totrans-68
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: PowerSGD状态
 - en: '[PRE17]'
+  id: totrans-69
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: Stores both the algorithm’s hyperparameters and the internal state for all the
     gradients during the training. Particularly, `matrix_approximation_rank` and `start_powerSGD_iter`
     are the main hyperparameters that should be tuned by the user. For performance,
     we suggest to keep binary hyperparameters `use_error_feedback` and `warm_start`
     on.
+  id: totrans-70
   prefs: []
   type: TYPE_NORMAL
+  zh: 在训练期间存储算法的超参数和所有梯度的内部状态。特别是，`matrix_approximation_rank` 和 `start_powerSGD_iter`
+    是用户应该调整的主要超参数。为了性能，建议保持二进制超参数 `use_error_feedback` 和 `warm_start` 打开。
 - en: '`matrix_approximation_rank` controls the size of compressed low-rank tensors,
     which determines the compression rate. The lower the rank, the stronger the compression.'
+  id: totrans-71
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: '`matrix_approximation_rank` 控制压缩的低秩张量的大小，从而确定压缩率。低秩越低，压缩越强。'
 - en: 1.1\. If `matrix_approximation_rank` is too low, the full model quality will
     need more training steps to reach or will never reach and yield loss in accuracy.
+  id: totrans-72
   prefs:
   - PREF_IND
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 1.1\. 如果 `matrix_approximation_rank` 太低，完整模型质量将需要更多的训练步骤才能达到，或者永远无法达到，并且会导致准确性下降。
 - en: ''
+  id: totrans-73
   prefs:
   - PREF_IND
   - PREF_BQ
@@ -306,17 +472,23 @@
 - en: 1.2\. The increase of `matrix_approximation_rank` can substantially increase
     the computation costs of the compression, and the accuracy may not be further
     improved beyond a certain `matrix_approximation_rank` threshold.
+  id: totrans-74
   prefs:
   - PREF_IND
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 1.2\. 增加 `matrix_approximation_rank` 可大幅增加压缩的计算成本，而准确性可能不会在某个特定的 `matrix_approximation_rank`
+    阈值之上进一步提高。
 - en: To tune `matrix_approximation_rank`, we suggest to start from 1 and increase
     by factors of 2 (like an exponential grid search, 1, 2, 4, …), until a satisfactory
     accuracy is reached. Typically only a small value 1-4 is used. For some NLP tasks
     (as shown in Appendix D of the original paper), this value has been increased
     to 32.
+  id: totrans-75
   prefs: []
   type: TYPE_NORMAL
+  zh: 要调整 `matrix_approximation_rank`，建议从 1 开始，按 2 的倍数递增（如指数网格搜索，1、2、4、...），直到达到满意的准确性。通常只使用一个小值
+    1-4。对于一些 NLP 任务（如原始论文附录 D 中所示），这个值已增加到 32。
 - en: '`start_powerSGD_iter` defers PowerSGD compression until step `start_powerSGD_iter`,
     and vanilla allreduce runs prior to step `start_powerSGD_iter`. This hybrid scheme
     of **vanilla allreduce + PowerSGD** can effectively improve the accuracy, even
@@ -324,35 +496,50 @@
     the beginning of training phase is usually very sensitive to inaccurate gradients,
     and compressing gradients too early may make the training quickly take a suboptimal
     trajectory, which can result in an irrecoverable impact on the accuracy.'
+  id: totrans-76
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: '`start_powerSGD_iter` 推迟 PowerSGD 压缩直到步骤 `start_powerSGD_iter`，并且在步骤 `start_powerSGD_iter`
+    之前运行普通的 allreduce。这种 **普通 allreduce + PowerSGD** 的混合方案可以有效提高准确性，即使使用相对较小的 `matrix_approximation_rank`。这是因为训练阶段的开始通常对不准确的梯度非常敏感，而过早压缩梯度可能会使训练迅速走向次优轨迹，这可能会对准确性产生不可挽回的影响。'
 - en: To tune `start_powerSGD_iter`, we suggest to start with 10% of total training
     steps, and increase it until a satisfactory accuracy is reached. If there is a
     warm-up stage in the training, `start_powerSGD_iter` typically should be no less
     than the number of warm-up steps.
+  id: totrans-77
   prefs: []
   type: TYPE_NORMAL
+  zh: 要调整 `start_powerSGD_iter`，建议从总训练步骤的 10% 开始，并逐渐增加，直到达到满意的准确性。如果训练中有热身阶段，则 `start_powerSGD_iter`
+    通常不应少于热身步数。
 - en: '`min_compression_rate` is the minimum compression rate required when a layer
     is compressed. Due to the computation overheads incurred by the compression, a
     tensor is worth compressing only if there can be sufficient saving in bandwidth,
     where `(num_rows + num_cols) * matrix_approximation_rank * min_compression_rate
     < num_rows * num_cols`. If the specified compression rate threshold cannot be
     satisfied, the tensor will be directly allreduced without compression.'
+  id: totrans-78
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: '`min_compression_rate` 是在压缩层时所需的最小压缩率。由于压缩带来的计算开销，只有当在带宽上可以节省足够的内容时，张量才值得压缩，其中
+    `(num_rows + num_cols) * matrix_approximation_rank * min_compression_rate < num_rows
+    * num_cols`。如果无法满足指定的压缩率阈值，则张量将直接进行无压缩的 allreduce。'
 - en: Compression statistics are logged every `compression_stats_logging_frequency`
     iterations once PowerSGD compression starts.
+  id: totrans-79
   prefs: []
   type: TYPE_NORMAL
+  zh: 一旦开始 PowerSGD 压缩，每隔 `compression_stats_logging_frequency` 次迭代记录一次压缩统计信息。
 - en: '`orthogonalization_epsilon` can be a very small value (e.g., 1e-8) added to
     every normalized matrix column in orthogonalization step, to prevent div-by-zero
     error if any column has all 0s. If this can already be prevented (e.g., by batch
     normalization), an epsilon of 0 is recommended for accuracy.'
+  id: totrans-80
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: '`orthogonalization_epsilon` 可以是一个非常小的值（例如，1e-8），添加到正交化步骤中每个归一化矩阵列中，以防止除零错误，如果任何列都是全
+    0。如果这已经可以被防止（例如，通过批量归一化），则建议将 epsilon 设置为 0 以提高准确性。'
 - en: '`batch_tensors_with_same_shape` controls whether to compress and decompress
     tensors with same shape in a batched operation to achieve higher parallelism.
     Note that you should also increase the bucket size (i.e., `bucket_cap_mb` arg
@@ -360,207 +547,289 @@
     however this may reduce the overlap between computation and communication, and
     increase the memory footprint due to stacking the tensors of the same shape. Set
     to `True` if the compression / decompression computation is a bottleneck.'
+  id: totrans-81
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: '`batch_tensors_with_same_shape` 控制是否在批处理操作中压缩和解压具有相同形状的张量，以实现更高的并行性。请注意，您还应增加桶大小（即
+    DDP 构造函数中的 `bucket_cap_mb` 参数），以使更多具有相同形状的张量出现在同一个桶中，但这可能会减少计算和通信之间的重叠，并增加内存占用量，因为需要堆叠相同形状的张量。如果压缩/解压计算是瓶颈，请将其设置为
+    `True`。'
 - en: Warning
+  id: totrans-82
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: If error feedback or warm-up is enabled, the minimum value of `start_powerSGD_iter`
     allowed in DDP is 2. This is because there is another internal optimization that
     rebuilds buckets at iteration 1 in DDP, and this can conflict with any tensor
     memorized before the rebuild process.
+  id: totrans-83
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果启用了误差反馈或热身阶段，DDP 中允许的 `start_powerSGD_iter` 的最小值为 2。这是因为在 DDP 中的第 1 次迭代中重新构建桶的另一个内部优化，这可能会与重建过程之前记忆的任何张量发生冲突。
 - en: PowerSGD Hooks
+  id: totrans-84
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: PowerSGD 钩子
 - en: Warning
+  id: totrans-85
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: PowerSGD typically requires extra memory of the same size as the model’s gradients
     to enable error feedback, which can compensate for biased compressed communication
     and improve accuracy.
+  id: totrans-86
   prefs: []
   type: TYPE_NORMAL
+  zh: PowerSGD 通常需要额外的内存，大小与模型梯度相同，以启用误差反馈，这可以补偿有偏压缩通信并提高准确性。
 - en: Warning
+  id: totrans-87
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: PowerSGD hooks may conflict with [Apex automatic mixed precision package](https://github.com/NVIDIA/apex).
     Please use PyTorch [native automatic mixed precision package](https://pytorch.org/docs/stable/amp.html)
     instead.
+  id: totrans-88
   prefs: []
   type: TYPE_NORMAL
+  zh: PowerSGD钩子可能与[Apex自动混合精度包](https://github.com/NVIDIA/apex)冲突。请改用PyTorch的[本机自动混合精度包](https://pytorch.org/docs/stable/amp.html)。
 - en: '[PRE18]'
+  id: totrans-89
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: 'This DDP communication hook implements PowerSGD gradient compression algorithm
     described in the [paper](https://arxiv.org/abs/1905.13727). Once gradient tensors
     are aggregated across all workers, this hook applies compression as follows:'
+  id: totrans-90
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个DDP通信钩子实现了[论文](https://arxiv.org/abs/1905.13727)中描述的PowerSGD梯度压缩算法。一旦梯度张量在所有工作节点上聚合，此钩子将按以下方式应用压缩：
 - en: 'Views the input flattened 1D gradient tensor as a list of per-parameter tensors,
     and divides all the tensors into two groups:'
+  id: totrans-91
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 将输入扁平化的1D梯度张量视为每个参数张量的列表，并将所有张量分为两组：
 - en: 1.1 The tensors that should be compressed before allreduce, because the compression
     can give enough saving in bandwidth.
+  id: totrans-92
   prefs:
   - PREF_IND
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 1.1 应在allreduce之前压缩的张量，因为压缩可以在带宽上节省足够的空间。
 - en: ''
+  id: totrans-93
   prefs:
   - PREF_IND
   - PREF_BQ
   type: TYPE_NORMAL
 - en: 1.2 Rest of the tensors will be directly allreduced without compression, including
     all the vector tensors (for biases).
+  id: totrans-94
   prefs:
   - PREF_IND
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 1.2 其余张量将直接进行allreduce而不进行压缩，包括所有的向量张量（用于偏置）。
 - en: 'Handles uncompressed tensors:'
+  id: totrans-95
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 处理未压缩的张量：
 - en: 2.1\. Allocate contiguous memory for those uncompressed tensors, and allreduces
     all the uncompressed tensors as a batch, without compression;
+  id: totrans-96
   prefs:
   - PREF_IND
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 2.1\. 为这些未压缩的张量分配连续内存，并将所有未压缩的张量作为一个批次进行allreduce，不进行压缩；
 - en: ''
+  id: totrans-97
   prefs:
   - PREF_IND
   - PREF_BQ
   type: TYPE_NORMAL
 - en: 2.2\. Copies the individual uncompressed tensors from the contiguous memory
     back to the input tensor.
+  id: totrans-98
   prefs:
   - PREF_IND
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 2.2\. 将单个未压缩的张量从连续内存复制回输入张量。
 - en: 'Handles the tensors that should be compressed by PowerSGD compression:'
+  id: totrans-99
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 处理应通过PowerSGD压缩进行压缩的张量：
 - en: 3.1\. For each tensor M, creates two low-rank tensors P and Q for decomposing
     M, such that M = PQ^T, where Q is initialized from a standard normal distribution
     and orthogonalized;
+  id: totrans-100
   prefs:
   - PREF_IND
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 3.1\. 对于每个张量M，创建两个低秩张量P和Q来分解M，使得M = PQ^T，其中Q从标准正态分布初始化并正交化；
 - en: ''
+  id: totrans-101
   prefs:
   - PREF_IND
   - PREF_BQ
   type: TYPE_NORMAL
 - en: 3.2\. Computes each P in Ps, which is equal to MQ;
+  id: totrans-102
   prefs:
   - PREF_IND
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 3.2\. 计算Ps中的每个P，等于MQ；
 - en: ''
+  id: totrans-103
   prefs:
   - PREF_IND
   - PREF_BQ
   type: TYPE_NORMAL
 - en: 3.3\. Allreduces Ps as a batch;
+  id: totrans-104
   prefs:
   - PREF_IND
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 3.3\. 将Ps作为一个批次进行allreduce；
 - en: ''
+  id: totrans-105
   prefs:
   - PREF_IND
   - PREF_BQ
   type: TYPE_NORMAL
 - en: 3.4\. Orthogonalizes each P in Ps;
+  id: totrans-106
   prefs:
   - PREF_IND
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 3.4\. 对Ps中的每个P进行正交化；
 - en: ''
+  id: totrans-107
   prefs:
   - PREF_IND
   - PREF_BQ
   type: TYPE_NORMAL
 - en: 3.5\. Computes each Q in Qs, which is approximately equal to M^TP;
+  id: totrans-108
   prefs:
   - PREF_IND
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 3.5\. 计算Qs中的每个Q，大致等于M^TP；
 - en: ''
+  id: totrans-109
   prefs:
   - PREF_IND
   - PREF_BQ
   type: TYPE_NORMAL
 - en: 3.6\. Allreduces Qs as a batch;
+  id: totrans-110
   prefs:
   - PREF_IND
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 3.6\. 所有的Q作为一个批次进行allreduce；
 - en: ''
+  id: totrans-111
   prefs:
   - PREF_IND
   - PREF_BQ
   type: TYPE_NORMAL
 - en: 3.7\. Computes each M among all the compressed tensors, which is approximately
     equal to PQ^T.
+  id: totrans-112
   prefs:
   - PREF_IND
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 3.7\. 计算所有压缩张量中的每个M，大致等于PQ^T。
 - en: Note that this communication hook enforces vanilla allreduce for the first `state.start_powerSGD_iter`
     iterations. This not only gives the user more control over the tradeoff between
     speedup and accuracy, but also helps abstract away some complexity of the internal
     optimization of DDP for future communication hook developers.
+  id: totrans-113
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，此通信钩子在前`state.start_powerSGD_iter`次迭代中强制使用普通allreduce。这不仅使用户能够更好地控制速度和准确性之间的权衡，还有助于将DDP的内部优化复杂性抽象化为未来通信钩子开发者。
 - en: Parameters
+  id: totrans-114
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**state** ([*PowerSGDState*](#torch.distributed.algorithms.ddp_comm_hooks.powerSGD_hook.PowerSGDState
     "torch.distributed.algorithms.ddp_comm_hooks.powerSGD_hook.PowerSGDState")) –
     State information to configure the compression rate and support error feedback,
     warm start, etc. To tune the compression configs, mainly need to tune `matrix_approximation_rank`,
     `start_powerSGD_iter` and `min_compression_rate`.'
+  id: totrans-115
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**state**（[*PowerSGDState*](#torch.distributed.algorithms.ddp_comm_hooks.powerSGD_hook.PowerSGDState
+    "torch.distributed.algorithms.ddp_comm_hooks.powerSGD_hook.PowerSGDState")）- 用于配置压缩率和支持错误反馈、热启动等的状态信息。要调整压缩配置，主要需要调整`matrix_approximation_rank`、`start_powerSGD_iter`和`min_compression_rate`。'
 - en: '**bucket** (*dist.GradBucket*) – Bucket that stores a 1D flattened gradient
     tensor that batches multiple per-variable tensors. Note that since DDP comm hook
     only supports single process single device mode, only exactly one tensor is stored
     in this bucket.'
+  id: totrans-116
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**bucket**（*dist.GradBucket*）- 存储批处理多个每个变量张量的扁平化梯度张量的桶。请注意，由于DDP通信钩子仅支持单进程单设备模式，因此此桶中仅存储一个张量。'
 - en: Returns
+  id: totrans-117
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回
 - en: Future handler of the communication, which updates the gradients in place.
+  id: totrans-118
   prefs: []
   type: TYPE_NORMAL
+  zh: 未来处理通信的处理程序，可以就地更新梯度。
 - en: Return type
+  id: totrans-119
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*Future*](futures.html#torch.futures.Future "torch.jit.Future")[[*Tensor*](tensors.html#torch.Tensor
     "torch.Tensor")]'
+  id: totrans-120
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*未来*](futures.html#torch.futures.Future "torch.jit.Future")[[*张量*](tensors.html#torch.Tensor
+    "torch.Tensor")]'
 - en: 'Example::'
+  id: totrans-121
   prefs: []
   type: TYPE_NORMAL
+  zh: '示例::'
 - en: '[PRE19]'
+  id: totrans-122
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE19]'
 - en: '[PRE20]'
+  id: totrans-123
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE20]'
 - en: This DDP communication hook implements a simplified PowerSGD gradient compression
     algorithm described in the [paper](https://arxiv.org/abs/1905.13727). This variant
     does not compress the gradients layer by layer, but instead compresses the flattened
@@ -569,126 +838,189 @@
     "torch.distributed.algorithms.ddp_comm_hooks.powerSGD_hook.powerSGD_hook"), but
     usually results in a **much lower accuracy**, unless `matrix_approximation_rank`
     is 1.
+  id: totrans-124
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个DDP通信钩子实现了一个简化的PowerSGD梯度压缩算法，描述在[论文](https://arxiv.org/abs/1905.13727)中。这个变体不是逐层压缩梯度，而是压缩批处理所有梯度的扁平输入张量。因此，它比[`powerSGD_hook()`](#torch.distributed.algorithms.ddp_comm_hooks.powerSGD_hook.powerSGD_hook
+    "torch.distributed.algorithms.ddp_comm_hooks.powerSGD_hook.powerSGD_hook")**更快**，但通常会导致**更低的准确性**，除非`matrix_approximation_rank`为1。
 - en: Warning
+  id: totrans-125
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: Increasing `matrix_approximation_rank` here may not necessarily increase the
     accuracy, because batching per-parameter tensors without column/row alignment
     can destroy low-rank structure. Therefore, the user should always consider [`powerSGD_hook()`](#torch.distributed.algorithms.ddp_comm_hooks.powerSGD_hook.powerSGD_hook
     "torch.distributed.algorithms.ddp_comm_hooks.powerSGD_hook.powerSGD_hook") first,
     and only consider this variant when a satisfactory accuracy can be achieved when
     `matrix_approximation_rank` is 1.
+  id: totrans-126
   prefs: []
   type: TYPE_NORMAL
+  zh: 在这里增加`matrix_approximation_rank`可能不一定会增加准确性，因为对于没有列/行对齐的每个参数张量进行批处理可能会破坏低秩结构。因此，用户应始终首先考虑[`powerSGD_hook()`](#torch.distributed.algorithms.ddp_comm_hooks.powerSGD_hook.powerSGD_hook
+    "torch.distributed.algorithms.ddp_comm_hooks.powerSGD_hook.powerSGD_hook")，仅在`matrix_approximation_rank`为1时可以实现令人满意的准确性时才考虑此变体。
 - en: 'Once gradient tensors are aggregated across all workers, this hook applies
     compression as follows:'
+  id: totrans-127
   prefs: []
   type: TYPE_NORMAL
+  zh: 一旦梯度张量在所有工作进程中聚合，此挂钩将应用压缩如下：
 - en: Views the input flattened 1D gradient tensor as a square-shaped tensor M with
     0 paddings;
+  id: totrans-128
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 将输入扁平化的1D梯度张量视为带有0填充的方形张量M;
 - en: Creates two low-rank tensors P and Q for decomposing M, such that M = PQ^T,
     where Q is initialized from a standard normal distribution and orthogonalized;
+  id: totrans-129
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 创建两个低秩张量P和Q以分解M，使得M = PQ^T，其中Q从标准正态分布初始化并正交化;
 - en: Computes P, which is equal to MQ;
+  id: totrans-130
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 计算P，它等于MQ；
 - en: Allreduces P;
+  id: totrans-131
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 全局归约P;
 - en: Orthogonalizes P;
+  id: totrans-132
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 正交化P;
 - en: Computes Q, which is approximately equal to M^TP;
+  id: totrans-133
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 计算Q，它大约等于M^TP;
 - en: Allreduces Q;
+  id: totrans-134
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 全局归约Q;
 - en: Computes M, which is approximately equal to PQ^T.
+  id: totrans-135
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 计算M，它大约等于PQ^T。
 - en: Truncates the input tensor to the original length.
+  id: totrans-136
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 将输入张量截断到原始长度。
 - en: Note that this communication hook enforces vanilla allreduce for the first `state.start_powerSGD_iter`
     iterations. This not only gives the user more control over the tradeoff between
     speedup and accuracy, but also helps abstract away some complexity of the internal
     optimization of DDP for future communication hook developers.
+  id: totrans-137
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，此通信挂钩在前`state.start_powerSGD_iter`次迭代中强制执行基本全局归约。这不仅使用户能够更好地控制速度和准确性之间的权衡，还有助于为未来通信挂钩开发人员抽象出DDP内部优化的一些复杂性。
 - en: Parameters
+  id: totrans-138
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**state** ([*PowerSGDState*](#torch.distributed.algorithms.ddp_comm_hooks.powerSGD_hook.PowerSGDState
     "torch.distributed.algorithms.ddp_comm_hooks.powerSGD_hook.PowerSGDState")) –
     State information to configure the compression rate and support error feedback,
     warm start, etc. To tune the compression configs, mainly need to tune `matrix_approximation_rank`
     and `start_powerSGD_iter`.'
+  id: totrans-139
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**state** ([*PowerSGDState*](#torch.distributed.algorithms.ddp_comm_hooks.powerSGD_hook.PowerSGDState
+    "torch.distributed.algorithms.ddp_comm_hooks.powerSGD_hook.PowerSGDState")) –
+    用于配置压缩率和支持错误反馈、热启动等的状态信息。要调整压缩配置，主要需要调整`matrix_approximation_rank`和`start_powerSGD_iter`。'
 - en: '**bucket** (*dist.GradBucket*) – Bucket that stores a 1D flattened gradient
     tensor that batches multiple per-variable tensors. Note that since DDP comm hook
     only supports single process single device mode, only exactly one tensor is stored
     in this bucket.'
+  id: totrans-140
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**bucket** (*dist.GradBucket*) – 存储批处理多个每个变量张量的扁平化梯度张量的桶。请注意，由于DDP通信挂钩仅支持单进程单设备模式，因此此桶中仅存储一个张量。'
 - en: Returns
+  id: totrans-141
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回
 - en: Future handler of the communication, which updates the gradients in place.
+  id: totrans-142
   prefs: []
   type: TYPE_NORMAL
+  zh: 通信的未来处理程序，它在原地更新梯度。
 - en: Return type
+  id: totrans-143
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*Future*](futures.html#torch.futures.Future "torch.jit.Future")[[*Tensor*](tensors.html#torch.Tensor
     "torch.Tensor")]'
+  id: totrans-144
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*Future*](futures.html#torch.futures.Future "torch.jit.Future")[[*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")]'
 - en: 'Example::'
+  id: totrans-145
   prefs: []
   type: TYPE_NORMAL
+  zh: '示例::'
 - en: '[PRE21]'
+  id: totrans-146
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE21]'
 - en: Debugging Communication Hooks[](#debugging-communication-hooks "Permalink to
     this heading")
+  id: totrans-147
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 调试通信挂钩[](#debugging-communication-hooks "跳转到此标题")
 - en: As the name implies, debugging communication hooks are **only** used for debugging
     and performance optimization purpose.
+  id: totrans-148
   prefs: []
   type: TYPE_NORMAL
+  zh: 顾名思义，调试通信挂钩仅用于调试和性能优化目的。
 - en: Warning
+  id: totrans-149
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: Debugging communication hooks do not necessarily output the correct results.
+  id: totrans-150
   prefs: []
   type: TYPE_NORMAL
+  zh: 调试通信挂钩不一定会输出正确的结果。
 - en: '[PRE22]'
+  id: totrans-151
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE22]'
 - en: This DDP communication hook returns a future that wraps the input, so it is
     a noop that does not incur any communication overheads.
+  id: totrans-152
   prefs: []
   type: TYPE_NORMAL
+  zh: 此DDP通信挂钩返回一个包装输入的未来，因此它是一个不会产生任何通信开销的空操作。
 - en: This hook should **only** be used for headroom analysis of allreduce optimization,
     instead of the normal gradient synchronization. For example, if only less than
     10% speedup of training time can be observed after this hook is registered, it
@@ -696,80 +1028,124 @@
     Such instrumentation can be particularly useful if GPU traces cannot be easily
     retrieved or the trace analysis is complicated some factors such as the overlap
     between allreduce and computation or the desynchronization across ranks.
+  id: totrans-153
   prefs: []
   type: TYPE_NORMAL
+  zh: 此挂钩应**仅**用于全局归约优化的headroom分析，而不是正常的梯度同步。例如，如果在注册此挂钩后只能观察到训练时间少于10%的加速，通常意味着对于这种情况，全局归约不是性能瓶颈。如果GPU跟踪不能轻松检索或跟踪分析受到某些因素的复杂影响，例如全局归约和计算之间的重叠或跨等级的不同步，这种仪器化可能特别有用。
 - en: 'Example::'
+  id: totrans-154
   prefs: []
   type: TYPE_NORMAL
+  zh: '示例::'
 - en: '[PRE23]'
+  id: totrans-155
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE23]'
 - en: Return type
+  id: totrans-156
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*Future*](futures.html#torch.futures.Future "torch.jit.Future")[[*Tensor*](tensors.html#torch.Tensor
     "torch.Tensor")]'
+  id: totrans-157
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*Future*](futures.html#torch.futures.Future "torch.jit.Future")[[*Tensor*](tensors.html#torch.Tensor
+    "torch.Tensor")]'
 - en: Checkpointing of Communication Hooks[](#checkpointing-of-communication-hooks
     "Permalink to this heading")
+  id: totrans-158
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 通信挂钩的检查点[](#checkpointing-of-communication-hooks "跳转到此标题")
 - en: A stateful communication hook can be saved as a part of model checkpointing
     to enable trainer restarts. To make a hook serializable, `__setstate__` and `__getstate__`
     should be defined.
+  id: totrans-159
   prefs: []
   type: TYPE_NORMAL
+  zh: 作为模型检查点的一部分，可以将有状态的通信挂钩保存以启用训练器重新启动。要使挂钩可序列化，应定义`__setstate__`和`__getstate__`。
 - en: Warning
+  id: totrans-160
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: '`__getstate__` should exclude non-serializable attributes from a returned dictionary.'
+  id: totrans-161
   prefs: []
   type: TYPE_NORMAL
+  zh: '`__getstate__`应从返回的字典中排除非可序列化属性。'
 - en: Warning
+  id: totrans-162
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: '`__setstate__` should properly initialize non-serializable attributes, excluded
     from a provided `state`.'
+  id: totrans-163
   prefs: []
   type: TYPE_NORMAL
+  zh: '`__setstate__`应正确初始化非可序列化属性，从提供的`state`中排除。'
 - en: '[`PowerSGDState`](#torch.distributed.algorithms.ddp_comm_hooks.powerSGD_hook.PowerSGDState
     "torch.distributed.algorithms.ddp_comm_hooks.powerSGD_hook.PowerSGDState") has
     `__setstate__` and `__getstate__` implemented and can be used as a reference.'
+  id: totrans-164
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`PowerSGDState`](#torch.distributed.algorithms.ddp_comm_hooks.powerSGD_hook.PowerSGDState
+    "torch.distributed.algorithms.ddp_comm_hooks.powerSGD_hook.PowerSGDState")已实现`__setstate__`和`__getstate__`，可用作参考。'
 - en: '[PRE24]'
+  id: totrans-165
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE24]'
 - en: '[PRE25]'
+  id: totrans-166
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE25]'
 - en: Returns a `Dict[str, Any]` which will be pickled and saved. `process_group`
     is not serializable and excluded from a returned state.
+  id: totrans-167
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回一个`Dict[str, Any]`，将被pickle化并保存。`process_group`不可序列化并从返回的状态中排除。
 - en: '[PRE26]'
+  id: totrans-168
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE26]'
 - en: Takes a provided `state` and retrieves `PowerSGDState`. `process_group` is set
     to default.
+  id: totrans-169
   prefs: []
   type: TYPE_NORMAL
+  zh: 接受一个提供的`state`并检索`PowerSGDState`。`process_group`设置为默认值。
 - en: Here is a simple, end-to-end example of saving and reloading PowerSGD state
     and hook.
+  id: totrans-170
   prefs: []
   type: TYPE_NORMAL
+  zh: 这里是一个简单的端到端示例，演示了如何保存和重新加载PowerSGD状态和钩子。
 - en: '[PRE27]'
+  id: totrans-171
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE27]'
 - en: Acknowledgements
+  id: totrans-172
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 致谢
 - en: Many thanks to PowerSGD paper author **Thijs Vogels** for the code review on
     PowerSGD communication hook, as well as the [comparison experiments](https://observablehq.com/@tvogels/powersgd-benchmark),
     which show that the performance of PowerSGD communication hook is on par with
     the implementation in the original [paper](https://arxiv.org/abs/1905.13727).
+  id: totrans-173
   prefs: []
   type: TYPE_NORMAL
+  zh: 非常感谢PowerSGD论文作者**Thijs Vogels**对PowerSGD通信钩子的代码审查，以及[比较实验](https://observablehq.com/@tvogels/powersgd-benchmark)，显示PowerSGD通信钩子的性能与原始[论文](https://arxiv.org/abs/1905.13727)中的实现相当。

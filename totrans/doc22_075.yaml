@@ -1,50 +1,72 @@
 - en: Distributed RPC Framework
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 分布式RPC框架
 - en: 原文：[https://pytorch.org/docs/stable/rpc.html](https://pytorch.org/docs/stable/rpc.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 链接：[https://pytorch.org/docs/stable/rpc.html](https://pytorch.org/docs/stable/rpc.html)
 - en: The distributed RPC framework provides mechanisms for multi-machine model training
     through a set of primitives to allow for remote communication, and a higher-level
     API to automatically differentiate models split across several machines.
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 分布式RPC框架提供了多机模型训练的机制，通过一组原语允许远程通信，并提供一个更高级的API来自动区分跨多台机器分割的模型。
 - en: Warning
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: APIs in the RPC package are stable. There are multiple ongoing work items to
     improve performance and error handling, which will ship in future releases.
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: RPC包中的API是稳定的。有多个正在进行的工作项目来改进性能和错误处理，这些将在未来的版本中发布。
 - en: Warning
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: 'CUDA support was introduced in PyTorch 1.9 and is still a **beta** feature.
     Not all features of the RPC package are yet compatible with CUDA support and thus
     their use is discouraged. These unsupported features include: RRefs, JIT compatibility,
     dist autograd and dist optimizer, and profiling. These shortcomings will be addressed
     in future releases.'
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: CUDA支持在PyTorch 1.9中引入，仍然是一个**beta**功能。RPC包的并非所有功能都与CUDA支持兼容，因此不建议使用。这些不受支持的功能包括：RRefs、JIT兼容性、分布式自动求导和分布式优化器，以及性能分析。这些缺陷将在未来的版本中得到解决。
 - en: Note
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Please refer to [PyTorch Distributed Overview](https://pytorch.org/tutorials/beginner/dist_overview.html)
     for a brief introduction to all features related to distributed training.
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 有关与分布式训练相关的所有功能的简要介绍，请参阅[PyTorch分布式概述](https://pytorch.org/tutorials/beginner/dist_overview.html)。
 - en: Basics
+  id: totrans-9
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 基础知识
 - en: The distributed RPC framework makes it easy to run functions remotely, supports
     referencing remote objects without copying the real data around, and provides
     autograd and optimizer APIs to transparently run backward and update parameters
     across RPC boundaries. These features can be categorized into four sets of APIs.
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 分布式RPC框架使远程运行函数变得容易，支持引用远程对象而无需复制真实数据，并提供自动求导和优化器API以透明地在RPC边界上运行反向传播和更新参数。这些功能可以分为四组API。
 - en: '**Remote Procedure Call (RPC)** supports running a function on the specified
     destination worker with the given arguments and getting the return value back
     or creating a reference to the return value. There are three main RPC APIs: [`rpc_sync()`](#torch.distributed.rpc.rpc_sync
@@ -63,9 +85,17 @@
     and [`rpc_async()`](#torch.distributed.rpc.rpc_async "torch.distributed.rpc.rpc_async")
     are no longer appropriate, as they always imply that the return value will be
     returned to the caller immediately or in the future.'
+  id: totrans-11
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: '**远程过程调用（RPC）**支持在指定的目标工作进程上运行函数，并获取返回值或创建对返回值的引用。有三个主要的RPC API：[`rpc_sync()`](#torch.distributed.rpc.rpc_sync
+    "torch.distributed.rpc.rpc_sync")（同步）、[`rpc_async()`](#torch.distributed.rpc.rpc_async
+    "torch.distributed.rpc.rpc_async")（异步）和[`remote()`](#torch.distributed.rpc.remote
+    "torch.distributed.rpc.remote")（异步并返回对远程返回值的引用）。如果用户代码不能在没有返回值的情况下继续进行，则使用同步API。否则，使用异步API获取一个future，并在调用者需要返回值时等待future。当需求是远程创建某物但从不需要将其提取到调用者时，[`remote()`](#torch.distributed.rpc.remote
+    "torch.distributed.rpc.remote") API是有用的。想象一下，驱动进程正在设置参数服务器和训练器。驱动程序可以在参数服务器上创建一个嵌入表，然后与训练器共享对嵌入表的引用，但本身永远不会在本地使用嵌入表。在这种情况下，[`rpc_sync()`](#torch.distributed.rpc.rpc_sync
+    "torch.distributed.rpc.rpc_sync")和[`rpc_async()`](#torch.distributed.rpc.rpc_async
+    "torch.distributed.rpc.rpc_async")不再适用，因为它们总是意味着返回值将立即或在将来返回给调用者。'
 - en: '**Remote Reference (RRef)** serves as a distributed shared pointer to a local
     or remote object. It can be shared with other workers and reference counting will
     be handled transparently. Each RRef only has one owner and the object only lives
@@ -74,9 +104,12 @@
     some data object, but itself is neither the creator (the caller of [`remote()`](#torch.distributed.rpc.remote
     "torch.distributed.rpc.remote")) or the owner of the object. The distributed optimizer,
     as we will discuss below, is one example of such use cases.'
+  id: totrans-12
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: '**远程引用（RRef）**用作本地或远程对象的分布式共享指针。它可以与其他工作进程共享，并且引用计数将被透明处理。每个RRef只有一个所有者，对象只存在于该所有者上。持有RRefs的非所有者工作进程可以通过显式请求从所有者那里获取对象的副本。当工作进程需要访问某个数据对象，但本身既不是创建者（[`remote()`](#torch.distributed.rpc.remote
+    "torch.distributed.rpc.remote")的调用者）也不是对象的所有者时，这是很有用的。正如我们将在下面讨论的分布式优化器，是这种用例的一个例子。'
 - en: '**Distributed Autograd** stitches together local autograd engines on all the
     workers involved in the forward pass, and automatically reach out to them during
     the backward pass to compute gradients. This is especially helpful if the forward
@@ -86,9 +119,11 @@
     in which order should the local autograd engines be launched, which can become
     quite complicated where there are nested and inter-dependent RPC calls in the
     forward pass.'
+  id: totrans-13
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: '**分布式自动微分**将所有参与前向传递的工作节点上的本地自动微分引擎连接在一起，并在后向传递期间自动到达它们以计算梯度。如果前向传递需要跨多台机器进行，例如进行分布式模型并行训练、参数服务器训练等，这将特别有帮助。有了这个功能，用户代码不再需要担心如何在RPC边界之间发送梯度以及本地自动微分引擎应该以哪种顺序启动，这在前向传递中存在嵌套和相互依赖的RPC调用时可能会变得非常复杂。'
 - en: '**Distributed Optimizer**’s constructor takes a [`Optimizer()`](optim.html#torch.optim.Optimizer
     "torch.optim.Optimizer") (e.g., [`SGD()`](generated/torch.optim.SGD.html#torch.optim.SGD
     "torch.optim.SGD"), [`Adagrad()`](generated/torch.optim.Adagrad.html#torch.optim.Adagrad
@@ -99,51 +134,80 @@
     hence it requires an optimizer on each of the involved workers. Distributed Optimizer
     wraps all those local optimizers into one, and provides a concise constructor
     and `step()` API.'
+  id: totrans-14
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: '**分布式优化器**的构造函数接受一个[`Optimizer()`](optim.html#torch.optim.Optimizer "torch.optim.Optimizer")（例如，[`SGD()`](generated/torch.optim.SGD.html#torch.optim.SGD
+    "torch.optim.SGD")、[`Adagrad()`](generated/torch.optim.Adagrad.html#torch.optim.Adagrad
+    "torch.optim.Adagrad")等）和参数RRef列表，为每个不同的RRef所有者创建一个[`Optimizer()`](optim.html#torch.optim.Optimizer
+    "torch.optim.Optimizer")实例，并在运行`step()`时相应地更新参数。当进行分布式前向和后向传递时，参数和梯度将分散在多个工作节点上，因此每个涉及的工作节点都需要一个优化器。分布式优化器将所有这些本地优化器包装在一起，并提供简洁的构造函数和`step()`
+    API。'
 - en: '## RPC'
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: '## RPC'
 - en: Before using RPC and distributed autograd primitives, initialization must take
     place. To initialize the RPC framework we need to use [`init_rpc()`](#torch.distributed.rpc.init_rpc
     "torch.distributed.rpc.init_rpc") which would initialize the RPC framework, RRef
     framework and distributed autograd.
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 在使用RPC和分布式自动微分原语之前，必须进行初始化。要初始化RPC框架，我们需要使用[`init_rpc()`](#torch.distributed.rpc.init_rpc
+    "torch.distributed.rpc.init_rpc")，这将初始化RPC框架、RRef框架和分布式自动微分。
 - en: '[PRE0]'
+  id: totrans-17
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: Initializes RPC primitives such as the local RPC agent and distributed autograd,
     which immediately makes the current process ready to send and receive RPCs.
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: 初始化RPC原语，如本地RPC代理和分布式自动微分，这将立即使当前进程准备好发送和接收RPC。
 - en: Parameters
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**name** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in
     Python v3.12)")) – a globally unique name of this node. (e.g., `Trainer3`, `ParameterServer2`,
     `Master`, `Worker1`) Name can only contain number, alphabet, underscore, colon,
     and/or dash, and must be shorter than 128 characters.'
+  id: totrans-20
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**name**（[*str*](https://docs.python.org/3/library/stdtypes.html#str "(在Python
+    v3.12中)")）- 此节点的全局唯一名称。 （例如，`Trainer3`、`ParameterServer2`、`Master`、`Worker1`）名称只能包含数字、字母、下划线、冒号和/或破折号，并且必须少于128个字符。'
 - en: '**backend** ([*BackendType*](#torch.distributed.rpc.BackendType "torch.distributed.rpc.BackendType")*,*
     *optional*) – The type of RPC backend implementation. Supported values is `BackendType.TENSORPIPE`
     (the default). See [Backends](#rpc-backends) for more information.'
+  id: totrans-21
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**backend**（[*BackendType*](#torch.distributed.rpc.BackendType "torch.distributed.rpc.BackendType")*,*
+    *可选*) - RPC后端实现的类型。支持的值是`BackendType.TENSORPIPE`（默认值）。有关更多信息，请参见[后端](#rpc-backends)。'
 - en: '**rank** ([*int*](https://docs.python.org/3/library/functions.html#int "(in
     Python v3.12)")) – a globally unique id/rank of this node.'
+  id: totrans-22
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**rank**（[*int*](https://docs.python.org/3/library/functions.html#int "(在Python
+    v3.12中)")）- 此节点的全局唯一id/排名。'
 - en: '**world_size** ([*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")) – The number of workers in the group.'
+  id: totrans-23
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**world_size**（[*int*](https://docs.python.org/3/library/functions.html#int
+    "(在Python v3.12中)")）- 组中的工作节点数。'
 - en: '**rpc_backend_options** ([*RpcBackendOptions*](#torch.distributed.rpc.RpcBackendOptions
     "torch.distributed.rpc.RpcBackendOptions")*,* *optional*) – The options passed
     to the RpcAgent constructor. It must be an agent-specific subclass of [`RpcBackendOptions`](#torch.distributed.rpc.RpcBackendOptions
@@ -153,9 +217,14 @@
     using `init_method = "env://"`, meaning that environment variables `MASTER_ADDR`
     and `MASTER_PORT` need to be set properly. See [Backends](#rpc-backends) for more
     information and find which options are available.'
+  id: totrans-24
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**rpc_backend_options**（[*RpcBackendOptions*](#torch.distributed.rpc.RpcBackendOptions
+    "torch.distributed.rpc.RpcBackendOptions")*,* *可选*) - 传递给RpcAgent构造函数的选项。它必须是[`RpcBackendOptions`](#torch.distributed.rpc.RpcBackendOptions
+    "torch.distributed.rpc.RpcBackendOptions")的特定于代理的子类，并包含特定于代理的初始化配置。默认情况下，对于所有代理，它将默认超时设置为60秒，并使用`init_method
+    = "env://"`初始化底层进程组进行会合，这意味着环境变量`MASTER_ADDR`和`MASTER_PORT`需要正确设置。有关更多信息，请参见[后端](#rpc-backends)，查找可用的选项。'
 - en: The following APIs allow users to remotely execute functions as well as create
     references (RRefs) to remote data objects. In these APIs, when passing a `Tensor`
     as an argument or a return value, the destination worker will try to create a
@@ -164,237 +233,374 @@
     and destination workers do not match. In such cases, applications can always explicitly
     move the input tensors to CPU on the caller and move it to the desired devices
     on the callee if necessary.
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下API允许用户远程执行函数以及创建对远程数据对象的引用（RRefs）。在这些API中，当将`Tensor`作为参数或返回值传递时，目标工作节点将尝试创建具有相同元数据（即形状、步幅等）的`Tensor`。我们有意禁止传输CUDA张量，因为如果源工作节点和目标工作节点上的设备列表不匹配，可能会导致崩溃。在这种情况下，应用程序始终可以在调用者上明确将输入张量移动到CPU，并在必要时将其移动到被调用者上的所需设备。
 - en: Warning
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: TorchScript support in RPC is a prototype feature and subject to change. Since
     v1.5.0, `torch.distributed.rpc` supports calling TorchScript functions as RPC
     target functions, and this will help improve parallelism on the callee side as
     executing TorchScript functions does not require GIL.
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: RPC中的TorchScript支持是一个原型功能，可能会发生变化。自v1.5.0以来，`torch.distributed.rpc`支持将TorchScript函数作为RPC目标函数调用，这将有助于提高被调用者端的并行性，因为执行TorchScript函数不需要GIL。
 - en: '[PRE1]'
+  id: totrans-28
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Make a blocking RPC call to run function `func` on worker `to`. RPC messages
     are sent and received in parallel to execution of Python code. This method is
     thread-safe.
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 在工作节点`to`上运行函数`func`的阻塞RPC调用。RPC消息在执行Python代码的同时并行发送和接收。此方法是线程安全的。
 - en: Parameters
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**to** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
     v3.12)") *or* [*WorkerInfo*](#torch.distributed.rpc.WorkerInfo "torch.distributed.rpc.WorkerInfo")
     *or* [*int*](https://docs.python.org/3/library/functions.html#int "(in Python
     v3.12)")) – name/rank/`WorkerInfo` of the destination worker.'
+  id: totrans-31
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**to** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
+    v3.12)") *或* [*WorkerInfo*](#torch.distributed.rpc.WorkerInfo "torch.distributed.rpc.WorkerInfo")
+    *或* [*int*](https://docs.python.org/3/library/functions.html#int "(in Python v3.12)"))
+    – 目标工作节点的名称/等级/`WorkerInfo`。'
 - en: '**func** (*Callable*) – a callable function, such as Python callables, builtin
     operators (e.g. [`add()`](generated/torch.add.html#torch.add "torch.add")) and
     annotated TorchScript functions.'
+  id: totrans-32
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**func** (*Callable*) – 一个可调用函数，例如Python可调用函数，内置运算符（例如[`add()`](generated/torch.add.html#torch.add
+    "torch.add")）和带注释的TorchScript函数。'
 - en: '**args** ([*tuple*](https://docs.python.org/3/library/stdtypes.html#tuple "(in
     Python v3.12)")) – the argument tuple for the `func` invocation.'
+  id: totrans-33
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**args** ([*tuple*](https://docs.python.org/3/library/stdtypes.html#tuple "(in
+    Python v3.12)")) – 用于`func`调用的参数元组。'
 - en: '**kwargs** ([*dict*](https://docs.python.org/3/library/stdtypes.html#dict "(in
     Python v3.12)")) – is a dictionary of keyword arguments for the `func` invocation.'
+  id: totrans-34
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**kwargs** ([*dict*](https://docs.python.org/3/library/stdtypes.html#dict "(in
+    Python v3.12)")) – 是`func`调用的关键字参数字典。'
 - en: '**timeout** ([*float*](https://docs.python.org/3/library/functions.html#float
     "(in Python v3.12)")*,* *optional*) – timeout in seconds to use for this RPC.
     If the RPC does not complete in this amount of time, an exception indicating it
     has timed out will be raised. A value of 0 indicates an infinite timeout, i.e.
     a timeout error will never be raised. If not provided, the default value set during
     initialization or with `_set_rpc_timeout` is used.'
+  id: totrans-35
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**timeout** ([*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* *可选*) – 用于此RPC的超时时间（以秒为单位）。如果RPC在此时间内未完成，将引发指示已超时的异常。值为0表示无限超时，即永远不会引发超时错误。如果未提供，则使用在初始化期间或使用`_set_rpc_timeout`设置的默认值。'
 - en: Returns
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回
 - en: Returns the result of running `func` with `args` and `kwargs`.
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回运行`func`与`args`和`kwargs`的结果。
 - en: 'Example::'
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: '示例::'
 - en: Make sure that `MASTER_ADDR` and `MASTER_PORT` are set properly on both workers.
     Refer to [`init_process_group()`](distributed.html#torch.distributed.init_process_group
     "torch.distributed.init_process_group") API for more details. For example,
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 确保在两个工作节点上正确设置`MASTER_ADDR`和`MASTER_PORT`。有关更多详细信息，请参考[`init_process_group()`](distributed.html#torch.distributed.init_process_group
+    "torch.distributed.init_process_group") API。例如，
 - en: export MASTER_ADDR=localhost export MASTER_PORT=5678
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: export MASTER_ADDR=localhost export MASTER_PORT=5678
 - en: 'Then run the following code in two different processes:'
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后在两个不同的进程中运行以下代码：
 - en: '[PRE2]'
+  id: totrans-42
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: '[PRE3]'
+  id: totrans-43
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: Below is an example of running a TorchScript function using RPC.
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下是使用RPC运行TorchScript函数的示例。
 - en: '[PRE4]'
+  id: totrans-45
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: '[PRE5]'
+  id: totrans-46
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: '[PRE6]'
+  id: totrans-47
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: '[PRE7]'
+  id: totrans-48
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: Make a non-blocking RPC call to run function `func` on worker `to`. RPC messages
     are sent and received in parallel to execution of Python code. This method is
     thread-safe. This method will immediately return a [`Future`](futures.html#torch.futures.Future
     "torch.futures.Future") that can be awaited on.
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: 在工作节点`to`上运行函数`func`的非阻塞RPC调用。RPC消息在执行Python代码的同时并行发送和接收。此方法是线程安全的。此方法将立即返回一个可以等待的[`Future`](futures.html#torch.futures.Future
+    "torch.futures.Future")。
 - en: Parameters
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**to** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
     v3.12)") *or* [*WorkerInfo*](#torch.distributed.rpc.WorkerInfo "torch.distributed.rpc.WorkerInfo")
     *or* [*int*](https://docs.python.org/3/library/functions.html#int "(in Python
     v3.12)")) – name/rank/`WorkerInfo` of the destination worker.'
+  id: totrans-51
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**to** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
+    v3.12)") *或* [*WorkerInfo*](#torch.distributed.rpc.WorkerInfo "torch.distributed.rpc.WorkerInfo")
+    *或* [*int*](https://docs.python.org/3/library/functions.html#int "(in Python v3.12)"))
+    – 目标工作节点的名称/等级/`WorkerInfo`。'
 - en: '**func** (*Callable*) – a callable function, such as Python callables, builtin
     operators (e.g. [`add()`](generated/torch.add.html#torch.add "torch.add")) and
     annotated TorchScript functions.'
+  id: totrans-52
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**func** (*Callable*) – 一个可调用函数，例如Python可调用函数，内置运算符（例如[`add()`](generated/torch.add.html#torch.add
+    "torch.add")）和带注释的TorchScript函数。'
 - en: '**args** ([*tuple*](https://docs.python.org/3/library/stdtypes.html#tuple "(in
     Python v3.12)")) – the argument tuple for the `func` invocation.'
+  id: totrans-53
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**args** ([*tuple*](https://docs.python.org/3/library/stdtypes.html#tuple "(in
+    Python v3.12)")) – 用于`func`调用的参数元组。'
 - en: '**kwargs** ([*dict*](https://docs.python.org/3/library/stdtypes.html#dict "(in
     Python v3.12)")) – is a dictionary of keyword arguments for the `func` invocation.'
+  id: totrans-54
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**kwargs** ([*dict*](https://docs.python.org/3/library/stdtypes.html#dict "(in
+    Python v3.12)")) – 是`func`调用的关键字参数字典。'
 - en: '**timeout** ([*float*](https://docs.python.org/3/library/functions.html#float
     "(in Python v3.12)")*,* *optional*) – timeout in seconds to use for this RPC.
     If the RPC does not complete in this amount of time, an exception indicating it
     has timed out will be raised. A value of 0 indicates an infinite timeout, i.e.
     a timeout error will never be raised. If not provided, the default value set during
     initialization or with `_set_rpc_timeout` is used.'
+  id: totrans-55
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**timeout** ([*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* *可选*) – 用于此 RPC 的超时时间（以秒为单位）。如果 RPC 在此时间内未完成，将引发指示已超时的异常。值为
+    0 表示无限超时，即永远不会引发超时错误。如果未提供，则使用初始化期间设置的默认值或使用 `_set_rpc_timeout` 设置的默认值。'
 - en: Returns
+  id: totrans-56
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回
 - en: Returns a [`Future`](futures.html#torch.futures.Future "torch.futures.Future")
     object that can be waited on. When completed, the return value of `func` on `args`
     and `kwargs` can be retrieved from the [`Future`](futures.html#torch.futures.Future
     "torch.futures.Future") object.
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回一个 [`Future`](futures.html#torch.futures.Future "torch.futures.Future") 对象，可以等待。完成后，可以从
+    [`Future`](futures.html#torch.futures.Future "torch.futures.Future") 对象中检索 `func`
+    在 `args` 和 `kwargs` 上的返回值。
 - en: Warning
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: Using GPU tensors as arguments or return values of `func` is not supported since
     we don’t support sending GPU tensors over the wire. You need to explicitly copy
     GPU tensors to CPU before using them as arguments or return values of `func`.
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: 不支持将 GPU 张量用作 `func` 的参数或返回值，因为我们不支持通过网络发送 GPU 张量。在将 GPU 张量用作 `func` 的参数或返回值之前，您需要显式将
+    GPU 张量复制到 CPU。
 - en: Warning
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: The `rpc_async` API does not copy storages of argument tensors until sending
     them over the wire, which could be done by a different thread depending on the
     RPC backend type. The caller should make sure that the contents of those tensors
     stay intact until the returned [`Future`](futures.html#torch.futures.Future "torch.futures.Future")
     completes.
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: '`rpc_async` API 在将参数张量通过网络发送之前不会复制存储，这可能由不同的线程完成，具体取决于 RPC 后端类型。调用者应确保这些张量的内容保持不变，直到返回的
+    [`Future`](futures.html#torch.futures.Future "torch.futures.Future") 完成。'
 - en: 'Example::'
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
+  zh: '示例::'
 - en: Make sure that `MASTER_ADDR` and `MASTER_PORT` are set properly on both workers.
     Refer to [`init_process_group()`](distributed.html#torch.distributed.init_process_group
     "torch.distributed.init_process_group") API for more details. For example,
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: 确保在两个工作节点上正确设置 `MASTER_ADDR` 和 `MASTER_PORT`。有关更多详细信息，请参考 [`init_process_group()`](distributed.html#torch.distributed.init_process_group
+    "torch.distributed.init_process_group") API。例如，
 - en: export MASTER_ADDR=localhost export MASTER_PORT=5678
+  id: totrans-64
   prefs: []
   type: TYPE_NORMAL
+  zh: 导出 MASTER_ADDR=localhost 导出 MASTER_PORT=5678
 - en: 'Then run the following code in two different processes:'
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后在两个不同的进程中运行以下代码：
 - en: '[PRE8]'
+  id: totrans-66
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: '[PRE9]'
+  id: totrans-67
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: Below is an example of running a TorchScript function using RPC.
+  id: totrans-68
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下是使用 RPC 运行 TorchScript 函数的示例。
 - en: '[PRE10]'
+  id: totrans-69
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: '[PRE11]'
+  id: totrans-70
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: '[PRE12]'
+  id: totrans-71
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: '[PRE13]'
+  id: totrans-72
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: Make a remote call to run `func` on worker `to` and return an `RRef` to the
     result value immediately. Worker `to` will be the owner of the returned `RRef`,
     and the worker calling `remote` is a user. The owner manages the global reference
     count of its `RRef`, and the owner `RRef` is only destructed when globally there
     are no living references to it.
+  id: totrans-73
   prefs: []
   type: TYPE_NORMAL
+  zh: 在工作节点 `to` 上运行 `func` 并立即返回结果值的 `RRef`。工作节点 `to` 将是返回的 `RRef` 的所有者，调用 `remote`
+    的工作节点是用户。所有者管理其 `RRef` 的全局引用计数，只有当全局没有对其的活动引用时，所有者的 `RRef` 才会被销毁。
 - en: Parameters
+  id: totrans-74
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**to** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
     v3.12)") *or* [*WorkerInfo*](#torch.distributed.rpc.WorkerInfo "torch.distributed.rpc.WorkerInfo")
     *or* [*int*](https://docs.python.org/3/library/functions.html#int "(in Python
     v3.12)")) – name/rank/`WorkerInfo` of the destination worker.'
+  id: totrans-75
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**to** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
+    v3.12)") *或* [*WorkerInfo*](#torch.distributed.rpc.WorkerInfo "torch.distributed.rpc.WorkerInfo")
+    *或* [*int*](https://docs.python.org/3/library/functions.html#int "(in Python v3.12)"))
+    – 目标工作节点的名称/等级/`WorkerInfo`。'
 - en: '**func** (*Callable*) – a callable function, such as Python callables, builtin
     operators (e.g. [`add()`](generated/torch.add.html#torch.add "torch.add")) and
     annotated TorchScript functions.'
+  id: totrans-76
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**func** (*Callable*) – 可调用函数，例如 Python 可调用函数、内置运算符（例如 [`add()`](generated/torch.add.html#torch.add
+    "torch.add")）和带注释的 TorchScript 函数。'
 - en: '**args** ([*tuple*](https://docs.python.org/3/library/stdtypes.html#tuple "(in
     Python v3.12)")) – the argument tuple for the `func` invocation.'
+  id: totrans-77
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**args** ([*tuple*](https://docs.python.org/3/library/stdtypes.html#tuple "(in
+    Python v3.12)")) – 用于 `func` 调用的参数元组。'
 - en: '**kwargs** ([*dict*](https://docs.python.org/3/library/stdtypes.html#dict "(in
     Python v3.12)")) – is a dictionary of keyword arguments for the `func` invocation.'
+  id: totrans-78
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**kwargs** ([*dict*](https://docs.python.org/3/library/stdtypes.html#dict "(in
+    Python v3.12)")) – 是 `func` 调用的关键字参数字典。'
 - en: '**timeout** ([*float*](https://docs.python.org/3/library/functions.html#float
     "(in Python v3.12)")*,* *optional*) – timeout in seconds for this remote call.
     If the creation of this `RRef` on worker `to` is not successfully processed on
@@ -403,29 +609,45 @@
     A value of 0 indicates an infinite timeout, i.e. a timeout error will never be
     raised. If not provided, the default value set during initialization or with `_set_rpc_timeout`
     is used.'
+  id: totrans-79
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**timeout** ([*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* *可选*) – 此远程调用的超时时间（以秒为单位）。如果在此超时时间内在此工作节点上未成功处理对工作节点 `to`
+    上的此 `RRef` 的创建，则下次尝试使用 RRef（例如 `to_here()`）时，将引发超时，指示此失败。值为 0 表示无限超时，即永远不会引发超时错误。如果未提供，则使用初始化期间设置的默认值或使用
+    `_set_rpc_timeout` 设置的默认值。'
 - en: Returns
+  id: totrans-80
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回
 - en: A user `RRef` instance to the result value. Use the blocking API `torch.distributed.rpc.RRef.to_here()`
     to retrieve the result value locally.
+  id: totrans-81
   prefs: []
   type: TYPE_NORMAL
+  zh: 用户 `RRef` 实例的结果值。使用阻塞 API `torch.distributed.rpc.RRef.to_here()` 在本地检索结果值。
 - en: Warning
+  id: totrans-82
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: The `remote` API does not copy storages of argument tensors until sending them
     over the wire, which could be done by a different thread depending on the RPC
     backend type. The caller should make sure that the contents of those tensors stay
     intact until the returned RRef is confirmed by the owner, which can be checked
     using the `torch.distributed.rpc.RRef.confirmed_by_owner()` API.
+  id: totrans-83
   prefs: []
   type: TYPE_NORMAL
+  zh: '`remote` API在将参数张量发送到远程时不会复制存储，这可能由不同的线程完成，具体取决于RPC后端类型。调用者应确保这些张量的内容保持不变，直到所有者确认返回的RRef，可以使用`torch.distributed.rpc.RRef.confirmed_by_owner()`
+    API进行检查。'
 - en: Warning
+  id: totrans-84
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: Errors such as timeouts for the `remote` API are handled on a best-effort basis.
     This means that when remote calls initiated by `remote` fail, such as with a timeout
     error, we take a best-effort approach to error handling. This means that errors
@@ -435,92 +657,142 @@
     it is possible that the user application will use the `RRef` before the errors
     are handled. In this case, errors may not be raised as they have not yet been
     handled.
+  id: totrans-85
   prefs: []
   type: TYPE_NORMAL
+  zh: '`remote` API的超时等错误是尽力处理的。这意味着当由`remote`发起的远程调用失败时，比如超时错误，我们会采取尽力处理错误的方法。这意味着错误会异步处理并设置在结果的RRef上。如果在此处理之前应用程序未使用RRef（例如`to_here`或fork调用），则将适当引发`RRef`的错误。但是，用户应用程序可能在处理错误之前使用`RRef`。在这种情况下，错误可能不会被引发，因为它们尚未被处理。'
 - en: 'Example:'
+  id: totrans-86
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例：
 - en: '[PRE14]'
+  id: totrans-87
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: '[PRE15]'
+  id: totrans-88
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: Get [`WorkerInfo`](#torch.distributed.rpc.WorkerInfo "torch.distributed.rpc.WorkerInfo")
     of a given worker name. Use this [`WorkerInfo`](#torch.distributed.rpc.WorkerInfo
     "torch.distributed.rpc.WorkerInfo") to avoid passing an expensive string on every
     invocation.
+  id: totrans-89
   prefs: []
   type: TYPE_NORMAL
+  zh: 获取给定工作进程名称的[`WorkerInfo`](#torch.distributed.rpc.WorkerInfo "torch.distributed.rpc.WorkerInfo")。使用此[`WorkerInfo`](#torch.distributed.rpc.WorkerInfo
+    "torch.distributed.rpc.WorkerInfo")以避免在每次调用时传递昂贵的字符串。
 - en: Parameters
+  id: totrans-90
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**worker_name** ([*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)")) – the string name of a worker. If `None`, return the the
     id of the current worker. (default `None`)'
+  id: totrans-91
   prefs: []
   type: TYPE_NORMAL
+  zh: '**worker_name**（[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")） - 工作进程的字符串名称。如果为`None`，则返回当前工作进程的ID。（默认为`None`）'
 - en: Returns
+  id: totrans-92
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回
 - en: '[`WorkerInfo`](#torch.distributed.rpc.WorkerInfo "torch.distributed.rpc.WorkerInfo")
     instance for the given `worker_name` or [`WorkerInfo`](#torch.distributed.rpc.WorkerInfo
     "torch.distributed.rpc.WorkerInfo") of the current worker if `worker_name` is
     `None`.'
+  id: totrans-93
   prefs: []
   type: TYPE_NORMAL
+  zh: 给定`worker_name`的[`WorkerInfo`](#torch.distributed.rpc.WorkerInfo "torch.distributed.rpc.WorkerInfo")实例或当前工作进程的[`WorkerInfo`](#torch.distributed.rpc.WorkerInfo
+    "torch.distributed.rpc.WorkerInfo")如果`worker_name`为`None`。
 - en: '[PRE16]'
+  id: totrans-94
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: Perform a shutdown of the RPC agent, and then destroy the RPC agent. This stops
     the local agent from accepting outstanding requests, and shuts down the RPC framework
     by terminating all RPC threads. If `graceful=True`, this will block until all
     local and remote RPC processes reach this method and wait for all outstanding
     work to complete. Otherwise, if `graceful=False`, this is a local shutdown, and
     it does not wait for other RPC processes to reach this method.
+  id: totrans-95
   prefs: []
   type: TYPE_NORMAL
+  zh: 执行RPC代理的关闭，然后销毁RPC代理。这将停止本地代理接受未完成的请求，并通过终止所有RPC线程关闭RPC框架。如果`graceful=True`，这将阻塞，直到所有本地和远程RPC进程到达此方法并等待所有未完成的工作完成。否则，如果`graceful=False`，这是一个本地关闭，不会等待其他RPC进程到达此方法。
 - en: Warning
+  id: totrans-96
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: For [`Future`](futures.html#torch.futures.Future "torch.futures.Future") objects
     returned by [`rpc_async()`](#torch.distributed.rpc.rpc_async "torch.distributed.rpc.rpc_async"),
     `future.wait()` should not be called after `shutdown()`.
+  id: totrans-97
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于由[`rpc_async()`](#torch.distributed.rpc.rpc_async "torch.distributed.rpc.rpc_async")返回的[`Future`](futures.html#torch.futures.Future
+    "torch.futures.Future")对象，在`shutdown()`之后不应调用`future.wait()`。
 - en: Parameters
+  id: totrans-98
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**graceful** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")) – Whether to do a graceful shutdown or not. If True, this
     will 1) wait until there is no pending system messages for `UserRRefs` and delete
     them; 2) block until all local and remote RPC processes have reached this method
     and wait for all outstanding work to complete.'
+  id: totrans-99
   prefs: []
   type: TYPE_NORMAL
+  zh: '**graceful**（[*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")） - 是否进行优雅关闭。如果为True，这将1）等待`UserRRefs`没有挂起的系统消息并删除它们；2）阻塞，直到所有本地和远程RPC进程到达此方法并等待所有未完成的工作完成。'
 - en: 'Example::'
+  id: totrans-100
   prefs: []
   type: TYPE_NORMAL
+  zh: '示例::'
 - en: Make sure that `MASTER_ADDR` and `MASTER_PORT` are set properly on both workers.
     Refer to [`init_process_group()`](distributed.html#torch.distributed.init_process_group
     "torch.distributed.init_process_group") API for more details. For example,
+  id: totrans-101
   prefs: []
   type: TYPE_NORMAL
+  zh: 确保在两个工作进程上正确设置`MASTER_ADDR`和`MASTER_PORT`。有关更多详细信息，请参考[`init_process_group()`](distributed.html#torch.distributed.init_process_group
+    "torch.distributed.init_process_group") API。例如，
 - en: export MASTER_ADDR=localhost export MASTER_PORT=5678
+  id: totrans-102
   prefs: []
   type: TYPE_NORMAL
+  zh: export MASTER_ADDR=localhost export MASTER_PORT=5678
 - en: 'Then run the following code in two different processes:'
+  id: totrans-103
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后在两个不同的进程中运行以下代码：
 - en: '[PRE17]'
+  id: totrans-104
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: '[PRE18]'
+  id: totrans-105
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: '[PRE19]'
+  id: totrans-106
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE19]'
 - en: A structure that encapsulates information of a worker in the system. Contains
     the name and ID of the worker. This class is not meant to be constructed directly,
     rather, an instance can be retrieved through [`get_worker_info()`](#torch.distributed.rpc.get_worker_info
@@ -529,27 +801,45 @@
     [`rpc_async()`](#torch.distributed.rpc.rpc_async "torch.distributed.rpc.rpc_async"),
     [`remote()`](#torch.distributed.rpc.remote "torch.distributed.rpc.remote") to
     avoid copying a string on every invocation.
+  id: totrans-107
   prefs: []
   type: TYPE_NORMAL
+  zh: 封装系统中工作进程信息的结构。包含工作进程的名称和ID。此类不应直接构造，而是可以通过[`get_worker_info()`](#torch.distributed.rpc.get_worker_info
+    "torch.distributed.rpc.get_worker_info")检索实例，并将结果传递给函数，如[`rpc_sync()`](#torch.distributed.rpc.rpc_sync
+    "torch.distributed.rpc.rpc_sync")、[`rpc_async()`](#torch.distributed.rpc.rpc_async
+    "torch.distributed.rpc.rpc_async")、[`remote()`](#torch.distributed.rpc.remote
+    "torch.distributed.rpc.remote")以避免在每次调用时复制字符串。
 - en: '[PRE20]'
+  id: totrans-108
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE20]'
 - en: Globally unique id to identify the worker.
+  id: totrans-109
   prefs: []
   type: TYPE_NORMAL
+  zh: 用于标识工作进程的全局唯一ID。
 - en: '[PRE21]'
+  id: totrans-110
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE21]'
 - en: The name of the worker.
+  id: totrans-111
   prefs: []
   type: TYPE_NORMAL
+  zh: 工作进程的名称。
 - en: The RPC package also provides decorators which allow applications to specify
     how a given function should be treated on the callee side.
+  id: totrans-112
   prefs: []
   type: TYPE_NORMAL
+  zh: RPC包还提供了装饰器，允许应用程序指定在被调用方如何处理给定函数。
 - en: '[PRE22]'
+  id: totrans-113
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE22]'
 - en: A decorator for a function indicating that the return value of the function
     is guaranteed to be a [`Future`](futures.html#torch.futures.Future "torch.futures.Future")
     object and this function can run asynchronously on the RPC callee. More specifically,
@@ -563,11 +853,20 @@
     useful when the wrapped function’s (`fn`) execution needs to pause and resume
     due to, e.g., containing [`rpc_async()`](#torch.distributed.rpc.rpc_async "torch.distributed.rpc.rpc_async")
     or waiting for other signals.
+  id: totrans-114
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个函数的装饰器，指示函数的返回值保证是一个[`Future`](futures.html#torch.futures.Future "torch.futures.Future")对象，并且此函数可以在RPC被调用方异步运行。更具体地说，被调用方提取由包装函数返回的[`Future`](futures.html#torch.futures.Future
+    "torch.futures.Future")并将后续处理步骤安装为该[`Future`](futures.html#torch.futures.Future
+    "torch.futures.Future")的回调。安装的回调将在完成时从[`Future`](futures.html#torch.futures.Future
+    "torch.futures.Future")中读取值并将该值作为RPC响应发送回去。这也意味着返回的[`Future`](futures.html#torch.futures.Future
+    "torch.futures.Future")仅存在于被调用方，并且永远不会通过RPC发送。当包装函数的执行需要暂停和恢复时，例如包含[`rpc_async()`](#torch.distributed.rpc.rpc_async
+    "torch.distributed.rpc.rpc_async")或等待其他信号时，此装饰器非常有用。
 - en: Note
+  id: totrans-115
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: To enable asynchronous execution, applications must pass the function object
     returned by this decorator to RPC APIs. If RPC detected attributes installed by
     this decorator, it knows that this function returns a `Future` object and will
@@ -577,11 +876,15 @@
     to allow the target function be recognized as a static or class function. This
     target function can still execute asynchronously because, when accessed, the static
     or class method preserves attributes installed by `@rpc.functions.async_execution`.
+  id: totrans-116
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了启用异步执行，应用程序必须将此装饰器返回的函数对象传递给RPC API。如果RPC检测到此装饰器安装的属性，它会知道此函数返回一个`Future`对象，并相应处理。但是，这并不意味着在定义函数时此装饰器必须是最外层的。例如，与`@staticmethod`或`@classmethod`结合时，`@rpc.functions.async_execution`需要是内部装饰器，以允许目标函数被识别为静态或类函数。这个目标函数仍然可以异步执行，因为当访问时，静态或类方法保留了由`@rpc.functions.async_execution`安装的属性。
 - en: 'Example::'
+  id: totrans-117
   prefs: []
   type: TYPE_NORMAL
+  zh: '示例::'
 - en: The returned [`Future`](futures.html#torch.futures.Future "torch.futures.Future")
     object can come from [`rpc_async()`](#torch.distributed.rpc.rpc_async "torch.distributed.rpc.rpc_async"),
     [`then()`](futures.html#torch.futures.Future.then "torch.futures.Future.then"),
@@ -589,35 +892,56 @@
     The example below shows directly using the [`Future`](futures.html#torch.futures.Future
     "torch.futures.Future") returned by [`then()`](futures.html#torch.futures.Future.then
     "torch.futures.Future.then").
+  id: totrans-118
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回的[`Future`](futures.html#torch.futures.Future "torch.futures.Future")对象可以来自[`rpc_async()`](#torch.distributed.rpc.rpc_async
+    "torch.distributed.rpc.rpc_async")、[`then()`](futures.html#torch.futures.Future.then
+    "torch.futures.Future.then")或[`Future`](futures.html#torch.futures.Future "torch.futures.Future")构造函数。下面的示例展示了直接使用由[`then()`](futures.html#torch.futures.Future.then
+    "torch.futures.Future.then")返回的[`Future`](futures.html#torch.futures.Future "torch.futures.Future")。
 - en: '[PRE23]'
+  id: totrans-119
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE23]'
 - en: When combined with TorchScript decorators, this decorator must be the outmost
     one.
+  id: totrans-120
   prefs: []
   type: TYPE_NORMAL
+  zh: 与TorchScript装饰器结合时，此装饰器必须是最外层的。
 - en: '[PRE24]'
+  id: totrans-121
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE24]'
 - en: When combined with static or class method, this decorator must be the inner
     one.
+  id: totrans-122
   prefs: []
   type: TYPE_NORMAL
+  zh: 与静态或类方法结合时，此装饰器必须是内部装饰器。
 - en: '[PRE25]'
+  id: totrans-123
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE25]'
 - en: This decorator also works with RRef helpers, i.e., . `torch.distributed.rpc.RRef.rpc_sync()`,
     `torch.distributed.rpc.RRef.rpc_async()`, and `torch.distributed.rpc.RRef.remote()`.
+  id: totrans-124
   prefs: []
   type: TYPE_NORMAL
+  zh: 此装饰器还与RRef助手一起使用，即。`torch.distributed.rpc.RRef.rpc_sync()`、`torch.distributed.rpc.RRef.rpc_async()`和`torch.distributed.rpc.RRef.remote()`。
 - en: '[PRE26]'
+  id: totrans-125
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE26]'
 - en: '### Backends'
+  id: totrans-126
   prefs: []
   type: TYPE_NORMAL
+  zh: '### 后端'
 - en: The RPC module can leverage different backends to perform the communication
     between the nodes. The backend to be used can be specified in the [`init_rpc()`](#torch.distributed.rpc.init_rpc
     "torch.distributed.rpc.init_rpc") function, by passing a certain value of the
@@ -627,45 +951,72 @@
     "torch.distributed.rpc.RpcBackendOptions") class, an instance of which can also
     be passed to [`init_rpc()`](#torch.distributed.rpc.init_rpc "torch.distributed.rpc.init_rpc")
     to configure the backend’s behavior.
+  id: totrans-127
   prefs: []
   type: TYPE_NORMAL
+  zh: RPC模块可以利用不同的后端来执行节点之间的通信。要使用的后端可以在[`init_rpc()`](#torch.distributed.rpc.init_rpc
+    "torch.distributed.rpc.init_rpc")函数中指定，通过传递[`BackendType`](#torch.distributed.rpc.BackendType
+    "torch.distributed.rpc.BackendType")枚举的某个值。无论使用什么后端，RPC API的其余部分都不会改变。每个后端还定义了自己的[`RpcBackendOptions`](#torch.distributed.rpc.RpcBackendOptions
+    "torch.distributed.rpc.RpcBackendOptions")类的子类，该类的实例也可以传递给[`init_rpc()`](#torch.distributed.rpc.init_rpc
+    "torch.distributed.rpc.init_rpc")以配置后端的行为。
 - en: '[PRE27]'
+  id: totrans-128
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE27]'
 - en: An enum class of available backends.
+  id: totrans-129
   prefs: []
   type: TYPE_NORMAL
+  zh: 可用后端的枚举类。
 - en: PyTorch ships with a builtin `BackendType.TENSORPIPE` backend. Additional ones
     can be registered using the `register_backend()` function.
+  id: totrans-130
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch内置了`BackendType.TENSORPIPE`后端。可以使用`register_backend()`函数注册其他后端。
 - en: '[PRE28]'
+  id: totrans-131
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE28]'
 - en: An abstract structure encapsulating the options passed into the RPC backend.
     An instance of this class can be passed in to [`init_rpc()`](#torch.distributed.rpc.init_rpc
     "torch.distributed.rpc.init_rpc") in order to initialize RPC with specific configurations,
     such as the RPC timeout and `init_method` to be used.
+  id: totrans-132
   prefs: []
   type: TYPE_NORMAL
+  zh: 封装传递给RPC后端的选项的抽象结构。可以将此类的实例传递给[`init_rpc()`](#torch.distributed.rpc.init_rpc
+    "torch.distributed.rpc.init_rpc")以使用特定配置初始化RPC，例如RPC超时和要使用的`init_method`。
 - en: '[PRE29]'
+  id: totrans-133
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE29]'
 - en: URL specifying how to initialize the process group. Default is `env://`
+  id: totrans-134
   prefs: []
   type: TYPE_NORMAL
+  zh: 指定如何初始化进程组的URL。默认为`env://`。
 - en: '[PRE30]'
+  id: totrans-135
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE30]'
 - en: A float indicating the timeout to use for all RPCs. If an RPC does not complete
     in this timeframe, it will complete with an exception indicating that it has timed
     out.
+  id: totrans-136
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个浮点数，表示用于所有RPC的超时时间。如果一个RPC在这个时间段内没有完成，它将以超时的异常完成。
 - en: TensorPipe Backend
+  id: totrans-137
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: TensorPipe后端
 - en: The TensorPipe agent, which is the default, leverages [the TensorPipe library](https://github.com/pytorch/tensorpipe),
     which provides a natively point-to-point communication primitive specifically
     suited for machine learning that fundamentally addresses some of the limitations
@@ -677,38 +1028,56 @@
     multiple different transports (TCP, of course, but also shared memory, NVLink,
     InfiniBand, …) and can automatically detect their availability and negotiate the
     best transport to use for each pipe.
+  id: totrans-138
   prefs: []
   type: TYPE_NORMAL
+  zh: TensorPipe代理是默认的，利用了[the TensorPipe library](https://github.com/pytorch/tensorpipe)，它提供了一种专门适用于机器学习的本地点对点通信原语，从根本上解决了Gloo的一些限制。与Gloo相比，它的优势在于是异步的，这允许大量的传输同时进行，每个传输以自己的速度进行，而不会相互阻塞。它只在需要时按需在节点对之间打开管道，当一个节点失败时，只有它的相关管道将被关闭，而所有其他管道将继续正常工作。此外，它能够支持多种不同的传输方式（TCP，当然，还有共享内存，NVLink，InfiniBand等），并且可以自动检测它们的可用性并协商用于每个管道的最佳传输方式。
 - en: The TensorPipe backend has been introduced in PyTorch v1.6 and is being actively
     developed. At the moment, it only supports CPU tensors, with GPU support coming
     soon. It comes with a TCP-based transport, just like Gloo. It is also able to
     automatically chunk and multiplex large tensors over multiple sockets and threads
     in order to achieve very high bandwidths. The agent will be able to pick the best
     transport on its own, with no intervention required.
+  id: totrans-139
   prefs: []
   type: TYPE_NORMAL
+  zh: TensorPipe后端已经在PyTorch v1.6中引入，并正在积极开发中。目前，它仅支持CPU张量，GPU支持即将到来。它配备了基于TCP的传输，就像Gloo一样。它还能够自动对大张量进行分块和多路复用，以实现非常高的带宽。代理将能够自行选择最佳传输方式，无需干预。
 - en: 'Example:'
+  id: totrans-140
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例：
 - en: '[PRE31]'
+  id: totrans-141
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE31]'
 - en: '[PRE32]'
+  id: totrans-142
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE32]'
 - en: The backend options for `TensorPipeAgent`, derived from [`RpcBackendOptions`](#torch.distributed.rpc.RpcBackendOptions
     "torch.distributed.rpc.RpcBackendOptions").
+  id: totrans-143
   prefs: []
   type: TYPE_NORMAL
+  zh: '`TensorPipeAgent`的后端选项，派生自[`RpcBackendOptions`](#torch.distributed.rpc.RpcBackendOptions
+    "torch.distributed.rpc.RpcBackendOptions")。'
 - en: Parameters
+  id: totrans-144
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**num_worker_threads** ([*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")*,* *optional*) – The number of threads in the thread-pool
     used by `TensorPipeAgent` to execute requests (default: 16).'
+  id: totrans-145
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**num_worker_threads**（[*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* *可选*) – `TensorPipeAgent`用于执行请求的线程池中的线程数（默认值：16）。'
 - en: '**rpc_timeout** ([*float*](https://docs.python.org/3/library/functions.html#float
     "(in Python v3.12)")*,* *optional*) – The default timeout, in seconds, for RPC
     requests (default: 60 seconds). If the RPC has not completed in this timeframe,
@@ -716,114 +1085,181 @@
     individual RPCs in [`rpc_sync()`](#torch.distributed.rpc.rpc_sync "torch.distributed.rpc.rpc_sync")
     and [`rpc_async()`](#torch.distributed.rpc.rpc_async "torch.distributed.rpc.rpc_async")
     if necessary.'
+  id: totrans-146
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**rpc_timeout**（[*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* *可选*) – RPC请求的默认超时时间，以秒为单位（默认值：60秒）。如果RPC在此时间段内未完成，将引发指示的异常。调用者可以在需要时在[`rpc_sync()`](#torch.distributed.rpc.rpc_sync
+    "torch.distributed.rpc.rpc_sync")和[`rpc_async()`](#torch.distributed.rpc.rpc_async
+    "torch.distributed.rpc.rpc_async")中为单独的RPC覆盖此超时。'
 - en: '**init_method** ([*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)")*,* *optional*) – The URL to initialize the distributed store
     used for rendezvous. It takes any value accepted for the same argument of [`init_process_group()`](distributed.html#torch.distributed.init_process_group
     "torch.distributed.init_process_group") (default: `env://`).'
+  id: totrans-147
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**init_method**（[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* *可选*) – 用于初始化用于会合的分布式存储的URL。它接受与[`init_process_group()`](distributed.html#torch.distributed.init_process_group
+    "torch.distributed.init_process_group")的相同参数的任何值（默认值：`env://`）。'
 - en: '**device_maps** (*Dict**[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)")*,* *Dict**]**,* *optional*) – Device placement mappings from
     this worker to the callee. Key is the callee worker name and value the dictionary
     (`Dict` of `int`, `str`, or `torch.device`) that maps this worker’s devices to
     the callee worker’s devices. (default: `None`)'
+  id: totrans-148
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**device_maps**（*Dict**[*[*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*,* *Dict**]**,* *可选*) – 从此工作器到被调用者的设备放置映射。键是被调用者工作器名称，值是字典（`Dict`
+    of `int`, `str`, or `torch.device`），将此工作器的设备映射到被调用者的设备。（默认值：`None`）'
 - en: '**devices** (List[int, str, or `torch.device`], optional) – all local CUDA
     devices used by RPC agent. By Default, it will be initialized to all local devices
     from its own `device_maps` and corresponding devices from its peers’ `device_maps`.
     When processing CUDA RPC requests, the agent will properly synchronize CUDA streams
     for all devices in this `List`.'
+  id: totrans-149
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**devices**（List[int, str, or `torch.device`]，可选）– RPC代理使用的所有本地CUDA设备。默认情况下，它将被初始化为来自其自身`device_maps`和对等方`device_maps`的所有本地设备。在处理CUDA
+    RPC请求时，代理将为此`List`中的所有设备正确同步CUDA流。'
 - en: '[PRE33]'
+  id: totrans-150
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE33]'
 - en: The device map locations.
+  id: totrans-151
   prefs: []
   type: TYPE_NORMAL
+  zh: 设备映射位置。
 - en: '[PRE34]'
+  id: totrans-152
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE34]'
 - en: All devices used by the local agent.
+  id: totrans-153
   prefs: []
   type: TYPE_NORMAL
+  zh: 本地代理使用的所有设备。
 - en: '[PRE35]'
+  id: totrans-154
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE35]'
 - en: URL specifying how to initialize the process group. Default is `env://`
+  id: totrans-155
   prefs: []
   type: TYPE_NORMAL
+  zh: 指定如何初始化进程组的URL。默认为`env://`
 - en: '[PRE36]'
+  id: totrans-156
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE36]'
 - en: The number of threads in the thread-pool used by `TensorPipeAgent` to execute
     requests.
+  id: totrans-157
   prefs: []
   type: TYPE_NORMAL
+  zh: '`TensorPipeAgent`用于执行请求的线程池中的线程数。'
 - en: '[PRE37]'
+  id: totrans-158
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE37]'
 - en: A float indicating the timeout to use for all RPCs. If an RPC does not complete
     in this timeframe, it will complete with an exception indicating that it has timed
     out.
+  id: totrans-159
   prefs: []
   type: TYPE_NORMAL
+  zh: 指示用于所有RPC的超时的浮点数。如果RPC在此时间段内未完成，它将以超时的异常完成。
 - en: '[PRE38]'
+  id: totrans-160
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE38]'
 - en: Set device mapping between each RPC caller and callee pair. This function can
     be called multiple times to incrementally add device placement configurations.
+  id: totrans-161
   prefs: []
   type: TYPE_NORMAL
+  zh: 设置每个RPC调用者和被调用者对之间的设备映射。此函数可以多次调用以逐步添加设备放置配置。
 - en: Parameters
+  id: totrans-162
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**to** ([*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
     v3.12)")) – Callee name.'
+  id: totrans-163
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**to**（[*str*](https://docs.python.org/3/library/stdtypes.html#str "(in Python
+    v3.12)")）- 被调用者名称。'
 - en: '**device_map** (*Dict* *of* [*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)")*, or* [*torch.device*](tensor_attributes.html#torch.device
     "torch.device")) – Device placement mappings from this worker to the callee. This
     map must be invertible.'
+  id: totrans-164
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**device_map**（*Dict* *of* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*, 或* [*torch.device*](tensor_attributes.html#torch.device
+    "torch.device")）- 从此工作器到被调用者的设备放置映射。此映射必须是可逆的。'
 - en: Example
+  id: totrans-165
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例
 - en: '[PRE39]'
+  id: totrans-166
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE39]'
 - en: '[PRE40]'
+  id: totrans-167
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE40]'
 - en: Set local devices used by the TensorPipe RPC agent. When processing CUDA RPC
     requests, the TensorPipe RPC agent will properly synchronize CUDA streams for
     all devices in this `List`.
+  id: totrans-168
   prefs: []
   type: TYPE_NORMAL
+  zh: 设置TensorPipe RPC代理使用的本地设备。在处理CUDA RPC请求时，TensorPipe RPC代理将为此`List`中所有设备适当同步CUDA流。
 - en: Parameters
+  id: totrans-169
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**devices** (*List* *of* [*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)")*, or* [*torch.device*](tensor_attributes.html#torch.device
     "torch.device")) – local devices used by the TensorPipe RPC agent.'
+  id: totrans-170
   prefs: []
   type: TYPE_NORMAL
+  zh: '**devices**（*List* *of* [*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* [*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")*, 或* [*torch.device*](tensor_attributes.html#torch.device
+    "torch.device")）- TensorPipe RPC代理使用的本地设备。'
 - en: Note
+  id: totrans-171
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: 'The RPC framework does not automatically retry any [`rpc_sync()`](#torch.distributed.rpc.rpc_sync
     "torch.distributed.rpc.rpc_sync"), [`rpc_async()`](#torch.distributed.rpc.rpc_async
     "torch.distributed.rpc.rpc_async") and [`remote()`](#torch.distributed.rpc.remote
@@ -835,14 +1271,23 @@
     connectivity issues. In such scenarios, the application needs to retry appropriately
     with reasonable backoffs to ensure the network isn’t overwhelmed by aggressive
     retries.  ## RRef'
+  id: totrans-172
   prefs: []
   type: TYPE_NORMAL
+  zh: RPC框架不会自动重试任何[`rpc_sync()`](#torch.distributed.rpc.rpc_sync "torch.distributed.rpc.rpc_sync")、[`rpc_async()`](#torch.distributed.rpc.rpc_async
+    "torch.distributed.rpc.rpc_async")和[`remote()`](#torch.distributed.rpc.remote
+    "torch.distributed.rpc.remote")调用。原因是RPC框架无法确定操作是否幂等，以及是否安全重试。因此，应用程序有责任处理失败并在必要时重试。RPC通信基于TCP，因此可能由于网络故障或间歇性网络连接问题而发生故障。在这种情况下，应用程序需要适当地重试，以合理的退避时间确保网络不会被过于激进的重试所压倒。##
+    RRef
 - en: Warning
+  id: totrans-173
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: RRefs are not currently supported when using CUDA tensors
+  id: totrans-174
   prefs: []
   type: TYPE_NORMAL
+  zh: 在使用CUDA张量时，目前不支持RRefs
 - en: An `RRef` (Remote REFerence) is a reference to a value of some type `T` (e.g.
     `Tensor`) on a remote worker. This handle keeps the referenced remote value alive
     on the owner, but there is no implication that the value will be transferred to
@@ -851,11 +1296,15 @@
     that exist on other workers, and calling the appropriate functions to retrieve
     or modify their parameters during training. See [Remote Reference Protocol](rpc/rref.html#remote-reference-protocol)
     for more details.
+  id: totrans-175
   prefs: []
   type: TYPE_NORMAL
+  zh: '`RRef`（远程引用）是对远程工作器上某种类型`T`（例如`Tensor`）的值的引用。此句柄在所有者上保持引用的远程值保持活动状态，但并不意味着该值将来会传输到本地工作器。RRefs可以通过持有对其他工作器上存在的[nn.Modules](https://pytorch.org/docs/stable/nn.html#torch.nn.Module)的引用，在多机训练中使用，并调用适当的函数在训练期间检索或修改它们的参数。有关更多详细信息，请参见[远程引用协议](rpc/rref.html#remote-reference-protocol)。'
 - en: '[PRE41]'
+  id: totrans-176
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE41]'
 - en: A class encapsulating a reference to a value of some type on a remote worker.
     This handle will keep the referenced remote value alive on the worker. A `UserRRef`
     will be deleted when 1) no references to it in both the application code and in
@@ -863,66 +1312,102 @@
     Invoking methods on a deleted RRef leads to undefined behaviors. RRef implementation
     only offers best-effort error detection, and applications should not use `UserRRefs`
     after `rpc.shutdown()`.
+  id: totrans-177
   prefs: []
   type: TYPE_NORMAL
+  zh: 封装对远程工作器上某种类型值的引用的类。此句柄将保持工作器上引用的远程值保持活动状态。当`UserRRef`被删除时，1）在应用程序代码和本地RRef上没有对它的引用，或2）应用程序已调用了优雅关闭时，`UserRRef`将被删除。在已删除的RRef上调用方法会导致未定义的行为。RRef实现仅提供尽力检测错误，应用程序不应在`rpc.shutdown()`之后使用`UserRRefs`。
 - en: Warning
+  id: totrans-178
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: RRefs can only be serialized and deserialized by the RPC module. Serializing
     and deserializing RRefs without RPC (e.g., Python pickle, torch [`save()`](generated/torch.save.html#torch.save
     "torch.save") / [`load()`](generated/torch.load.html#torch.load "torch.load"),
     JIT [`save()`](generated/torch.jit.save.html#torch.jit.save "torch.jit.save")
     / [`load()`](generated/torch.jit.load.html#torch.jit.load "torch.jit.load"), etc.)
     will lead to errors.
+  id: totrans-179
   prefs: []
   type: TYPE_NORMAL
+  zh: RRefs只能由RPC模块序列化和反序列化。在没有RPC的情况下序列化和反序列化RRefs（例如，Python pickle，torch [`save()`](generated/torch.save.html#torch.save
+    "torch.save") / [`load()`](generated/torch.load.html#torch.load "torch.load")，JIT
+    [`save()`](generated/torch.jit.save.html#torch.jit.save "torch.jit.save") / [`load()`](generated/torch.jit.load.html#torch.jit.load
+    "torch.jit.load")等）会导致错误。
 - en: Parameters
+  id: totrans-180
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**value** ([*object*](https://docs.python.org/3/library/functions.html#object
     "(in Python v3.12)")) – The value to be wrapped by this RRef.'
+  id: totrans-181
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**value**（[*object*](https://docs.python.org/3/library/functions.html#object
+    "(in Python v3.12)")）- 要由此RRef包装的值。'
 - en: '**type_hint** (*Type**,* *optional*) – Python type that should be passed to
     `TorchScript` compiler as type hint for `value`.'
+  id: totrans-182
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**type_hint**（*Type**,* *可选*）- 应传递给`TorchScript`编译器作为`value`的类型提示的Python类型。'
 - en: 'Example::'
+  id: totrans-183
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例：
 - en: Following examples skip RPC initialization and shutdown code for simplicity.
     Refer to RPC docs for those details.
+  id: totrans-184
   prefs: []
   type: TYPE_NORMAL
+  zh: 出于简单起见，以下示例跳过了RPC初始化和关闭代码。有关详细信息，请参阅RPC文档。
 - en: Create an RRef using rpc.remote
+  id: totrans-185
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 使用rpc.remote创建一个RRef
 - en: '[PRE42]'
+  id: totrans-186
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE42]'
 - en: Create an RRef from a local object
+  id: totrans-187
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 从本地对象创建一个RRef
 - en: '[PRE43]'
+  id: totrans-188
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE43]'
 - en: Share an RRef with other workers
+  id: totrans-189
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 与其他工作人员共享一个RRef
 - en: '[PRE44]'
+  id: totrans-190
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE44]'
 - en: '[PRE45]'
+  id: totrans-191
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE45]'
 - en: '[PRE46]'
+  id: totrans-192
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE46]'
 - en: Runs the backward pass using the RRef as the root of the backward pass. If `dist_autograd_ctx_id`
     is provided, we perform a distributed backward pass using the provided ctx_id
     starting from the owner of the RRef. In this case, [`get_gradients()`](#torch.distributed.autograd.get_gradients
@@ -931,249 +1416,377 @@
     graph and we only perform a local backward pass. In the local case, the node calling
     this API has to be the owner of the RRef. The value of the RRef is expected to
     be a scalar Tensor.
+  id: totrans-193
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 使用RRef作为反向传递的根运行反向传递。如果提供了`dist_autograd_ctx_id`，我们将使用提供的ctx_id从RRef的所有者开始执行分布式反向传递。在这种情况下，应使用[`get_gradients()`](#torch.distributed.autograd.get_gradients
+    "torch.distributed.autograd.get_gradients")来检索梯度。如果`dist_autograd_ctx_id`为`None`，则假定这是一个本地自动梯度图，我们只执行本地反向传递。在本地情况下，调用此API的节点必须是RRef的所有者。预期RRef的值是标量张量。
 - en: Parameters
+  id: totrans-194
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**dist_autograd_ctx_id** ([*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")*,* *optional*) – The distributed autograd context id for
     which we should retrieve the gradients (default: -1).'
+  id: totrans-195
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**dist_autograd_ctx_id**（[*int*](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")*,* *可选*）- 我们应该检索梯度的分布式自动梯度上下文id（默认值：-1）。'
 - en: '**retain_graph** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")*,* *optional*) – If `False`, the graph used to compute the
     grad will be freed. Note that in nearly all cases setting this option to `True`
     is not needed and often can be worked around in a much more efficient way. Usually,
     you need to set this to `True` to run backward multiple times (default: False).'
+  id: totrans-196
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**retain_graph**（[*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")*,* *可选*）- 如果为`False`，用于计算梯度的图将被释放。请注意，在几乎所有情况下，将此选项设置为`True`是不需要的，并且通常可以以更高效的方式解决。通常，您需要将其设置为`True`以多次运行反向（默认值：False）。'
 - en: 'Example::'
+  id: totrans-197
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例：
 - en: '[PRE47]'
+  id: totrans-198
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE47]'
 - en: '[PRE48]'
+  id: totrans-199
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE48]'
 - en: Returns whether this `RRef` has been confirmed by the owner. `OwnerRRef` always
     returns true, while `UserRRef` only returns true when the owner knowns about this
     `UserRRef`.
+  id: totrans-200
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回此`RRef`是否已被所有者确认。`OwnerRRef`始终返回true，而`UserRRef`仅在所有者知道此`UserRRef`时返回true。
 - en: '[PRE49]'
+  id: totrans-201
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE49]'
 - en: Returns whether or not the current node is the owner of this `RRef`.
+  id: totrans-202
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回当前节点是否是此`RRef`的所有者。
 - en: '[PRE50]'
+  id: totrans-203
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE50]'
 - en: If the current node is the owner, returns a reference to the local value. Otherwise,
     throws an exception.
+  id: totrans-204
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果当前节点是所有者，则返回对本地值的引用。否则，抛出异常。
 - en: '[PRE51]'
+  id: totrans-205
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE51]'
 - en: Returns worker information of the node that owns this `RRef`.
+  id: totrans-206
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回拥有此`RRef`的节点的工作人员信息。
 - en: '[PRE52]'
+  id: totrans-207
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE52]'
 - en: Returns worker name of the node that owns this `RRef`.
+  id: totrans-208
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回拥有此`RRef`的节点的工作人员名称。
 - en: '[PRE53]'
+  id: totrans-209
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE53]'
 - en: 'Create a helper proxy to easily launch a `remote` using the owner of the RRef
     as the destination to run functions on the object referenced by this RRef. More
     specifically, `rref.remote().func_name(*args, **kwargs)` is the same as the following:'
+  id: totrans-210
   prefs: []
   type: TYPE_NORMAL
+  zh: 创建一个辅助代理，以便使用拥有RRef的所有者作为目标轻松启动`remote`，以在此RRef引用的对象上运行函数。更具体地说，`rref.remote().func_name(*args,
+    **kwargs)`等同于以下内容：
 - en: '[PRE54]'
+  id: totrans-211
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE54]'
 - en: Parameters
+  id: totrans-212
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**timeout** ([*float*](https://docs.python.org/3/library/functions.html#float
     "(in Python v3.12)")*,* *optional*) – Timeout for `rref.remote()`. If the creation
     of this `RRef` is not successfully completed within the timeout, then the next
     time there is an attempt to use the RRef (such as `to_here`), a timeout will be
     raised. If not provided, the default RPC timeout will be used. Please see `rpc.remote()`
     for specific timeout semantics for `RRef`.'
+  id: totrans-213
   prefs: []
   type: TYPE_NORMAL
+  zh: '**timeout**（[*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* *可选*）- `rref.remote()`的超时时间。如果在超时时间内未成功完成此`RRef`的创建，则下次尝试使用RRef（例如`to_here`）时将引发超时。如果未提供，将使用默认的RPC超时时间。有关`RRef`的特定超时语义，请参见`rpc.remote()`。'
 - en: 'Example::'
+  id: totrans-214
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例：
 - en: '[PRE55]'
+  id: totrans-215
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE55]'
 - en: '[PRE56]'
+  id: totrans-216
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE56]'
 - en: 'Create a helper proxy to easily launch an `rpc_async` using the owner of the
     RRef as the destination to run functions on the object referenced by this RRef.
     More specifically, `rref.rpc_async().func_name(*args, **kwargs)` is the same as
     the following:'
+  id: totrans-217
   prefs: []
   type: TYPE_NORMAL
+  zh: 创建一个辅助代理，以便使用拥有RRef的所有者作为目标轻松启动`rpc_async`，以在此RRef引用的对象上运行函数。更具体地说，`rref.rpc_async().func_name(*args,
+    **kwargs)`等同于以下内容：
 - en: '[PRE57]'
+  id: totrans-218
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE57]'
 - en: Parameters
+  id: totrans-219
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**timeout** ([*float*](https://docs.python.org/3/library/functions.html#float
     "(in Python v3.12)")*,* *optional*) – Timeout for `rref.rpc_async()`. If the call
     does not complete within this timeframe, an exception indicating so will be raised.
     If this argument is not provided, the default RPC timeout will be used.'
+  id: totrans-220
   prefs: []
   type: TYPE_NORMAL
+  zh: '**timeout**（[*float*](https://docs.python.org/3/library/functions.html#float
+    "(in Python v3.12)")*,* *可选*）- `rref.rpc_async()`的超时时间。如果在此时间范围内调用未完成，将引发指示的异常。如果未提供此参数，则将使用默认的RPC超时时间。'
 - en: 'Example::'
+  id: totrans-221
   prefs: []
   type: TYPE_NORMAL
+  zh: '示例::'
 - en: '[PRE58]'
+  id: totrans-222
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE58]'
 - en: '[PRE59]'
+  id: totrans-223
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE59]'
 - en: 'Create a helper proxy to easily launch an `rpc_sync` using the owner of the
     RRef as the destination to run functions on the object referenced by this RRef.
     More specifically, `rref.rpc_sync().func_name(*args, **kwargs)` is the same as
     the following:'
+  id: totrans-224
   prefs: []
   type: TYPE_NORMAL
+  zh: 创建一个辅助代理，以便使用RRef的所有者轻松启动`rpc_sync`，以运行此RRef引用的对象上的函数。更具体地说，`rref.rpc_sync().func_name(*args,
+    **kwargs)`等同于以下内容：
 - en: '[PRE60]'
+  id: totrans-225
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE60]'
 - en: Parameters
+  id: totrans-226
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**timeout** ([*float*](https://docs.python.org/3/library/functions.html#float
     "(in Python v3.12)")*,* *optional*) – Timeout for `rref.rpc_sync()`. If the call
     does not complete within this timeframe, an exception indicating so will be raised.
     If this argument is not provided, the default RPC timeout will be used.'
+  id: totrans-227
   prefs: []
   type: TYPE_NORMAL
+  zh: '**timeout** ([*float*](https://docs.python.org/3/library/functions.html#float
+    "(在Python v3.12中)")*,* *optional*) – `rref.rpc_sync()`的超时时间。如果调用在此时间范围内未完成，将引发指示的异常。如果未提供此参数，则将使用默认的RPC超时时间。'
 - en: 'Example::'
+  id: totrans-228
   prefs: []
   type: TYPE_NORMAL
+  zh: '示例::'
 - en: '[PRE61]'
+  id: totrans-229
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE61]'
 - en: '[PRE62]'
+  id: totrans-230
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE62]'
 - en: Blocking call that copies the value of the RRef from the owner to the local
     node and returns it. If the current node is the owner, returns a reference to
     the local value.
+  id: totrans-231
   prefs: []
   type: TYPE_NORMAL
+  zh: 阻塞调用，将RRef的值从所有者复制到本地节点并返回。如果当前节点是所有者，则返回对本地值的引用。
 - en: Parameters
+  id: totrans-232
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**timeout** ([*float*](https://docs.python.org/3/library/functions.html#float
     "(in Python v3.12)")*,* *optional*) – Timeout for `to_here`. If the call does
     not complete within this timeframe, an exception indicating so will be raised.
     If this argument is not provided, the default RPC timeout (60s) will be used.'
+  id: totrans-233
   prefs: []
   type: TYPE_NORMAL
+  zh: '**timeout** ([*float*](https://docs.python.org/3/library/functions.html#float
+    "(在Python v3.12中)")*,* *optional*) – `to_here`的超时时间。如果调用在此时间范围内未完成，将引发指示的异常。如果未提供此参数，则将使用默认的RPC超时时间（60秒）。'
 - en: More Information about RRef
+  id: totrans-234
   prefs: []
   type: TYPE_NORMAL
+  zh: 有关RRef的更多信息
 - en: '[Remote Reference Protocol](rpc/rref.html)'
+  id: totrans-235
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[远程引用协议](rpc/rref.html)'
 - en: '[Background](rpc/rref.html#background)'
+  id: totrans-236
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[背景](rpc/rref.html#background)'
 - en: '[Assumptions](rpc/rref.html#assumptions)'
+  id: totrans-237
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[假设](rpc/rref.html#assumptions)'
 - en: '[RRef Lifetime](rpc/rref.html#rref-lifetime)'
+  id: totrans-238
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[RRef生命周期](rpc/rref.html#rref-lifetime)'
 - en: '[Design Reasoning](rpc/rref.html#design-reasoning)'
+  id: totrans-239
   prefs:
   - PREF_IND
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[设计原理](rpc/rref.html#design-reasoning)'
 - en: '[Implementation](rpc/rref.html#implementation)'
+  id: totrans-240
   prefs:
   - PREF_IND
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[实现](rpc/rref.html#implementation)'
 - en: '[Protocol Scenarios](rpc/rref.html#protocol-scenarios)'
+  id: totrans-241
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[协议场景](rpc/rref.html#protocol-scenarios)'
 - en: '[User Share RRef with Owner as Return Value](rpc/rref.html#user-share-rref-with-owner-as-return-value)'
+  id: totrans-242
   prefs:
   - PREF_IND
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[用户与所有者共享RRef作为返回值](rpc/rref.html#user-share-rref-with-owner-as-return-value)'
 - en: '[User Share RRef with Owner as Argument](rpc/rref.html#user-share-rref-with-owner-as-argument)'
+  id: totrans-243
   prefs:
   - PREF_IND
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[用户与所有者共享RRef作为参数](rpc/rref.html#user-share-rref-with-owner-as-argument)'
 - en: '[Owner Share RRef with User](rpc/rref.html#owner-share-rref-with-user)'
+  id: totrans-244
   prefs:
   - PREF_IND
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[所有者与用户共享RRef](rpc/rref.html#owner-share-rref-with-user)'
 - en: '[User Share RRef with User](rpc/rref.html#user-share-rref-with-user)  ## RemoteModule[](#remotemodule
     "Permalink to this heading")'
+  id: totrans-245
   prefs:
   - PREF_IND
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[用户与用户共享RRef](rpc/rref.html#user-share-rref-with-user)  ## RemoteModule[](#remotemodule
+    "Permalink to this heading")'
 - en: Warning
+  id: totrans-246
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: RemoteModule is not currently supported when using CUDA tensors
+  id: totrans-247
   prefs: []
   type: TYPE_NORMAL
+  zh: 当前不支持使用CUDA张量时，RemoteModule
 - en: '`RemoteModule` is an easy way to create an nn.Module remotely on a different
     process. The actual module resides on a remote host, but the local host has a
     handle to this module and invoke this module similar to a regular nn.Module. The
     invocation however incurs RPC calls to the remote end and can be performed asynchronously
     if needed via additional APIs supported by RemoteModule.'
+  id: totrans-248
   prefs: []
   type: TYPE_NORMAL
+  zh: '`RemoteModule`是在不同进程上轻松创建nn.Module的一种方式。实际模块驻留在远程主机上，但本地主机具有对此模块的句柄，并且可以像常规的nn.Module一样调用此模块。但是，调用会导致RPC调用到远程端，并且如果需要，可以通过RemoteModule支持的其他API以异步方式执行。'
 - en: '[PRE63]'
+  id: totrans-249
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE63]'
 - en: A RemoteModule instance can only be created after RPC initialization.
+  id: totrans-250
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 只有在RPC初始化后才能创建RemoteModule实例。
 - en: ''
+  id: totrans-251
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
@@ -1181,10 +1794,13 @@
     a regular `nn.Module` except that the `forward` method is executed on the remote
     node. It takes care of autograd recording to ensure the backward pass propagates
     gradients back to the corresponding remote module.
+  id: totrans-252
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 它在指定的远程节点上创建一个用户指定的模块。它的行为类似于常规的`nn.Module`，只是`forward`方法在远程节点上执行。它负责自动求导记录，以确保反向传播梯度传播回相应的远程模块。
 - en: ''
+  id: totrans-253
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
@@ -1192,162 +1808,249 @@
     of the `forward` method of `module_cls`. `forward_async` runs asynchronously and
     returns a Future. The arguments of `forward_async` and `forward` are the same
     as the `forward` method of the module returned by the `module_cls`.
+  id: totrans-254
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 它根据`module_cls`的`forward`方法的签名生成两个方法`forward_async`和`forward`。`forward_async`以异步方式运行并返回一个Future。`forward_async`和`forward`的参数与由`module_cls`返回的模块的`forward`方法相同。
 - en: ''
+  id: totrans-255
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
 - en: 'For example, if `module_cls` returns an instance of `nn.Linear`, that has `forward`
     method signature: `def forward(input: Tensor) -> Tensor:`, the generated `RemoteModule`
     will have 2 methods with the signatures:'
+  id: totrans-256
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: '例如，如果`module_cls`返回`nn.Linear`的实例，该实例具有`forward`方法签名：`def forward(input: Tensor)
+    -> Tensor:`，生成的`RemoteModule`将具有2个带有签名的方法：'
 - en: ''
+  id: totrans-257
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
 - en: '`def forward(input: Tensor) -> Tensor:``def forward_async(input: Tensor) ->
     Future[Tensor]:`'
+  id: totrans-258
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: '`def forward(input: Tensor) -> Tensor:``def forward_async(input: Tensor) ->
+    Future[Tensor]:`'
 - en: Parameters
+  id: totrans-259
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**remote_device** ([*str*](https://docs.python.org/3/library/stdtypes.html#str
     "(in Python v3.12)")) – Device on the destination worker where we’d like to place
     this module. The format should be “<workername>/<device>”, where the device field
     can be parsed as torch.device type. E.g., “trainer0/cpu”, “trainer0”, “ps0/cuda:0”.
     In addition, the device field can be optional and the default value is “cpu”.'
+  id: totrans-260
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**remote_device** ([*str*](https://docs.python.org/3/library/stdtypes.html#str
+    "(在Python v3.12中)")) – 我们希望将此模块放置在目标工作节点上的设备。格式应为“<workername>/<device>”，其中设备字段可以解析为torch.device类型。例如，“trainer0/cpu”，“trainer0”，“ps0/cuda:0”。此外，设备字段可以是可选的，默认值为“cpu”。'
 - en: '**module_cls** ([*nn.Module*](generated/torch.nn.Module.html#torch.nn.Module
     "torch.nn.Module")) –'
+  id: totrans-261
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**module_cls** ([*nn.Module*](generated/torch.nn.Module.html#torch.nn.Module
+    "torch.nn.Module")) –'
 - en: Class for the module to be created remotely. For example,
+  id: totrans-262
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 用于在远程创建的模块的类。例如，
 - en: '[PRE64]'
+  id: totrans-263
   prefs:
   - PREF_IND
   type: TYPE_PRE
+  zh: '[PRE64]'
 - en: '**args** (*Sequence**,* *optional*) – args to be passed to `module_cls`.'
+  id: totrans-264
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**args** (*Sequence**,* *optional*) – 传递给`module_cls`的参数。'
 - en: '**kwargs** (*Dict**,* *optional*) – kwargs to be passed to `module_cls`.'
+  id: totrans-265
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**kwargs** (*Dict**,* *optional*) – 传递给`module_cls`的关键字参数。'
 - en: Returns
+  id: totrans-266
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回
 - en: A remote module instance which wraps the `Module` created by the user-provided
     `module_cls`, it has a blocking `forward` method and an asynchronous `forward_async`
     method that returns a future of the `forward` call on the user-provided module
     on the remote side.
+  id: totrans-267
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个远程模块实例，包装了用户提供的 `module_cls` 创建的 `Module`，它具有阻塞的 `forward` 方法和一个异步的 `forward_async`
+    方法，返回用户提供模块在远程端的 `forward` 调用的 future。
 - en: 'Example::'
+  id: totrans-268
   prefs: []
   type: TYPE_NORMAL
+  zh: '示例::'
 - en: 'Run the following code in two different processes:'
+  id: totrans-269
   prefs: []
   type: TYPE_NORMAL
+  zh: 在两个不同的进程中运行以下代码：
 - en: '[PRE65]'
+  id: totrans-270
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE65]'
 - en: '[PRE66]'
+  id: totrans-271
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE66]'
 - en: Furthermore, a more practical example that is combined with [DistributedDataParallel](https://pytorch.org/docs/stable/nn.html#torch.nn.parallel.DistributedDataParallel)
     (DDP) can be found in this [tutorial](https://pytorch.org/tutorials/advanced/rpc_ddp_tutorial.html).
+  id: totrans-272
   prefs: []
   type: TYPE_NORMAL
+  zh: 此外，可以在[分布式数据并行](https://pytorch.org/docs/stable/nn.html#torch.nn.parallel.DistributedDataParallel)（DDP）中结合更实际的示例，详见此[教程](https://pytorch.org/tutorials/advanced/rpc_ddp_tutorial.html)。
 - en: '[PRE67]'
+  id: totrans-273
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE67]'
 - en: Return an `RRef` (`RRef[nn.Module]`) pointing to the remote module.
+  id: totrans-274
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回一个指向远程模块的 `RRef`（`RRef[nn.Module]`）。
 - en: Return type
+  id: totrans-275
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '*RRef*[[*Module*](generated/torch.nn.Module.html#torch.nn.Module "torch.nn.modules.module.Module")]'
+  id: totrans-276
   prefs: []
   type: TYPE_NORMAL
+  zh: '*RRef*[[*Module*](generated/torch.nn.Module.html#torch.nn.Module "torch.nn.modules.module.Module")]'
 - en: '[PRE68]'
+  id: totrans-277
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE68]'
 - en: Return a list of `RRef` pointing to the remote module’s parameters.
+  id: totrans-278
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回一个指向远程模块参数的 `RRef` 列表。
 - en: This can typically be used in conjunction with [`DistributedOptimizer`](distributed.optim.html#torch.distributed.optim.DistributedOptimizer
     "torch.distributed.optim.DistributedOptimizer").
+  id: totrans-279
   prefs: []
   type: TYPE_NORMAL
+  zh: 这通常可以与 [`DistributedOptimizer`](distributed.optim.html#torch.distributed.optim.DistributedOptimizer
+    "torch.distributed.optim.DistributedOptimizer") 结合使用。
 - en: Parameters
+  id: totrans-280
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**recurse** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")) – if True, then returns parameters of the remote module
     and all submodules of the remote module. Otherwise, returns only parameters that
     are direct members of the remote module.'
+  id: totrans-281
   prefs: []
   type: TYPE_NORMAL
+  zh: '**recurse**（[*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(在 Python v3.12 中)")）- 如果为 True，则返回远程模块及其所有子模块的参数。否则，仅返回远程模块的直接成员参数。'
 - en: Returns
+  id: totrans-282
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回
 - en: A list of `RRef` (`List[RRef[nn.Parameter]]`) to remote module’s parameters.
+  id: totrans-283
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个远程模块参数的 `RRef`（`List[RRef[nn.Parameter]]`）列表。
 - en: Return type
+  id: totrans-284
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*List*](https://docs.python.org/3/library/typing.html#typing.List "(in Python
     v3.12)")[*RRef*[[*Parameter*](generated/torch.nn.parameter.Parameter.html#torch.nn.parameter.Parameter
     "torch.nn.parameter.Parameter")]]'
+  id: totrans-285
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*List*](https://docs.python.org/3/library/typing.html#typing.List "(在 Python
+    v3.12 中)")[*RRef*[[*Parameter*](generated/torch.nn.parameter.Parameter.html#torch.nn.parameter.Parameter
+    "torch.nn.parameter.Parameter")]]'
 - en: Distributed Autograd Framework[](#distributed-autograd-framework "Permalink
     to this heading")
+  id: totrans-286
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 分布式自动求导框架[](#distributed-autograd-framework "跳转到此标题")
 - en: Warning
+  id: totrans-287
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: Distributed autograd is not currently supported when using CUDA tensors
+  id: totrans-288
   prefs: []
   type: TYPE_NORMAL
+  zh: 当使用 CUDA 张量时，不支持分布式自动求导
 - en: This module provides an RPC-based distributed autograd framework that can be
     used for applications such as model parallel training. In short, applications
     may send and receive gradient recording tensors over RPC. In the forward pass,
     we record when gradient recording tensors are sent over RPC and during the backward
     pass we use this information to perform a distributed backward pass using RPC.
     For more details see [Distributed Autograd Design](rpc/distributed_autograd.html#distributed-autograd-design).
+  id: totrans-289
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个模块提供了一个基于 RPC 的分布式自动求导框架，可用于诸如模型并行训练等应用。简而言之，应用程序可以通过 RPC 发送和接收梯度记录张量。在前向传播中，当梯度记录张量通过
+    RPC 发送时，我们记录下来；在反向传播过程中，我们使用这些信息来使用 RPC 执行分布式反向传播。更多细节请参见[分布式自动求导设计](rpc/distributed_autograd.html#distributed-autograd-design)。
 - en: '[PRE69]'
+  id: totrans-290
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE69]'
 - en: Kicks off the distributed backward pass using the provided roots. This currently
     implements the [FAST mode algorithm](rpc/distributed_autograd.html#fast-mode-algorithm)
     which assumes all RPC messages sent in the same distributed autograd context across
     workers would be part of the autograd graph during the backward pass.
+  id: totrans-291
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用提供的根启动分布式反向传播。目前实现了[FAST mode 算法](rpc/distributed_autograd.html#fast-mode-algorithm)，该算法假定在同一分布式自动求导上下文中的所有
+    RPC 消息在反向传播过程中都将成为自动求导图的一部分。
 - en: We use the provided roots to discover the autograd graph and compute appropriate
     dependencies. This method blocks until the entire autograd computation is done.
+  id: totrans-292
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们使用提供的根来发现自动求导图并计算适当的依赖关系。此方法会阻塞，直到整个自动求导计算完成。
 - en: We accumulate the gradients in the appropriate [`torch.distributed.autograd.context`](#torch.distributed.autograd.context
     "torch.distributed.autograd.context") on each of the nodes. The autograd context
     to be used is looked up given the `context_id` that is passed in when [`torch.distributed.autograd.backward()`](#torch.distributed.autograd.backward
@@ -1355,197 +2058,294 @@
     context corresponding to the given ID, we throw an error. You can retrieve the
     accumulated gradients using the [`get_gradients()`](#torch.distributed.autograd.get_gradients
     "torch.distributed.autograd.get_gradients") API.
+  id: totrans-293
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们在每个节点的适当 [`torch.distributed.autograd.context`](#torch.distributed.autograd.context
+    "torch.distributed.autograd.context") 中累积梯度。要使用的自动求导上下文是根据传入的 `context_id` 查找的，当调用
+    [`torch.distributed.autograd.backward()`](#torch.distributed.autograd.backward
+    "torch.distributed.autograd.backward") 时传入。如果没有与给定 ID 对应的有效自动求导上下文，我们会抛出错误。您可以使用
+    [`get_gradients()`](#torch.distributed.autograd.get_gradients "torch.distributed.autograd.get_gradients")
+    API 检索累积的梯度。
 - en: Parameters
+  id: totrans-294
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**context_id** ([*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")) – The autograd context id for which we should retrieve the
     gradients.'
+  id: totrans-295
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**context_id**（[*int*](https://docs.python.org/3/library/functions.html#int
+    "(在 Python v3.12 中)")）- 我们应该检索梯度的自动求导上下文 id。'
 - en: '**roots** ([*list*](https://docs.python.org/3/library/stdtypes.html#list "(in
     Python v3.12)")) – Tensors which represent the roots of the autograd computation.
     All the tensors should be scalars.'
+  id: totrans-296
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**roots**（[*list*](https://docs.python.org/3/library/stdtypes.html#list "(在
+    Python v3.12 中)")）- 代表自动求导计算的根的张量。所有张量应为标量。'
 - en: '**retain_graph** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")*,* *optional*) – If False, the graph used to compute the
     grad will be freed. Note that in nearly all cases setting this option to True
     is not needed and often can be worked around in a much more efficient way. Usually,
     you need to set this to True to run backward multiple times.'
+  id: totrans-297
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**retain_graph**（*bool*，可选） - 如果为False，则用于计算梯度的图将被释放。请注意，在几乎所有情况下，将此选项设置为True是不需要的，并且通常可以以更高效的方式解决。通常，您需要将其设置为True以多次运行反向传递。'
 - en: 'Example::'
+  id: totrans-298
   prefs: []
   type: TYPE_NORMAL
+  zh: '示例::'
 - en: '[PRE70]'
+  id: totrans-299
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE70]'
 - en: '[PRE71]'
+  id: totrans-300
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE71]'
 - en: Context object to wrap forward and backward passes when using distributed autograd.
     The `context_id` generated in the `with` statement is required to uniquely identify
     a distributed backward pass on all workers. Each worker stores metadata associated
     with this `context_id`, which is required to correctly execute a distributed autograd
     pass.
+  id: totrans-301
   prefs: []
   type: TYPE_NORMAL
+  zh: 在使用分布式自动求导时，用于包装前向和后向传递的上下文对象。在“with”语句中生成的“context_id”用于唯一标识所有工作进程上的分布式后向传递。每个工作进程存储与此“context_id”相关的元数据，这是正确执行分布式自动求导传递所必需的。
 - en: 'Example::'
+  id: totrans-302
   prefs: []
   type: TYPE_NORMAL
+  zh: '示例::'
 - en: '[PRE72]'
+  id: totrans-303
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE72]'
 - en: '[PRE73]'
+  id: totrans-304
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE73]'
 - en: Retrieves a map from Tensor to the appropriate gradient for that Tensor accumulated
     in the provided context corresponding to the given `context_id` as part of the
     distributed autograd backward pass.
+  id: totrans-305
   prefs: []
   type: TYPE_NORMAL
+  zh: 从张量到在分布式自动求导后向传递的提供的上下文中累积的该张量的适当梯度的映射中检索映射，对应于给定的“context_id”。
 - en: Parameters
+  id: totrans-306
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**context_id** ([*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")) – The autograd context id for which we should retrieve the
     gradients.'
+  id: totrans-307
   prefs: []
   type: TYPE_NORMAL
+  zh: '**context_id**（*int*） - 我们应该检索与给定“context_id”对应的上下文中累积的该张量的适当梯度的张量映射。'
 - en: Returns
+  id: totrans-308
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回
 - en: A map where the key is the Tensor and the value is the associated gradient for
     that Tensor.
+  id: totrans-309
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个映射，其中键是张量，值是该张量的相关梯度。
 - en: 'Example::'
+  id: totrans-310
   prefs: []
   type: TYPE_NORMAL
+  zh: '示例::'
 - en: '[PRE74]'
+  id: totrans-311
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE74]'
 - en: More Information about RPC Autograd
+  id: totrans-312
   prefs: []
   type: TYPE_NORMAL
+  zh: 有关RPC自动求导的更多信息
 - en: '[Distributed Autograd Design](rpc/distributed_autograd.html)'
+  id: totrans-313
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[分布式自动求导设计](rpc/distributed_autograd.html)'
 - en: '[Background](rpc/distributed_autograd.html#background)'
+  id: totrans-314
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[背景](rpc/distributed_autograd.html#background)'
 - en: '[Autograd recording during the forward pass](rpc/distributed_autograd.html#autograd-recording-during-the-forward-pass)'
+  id: totrans-315
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[前向传递期间的自动求导记录](rpc/distributed_autograd.html#autograd-recording-during-the-forward-pass)'
 - en: '[Distributed Autograd Context](rpc/distributed_autograd.html#distributed-autograd-context)'
+  id: totrans-316
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[分布式自动求导上下文](rpc/distributed_autograd.html#distributed-autograd-context)'
 - en: '[Distributed Backward Pass](rpc/distributed_autograd.html#distributed-backward-pass)'
+  id: totrans-317
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[分布式后向传递](rpc/distributed_autograd.html#distributed-backward-pass)'
 - en: '[Computing dependencies](rpc/distributed_autograd.html#computing-dependencies)'
+  id: totrans-318
   prefs:
   - PREF_IND
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[计算依赖关系](rpc/distributed_autograd.html#computing-dependencies)'
 - en: '[FAST mode algorithm](rpc/distributed_autograd.html#fast-mode-algorithm)'
+  id: totrans-319
   prefs:
   - PREF_IND
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[FAST模式算法](rpc/distributed_autograd.html#fast-mode-algorithm)'
 - en: '[SMART mode algorithm](rpc/distributed_autograd.html#smart-mode-algorithm)'
+  id: totrans-320
   prefs:
   - PREF_IND
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[SMART模式算法](rpc/distributed_autograd.html#smart-mode-algorithm)'
 - en: '[Distributed Optimizer](rpc/distributed_autograd.html#distributed-optimizer)'
+  id: totrans-321
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[分布式优化器](rpc/distributed_autograd.html#distributed-optimizer)'
 - en: '[Simple end to end example](rpc/distributed_autograd.html#simple-end-to-end-example)'
+  id: totrans-322
   prefs:
   - PREF_IND
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[简单的端到端示例](rpc/distributed_autograd.html#simple-end-to-end-example)'
 - en: Distributed Optimizer
+  id: totrans-323
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 分布式优化器
 - en: See the [torch.distributed.optim](https://pytorch.org/docs/main/distributed.optim.html)
     page for documentation on distributed optimizers.
+  id: totrans-324
   prefs: []
   type: TYPE_NORMAL
+  zh: 请参阅[torch.distributed.optim](https://pytorch.org/docs/main/distributed.optim.html)页面，了解有关分布式优化器的文档。
 - en: Design Notes
+  id: totrans-325
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 设计说明
 - en: The distributed autograd design note covers the design of the RPC-based distributed
     autograd framework that is useful for applications such as model parallel training.
+  id: totrans-326
   prefs: []
   type: TYPE_NORMAL
+  zh: 分布式自动求导设计说明涵盖了基于RPC的分布式自动求导框架的设计，对于模型并行训练等应用非常有用。
 - en: '[Distributed Autograd Design](rpc/distributed_autograd.html#distributed-autograd-design)'
+  id: totrans-327
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[分布式自动求导设计](rpc/distributed_autograd.html#distributed-autograd-design)'
 - en: The RRef design note covers the design of the [RRef](#rref) (Remote REFerence)
     protocol used to refer to values on remote workers by the framework.
+  id: totrans-328
   prefs: []
   type: TYPE_NORMAL
+  zh: RRef设计说明涵盖了[RRef](#rref)（远程引用）协议的设计，该协议用于通过框架引用远程工作进程上的值。
 - en: '[Remote Reference Protocol](rpc/rref.html#remote-reference-protocol)'
+  id: totrans-329
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[远程引用协议](rpc/rref.html#remote-reference-protocol)'
 - en: Tutorials
+  id: totrans-330
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 教程
 - en: The RPC tutorials introduce users to the RPC framework, provide several example
     applications using [torch.distributed.rpc](#distributed-rpc-framework) APIs, and
     demonstrate how to use [the profiler](https://pytorch.org/docs/stable/autograd.html#profiler)
     to profile RPC-based workloads.
+  id: totrans-331
   prefs: []
   type: TYPE_NORMAL
+  zh: RPC教程介绍了用户如何使用RPC框架，提供了几个示例应用程序，使用torch.distributed.rpc API，并演示如何使用分析器来分析基于RPC的工作负载。
 - en: '[Getting started with Distributed RPC Framework](https://pytorch.org/tutorials/intermediate/rpc_tutorial.html)'
+  id: totrans-332
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 使用分布式RPC框架入门
 - en: '[Implementing a Parameter Server using Distributed RPC Framework](https://pytorch.org/tutorials/intermediate/rpc_param_server_tutorial.html)'
+  id: totrans-333
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[使用分布式RPC框架实现参数服务器](https://pytorch.org/tutorials/intermediate/rpc_param_server_tutorial.html)'
 - en: '[Combining Distributed DataParallel with Distributed RPC Framework](https://pytorch.org/tutorials/advanced/rpc_ddp_tutorial.html)
     (covers **RemoteModule** as well)'
+  id: totrans-334
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[将分布式数据并行与分布式RPC框架结合使用](https://pytorch.org/tutorials/advanced/rpc_ddp_tutorial.html)（涵盖**RemoteModule**）'
 - en: '[Profiling RPC-based Workloads](https://pytorch.org/tutorials/recipes/distributed_rpc_profiling.html)'
+  id: totrans-335
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[基于RPC的工作负载分析](https://pytorch.org/tutorials/recipes/distributed_rpc_profiling.html)'
 - en: '[Implementing batch RPC processing](https://pytorch.org/tutorials/intermediate/rpc_async_execution.html)'
+  id: totrans-336
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[实现批处理RPC处理](https://pytorch.org/tutorials/intermediate/rpc_async_execution.html)'
 - en: '[Distributed Pipeline Parallel](https://pytorch.org/tutorials/intermediate/dist_pipeline_parallel_tutorial.html)'
+  id: totrans-337
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[分布式管道并行](https://pytorch.org/tutorials/intermediate/dist_pipeline_parallel_tutorial.html)'

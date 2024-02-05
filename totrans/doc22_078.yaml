@@ -1,86 +1,128 @@
 - en: torch.nested
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: torch.nested
 - en: 原文：[https://pytorch.org/docs/stable/nested.html](https://pytorch.org/docs/stable/nested.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/docs/stable/nested.html](https://pytorch.org/docs/stable/nested.html)
 - en: '## Introduction'
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: '## 简介'
 - en: Warning
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: The PyTorch API of nested tensors is in prototype stage and will change in the
     near future.
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: PyTorch嵌套张量的API处于原型阶段，将来会有变化。
 - en: NestedTensor allows the user to pack a list of Tensors into a single, efficient
     datastructure.
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 嵌套张量允许用户将一组张量打包到一个单一的、高效的数据结构中。
 - en: The only constraint on the input Tensors is that their dimension must match.
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 输入张量的唯一约束是它们的维度必须匹配。
 - en: This enables more efficient metadata representations and access to purpose built
     kernels.
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 这样可以更有效地表示元数据并访问专门构建的内核。
 - en: One application of NestedTensors is to express sequential data in various domains.
     While the conventional approach is to pad variable length sequences, NestedTensor
     enables users to bypass padding. The API for calling operations on a nested tensor
     is no different from that of a regular `torch.Tensor`, which should allow seamless
     integration with existing models, with the main difference being [construction
     of the inputs](#construction).
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 嵌套张量的一个应用是在各种领域中表达顺序数据。传统方法是填充可变长度序列，而嵌套张量使用户可以绕过填充。在嵌套张量上调用操作的API与常规`torch.Tensor`没有区别，这应该允许与现有模型无缝集成，主要区别在于[输入的构造](#construction)。
 - en: As this is a prototype feature, the [operations supported](#supported-operations)
     are still limited. However, we welcome issues, feature requests and contributions.
     More information on contributing can be found [in this Readme](https://github.com/pytorch/pytorch/blob/main/aten/src/ATen/native/nested/README.md).
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于这是一个原型功能，[支持的操作](#supported-operations)仍然有限。但是，我们欢迎问题、功能请求和贡献。有关贡献更多信息，请参阅[此Readme](https://github.com/pytorch/pytorch/blob/main/aten/src/ATen/native/nested/README.md)。
 - en: '## Construction'
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: '## 构造'
 - en: Construction is straightforward and involves passing a list of Tensors to the
     `torch.nested.nested_tensor` constructor.
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 构造很简单，只需将一组张量传递给`torch.nested.nested_tensor`构造函数。
 - en: '[PRE0]'
+  id: totrans-12
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: Data type, device and whether gradients are required can be chosen via the usual
     keyword arguments.
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: 数据类型、设备和是否需要梯度可以通过通常的关键字参数选择。
 - en: '[PRE1]'
+  id: totrans-14
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: In the vein of `torch.as_tensor`, `torch.nested.as_nested_tensor` can be used
     to preserve autograd history from the tensors passed to the constructor. For more
     information, refer to the section on [Nested tensor constructor and conversion
     functions](#constructor-functions).
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 类似于`torch.as_tensor`，`torch.nested.as_nested_tensor`可以用来保留传递给构造函数的张量的自动求导历史。有关更多信息，请参考[嵌套张量构造函数和转换函数](#constructor-functions)部分。
 - en: In order to form a valid NestedTensor all the passed Tensors need to match in
     dimension, but none of the other attributes need to.
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了形成一个有效的嵌套张量，所有传递的张量需要在维度上匹配，但其他属性则不需要。
 - en: '[PRE2]'
+  id: totrans-17
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: If one of the dimensions doesn’t match, the constructor throws an error.
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果其中一个维度不匹配，构造函数会抛出错误。
 - en: '[PRE3]'
+  id: totrans-19
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: Note that the passed Tensors are being copied into a contiguous piece of memory.
     The resulting NestedTensor allocates new memory to store them and does not keep
     a reference.
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，传递的张量被复制到一个连续的内存块中。生成的嵌套张量分配新的内存来存储它们，并不保留引用。
 - en: At this moment we only support one level of nesting, i.e. a simple, flat list
     of Tensors. In the future we can add support for multiple levels of nesting, such
     as a list that consists entirely of lists of Tensors. Note that for this extension
@@ -88,353 +130,563 @@
     resulting NestedTensor has a well defined dimension. If you have a need for this
     feature, please feel encouraged to open a feature request so that we can track
     it and plan accordingly.
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 目前我们只支持一级嵌套，即一个简单的、扁平的张量列表。在未来，我们可以添加对多级嵌套的支持，例如一个完全由张量列表组成的列表。请注意，对于这种扩展，保持每个条目的嵌套级别是均匀的非常重要，以便生成的嵌套张量具有明确定义的维度。如果您有这个需求，请随时提出功能请求，以便我们可以跟踪并相应地计划。
 - en: size
+  id: totrans-22
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 大小
 - en: Even though a NestedTensor does not support `.size()` (or `.shape`), it supports
     `.size(i)` if dimension i is regular.
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 尽管嵌套张量不支持`.size()`（或`.shape`），但如果维度i是规则的，它支持`.size(i)`。
 - en: '[PRE4]'
+  id: totrans-24
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: If all dimensions are regular, the NestedTensor is intended to be semantically
     indistinguishable from a regular `torch.Tensor`.
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果所有维度都是规则的，嵌套张量应该在语义上与常规的`torch.Tensor`无法区分。
 - en: '[PRE5]'
+  id: totrans-26
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: In the future we might make it easier to detect this condition and convert seamlessly.
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 将来我们可能会使检测这种情况并无缝转换更容易。
 - en: Please open a feature request if you have a need for this (or any other related
     feature for that matter).
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您有这方面的需求（或任何其他相关功能），请提出一个功能请求。
 - en: unbind
+  id: totrans-29
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: unbind
 - en: '`unbind` allows you to retrieve a view of the constituents.'
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: '`unbind`允许您检索组成部分的视图。'
 - en: '[PRE6]'
+  id: totrans-31
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: Note that `nt.unbind()[0]` is not a copy, but rather a slice of the underlying
     memory, which represents the first entry or constituent of the NestedTensor.
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，`nt.unbind()[0]`不是一个副本，而是底层内存的一个切片，表示嵌套张量的第一个条目或组成部分。
 - en: '## Nested tensor constructor and conversion functions[](#nested-tensor-constructor-and-conversion-functions
     "Permalink to this heading")'
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: '## 嵌套张量构造函数和转换函数[](#nested-tensor-constructor-and-conversion-functions "跳转到此标题")'
 - en: 'The following functions are related to nested tensors:'
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下函数与嵌套张量相关：
 - en: '[PRE7]'
+  id: totrans-35
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: Constructs a nested tensor with no autograd history (also known as a “leaf tensor”,
     see [Autograd mechanics](notes/autograd.html#autograd-mechanics)) from `tensor_list`
     a list of tensors.
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 从`tensor_list`（张量列表）构造一个没有自动求导历史（也称为“叶张量”，参见[自动求导机制](notes/autograd.html#autograd-mechanics)）的嵌套张量。
 - en: Parameters
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**tensor_list** (*List**[**array_like**]*) – a list of tensors, or anything
     that can be passed to torch.tensor,'
+  id: totrans-38
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**tensor_list**（*List**[**array_like**]*）- 一个张量列表，或者任何可以传递给torch.tensor的东西，'
 - en: '**dimensionality.** (*where each element* *of* *the list has the same*) –'
+  id: totrans-39
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**维度。**（*其中列表的每个元素具有相同的*）-'
 - en: Keyword Arguments
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: 关键字参数
 - en: '**dtype** ([`torch.dtype`](tensor_attributes.html#torch.dtype "torch.dtype"),
     optional) – the desired type of returned nested tensor. Default: if None, same
     [`torch.dtype`](tensor_attributes.html#torch.dtype "torch.dtype") as leftmost
     tensor in the list.'
+  id: totrans-41
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**dtype**（[`torch.dtype`](tensor_attributes.html#torch.dtype "torch.dtype")，可选）-
+    返回的嵌套张量的期望类型。默认值：如果为None，则与列表中最左边的张量相同[`torch.dtype`](tensor_attributes.html#torch.dtype
+    "torch.dtype")'
 - en: '**layout** ([`torch.layout`](tensor_attributes.html#torch.layout "torch.layout"),
     optional) – the desired layout of returned nested tensor. Only strided and jagged
     layouts are supported. Default: if None, the strided layout.'
+  id: totrans-42
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**layout**（[`torch.layout`](tensor_attributes.html#torch.layout "torch.layout")，可选）-
+    返回的嵌套张量的期望布局。仅支持步进和不规则布局。默认值：如果为None，则为步进布局。'
 - en: '**device** ([`torch.device`](tensor_attributes.html#torch.device "torch.device"),
     optional) – the desired device of returned nested tensor. Default: if None, same
     [`torch.device`](tensor_attributes.html#torch.device "torch.device") as leftmost
     tensor in the list'
+  id: totrans-43
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**device**（[`torch.device`](tensor_attributes.html#torch.device "torch.device")，可选）-
+    返回的嵌套张量的期望设备。默认值：如果为None，则与列表中最左边的张量相同[`torch.device`](tensor_attributes.html#torch.device
+    "torch.device")'
 - en: '**requires_grad** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")*,* *optional*) – If autograd should record operations on
     the returned nested tensor. Default: `False`.'
+  id: totrans-44
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**requires_grad**（[*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(在Python v3.12中)")，可选）- 如果自动求导应记录返回的嵌套张量上的操作。默认值：`False`。'
 - en: '**pin_memory** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")*,* *optional*) – If set, returned nested tensor would be
     allocated in the pinned memory. Works only for CPU tensors. Default: `False`.'
+  id: totrans-45
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**pin_memory**（[*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(在Python v3.12中)")，可选）- 如果设置，返回的嵌套张量将分配在固定内存中。仅适用于CPU张量。默认值：`False`。'
 - en: Return type
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*Tensor*](tensors.html#torch.Tensor "torch.Tensor")'
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*张量*](tensors.html#torch.Tensor "torch.Tensor")'
 - en: 'Example:'
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例：
 - en: '[PRE8]'
+  id: totrans-49
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: '[PRE9]'
+  id: totrans-50
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: Constructs a nested tensor preserving autograd history from `tensor_list` a
     list of tensors.
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
+  zh: 从`tensor_list`张量列表构造一个保留自动求导历史的嵌套张量。
 - en: Note
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Tensors within the list are always copied by this function due to current nested
     tensor semantics.
+  id: totrans-53
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于当前嵌套张量语义，此函数总是复制列表中的张量。
 - en: Parameters
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**tensor_list** (*List**[*[*Tensor*](tensors.html#torch.Tensor "torch.Tensor")*]*)
     – a list of tensors with the same ndim'
+  id: totrans-55
   prefs: []
   type: TYPE_NORMAL
+  zh: '**tensor_list**（*列表**[*[*张量*](tensors.html#torch.Tensor "torch.Tensor")*]*）-
+    具有相同ndim的张量列表'
 - en: Keyword Arguments
+  id: totrans-56
   prefs: []
   type: TYPE_NORMAL
+  zh: 关键字参数
 - en: '**dtype** ([`torch.dtype`](tensor_attributes.html#torch.dtype "torch.dtype"),
     optional) – the desired type of returned nested tensor. Default: if None, same
     [`torch.dtype`](tensor_attributes.html#torch.dtype "torch.dtype") as leftmost
     tensor in the list.'
+  id: totrans-57
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**dtype**（[`torch.dtype`](tensor_attributes.html#torch.dtype "torch.dtype")，可选）-
+    返回的嵌套张量的期望类型。默认值：如果为None，则与列表中最左边的张量相同[`torch.dtype`](tensor_attributes.html#torch.dtype
+    "torch.dtype")'
 - en: '**device** ([`torch.device`](tensor_attributes.html#torch.device "torch.device"),
     optional) – the desired device of returned nested tensor. Default: if None, same
     [`torch.device`](tensor_attributes.html#torch.device "torch.device") as leftmost
     tensor in the list'
+  id: totrans-58
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**device**（[`torch.device`](tensor_attributes.html#torch.device "torch.device")，可选）-
+    返回的嵌套张量的期望设备。默认值：如果为None，则与列表中最左边的张量相同[`torch.device`](tensor_attributes.html#torch.device
+    "torch.device")'
 - en: '**layout** ([`torch.layout`](tensor_attributes.html#torch.layout "torch.layout"),
     optional) – the desired layout of returned nested tensor. Only strided and jagged
     layouts are supported. Default: if None, the strided layout.'
+  id: totrans-59
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**layout**（[`torch.layout`](tensor_attributes.html#torch.layout "torch.layout")，可选）-
+    返回嵌套张量的期望布局。仅支持步进和不规则布局。默认值：如果为None，则为步进布局。'
 - en: Return type
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*Tensor*](tensors.html#torch.Tensor "torch.Tensor")'
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*张量*](tensors.html#torch.Tensor "torch.Tensor")'
 - en: 'Example:'
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例：
 - en: '[PRE10]'
+  id: totrans-63
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: '[PRE11]'
+  id: totrans-64
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: Returns a new (non-nested) Tensor by padding the `input` nested tensor. The
     leading entries will be filled with the nested data, while the trailing entries
     will be padded.
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过填充`input`嵌套张量，返回一个新的（非嵌套）张量。前导条目将填充嵌套数据，而尾随条目将被填充。
 - en: Warning
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: '[`to_padded_tensor()`](#torch.nested.to_padded_tensor "torch.nested.to_padded_tensor")
     always copies the underlying data, since the nested and the non-nested tensors
     differ in memory layout.'
+  id: totrans-67
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`to_padded_tensor()`](#torch.nested.to_padded_tensor "torch.nested.to_padded_tensor")总是复制底层数据，因为嵌套张量和非嵌套张量在内存布局上有所不同。'
 - en: Parameters
+  id: totrans-68
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**padding** ([*float*](https://docs.python.org/3/library/functions.html#float
     "(in Python v3.12)")) – The padding value for the trailing entries.'
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: '**padding**（[*float*](https://docs.python.org/3/library/functions.html#float
+    "(在Python v3.12)")）- 尾随条目的填充值。'
 - en: Keyword Arguments
+  id: totrans-70
   prefs: []
   type: TYPE_NORMAL
+  zh: 关键字参数
 - en: '**output_size** (*Tuple**[*[*int*](https://docs.python.org/3/library/functions.html#int
     "(in Python v3.12)")*]*) – The size of the output tensor. If given, it must be
     large enough to contain all nested data; else, will infer by taking the max size
     of each nested sub-tensor along each dimension.'
+  id: totrans-71
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**output_size**（*元组**[*[*int*](https://docs.python.org/3/library/functions.html#int
+    "(在Python v3.12中)")*]*）- 输出张量的大小。如果给定，必须足够大以包含所有嵌套数据；否则，将通过沿每个维度取每个嵌套子张量的最大大小来推断。'
 - en: '**out** ([*Tensor*](tensors.html#torch.Tensor "torch.Tensor")*,* *optional*)
     – the output tensor.'
+  id: totrans-72
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**out**（[*张量*](tensors.html#torch.Tensor "torch.Tensor")，可选）- 输出张量。'
 - en: 'Example:'
+  id: totrans-73
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例：
 - en: '[PRE12]  ## Supported operations[](#supported-operations "Permalink to this
     heading")'
+  id: totrans-74
   prefs: []
   type: TYPE_NORMAL
+  zh: '[PRE12]  ## 支持的操作[](#supported-operations "跳转到此标题")'
 - en: In this section, we summarize the operations that are currently supported on
     NestedTensor and any constraints they have.
+  id: totrans-75
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本节中，我们总结了当前在NestedTensor上支持的操作以及它们的任何约束。
 - en: '| PyTorch operation | Constraints |'
+  id: totrans-76
   prefs: []
   type: TYPE_TB
+  zh: '| PyTorch操作 | 约束 |'
 - en: '| --- | --- |'
+  id: totrans-77
   prefs: []
   type: TYPE_TB
+  zh: '| --- | --- |'
 - en: '| [`torch.matmul()`](generated/torch.matmul.html#torch.matmul "torch.matmul")
     | Supports matrix multiplication between two (>= 3d) nested tensors where the
     last two dimensions are matrix dimensions and the leading (batch) dimensions have
     the same size (i.e. no broadcasting support for batch dimensions yet). |'
+  id: totrans-78
   prefs: []
   type: TYPE_TB
+  zh: '| [`torch.matmul()`](generated/torch.matmul.html#torch.matmul "torch.matmul")
+    | 支持两个（>= 3d）嵌套张量之间的矩阵乘法，其中最后两个维度是矩阵维度，前导（批量）维度具有相同的大小（即批量维度尚不支持广播）。 |'
 - en: '| [`torch.bmm()`](generated/torch.bmm.html#torch.bmm "torch.bmm") | Supports
     batch matrix multiplication of two 3-d nested tensors. |'
+  id: totrans-79
   prefs: []
   type: TYPE_TB
+  zh: '| [`torch.bmm()`](generated/torch.bmm.html#torch.bmm "torch.bmm") | 支持两个3维嵌套张量的批量矩阵乘法。
+    |'
 - en: '| [`torch.nn.Linear()`](generated/torch.nn.Linear.html#torch.nn.Linear "torch.nn.Linear")
     | Supports 3-d nested input and a dense 2-d weight matrix. |'
+  id: totrans-80
   prefs: []
   type: TYPE_TB
+  zh: '| [`torch.nn.Linear()`](generated/torch.nn.Linear.html#torch.nn.Linear "torch.nn.Linear")
+    | 支持3维嵌套输入和一个密集的2维权重矩阵。 |'
 - en: '| [`torch.nn.functional.softmax()`](generated/torch.nn.functional.softmax.html#torch.nn.functional.softmax
     "torch.nn.functional.softmax") | Supports softmax along all dims except dim=0.
     |'
+  id: totrans-81
   prefs: []
   type: TYPE_TB
+  zh: '| [`torch.nn.functional.softmax()`](generated/torch.nn.functional.softmax.html#torch.nn.functional.softmax
+    "torch.nn.functional.softmax") | 支持除`dim=0`以外的所有维度的softmax。 |'
 - en: '| [`torch.nn.Dropout()`](generated/torch.nn.Dropout.html#torch.nn.Dropout "torch.nn.Dropout")
     | Behavior is the same as on regular tensors. |'
+  id: totrans-82
   prefs: []
   type: TYPE_TB
+  zh: '| [`torch.nn.Dropout()`](generated/torch.nn.Dropout.html#torch.nn.Dropout "torch.nn.Dropout")
+    | 行为与常规张量相同。 |'
 - en: '| [`torch.Tensor.masked_fill()`](generated/torch.Tensor.masked_fill.html#torch.Tensor.masked_fill
     "torch.Tensor.masked_fill") | Behavior is the same as on regular tensors. |'
+  id: totrans-83
   prefs: []
   type: TYPE_TB
+  zh: '| [`torch.Tensor.masked_fill()`](generated/torch.Tensor.masked_fill.html#torch.Tensor.masked_fill
+    "torch.Tensor.masked_fill") | 行为与常规张量相同。 |'
 - en: '| `torch.relu()` | Behavior is the same as on regular tensors. |'
+  id: totrans-84
   prefs: []
   type: TYPE_TB
+  zh: '| `torch.relu()` | 行为与常规张量相同。 |'
 - en: '| `torch.gelu()` | Behavior is the same as on regular tensors. |'
+  id: totrans-85
   prefs: []
   type: TYPE_TB
+  zh: '| `torch.gelu()` | 行为与常规张量相同。 |'
 - en: '| `torch.silu()` | Behavior is the same as on regular tensors. |'
+  id: totrans-86
   prefs: []
   type: TYPE_TB
+  zh: '| `torch.silu()` | 行为与常规张量相同。 |'
 - en: '| [`torch.abs()`](generated/torch.abs.html#torch.abs "torch.abs") | Behavior
     is the same as on regular tensors. |'
+  id: totrans-87
   prefs: []
   type: TYPE_TB
+  zh: '| [`torch.abs()`](generated/torch.abs.html#torch.abs "torch.abs") | 行为与常规张量相同。
+    |'
 - en: '| [`torch.sgn()`](generated/torch.sgn.html#torch.sgn "torch.sgn") | Behavior
     is the same as on regular tensors. |'
+  id: totrans-88
   prefs: []
   type: TYPE_TB
+  zh: '| [`torch.sgn()`](generated/torch.sgn.html#torch.sgn "torch.sgn") | 行为与常规张量相同。
+    |'
 - en: '| [`torch.logical_not()`](generated/torch.logical_not.html#torch.logical_not
     "torch.logical_not") | Behavior is the same as on regular tensors. |'
+  id: totrans-89
   prefs: []
   type: TYPE_TB
+  zh: '| [`torch.logical_not()`](generated/torch.logical_not.html#torch.logical_not
+    "torch.logical_not") | 行为与常规张量相同。 |'
 - en: '| [`torch.neg()`](generated/torch.neg.html#torch.neg "torch.neg") | Behavior
     is the same as on regular tensors. |'
+  id: totrans-90
   prefs: []
   type: TYPE_TB
+  zh: '| [`torch.neg()`](generated/torch.neg.html#torch.neg "torch.neg") | 行为与常规张量相同。
+    |'
 - en: '| [`torch.sub()`](generated/torch.sub.html#torch.sub "torch.sub") | Supports
     elementwise subtraction of two nested tensors. |'
+  id: totrans-91
   prefs: []
   type: TYPE_TB
+  zh: '| [`torch.sub()`](generated/torch.sub.html#torch.sub "torch.sub") | 支持对两个嵌套张量进行逐元素减法。
+    |'
 - en: '| [`torch.add()`](generated/torch.add.html#torch.add "torch.add") | Supports
     elementwise addition of two nested tensors. Supports addition of a scalar to a
     nested tensor. |'
+  id: totrans-92
   prefs: []
   type: TYPE_TB
+  zh: '| [`torch.add()`](generated/torch.add.html#torch.add "torch.add") | 支持两个嵌套张量的逐元素加法。支持将标量添加到嵌套张量中。
+    |'
 - en: '| [`torch.mul()`](generated/torch.mul.html#torch.mul "torch.mul") | Supports
     elementwise multiplication of two nested tensors. Supports multiplication of a
     nested tensor by a scalar. |'
+  id: totrans-93
   prefs: []
   type: TYPE_TB
+  zh: '| [`torch.mul()`](generated/torch.mul.html#torch.mul "torch.mul") | 支持两个嵌套张量的逐元素乘法。支持将嵌套张量乘以标量。
+    |'
 - en: '| [`torch.select()`](generated/torch.select.html#torch.select "torch.select")
     | Supports selecting along all dimensions. |'
+  id: totrans-94
   prefs: []
   type: TYPE_TB
+  zh: '| [`torch.select()`](generated/torch.select.html#torch.select "torch.select")
+    | 支持沿所有维度进行选择。 |'
 - en: '| [`torch.clone()`](generated/torch.clone.html#torch.clone "torch.clone") |
     Behavior is the same as on regular tensors. |'
+  id: totrans-95
   prefs: []
   type: TYPE_TB
+  zh: '| [`torch.clone()`](generated/torch.clone.html#torch.clone "torch.clone") |
+    行为与常规张量相同。 |'
 - en: '| `torch.detach()` | Behavior is the same as on regular tensors. |'
+  id: totrans-96
   prefs: []
   type: TYPE_TB
+  zh: '| `torch.detach()` | 行为与常规张量相同。 |'
 - en: '| [`torch.unbind()`](generated/torch.unbind.html#torch.unbind "torch.unbind")
     | Supports unbinding along `dim=0` only. |'
+  id: totrans-97
   prefs: []
   type: TYPE_TB
+  zh: '| [`torch.unbind()`](generated/torch.unbind.html#torch.unbind "torch.unbind")
+    | 仅支持沿`dim=0`解绑。 |'
 - en: '| [`torch.reshape()`](generated/torch.reshape.html#torch.reshape "torch.reshape")
     | Supports reshaping with size of `dim=0` preserved (i.e. number of tensors nested
     cannot be changed). Unlike regular tensors, a size of `-1` here means that the
     existing size is inherited. In particular, the only valid size for a irregular
     dimension is `-1`. Size inference is not implemented yet and hence for new dimensions
     the size cannot be `-1`. |'
+  id: totrans-98
   prefs: []
   type: TYPE_TB
+  zh: '| [`torch.reshape()`](generated/torch.reshape.html#torch.reshape "torch.reshape")
+    | 支持保留`dim=0`大小的重塑（即嵌套张量的数量不能改变）。与常规张量不同，这里的大小为`-1`表示继承现有大小。特别是，不规则维度的唯一有效大小是`-1`。尺寸推断尚未实现，因此对于新维度，大小不能为`-1`。
+    |'
 - en: '| [`torch.Tensor.reshape_as()`](generated/torch.Tensor.reshape_as.html#torch.Tensor.reshape_as
     "torch.Tensor.reshape_as") | Similar constraint as for `reshape`. |'
+  id: totrans-99
   prefs: []
   type: TYPE_TB
+  zh: '| [`torch.Tensor.reshape_as()`](generated/torch.Tensor.reshape_as.html#torch.Tensor.reshape_as
+    "torch.Tensor.reshape_as") | 新形状的规则与`reshape`类似。 |'
 - en: '| [`torch.transpose()`](generated/torch.transpose.html#torch.transpose "torch.transpose")
     | Supports transposing of all dims except `dim=0`. |'
+  id: totrans-100
   prefs: []
   type: TYPE_TB
+  zh: '| [`torch.transpose()`](generated/torch.transpose.html#torch.transpose "torch.transpose")
+    | 支持除`dim=0`以外的所有维度的转置。 |'
 - en: '| [`torch.Tensor.view()`](generated/torch.Tensor.view.html#torch.Tensor.view
     "torch.Tensor.view") | Rules for the new shape are similar to that of `reshape`.
     |'
+  id: totrans-101
   prefs: []
   type: TYPE_TB
+  zh: '| [`torch.Tensor.view()`](generated/torch.Tensor.view.html#torch.Tensor.view
+    "torch.Tensor.view") | 新形状的规则类似于`reshape`。 |'
 - en: '| [`torch.empty_like()`](generated/torch.empty_like.html#torch.empty_like "torch.empty_like")
     | Behavior is analogous to that of regular tensors; returns a new empty nested
     tensor (i.e. with uninitialized values) matching the nested structure of the input.
     |'
+  id: totrans-102
   prefs: []
   type: TYPE_TB
+  zh: '| [`torch.empty_like()`](generated/torch.empty_like.html#torch.empty_like "torch.empty_like")
+    | 行为类似于常规张量；返回一个新的空嵌套张量（即未初始化值），匹配输入的嵌套结构。 |'
 - en: '| [`torch.randn_like()`](generated/torch.randn_like.html#torch.randn_like "torch.randn_like")
     | Behavior is analogous to that of regular tensors; returns a new nested tensor
     with values randomly initialized according to a standard normal distribution matching
     the nested structure of the input. |'
+  id: totrans-103
   prefs: []
   type: TYPE_TB
+  zh: '| [`torch.randn_like()`](generated/torch.randn_like.html#torch.randn_like "torch.randn_like")
+    | 行为类似于常规张量；返回一个新的嵌套张量，其值根据标准正态分布随机初始化，匹配输入的嵌套结构。 |'
 - en: '| [`torch.zeros_like()`](generated/torch.zeros_like.html#torch.zeros_like "torch.zeros_like")
     | Behavior is analogous to that of regular tensors; returns a new nested tensor
     with all zero values matching the nested structure of the input. |'
+  id: totrans-104
   prefs: []
   type: TYPE_TB
+  zh: '| [`torch.zeros_like()`](generated/torch.zeros_like.html#torch.zeros_like "torch.zeros_like")
+    | 行为类似于常规张量；返回一个新的嵌套张量，所有零值与输入的嵌套结构匹配。 |'
 - en: '| [`torch.nn.LayerNorm()`](generated/torch.nn.LayerNorm.html#torch.nn.LayerNorm
     "torch.nn.LayerNorm") | The `normalized_shape` argument is restricted to not extend
     into the irregular dimensions of the NestedTensor. |'
+  id: totrans-105
   prefs: []
   type: TYPE_TB
+  zh: '| [`torch.nn.LayerNorm()`](generated/torch.nn.LayerNorm.html#torch.nn.LayerNorm
+    "torch.nn.LayerNorm") | `normalized_shape` 参数受限于不扩展到 NestedTensor 的不规则维度。 |'
