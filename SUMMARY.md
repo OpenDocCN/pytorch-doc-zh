@@ -1,5 +1,6 @@
 +   [PyTorch 中文教程 & 文档](README.md)
-+   [PyTorch 中文官方教程 1.7](docs/1.7/README.md)
++   [PyTorch 2.2 中文教程和文档](docs/2.2/README.md)
++   [PyTorch 1.7 中文官方教程](docs/1.7/README.md)
 +   [PyTorch 1.4 教程&文档](docs/1.4/README.md)
 +   [PyTorch 1.0 中文文档](docs/1.0/README.md)
 +   [PyTorch 0.4 中文文档](docs/0.4/README.md)
