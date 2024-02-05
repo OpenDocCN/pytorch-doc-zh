@@ -3,55 +3,66 @@
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 使用XLM-RoBERTa模型进行SST-2二元文本分类
 - en: 原文：[https://pytorch.org/text/stable/tutorials/sst2_classification_non_distributed.html](https://pytorch.org/text/stable/tutorials/sst2_classification_non_distributed.html)
   id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：https://pytorch.org/text/stable/tutorials/sst2_classification_non_distributed.html
 - en: Note
   id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-tutorials-sst2-classification-non-distributed-py)
     to download the full example code
   id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击这里下载完整的示例代码
 - en: '**Author**: [Parmeet Bhatia](mailto:parmeetbhatia%40fb.com)'
   id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 作者：Parmeet Bhatia
 - en: Overview[](#overview "Permalink to this heading")
   id: totrans-5
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 概述
 - en: 'This tutorial demonstrates how to train a text classifier on SST-2 binary dataset
     using a pre-trained XLM-RoBERTa (XLM-R) model. We will show how to use torchtext
     library to:'
   id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程演示了如何使用预训练的XLM-RoBERTa（XLM-R）模型在SST-2二元数据集上训练文本分类器。我们将展示如何使用torchtext库来：
 - en: build text pre-processing pipeline for XLM-R model
   id: totrans-7
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 为XLM-R模型构建文本预处理管道
 - en: read SST-2 dataset and transform it using text and label transformation
   id: totrans-8
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 读取SST-2数据集并使用文本和标签转换进行转换
 - en: instantiate classification model using pre-trained XLM-R encoder
   id: totrans-9
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 使用预训练的XLM-R编码器实例化分类模型
 - en: Common imports[](#common-imports "Permalink to this heading")
   id: totrans-10
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 常见导入
 - en: '[PRE0]'
   id: totrans-11
   prefs: []
@@ -62,6 +73,7 @@
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 数据转换
 - en: 'Models like XLM-R cannot work directly with raw text. The first step in training
     these models is to transform input text into tensor (numerical) form such that
     it can then be processed by models to make predictions. A standard way to process
@@ -69,21 +81,25 @@
   id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: 像XLM-R这样的模型不能直接处理原始文本。训练这些模型的第一步是将输入文本转换为张量（数值）形式，以便模型可以对其进行处理并进行预测。处理文本的标准方法是：
 - en: Tokenize text
   id: totrans-14
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 对文本进行标记化
 - en: Convert tokens into (integer) IDs
   id: totrans-15
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 将标记转换为（整数）ID
 - en: Add any special tokens IDs
   id: totrans-16
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 添加任何特殊的标记ID
 - en: XLM-R uses sentencepiece model for text tokenization. Below, we use pre-trained
     sentencepiece model along with corresponding vocabulary to build text pre-processing
     pipeline using torchtext’s transforms. The transforms are pipelined using [`torchtext.transforms.Sequential()`](../transforms.html#torchtext.transforms.Sequential
@@ -93,6 +109,7 @@
   id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: XLM-R使用sentencepiece模型进行文本标记化。下面，我们使用预训练的sentencepiece模型以及相应的词汇表来构建文本预处理管道，使用torchtext的transforms。这些transforms通过torchtext.transforms.Sequential()进行流水线处理，类似于torch.nn.Sequential()，但是可以被torchscript。请注意，transforms支持批处理和非批处理文本输入，即可以传递单个句子或句子列表。
 - en: '[PRE1]'
   id: totrans-18
   prefs: []
@@ -103,6 +120,7 @@
   id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 或者我们也可以使用预训练模型附带的转换，它可以直接完成上述所有步骤
 - en: '[PRE2]'
   id: totrans-20
   prefs: []
@@ -113,6 +131,7 @@
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 数据集
 - en: torchtext provides several standard NLP datasets. For complete list, refer to
     documentation at [https://pytorch.org/text/stable/datasets.html](https://pytorch.org/text/stable/datasets.html).
     These datasets are build using composable torchdata datapipes and hence support
@@ -122,16 +141,20 @@
   id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: torchtext提供了几个标准的NLP数据集。有关完整列表，请参阅文档：https://pytorch.org/text/stable/datasets.html。这些数据集是使用可组合的torchdata
+    datapipes构建的，因此支持使用用户定义的函数和transforms进行标准的流控制和映射/转换。下面，我们演示如何使用文本和标签处理transforms来预处理SST-2数据集。
 - en: Note
   id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Using datapipes is still currently subject to a few caveats. If you wish to
     extend this example to include shuffling, multi-processing, or distributed learning,
     please see [this note](../datasets.html#datapipes-warnings) for further instructions.
   id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用datapipes目前仍然存在一些注意事项。如果您希望将此示例扩展到包括洗牌、多处理或分布式学习，请参阅此说明以获取进一步的指导。
 - en: '[PRE3]'
   id: totrans-25
   prefs: []
@@ -142,6 +165,7 @@
   id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 或者我们也可以使用批处理API（即对整个批次应用转换）
 - en: '[PRE4]'
   id: totrans-27
   prefs: []
@@ -152,6 +176,7 @@
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 模型准备
 - en: torchtext provides SOTA pre-trained models that can be used to fine-tune on
     downstream NLP tasks. Below we use pre-trained XLM-R encoder with standard base
     architecture and attach a classifier head to fine-tune it on SST-2 binary classification
@@ -162,6 +187,7 @@
   id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: torchtext提供了可以用于微调下游NLP任务的SOTA预训练模型。以下我们使用预训练的XLM-R编码器与标准基础架构，并附加一个分类器头来对其进行微调，以在SST-2二元分类任务上进行微调。我们将使用库中的标准分类器头，但用户可以定义自己适当的任务头并将其附加到预训练的编码器上。有关可用预训练模型的更多详细信息，请参阅文档：https://pytorch.org/text/main/models.html
 - en: '[PRE5]'
   id: totrans-30
   prefs: []
@@ -172,11 +198,13 @@
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 训练方法
 - en: Let’s now define the standard optimizer and training criteria as well as some
     helper functions for training and evaluation
   id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在让我们定义标准的优化器和训练标准，以及一些用于训练和评估的辅助函数。
 - en: '[PRE6]'
   id: totrans-33
   prefs: []
@@ -187,6 +215,7 @@
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 训练
 - en: Now we have all the ingredients to train our classification model. Note that
     we are able to directly iterate on our dataset object without using DataLoader.
     Our pre-process dataset shall yield batches of data already, thanks to the batching

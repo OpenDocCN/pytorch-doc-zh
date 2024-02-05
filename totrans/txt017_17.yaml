@@ -1,245 +1,368 @@
 - en: T5-Base Model for Summarization, Sentiment Classification, and Translation
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: T5-基础模型用于摘要、情感分类和翻译
 - en: 原文：[https://pytorch.org/text/stable/tutorials/t5_demo.html](https://pytorch.org/text/stable/tutorials/t5_demo.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/text/stable/tutorials/t5_demo.html](https://pytorch.org/text/stable/tutorials/t5_demo.html)
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-tutorials-t5-demo-py) to download the full example
     code
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[这里](#sphx-glr-download-tutorials-t5-demo-py)下载完整示例代码
 - en: '**Author**: [Pendo Abbo](mailto:pabbo%40fb.com), [Joe Cummings](mailto:jrcummings%40fb.com)'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '**作者**：[Pendo Abbo](mailto:pabbo%40fb.com)，[Joe Cummings](mailto:jrcummings%40fb.com)'
 - en: Overview[](#overview "Permalink to this heading")
+  id: totrans-5
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 概述[](#overview "跳转到此标题")
 - en: 'This tutorial demonstrates how to use a pre-trained T5 Model for summarization,
     sentiment classification, and translation tasks. We will demonstrate how to use
     the torchtext library to:'
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程演示了如何使用预训练的T5模型进行摘要、情感分类和翻译任务。我们将演示如何使用torchtext库：
 - en: Build a text pre-processing pipeline for a T5 model
+  id: totrans-7
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 为T5模型构建文本预处理管道
 - en: Instantiate a pre-trained T5 model with base configuration
+  id: totrans-8
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 实例化一个带有基础配置的预训练T5模型
 - en: Read in the CNNDM, IMDB, and Multi30k datasets and pre-process their texts in
     preparation for the model
+  id: totrans-9
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 读取CNNDM、IMDB和Multi30k数据集，并预处理它们的文本，为模型做准备。
 - en: Perform text summarization, sentiment classification, and translation
+  id: totrans-10
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 执行文本摘要、情感分类和翻译
 - en: Data Transformation[](#data-transformation "Permalink to this heading")
+  id: totrans-11
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 数据转换[](#data-transformation "跳转到此标题")
 - en: 'The T5 model does not work with raw text. Instead, it requires the text to
     be transformed into numerical form in order to perform training and inference.
     The following transformations are required for the T5 model:'
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: T5模型不适用于原始文本。相反，它需要将文本转换为数字形式，以便进行训练和推断。T5模型需要以下转换：
 - en: Tokenize text
+  id: totrans-13
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 标记化文本
 - en: Convert tokens into (integer) IDs
+  id: totrans-14
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 将标记转换为（整数）ID
 - en: Truncate the sequences to a specified maximum length
+  id: totrans-15
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 将序列截断到指定的最大长度
 - en: Add end-of-sequence (EOS) and padding token IDs
+  id: totrans-16
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 添加终止序列（EOS）和填充标记ID
 - en: T5 uses a SentencePiece model for text tokenization. Below, we use a pre-trained
     SentencePiece model to build the text pre-processing pipeline using torchtext’s
     T5Transform. Note that the transform supports both batched and non-batched text
     input (for example, one can either pass a single sentence or a list of sentences),
     however the T5 model expects the input to be batched.
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: T5使用SentencePiece模型进行文本标记化。下面，我们使用预训练的SentencePiece模型构建文本预处理管道，使用torchtext的T5Transform。请注意，该转换支持批处理和非批处理文本输入（例如，可以传递单个句子或句子列表），但是T5模型期望输入是批处理的。
 - en: '[PRE0]'
+  id: totrans-18
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: Alternatively, we can also use the transform shipped with the pre-trained models
     that does all of the above out-of-the-box
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 或者，我们也可以使用预训练模型中附带的转换器，该转换器可以直接执行所有上述操作。
 - en: '[PRE1]'
+  id: totrans-20
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Model Preparation[](#model-preparation "Permalink to this heading")
+  id: totrans-21
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 模型准备[](#model-preparation "跳转到此标题")
 - en: torchtext provides SOTA pre-trained models that can be used directly for NLP
     tasks or fine-tuned on downstream tasks. Below we use the pre-trained T5 model
     with standard base configuration to perform text summarization, sentiment classification,
     and translation. For additional details on available pre-trained models, see [the
     torchtext documentation](https://pytorch.org/text/main/models.html)
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: torchtext提供了SOTA预训练模型，可以直接用于NLP任务，或在下游任务上进行微调。下面我们使用预训练的T5模型，标准基础配置，执行文本摘要、情感分类和翻译。有关可用预训练模型的更多详细信息，请参阅[torchtext文档](https://pytorch.org/text/main/models.html)。
 - en: '[PRE2]'
+  id: totrans-23
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: GenerationUtils[](#generationutils "Permalink to this heading")
+  id: totrans-24
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: GenerationUtils[](#generationutils "跳转到此标题")
 - en: We can use torchtext’s `GenerationUtils` to produce an output sequence based
     on the input sequence provided. This calls on the model’s encoder and decoder,
     and iteratively expands the decoded sequences until the end-of-sequence token
     is generated for all sequences in the batch. The `generate` method shown below
     uses greedy search to generate the sequences. Beam search and other decoding strategies
     are also supported.
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们可以使用torchtext的`GenerationUtils`根据提供的输入序列生成输出序列。这调用模型的编码器和解码器，并迭代地扩展解码的序列，直到为批处理中的所有序列生成终止序列标记。下面显示的`generate`方法使用贪婪搜索生成序列。还支持波束搜索和其他解码策略。
 - en: '[PRE3]'
+  id: totrans-26
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: Datasets[](#datasets "Permalink to this heading")
+  id: totrans-27
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 数据集[](#datasets "跳转到此标题")
 - en: torchtext provides several standard NLP datasets. For a complete list, refer
     to the documentation at [https://pytorch.org/text/stable/datasets.html](https://pytorch.org/text/stable/datasets.html).
     These datasets are built using composable torchdata datapipes and hence support
     standard flow-control and mapping/transformation using user defined functions
     and transforms.
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: torchtext提供了几个标准的NLP数据集。有关完整列表，请参阅[文档](https://pytorch.org/text/stable/datasets.html)。这些数据集使用可组合的torchdata
+    datapipes构建，因此支持使用用户定义的函数和转换进行标准的流控制和映射/转换。
 - en: Below we demonstrate how to pre-process the CNNDM dataset to include the prefix
     necessary for the model to indentify the task it is performing. The CNNDM dataset
     has a train, validation, and test split. Below we demo on the test split.
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 下面我们演示如何预处理CNNDM数据集，以包含模型识别正在执行的任务所需的前缀。CNNDM数据集有训练、验证和测试拆分。下面我们在测试拆分上演示。
 - en: The T5 model uses the prefix “summarize” for text summarization. For more information
     on task prefixes, please visit Appendix D of the [T5 Paper](https://arxiv.org/pdf/1910.10683.pdf)
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: T5模型使用前缀“summarize”进行文本摘要。有关任务前缀的更多信息，请访问[T5论文](https://arxiv.org/pdf/1910.10683.pdf)的附录D。
 - en: Note
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Using datapipes is still currently subject to a few caveats. If you wish to
     extend this example to include shuffling, multi-processing, or distributed learning,
     please see [this note](../datasets.html#datapipes-warnings) for further instructions.
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用datapipes目前仍然存在一些注意事项。如果您希望将此示例扩展到包括洗牌、多处理或分布式学习，请参阅[此说明](../datasets.html#datapipes-warnings)以获取进一步的指导。
 - en: '[PRE4]'
+  id: totrans-33
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: 'Alternately, we can also use batched API, for example, apply the prefix on
     the whole batch:'
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 或者，我们也可以使用批处理API，例如，在整个批处理上应用前缀：
 - en: '[PRE5]'
+  id: totrans-35
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: We can also load the IMDB dataset, which will be used to demonstrate sentiment
     classification using the T5 model. This dataset has a train and test split. Below
     we demo on the test split.
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们还可以加载IMDB数据集，用于演示使用T5模型进行情感分类。这个数据集有一个训练和测试分割。下面我们在测试分割上进行演示。
 - en: The T5 model was trained on the SST2 dataset (also available in torchtext) for
     sentiment classification using the prefix “sst2 sentence”. Therefore, we will
     use this prefix to perform sentiment classification on the IMDB dataset.
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: T5模型在SST2数据集上进行了训练（也可在torchtext中找到），用于情感分类，使用前缀“sst2 sentence”。因此，我们将使用这个前缀在IMDB数据集上执行情感分类。
 - en: '[PRE6]'
+  id: totrans-38
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: Finally, we can also load the Multi30k dataset to demonstrate English to German
     translation using the T5 model. This dataset has a train, validation, and test
     split. Below we demo on the test split.
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 最后，我们还可以加载Multi30k数据集，演示使用T5模型进行英语到德语翻译。这个数据集有一个训练、验证和测试分割。下面我们在测试分割上进行演示。
 - en: The T5 model uses the prefix “translate English to German” for this task.
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: T5模型在这个任务中使用前缀“将英语翻译成德语”。
 - en: '[PRE7]'
+  id: totrans-41
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: Generate Summaries[](#generate-summaries "Permalink to this heading")
+  id: totrans-42
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 生成摘要
 - en: We can put all of the components together to generate summaries on the first
     batch of articles in the CNNDM test set using a beam size of 1.
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们可以将所有组件放在一起，在CNNDM测试集的第一批文章上生成摘要，使用一个束大小为1。
 - en: '[PRE8]'
+  id: totrans-44
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: Summarization Output (Might vary since we shuffle the dataloader)[](#summarization-output-might-vary-since-we-shuffle-the-dataloader
     "Permalink to this heading")
+  id: totrans-45
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 摘要输出（可能会有所不同，因为我们对数据加载器进行了洗牌）
 - en: '[PRE9]'
+  id: totrans-46
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: Generate Sentiment Classifications[](#generate-sentiment-classifications "Permalink
     to this heading")
+  id: totrans-47
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 生成情感分类
 - en: Similarly, we can use the model to generate sentiment classifications on the
     first batch of reviews from the IMDB test set using a beam size of 1.
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: 同样地，我们可以使用模型在IMDB测试集的第一批评论上生成情感分类，使用一个束大小为1。
 - en: '[PRE10]'
+  id: totrans-49
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: Sentiment Output[](#sentiment-output "Permalink to this heading")
+  id: totrans-50
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 情感输出
 - en: '[PRE11]'
+  id: totrans-51
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: Generate Translations[](#generate-translations "Permalink to this heading")
+  id: totrans-52
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 生成翻译
 - en: Finally, we can also use the model to generate English to German translations
     on the first batch of examples from the Multi30k test set.
+  id: totrans-53
   prefs: []
   type: TYPE_NORMAL
+  zh: 最后，我们还可以使用模型在Multi30k测试集的第一批示例上生成英语到德语的翻译。
 - en: '[PRE12]'
+  id: totrans-54
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: Translation Output[](#translation-output "Permalink to this heading")
+  id: totrans-55
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 翻译输出
 - en: '[PRE13]'
+  id: totrans-56
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: '**Total running time of the script:** ( 0 minutes 0.000 seconds)'
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: 脚本的总运行时间：（0分钟0.000秒）
 - en: '[`Download Python source code: t5_demo.py`](../_downloads/44b94d63339a7b86de25d87a007ac20d/t5_demo.py)'
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: '[下载Python源代码：t5_demo.py](../_downloads/44b94d63339a7b86de25d87a007ac20d/t5_demo.py)'
 - en: '[`Download Jupyter notebook: t5_demo.ipynb`](../_downloads/607a641e3f6f089289ce96925bb002c7/t5_demo.ipynb)'
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: '[下载Jupyter笔记本：t5_demo.ipynb]'
 - en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Sphinx-Gallery生成的画廊](https://sphinx-gallery.github.io)'
