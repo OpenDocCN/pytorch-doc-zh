@@ -1,0 +1,176 @@
+- en: SST-2 Binary text classification with XLM-RoBERTa model¶
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/text/stable/tutorials/sst2_classification_non_distributed.html](https://pytorch.org/text/stable/tutorials/sst2_classification_non_distributed.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Click [here](#sphx-glr-download-tutorials-sst2-classification-non-distributed-py)
+    to download the full example code
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Author**: [Parmeet Bhatia](mailto:parmeetbhatia%40fb.com)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Overview[¶](#overview "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'This tutorial demonstrates how to train a text classifier on SST-2 binary dataset
+    using a pre-trained XLM-RoBERTa (XLM-R) model. We will show how to use torchtext
+    library to:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: build text pre-processing pipeline for XLM-R model
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: read SST-2 dataset and transform it using text and label transformation
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: instantiate classification model using pre-trained XLM-R encoder
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Common imports[¶](#common-imports "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Data Transformation[¶](#data-transformation "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Models like XLM-R cannot work directly with raw text. The first step in training
+    these models is to transform input text into tensor (numerical) form such that
+    it can then be processed by models to make predictions. A standard way to process
+    text is:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tokenize text
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Convert tokens into (integer) IDs
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Add any special tokens IDs
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: XLM-R uses sentencepiece model for text tokenization. Below, we use pre-trained
+    sentencepiece model along with corresponding vocabulary to build text pre-processing
+    pipeline using torchtext’s transforms. The transforms are pipelined using [`torchtext.transforms.Sequential()`](../transforms.html#torchtext.transforms.Sequential
+    "torchtext.transforms.Sequential") which is similar to `torch.nn.Sequential()`
+    but is torchscriptable. Note that the transforms support both batched and non-batched
+    text inputs i.e, one can either pass a single sentence or list of sentences.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Alternately we can also use transform shipped with pre-trained model that does
+    all of the above out-of-the-box
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Dataset[¶](#dataset "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: torchtext provides several standard NLP datasets. For complete list, refer to
+    documentation at [https://pytorch.org/text/stable/datasets.html](https://pytorch.org/text/stable/datasets.html).
+    These datasets are build using composable torchdata datapipes and hence support
+    standard flow-control and mapping/transformation using user defined functions
+    and transforms. Below, we demonstrate how to use text and label processing transforms
+    to pre-process the SST-2 dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Using datapipes is still currently subject to a few caveats. If you wish to
+    extend this example to include shuffling, multi-processing, or distributed learning,
+    please see [this note](../datasets.html#datapipes-warnings) for further instructions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Alternately we can also use batched API (i.e apply transformation on the whole
+    batch)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Model Preparation[¶](#model-preparation "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: torchtext provides SOTA pre-trained models that can be used to fine-tune on
+    downstream NLP tasks. Below we use pre-trained XLM-R encoder with standard base
+    architecture and attach a classifier head to fine-tune it on SST-2 binary classification
+    task. We shall use standard Classifier head from the library, but users can define
+    their own appropriate task head and attach it to the pre-trained encoder. For
+    additional details on available pre-trained models, please refer to documentation
+    at [https://pytorch.org/text/main/models.html](https://pytorch.org/text/main/models.html)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: Training methods[¶](#training-methods "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Let’s now define the standard optimizer and training criteria as well as some
+    helper functions for training and evaluation
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: Train[¶](#train "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Now we have all the ingredients to train our classification model. Note that
+    we are able to directly iterate on our dataset object without using DataLoader.
+    Our pre-process dataset shall yield batches of data already, thanks to the batching
+    datapipe we have applied. For distributed training, we would need to use DataLoader
+    to take care of data-sharding.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Output[¶](#output "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: '**Total running time of the script:** ( 0 minutes 0.000 seconds)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Python source code: sst2_classification_non_distributed.py`](../_downloads/4bb41c115b7ab0e9392abf45c7eee83b/sst2_classification_non_distributed.py)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Jupyter notebook: sst2_classification_non_distributed.ipynb`](../_downloads/764dcd36c4948c7e9a28df09d761099d/sst2_classification_non_distributed.ipynb)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  prefs: []
+  type: TYPE_NORMAL

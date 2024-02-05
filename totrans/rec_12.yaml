@@ -1,0 +1,297 @@
+- en: torchrec.quant¶
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/torchrec/torchrec.quant.html](https://pytorch.org/torchrec/torchrec.quant.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Torchrec Quantization
+  prefs: []
+  type: TYPE_NORMAL
+- en: Torchrec provides a quantized version of EmbeddingBagCollection for inference.
+    It relies on fbgemm quantized ops. This reduces the size of the model weights
+    and speeds up model execution.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Example
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: '## torchrec.quant.embedding_modules[¶](#module-torchrec.quant.embedding_modules
+    "Permalink to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`EmbeddingBagCollectionInterface`](torchrec.modules.html#torchrec.modules.embedding_modules.EmbeddingBagCollectionInterface
+    "torchrec.modules.embedding_modules.EmbeddingBagCollectionInterface"), `ModuleNoCopyMixin`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: EmbeddingBagCollection represents a collection of pooled embeddings (EmbeddingBags).
+    This EmbeddingBagCollection is quantized for lower precision. It relies on fbgemm
+    quantized ops and provides table batching.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'It processes sparse data in the form of KeyedJaggedTensor with values of the
+    form [F X B X L] F: features (keys) B: batch size L: Length of sparse features
+    (jagged)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'and outputs a KeyedTensor with values of the form [B * (F * D)] where F: features
+    (keys) D: each feature’s (key’s) embedding dimension B: batch size'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**table_name_to_quantized_weights** (*Dict**[**str**,* *Tuple**[**Tensor**,*
+    *Tensor**]**]*) – map of tables to quantized weights'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**embedding_configs** (*List**[*[*EmbeddingBagConfig*](torchrec.modules.html#torchrec.modules.embedding_configs.EmbeddingBagConfig
+    "torchrec.modules.embedding_configs.EmbeddingBagConfig")*]*) – list of embedding
+    tables'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**is_weighted** – (bool): whether input KeyedJaggedTensor is weighted'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**device** – (Optional[torch.device]): default compute device'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Call Args:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'features: KeyedJaggedTensor,'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: KeyedTensor
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**features** ([*KeyedJaggedTensor*](torchrec.sparse.html#torchrec.sparse.jagged_tensor.KeyedJaggedTensor
+    "torchrec.sparse.jagged_tensor.KeyedJaggedTensor")) – KJT of form [F X B X L].'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: KeyedTensor
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`EmbeddingCollectionInterface`](torchrec.modules.html#torchrec.modules.embedding_modules.EmbeddingCollectionInterface
+    "torchrec.modules.embedding_modules.EmbeddingCollectionInterface"), `ModuleNoCopyMixin`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: EmbeddingCollection represents a collection of non-pooled embeddings.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'It processes sparse data in the form of KeyedJaggedTensor of the form [F X
+    B X L] where:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'F: features (keys)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'B: batch size'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'L: length of sparse features (variable)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'and outputs Dict[feature (key), JaggedTensor]. Each JaggedTensor contains values
+    of the form (B * L) X D where:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'B: batch size'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'L: length of sparse features (jagged)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'D: each feature’s (key’s) embedding dimension and lengths are of the form L'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**tables** (*List**[*[*EmbeddingConfig*](torchrec.modules.html#torchrec.modules.embedding_configs.EmbeddingConfig
+    "torchrec.modules.embedding_configs.EmbeddingConfig")*]*) – list of embedding
+    tables.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**device** (*Optional**[**torch.device**]*) – default compute device.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**need_indices** (*bool*) – if we need to pass indices to the final lookup
+    result dict'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**features** ([*KeyedJaggedTensor*](torchrec.sparse.html#torchrec.sparse.jagged_tensor.KeyedJaggedTensor
+    "torchrec.sparse.jagged_tensor.KeyedJaggedTensor")) – KJT of form [F X B X L].'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Dict[str, JaggedTensor]
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`EmbeddingBagCollection`](#torchrec.quant.embedding_modules.EmbeddingBagCollection
+    "torchrec.quant.embedding_modules.EmbeddingBagCollection")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**features** ([*KeyedJaggedTensor*](torchrec.sparse.html#torchrec.sparse.jagged_tensor.KeyedJaggedTensor
+    "torchrec.sparse.jagged_tensor.KeyedJaggedTensor")) – KJT of form [F X B X L].'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: KeyedTensor
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE26]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE27]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE28]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE29]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE30]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE31]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE32]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE33]  ## Module contents[¶](#module-0 "Permalink to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Torchrec Quantization
+  prefs: []
+  type: TYPE_NORMAL
+- en: Torchrec provides a quantized version of EmbeddingBagCollection for inference.
+    It relies on fbgemm quantized ops. This reduces the size of the model weights
+    and speeds up model execution.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Example
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE34]'
+  prefs: []
+  type: TYPE_PRE

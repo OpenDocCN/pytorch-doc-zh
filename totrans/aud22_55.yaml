@@ -1,0 +1,948 @@
+- en: torchaudio.pipelines¶
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/audio/stable/pipelines.html](https://pytorch.org/audio/stable/pipelines.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: The `torchaudio.pipelines` module packages pre-trained models with support functions
+    and meta-data into simple APIs tailored to perform specific tasks.
+  prefs: []
+  type: TYPE_NORMAL
+- en: When using pre-trained models to perform a task, in addition to instantiating
+    the model with pre-trained weights, the client code also needs to build pipelines
+    for feature extractions and post processing in the same way they were done during
+    the training. This requires to carrying over information used during the training,
+    such as the type of transforms and the their parameters (for example, sampling
+    rate the number of FFT bins).
+  prefs: []
+  type: TYPE_NORMAL
+- en: To make this information tied to a pre-trained model and easily accessible,
+    `torchaudio.pipelines` module uses the concept of a Bundle class, which defines
+    a set of APIs to instantiate pipelines, and the interface of the pipelines.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The following figure illustrates this.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![https://download.pytorch.org/torchaudio/doc-assets/pipelines-intro.png](../Images/7dc27a33a67f5b02c554368a2500bcb8.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: A pre-trained model and associated pipelines are expressed as an instance of
+    `Bundle`. Different instances of same `Bundle` share the interface, but their
+    implementations are not constrained to be of same types. For example, [`SourceSeparationBundle`](generated/torchaudio.pipelines.SourceSeparationBundle.html#torchaudio.pipelines.SourceSeparationBundle
+    "torchaudio.pipelines.SourceSeparationBundle") defines the interface for performing
+    source separation, but its instance [`CONVTASNET_BASE_LIBRI2MIX`](generated/torchaudio.pipelines.CONVTASNET_BASE_LIBRI2MIX.html#torchaudio.pipelines.CONVTASNET_BASE_LIBRI2MIX
+    "torchaudio.pipelines.CONVTASNET_BASE_LIBRI2MIX") instantiates a model of [`ConvTasNet`](generated/torchaudio.models.ConvTasNet.html#torchaudio.models.ConvTasNet
+    "torchaudio.models.ConvTasNet") while [`HDEMUCS_HIGH_MUSDB`](generated/torchaudio.pipelines.HDEMUCS_HIGH_MUSDB.html#torchaudio.pipelines.HDEMUCS_HIGH_MUSDB
+    "torchaudio.pipelines.HDEMUCS_HIGH_MUSDB") instantiates a model of [`HDemucs`](generated/torchaudio.models.HDemucs.html#torchaudio.models.HDemucs
+    "torchaudio.models.HDemucs"). Still, because they share the same interface, the
+    usage is the same.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Under the hood, the implementations of `Bundle` use components from other `torchaudio`
+    modules, such as [`torchaudio.models`](models.html#module-torchaudio.models "torchaudio.models")
+    and [`torchaudio.transforms`](transforms.html#module-torchaudio.transforms "torchaudio.transforms"),
+    or even third party libraries like [SentencPiece](https://github.com/google/sentencepiece)
+    and [DeepPhonemizer](https://github.com/as-ideas/DeepPhonemizer). But this implementation
+    detail is abstracted away from library users.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '## RNN-T Streaming/Non-Streaming ASR[¶](#rnn-t-streaming-non-streaming-asr
+    "Permalink to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Interface[¶](#interface "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '`RNNTBundle` defines ASR pipelines and consists of three steps: feature extraction,
+    inference, and de-tokenization.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![https://download.pytorch.org/torchaudio/doc-assets/pipelines-rnntbundle.png](../Images/d53f88ebd8f526f56982a4de4848dcaf.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '| [`RNNTBundle`](generated/torchaudio.pipelines.RNNTBundle.html#torchaudio.pipelines.RNNTBundle
+    "torchaudio.pipelines.RNNTBundle") | Dataclass that bundles components for performing
+    automatic speech recognition (ASR, speech-to-text) inference with an RNN-T model.
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`RNNTBundle.FeatureExtractor`](generated/torchaudio.pipelines.RNNTBundle.FeatureExtractor.html#torchaudio.pipelines.RNNTBundle.FeatureExtractor
+    "torchaudio.pipelines.RNNTBundle.FeatureExtractor") | Interface of the feature
+    extraction part of RNN-T pipeline |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`RNNTBundle.TokenProcessor`](generated/torchaudio.pipelines.RNNTBundle.TokenProcessor.html#torchaudio.pipelines.RNNTBundle.TokenProcessor
+    "torchaudio.pipelines.RNNTBundle.TokenProcessor") | Interface of the token processor
+    part of RNN-T pipeline |'
+  prefs: []
+  type: TYPE_TB
+- en: Tutorials using `RNNTBundle`
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![Online ASR with Emformer RNN-T](../Images/200081d049505bef5c1ce8e3c321134d.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '[Online ASR with Emformer RNN-T](tutorials/online_asr_tutorial.html#sphx-glr-tutorials-online-asr-tutorial-py)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Online ASR with Emformer RNN-T![Device ASR with Emformer RNN-T](../Images/62ca7f96e6d3a3011aa85c2a9228f03f.png)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Device ASR with Emformer RNN-T](tutorials/device_asr.html#sphx-glr-tutorials-device-asr-py)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Device ASR with Emformer RNN-T
+  prefs: []
+  type: TYPE_NORMAL
+- en: Pretrained Models[¶](#pretrained-models "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '| [`EMFORMER_RNNT_BASE_LIBRISPEECH`](generated/torchaudio.pipelines.EMFORMER_RNNT_BASE_LIBRISPEECH.html#torchaudio.pipelines.EMFORMER_RNNT_BASE_LIBRISPEECH
+    "torchaudio.pipelines.EMFORMER_RNNT_BASE_LIBRISPEECH") | ASR pipeline based on
+    Emformer-RNNT, pretrained on *LibriSpeech* dataset [[Panayotov *et al.*, 2015](references.html#id13
+    "Vassil Panayotov, Guoguo Chen, Daniel Povey, and Sanjeev Khudanpur. Librispeech:
+    an asr corpus based on public domain audio books. In 2015 IEEE International Conference
+    on Acoustics, Speech and Signal Processing (ICASSP), volume, 5206-5210\. 2015\.
+    doi:10.1109/ICASSP.2015.7178964.")], capable of performing both streaming and
+    non-streaming inference. |'
+  prefs: []
+  type: TYPE_TB
+- en: wav2vec 2.0 / HuBERT / WavLM - SSL[¶](#wav2vec-2-0-hubert-wavlm-ssl "Permalink
+    to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Interface[¶](#id2 "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '`Wav2Vec2Bundle` instantiates models that generate acoustic features that can
+    be used for downstream inference and fine-tuning.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![https://download.pytorch.org/torchaudio/doc-assets/pipelines-wav2vec2bundle.png](../Images/7a92fa41c1718aa05693226b9462514d.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '| [`Wav2Vec2Bundle`](generated/torchaudio.pipelines.Wav2Vec2Bundle.html#torchaudio.pipelines.Wav2Vec2Bundle
+    "torchaudio.pipelines.Wav2Vec2Bundle") | Data class that bundles associated information
+    to use pretrained [`Wav2Vec2Model`](generated/torchaudio.models.Wav2Vec2Model.html#torchaudio.models.Wav2Vec2Model
+    "torchaudio.models.Wav2Vec2Model"). |'
+  prefs: []
+  type: TYPE_TB
+- en: Pretrained Models[¶](#id3 "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '| [`WAV2VEC2_BASE`](generated/torchaudio.pipelines.WAV2VEC2_BASE.html#torchaudio.pipelines.WAV2VEC2_BASE
+    "torchaudio.pipelines.WAV2VEC2_BASE") | Wav2vec 2.0 model ("base" architecture),
+    pre-trained on 960 hours of unlabeled audio from *LibriSpeech* dataset [[Panayotov
+    *et al.*, 2015](references.html#id13 "Vassil Panayotov, Guoguo Chen, Daniel Povey,
+    and Sanjeev Khudanpur. Librispeech: an asr corpus based on public domain audio
+    books. In 2015 IEEE International Conference on Acoustics, Speech and Signal Processing
+    (ICASSP), volume, 5206-5210\. 2015\. doi:10.1109/ICASSP.2015.7178964.")] (the
+    combination of "train-clean-100", "train-clean-360", and "train-other-500"), not
+    fine-tuned. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`WAV2VEC2_LARGE`](generated/torchaudio.pipelines.WAV2VEC2_LARGE.html#torchaudio.pipelines.WAV2VEC2_LARGE
+    "torchaudio.pipelines.WAV2VEC2_LARGE") | Wav2vec 2.0 model ("large" architecture),
+    pre-trained on 960 hours of unlabeled audio from *LibriSpeech* dataset [[Panayotov
+    *et al.*, 2015](references.html#id13 "Vassil Panayotov, Guoguo Chen, Daniel Povey,
+    and Sanjeev Khudanpur. Librispeech: an asr corpus based on public domain audio
+    books. In 2015 IEEE International Conference on Acoustics, Speech and Signal Processing
+    (ICASSP), volume, 5206-5210\. 2015\. doi:10.1109/ICASSP.2015.7178964.")] (the
+    combination of "train-clean-100", "train-clean-360", and "train-other-500"), not
+    fine-tuned. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`WAV2VEC2_LARGE_LV60K`](generated/torchaudio.pipelines.WAV2VEC2_LARGE_LV60K.html#torchaudio.pipelines.WAV2VEC2_LARGE_LV60K
+    "torchaudio.pipelines.WAV2VEC2_LARGE_LV60K") | Wav2vec 2.0 model ("large-lv60k"
+    architecture), pre-trained on 60,000 hours of unlabeled audio from *Libri-Light*
+    dataset [[Kahn *et al.*, 2020](references.html#id12 "J. Kahn, M. Rivière, W. Zheng,
+    E. Kharitonov, Q. Xu, P. E. Mazaré, J. Karadayi, V. Liptchinsky, R. Collobert,
+    C. Fuegen, T. Likhomanenko, G. Synnaeve, A. Joulin, A. Mohamed, and E. Dupoux.
+    Libri-light: a benchmark for asr with limited or no supervision. In ICASSP 2020
+    - 2020 IEEE International Conference on Acoustics, Speech and Signal Processing
+    (ICASSP), 7669-7673\. 2020\. \url https://github.com/facebookresearch/libri-light.")],
+    not fine-tuned. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`WAV2VEC2_XLSR53`](generated/torchaudio.pipelines.WAV2VEC2_XLSR53.html#torchaudio.pipelines.WAV2VEC2_XLSR53
+    "torchaudio.pipelines.WAV2VEC2_XLSR53") | Wav2vec 2.0 model ("base" architecture),
+    pre-trained on 56,000 hours of unlabeled audio from multiple datasets ( *Multilingual
+    LibriSpeech* [[Pratap *et al.*, 2020](references.html#id11 "Vineel Pratap, Qiantong
+    Xu, Anuroop Sriram, Gabriel Synnaeve, and Ronan Collobert. Mls: a large-scale
+    multilingual dataset for speech research. Interspeech 2020, Oct 2020\. URL: http://dx.doi.org/10.21437/Interspeech.2020-2826,
+    doi:10.21437/interspeech.2020-2826.")], *CommonVoice* [[Ardila *et al.*, 2020](references.html#id10
+    "Rosana Ardila, Megan Branson, Kelly Davis, Michael Henretty, Michael Kohler,
+    Josh Meyer, Reuben Morais, Lindsay Saunders, Francis M. Tyers, and Gregor Weber.
+    Common voice: a massively-multilingual speech corpus. 2020\. arXiv:1912.06670.")]
+    and *BABEL* [[Gales *et al.*, 2014](references.html#id9 "Mark John Francis Gales,
+    Kate Knill, Anton Ragni, and Shakti Prasad Rath. Speech recognition and keyword
+    spotting for low-resource languages: babel project research at cued. In SLTU.
+    2014.")]), not fine-tuned. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`WAV2VEC2_XLSR_300M`](generated/torchaudio.pipelines.WAV2VEC2_XLSR_300M.html#torchaudio.pipelines.WAV2VEC2_XLSR_300M
+    "torchaudio.pipelines.WAV2VEC2_XLSR_300M") | XLS-R model with 300 million parameters,
+    pre-trained on 436,000 hours of unlabeled audio from multiple datasets ( *Multilingual
+    LibriSpeech* [[Pratap *et al.*, 2020](references.html#id11 "Vineel Pratap, Qiantong
+    Xu, Anuroop Sriram, Gabriel Synnaeve, and Ronan Collobert. Mls: a large-scale
+    multilingual dataset for speech research. Interspeech 2020, Oct 2020\. URL: http://dx.doi.org/10.21437/Interspeech.2020-2826,
+    doi:10.21437/interspeech.2020-2826.")], *CommonVoice* [[Ardila *et al.*, 2020](references.html#id10
+    "Rosana Ardila, Megan Branson, Kelly Davis, Michael Henretty, Michael Kohler,
+    Josh Meyer, Reuben Morais, Lindsay Saunders, Francis M. Tyers, and Gregor Weber.
+    Common voice: a massively-multilingual speech corpus. 2020\. arXiv:1912.06670.")],
+    *VoxLingua107* [[Valk and Alumäe, 2021](references.html#id61 "Jörgen Valk and
+    Tanel Alumäe. Voxlingua107: a dataset for spoken language recognition. In 2021
+    IEEE Spoken Language Technology Workshop (SLT), 652–658\. IEEE, 2021.")], *BABEL*
+    [[Gales *et al.*, 2014](references.html#id9 "Mark John Francis Gales, Kate Knill,
+    Anton Ragni, and Shakti Prasad Rath. Speech recognition and keyword spotting for
+    low-resource languages: babel project research at cued. In SLTU. 2014.")], and
+    *VoxPopuli* [[Wang *et al.*, 2021](references.html#id5 "Changhan Wang, Morgane
+    Rivière, Ann Lee, Anne Wu, Chaitanya Talnikar, Daniel Haziza, Mary Williamson,
+    Juan Miguel Pino, and Emmanuel Dupoux. Voxpopuli: A large-scale multilingual speech
+    corpus for representation learning, semi-supervised learning and interpretation.
+    CoRR, 2021\. URL: https://arxiv.org/abs/2101.00390, arXiv:2101.00390.")]) in 128
+    languages, not fine-tuned. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`WAV2VEC2_XLSR_1B`](generated/torchaudio.pipelines.WAV2VEC2_XLSR_1B.html#torchaudio.pipelines.WAV2VEC2_XLSR_1B
+    "torchaudio.pipelines.WAV2VEC2_XLSR_1B") | XLS-R model with 1 billion parameters,
+    pre-trained on 436,000 hours of unlabeled audio from multiple datasets ( *Multilingual
+    LibriSpeech* [[Pratap *et al.*, 2020](references.html#id11 "Vineel Pratap, Qiantong
+    Xu, Anuroop Sriram, Gabriel Synnaeve, and Ronan Collobert. Mls: a large-scale
+    multilingual dataset for speech research. Interspeech 2020, Oct 2020\. URL: http://dx.doi.org/10.21437/Interspeech.2020-2826,
+    doi:10.21437/interspeech.2020-2826.")], *CommonVoice* [[Ardila *et al.*, 2020](references.html#id10
+    "Rosana Ardila, Megan Branson, Kelly Davis, Michael Henretty, Michael Kohler,
+    Josh Meyer, Reuben Morais, Lindsay Saunders, Francis M. Tyers, and Gregor Weber.
+    Common voice: a massively-multilingual speech corpus. 2020\. arXiv:1912.06670.")],
+    *VoxLingua107* [[Valk and Alumäe, 2021](references.html#id61 "Jörgen Valk and
+    Tanel Alumäe. Voxlingua107: a dataset for spoken language recognition. In 2021
+    IEEE Spoken Language Technology Workshop (SLT), 652–658\. IEEE, 2021.")], *BABEL*
+    [[Gales *et al.*, 2014](references.html#id9 "Mark John Francis Gales, Kate Knill,
+    Anton Ragni, and Shakti Prasad Rath. Speech recognition and keyword spotting for
+    low-resource languages: babel project research at cued. In SLTU. 2014.")], and
+    *VoxPopuli* [[Wang *et al.*, 2021](references.html#id5 "Changhan Wang, Morgane
+    Rivière, Ann Lee, Anne Wu, Chaitanya Talnikar, Daniel Haziza, Mary Williamson,
+    Juan Miguel Pino, and Emmanuel Dupoux. Voxpopuli: A large-scale multilingual speech
+    corpus for representation learning, semi-supervised learning and interpretation.
+    CoRR, 2021\. URL: https://arxiv.org/abs/2101.00390, arXiv:2101.00390.")]) in 128
+    languages, not fine-tuned. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`WAV2VEC2_XLSR_2B`](generated/torchaudio.pipelines.WAV2VEC2_XLSR_2B.html#torchaudio.pipelines.WAV2VEC2_XLSR_2B
+    "torchaudio.pipelines.WAV2VEC2_XLSR_2B") | XLS-R model with 2 billion parameters,
+    pre-trained on 436,000 hours of unlabeled audio from multiple datasets ( *Multilingual
+    LibriSpeech* [[Pratap *et al.*, 2020](references.html#id11 "Vineel Pratap, Qiantong
+    Xu, Anuroop Sriram, Gabriel Synnaeve, and Ronan Collobert. Mls: a large-scale
+    multilingual dataset for speech research. Interspeech 2020, Oct 2020\. URL: http://dx.doi.org/10.21437/Interspeech.2020-2826,
+    doi:10.21437/interspeech.2020-2826.")], *CommonVoice* [[Ardila *et al.*, 2020](references.html#id10
+    "Rosana Ardila, Megan Branson, Kelly Davis, Michael Henretty, Michael Kohler,
+    Josh Meyer, Reuben Morais, Lindsay Saunders, Francis M. Tyers, and Gregor Weber.
+    Common voice: a massively-multilingual speech corpus. 2020\. arXiv:1912.06670.")],
+    *VoxLingua107* [[Valk and Alumäe, 2021](references.html#id61 "Jörgen Valk and
+    Tanel Alumäe. Voxlingua107: a dataset for spoken language recognition. In 2021
+    IEEE Spoken Language Technology Workshop (SLT), 652–658\. IEEE, 2021.")], *BABEL*
+    [[Gales *et al.*, 2014](references.html#id9 "Mark John Francis Gales, Kate Knill,
+    Anton Ragni, and Shakti Prasad Rath. Speech recognition and keyword spotting for
+    low-resource languages: babel project research at cued. In SLTU. 2014.")], and
+    *VoxPopuli* [[Wang *et al.*, 2021](references.html#id5 "Changhan Wang, Morgane
+    Rivière, Ann Lee, Anne Wu, Chaitanya Talnikar, Daniel Haziza, Mary Williamson,
+    Juan Miguel Pino, and Emmanuel Dupoux. Voxpopuli: A large-scale multilingual speech
+    corpus for representation learning, semi-supervised learning and interpretation.
+    CoRR, 2021\. URL: https://arxiv.org/abs/2101.00390, arXiv:2101.00390.")]) in 128
+    languages, not fine-tuned. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`HUBERT_BASE`](generated/torchaudio.pipelines.HUBERT_BASE.html#torchaudio.pipelines.HUBERT_BASE
+    "torchaudio.pipelines.HUBERT_BASE") | HuBERT model ("base" architecture), pre-trained
+    on 960 hours of unlabeled audio from *LibriSpeech* dataset [[Panayotov *et al.*,
+    2015](references.html#id13 "Vassil Panayotov, Guoguo Chen, Daniel Povey, and Sanjeev
+    Khudanpur. Librispeech: an asr corpus based on public domain audio books. In 2015
+    IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP),
+    volume, 5206-5210\. 2015\. doi:10.1109/ICASSP.2015.7178964.")] (the combination
+    of "train-clean-100", "train-clean-360", and "train-other-500"), not fine-tuned.
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`HUBERT_LARGE`](generated/torchaudio.pipelines.HUBERT_LARGE.html#torchaudio.pipelines.HUBERT_LARGE
+    "torchaudio.pipelines.HUBERT_LARGE") | HuBERT model ("large" architecture), pre-trained
+    on 60,000 hours of unlabeled audio from *Libri-Light* dataset [[Kahn *et al.*,
+    2020](references.html#id12 "J. Kahn, M. Rivière, W. Zheng, E. Kharitonov, Q. Xu,
+    P. E. Mazaré, J. Karadayi, V. Liptchinsky, R. Collobert, C. Fuegen, T. Likhomanenko,
+    G. Synnaeve, A. Joulin, A. Mohamed, and E. Dupoux. Libri-light: a benchmark for
+    asr with limited or no supervision. In ICASSP 2020 - 2020 IEEE International Conference
+    on Acoustics, Speech and Signal Processing (ICASSP), 7669-7673\. 2020\. \url https://github.com/facebookresearch/libri-light.")],
+    not fine-tuned. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`HUBERT_XLARGE`](generated/torchaudio.pipelines.HUBERT_XLARGE.html#torchaudio.pipelines.HUBERT_XLARGE
+    "torchaudio.pipelines.HUBERT_XLARGE") | HuBERT model ("extra large" architecture),
+    pre-trained on 60,000 hours of unlabeled audio from *Libri-Light* dataset [[Kahn
+    *et al.*, 2020](references.html#id12 "J. Kahn, M. Rivière, W. Zheng, E. Kharitonov,
+    Q. Xu, P. E. Mazaré, J. Karadayi, V. Liptchinsky, R. Collobert, C. Fuegen, T.
+    Likhomanenko, G. Synnaeve, A. Joulin, A. Mohamed, and E. Dupoux. Libri-light:
+    a benchmark for asr with limited or no supervision. In ICASSP 2020 - 2020 IEEE
+    International Conference on Acoustics, Speech and Signal Processing (ICASSP),
+    7669-7673\. 2020\. \url https://github.com/facebookresearch/libri-light.")], not
+    fine-tuned. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`WAVLM_BASE`](generated/torchaudio.pipelines.WAVLM_BASE.html#torchaudio.pipelines.WAVLM_BASE
+    "torchaudio.pipelines.WAVLM_BASE") | WavLM Base model ("base" architecture), pre-trained
+    on 960 hours of unlabeled audio from *LibriSpeech* dataset [[Panayotov *et al.*,
+    2015](references.html#id13 "Vassil Panayotov, Guoguo Chen, Daniel Povey, and Sanjeev
+    Khudanpur. Librispeech: an asr corpus based on public domain audio books. In 2015
+    IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP),
+    volume, 5206-5210\. 2015\. doi:10.1109/ICASSP.2015.7178964.")], not fine-tuned.
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`WAVLM_BASE_PLUS`](generated/torchaudio.pipelines.WAVLM_BASE_PLUS.html#torchaudio.pipelines.WAVLM_BASE_PLUS
+    "torchaudio.pipelines.WAVLM_BASE_PLUS") | WavLM Base+ model ("base" architecture),
+    pre-trained on 60,000 hours of Libri-Light dataset [[Kahn *et al.*, 2020](references.html#id12
+    "J. Kahn, M. Rivière, W. Zheng, E. Kharitonov, Q. Xu, P. E. Mazaré, J. Karadayi,
+    V. Liptchinsky, R. Collobert, C. Fuegen, T. Likhomanenko, G. Synnaeve, A. Joulin,
+    A. Mohamed, and E. Dupoux. Libri-light: a benchmark for asr with limited or no
+    supervision. In ICASSP 2020 - 2020 IEEE International Conference on Acoustics,
+    Speech and Signal Processing (ICASSP), 7669-7673\. 2020\. \url https://github.com/facebookresearch/libri-light.")],
+    10,000 hours of GigaSpeech [[Chen *et al.*, 2021](references.html#id56 "Guoguo
+    Chen, Shuzhou Chai, Guanbo Wang, Jiayu Du, Wei-Qiang Zhang, Chao Weng, Dan Su,
+    Daniel Povey, Jan Trmal, Junbo Zhang, Mingjie Jin, Sanjeev Khudanpur, Shinji Watanabe,
+    Shuaijiang Zhao, Wei Zou, Xiangang Li, Xuchen Yao, Yongqing Wang, Yujun Wang,
+    Zhao You, and Zhiyong Yan. Gigaspeech: an evolving, multi-domain asr corpus with
+    10,000 hours of transcribed audio. In Proc. Interspeech 2021\. 2021.")], and 24,000
+    hours of *VoxPopuli* [[Wang *et al.*, 2021](references.html#id5 "Changhan Wang,
+    Morgane Rivière, Ann Lee, Anne Wu, Chaitanya Talnikar, Daniel Haziza, Mary Williamson,
+    Juan Miguel Pino, and Emmanuel Dupoux. Voxpopuli: A large-scale multilingual speech
+    corpus for representation learning, semi-supervised learning and interpretation.
+    CoRR, 2021\. URL: https://arxiv.org/abs/2101.00390, arXiv:2101.00390.")], not
+    fine-tuned. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`WAVLM_LARGE`](generated/torchaudio.pipelines.WAVLM_LARGE.html#torchaudio.pipelines.WAVLM_LARGE
+    "torchaudio.pipelines.WAVLM_LARGE") | WavLM Large model ("large" architecture),
+    pre-trained on 60,000 hours of Libri-Light dataset [[Kahn *et al.*, 2020](references.html#id12
+    "J. Kahn, M. Rivière, W. Zheng, E. Kharitonov, Q. Xu, P. E. Mazaré, J. Karadayi,
+    V. Liptchinsky, R. Collobert, C. Fuegen, T. Likhomanenko, G. Synnaeve, A. Joulin,
+    A. Mohamed, and E. Dupoux. Libri-light: a benchmark for asr with limited or no
+    supervision. In ICASSP 2020 - 2020 IEEE International Conference on Acoustics,
+    Speech and Signal Processing (ICASSP), 7669-7673\. 2020\. \url https://github.com/facebookresearch/libri-light.")],
+    10,000 hours of GigaSpeech [[Chen *et al.*, 2021](references.html#id56 "Guoguo
+    Chen, Shuzhou Chai, Guanbo Wang, Jiayu Du, Wei-Qiang Zhang, Chao Weng, Dan Su,
+    Daniel Povey, Jan Trmal, Junbo Zhang, Mingjie Jin, Sanjeev Khudanpur, Shinji Watanabe,
+    Shuaijiang Zhao, Wei Zou, Xiangang Li, Xuchen Yao, Yongqing Wang, Yujun Wang,
+    Zhao You, and Zhiyong Yan. Gigaspeech: an evolving, multi-domain asr corpus with
+    10,000 hours of transcribed audio. In Proc. Interspeech 2021\. 2021.")], and 24,000
+    hours of *VoxPopuli* [[Wang *et al.*, 2021](references.html#id5 "Changhan Wang,
+    Morgane Rivière, Ann Lee, Anne Wu, Chaitanya Talnikar, Daniel Haziza, Mary Williamson,
+    Juan Miguel Pino, and Emmanuel Dupoux. Voxpopuli: A large-scale multilingual speech
+    corpus for representation learning, semi-supervised learning and interpretation.
+    CoRR, 2021\. URL: https://arxiv.org/abs/2101.00390, arXiv:2101.00390.")], not
+    fine-tuned. |'
+  prefs: []
+  type: TYPE_TB
+- en: wav2vec 2.0 / HuBERT - Fine-tuned ASR[¶](#wav2vec-2-0-hubert-fine-tuned-asr
+    "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Interface[¶](#id35 "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '`Wav2Vec2ASRBundle` instantiates models that generate probability distribution
+    over pre-defined labels, that can be used for ASR.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![https://download.pytorch.org/torchaudio/doc-assets/pipelines-wav2vec2asrbundle.png](../Images/5f9b45dac675bb2cb840209162a85158.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '| [`Wav2Vec2ASRBundle`](generated/torchaudio.pipelines.Wav2Vec2ASRBundle.html#torchaudio.pipelines.Wav2Vec2ASRBundle
+    "torchaudio.pipelines.Wav2Vec2ASRBundle") | Data class that bundles associated
+    information to use pretrained [`Wav2Vec2Model`](generated/torchaudio.models.Wav2Vec2Model.html#torchaudio.models.Wav2Vec2Model
+    "torchaudio.models.Wav2Vec2Model"). |'
+  prefs: []
+  type: TYPE_TB
+- en: Tutorials using `Wav2Vec2ASRBundle`
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![Speech Recognition with Wav2Vec2](../Images/a6aefab61852740b8a11d3cfd1ac6866.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '[Speech Recognition with Wav2Vec2](tutorials/speech_recognition_pipeline_tutorial.html#sphx-glr-tutorials-speech-recognition-pipeline-tutorial-py)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Speech Recognition with Wav2Vec2![ASR Inference with CTC Decoder](../Images/260e63239576cae8ee00cfcba8e4889e.png)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[ASR Inference with CTC Decoder](tutorials/asr_inference_with_ctc_decoder_tutorial.html#sphx-glr-tutorials-asr-inference-with-ctc-decoder-tutorial-py)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: ASR Inference with CTC Decoder![Forced Alignment with Wav2Vec2](../Images/6658c9fe256ea584e84432cc92cd4db9.png)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Forced Alignment with Wav2Vec2](tutorials/forced_alignment_tutorial.html#sphx-glr-tutorials-forced-alignment-tutorial-py)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Forced Alignment with Wav2Vec2
+  prefs: []
+  type: TYPE_NORMAL
+- en: Pretrained Models[¶](#id36 "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '| [`WAV2VEC2_ASR_BASE_10M`](generated/torchaudio.pipelines.WAV2VEC2_ASR_BASE_10M.html#torchaudio.pipelines.WAV2VEC2_ASR_BASE_10M
+    "torchaudio.pipelines.WAV2VEC2_ASR_BASE_10M") | Wav2vec 2.0 model ("base" architecture
+    with an extra linear module), pre-trained on 960 hours of unlabeled audio from
+    *LibriSpeech* dataset [[Panayotov *et al.*, 2015](references.html#id13 "Vassil
+    Panayotov, Guoguo Chen, Daniel Povey, and Sanjeev Khudanpur. Librispeech: an asr
+    corpus based on public domain audio books. In 2015 IEEE International Conference
+    on Acoustics, Speech and Signal Processing (ICASSP), volume, 5206-5210\. 2015\.
+    doi:10.1109/ICASSP.2015.7178964.")] (the combination of "train-clean-100", "train-clean-360",
+    and "train-other-500"), and fine-tuned for ASR on 10 minutes of transcribed audio
+    from *Libri-Light* dataset [[Kahn *et al.*, 2020](references.html#id12 "J. Kahn,
+    M. Rivière, W. Zheng, E. Kharitonov, Q. Xu, P. E. Mazaré, J. Karadayi, V. Liptchinsky,
+    R. Collobert, C. Fuegen, T. Likhomanenko, G. Synnaeve, A. Joulin, A. Mohamed,
+    and E. Dupoux. Libri-light: a benchmark for asr with limited or no supervision.
+    In ICASSP 2020 - 2020 IEEE International Conference on Acoustics, Speech and Signal
+    Processing (ICASSP), 7669-7673\. 2020\. \url https://github.com/facebookresearch/libri-light.")]
+    ("train-10min" subset). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`WAV2VEC2_ASR_BASE_100H`](generated/torchaudio.pipelines.WAV2VEC2_ASR_BASE_100H.html#torchaudio.pipelines.WAV2VEC2_ASR_BASE_100H
+    "torchaudio.pipelines.WAV2VEC2_ASR_BASE_100H") | Wav2vec 2.0 model ("base" architecture
+    with an extra linear module), pre-trained on 960 hours of unlabeled audio from
+    *LibriSpeech* dataset [[Panayotov *et al.*, 2015](references.html#id13 "Vassil
+    Panayotov, Guoguo Chen, Daniel Povey, and Sanjeev Khudanpur. Librispeech: an asr
+    corpus based on public domain audio books. In 2015 IEEE International Conference
+    on Acoustics, Speech and Signal Processing (ICASSP), volume, 5206-5210\. 2015\.
+    doi:10.1109/ICASSP.2015.7178964.")] (the combination of "train-clean-100", "train-clean-360",
+    and "train-other-500"), and fine-tuned for ASR on 100 hours of transcribed audio
+    from "train-clean-100" subset. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`WAV2VEC2_ASR_BASE_960H`](generated/torchaudio.pipelines.WAV2VEC2_ASR_BASE_960H.html#torchaudio.pipelines.WAV2VEC2_ASR_BASE_960H
+    "torchaudio.pipelines.WAV2VEC2_ASR_BASE_960H") | Wav2vec 2.0 model ("base" architecture
+    with an extra linear module), pre-trained on 960 hours of unlabeled audio from
+    *LibriSpeech* dataset [[Panayotov *et al.*, 2015](references.html#id13 "Vassil
+    Panayotov, Guoguo Chen, Daniel Povey, and Sanjeev Khudanpur. Librispeech: an asr
+    corpus based on public domain audio books. In 2015 IEEE International Conference
+    on Acoustics, Speech and Signal Processing (ICASSP), volume, 5206-5210\. 2015\.
+    doi:10.1109/ICASSP.2015.7178964.")] (the combination of "train-clean-100", "train-clean-360",
+    and "train-other-500"), and fine-tuned for ASR on the same audio with the corresponding
+    transcripts. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`WAV2VEC2_ASR_LARGE_10M`](generated/torchaudio.pipelines.WAV2VEC2_ASR_LARGE_10M.html#torchaudio.pipelines.WAV2VEC2_ASR_LARGE_10M
+    "torchaudio.pipelines.WAV2VEC2_ASR_LARGE_10M") | Wav2vec 2.0 model ("large" architecture
+    with an extra linear module), pre-trained on 960 hours of unlabeled audio from
+    *LibriSpeech* dataset [[Panayotov *et al.*, 2015](references.html#id13 "Vassil
+    Panayotov, Guoguo Chen, Daniel Povey, and Sanjeev Khudanpur. Librispeech: an asr
+    corpus based on public domain audio books. In 2015 IEEE International Conference
+    on Acoustics, Speech and Signal Processing (ICASSP), volume, 5206-5210\. 2015\.
+    doi:10.1109/ICASSP.2015.7178964.")] (the combination of "train-clean-100", "train-clean-360",
+    and "train-other-500"), and fine-tuned for ASR on 10 minutes of transcribed audio
+    from *Libri-Light* dataset [[Kahn *et al.*, 2020](references.html#id12 "J. Kahn,
+    M. Rivière, W. Zheng, E. Kharitonov, Q. Xu, P. E. Mazaré, J. Karadayi, V. Liptchinsky,
+    R. Collobert, C. Fuegen, T. Likhomanenko, G. Synnaeve, A. Joulin, A. Mohamed,
+    and E. Dupoux. Libri-light: a benchmark for asr with limited or no supervision.
+    In ICASSP 2020 - 2020 IEEE International Conference on Acoustics, Speech and Signal
+    Processing (ICASSP), 7669-7673\. 2020\. \url https://github.com/facebookresearch/libri-light.")]
+    ("train-10min" subset). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`WAV2VEC2_ASR_LARGE_100H`](generated/torchaudio.pipelines.WAV2VEC2_ASR_LARGE_100H.html#torchaudio.pipelines.WAV2VEC2_ASR_LARGE_100H
+    "torchaudio.pipelines.WAV2VEC2_ASR_LARGE_100H") | Wav2vec 2.0 model ("large" architecture
+    with an extra linear module), pre-trained on 960 hours of unlabeled audio from
+    *LibriSpeech* dataset [[Panayotov *et al.*, 2015](references.html#id13 "Vassil
+    Panayotov, Guoguo Chen, Daniel Povey, and Sanjeev Khudanpur. Librispeech: an asr
+    corpus based on public domain audio books. In 2015 IEEE International Conference
+    on Acoustics, Speech and Signal Processing (ICASSP), volume, 5206-5210\. 2015\.
+    doi:10.1109/ICASSP.2015.7178964.")] (the combination of "train-clean-100", "train-clean-360",
+    and "train-other-500"), and fine-tuned for ASR on 100 hours of transcribed audio
+    from the same dataset ("train-clean-100" subset). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`WAV2VEC2_ASR_LARGE_960H`](generated/torchaudio.pipelines.WAV2VEC2_ASR_LARGE_960H.html#torchaudio.pipelines.WAV2VEC2_ASR_LARGE_960H
+    "torchaudio.pipelines.WAV2VEC2_ASR_LARGE_960H") | Wav2vec 2.0 model ("large" architecture
+    with an extra linear module), pre-trained on 960 hours of unlabeled audio from
+    *LibriSpeech* dataset [[Panayotov *et al.*, 2015](references.html#id13 "Vassil
+    Panayotov, Guoguo Chen, Daniel Povey, and Sanjeev Khudanpur. Librispeech: an asr
+    corpus based on public domain audio books. In 2015 IEEE International Conference
+    on Acoustics, Speech and Signal Processing (ICASSP), volume, 5206-5210\. 2015\.
+    doi:10.1109/ICASSP.2015.7178964.")] (the combination of "train-clean-100", "train-clean-360",
+    and "train-other-500"), and fine-tuned for ASR on the same audio with the corresponding
+    transcripts. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`WAV2VEC2_ASR_LARGE_LV60K_10M`](generated/torchaudio.pipelines.WAV2VEC2_ASR_LARGE_LV60K_10M.html#torchaudio.pipelines.WAV2VEC2_ASR_LARGE_LV60K_10M
+    "torchaudio.pipelines.WAV2VEC2_ASR_LARGE_LV60K_10M") | Wav2vec 2.0 model ("large-lv60k"
+    architecture with an extra linear module), pre-trained on 60,000 hours of unlabeled
+    audio from *Libri-Light* dataset [[Kahn *et al.*, 2020](references.html#id12 "J.
+    Kahn, M. Rivière, W. Zheng, E. Kharitonov, Q. Xu, P. E. Mazaré, J. Karadayi, V.
+    Liptchinsky, R. Collobert, C. Fuegen, T. Likhomanenko, G. Synnaeve, A. Joulin,
+    A. Mohamed, and E. Dupoux. Libri-light: a benchmark for asr with limited or no
+    supervision. In ICASSP 2020 - 2020 IEEE International Conference on Acoustics,
+    Speech and Signal Processing (ICASSP), 7669-7673\. 2020\. \url https://github.com/facebookresearch/libri-light.")],
+    and fine-tuned for ASR on 10 minutes of transcribed audio from the same dataset
+    ("train-10min" subset). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`WAV2VEC2_ASR_LARGE_LV60K_100H`](generated/torchaudio.pipelines.WAV2VEC2_ASR_LARGE_LV60K_100H.html#torchaudio.pipelines.WAV2VEC2_ASR_LARGE_LV60K_100H
+    "torchaudio.pipelines.WAV2VEC2_ASR_LARGE_LV60K_100H") | Wav2vec 2.0 model ("large-lv60k"
+    architecture with an extra linear module), pre-trained on 60,000 hours of unlabeled
+    audio from *Libri-Light* dataset [[Kahn *et al.*, 2020](references.html#id12 "J.
+    Kahn, M. Rivière, W. Zheng, E. Kharitonov, Q. Xu, P. E. Mazaré, J. Karadayi, V.
+    Liptchinsky, R. Collobert, C. Fuegen, T. Likhomanenko, G. Synnaeve, A. Joulin,
+    A. Mohamed, and E. Dupoux. Libri-light: a benchmark for asr with limited or no
+    supervision. In ICASSP 2020 - 2020 IEEE International Conference on Acoustics,
+    Speech and Signal Processing (ICASSP), 7669-7673\. 2020\. \url https://github.com/facebookresearch/libri-light.")],
+    and fine-tuned for ASR on 100 hours of transcribed audio from *LibriSpeech* dataset
+    [[Panayotov *et al.*, 2015](references.html#id13 "Vassil Panayotov, Guoguo Chen,
+    Daniel Povey, and Sanjeev Khudanpur. Librispeech: an asr corpus based on public
+    domain audio books. In 2015 IEEE International Conference on Acoustics, Speech
+    and Signal Processing (ICASSP), volume, 5206-5210\. 2015\. doi:10.1109/ICASSP.2015.7178964.")]
+    ("train-clean-100" subset). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`WAV2VEC2_ASR_LARGE_LV60K_960H`](generated/torchaudio.pipelines.WAV2VEC2_ASR_LARGE_LV60K_960H.html#torchaudio.pipelines.WAV2VEC2_ASR_LARGE_LV60K_960H
+    "torchaudio.pipelines.WAV2VEC2_ASR_LARGE_LV60K_960H") | Wav2vec 2.0 model ("large-lv60k"
+    architecture with an extra linear module), pre-trained on 60,000 hours of unlabeled
+    audio from *Libri-Light* [[Kahn *et al.*, 2020](references.html#id12 "J. Kahn,
+    M. Rivière, W. Zheng, E. Kharitonov, Q. Xu, P. E. Mazaré, J. Karadayi, V. Liptchinsky,
+    R. Collobert, C. Fuegen, T. Likhomanenko, G. Synnaeve, A. Joulin, A. Mohamed,
+    and E. Dupoux. Libri-light: a benchmark for asr with limited or no supervision.
+    In ICASSP 2020 - 2020 IEEE International Conference on Acoustics, Speech and Signal
+    Processing (ICASSP), 7669-7673\. 2020\. \url https://github.com/facebookresearch/libri-light.")]
+    dataset, and fine-tuned for ASR on 960 hours of transcribed audio from *LibriSpeech*
+    dataset [[Panayotov *et al.*, 2015](references.html#id13 "Vassil Panayotov, Guoguo
+    Chen, Daniel Povey, and Sanjeev Khudanpur. Librispeech: an asr corpus based on
+    public domain audio books. In 2015 IEEE International Conference on Acoustics,
+    Speech and Signal Processing (ICASSP), volume, 5206-5210\. 2015\. doi:10.1109/ICASSP.2015.7178964.")]
+    (the combination of "train-clean-100", "train-clean-360", and "train-other-500").
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`VOXPOPULI_ASR_BASE_10K_DE`](generated/torchaudio.pipelines.VOXPOPULI_ASR_BASE_10K_DE.html#torchaudio.pipelines.VOXPOPULI_ASR_BASE_10K_DE
+    "torchaudio.pipelines.VOXPOPULI_ASR_BASE_10K_DE") | wav2vec 2.0 model ("base"
+    architecture), pre-trained on 10k hours of unlabeled audio from *VoxPopuli* dataset
+    [[Wang *et al.*, 2021](references.html#id5 "Changhan Wang, Morgane Rivière, Ann
+    Lee, Anne Wu, Chaitanya Talnikar, Daniel Haziza, Mary Williamson, Juan Miguel
+    Pino, and Emmanuel Dupoux. Voxpopuli: A large-scale multilingual speech corpus
+    for representation learning, semi-supervised learning and interpretation. CoRR,
+    2021\. URL: https://arxiv.org/abs/2101.00390, arXiv:2101.00390.")] ("10k" subset,
+    consisting of 23 languages), and fine-tuned for ASR on 282 hours of transcribed
+    audio from "de" subset. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`VOXPOPULI_ASR_BASE_10K_EN`](generated/torchaudio.pipelines.VOXPOPULI_ASR_BASE_10K_EN.html#torchaudio.pipelines.VOXPOPULI_ASR_BASE_10K_EN
+    "torchaudio.pipelines.VOXPOPULI_ASR_BASE_10K_EN") | wav2vec 2.0 model ("base"
+    architecture), pre-trained on 10k hours of unlabeled audio from *VoxPopuli* dataset
+    [[Wang *et al.*, 2021](references.html#id5 "Changhan Wang, Morgane Rivière, Ann
+    Lee, Anne Wu, Chaitanya Talnikar, Daniel Haziza, Mary Williamson, Juan Miguel
+    Pino, and Emmanuel Dupoux. Voxpopuli: A large-scale multilingual speech corpus
+    for representation learning, semi-supervised learning and interpretation. CoRR,
+    2021\. URL: https://arxiv.org/abs/2101.00390, arXiv:2101.00390.")] ("10k" subset,
+    consisting of 23 languages), and fine-tuned for ASR on 543 hours of transcribed
+    audio from "en" subset. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`VOXPOPULI_ASR_BASE_10K_ES`](generated/torchaudio.pipelines.VOXPOPULI_ASR_BASE_10K_ES.html#torchaudio.pipelines.VOXPOPULI_ASR_BASE_10K_ES
+    "torchaudio.pipelines.VOXPOPULI_ASR_BASE_10K_ES") | wav2vec 2.0 model ("base"
+    architecture), pre-trained on 10k hours of unlabeled audio from *VoxPopuli* dataset
+    [[Wang *et al.*, 2021](references.html#id5 "Changhan Wang, Morgane Rivière, Ann
+    Lee, Anne Wu, Chaitanya Talnikar, Daniel Haziza, Mary Williamson, Juan Miguel
+    Pino, and Emmanuel Dupoux. Voxpopuli: A large-scale multilingual speech corpus
+    for representation learning, semi-supervised learning and interpretation. CoRR,
+    2021\. URL: https://arxiv.org/abs/2101.00390, arXiv:2101.00390.")] ("10k" subset,
+    consisting of 23 languages), and fine-tuned for ASR on 166 hours of transcribed
+    audio from "es" subset. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`VOXPOPULI_ASR_BASE_10K_FR`](generated/torchaudio.pipelines.VOXPOPULI_ASR_BASE_10K_FR.html#torchaudio.pipelines.VOXPOPULI_ASR_BASE_10K_FR
+    "torchaudio.pipelines.VOXPOPULI_ASR_BASE_10K_FR") | wav2vec 2.0 model ("base"
+    architecture), pre-trained on 10k hours of unlabeled audio from *VoxPopuli* dataset
+    [[Wang *et al.*, 2021](references.html#id5 "Changhan Wang, Morgane Rivière, Ann
+    Lee, Anne Wu, Chaitanya Talnikar, Daniel Haziza, Mary Williamson, Juan Miguel
+    Pino, and Emmanuel Dupoux. Voxpopuli: A large-scale multilingual speech corpus
+    for representation learning, semi-supervised learning and interpretation. CoRR,
+    2021\. URL: https://arxiv.org/abs/2101.00390, arXiv:2101.00390.")] ("10k" subset,
+    consisting of 23 languages), and fine-tuned for ASR on 211 hours of transcribed
+    audio from "fr" subset. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`VOXPOPULI_ASR_BASE_10K_IT`](generated/torchaudio.pipelines.VOXPOPULI_ASR_BASE_10K_IT.html#torchaudio.pipelines.VOXPOPULI_ASR_BASE_10K_IT
+    "torchaudio.pipelines.VOXPOPULI_ASR_BASE_10K_IT") | wav2vec 2.0 model ("base"
+    architecture), pre-trained on 10k hours of unlabeled audio from *VoxPopuli* dataset
+    [[Wang *et al.*, 2021](references.html#id5 "Changhan Wang, Morgane Rivière, Ann
+    Lee, Anne Wu, Chaitanya Talnikar, Daniel Haziza, Mary Williamson, Juan Miguel
+    Pino, and Emmanuel Dupoux. Voxpopuli: A large-scale multilingual speech corpus
+    for representation learning, semi-supervised learning and interpretation. CoRR,
+    2021\. URL: https://arxiv.org/abs/2101.00390, arXiv:2101.00390.")] ("10k" subset,
+    consisting of 23 languages), and fine-tuned for ASR on 91 hours of transcribed
+    audio from "it" subset. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`HUBERT_ASR_LARGE`](generated/torchaudio.pipelines.HUBERT_ASR_LARGE.html#torchaudio.pipelines.HUBERT_ASR_LARGE
+    "torchaudio.pipelines.HUBERT_ASR_LARGE") | HuBERT model ("large" architecture),
+    pre-trained on 60,000 hours of unlabeled audio from *Libri-Light* dataset [[Kahn
+    *et al.*, 2020](references.html#id12 "J. Kahn, M. Rivière, W. Zheng, E. Kharitonov,
+    Q. Xu, P. E. Mazaré, J. Karadayi, V. Liptchinsky, R. Collobert, C. Fuegen, T.
+    Likhomanenko, G. Synnaeve, A. Joulin, A. Mohamed, and E. Dupoux. Libri-light:
+    a benchmark for asr with limited or no supervision. In ICASSP 2020 - 2020 IEEE
+    International Conference on Acoustics, Speech and Signal Processing (ICASSP),
+    7669-7673\. 2020\. \url https://github.com/facebookresearch/libri-light.")], and
+    fine-tuned for ASR on 960 hours of transcribed audio from *LibriSpeech* dataset
+    [[Panayotov *et al.*, 2015](references.html#id13 "Vassil Panayotov, Guoguo Chen,
+    Daniel Povey, and Sanjeev Khudanpur. Librispeech: an asr corpus based on public
+    domain audio books. In 2015 IEEE International Conference on Acoustics, Speech
+    and Signal Processing (ICASSP), volume, 5206-5210\. 2015\. doi:10.1109/ICASSP.2015.7178964.")]
+    (the combination of "train-clean-100", "train-clean-360", and "train-other-500").
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`HUBERT_ASR_XLARGE`](generated/torchaudio.pipelines.HUBERT_ASR_XLARGE.html#torchaudio.pipelines.HUBERT_ASR_XLARGE
+    "torchaudio.pipelines.HUBERT_ASR_XLARGE") | HuBERT model ("extra large" architecture),
+    pre-trained on 60,000 hours of unlabeled audio from *Libri-Light* dataset [[Kahn
+    *et al.*, 2020](references.html#id12 "J. Kahn, M. Rivière, W. Zheng, E. Kharitonov,
+    Q. Xu, P. E. Mazaré, J. Karadayi, V. Liptchinsky, R. Collobert, C. Fuegen, T.
+    Likhomanenko, G. Synnaeve, A. Joulin, A. Mohamed, and E. Dupoux. Libri-light:
+    a benchmark for asr with limited or no supervision. In ICASSP 2020 - 2020 IEEE
+    International Conference on Acoustics, Speech and Signal Processing (ICASSP),
+    7669-7673\. 2020\. \url https://github.com/facebookresearch/libri-light.")], and
+    fine-tuned for ASR on 960 hours of transcribed audio from *LibriSpeech* dataset
+    [[Panayotov *et al.*, 2015](references.html#id13 "Vassil Panayotov, Guoguo Chen,
+    Daniel Povey, and Sanjeev Khudanpur. Librispeech: an asr corpus based on public
+    domain audio books. In 2015 IEEE International Conference on Acoustics, Speech
+    and Signal Processing (ICASSP), volume, 5206-5210\. 2015\. doi:10.1109/ICASSP.2015.7178964.")]
+    (the combination of "train-clean-100", "train-clean-360", and "train-other-500").
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: wav2vec 2.0 / HuBERT - Forced Alignment[¶](#wav2vec-2-0-hubert-forced-alignment
+    "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Interface[¶](#id59 "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '`Wav2Vec2FABundle` bundles pre-trained model and its associated dictionary.
+    Additionally, it supports appending `star` token dimension.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![https://download.pytorch.org/torchaudio/doc-assets/pipelines-wav2vec2fabundle.png](../Images/81159a1c90b6bf1cc96789ecb75c13f0.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '| [`Wav2Vec2FABundle`](generated/torchaudio.pipelines.Wav2Vec2FABundle.html#torchaudio.pipelines.Wav2Vec2FABundle
+    "torchaudio.pipelines.Wav2Vec2FABundle") | Data class that bundles associated
+    information to use pretrained [`Wav2Vec2Model`](generated/torchaudio.models.Wav2Vec2Model.html#torchaudio.models.Wav2Vec2Model
+    "torchaudio.models.Wav2Vec2Model") for forced alignment. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`Wav2Vec2FABundle.Tokenizer`](generated/torchaudio.pipelines.Wav2Vec2FABundle.Tokenizer.html#torchaudio.pipelines.Wav2Vec2FABundle.Tokenizer
+    "torchaudio.pipelines.Wav2Vec2FABundle.Tokenizer") | Interface of the tokenizer
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`Wav2Vec2FABundle.Aligner`](generated/torchaudio.pipelines.Wav2Vec2FABundle.Aligner.html#torchaudio.pipelines.Wav2Vec2FABundle.Aligner
+    "torchaudio.pipelines.Wav2Vec2FABundle.Aligner") | Interface of the aligner |'
+  prefs: []
+  type: TYPE_TB
+- en: Tutorials using `Wav2Vec2FABundle`
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![CTC forced alignment API tutorial](../Images/644afa8c7cc662a8465d389ef96d587c.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '[CTC forced alignment API tutorial](tutorials/ctc_forced_alignment_api_tutorial.html#sphx-glr-tutorials-ctc-forced-alignment-api-tutorial-py)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: CTC forced alignment API tutorial![Forced alignment for multilingual data](../Images/ca023cbba331b61f65d37937f8a25beb.png)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Forced alignment for multilingual data](tutorials/forced_alignment_for_multilingual_data_tutorial.html#sphx-glr-tutorials-forced-alignment-for-multilingual-data-tutorial-py)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Forced alignment for multilingual data![Forced Alignment with Wav2Vec2](../Images/6658c9fe256ea584e84432cc92cd4db9.png)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Forced Alignment with Wav2Vec2](tutorials/forced_alignment_tutorial.html#sphx-glr-tutorials-forced-alignment-tutorial-py)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Forced Alignment with Wav2Vec2
+  prefs: []
+  type: TYPE_NORMAL
+- en: Pertrained Models[¶](#pertrained-models "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '| [`MMS_FA`](generated/torchaudio.pipelines.MMS_FA.html#torchaudio.pipelines.MMS_FA
+    "torchaudio.pipelines.MMS_FA") | Trained on 31K hours of data in 1,130 languages
+    from *Scaling Speech Technology to 1,000+ Languages* [[Pratap *et al.*, 2023](references.html#id71
+    "Vineel Pratap, Andros Tjandra, Bowen Shi, Paden Tomasello, Arun Babu, Sayani
+    Kundu, Ali Elkahky, Zhaoheng Ni, Apoorv Vyas, Maryam Fazel-Zarandi, Alexei Baevski,
+    Yossi Adi, Xiaohui Zhang, Wei-Ning Hsu, Alexis Conneau, and Michael Auli. Scaling
+    speech technology to 1,000+ languages. 2023\. arXiv:2305.13516.")]. |'
+  prefs: []
+  type: TYPE_TB
+- en: '## Tacotron2 Text-To-Speech[¶](#tacotron2-text-to-speech "Permalink to this
+    heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`Tacotron2TTSBundle` defines text-to-speech pipelines and consists of three
+    steps: tokenization, spectrogram generation and vocoder. The spectrogram generation
+    is based on [`Tacotron2`](generated/torchaudio.models.Tacotron2.html#torchaudio.models.Tacotron2
+    "torchaudio.models.Tacotron2") model.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![https://download.pytorch.org/torchaudio/doc-assets/pipelines-tacotron2bundle.png](../Images/97c575d1ba15c954a23c68df0d5b0471.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '`TextProcessor` can be rule-based tokenization in the case of characters, or
+    it can be a neural-netowrk-based G2P model that generates sequence of phonemes
+    from input text.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Similarly `Vocoder` can be an algorithm without learning parameters, like Griffin-Lim,
+    or a neural-network-based model like Waveglow.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Interface[¶](#id61 "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '| [`Tacotron2TTSBundle`](generated/torchaudio.pipelines.Tacotron2TTSBundle.html#torchaudio.pipelines.Tacotron2TTSBundle
+    "torchaudio.pipelines.Tacotron2TTSBundle") | Data class that bundles associated
+    information to use pretrained Tacotron2 and vocoder. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`Tacotron2TTSBundle.TextProcessor`](generated/torchaudio.pipelines.Tacotron2TTSBundle.TextProcessor.html#torchaudio.pipelines.Tacotron2TTSBundle.TextProcessor
+    "torchaudio.pipelines.Tacotron2TTSBundle.TextProcessor") | Interface of the text
+    processing part of Tacotron2TTS pipeline |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`Tacotron2TTSBundle.Vocoder`](generated/torchaudio.pipelines.Tacotron2TTSBundle.Vocoder.html#torchaudio.pipelines.Tacotron2TTSBundle.Vocoder
+    "torchaudio.pipelines.Tacotron2TTSBundle.Vocoder") | Interface of the vocoder
+    part of Tacotron2TTS pipeline |'
+  prefs: []
+  type: TYPE_TB
+- en: Tutorials using `Tacotron2TTSBundle`
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![Text-to-Speech with Tacotron2](../Images/5a248f30c367f9fb17d182966714fd7d.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '[Text-to-Speech with Tacotron2](tutorials/tacotron2_pipeline_tutorial.html#sphx-glr-tutorials-tacotron2-pipeline-tutorial-py)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Text-to-Speech with Tacotron2
+  prefs: []
+  type: TYPE_NORMAL
+- en: Pretrained Models[¶](#id62 "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '| [`TACOTRON2_WAVERNN_PHONE_LJSPEECH`](generated/torchaudio.pipelines.TACOTRON2_WAVERNN_PHONE_LJSPEECH.html#torchaudio.pipelines.TACOTRON2_WAVERNN_PHONE_LJSPEECH
+    "torchaudio.pipelines.TACOTRON2_WAVERNN_PHONE_LJSPEECH") | Phoneme-based TTS pipeline
+    with [`Tacotron2`](generated/torchaudio.models.Tacotron2.html#torchaudio.models.Tacotron2
+    "torchaudio.models.Tacotron2") trained on *LJSpeech* [[Ito and Johnson, 2017](references.html#id7
+    "Keith Ito and Linda Johnson. The lj speech dataset. \url https://keithito.com/LJ-Speech-Dataset/,
+    2017.")] for 1,500 epochs, and [`WaveRNN`](generated/torchaudio.models.WaveRNN.html#torchaudio.models.WaveRNN
+    "torchaudio.models.WaveRNN") vocoder trained on 8 bits depth waveform of *LJSpeech*
+    [[Ito and Johnson, 2017](references.html#id7 "Keith Ito and Linda Johnson. The
+    lj speech dataset. \url https://keithito.com/LJ-Speech-Dataset/, 2017.")] for
+    10,000 epochs. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`TACOTRON2_WAVERNN_CHAR_LJSPEECH`](generated/torchaudio.pipelines.TACOTRON2_WAVERNN_CHAR_LJSPEECH.html#torchaudio.pipelines.TACOTRON2_WAVERNN_CHAR_LJSPEECH
+    "torchaudio.pipelines.TACOTRON2_WAVERNN_CHAR_LJSPEECH") | Character-based TTS
+    pipeline with [`Tacotron2`](generated/torchaudio.models.Tacotron2.html#torchaudio.models.Tacotron2
+    "torchaudio.models.Tacotron2") trained on *LJSpeech* [[Ito and Johnson, 2017](references.html#id7
+    "Keith Ito and Linda Johnson. The lj speech dataset. \url https://keithito.com/LJ-Speech-Dataset/,
+    2017.")] for 1,500 epochs and [`WaveRNN`](generated/torchaudio.models.WaveRNN.html#torchaudio.models.WaveRNN
+    "torchaudio.models.WaveRNN") vocoder trained on 8 bits depth waveform of *LJSpeech*
+    [[Ito and Johnson, 2017](references.html#id7 "Keith Ito and Linda Johnson. The
+    lj speech dataset. \url https://keithito.com/LJ-Speech-Dataset/, 2017.")] for
+    10,000 epochs. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`TACOTRON2_GRIFFINLIM_PHONE_LJSPEECH`](generated/torchaudio.pipelines.TACOTRON2_GRIFFINLIM_PHONE_LJSPEECH.html#torchaudio.pipelines.TACOTRON2_GRIFFINLIM_PHONE_LJSPEECH
+    "torchaudio.pipelines.TACOTRON2_GRIFFINLIM_PHONE_LJSPEECH") | Phoneme-based TTS
+    pipeline with [`Tacotron2`](generated/torchaudio.models.Tacotron2.html#torchaudio.models.Tacotron2
+    "torchaudio.models.Tacotron2") trained on *LJSpeech* [[Ito and Johnson, 2017](references.html#id7
+    "Keith Ito and Linda Johnson. The lj speech dataset. \url https://keithito.com/LJ-Speech-Dataset/,
+    2017.")] for 1,500 epochs and [`GriffinLim`](generated/torchaudio.transforms.GriffinLim.html#torchaudio.transforms.GriffinLim
+    "torchaudio.transforms.GriffinLim") as vocoder. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`TACOTRON2_GRIFFINLIM_CHAR_LJSPEECH`](generated/torchaudio.pipelines.TACOTRON2_GRIFFINLIM_CHAR_LJSPEECH.html#torchaudio.pipelines.TACOTRON2_GRIFFINLIM_CHAR_LJSPEECH
+    "torchaudio.pipelines.TACOTRON2_GRIFFINLIM_CHAR_LJSPEECH") | Character-based TTS
+    pipeline with [`Tacotron2`](generated/torchaudio.models.Tacotron2.html#torchaudio.models.Tacotron2
+    "torchaudio.models.Tacotron2") trained on *LJSpeech* [[Ito and Johnson, 2017](references.html#id7
+    "Keith Ito and Linda Johnson. The lj speech dataset. \url https://keithito.com/LJ-Speech-Dataset/,
+    2017.")] for 1,500 epochs, and [`GriffinLim`](generated/torchaudio.transforms.GriffinLim.html#torchaudio.transforms.GriffinLim
+    "torchaudio.transforms.GriffinLim") as vocoder. |'
+  prefs: []
+  type: TYPE_TB
+- en: Source Separation[¶](#source-separation "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Interface[¶](#id69 "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '`SourceSeparationBundle` instantiates source separation models which take single
+    channel audio and generates multi-channel audio.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![https://download.pytorch.org/torchaudio/doc-assets/pipelines-sourceseparationbundle.png](../Images/69b4503224dac9c3e845bd309a996829.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '| [`SourceSeparationBundle`](generated/torchaudio.pipelines.SourceSeparationBundle.html#torchaudio.pipelines.SourceSeparationBundle
+    "torchaudio.pipelines.SourceSeparationBundle") | Dataclass that bundles components
+    for performing source separation. |'
+  prefs: []
+  type: TYPE_TB
+- en: Tutorials using `SourceSeparationBundle`
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![Music Source Separation with Hybrid Demucs](../Images/f822c0c06abbbf25ee5b2b2573665977.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '[Music Source Separation with Hybrid Demucs](tutorials/hybrid_demucs_tutorial.html#sphx-glr-tutorials-hybrid-demucs-tutorial-py)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Music Source Separation with Hybrid Demucs
+  prefs: []
+  type: TYPE_NORMAL
+- en: Pretrained Models[¶](#id70 "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '| [`CONVTASNET_BASE_LIBRI2MIX`](generated/torchaudio.pipelines.CONVTASNET_BASE_LIBRI2MIX.html#torchaudio.pipelines.CONVTASNET_BASE_LIBRI2MIX
+    "torchaudio.pipelines.CONVTASNET_BASE_LIBRI2MIX") | Pre-trained Source Separation
+    pipeline with *ConvTasNet* [[Luo and Mesgarani, 2019](references.html#id22 "Yi
+    Luo and Nima Mesgarani. Conv-tasnet: surpassing ideal time–frequency magnitude
+    masking for speech separation. IEEE/ACM Transactions on Audio, Speech, and Language
+    Processing, 27(8):1256–1266, Aug 2019\. URL: http://dx.doi.org/10.1109/TASLP.2019.2915167,
+    doi:10.1109/taslp.2019.2915167.")] trained on *Libri2Mix dataset* [[Cosentino
+    *et al.*, 2020](references.html#id37 "Joris Cosentino, Manuel Pariente, Samuele
+    Cornell, Antoine Deleforge, and Emmanuel Vincent. Librimix: an open-source dataset
+    for generalizable speech separation. 2020\. arXiv:2005.11262.")]. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`HDEMUCS_HIGH_MUSDB_PLUS`](generated/torchaudio.pipelines.HDEMUCS_HIGH_MUSDB_PLUS.html#torchaudio.pipelines.HDEMUCS_HIGH_MUSDB_PLUS
+    "torchaudio.pipelines.HDEMUCS_HIGH_MUSDB_PLUS") | Pre-trained music source separation
+    pipeline with *Hybrid Demucs* [[Défossez, 2021](references.html#id50 "Alexandre
+    Défossez. Hybrid spectrogram and waveform source separation. In Proceedings of
+    the ISMIR 2021 Workshop on Music Source Separation. 2021.")] trained on both training
+    and test sets of MUSDB-HQ [[Rafii *et al.*, 2019](references.html#id47 "Zafar
+    Rafii, Antoine Liutkus, Fabian-Robert Stöter, Stylianos Ioannis Mimilakis, and
+    Rachel Bittner. MUSDB18-HQ - an uncompressed version of musdb18\. December 2019\.
+    URL: https://doi.org/10.5281/zenodo.3338373, doi:10.5281/zenodo.3338373.")] and
+    an additional 150 extra songs from an internal database that was specifically
+    produced for Meta. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`HDEMUCS_HIGH_MUSDB`](generated/torchaudio.pipelines.HDEMUCS_HIGH_MUSDB.html#torchaudio.pipelines.HDEMUCS_HIGH_MUSDB
+    "torchaudio.pipelines.HDEMUCS_HIGH_MUSDB") | Pre-trained music source separation
+    pipeline with *Hybrid Demucs* [[Défossez, 2021](references.html#id50 "Alexandre
+    Défossez. Hybrid spectrogram and waveform source separation. In Proceedings of
+    the ISMIR 2021 Workshop on Music Source Separation. 2021.")] trained on the training
+    set of MUSDB-HQ [[Rafii *et al.*, 2019](references.html#id47 "Zafar Rafii, Antoine
+    Liutkus, Fabian-Robert Stöter, Stylianos Ioannis Mimilakis, and Rachel Bittner.
+    MUSDB18-HQ - an uncompressed version of musdb18\. December 2019\. URL: https://doi.org/10.5281/zenodo.3338373,
+    doi:10.5281/zenodo.3338373.")]. |'
+  prefs: []
+  type: TYPE_TB
+- en: Squim Objective[¶](#squim-objective "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Interface[¶](#id77 "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[`SquimObjectiveBundle`](generated/torchaudio.pipelines.SquimObjectiveBundle.html#torchaudio.pipelines.SquimObjectiveBundle
+    "torchaudio.pipelines.SquimObjectiveBundle") defines speech quality and intelligibility
+    measurement (SQUIM) pipeline that can predict **objecive** metric scores given
+    the input waveform.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| [`SquimObjectiveBundle`](generated/torchaudio.pipelines.SquimObjectiveBundle.html#torchaudio.pipelines.SquimObjectiveBundle
+    "torchaudio.pipelines.SquimObjectiveBundle") | Data class that bundles associated
+    information to use pretrained [`SquimObjective`](generated/torchaudio.models.SquimObjective.html#torchaudio.models.SquimObjective
+    "torchaudio.models.SquimObjective") model. |'
+  prefs: []
+  type: TYPE_TB
+- en: Pretrained Models[¶](#id78 "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '| [`SQUIM_OBJECTIVE`](generated/torchaudio.pipelines.SQUIM_OBJECTIVE.html#torchaudio.pipelines.SQUIM_OBJECTIVE
+    "torchaudio.pipelines.SQUIM_OBJECTIVE") | SquimObjective pipeline trained using
+    approach described in [[Kumar *et al.*, 2023](references.html#id69 "Anurag Kumar,
+    Ke Tan, Zhaoheng Ni, Pranay Manocha, Xiaohui Zhang, Ethan Henderson, and Buye
+    Xu. Torchaudio-squim: reference-less speech quality and intelligibility measures
+    in torchaudio. arXiv preprint arXiv:2304.01448, 2023.")] on the *DNS 2020 Dataset*
+    [[Reddy *et al.*, 2020](references.html#id65 "Chandan KA Reddy, Vishak Gopal,
+    Ross Cutler, Ebrahim Beyrami, Roger Cheng, Harishchandra Dubey, Sergiy Matusevych,
+    Robert Aichner, Ashkan Aazami, Sebastian Braun, and others. The interspeech 2020
+    deep noise suppression challenge: datasets, subjective testing framework, and
+    challenge results. arXiv preprint arXiv:2005.13981, 2020.")]. |'
+  prefs: []
+  type: TYPE_TB
+- en: Squim Subjective[¶](#squim-subjective "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Interface[¶](#id81 "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[`SquimSubjectiveBundle`](generated/torchaudio.pipelines.SquimSubjectiveBundle.html#torchaudio.pipelines.SquimSubjectiveBundle
+    "torchaudio.pipelines.SquimSubjectiveBundle") defines speech quality and intelligibility
+    measurement (SQUIM) pipeline that can predict **subjective** metric scores given
+    the input waveform.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| [`SquimSubjectiveBundle`](generated/torchaudio.pipelines.SquimSubjectiveBundle.html#torchaudio.pipelines.SquimSubjectiveBundle
+    "torchaudio.pipelines.SquimSubjectiveBundle") | Data class that bundles associated
+    information to use pretrained [`SquimSubjective`](generated/torchaudio.models.SquimSubjective.html#torchaudio.models.SquimSubjective
+    "torchaudio.models.SquimSubjective") model. |'
+  prefs: []
+  type: TYPE_TB
+- en: Pretrained Models[¶](#id82 "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '| [`SQUIM_SUBJECTIVE`](generated/torchaudio.pipelines.SQUIM_SUBJECTIVE.html#torchaudio.pipelines.SQUIM_SUBJECTIVE
+    "torchaudio.pipelines.SQUIM_SUBJECTIVE") | SquimSubjective pipeline trained as
+    described in [[Manocha and Kumar, 2022](references.html#id66 "Pranay Manocha and
+    Anurag Kumar. Speech quality assessment through mos using non-matching references.
+    arXiv preprint arXiv:2206.12285, 2022.")] and [[Kumar *et al.*, 2023](references.html#id69
+    "Anurag Kumar, Ke Tan, Zhaoheng Ni, Pranay Manocha, Xiaohui Zhang, Ethan Henderson,
+    and Buye Xu. Torchaudio-squim: reference-less speech quality and intelligibility
+    measures in torchaudio. arXiv preprint arXiv:2304.01448, 2023.")] on the *BVCC*
+    [[Cooper and Yamagishi, 2021](references.html#id67 "Erica Cooper and Junichi Yamagishi.
+    How do voices from past speech synthesis challenges compare today? arXiv preprint
+    arXiv:2105.02373, 2021.")] and *DAPS* [[Mysore, 2014](references.html#id68 "Gautham
+    J Mysore. Can we automatically transform speech recorded on common consumer devices
+    in real-world environments into professional production quality speech?—a dataset,
+    insights, and challenges. IEEE Signal Processing Letters, 22(8):1006–1010, 2014.")]
+    datasets. |'
+  prefs: []
+  type: TYPE_TB

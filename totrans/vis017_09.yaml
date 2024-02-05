@@ -1,0 +1,114 @@
+- en: Feature extraction for model inspection¶
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/vision/stable/feature_extraction.html](https://pytorch.org/vision/stable/feature_extraction.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: 'The `torchvision.models.feature_extraction` package contains feature extraction
+    utilities that let us tap into our models to access intermediate transformations
+    of our inputs. This could be useful for a variety of applications in computer
+    vision. Just a few examples are:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Visualizing feature maps.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Extracting features to compute image descriptors for tasks like facial recognition,
+    copy-detection, or image retrieval.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Passing selected features to downstream sub-networks for end-to-end training
+    with a specific task in mind. For example, passing a hierarchy of features to
+    a Feature Pyramid Network with object detection heads.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Torchvision provides [`create_feature_extractor()`](generated/torchvision.models.feature_extraction.create_feature_extractor.html#torchvision.models.feature_extraction.create_feature_extractor
+    "torchvision.models.feature_extraction.create_feature_extractor") for this purpose.
+    It works by following roughly these steps:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Symbolically tracing the model to get a graphical representation of how it transforms
+    the input, step by step.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Setting the user-selected graph nodes as outputs.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Removing all redundant nodes (anything downstream of the output nodes).
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Generating python code from the resulting graph and bundling that into a PyTorch
+    module together with the graph itself.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: The [torch.fx documentation](https://pytorch.org/docs/stable/fx.html) provides
+    a more general and detailed explanation of the above procedure and the inner workings
+    of the symbolic tracing.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**About Node Names**'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In order to specify which nodes should be output nodes for extracted features,
+    one should be familiar with the node naming convention used here (which differs
+    slightly from that used in `torch.fx`). A node name is specified as a `.` separated
+    path walking the module hierarchy from top level module down to leaf operation
+    or leaf module. For instance `"layer4.2.relu"` in ResNet-50 represents the output
+    of the ReLU of the 2nd block of the 4th layer of the `ResNet` module. Here are
+    some finer points to keep in mind:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: When specifying node names for [`create_feature_extractor()`](generated/torchvision.models.feature_extraction.create_feature_extractor.html#torchvision.models.feature_extraction.create_feature_extractor
+    "torchvision.models.feature_extraction.create_feature_extractor"), you may provide
+    a truncated version of a node name as a shortcut. To see how this works, try creating
+    a ResNet-50 model and printing the node names with `train_nodes, _ = get_graph_node_names(model)
+    print(train_nodes)` and observe that the last node pertaining to `layer4` is `"layer4.2.relu_2"`.
+    One may specify `"layer4.2.relu_2"` as the return node, or just `"layer4"` as
+    this, by convention, refers to the last node (in order of execution) of `layer4`.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: If a certain module or operation is repeated more than once, node names get
+    an additional `_{int}` postfix to disambiguate. For instance, maybe the addition
+    (`+`) operation is used three times in the same `forward` method. Then there would
+    be `"path.to.module.add"`, `"path.to.module.add_1"`, `"path.to.module.add_2"`.
+    The counter is maintained within the scope of the direct parent. So in ResNet-50
+    there is a `"layer4.1.add"` and a `"layer4.2.add"`. Because the addition operations
+    reside in different blocks, there is no need for a postfix to disambiguate.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**An Example**'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Here is an example of how we might extract features for MaskRCNN:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: API Reference[¶](#api-reference "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '| [`create_feature_extractor`](generated/torchvision.models.feature_extraction.create_feature_extractor.html#torchvision.models.feature_extraction.create_feature_extractor
+    "torchvision.models.feature_extraction.create_feature_extractor")(model[, ...])
+    | Creates a new graph module that returns intermediate nodes from a given model
+    as dictionary with user specified keys as strings, and the requested outputs as
+    values. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`get_graph_node_names`](generated/torchvision.models.feature_extraction.get_graph_node_names.html#torchvision.models.feature_extraction.get_graph_node_names
+    "torchvision.models.feature_extraction.get_graph_node_names")(model[, tracer_kwargs, ...])
+    | Dev utility to return node names in order of execution. |'
+  prefs: []
+  type: TYPE_TB

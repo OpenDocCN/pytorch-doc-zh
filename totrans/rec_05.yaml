@@ -1,0 +1,1390 @@
+- en: torchrec.distributed.planner¶
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/torchrec/torchrec.distributed.planner.html](https://pytorch.org/torchrec/torchrec.distributed.planner.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Torchrec Planner
+  prefs: []
+  type: TYPE_NORMAL
+- en: The planner provides the specifications necessary for a module to be sharded,
+    considering the possible options to build an optimized plan.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The features includes:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: generating all possible sharding options.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: estimating perf and storage for every shard.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: estimating peak memory usage to eliminate sharding plans that might OOM.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: customizability for parameter constraints, partitioning, proposers, or performance
+    modeling.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: automatically building and selecting an optimized sharding plan.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '## torchrec.distributed.planner.constants[¶](#module-torchrec.distributed.planner.constants
+    "Permalink to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Calculates the device bandwidth based on given compute device, compute kernel,
+    and caching ratio.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**compute_kernel** (*str*) – compute kernel.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**compute_device** (*str*) – compute device.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**hbm_mem_bw** (*float*) – the bandwidth of the device HBM.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**ddr_mem_bw** (*float*) – the bandwidth of the system DDR memory.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**caching_ratio** (*Optional**[**float**]*) – caching ratio used to determine
+    device bandwidth if UVM caching is enabled.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**prefetch_pipeline** (*bool*) – whether prefetch pipeline is enabled.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: the device bandwidth.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Optional[float]  ## torchrec.distributed.planner.enumerators[¶](#module-torchrec.distributed.planner.enumerators
+    "Permalink to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`Enumerator`](#torchrec.distributed.planner.types.Enumerator "torchrec.distributed.planner.types.Enumerator")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Generates embedding sharding options for given nn.Module, considering user provided
+    constraints.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**topology** ([*Topology*](#torchrec.distributed.planner.types.Topology "torchrec.distributed.planner.types.Topology"))
+    – device topology.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**batch_size** (*int*) – batch size.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**constraints** (*Optional**[**Dict**[**str**,* [*ParameterConstraints*](#torchrec.distributed.planner.types.ParameterConstraints
+    "torchrec.distributed.planner.types.ParameterConstraints")*]**]*) – dict of parameter
+    names to provided ParameterConstraints.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Generates relevant sharding options given module and sharders.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**module** (*nn.Module*) – module to be sharded.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**sharders** (*List**[*[*ModuleSharder*](torchrec.distributed.html#torchrec.distributed.types.ModuleSharder
+    "torchrec.distributed.types.ModuleSharder")*[**nn.Module**]**]*) – provided sharders
+    for module.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: valid sharding options with values populated.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: List[[ShardingOption](#torchrec.distributed.planner.types.ShardingOption "torchrec.distributed.planner.types.ShardingOption")]
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: See class description.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Gets corresponding partition by type for provided sharding type.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**sharding_type** (*str*) – sharding type string.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: the corresponding PartitionByType value.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'str  ## torchrec.distributed.planner.partitioners[¶](#module-torchrec.distributed.planner.partitioners
+    "Permalink to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`Partitioner`](#torchrec.distributed.planner.types.Partitioner "torchrec.distributed.planner.types.Partitioner")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Greedy Partitioner
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**sort_by** ([*SortBy*](#torchrec.distributed.planner.partitioners.SortBy "torchrec.distributed.planner.partitioners.SortBy"))
+    – Sort sharding options by storage or perf in descending order (i.e., large tables
+    will be placed first).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**balance_modules** (*bool*) – Whether to sort by modules first, where smaller
+    modules will be sorted first. In effect, this will place tables in each module
+    in a balanced way.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: Places sharding options on topology based on each sharding option’s partition_by
+    attribute. The topology, storage, and perfs are updated at the end of the placement.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**proposal** (*List**[*[*ShardingOption*](#torchrec.distributed.planner.types.ShardingOption
+    "torchrec.distributed.planner.types.ShardingOption")*]*) – list of populated sharding
+    options.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**storage_constraint** ([*Topology*](#torchrec.distributed.planner.types.Topology
+    "torchrec.distributed.planner.types.Topology")) – device topology.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: list of sharding options for selected plan.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: List[[ShardingOption](#torchrec.distributed.planner.types.ShardingOption "torchrec.distributed.planner.types.ShardingOption")]
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`Partitioner`](#torchrec.distributed.planner.types.Partitioner "torchrec.distributed.planner.types.Partitioner")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Memory balanced Partitioner.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**max_search_count** (*int*) – Maximum number of times to call the GreedyPartitioner.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**tolerance** (*float*) – The maximum acceptable difference between the original
+    plan and the new plan. If tolerance is 1, that means a new plan will be rejected
+    if its perf is 200% of the original plan (i.e., the plan is 100% worse).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**balance_modules** (*bool*) – Whether to sort by modules first, where smaller
+    modules will be sorted first. In effect, this will place tables in each module
+    in a balanced way.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: Repeatedly calls the GreedyPerfPartitioner to find a plan with perf within the
+    tolerance of the original plan that uses the least amount of memory.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: `object`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: `object`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: `Enum`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: An enumeration.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE21]  ## torchrec.distributed.planner.perf_models[¶](#module-torchrec.distributed.planner.perf_models
+    "Permalink to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`PerfModel`](#torchrec.distributed.planner.types.PerfModel "torchrec.distributed.planner.types.PerfModel")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE23]  ## torchrec.distributed.planner.planners[¶](#module-torchrec.distributed.planner.planners
+    "Permalink to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`ShardingPlanner`](torchrec.distributed.html#torchrec.distributed.types.ShardingPlanner
+    "torchrec.distributed.types.ShardingPlanner")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Provides an optimized sharding plan for a given module with shardable parameters
+    according to the provided sharders, topology, and constraints.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: Call self.plan(…) on rank 0 and broadcast
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE26]'
+  prefs: []
+  type: TYPE_PRE
+- en: Plans sharding for provided module and given sharders.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**module** (*nn.Module*) – module that sharding is planned for.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**sharders** (*List**[*[*ModuleSharder*](torchrec.distributed.html#torchrec.distributed.types.ModuleSharder
+    "torchrec.distributed.types.ModuleSharder")*[**nn.Module**]**]*) – provided sharders
+    for module.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: the computed sharding plan.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[ShardingPlan](torchrec.distributed.html#torchrec.distributed.types.ShardingPlan
+    "torchrec.distributed.types.ShardingPlan")  ## torchrec.distributed.planner.proposers[¶](#module-torchrec.distributed.planner.proposers
+    "Permalink to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE27]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`Proposer`](#torchrec.distributed.planner.types.Proposer "torchrec.distributed.planner.types.Proposer")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE28]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE29]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE30]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE31]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE32]'
+  prefs: []
+  type: TYPE_PRE
+- en: returns additional HBM budget available for GPU caches.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE33]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE34]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE35]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE36]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE37]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE38]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`Proposer`](#torchrec.distributed.planner.types.Proposer "torchrec.distributed.planner.types.Proposer")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Proposes sharding plans in greedy fashion.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Sorts sharding options for each shardable parameter by perf. On each iteration,
+    finds parameter with largest current storage usage and tries its next sharding
+    option.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**use_depth** (*bool*) – When enabled, sharding_options of a fqn are sorted
+    based on max(shard.perf.total), otherwise sharding_options are sorted by sum(shard.perf.total).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**threshold** (*Optional**[**int**]*) – Threshold for early stopping. When
+    specified, the proposer stops proposing when the proposals have consecutive worse
+    perf_rating than best_perf_rating.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE39]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE40]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE41]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE42]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`Proposer`](#torchrec.distributed.planner.types.Proposer "torchrec.distributed.planner.types.Proposer")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE43]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE44]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE45]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE46]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`Proposer`](#torchrec.distributed.planner.types.Proposer "torchrec.distributed.planner.types.Proposer")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Proposes uniform sharding plans, plans that have the same sharding type for
+    all sharding options.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE47]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE48]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE49]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE50]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'only works for static_feedback proposers (the path of proposals to check is
+    independent of the performance of the proposals)  ## torchrec.distributed.planner.shard_estimators[¶](#module-torchrec.distributed.planner.shard_estimators
+    "Permalink to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE51]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`CacheStatistics`](torchrec.distributed.html#torchrec.distributed.types.CacheStatistics
+    "torchrec.distributed.types.CacheStatistics")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Computes cache statistics for uvm_fused_cache tables.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Args:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'cachebility (float):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The area-under-the-curve of miss-ratio curve.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'expected_lookups (float):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The expected number of unique embedding ids per global batch.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'mrc_hist_counts (torch.Tensor):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: A 1d tensor (size n) holding a histogram of LRU miss ratio curve. Each bin represents
+    1/nth of possible LRU cache sizes (from load_factor 0 to load_factor 1.0). The
+    bin contains the number of expected LRU operations that could be handled without
+    a cache miss if the LRU load_factor was at least that size.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'height (int):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The height (num_embeddings) of the embedding table.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE52]'
+  prefs: []
+  type: TYPE_PRE
+- en: Summarized measure of the difficulty to cache a dataset that is independent
+    of cache size. A score of 0 means the dataset is very cacheable (e.g. high locality
+    between accesses), a score of 1 is very difficult to cache.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE53]'
+  prefs: []
+  type: TYPE_PRE
+- en: Calculate estimated cache miss ratio for the proposed cache_sizes, given the
+    MRC histogram.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE54]'
+  prefs: []
+  type: TYPE_PRE
+- en: Number of expected cache lookups per training step.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This is the expected number of distinct values in a global training batch.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE55]'
+  prefs: []
+  type: TYPE_PRE
+- en: Expected cache lookup miss rate for a given cache size.
+  prefs: []
+  type: TYPE_NORMAL
+- en: When clf (cache load factor) is 0, returns 1.0 (100% miss). When clf is 1.0,
+    returns 0 (100% hit). For values of clf between these extremes, returns the estimated
+    miss rate of the cache, e.g. based on knowledge of the statistical properties
+    of the training data set.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE56]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`ShardEstimator`](#torchrec.distributed.planner.types.ShardEstimator
+    "torchrec.distributed.planner.types.ShardEstimator")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Embedding Wall Time Perf Estimator
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE57]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE58]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`ShardEstimator`](#torchrec.distributed.planner.types.ShardEstimator
+    "torchrec.distributed.planner.types.ShardEstimator")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Embedding Storage Usage Estimator
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE59]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE60]'
+  prefs: []
+  type: TYPE_PRE
+- en: Calculates estimated storage sizes for each sharded tensor, comprised of input,
+    output, tensor, gradient, and optimizer sizes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**sharder** ([*ModuleSharder*](torchrec.distributed.html#torchrec.distributed.types.ModuleSharder
+    "torchrec.distributed.types.ModuleSharder")*[**nn.Module**]*) – sharder for module
+    that supports sharding.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**sharding_type** (*str*) – provided ShardingType value.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**tensor** (*torch.Tensor*) – tensor to be sharded.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**compute_device** (*str*) – compute device to be used.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**compute_kernel** (*str*) – compute kernel to be used.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**shard_sizes** (*List**[**List**[**int**]**]*) – list of dimensions of each
+    sharded tensor.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**batch_sizes** (*List**[**int**]*) – batch size for each input feature.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**world_size** (*int*) – total number of devices in topology.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**local_world_size** (*int*) – total number of devices in host group topology.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**input_lengths** (*List**[**float**]*) – average input lengths synonymous
+    with pooling factors.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**num_poolings** (*List**[**float**]*) – average number of poolings per sample
+    (typically 1.0).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**caching_ratio** (*float*) – ratio of HBM to DDR memory for UVM caching.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**is_pooled** (*bool*) – True if embedding output is pooled (ie. EmbeddingBag),
+    False if unpooled/sequential (ie. Embedding).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: storage object for each device in topology.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: List[[Storage](#torchrec.distributed.planner.types.Storage "torchrec.distributed.planner.types.Storage")]
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE61]'
+  prefs: []
+  type: TYPE_PRE
+- en: Attempts to model perfs as a function of relative wall times.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**shard_sizes** (*List**[**List**[**int**]**]*) – the list of (local_rows,
+    local_cols) of each shard.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**compute_kernel** (*str*) – compute kernel.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**compute_device** (*str*) – compute device.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**sharding_type** (*str*) – tw, rw, cw, twrw, dp.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**batch_sizes** (*List**[**int**]*) – batch size for each input feature.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**world_size** (*int*) – the number of devices for all hosts.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**local_world_size** (*int*) – the number of the device for each host.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**input_lengths** (*List**[**float**]*) – the list of the average number of
+    lookups of each input query feature.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**input_data_type_size** (*float*) – the data type size of the distributed
+    data_parallel input.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**table_data_type_size** (*float*) – the data type size of the table.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**fwd_comm_data_type_size** (*float*) – the data type size of the distributed
+    data_parallel input during forward communication.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**bwd_comm_data_type_size** (*float*) – the data type size of the distributed
+    data_parallel input during backward communication.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**num_poolings** (*List**[**float**]*) – number of poolings per sample, typically
+    1.0.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**hbm_mem_bw** (*float*) – the bandwidth of the device HBM.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**ddr_mem_bw** (*float*) – the bandwidth of the system DDR memory.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**intra_host_bw** (*float*) – the bandwidth within a single host like multiple
+    threads.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**inter_host_bw** (*float*) – the bandwidth between two hosts like multiple
+    machines.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**is_pooled** (*bool*) – True if embedding output is pooled (ie. EmbeddingBag),
+    False if unpooled/sequential (ie. Embedding).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**is_weighted** (*bool = False*) – if the module is an EBC and is weighted,
+    typically signifying an id score list feature.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**is_inference** (*bool = False*) – if planning for inference.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**caching_ratio** (*Optional**[**float**]* *= None*) – cache ratio to determine
+    the bandwidth of device.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**prefetch_pipeline** (*bool = False*) – whether prefetch pipeline is enabled.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**expected_cache_fetches** (*float*) – number of expected cache fetches across
+    global batch'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: the list of perf for each shard.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'List[float]  ## torchrec.distributed.planner.stats[¶](#module-torchrec.distributed.planner.stats
+    "Permalink to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE62]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`Stats`](#torchrec.distributed.planner.types.Stats "torchrec.distributed.planner.types.Stats")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Stats for a sharding planner execution.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE63]'
+  prefs: []
+  type: TYPE_PRE
+- en: Logs stats for a given sharding plan.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Provides a tabular view of stats for the given sharding plan with per device
+    storage usage (HBM and DDR), perf, input, output, and number/type of shards.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**sharding_plan** ([*ShardingPlan*](torchrec.distributed.html#torchrec.distributed.types.ShardingPlan
+    "torchrec.distributed.types.ShardingPlan")) – sharding plan chosen by the planner.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**topology** ([*Topology*](#torchrec.distributed.planner.types.Topology "torchrec.distributed.planner.types.Topology"))
+    – device topology.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**batch_size** (*int*) – batch size.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**storage_reservation** ([*StorageReservation*](#torchrec.distributed.planner.types.StorageReservation
+    "torchrec.distributed.planner.types.StorageReservation")) – reserves storage for
+    unsharded parts of the model'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**num_proposals** (*int*) – number of proposals evaluated.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**num_plans** (*int*) – number of proposals successfully partitioned.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**run_time** (*float*) – time taken to find plan (in seconds).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**best_plan** (*List**[*[*ShardingOption*](#torchrec.distributed.planner.types.ShardingOption
+    "torchrec.distributed.planner.types.ShardingOption")*]*) – plan with expected
+    performance.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**constraints** (*Optional**[**Dict**[**str**,* [*ParameterConstraints*](#torchrec.distributed.planner.types.ParameterConstraints
+    "torchrec.distributed.planner.types.ParameterConstraints")*]**]*) – dict of parameter
+    names to provided ParameterConstraints.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**debug** (*bool*) – whether to enable debug mode.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE64]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`Stats`](#torchrec.distributed.planner.types.Stats "torchrec.distributed.planner.types.Stats")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Noop Stats for a sharding planner execution.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE65]'
+  prefs: []
+  type: TYPE_PRE
+- en: See class description
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE66]  ## torchrec.distributed.planner.storage_reservations[¶](#module-torchrec.distributed.planner.storage_reservations
+    "Permalink to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE67]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`StorageReservation`](#torchrec.distributed.planner.types.StorageReservation
+    "torchrec.distributed.planner.types.StorageReservation")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE68]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE69]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`StorageReservation`](#torchrec.distributed.planner.types.StorageReservation
+    "torchrec.distributed.planner.types.StorageReservation")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Reserves storage for model to be sharded with heuristical calculation. The storage
+    reservation is comprised of dense tensor storage, KJT storage, and an extra percentage
+    of total storage.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**percentage** (*float*) – extra storage percent to reserve that acts as a
+    margin of error beyond heuristic calculation of storage.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**parameter_multiplier** (*float*) – heuristic multiplier for total parameter
+    storage.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**dense_tensor_estimate** (*Optional**[**int**]*) – storage estimate for dense
+    tensors, uses default heuristic estimate if not provided.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE70]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE71]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`StorageReservation`](#torchrec.distributed.planner.types.StorageReservation
+    "torchrec.distributed.planner.types.StorageReservation")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Reserves storage for model to be sharded for inference. The storage reservation
+    is comprised of dense tensor storage, KJT storage, and an extra percentage of
+    total storage. Note that when estimating for storage, dense modules are assumed
+    to be on GPUs and replicated across ranks. If this is not the case, please override
+    the estimates with dense_tensor_estimate.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**percentage** (*float*) – extra storage percentage to reserve that acts as
+    a margin of error beyond storage calculation.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**dense_tensor_estimate** (*Optional**[**int**]*) – storage estimate for dense
+    tensors, use default heuristic estimate if not provided.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE72]  ## torchrec.distributed.planner.types[¶](#module-torchrec.distributed.planner.types
+    "Permalink to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE73]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: `object`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Representation of a device in a process group. ‘perf’ is an estimation of network,
+    CPU, and storage usages.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE74]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE75]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE76]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE77]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: `ABC`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Generates all relevant sharding options for given topology, constraints, nn.Module,
+    and sharders.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE78]'
+  prefs: []
+  type: TYPE_PRE
+- en: See class description.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE79]'
+  prefs: []
+  type: TYPE_PRE
+- en: See class description.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE80]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: `object`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Stores user provided constraints around the sharding plan.
+  prefs: []
+  type: TYPE_NORMAL
+- en: If provided, pooling_factors, num_poolings, and batch_sizes must match in length,
+    as per sample.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE81]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE82]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE83]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE84]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE85]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE86]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE87]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE88]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE89]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE90]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE91]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE92]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: `Enum`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Well-known partition types.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE93]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE94]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE95]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE96]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: `ABC`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Partitions shards.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Today we have multiple strategies ie. (Greedy, BLDM, Linear).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE97]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE98]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: `object`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Representation of the breakdown of the perf estimate a single shard of an embedding
+    table.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE99]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE100]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE101]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE102]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE103]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE104]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE105]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: `ABC`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE106]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE107]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: `Exception`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE108]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: `Enum`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Classify PlannerError based on the following cases.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE109]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE110]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE111]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE112]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE113]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: `ABC`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Prosposes complete lists of sharding options which can be parititioned to generate
+    a plan.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE114]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE115]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE116]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE117]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: `object`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Representation of a subset of an embedding table. ‘size’ and ‘offset’ fully
+    determine the tensors in the shard. ‘storage’ is an estimation of how much it
+    takes to store the shard with an estimation ‘perf’.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE118]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE119]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE120]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE121]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE122]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE123]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: `ABC`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Estimates shard perf or storage, requires fully specified sharding options.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE124]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE125]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: `object`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: One way of sharding an embedding table.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE126]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE127]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE128]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE129]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE130]'
+  prefs: []
+  type: TYPE_PRE
+- en: Determine if module pools output (e.g. EmbeddingBag) or uses unpooled/sequential
+    output.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE131]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE132]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE133]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE134]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE135]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE136]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE137]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: `ABC`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Logs statistics related to the sharding plan.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE138]'
+  prefs: []
+  type: TYPE_PRE
+- en: See class description
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE139]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: `object`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Representation of the storage capacities of a hardware used in training.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE140]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE141]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE142]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE143]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: `ABC`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Reserves storage space for non-sharded parts of the model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE144]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE145]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: `object`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE146]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE147]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE148]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE149]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE150]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE151]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE152]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE153]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE154]  ## torchrec.distributed.planner.utils[¶](#module-torchrec.distributed.planner.utils
+    "Permalink to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE155]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: `object`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Generates values of X between A & B to invoke on an external predicate F(X)
+    to discover the largest X for which F(X) is true. Uses binary search to minimize
+    the number of invocations of F. Assumes F is a step function, i.e. if F(X) is
+    false, there is no point trying F(X+1).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE156]'
+  prefs: []
+  type: TYPE_PRE
+- en: next() returns the next value to probe, given the result of the prior probe.
+    The first time next() is invoked the prior_result is ignored. Returns None if
+    entire range explored or threshold reached.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE157]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE158]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE159]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE160]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns placement, formatted as string
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE161]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE162]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE163]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE164]'
+  prefs: []
+  type: TYPE_PRE

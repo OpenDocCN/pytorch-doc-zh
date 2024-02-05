@@ -1,0 +1,2222 @@
+- en: torchrec.modules¶
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/torchrec/torchrec.modules.html](https://pytorch.org/torchrec/torchrec.modules.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Torchrec Common Modules
+  prefs: []
+  type: TYPE_NORMAL
+- en: The torchrec modules contain a collection of various modules.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'These modules include:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: extensions of nn.Embedding and nn.EmbeddingBag, called EmbeddingBagCollection
+    and EmbeddingCollection respectively.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: established modules such as [DeepFM](https://arxiv.org/pdf/1703.04247.pdf) and
+    [CrossNet](https://arxiv.org/abs/1708.05123).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: common module patterns such as MLP and SwishLayerNorm.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: custom modules for TorchRec such as PositionWeightedModule and LazyModuleExtensionMixin.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: EmbeddingTower and EmbeddingTowerCollection, logical “tower” of embeddings passed
+    to provided interaction module.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '## torchrec.modules.activation[¶](#module-torchrec.modules.activation "Permalink
+    to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Activation Modules
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: `Module`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Applies the Swish function with layer normalization: Y = X * Sigmoid(LayerNorm(X)).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**input_dims** (*Union**[**int**,* *List**[**int**]**,* *torch.Size**]*) –
+    dimensions to normalize over. If an input tensor has shape [batch_size, d1, d2,
+    d3], setting input_dim=[d2, d3] will do the layer normalization on last two dimensions.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**device** (*Optional**[**torch.device**]*) – default compute device.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**input** (*torch.Tensor*) – an input tensor.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: an output tensor.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: torch.Tensor
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]  ## torchrec.modules.crossnet[¶](#module-torchrec.modules.crossnet "Permalink
+    to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: CrossNet API
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: `Module`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Cross Network](https://arxiv.org/abs/1708.05123):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Cross Net is a stack of “crossing” operations on a tensor of shape \((*, N)\)
+    to the same shape, effectively creating \(N\) learnable polynomical functions
+    over the input tensor.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In this module, the crossing operations are defined based on a full rank matrix
+    (NxN), such that the crossing effect can cover all bits on each layer. On each
+    layer l, the tensor is transformed into:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: \[x_{l+1} = x_0 * (W_l \cdot x_l + b_l) + x_l\]
+  prefs: []
+  type: TYPE_NORMAL
+- en: where \(W_l\) is a square matrix \((NxN)\), \(*\) means element-wise multiplication,
+    \(\cdot\) means matrix multiplication.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**in_features** (*int*) – the dimension of the input.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**num_layers** (*int*) – the number of layers in the module.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**input** (*torch.Tensor*) – tensor with shape [batch_size, in_features].'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: tensor with shape [batch_size, in_features].
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: torch.Tensor
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: `Module`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Low Rank Cross Net is a highly efficient cross net. Instead of using full rank
+    cross matrices (NxN) at each layer, it will use two kernels \(W (N x r)\) and
+    \(V (r x N)\), where r << N, to simplify the matrix multiplication.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'On each layer l, the tensor is transformed into:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: \[x_{l+1} = x_0 * (W_l \cdot (V_l \cdot x_l) + b_l) + x_l\]
+  prefs: []
+  type: TYPE_NORMAL
+- en: where \(W_l\) is either a vector, \(*\) means element-wise multiplication, and
+    \(\cdot\) means matrix multiplication.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Rank r should be chosen smartly. Usually, we expect r < N/2 to have computational
+    savings; we should expect \(r ~= N/4\) to preserve the accuracy of the full rank
+    cross net.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**in_features** (*int*) – the dimension of the input.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**num_layers** (*int*) – the number of layers in the module.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**low_rank** (*int*) – the rank setup of the cross matrix (default = 1). Value
+    must be always >= 1.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**input** (*torch.Tensor*) – tensor with shape [batch_size, in_features].'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: tensor with shape [batch_size, in_features].
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: torch.Tensor
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: `Module`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Low Rank Mixture Cross Net is a DCN V2 implementation from the [paper](https://arxiv.org/pdf/2008.13535.pdf):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: LowRankMixtureCrossNet defines the learnable crossing parameter per layer as
+    a low-rank matrix \((N*r)\) together with mixture of experts. Compared to LowRankCrossNet,
+    instead of relying on one single expert to learn feature crosses, this module
+    leverages such \(K\) experts; each learning feature interactions in different
+    subspaces, and adaptively combining the learned crosses using a gating mechanism
+    that depends on input \(x\)..
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'On each layer l, the tensor is transformed into:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '\[x_{l+1} = MoE({expert_i : i \in K_{experts}}) + x_l\]'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'and each \(expert_i\) is defined as:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: \[expert_i = x_0 * (U_{li} \cdot g(C_{li} \cdot g(V_{li} \cdot x_l)) + b_l)\]
+  prefs: []
+  type: TYPE_NORMAL
+- en: where \(U_{li} (N, r)\), \(C_{li} (r, r)\) and \(V_{li} (r, N)\) are low-rank
+    matrices, \(*\) means element-wise multiplication, \(x\) means matrix multiplication,
+    and \(g()\) is the non-linear activation function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: When num_expert is 1, the gate evaluation and MOE will be skipped to save computation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**in_features** (*int*) – the dimension of the input.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**num_layers** (*int*) – the number of layers in the module.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**low_rank** (*int*) – the rank setup of the cross matrix (default = 1). Value
+    must be always >= 1'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**activation** (*Union**[**torch.nn.Module**,* *Callable**[**[**torch.Tensor**]**,*
+    *torch.Tensor**]**]*) – the non-linear activation function, used in defining experts.
+    Default is relu.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**input** (*torch.Tensor*) – tensor with shape [batch_size, in_features].'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: tensor with shape [batch_size, in_features].
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: torch.Tensor
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: `Module`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Vector Cross Network can be refered as [DCN-V1](https://arxiv.org/pdf/1708.05123.pdf).
+  prefs: []
+  type: TYPE_NORMAL
+- en: It is also a specialized low rank cross net, where rank=1\. In this version,
+    on each layer, instead of keeping two kernels W and V, we only keep one vector
+    kernel W (Nx1). We use the dot operation to compute the “crossing” effect of the
+    features, thus saving two matrix multiplications to further reduce computational
+    cost and cut the number of learnable parameters.
+  prefs: []
+  type: TYPE_NORMAL
+- en: On each layer l, the tensor is transformed into
+  prefs: []
+  type: TYPE_NORMAL
+- en: \[x_{l+1} = x_0 * (W_l . x_l + b_l) + x_l\]
+  prefs: []
+  type: TYPE_NORMAL
+- en: where \(W_l\) is either a vector, \(*\) means element-wise multiplication; \(.\)
+    means dot operations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**in_features** (*int*) – the dimension of the input.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**num_layers** (*int*) – the number of layers in the module.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**input** (*torch.Tensor*) – tensor with shape [batch_size, in_features].'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: tensor with shape [batch_size, in_features].
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: torch.Tensor
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE19]  ## torchrec.modules.deepfm[¶](#module-torchrec.modules.deepfm "Permalink
+    to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Deep Factorization-Machine Modules
+  prefs: []
+  type: TYPE_NORMAL
+- en: The following modules are based off the [Deep Factorization-Machine (DeepFM)
+    paper](https://arxiv.org/pdf/1703.04247.pdf)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Class DeepFM implents the DeepFM Framework
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Class FactorizationMachine implements FM as noted in the above paper.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: `Module`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: This is the [DeepFM module](https://arxiv.org/pdf/1703.04247.pdf)
+  prefs: []
+  type: TYPE_NORMAL
+- en: This module does not cover the end-end functionality of the published paper.
+    Instead, it covers only the deep component of the publication. It is used to learn
+    high-order feature interactions. If low-order feature interactions should be learnt,
+    please use FactorizationMachine module instead, which will share the same embedding
+    input of this module.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'To support modeling flexibility, we customize the key components as:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Different from the public paper, we change the input from raw sparse features
+    to embeddings of the features. It allows flexibility in embedding dimensions and
+    the number of embeddings, as long as all embedding tensors have the same batch
+    size.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: On top of the public paper, we allow users to customize the hidden layer to
+    be any module, not limited to just MLP.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'The general architecture of the module is like:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**dense_module** (*nn.Module*) – any customized module that can be used (such
+    as MLP) in DeepFM. The in_features of this module must be equal to the element
+    counts. For example, if the input embedding is [randn(3, 2, 3), randn(3, 4, 5)],
+    the in_features should be: 2*3+4*5.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**embeddings** (*List**[**torch.Tensor**]*) –'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The list of all embeddings (e.g. dense, common_sparse, specialized_sparse,
+    embedding_features, raw_embedding_features) in the shape of:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'For the ease of operation, embeddings that have the same embedding dimension
+    have the option to be stacked into a single tensor. For example, when we have
+    1 trained embedding with dimension=32, 5 native embeddings with dimension=64,
+    and 3 dense features with dimension=16, we can prepare the embeddings list to
+    be the list of:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: batch_size of all input tensors need to be identical.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: output of dense_module with flattened and concatenated embeddings as input.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: torch.Tensor
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE26]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE27]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: `Module`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'This is the Factorization Machine module, mentioned in the [DeepFM paper](https://arxiv.org/pdf/1703.04247.pdf):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: This module does not cover the end-end functionality of the published paper.
+    Instead, it covers only the FM part of the publication, and is used to learn 2nd-order
+    feature interactions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'To support modeling flexibility, we customize the key components as different
+    from the public paper:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: We change the input from raw sparse features to embeddings of the features.
+    This allows flexibility in embedding dimensions and the number of embeddings,
+    as long as all embedding tensors have the same batch size.
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: 'The general architecture of the module is like:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE28]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE29]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE30]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**embeddings** (*List**[**torch.Tensor**]*) –'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The list of all embeddings (e.g. dense, common_sparse, specialized_sparse,
+    embedding_features, raw_embedding_features) in the shape of:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE31]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'For the ease of operation, embeddings that have the same embedding dimension
+    have the option to be stacked into a single tensor. For example, when we have
+    1 trained embedding with dimension=32, 5 native embeddings with dimension=64,
+    and 3 dense features with dimension=16, we can prepare the embeddings list to
+    be the list of:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE32]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: batch_size of all input tensors need to be identical.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: output of fm with flattened and concatenated embeddings as input. Expected to
+    be [B, 1].
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: torch.Tensor
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE33]  ## torchrec.modules.embedding_configs[¶](#module-torchrec.modules.embedding_configs
+    "Permalink to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE34]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: `object`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE35]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE36]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE37]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE38]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE39]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE40]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE41]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE42]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE43]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE44]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE45]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE46]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE47]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE48]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`BaseEmbeddingConfig`](#torchrec.modules.embedding_configs.BaseEmbeddingConfig
+    "torchrec.modules.embedding_configs.BaseEmbeddingConfig")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE49]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE50]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`BaseEmbeddingConfig`](#torchrec.modules.embedding_configs.BaseEmbeddingConfig
+    "torchrec.modules.embedding_configs.BaseEmbeddingConfig")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE51]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE52]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE53]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE54]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`BaseEmbeddingConfig`](#torchrec.modules.embedding_configs.BaseEmbeddingConfig
+    "torchrec.modules.embedding_configs.BaseEmbeddingConfig")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE55]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE56]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE57]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE58]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE59]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: `Enum`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: An enumeration.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE60]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE61]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE62]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE63]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: `tuple`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE64]'
+  prefs: []
+  type: TYPE_PRE
+- en: Alias for field number 0
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE65]'
+  prefs: []
+  type: TYPE_PRE
+- en: Alias for field number 2
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE66]'
+  prefs: []
+  type: TYPE_PRE
+- en: Alias for field number 1
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE67]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE68]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE69]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE70]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE71]  ## torchrec.modules.embedding_modules[¶](#module-torchrec.modules.embedding_modules
+    "Permalink to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE72]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`EmbeddingBagCollectionInterface`](#torchrec.modules.embedding_modules.EmbeddingBagCollectionInterface
+    "torchrec.modules.embedding_modules.EmbeddingBagCollectionInterface")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: EmbeddingBagCollection represents a collection of pooled embeddings (EmbeddingBags).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'It processes sparse data in the form of KeyedJaggedTensor with values of the
+    form [F X B X L] where:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'F: features (keys)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'B: batch size'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'L: length of sparse features (jagged)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'and outputs a KeyedTensor with values of the form [B * (F * D)] where:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'F: features (keys)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'D: each feature’s (key’s) embedding dimension'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'B: batch size'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**tables** (*List**[*[*EmbeddingBagConfig*](#torchrec.modules.embedding_configs.EmbeddingBagConfig
+    "torchrec.modules.embedding_configs.EmbeddingBagConfig")*]*) – list of embedding
+    tables.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**is_weighted** (*bool*) – whether input KeyedJaggedTensor is weighted.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**device** (*Optional**[**torch.device**]*) – default compute device.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE73]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE74]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE75]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE76]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**features** ([*KeyedJaggedTensor*](torchrec.sparse.html#torchrec.sparse.jagged_tensor.KeyedJaggedTensor
+    "torchrec.sparse.jagged_tensor.KeyedJaggedTensor")) – KJT of form [F X B X L].'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: KeyedTensor
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE77]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE78]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE79]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE80]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: `ABC`, `Module`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Interface for EmbeddingBagCollection.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE81]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE82]'
+  prefs: []
+  type: TYPE_PRE
+- en: Define the computation performed at every call.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Should be overridden by all subclasses.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Although the recipe for forward pass needs to be defined within this function,
+    one should call the `Module` instance afterwards instead of this since the former
+    takes care of running the registered hooks while the latter silently ignores them.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE83]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE84]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE85]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`EmbeddingCollectionInterface`](#torchrec.modules.embedding_modules.EmbeddingCollectionInterface
+    "torchrec.modules.embedding_modules.EmbeddingCollectionInterface")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: EmbeddingCollection represents a collection of non-pooled embeddings.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'It processes sparse data in the form of KeyedJaggedTensor of the form [F X
+    B X L] where:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'F: features (keys)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'B: batch size'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'L: length of sparse features (variable)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'and outputs Dict[feature (key), JaggedTensor]. Each JaggedTensor contains values
+    of the form (B * L) X D where:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'B: batch size'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'L: length of sparse features (jagged)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'D: each feature’s (key’s) embedding dimension and lengths are of the form L'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**tables** (*List**[*[*EmbeddingConfig*](#torchrec.modules.embedding_configs.EmbeddingConfig
+    "torchrec.modules.embedding_configs.EmbeddingConfig")*]*) – list of embedding
+    tables.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**device** (*Optional**[**torch.device**]*) – default compute device.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**need_indices** (*bool*) – if we need to pass indices to the final lookup
+    dict.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE86]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE87]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE88]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE89]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE90]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE91]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**features** ([*KeyedJaggedTensor*](torchrec.sparse.html#torchrec.sparse.jagged_tensor.KeyedJaggedTensor
+    "torchrec.sparse.jagged_tensor.KeyedJaggedTensor")) – KJT of form [F X B X L].'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Dict[str, JaggedTensor]
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE92]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE93]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE94]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE95]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: `ABC`, `Module`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Interface for EmbeddingCollection.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE96]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE97]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE98]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE99]'
+  prefs: []
+  type: TYPE_PRE
+- en: Define the computation performed at every call.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Should be overridden by all subclasses.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Although the recipe for forward pass needs to be defined within this function,
+    one should call the `Module` instance afterwards instead of this since the former
+    takes care of running the registered hooks while the latter silently ignores them.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE100]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE101]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE102]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE103]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE104]  ## torchrec.modules.feature_processor[¶](#module-torchrec.modules.feature_processor
+    "Permalink to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE105]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: `Module`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Abstract base class for feature processor.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE106]'
+  prefs: []
+  type: TYPE_PRE
+- en: Define the computation performed at every call.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Should be overridden by all subclasses.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Although the recipe for forward pass needs to be defined within this function,
+    one should call the `Module` instance afterwards instead of this since the former
+    takes care of running the registered hooks while the latter silently ignores them.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE107]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE108]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: `Module`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Abstract base class for grouped feature processor
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE109]'
+  prefs: []
+  type: TYPE_PRE
+- en: Define the computation performed at every call.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Should be overridden by all subclasses.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Although the recipe for forward pass needs to be defined within this function,
+    one should call the `Module` instance afterwards instead of this since the former
+    takes care of running the registered hooks while the latter silently ignores them.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE110]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE111]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`BaseFeatureProcessor`](#torchrec.modules.feature_processor.BaseFeatureProcessor
+    "torchrec.modules.feature_processor.BaseFeatureProcessor")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Adds position weights to id list features.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**max_feature_lengths** (*Dict**[**str**,* *int**]*) – feature name to max_length
+    mapping. max_length, a.k.a truncation size, specifies the maximum number of ids
+    each sample has. For each feature, its position weight parameter size is max_length.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE112]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**features** (*Dict**[**str**,* [*JaggedTensor*](torchrec.sparse.html#torchrec.sparse.jagged_tensor.JaggedTensor
+    "torchrec.sparse.jagged_tensor.JaggedTensor")*]*) – dictionary of keys to JaggedTensor,
+    representing the features.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: same as input features with weights field being populated.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Dict[str, [JaggedTensor](torchrec.sparse.html#torchrec.sparse.jagged_tensor.JaggedTensor
+    "torchrec.sparse.jagged_tensor.JaggedTensor")]
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE113]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE114]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE115]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`BaseGroupedFeatureProcessor`](#torchrec.modules.feature_processor.BaseGroupedFeatureProcessor
+    "torchrec.modules.feature_processor.BaseGroupedFeatureProcessor")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: PositionWeightedProcessor represents a processor to apply position weight to
+    a KeyedJaggedTensor.
+  prefs: []
+  type: TYPE_NORMAL
+- en: It can handle both unsharded and sharded input and output corresponding output
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**max_feature_lengths** (*Dict**[**str**,* *int**]*) – Dict of feature_lengths,
+    the key is the feature_name and value is length.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**device** (*Optional**[**torch.device**]*) – default compute device.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE116]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE117]'
+  prefs: []
+  type: TYPE_PRE
+- en: In unsharded or non-pipelined model, the input features both contain fp_feature
+    and non_fp_features, and the output will filter out non_fp features In sharded
+    pipelining model, the input features can only contain either none or all feature_processed
+    features, since the input feature comes from the input_dist() of ebc which will
+    filter out the keys not in the ebc. And the input size is same as output size
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**features** ([*KeyedJaggedTensor*](torchrec.sparse.html#torchrec.sparse.jagged_tensor.KeyedJaggedTensor
+    "torchrec.sparse.jagged_tensor.KeyedJaggedTensor")) – input features'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: KeyedJaggedTensor
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE118]'
+  prefs: []
+  type: TYPE_PRE
+- en: Return an iterator over module buffers, yielding both the name of the buffer
+    as well as the buffer itself.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**prefix** (*str*) – prefix to prepend to all buffer names.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**recurse** (*bool**,* *optional*) – if True, then yields buffers of this module
+    and all submodules. Otherwise, yields only buffers that are direct members of
+    this module. Defaults to True.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**remove_duplicate** (*bool**,* *optional*) – whether to remove the duplicated
+    buffers in the result. Defaults to True.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Yields:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '*(str, torch.Tensor)* – Tuple containing the name and buffer'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE119]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE120]'
+  prefs: []
+  type: TYPE_PRE
+- en: Return a dictionary containing references to the whole state of the module.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Both parameters and persistent buffers (e.g. running averages) are included.
+    Keys are corresponding parameter and buffer names. Parameters and buffers set
+    to `None` are not included.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: The returned object is a shallow copy. It contains references to the module’s
+    parameters and buffers.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: Currently `state_dict()` also accepts positional arguments for `destination`,
+    `prefix` and `keep_vars` in order. However, this is being deprecated and keyword
+    arguments will be enforced in future releases.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: Please avoid the use of argument `destination` as it is not designed for end-users.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**destination** (*dict**,* *optional*) – If provided, the state of module will
+    be updated into the dict and the same object is returned. Otherwise, an `OrderedDict`
+    will be created and returned. Default: `None`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**prefix** (*str**,* *optional*) – a prefix added to parameter and buffer names
+    to compose the keys in state_dict. Default: `''''`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**keep_vars** (*bool**,* *optional*) – by default the `Tensor` s returned in
+    the state dict are detached from autograd. If it’s set to `True`, detaching will
+    not be performed. Default: `False`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: a dictionary containing a whole state of the module
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: dict
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE121]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE122]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE123]  ## torchrec.modules.lazy_extension[¶](#module-torchrec.modules.lazy_extension
+    "Permalink to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE124]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: `LazyModuleMixin`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: This is a temporary extension of LazyModuleMixin to support passing keyword
+    arguments to lazy module’s forward method.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The long-term plan is to upstream this feature to LazyModuleMixin. Please see
+    [https://github.com/pytorch/pytorch/issues/59923](https://github.com/pytorch/pytorch/issues/59923)
+    for details.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Please see TestLazyModuleExtensionMixin, which contains unit tests that ensure:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: LazyModuleExtensionMixin._infer_parameters has source code parity with torch.nn.modules.lazy.LazyModuleMixin._infer_parameters,
+    except that the former can accept keyword arguments.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: LazyModuleExtensionMixin._call_impl has source code parity with torch.nn.Module._call_impl,
+    except that the former can pass keyword arguments to forward pre hooks.”
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE125]'
+  prefs: []
+  type: TYPE_PRE
+- en: Applies fn recursively to every submodule (as returned by .children()) as well
+    as self. Typical use includes initializing the parameters of a model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Calling apply() on an uninitialized lazy-module will result in an error. User
+    is required to initialize a lazy-module (by doing a dummy forward pass) before
+    calling apply() on the lazy-module.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**fn** (*torch.nn.Module -> None*) – function to be applied to each submodule.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: self
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: torch.nn.Module
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE126]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE127]'
+  prefs: []
+  type: TYPE_PRE
+- en: Attaches a function to a module, which will be applied recursively to every
+    submodule (as returned by .children()) of the module as well as the module itself
+    right after the first forward pass (i.e. after all submodules and parameters have
+    been initialized).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Typical use includes initializing the numerical value of the parameters of a
+    lazy module (i.e. modules inherited from LazyModuleMixin).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: lazy_apply() can be used on both lazy and non-lazy modules.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**module** (*torch.nn.Module*) – module to recursively apply fn on.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**fn** (*Callable**[**[**torch.nn.Module**]**,* *None**]*) – function to be
+    attached to module and later be applied to each submodule of module and the module
+    itself.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: module with fn attached.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: torch.nn.Module
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE128]  ## torchrec.modules.mlp[¶](#module-torchrec.modules.mlp "Permalink
+    to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE129]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: `Module`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Applies a stack of Perceptron modules sequentially (i.e. Multi-Layer Perceptron).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**in_size** (*int*) – in_size of the input.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**layer_sizes** (*List**[**int**]*) – out_size of each Perceptron module.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**bias** (*bool*) – if set to False, the layer will not learn an additive bias.
+    Default: True.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**activation** (*str**,* *Union**[**Callable**[**[**]**,* *torch.nn.Module**]**,*
+    *torch.nn.Module**,* *Callable**[**[**torch.Tensor**]**,* *torch.Tensor**]**]*)
+    – the activation function to apply to the output of linear transformation of each
+    Perceptron module. If activation is a str, we currently only support the follow
+    strings, as “relu”, “sigmoid”, and “swish_layernorm”. If activation is a Callable[[],
+    torch.nn.Module], activation() will be called once per Perceptron module to generate
+    the activation module for that Perceptron module, and the parameters won’t be
+    shared between those activation modules. One use case is when all the activation
+    modules share the same constructor arguments, but don’t share the actual module
+    parameters. Default: torch.relu.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**device** (*Optional**[**torch.device**]*) – default compute device.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE130]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE131]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**input** (*torch.Tensor*) – tensor of shape (B, I) where I is number of elements
+    in each input sample.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: tensor of shape (B, O) where O is out_size of the last Perceptron module.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: torch.Tensor
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE132]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE133]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: `Module`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Applies a linear transformation and activation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**in_size** (*int*) – number of elements in each input sample.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**out_size** (*int*) – number of elements in each output sample.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**bias** (*bool*) – if set to `False`, the layer will not learn an additive
+    bias. Default: `True`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**activation** (*Union**[**torch.nn.Module**,* *Callable**[**[**torch.Tensor**]**,*
+    *torch.Tensor**]**]*) – the activation function to apply to the output of linear
+    transformation. Default: torch.relu.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**device** (*Optional**[**torch.device**]*) – default compute device.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE134]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE135]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**input** (*torch.Tensor*) – tensor of shape (B, I) where I is number of elements
+    in each input sample.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: tensor of shape (B, O) where O is number of elements per
+  prefs: []
+  type: TYPE_NORMAL
+- en: channel in each output sample (i.e. out_size).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: torch.Tensor
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE136]  ## torchrec.modules.utils[¶](#module-torchrec.modules.utils "Permalink
+    to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE137]'
+  prefs: []
+  type: TYPE_PRE
+- en: Verify that the out_features of a given module or a list of modules matches
+    the specified number. If a list of modules or a ModuleList is given, recursively
+    check all the submodules.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE138]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE139]'
+  prefs: []
+  type: TYPE_PRE
+- en: Given a single module, construct a (nested) ModuleList of size of sizes by making
+    copies of the provided module and reinitializing the Linear layers.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE140]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE141]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE142]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE143]'
+  prefs: []
+  type: TYPE_PRE
+- en: torchrec.modules.mc_modules[¶](#torchrec-modules-mc-modules "Permalink to this
+    heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE144]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`MCHEvictionPolicy`](#torchrec.modules.mc_modules.MCHEvictionPolicy
+    "torchrec.modules.mc_modules.MCHEvictionPolicy")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE145]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Args: history_metadata (Dict[str, torch.Tensor]): history metadata dict additional_ids
+    (torch.Tensor): additional ids to be used as part of history unique_inverse_mapping
+    (torch.Tensor): torch.unique inverse mapping generated from'
+  prefs: []
+  type: TYPE_NORMAL
+- en: torch.cat[history_accumulator, additional_ids]. used to map history metadata
+    tensor indices to their coalesced tensor indices.
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Coalesce metadata history buffers and return dict of processed metadata tensors.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE146]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE147]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Args: current_iter (int): current iteration incoming_ids (torch.Tensor): incoming
+    ids history_metadata (Dict[str, torch.Tensor]): history metadata dict'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Compute and record metadata based on incoming ids
+  prefs: []
+  type: TYPE_NORMAL
+- en: for the implemented eviction policy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE148]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Args:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Returns Tuple of (evicted_indices, selected_new_indices) where:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: evicted_indices are indices in the mch map to be evicted, and selected_new_indices
+    are the indices of the ids in the coalesced history that are to be added to the
+    mch.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE149]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`MCHEvictionPolicy`](#torchrec.modules.mc_modules.MCHEvictionPolicy
+    "torchrec.modules.mc_modules.MCHEvictionPolicy")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE150]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Args: history_metadata (Dict[str, torch.Tensor]): history metadata dict additional_ids
+    (torch.Tensor): additional ids to be used as part of history unique_inverse_mapping
+    (torch.Tensor): torch.unique inverse mapping generated from'
+  prefs: []
+  type: TYPE_NORMAL
+- en: torch.cat[history_accumulator, additional_ids]. used to map history metadata
+    tensor indices to their coalesced tensor indices.
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Coalesce metadata history buffers and return dict of processed metadata tensors.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE151]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE152]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Args: current_iter (int): current iteration incoming_ids (torch.Tensor): incoming
+    ids history_metadata (Dict[str, torch.Tensor]): history metadata dict'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Compute and record metadata based on incoming ids
+  prefs: []
+  type: TYPE_NORMAL
+- en: for the implemented eviction policy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE153]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Args:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Returns Tuple of (evicted_indices, selected_new_indices) where:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: evicted_indices are indices in the mch map to be evicted, and selected_new_indices
+    are the indices of the ids in the coalesced history that are to be added to the
+    mch.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE154]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`MCHEvictionPolicy`](#torchrec.modules.mc_modules.MCHEvictionPolicy
+    "torchrec.modules.mc_modules.MCHEvictionPolicy")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE155]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Args: history_metadata (Dict[str, torch.Tensor]): history metadata dict additional_ids
+    (torch.Tensor): additional ids to be used as part of history unique_inverse_mapping
+    (torch.Tensor): torch.unique inverse mapping generated from'
+  prefs: []
+  type: TYPE_NORMAL
+- en: torch.cat[history_accumulator, additional_ids]. used to map history metadata
+    tensor indices to their coalesced tensor indices.
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Coalesce metadata history buffers and return dict of processed metadata tensors.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE156]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE157]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Args: current_iter (int): current iteration incoming_ids (torch.Tensor): incoming
+    ids history_metadata (Dict[str, torch.Tensor]): history metadata dict'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Compute and record metadata based on incoming ids
+  prefs: []
+  type: TYPE_NORMAL
+- en: for the implemented eviction policy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE158]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Args:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Returns Tuple of (evicted_indices, selected_new_indices) where:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: evicted_indices are indices in the mch map to be evicted, and selected_new_indices
+    are the indices of the ids in the coalesced history that are to be added to the
+    mch.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE159]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: `ABC`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE160]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Args: history_metadata (Dict[str, torch.Tensor]): history metadata dict additional_ids
+    (torch.Tensor): additional ids to be used as part of history unique_inverse_mapping
+    (torch.Tensor): torch.unique inverse mapping generated from'
+  prefs: []
+  type: TYPE_NORMAL
+- en: torch.cat[history_accumulator, additional_ids]. used to map history metadata
+    tensor indices to their coalesced tensor indices.
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Coalesce metadata history buffers and return dict of processed metadata tensors.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE161]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE162]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Args: current_iter (int): current iteration incoming_ids (torch.Tensor): incoming
+    ids history_metadata (Dict[str, torch.Tensor]): history metadata dict'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Compute and record metadata based on incoming ids
+  prefs: []
+  type: TYPE_NORMAL
+- en: for the implemented eviction policy.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE163]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Args:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Returns Tuple of (evicted_indices, selected_new_indices) where:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: evicted_indices are indices in the mch map to be evicted, and selected_new_indices
+    are the indices of the ids in the coalesced history that are to be added to the
+    mch.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE164]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: `tuple`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE165]'
+  prefs: []
+  type: TYPE_PRE
+- en: Alias for field number 2
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE166]'
+  prefs: []
+  type: TYPE_PRE
+- en: Alias for field number 1
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE167]'
+  prefs: []
+  type: TYPE_PRE
+- en: Alias for field number 0
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE168]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`ManagedCollisionModule`](#torchrec.modules.mc_modules.ManagedCollisionModule
+    "torchrec.modules.mc_modules.ManagedCollisionModule")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: ZCH / MCH managed collision module
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**zch_size** (*int*) – range of output ids, within [output_size_offset, output_size_offset
+    + zch_size - 1)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**device** (*torch.device*) – device on which this module will be executed'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**eviction_policy** (*eviction policy*) – eviction policy to be used'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**eviction_interval** (*int*) – interval of eviction policy is triggered'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**input_hash_size** (*int*) – input feature id range, will be passed to input_hash_func
+    as second arg'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**input_hash_func** (*Optional**[**Callable**]*) – function used to generate
+    hashes for input features. This function is typically used to drive uniform distribution
+    over range same or greater than input data'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**mch_size** (*Optional**[**int**]*) – size of residual output (ie. legacy
+    MCH), experimental feature. Ids are internally shifted by output_size_offset +
+    zch_output_range'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**mch_hash_func** (*Optional**[**Callable**]*) – function used to generate
+    hashes for residual feature. will hash down to mch_size.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**output_global_offset** (*int*) – offset of the output id for output range,
+    typically only used in sharding applications.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE169]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns None if no eviction should be done this iteration. Otherwise, return
+    ids of slots to reset. On eviction, this module should reset its state for those
+    slots, with the assumptionn that the downstream module will handle this properly.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE170]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Args: feature (JaggedTensor]): feature representation :returns: modified JT
+    :rtype: Dict[str, JaggedTensor]'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE171]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns numerical range of input, for sharding info
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE172]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns numerical range of output, for validation vs. downstream embedding lookups
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE173]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE174]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE175]'
+  prefs: []
+  type: TYPE_PRE
+- en: Used for creating local MC modules for RW sharding, hack for now
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE176]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE177]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE178]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: `Module`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: ManagedCollisionCollection represents a collection of managed collision modules.
+    The inputs passed to the MCC will be remapped by the managed collision modules
+  prefs: []
+  type: TYPE_NORMAL
+- en: and returned.
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**managed_collision_modules** (*Dict**[**str**,* [*ManagedCollisionModule*](#torchrec.modules.mc_modules.ManagedCollisionModule
+    "torchrec.modules.mc_modules.ManagedCollisionModule")*]*) – Dict of managed collision
+    modules'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**embedding_confgs** (*List**[*[*BaseEmbeddingConfig*](#torchrec.modules.embedding_configs.BaseEmbeddingConfig
+    "torchrec.modules.embedding_configs.BaseEmbeddingConfig")*]*) – List of embedding
+    configs, for each table with a managed collsion module'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE179]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE180]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE181]'
+  prefs: []
+  type: TYPE_PRE
+- en: Define the computation performed at every call.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Should be overridden by all subclasses.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Although the recipe for forward pass needs to be defined within this function,
+    one should call the `Module` instance afterwards instead of this since the former
+    takes care of running the registered hooks while the latter silently ignores them.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE182]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE183]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: `Module`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Abstract base class for ManagedCollisionModule. Maps input ids to range [0,
+    max_output_id).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**max_output_id** (*int*) – Max output value of remapped ids.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**input_hash_size** (*int*) – Max value of input range i.e. [0, input_hash_size)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**remapping_range_start_index** (*int*) – Relative start index of remapping
+    range'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**device** (*torch.device*) – default compute device.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Example::'
+  prefs: []
+  type: TYPE_NORMAL
+- en: jt = JaggedTensor(…) mcm = ManagedCollisionModule(…) mcm_jt = mcm(fp)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE184]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE185]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns None if no eviction should be done this iteration. Otherwise, return
+    ids of slots to reset. On eviction, this module should reset its state for those
+    slots, with the assumptionn that the downstream module will handle this properly.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE186]'
+  prefs: []
+  type: TYPE_PRE
+- en: Define the computation performed at every call.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Should be overridden by all subclasses.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Although the recipe for forward pass needs to be defined within this function,
+    one should call the `Module` instance afterwards instead of this since the former
+    takes care of running the registered hooks while the latter silently ignores them.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE187]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns numerical range of input, for sharding info
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE188]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns numerical range of output, for validation vs. downstream embedding lookups
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE189]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE190]'
+  prefs: []
+  type: TYPE_PRE
+- en: Used for creating local MC modules for RW sharding, hack for now
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE191]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE192]'
+  prefs: []
+  type: TYPE_PRE
+- en: Applies an MC method to a dictionary of JaggedTensors, returning the updated
+    dictionary with same ordering
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE193]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE194]'
+  prefs: []
+  type: TYPE_PRE
+- en: torchrec.modules.mc_embedding_modules[¶](#torchrec-modules-mc-embedding-modules
+    "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE195]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: `Module`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: BaseManagedCollisionEmbeddingCollection represents a EC/EBC module and a set
+    of managed collision modules. The inputs into the MC-EC/EBC will first be modified
+    by the managed collision module before being passed into the embedding collection.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**embedding_module** – EmbeddingCollection to lookup embeddings'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**managed_collision_modules** – Dict of managed collision modules'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**return_remapped_features** (*bool*) – whether to return remapped input features
+    in addition to embeddings'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE196]'
+  prefs: []
+  type: TYPE_PRE
+- en: Define the computation performed at every call.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Should be overridden by all subclasses.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Although the recipe for forward pass needs to be defined within this function,
+    one should call the `Module` instance afterwards instead of this since the former
+    takes care of running the registered hooks while the latter silently ignores them.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE197]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE198]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`BaseManagedCollisionEmbeddingCollection`](#torchrec.modules.mc_embedding_modules.BaseManagedCollisionEmbeddingCollection
+    "torchrec.modules.mc_embedding_modules.BaseManagedCollisionEmbeddingCollection")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: ManagedCollisionEmbeddingBagCollection represents a EmbeddingBagCollection module
+    and a set of managed collision modules. The inputs into the MC-EBC will first
+    be modified by the managed collision module before being passed into the embedding
+    bag collection.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For details of input and output types, see EmbeddingBagCollection
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**embedding_module** – EmbeddingBagCollection to lookup embeddings'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**managed_collision_modules** – Dict of managed collision modules'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**return_remapped_features** (*bool*) – whether to return remapped input features
+    in addition to embeddings'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE199]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE200]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: [`BaseManagedCollisionEmbeddingCollection`](#torchrec.modules.mc_embedding_modules.BaseManagedCollisionEmbeddingCollection
+    "torchrec.modules.mc_embedding_modules.BaseManagedCollisionEmbeddingCollection")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: ManagedCollisionEmbeddingCollection represents a EmbeddingCollection module
+    and a set of managed collision modules. The inputs into the MC-EC will first be
+    modified by the managed collision module before being passed into the embedding
+    collection.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For details of input and output types, see EmbeddingCollection
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**embedding_module** – EmbeddingCollection to lookup embeddings'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**managed_collision_modules** – Dict of managed collision modules'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**return_remapped_features** (*bool*) – whether to return remapped input features
+    in addition to embeddings'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE201]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE202]'
+  prefs: []
+  type: TYPE_PRE

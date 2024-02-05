@@ -1,0 +1,261 @@
+- en: DataLoader2¶
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/data/beta/dataloader2.html](https://pytorch.org/data/beta/dataloader2.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: A new, light-weight [`DataLoader2`](#torchdata.dataloader2.DataLoader2 "torchdata.dataloader2.DataLoader2")
+    is introduced to decouple the overloaded data-manipulation functionalities from
+    `torch.utils.data.DataLoader` to `DataPipe` operations. Besides, certain features
+    can only be achieved with [`DataLoader2`](#torchdata.dataloader2.DataLoader2 "torchdata.dataloader2.DataLoader2")
+    like snapshotting and switching backend services to perform high-performant operations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: DataLoader2[¶](#id1 "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: '`DataLoader2` is used to optimize and execute the given `DataPipe` graph based
+    on `ReadingService` and `Adapter` functions, with support for'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Dynamic sharding for multiprocess and distributed data loading
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Multiple backend `ReadingServices`
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`DataPipe` graph in-place modification like shuffle control, memory pinning,
+    etc.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Snapshot the state of data-preprocessing pipeline (WIP)
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**datapipe** (`IterDataPipe` or `MapDataPipe`) – `DataPipe` from which to load
+    the data. A deepcopy of this datapipe will be made during initialization, allowing
+    the input to be re-used in a different `DataLoader2` without sharing states. Input
+    `None` can only be used if `load_state_dict` is called right after the creation
+    of the DataLoader.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**datapipe_adapter_fn** (`Iterable[Adapter]` or `Adapter`, optional) – `Adapter`
+    function(s) that will be applied to the DataPipe (default: `None`).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**reading_service** ([*ReadingServiceInterface*](reading_service.html#torchdata.dataloader2.ReadingServiceInterface
+    "torchdata.dataloader2.ReadingServiceInterface")*,* *optional*) – defines how
+    `DataLoader2` should execute operations over the `DataPipe`, e.g. multiprocessing/distributed
+    (default: `None`). A deepcopy of this will be created during initialization, allowing
+    the ReadingService to be re-used in a different `DataLoader2` without sharing
+    states.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: When a `MapDataPipe` is passed into `DataLoader2`, in order to iterate through
+    the data, `DataLoader2` will attempt to create an iterator via `iter(datapipe)`.
+    If the object has a non-zero-indexed indices, this may fail. Consider using `.shuffle()`
+    (which converts `MapDataPipe` to `IterDataPipe`) or `datapipe.to_iter_datapipe(custom_indices)`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Return a singleton iterator from the `DataPipe` graph adapted by `ReadingService`.
+    `DataPipe` will be restored if the serialized state is provided to construct `DataLoader2`.
+    And, `initialize_iteration` and `finalize_iterator` will be invoked at the beginning
+    and end of the iteration correspondingly.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Create new `DataLoader2` with `DataPipe` graph and `ReadingService` restored
+    from the serialized state.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: For the existing `DataLoader2`, load serialized state to restore `DataPipe`
+    graph and reset the internal state of `ReadingService`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Set random seed for DataLoader2 to control determinism.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**seed** – Random uint64 seed'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: Shuts down `ReadingService` and clean up iterator.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Return a dictionary to represent the state of data-processing pipeline with
+    keys:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`serialized_datapipe`:Serialized `DataPipe` before `ReadingService` adaption.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`reading_service_state`: The state of `ReadingService` and adapted `DataPipe`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Note: [`DataLoader2`](#torchdata.dataloader2.DataLoader2 "torchdata.dataloader2.DataLoader2")
+    doesn’t support `torch.utils.data.Dataset` or `torch.utils.data.IterableDataset`.
+    Please wrap each of them with the corresponding `DataPipe` below:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`torchdata.datapipes.map.SequenceWrapper`](generated/torchdata.datapipes.map.SequenceWrapper.html#torchdata.datapipes.map.SequenceWrapper
+    "torchdata.datapipes.map.SequenceWrapper"): `torch.utils.data.Dataset`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[`torchdata.datapipes.iter.IterableWrapper`](generated/torchdata.datapipes.iter.IterableWrapper.html#torchdata.datapipes.iter.IterableWrapper
+    "torchdata.datapipes.iter.IterableWrapper"): `torch.utils.data.IterableDataset`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ReadingService[¶](#readingservice "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '`ReadingService` specifies the execution backend for the data-processing graph.
+    There are three types of `ReadingServices` provided in TorchData:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| [`DistributedReadingService`](generated/torchdata.dataloader2.DistributedReadingService.html#torchdata.dataloader2.DistributedReadingService
+    "torchdata.dataloader2.DistributedReadingService") | `DistributedReadingSerivce`
+    handles distributed sharding on the graph of `DataPipe` and guarantee the randomness
+    by sharing the same seed across the distributed processes. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`InProcessReadingService`](generated/torchdata.dataloader2.InProcessReadingService.html#torchdata.dataloader2.InProcessReadingService
+    "torchdata.dataloader2.InProcessReadingService") | Default ReadingService to serve
+    the [``](#id2)DataPipe` graph in the main process, and apply graph settings like
+    determinism control to the graph. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`MultiProcessingReadingService`](generated/torchdata.dataloader2.MultiProcessingReadingService.html#torchdata.dataloader2.MultiProcessingReadingService
+    "torchdata.dataloader2.MultiProcessingReadingService") | Spawns multiple worker
+    processes to load data from the `DataPipe` graph. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`SequentialReadingService`](generated/torchdata.dataloader2.SequentialReadingService.html#torchdata.dataloader2.SequentialReadingService
+    "torchdata.dataloader2.SequentialReadingService") |  |'
+  prefs: []
+  type: TYPE_TB
+- en: Each `ReadingServices` would take the `DataPipe` graph and rewrite it to achieve
+    a few features like dynamic sharding, sharing random seeds and snapshoting for
+    multi-/distributed processes. For more detail about those features, please refer
+    to [the documentation](reading_service.html).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Adapter[¶](#adapter "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '`Adapter` is used to configure, modify and extend the `DataPipe` graph in [`DataLoader2`](#torchdata.dataloader2.DataLoader2
+    "torchdata.dataloader2.DataLoader2"). It allows in-place modification or replace
+    the pre-assembled `DataPipe` graph provided by PyTorch domains. For example, `Shuffle(False)`
+    can be provided to [`DataLoader2`](#torchdata.dataloader2.DataLoader2 "torchdata.dataloader2.DataLoader2"),
+    which would disable any `shuffle` operations in the `DataPipes` graph.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Adapter Base Class that follows python Callable protocol.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: Callable function that either runs in-place modification of the `DataPipe` graph,
+    or returns a new `DataPipe` graph.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**datapipe** – `DataPipe` that needs to be adapted.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Adapted `DataPipe` or new `DataPipe`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Here are the list of [`Adapter`](#torchdata.dataloader2.adapter.Adapter "torchdata.dataloader2.adapter.Adapter")
+    provided by TorchData in `torchdata.dataloader2.adapter`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| [`Shuffle`](generated/torchdata.dataloader2.adapter.Shuffle.html#torchdata.dataloader2.adapter.Shuffle
+    "torchdata.dataloader2.adapter.Shuffle") | Shuffle DataPipes adapter allows control
+    over all existing Shuffler (`shuffle`) DataPipes in the graph. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`CacheTimeout`](generated/torchdata.dataloader2.adapter.CacheTimeout.html#torchdata.dataloader2.adapter.CacheTimeout
+    "torchdata.dataloader2.adapter.CacheTimeout") | CacheTimeout DataPipes adapter
+    allows control over timeouts of all existing EndOnDiskCacheHolder (`end_caching`)
+    in the graph. |'
+  prefs: []
+  type: TYPE_TB
+- en: 'And, we will provide more `Adapters` to cover data-processing options:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`PinMemory`: Attach a `DataPipe` at the end of the data-processing graph that
+    coverts output data to `torch.Tensor` in pinned memory.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`FullSync`: Attach a `DataPipe` to make sure the data-processing graph synchronized
+    between distributed processes to prevent hanging.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`ShardingPolicy`: Modify sharding policy if `sharding_filter` is presented
+    in the `DataPipe` graph.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`PrefetchPolicy`, `InvalidateCache`, etc.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: If you have feature requests about the `Adapters` you’d like to be provided,
+    please open a GitHub issue. For specific needs, `DataLoader2` also accepts any
+    custom `Adapter` as long as it inherits from the `Adapter` class.
+  prefs: []
+  type: TYPE_NORMAL

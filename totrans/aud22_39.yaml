@@ -1,0 +1,203 @@
+- en: Device AV-ASR with Emformer RNN-T¶
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/audio/stable/tutorials/device_avsr.html](https://pytorch.org/audio/stable/tutorials/device_avsr.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Click [here](#sphx-glr-download-tutorials-device-avsr-py) to download the full
+    example code
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Author**: [Pingchuan Ma](mailto:pingchuanma%40meta.com), [Moto Hira](mailto:moto%40meta.com).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: This tutorial shows how to run on-device audio-visual speech recognition (AV-ASR,
+    or AVSR) with TorchAudio on a streaming device input, i.e. microphone on laptop.
+    AV-ASR is the task of transcribing text from audio and visual streams, which has
+    recently attracted a lot of research attention due to its robustness against noise.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: This tutorial requires ffmpeg, sentencepiece, mediapipe, opencv-python and scikit-image
+    libraries.
+  prefs: []
+  type: TYPE_NORMAL
+- en: There are multiple ways to install ffmpeg libraries. If you are using Anaconda
+    Python distribution, `conda install -c conda-forge 'ffmpeg<7'` will install compatible
+    FFmpeg libraries.
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can run `pip install sentencepiece mediapipe opencv-python scikit-image`
+    to install the other libraries mentioned.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: To run this tutorial, please make sure you are in the tutorial folder.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: We tested the tutorial on torchaudio version 2.0.2 on Macbook Pro (M1 Pro).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Overview[¶](#overview "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The real-time AV-ASR system is presented as follows, which consists of three
+    components, a data collection module, a pre-processing module and an end-to-end
+    model. The data collection module is hardware, such as a microphone and camera.
+    Its role is to collect information from the real world. Once the information is
+    collected, the pre-processing module location and crop out face. Next, we feed
+    the raw audio stream and the pre-processed video stream into our end-to-end model
+    for inference.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![https://download.pytorch.org/torchaudio/doc-assets/avsr/overview.png](../Images/757b2c4226d175a3a1b0d10e928d909c.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 1\. Data acquisition[¶](#data-acquisition "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Firstly, we define the function to collect videos from microphone and camera.
+    To be specific, we use [`StreamReader`](../generated/torchaudio.io.StreamReader.html#torchaudio.io.StreamReader
+    "torchaudio.io.StreamReader") class for the purpose of data collection, which
+    supports capturing audio/video from microphone and camera. For the detailed usage
+    of this class, please refer to the [tutorial](./streamreader_basic_tutorial.html).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: 2\. Pre-processing[¶](#pre-processing "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Before feeding the raw stream into our model, each video sequence has to undergo
+    a specific pre-processing procedure. This involves three critical steps. The first
+    step is to perform face detection. Following that, each individual frame is aligned
+    to a referenced frame, commonly known as the mean face, in order to normalize
+    rotation and size differences across frames. The final step in the pre-processing
+    module is to crop the face region from the aligned face image.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| ![https://download.pytorch.org/torchaudio/doc-assets/avsr/original.gif](../Images/b9142268a9c0666c9697c22b10755a18.png)
+    | ![https://download.pytorch.org/torchaudio/doc-assets/avsr/detected.gif](../Images/b44fd7d78a200f7ef203259295e21a8a.png)
+    | ![https://download.pytorch.org/torchaudio/doc-assets/avsr/transformed.gif](../Images/7029d284337ec7c2222d6b4344ac49d0.png)
+    | ![https://download.pytorch.org/torchaudio/doc-assets/avsr/cropped.gif](../Images/5aa4bb57e0b31b6d34ac3b4766e5503f.png)
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '|'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Original
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '|'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Detected
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '|'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Transformed
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '|'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Cropped
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '|'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: 3\. Building inference pipeline[¶](#building-inference-pipeline "Permalink to
+    this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The next step is to create components required for pipeline.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We use convolutional-based front-ends to extract features from both the raw
+    audio and video streams. These features are then passed through a two-layer MLP
+    for fusion. For our transducer model, we leverage the TorchAudio library, which
+    incorporates an encoder (Emformer), a predictor, and a joint network. The architecture
+    of the proposed AV-ASR model is illustrated as follows.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![https://download.pytorch.org/torchaudio/doc-assets/avsr/architecture.png](../Images/ed7f525d50ee520d70b7e9c6f6b7fd66.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: 4\. The main process[¶](#the-main-process "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'The execution flow of the main process is as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Initialize the inference pipeline.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Launch data acquisition subprocess.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Run inference.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Clean up
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Tag: [`torchaudio.io`](../io.html#module-torchaudio.io "torchaudio.io")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Total running time of the script:** ( 0 minutes 0.000 seconds)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Python source code: device_avsr.py`](../_downloads/e10abb57121274b0bbaca74dbbd1fbc4/device_avsr.py)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Jupyter notebook: device_avsr.ipynb`](../_downloads/eb72a6f2273304a15352dfcf3b824b42/device_avsr.ipynb)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  prefs: []
+  type: TYPE_NORMAL

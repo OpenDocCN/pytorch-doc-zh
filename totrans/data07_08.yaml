@@ -1,0 +1,454 @@
+- en: DataPipe Tutorial¶
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/data/beta/dp_tutorial.html](https://pytorch.org/data/beta/dp_tutorial.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Using DataPipes[¶](#using-datapipes "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'Suppose that we want to load data from CSV files with the following steps:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: List all CSV files in a directory
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Load CSV files
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Parse CSV file and yield rows
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Split our dataset into training and validation sets
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: There are a few [built-in DataPipes](torchdata.datapipes.iter.html) that can
+    help us with the above operations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`FileLister` - [lists out files in a directory](generated/torchdata.datapipes.iter.FileLister.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`Filter` - [filters the elements in DataPipe based on a given function](generated/torchdata.datapipes.iter.Filter.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`FileOpener` - [consumes file paths and returns opened file streams](generated/torchdata.datapipes.iter.FileOpener.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`CSVParser` - [consumes file streams, parses the CSV contents, and returns
+    one parsed line at a time](generated/torchdata.datapipes.iter.CSVParser.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`RandomSplitter` - [randomly split samples from a source DataPipe into groups](generated/torchdata.datapipes.iter.RandomSplitter.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'As an example, the source code for `CSVParser` looks something like this:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'As mentioned in a different section, DataPipes can be invoked using their functional
+    forms (recommended) or their class constructors. A pipeline can be assembled as
+    the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: You can find the full list of built-in [IterDataPipes here](torchdata.datapipes.iter.html)
+    and [MapDataPipes here](torchdata.datapipes.map.html).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Working with DataLoader[¶](#working-with-dataloader "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In this section, we will demonstrate how you can use `DataPipe` with `DataLoader`.
+    For the most part, you should be able to use it just by passing `dataset=datapipe`
+    as an input argument into the `DataLoader`. For detailed documentation related
+    to `DataLoader`, please visit [this PyTorch Core page](https://pytorch.org/docs/stable/data.html#single-and-multi-process-data-loading).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Please refer to [this page](dlv2_tutorial.html) about using `DataPipe` with
+    `DataLoader2`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For this example, we will first have a helper function that generates some CSV
+    files with random label and data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Next, we will build our DataPipes to read and parse through the generated CSV
+    files. Note that we prefer to have pass defined functions to DataPipes rather
+    than lambda functions because the formers are serializable with pickle.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Lastly, we will put everything together in `'__main__'` and pass the DataPipe
+    into the DataLoader. Note that if you choose to use `Batcher` while setting `batch_size
+    > 1` for DataLoader, your samples will be batched more than once. You should choose
+    one or the other.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: The following statements will be printed to show the shapes of a single batch
+    of labels and features.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: The reason why `n_sample = 12` is because `ShardingFilter` (`datapipe.sharding_filter()`)
+    was not used, such that each worker will independently return all samples. In
+    this case, there are 10 rows per file and 3 files, with a batch size of 5, that
+    gives us 6 batches per worker. With 2 workers, we get 12 total batches from the
+    `DataLoader`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In order for DataPipe sharding to work with `DataLoader`, we need to add the
+    following.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'When we re-run, we will get:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Note:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Place `ShardingFilter` (`datapipe.sharding_filter`) as early as possible in
+    the pipeline, especially before expensive operations such as decoding, in order
+    to avoid repeating these expensive operations across worker/distributed processes.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: For the data source that needs to be sharded, it is crucial to add `Shuffler`
+    before `ShardingFilter` to ensure data are globally shuffled before being split
+    into shards. Otherwise, each worker process would always process the same shard
+    of data for all epochs. And, it means each batch would only consist of data from
+    the same shard, which leads to low accuracy during training. However, it doesn’t
+    apply to the data source that has already been sharded for each multi-/distributed
+    process, since `ShardingFilter` is no longer required to be presented in the pipeline.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: There may be cases where placing `Shuffler` earlier in the pipeline lead to
+    worse performance, because some operations (e.g. decompression) are faster with
+    sequential reading. In those cases, we recommend decompressing the files prior
+    to shuffling (potentially prior to any data loading).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: You can find more DataPipe implementation examples for various research domains
+    [on this page](examples.html).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Implementing a Custom DataPipe[¶](#implementing-a-custom-datapipe "Permalink
+    to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Currently, we already have a large number of built-in DataPipes and we expect
+    them to cover most necessary data processing operations. If none of them supports
+    your need, you can create your own custom DataPipe.
+  prefs: []
+  type: TYPE_NORMAL
+- en: As a guiding example, let us implement an `IterDataPipe` that applies a callable
+    to the input iterator. For `MapDataPipe`, take a look at the [map](https://github.com/pytorch/pytorch/tree/master/torch/utils/data/datapipes/map)
+    folder for examples, and follow the steps below for the `__getitem__` method instead
+    of the `__iter__` method.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Naming[¶](#naming "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: The naming convention for `DataPipe` is “Operation”-er, followed by `IterDataPipe`
+    or `MapDataPipe`, as each DataPipe is essentially a container to apply an operation
+    to data yielded from a source `DataPipe`. For succinctness, we alias to just “Operation-er”
+    in **init** files. For our `IterDataPipe` example, we’ll name the module `MapperIterDataPipe`
+    and alias it as `iter.Mapper` under `torchdata.datapipes`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For the functional method name, the naming convention is `datapipe.<operation>`.
+    For instance, the functional method name of `Mapper` is `map`, such that it can
+    be invoked by `datapipe.map(...)`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Constructor[¶](#constructor "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'DataSets are now generally constructed as stacks of `DataPipes`, so each `DataPipe`
+    typically takes a source `DataPipe` as its first argument. Here is a simplified
+    version of Mapper as an example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Note:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Avoid loading data from the source DataPipe in `__init__` function, in order
+    to support lazy data loading and save memory.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: If `IterDataPipe` instance holds data in memory, please be ware of the in-place
+    modification of data. When second iterator is created from the instance, the data
+    may have already changed. Please take `IterableWrapper` [class](https://github.com/pytorch/pytorch/blob/master/torch/utils/data/datapipes/iter/utils.py)
+    as reference to `deepcopy` data for each iterator.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Avoid variables names that are taken by the functional names of existing DataPipes.
+    For instance, `.filter` is the functional name that can be used to invoke `FilterIterDataPipe`.
+    Having a variable named `filter` inside another `IterDataPipe` can lead to confusion.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Iterator[¶](#iterator "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: For `IterDataPipes`, an `__iter__` function is needed to consume data from the
+    source `IterDataPipe` then apply the operation over the data before `yield`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: Length[¶](#length "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: In many cases, as in our `MapperIterDataPipe` example, the `__len__` method
+    of a DataPipe returns the length of the source DataPipe.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: However, note that `__len__` is optional for `IterDataPipe` and often inadvisable.
+    For `CSVParserIterDataPipe` in the using DataPipes section below, `__len__` is
+    not implemented because the number of rows in each file is unknown before loading
+    it. In some special cases, `__len__` can be made to either return an integer or
+    raise an Error depending on the input. In those cases, the Error must be a `TypeError`
+    to support Python’s build-in functions like `list(dp)`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Registering DataPipes with the functional API[¶](#registering-datapipes-with-the-functional-api
+    "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Each DataPipe can be registered to support functional invocation using the decorator
+    `functional_datapipe`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'The stack of DataPipes can then be constructed using their functional forms
+    (recommended) or class constructors:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: In the above example, `datapipes1` and `datapipes2` represent the exact same
+    stack of `IterDataPipe`s. We recommend using the functional form of DataPipes.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Working with Cloud Storage Providers[¶](#working-with-cloud-storage-providers
+    "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In this section, we show examples accessing AWS S3, Google Cloud Storage, and
+    Azure Cloud Storage with built-in `fsspec` DataPipes. Although only those two
+    providers are discussed here, with additional libraries, `fsspec` DataPipes should
+    allow you to connect with other storage systems as well ([list of known implementations](https://filesystem-spec.readthedocs.io/en/latest/api.html#other-known-implementations)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Let us know on GitHub if you have a request for support for other cloud storage
+    providers, or you have code examples to share with the community.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Accessing AWS S3 with `fsspec` DataPipes[¶](#accessing-aws-s3-with-fsspec-datapipes
+    "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: This requires the installation of the libraries `fsspec` ([documentation](https://filesystem-spec.readthedocs.io/en/latest/))
+    and `s3fs` ([s3fs GitHub repo](https://github.com/fsspec/s3fs)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can list out the files within a S3 bucket directory by passing a path that
+    starts with `"s3://BUCKET_NAME"` to [FSSpecFileLister](generated/torchdata.datapipes.iter.FSSpecFileLister.html)
+    (`.list_files_by_fsspec(...)`).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: You can also open files using [FSSpecFileOpener](generated/torchdata.datapipes.iter.FSSpecFileOpener.html)
+    (`.open_files_by_fsspec(...)`) and stream them (if supported by the file format).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Note that you can also provide additional parameters via the argument `kwargs_for_open`.
+    This can be useful for purposes such as accessing specific bucket version, which
+    you can do so by passing in `{version_id: ''SOMEVERSIONID''}` (more [details about
+    S3 bucket version awareness](https://s3fs.readthedocs.io/en/latest/#bucket-version-awareness)
+    by `s3fs`). The supported arguments vary by the (cloud) file system that you are
+    accessing.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the example below, we are streaming the archive by using [TarArchiveLoader](generated/torchdata.datapipes.iter.TarArchiveLoader.html#)
+    (`.load_from_tar(mode="r|")`), in contrast with the usual `mode="r:"`. This allows
+    us to begin processing data inside the archive without downloading the whole archive
+    into memory first.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: Finally, [FSSpecFileSaver](generated/torchdata.datapipes.iter.FSSpecSaver.html)
+    is also available for writing data to cloud.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Accessing Google Cloud Storage (GCS) with `fsspec` DataPipes[¶](#accessing-google-cloud-storage-gcs-with-fsspec-datapipes
+    "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: This requires the installation of the libraries `fsspec` ([documentation](https://filesystem-spec.readthedocs.io/en/latest/))
+    and `gcsfs` ([gcsfs GitHub repo](https://github.com/fsspec/gcsfs)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can list out the files within a GCS bucket directory by specifying a path
+    that starts with `"gcs://BUCKET_NAME"`. The bucket name in the example below is
+    `uspto-pair`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: Here is an example of loading a zip file `05900035.zip` from a bucket named
+    `uspto-pair` inside the directory `applications`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: Accessing Azure Blob storage with `fsspec` DataPipes[¶](#accessing-azure-blob-storage-with-fsspec-datapipes
+    "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'This requires the installation of the libraries `fsspec` ([documentation](https://filesystem-spec.readthedocs.io/en/latest/))
+    and `adlfs` ([adlfs GitHub repo](https://github.com/fsspec/adlfs)). You can access
+    data in Azure Data Lake Storage Gen2 by providing URIs staring with `abfs://`.
+    For example, [FSSpecFileLister](generated/torchdata.datapipes.iter.FSSpecFileLister.html)
+    (`.list_files_by_fsspec(...)`) can be used to list files in a directory in a container:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: You can also open files using [FSSpecFileOpener](generated/torchdata.datapipes.iter.FSSpecFileOpener.html)
+    (`.open_files_by_fsspec(...)`) and stream them (if supported by the file format).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Here is an example of loading a CSV file `ecdc_cases.csv` from a public container
+    inside the directory `curated/covid-19/ecdc_cases/latest`, belonging to account
+    `pandemicdatalake`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: If necessary, you can also access data in Azure Data Lake Storage Gen1 by using
+    URIs staring with `adl://` and `abfs://`, as described in [README of adlfs repo](https://github.com/fsspec/adlfs/blob/main/README.md)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Accessing Azure ML Datastores with `fsspec` DataPipes[¶](#accessing-azure-ml-datastores-with-fsspec-datapipes
+    "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'An Azure ML datastore is a *reference* to an existing storage account on Azure.
+    The key benefits of creating and using an Azure ML datastore are:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: A common and easy-to-use API to interact with different storage types in Azure
+    (Blob/Files/<datastore>).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Easier to discover useful datastores when working as a team.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Authentication is automatically handled - both *credential-based* access (service
+    principal/SAS/key) and *identity-based* access (Azure Active Directory/managed
+    identity) are supported. When using credential-based authentication, you do not
+    need to expose secrets in your code.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: This requires the installation of the library `azureml-fsspec` ([documentation](https://learn.microsoft.com/python/api/azureml-fsspec/?view=azure-ml-py)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'You can access data in an Azure ML datastore by providing URIs staring with
+    `azureml://`. For example, [FSSpecFileLister](generated/torchdata.datapipes.iter.FSSpecFileLister.html)
+    (`.list_files_by_fsspec(...)`) can be used to list files in a directory in a container:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: You can also open files using [FSSpecFileOpener](generated/torchdata.datapipes.iter.FSSpecFileOpener.html)
+    (`.open_files_by_fsspec(...)`) and stream them (if supported by the file format).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Here is an example of loading a tar file from the default Azure ML datastore
+    `workspaceblobstore` where the path is `/cifar-10-python.tar.gz` (top-level folder).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: Here is an example of loading a CSV file - the famous Titanic dataset ([download](https://raw.githubusercontent.com/Azure/azureml-examples/main/cli/assets/data/sample-data/titanic.csv))
+    - from the Azure ML datastore `workspaceblobstore` where the path is `/titanic.csv`
+    (top-level folder).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE

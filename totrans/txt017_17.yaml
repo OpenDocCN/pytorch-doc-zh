@@ -1,0 +1,245 @@
+- en: T5-Base Model for Summarization, Sentiment Classification, and Translation¶
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/text/stable/tutorials/t5_demo.html](https://pytorch.org/text/stable/tutorials/t5_demo.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Click [here](#sphx-glr-download-tutorials-t5-demo-py) to download the full example
+    code
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Author**: [Pendo Abbo](mailto:pabbo%40fb.com), [Joe Cummings](mailto:jrcummings%40fb.com)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Overview[¶](#overview "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'This tutorial demonstrates how to use a pre-trained T5 Model for summarization,
+    sentiment classification, and translation tasks. We will demonstrate how to use
+    the torchtext library to:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Build a text pre-processing pipeline for a T5 model
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Instantiate a pre-trained T5 model with base configuration
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Read in the CNNDM, IMDB, and Multi30k datasets and pre-process their texts in
+    preparation for the model
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Perform text summarization, sentiment classification, and translation
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Data Transformation[¶](#data-transformation "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: 'The T5 model does not work with raw text. Instead, it requires the text to
+    be transformed into numerical form in order to perform training and inference.
+    The following transformations are required for the T5 model:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tokenize text
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Convert tokens into (integer) IDs
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Truncate the sequences to a specified maximum length
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Add end-of-sequence (EOS) and padding token IDs
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: T5 uses a SentencePiece model for text tokenization. Below, we use a pre-trained
+    SentencePiece model to build the text pre-processing pipeline using torchtext’s
+    T5Transform. Note that the transform supports both batched and non-batched text
+    input (for example, one can either pass a single sentence or a list of sentences),
+    however the T5 model expects the input to be batched.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Alternatively, we can also use the transform shipped with the pre-trained models
+    that does all of the above out-of-the-box
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Model Preparation[¶](#model-preparation "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: torchtext provides SOTA pre-trained models that can be used directly for NLP
+    tasks or fine-tuned on downstream tasks. Below we use the pre-trained T5 model
+    with standard base configuration to perform text summarization, sentiment classification,
+    and translation. For additional details on available pre-trained models, see [the
+    torchtext documentation](https://pytorch.org/text/main/models.html)
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: GenerationUtils[¶](#generationutils "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: We can use torchtext’s `GenerationUtils` to produce an output sequence based
+    on the input sequence provided. This calls on the model’s encoder and decoder,
+    and iteratively expands the decoded sequences until the end-of-sequence token
+    is generated for all sequences in the batch. The `generate` method shown below
+    uses greedy search to generate the sequences. Beam search and other decoding strategies
+    are also supported.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Datasets[¶](#datasets "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: torchtext provides several standard NLP datasets. For a complete list, refer
+    to the documentation at [https://pytorch.org/text/stable/datasets.html](https://pytorch.org/text/stable/datasets.html).
+    These datasets are built using composable torchdata datapipes and hence support
+    standard flow-control and mapping/transformation using user defined functions
+    and transforms.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Below we demonstrate how to pre-process the CNNDM dataset to include the prefix
+    necessary for the model to indentify the task it is performing. The CNNDM dataset
+    has a train, validation, and test split. Below we demo on the test split.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The T5 model uses the prefix “summarize” for text summarization. For more information
+    on task prefixes, please visit Appendix D of the [T5 Paper](https://arxiv.org/pdf/1910.10683.pdf)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Using datapipes is still currently subject to a few caveats. If you wish to
+    extend this example to include shuffling, multi-processing, or distributed learning,
+    please see [this note](../datasets.html#datapipes-warnings) for further instructions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Alternately, we can also use batched API, for example, apply the prefix on
+    the whole batch:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: We can also load the IMDB dataset, which will be used to demonstrate sentiment
+    classification using the T5 model. This dataset has a train and test split. Below
+    we demo on the test split.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The T5 model was trained on the SST2 dataset (also available in torchtext) for
+    sentiment classification using the prefix “sst2 sentence”. Therefore, we will
+    use this prefix to perform sentiment classification on the IMDB dataset.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: Finally, we can also load the Multi30k dataset to demonstrate English to German
+    translation using the T5 model. This dataset has a train, validation, and test
+    split. Below we demo on the test split.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The T5 model uses the prefix “translate English to German” for this task.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Generate Summaries[¶](#generate-summaries "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: We can put all of the components together to generate summaries on the first
+    batch of articles in the CNNDM test set using a beam size of 1.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: Summarization Output (Might vary since we shuffle the dataloader)[¶](#summarization-output-might-vary-since-we-shuffle-the-dataloader
+    "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: Generate Sentiment Classifications[¶](#generate-sentiment-classifications "Permalink
+    to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Similarly, we can use the model to generate sentiment classifications on the
+    first batch of reviews from the IMDB test set using a beam size of 1.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: Sentiment Output[¶](#sentiment-output "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: Generate Translations[¶](#generate-translations "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Finally, we can also use the model to generate English to German translations
+    on the first batch of examples from the Multi30k test set.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: Translation Output[¶](#translation-output "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: '**Total running time of the script:** ( 0 minutes 0.000 seconds)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Python source code: t5_demo.py`](../_downloads/44b94d63339a7b86de25d87a007ac20d/t5_demo.py)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Jupyter notebook: t5_demo.ipynb`](../_downloads/607a641e3f6f089289ce96925bb002c7/t5_demo.ipynb)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  prefs: []
+  type: TYPE_NORMAL

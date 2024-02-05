@@ -1,0 +1,408 @@
+- en: torchrec.inference¶
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/torchrec/torchrec.inference.html](https://pytorch.org/torchrec/torchrec.inference.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Torchrec Inference
+  prefs: []
+  type: TYPE_NORMAL
+- en: Torchrec inference provides a Torch.Deploy based library for GPU inference.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'These includes:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Model packaging in Python
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: PredictModule and PredictFactory are the contracts between the Python model
+    authoring and the C++ model serving.
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: PredictFactoryPackager can be used to package a PredictFactory class using torch.package.
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Model serving in C++
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: BatchingQueue is a generalized config-based request tensor batching implementation.
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: GPUExecutor handles the forward call into the inference model inside Torch.Deploy.
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: We implemented an example of how to use this library with the TorchRec DLRM
+    model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'examples/dlrm/inference/dlrm_packager.py: this demonstrates how to export the
+    DLRM model as a torch.package.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'examples/dlrm/inference/dlrm_predict.py: this shows how to use PredictModule
+    and PredictFactory based on an existing model.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: torchrec.inference.model_packager[¶](#torchrec-inference-model-packager "Permalink
+    to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: `object`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: A decorator indicating abstract classmethods.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Deprecated, use ‘classmethod’ with ‘abstractmethod’ instead.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: A decorator indicating abstract classmethods.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Deprecated, use ‘classmethod’ with ‘abstractmethod’ instead.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: torchrec.inference.modules[¶](#torchrec-inference-modules "Permalink to this
+    heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: `object`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Metadata class for batching, this should be kept in sync with the C++ definition.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: `ABC`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Creates a model (with already learned weights) to be used inference time.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns a dict from input name to BatchingMetadata. This infomation is used
+    for batching for input requests.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: Serialize the batching metadata to JSON, for ease of parsing with torch::deploy
+    environments.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns already sharded model with allocated weights. state_dict() must match
+    TransformModule.transform_state_dict(). It assumes that torch.distributed.init_process_group
+    was already called and will shard model according to torch.distributed.get_world_size().
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns a dict of various data for benchmarking input generation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns a dict from qualname (method name) to QualNameMetadata. This is additional
+    information for execution of specific methods of the model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: Serialize the qualname metadata to JSON, for ease of parsing with torch::deploy
+    environments.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: Returns a string which represents the result type. This information is used
+    for result split.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: Run transformations that depends on weights of the predict module. e.g. lowering
+    to a backend.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: Run transformations that don’t rely on weights of the predict module. e.g. fx
+    tracing, model split etc.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: `Module`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Interface for modules to work in a torch.deploy based backend. Users should
+    override predict_forward to convert batch input format to module input format.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Call Args:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'batch: a dict of input tensors'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: a dict of output tensors
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: output
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**module** – the actual predict module'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**device** – the primary device for this module that will be used in forward
+    calls.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: Define the computation performed at every call.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Should be overridden by all subclasses.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Although the recipe for forward pass needs to be defined within this function,
+    one should call the `Module` instance afterwards instead of this since the former
+    takes care of running the registered hooks while the latter silently ignores them.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: Return a dictionary containing references to the whole state of the module.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Both parameters and persistent buffers (e.g. running averages) are included.
+    Keys are corresponding parameter and buffer names. Parameters and buffers set
+    to `None` are not included.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: The returned object is a shallow copy. It contains references to the module’s
+    parameters and buffers.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: Currently `state_dict()` also accepts positional arguments for `destination`,
+    `prefix` and `keep_vars` in order. However, this is being deprecated and keyword
+    arguments will be enforced in future releases.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: Please avoid the use of argument `destination` as it is not designed for end-users.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**destination** (*dict**,* *optional*) – If provided, the state of module will
+    be updated into the dict and the same object is returned. Otherwise, an `OrderedDict`
+    will be created and returned. Default: `None`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**prefix** (*str**,* *optional*) – a prefix added to parameter and buffer names
+    to compose the keys in state_dict. Default: `''''`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**keep_vars** (*bool**,* *optional*) – by default the `Tensor` s returned in
+    the state dict are detached from autograd. If it’s set to `True`, detaching will
+    not be performed. Default: `False`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: a dictionary containing a whole state of the module
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: dict
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE26]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE27]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE28]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Bases: `object`'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE29]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE30]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE31]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE32]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE33]  ## Module contents[¶](#module-0 "Permalink to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Torchrec Inference
+  prefs: []
+  type: TYPE_NORMAL
+- en: Torchrec inference provides a Torch.Deploy based library for GPU inference.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'These includes:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Model packaging in Python
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: PredictModule and PredictFactory are the contracts between the Python model
+    authoring and the C++ model serving.
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: PredictFactoryPackager can be used to package a PredictFactory class using torch.package.
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Model serving in C++
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: BatchingQueue is a generalized config-based request tensor batching implementation.
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: GPUExecutor handles the forward call into the inference model inside Torch.Deploy.
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: We implemented an example of how to use this library with the TorchRec DLRM
+    model.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'examples/dlrm/inference/dlrm_packager.py: this demonstrates how to export the
+    DLRM model as a torch.package.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'examples/dlrm/inference/dlrm_predict.py: this shows how to use PredictModule
+    and PredictFactory based on an existing model.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL

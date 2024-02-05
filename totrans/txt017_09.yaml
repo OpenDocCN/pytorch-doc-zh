@@ -1,0 +1,2186 @@
+- en: torchtext.datasets¶
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/text/stable/datasets.html](https://pytorch.org/text/stable/datasets.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: The datasets supported by torchtext are datapipes from the [torchdata project](https://pytorch.org/data/beta/index.html),
+    which is still in Beta status. This means that the API is subject to change without
+    deprecation cycles. In particular, we expect a lot of the current idioms to change
+    with the eventual release of `DataLoaderV2` from `torchdata`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Here are a few recommendations regarding the use of datapipes:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'For shuffling the datapipe, do that in the DataLoader: `DataLoader(dp, shuffle=True)`.
+    You do not need to call `dp.shuffle()`, because `torchtext` has already done that
+    for you. Note however that the datapipe won’t be shuffled unless you explicitly
+    pass `shuffle=True` to the DataLoader.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'When using multi-processing (`num_workers=N`), use the builtin `worker_init_fn`:'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs:
+  - PREF_IND
+  type: TYPE_PRE
+- en: This will ensure that data isn’t duplicated across workers.
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: We also recommend using `drop_last=True`. Without this, the batch sizes at the
+    end of an epoch may be very small in some cases (smaller than with other map-style
+    datasets). This might affect accuracy greatly especially when batch-norm is used.
+    `drop_last=True` ensures that all batch sizes are equal.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Distributed training with `DistributedDataParallel` is not yet entirely stable
+    / supported, and we don’t recommend it at this point. It will be better supported
+    in DataLoaderV2\. If you still wish to use DDP, make sure that:'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: All workers (DDP workers *and* DataLoader workers) see a different part of the
+    data. The datasets are already wrapped inside [ShardingFilter](https://pytorch.org/data/main/generated/torchdata.datapipes.iter.ShardingFilter.html)
+    and you may need to call `dp.apply_sharding(num_shards, shard_id)` in order to
+    shard the data across ranks (DDP workers) and DataLoader workers. One way to do
+    this is to create `worker_init_fn` that calls `apply_sharding` with appropriate
+    number of shards (DDP workers * DataLoader workers) and shard id (inferred through
+    rank and worker ID of corresponding DataLoader withing rank). Note however, that
+    this assumes equal number of DataLoader workers for all the ranks.
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: All DDP workers work on the same number of batches. One way to do this is to
+    by limit the size of the datapipe within each worker to `len(datapipe) // num_ddp_workers`,
+    but this might not suit all use-cases.
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The shuffling seed is the same across all workers. You might need to call `torch.utils.data.graph_settings.apply_shuffle_seed(dp,
+    rng)`
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The shuffling seed is different across epochs.
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The rest of the RNG (typically used for transformations) is **different** across
+    workers, for maximal entropy and optimal accuracy.
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'General use cases are as follows:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: The following datasets are currently available. If you would like to contribute
+    new datasets to the repo or work with your own custom datasets, please refer to
+    [CONTRIBUTING_DATASETS.md](https://github.com/pytorch/text/blob/main/CONTRIBUTING_DATASETS.md)
+    guide.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Datasets
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Text Classification](#text-classification)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[AG_NEWS](#ag-news)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[AmazonReviewFull](#amazonreviewfull)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[AmazonReviewPolarity](#amazonreviewpolarity)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[CoLA](#cola)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[DBpedia](#dbpedia)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[IMDb](#imdb)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[MNLI](#mnli)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[MRPC](#mrpc)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[QNLI](#qnli)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[QQP](#qqp)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[RTE](#rte)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[SogouNews](#sogounews)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[SST2](#sst2)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[STSB](#stsb)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[WNLI](#wnli)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[YahooAnswers](#yahooanswers)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[YelpReviewFull](#yelpreviewfull)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[YelpReviewPolarity](#yelpreviewpolarity)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Language Modeling](#language-modeling)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PennTreebank](#penntreebank)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[WikiText-2](#wikitext-2)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[WikiText103](#wikitext103)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Machine Translation](#machine-translation)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[IWSLT2016](#iwslt2016)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[IWSLT2017](#iwslt2017)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Multi30k](#multi30k)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Sequence Tagging](#sequence-tagging)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[CoNLL2000Chunking](#conll2000chunking)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[UDPOS](#udpos)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Question Answer](#question-answer)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[SQuAD 1.0](#squad-1-0)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[SQuAD 2.0](#squad-2-0)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Unsupervised Learning](#unsupervised-learning)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[CC100](#cc100)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[EnWik9](#enwik9)'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[Text Classification](#id1)[¶](#text-classification "Permalink to this heading")'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[AG_NEWS](#id2)[¶](#ag-news "Permalink to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: AG_NEWS Dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: Using datapipes is still currently subject to a few caveats. If you wish to
+    use this dataset with shuffling, multi-processing, or distributed learning, please
+    see [this note](#datapipes-warnings) for further instructions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For additional details refer to [https://paperswithcode.com/dataset/ag-news](https://paperswithcode.com/dataset/ag-news)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Number of lines per split:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'train: 120000'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'test: 7600'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**root** – Directory where the datasets are saved. Default: os.path.expanduser(‘~/.torchtext/cache’)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**split** – split or splits to be returned. Can be a string or tuple of strings.
+    Default: (train, test)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: DataPipe that yields tuple of label (1 to 4) and text
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: ([int](https://docs.python.org/3/library/functions.html#int "(in Python v3.12)"),
+    [str](https://docs.python.org/3/library/stdtypes.html#str "(in Python v3.12)"))
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[AmazonReviewFull](#id3)[¶](#amazonreviewfull "Permalink to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: AmazonReviewFull Dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: Using datapipes is still currently subject to a few caveats. If you wish to
+    use this dataset with shuffling, multi-processing, or distributed learning, please
+    see [this note](#datapipes-warnings) for further instructions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For additional details refer to [https://arxiv.org/abs/1509.01626](https://arxiv.org/abs/1509.01626)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Number of lines per split:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'train: 3000000'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'test: 650000'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**root** – Directory where the datasets are saved. Default: os.path.expanduser(‘~/.torchtext/cache’)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**split** – split or splits to be returned. Can be a string or tuple of strings.
+    Default: (train, test)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: DataPipe that yields tuple of label (1 to 5) and text containing the review
+    title and text
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: ([int](https://docs.python.org/3/library/functions.html#int "(in Python v3.12)"),
+    [str](https://docs.python.org/3/library/stdtypes.html#str "(in Python v3.12)"))
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[AmazonReviewPolarity](#id4)[¶](#amazonreviewpolarity "Permalink to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: AmazonReviewPolarity Dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: Using datapipes is still currently subject to a few caveats. If you wish to
+    use this dataset with shuffling, multi-processing, or distributed learning, please
+    see [this note](#datapipes-warnings) for further instructions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For additional details refer to [https://arxiv.org/abs/1509.01626](https://arxiv.org/abs/1509.01626)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Number of lines per split:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'train: 3600000'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'test: 400000'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**root** – Directory where the datasets are saved. Default: os.path.expanduser(‘~/.torchtext/cache’)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**split** – split or splits to be returned. Can be a string or tuple of strings.
+    Default: (train, test)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: DataPipe that yields tuple of label (1 to 2) and text containing the review
+    title and text
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: ([int](https://docs.python.org/3/library/functions.html#int "(in Python v3.12)"),
+    [str](https://docs.python.org/3/library/stdtypes.html#str "(in Python v3.12)"))
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[CoLA](#id5)[¶](#cola "Permalink to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: CoLA dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: Using datapipes is still currently subject to a few caveats. If you wish to
+    use this dataset with shuffling, multi-processing, or distributed learning, please
+    see [this note](#datapipes-warnings) for further instructions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For additional details refer to [https://nyu-mll.github.io/CoLA/](https://nyu-mll.github.io/CoLA/)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Number of lines per split:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'train: 8551'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'dev: 527'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'test: 516'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**root** – Directory where the datasets are saved. Default: os.path.expanduser(‘~/.torchtext/cache’)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**split** – split or splits to be returned. Can be a string or tuple of strings.
+    Default: (train, dev, test)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: DataPipe that yields rows from CoLA dataset (source (str), label (int), sentence
+    (str))
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: ([str](https://docs.python.org/3/library/stdtypes.html#str "(in Python v3.12)"),
+    [int](https://docs.python.org/3/library/functions.html#int "(in Python v3.12)"),
+    [str](https://docs.python.org/3/library/stdtypes.html#str "(in Python v3.12)"))
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[DBpedia](#id6)[¶](#dbpedia "Permalink to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: DBpedia Dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: using datapipes is still currently subject to a few caveats. if you wish to
+    use this dataset with shuffling, multi-processing, or distributed learning, please
+    see [this note](#datapipes-warnings) for further instructions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For additional details refer to [https://www.dbpedia.org/resources/latest-core/](https://www.dbpedia.org/resources/latest-core/)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Number of lines per split:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'train: 560000'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'test: 70000'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**root** – Directory where the datasets are saved. Default: os.path.expanduser(‘~/.torchtext/cache’)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**split** – split or splits to be returned. Can be a string or tuple of strings.
+    Default: (train, test)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: DataPipe that yields tuple of label (1 to 14) and text containing the news title
+    and contents
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: ([int](https://docs.python.org/3/library/functions.html#int "(in Python v3.12)"),
+    [str](https://docs.python.org/3/library/stdtypes.html#str "(in Python v3.12)"))
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[IMDb](#id7)[¶](#imdb "Permalink to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: IMDB Dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: using datapipes is still currently subject to a few caveats. if you wish to
+    use this dataset with shuffling, multi-processing, or distributed learning, please
+    see [this note](#datapipes-warnings) for further instructions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For additional details refer to [http://ai.stanford.edu/~amaas/data/sentiment/](http://ai.stanford.edu/~amaas/data/sentiment/)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Number of lines per split:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'train: 25000'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'test: 25000'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**root** – Directory where the datasets are saved. Default: os.path.expanduser(‘~/.torchtext/cache’)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**split** – split or splits to be returned. Can be a string or tuple of strings.
+    Default: (train, test)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: DataPipe that yields tuple of label (1 to 2) and text containing the movie review
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: ([int](https://docs.python.org/3/library/functions.html#int "(in Python v3.12)"),
+    [str](https://docs.python.org/3/library/stdtypes.html#str "(in Python v3.12)"))
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Tutorials using `IMDB`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![T5-Base Model for Summarization, Sentiment Classification, and Translation](../Images/054ec2c5b6c69ac648ddd68d0b5494e6.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '[T5-Base Model for Summarization, Sentiment Classification, and Translation](tutorials/t5_demo.html#sphx-glr-tutorials-t5-demo-py)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: T5-Base Model for Summarization, Sentiment Classification, and Translation
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[MNLI](#id8)[¶](#mnli "Permalink to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: MNLI Dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: using datapipes is still currently subject to a few caveats. if you wish to
+    use this dataset with shuffling, multi-processing, or distributed learning, please
+    see [this note](#datapipes-warnings) for further instructions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For additional details refer to [https://cims.nyu.edu/~sbowman/multinli/](https://cims.nyu.edu/~sbowman/multinli/)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Number of lines per split:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'train: 392702'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'dev_matched: 9815'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'dev_mismatched: 9832'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**root** – Directory where the datasets are saved. Default: os.path.expanduser(‘~/.torchtext/cache’)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**split** – split or splits to be returned. Can be a string or tuple of strings.
+    Default: (train, dev_matched, dev_mismatched)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: DataPipe that yields tuple of text and label (0 to 2).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tuple[[int](https://docs.python.org/3/library/functions.html#int "(in Python
+    v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str "(in Python
+    v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str "(in Python
+    v3.12)")]
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[MRPC](#id9)[¶](#mrpc "Permalink to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: MRPC Dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: using datapipes is still currently subject to a few caveats. if you wish to
+    use this dataset with shuffling, multi-processing, or distributed learning, please
+    see [this note](#datapipes-warnings) for further instructions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For additional details refer to [https://www.microsoft.com/en-us/download/details.aspx?id=52398](https://www.microsoft.com/en-us/download/details.aspx?id=52398)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Number of lines per split:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'train: 4076'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'test: 1725'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**root** – Directory where the datasets are saved. Default: os.path.expanduser(‘~/.torchtext/cache’)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**split** – split or splits to be returned. Can be a string or tuple of strings.
+    Default: (train, test)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: DataPipe that yields data points from MRPC dataset which consist of label, sentence1,
+    sentence2
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: ([int](https://docs.python.org/3/library/functions.html#int "(in Python v3.12)"),
+    [str](https://docs.python.org/3/library/stdtypes.html#str "(in Python v3.12)"),
+    [str](https://docs.python.org/3/library/stdtypes.html#str "(in Python v3.12)"))
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[QNLI](#id10)[¶](#qnli "Permalink to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: QNLI Dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: For additional details refer to [https://arxiv.org/pdf/1804.07461.pdf](https://arxiv.org/pdf/1804.07461.pdf)
+    (from GLUE paper)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Number of lines per split:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'train: 104743'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'dev: 5463'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'test: 5463'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**root** – Directory where the datasets are saved. Default: os.path.expanduser(‘~/.torchtext/cache’)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**split** – split or splits to be returned. Can be a string or tuple of strings.
+    Default: (train, dev, test)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: DataPipe that yields tuple of text and label (0 and 1).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: ([int](https://docs.python.org/3/library/functions.html#int "(in Python v3.12)"),
+    [str](https://docs.python.org/3/library/stdtypes.html#str "(in Python v3.12)"),
+    [str](https://docs.python.org/3/library/stdtypes.html#str "(in Python v3.12)"))
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[QQP](#id11)[¶](#qqp "Permalink to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: QQP dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: using datapipes is still currently subject to a few caveats. if you wish to
+    use this dataset with shuffling, multi-processing, or distributed learning, please
+    see [this note](#datapipes-warnings) for further instructions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For additional details refer to [https://quoradata.quora.com/First-Quora-Dataset-Release-Question-Pairs](https://quoradata.quora.com/First-Quora-Dataset-Release-Question-Pairs)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**root** – Directory where the datasets are saved. Default: os.path.expanduser(‘~/.torchtext/cache’)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: DataPipe that yields rows from QQP dataset (label (int), question1 (str), question2
+    (str))
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: ([int](https://docs.python.org/3/library/functions.html#int "(in Python v3.12)"),
+    [str](https://docs.python.org/3/library/stdtypes.html#str "(in Python v3.12)"),
+    [str](https://docs.python.org/3/library/stdtypes.html#str "(in Python v3.12)"))
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[RTE](#id12)[¶](#rte "Permalink to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: RTE Dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: For additional details refer to [https://aclweb.org/aclwiki/Recognizing_Textual_Entailment](https://aclweb.org/aclwiki/Recognizing_Textual_Entailment)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Number of lines per split:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'train: 2490'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'dev: 277'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'test: 3000'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**root** – Directory where the datasets are saved. Default: os.path.expanduser(‘~/.torchtext/cache’)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**split** – split or splits to be returned. Can be a string or tuple of strings.
+    Default: (train, dev, test)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: DataPipe that yields tuple of text and/or label (0 and 1). The test split only
+    returns text.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Union[([int](https://docs.python.org/3/library/functions.html#int "(in Python
+    v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str "(in Python
+    v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str "(in Python
+    v3.12)")), ([str](https://docs.python.org/3/library/stdtypes.html#str "(in Python
+    v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str "(in Python
+    v3.12)"))]
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[SogouNews](#id13)[¶](#sogounews "Permalink to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: SogouNews Dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: using datapipes is still currently subject to a few caveats. if you wish to
+    use this dataset with shuffling, multi-processing, or distributed learning, please
+    see [this note](#datapipes-warnings) for further instructions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For additional details refer to [https://arxiv.org/abs/1509.01626](https://arxiv.org/abs/1509.01626)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Number of lines per split:'
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: 'train: 450000'
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: 'test: 60000'
+  prefs:
+  - PREF_BQ
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: 'Args:'
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: 'root: Directory where the datasets are saved. Default: os.path.expanduser(‘~/.torchtext/cache’)
+    split: split or splits to be returned. Can be a string or tuple of strings. Default:
+    (train, test)'
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: 'returns:'
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: DataPipe that yields tuple of label (1 to 5) and text containing the news title
+    and contents
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: 'rtype:'
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: ''
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: (int, str)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: '[SST2](#id14)[¶](#sst2 "Permalink to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: SST2 Dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: using datapipes is still currently subject to a few caveats. if you wish to
+    use this dataset with shuffling, multi-processing, or distributed learning, please
+    see [this note](#datapipes-warnings) for further instructions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For additional details refer to [https://nlp.stanford.edu/sentiment/](https://nlp.stanford.edu/sentiment/)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Number of lines per split:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'train: 67349'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'dev: 872'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'test: 1821'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**root** – Directory where the datasets are saved. Default: os.path.expanduser(‘~/.torchtext/cache’)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**split** – split or splits to be returned. Can be a string or tuple of strings.
+    Default: (train, dev, test)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: DataPipe that yields tuple of text and/or label (1 to 4). The test split only
+    returns text.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Union[([int](https://docs.python.org/3/library/functions.html#int "(in Python
+    v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str "(in Python
+    v3.12)")), ([str](https://docs.python.org/3/library/stdtypes.html#str "(in Python
+    v3.12)"),)]
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Tutorials using `SST2`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![SST-2 Binary text classification with XLM-RoBERTa model](../Images/98241cb68ab73fa3d56bc87944e16fd8.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '[SST-2 Binary text classification with XLM-RoBERTa model](tutorials/sst2_classification_non_distributed.html#sphx-glr-tutorials-sst2-classification-non-distributed-py)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: SST-2 Binary text classification with XLM-RoBERTa model
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[STSB](#id15)[¶](#stsb "Permalink to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: STSB Dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: using datapipes is still currently subject to a few caveats. if you wish to
+    use this dataset with shuffling, multi-processing, or distributed learning, please
+    see [this note](#datapipes-warnings) for further instructions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For additional details refer to [https://ixa2.si.ehu.eus/stswiki/index.php/STSbenchmark](https://ixa2.si.ehu.eus/stswiki/index.php/STSbenchmark)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Number of lines per split:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'train: 5749'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'dev: 1500'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'test: 1379'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**root** – Directory where the datasets are saved. Default: os.path.expanduser(‘~/.torchtext/cache’)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**split** – split or splits to be returned. Can be a string or tuple of strings.
+    Default: (train, dev, test)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: DataPipe that yields tuple of (index (int), label (float), sentence1 (str),
+    sentence2 (str))
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: ([int](https://docs.python.org/3/library/functions.html#int "(in Python v3.12)"),
+    [float](https://docs.python.org/3/library/functions.html#float "(in Python v3.12)"),
+    [str](https://docs.python.org/3/library/stdtypes.html#str "(in Python v3.12)"),
+    [str](https://docs.python.org/3/library/stdtypes.html#str "(in Python v3.12)"))
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[WNLI](#id16)[¶](#wnli "Permalink to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: WNLI Dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: For additional details refer to [https://arxiv.org/pdf/1804.07461v3.pdf](https://arxiv.org/pdf/1804.07461v3.pdf)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Number of lines per split:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'train: 635'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'dev: 71'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'test: 146'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**root** – Directory where the datasets are saved. Default: os.path.expanduser(‘~/.torchtext/cache’)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**split** – split or splits to be returned. Can be a string or tuple of strings.
+    Default: (train, dev, test)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: DataPipe that yields tuple of text and/or label (0 to 1). The test split only
+    returns text.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Union[([int](https://docs.python.org/3/library/functions.html#int "(in Python
+    v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str "(in Python
+    v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str "(in Python
+    v3.12)")), ([str](https://docs.python.org/3/library/stdtypes.html#str "(in Python
+    v3.12)"), [str](https://docs.python.org/3/library/stdtypes.html#str "(in Python
+    v3.12)"))]
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[YahooAnswers](#id17)[¶](#yahooanswers "Permalink to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: YahooAnswers Dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: using datapipes is still currently subject to a few caveats. if you wish to
+    use this dataset with shuffling, multi-processing, or distributed learning, please
+    see [this note](#datapipes-warnings) for further instructions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For additional details refer to [https://arxiv.org/abs/1509.01626](https://arxiv.org/abs/1509.01626)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Number of lines per split:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'train: 1400000'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'test: 60000'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**root** – Directory where the datasets are saved. Default: os.path.expanduser(‘~/.torchtext/cache’)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**split** – split or splits to be returned. Can be a string or tuple of strings.
+    Default: (train, test)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: DataPipe that yields tuple of label (1 to 10) and text containing the question
+    title, question content, and best answer
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: ([int](https://docs.python.org/3/library/functions.html#int "(in Python v3.12)"),
+    [str](https://docs.python.org/3/library/stdtypes.html#str "(in Python v3.12)"))
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[YelpReviewFull](#id18)[¶](#yelpreviewfull "Permalink to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: YelpReviewFull Dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: using datapipes is still currently subject to a few caveats. if you wish to
+    use this dataset with shuffling, multi-processing, or distributed learning, please
+    see [this note](#datapipes-warnings) for further instructions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For additional details refer to [https://arxiv.org/abs/1509.01626](https://arxiv.org/abs/1509.01626)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Number of lines per split:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'train: 650000'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'test: 50000'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**root** – Directory where the datasets are saved. Default: os.path.expanduser(‘~/.torchtext/cache’)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**split** – split or splits to be returned. Can be a string or tuple of strings.
+    Default: (train, test)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: DataPipe that yields tuple of label (1 to 5) and text containing the review
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: ([int](https://docs.python.org/3/library/functions.html#int "(in Python v3.12)"),
+    [str](https://docs.python.org/3/library/stdtypes.html#str "(in Python v3.12)"))
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[YelpReviewPolarity](#id19)[¶](#yelpreviewpolarity "Permalink to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: YelpReviewPolarity Dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: using datapipes is still currently subject to a few caveats. if you wish to
+    use this dataset with shuffling, multi-processing, or distributed learning, please
+    see [this note](#datapipes-warnings) for further instructions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For additional details refer to [https://arxiv.org/abs/1509.01626](https://arxiv.org/abs/1509.01626)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Number of lines per split:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'train: 560000'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'test: 38000'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**root** – Directory where the datasets are saved. Default: os.path.expanduser(‘~/.torchtext/cache’)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**split** – split or splits to be returned. Can be a string or tuple of strings.
+    Default: (train, test)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: DataPipe that yields tuple of label (1 to 2) and text containing the review
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: ([int](https://docs.python.org/3/library/functions.html#int "(in Python v3.12)"),
+    [str](https://docs.python.org/3/library/stdtypes.html#str "(in Python v3.12)"))
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Language Modeling](#id20)[¶](#language-modeling "Permalink to this heading")'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PennTreebank](#id21)[¶](#penntreebank "Permalink to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: PennTreebank Dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: using datapipes is still currently subject to a few caveats. if you wish to
+    use this dataset with shuffling, multi-processing, or distributed learning, please
+    see [this note](#datapipes-warnings) for further instructions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For additional details refer to [https://catalog.ldc.upenn.edu/docs/LDC95T7/cl93.html](https://catalog.ldc.upenn.edu/docs/LDC95T7/cl93.html)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Number of lines per split:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'train: 42068'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'valid: 3370'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'test: 3761'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**root** – Directory where the datasets are saved. Default: os.path.expanduser(‘~/.torchtext/cache’)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**split** – split or splits to be returned. Can be a string or tuple of strings.
+    Default: (train, valid, test)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: DataPipe that yields text from the Treebank corpus
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[str](https://docs.python.org/3/library/stdtypes.html#str "(in Python v3.12)")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[WikiText-2](#id22)[¶](#wikitext-2 "Permalink to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: WikiText2 Dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: using datapipes is still currently subject to a few caveats. if you wish to
+    use this dataset with shuffling, multi-processing, or distributed learning, please
+    see [this note](#datapipes-warnings) for further instructions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For additional details refer to [https://blog.salesforceairesearch.com/the-wikitext-long-term-dependency-language-modeling-dataset/](https://blog.salesforceairesearch.com/the-wikitext-long-term-dependency-language-modeling-dataset/)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Number of lines per split:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'train: 36718'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'valid: 3760'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'test: 4358'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**root** – Directory where the datasets are saved. Default: os.path.expanduser(‘~/.torchtext/cache’)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**split** – split or splits to be returned. Can be a string or tuple of strings.
+    Default: (train, valid, test)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: DataPipe that yields text from Wikipedia articles
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[str](https://docs.python.org/3/library/stdtypes.html#str "(in Python v3.12)")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[WikiText103](#id23)[¶](#wikitext103 "Permalink to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: WikiText103 Dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: using datapipes is still currently subject to a few caveats. if you wish to
+    use this dataset with shuffling, multi-processing, or distributed learning, please
+    see [this note](#datapipes-warnings) for further instructions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For additional details refer to [https://blog.salesforceairesearch.com/the-wikitext-long-term-dependency-language-modeling-dataset/](https://blog.salesforceairesearch.com/the-wikitext-long-term-dependency-language-modeling-dataset/)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Number of lines per split:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'train: 1801350'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'valid: 3760'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'test: 4358'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**root** – Directory where the datasets are saved. Default: os.path.expanduser(‘~/.torchtext/cache’)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**split** – split or splits to be returned. Can be a string or tuple of strings.
+    Default: (train, valid, test)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: DataPipe that yields text from Wikipedia articles
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[str](https://docs.python.org/3/library/stdtypes.html#str "(in Python v3.12)")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Machine Translation](#id24)[¶](#machine-translation "Permalink to this heading")'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[IWSLT2016](#id25)[¶](#iwslt2016 "Permalink to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: IWSLT2016 dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: using datapipes is still currently subject to a few caveats. if you wish to
+    use this dataset with shuffling, multi-processing, or distributed learning, please
+    see [this note](#datapipes-warnings) for further instructions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For additional details refer to [https://wit3.fbk.eu/2016-01](https://wit3.fbk.eu/2016-01)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The available datasets include following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Language pairs**:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '|  | “en” | “fr” | “de” | “cs” | “ar” |'
+  prefs: []
+  type: TYPE_TB
+- en: '| “en” |  | x | x | x | x |'
+  prefs: []
+  type: TYPE_TB
+- en: '| “fr” | x |  |  |  |  |'
+  prefs: []
+  type: TYPE_TB
+- en: '| “de” | x |  |  |  |  |'
+  prefs: []
+  type: TYPE_TB
+- en: '| “cs” | x |  |  |  |  |'
+  prefs: []
+  type: TYPE_TB
+- en: '| “ar” | x |  |  |  |  |'
+  prefs: []
+  type: TYPE_TB
+- en: '**valid/test sets**: [“dev2010”, “tst2010”, “tst2011”, “tst2012”, “tst2013”,
+    “tst2014”]'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**root** – Directory where the datasets are saved. Default: os.path.expanduser(‘~/.torchtext/cache’)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**split** – split or splits to be returned. Can be a string or tuple of strings.
+    Default: (‘train’, ‘valid’, ‘test’)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**language_pair** – tuple or list containing src and tgt language'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**valid_set** – a string to identify validation set.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**test_set** – a string to identify test set.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: DataPipe that yields tuple of source and target sentences
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: ([str](https://docs.python.org/3/library/stdtypes.html#str "(in Python v3.12)"),
+    [str](https://docs.python.org/3/library/stdtypes.html#str "(in Python v3.12)"))
+  prefs: []
+  type: TYPE_NORMAL
+- en: Examples
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[IWSLT2017](#id26)[¶](#iwslt2017 "Permalink to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: IWSLT2017 dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: using datapipes is still currently subject to a few caveats. if you wish to
+    use this dataset with shuffling, multi-processing, or distributed learning, please
+    see [this note](#datapipes-warnings) for further instructions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For additional details refer to [https://wit3.fbk.eu/2017-01](https://wit3.fbk.eu/2017-01)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The available datasets include following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Language pairs**:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '|  | “en” | “nl” | “de” | “it” | “ro” |'
+  prefs: []
+  type: TYPE_TB
+- en: '| “en” |  | x | x | x | x |'
+  prefs: []
+  type: TYPE_TB
+- en: '| “nl” | x |  | x | x | x |'
+  prefs: []
+  type: TYPE_TB
+- en: '| “de” | x | x |  | x | x |'
+  prefs: []
+  type: TYPE_TB
+- en: '| “it” | x | x | x |  | x |'
+  prefs: []
+  type: TYPE_TB
+- en: '| “ro” | x | x | x | x |  |'
+  prefs: []
+  type: TYPE_TB
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**root** – Directory where the datasets are saved. Default: os.path.expanduser(‘~/.torchtext/cache’)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**split** – split or splits to be returned. Can be a string or tuple of strings.
+    Default: (‘train’, ‘valid’, ‘test’)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**language_pair** – tuple or list containing src and tgt language'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: DataPipe that yields tuple of source and target sentences
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: ([str](https://docs.python.org/3/library/stdtypes.html#str "(in Python v3.12)"),
+    [str](https://docs.python.org/3/library/stdtypes.html#str "(in Python v3.12)"))
+  prefs: []
+  type: TYPE_NORMAL
+- en: Examples
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE26]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[Multi30k](#id27)[¶](#multi30k "Permalink to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[PRE27]'
+  prefs: []
+  type: TYPE_PRE
+- en: Multi30k dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: using datapipes is still currently subject to a few caveats. if you wish to
+    use this dataset with shuffling, multi-processing, or distributed learning, please
+    see [this note](#datapipes-warnings) for further instructions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For additional details refer to [https://www.statmt.org/wmt16/multimodal-task.html#task1](https://www.statmt.org/wmt16/multimodal-task.html#task1)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Number of lines per split:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'train: 29000'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'valid: 1014'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'test: 1000'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**root** – Directory where the datasets are saved. Default: os.path.expanduser(‘~/.torchtext/cache’)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**split** – split or splits to be returned. Can be a string or tuple of strings.
+    Default: (‘train’, ‘valid’, ‘test’)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**language_pair** – tuple or list containing src and tgt language. Available
+    options are (‘de’,’en’) and (‘en’, ‘de’)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: DataPipe that yields tuple of source and target sentences
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: ([str](https://docs.python.org/3/library/stdtypes.html#str "(in Python v3.12)"),
+    [str](https://docs.python.org/3/library/stdtypes.html#str "(in Python v3.12)"))
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Tutorials using `Multi30k`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![T5-Base Model for Summarization, Sentiment Classification, and Translation](../Images/054ec2c5b6c69ac648ddd68d0b5494e6.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '[T5-Base Model for Summarization, Sentiment Classification, and Translation](tutorials/t5_demo.html#sphx-glr-tutorials-t5-demo-py)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: T5-Base Model for Summarization, Sentiment Classification, and Translation
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Sequence Tagging](#id28)[¶](#sequence-tagging "Permalink to this heading")'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[CoNLL2000Chunking](#id29)[¶](#conll2000chunking "Permalink to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[PRE28]'
+  prefs: []
+  type: TYPE_PRE
+- en: CoNLL2000Chunking Dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: using datapipes is still currently subject to a few caveats. if you wish to
+    use this dataset with shuffling, multi-processing, or distributed learning, please
+    see [this note](#datapipes-warnings) for further instructions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For additional details refer to [https://www.clips.uantwerpen.be/conll2000/chunking/](https://www.clips.uantwerpen.be/conll2000/chunking/)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Number of lines per split:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'train: 8936'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'test: 2012'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**root** – Directory where the datasets are saved. Default: os.path.expanduser(‘~/.torchtext/cache’)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**split** – split or splits to be returned. Can be a string or tuple of strings.
+    Default: (train, test)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: DataPipe that yields list of words along with corresponding Parts-of-speech
+    tag and chunk tag
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[[list](https://docs.python.org/3/library/stdtypes.html#list "(in Python v3.12)")([str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")), [list](https://docs.python.org/3/library/stdtypes.html#list
+    "(in Python v3.12)")([str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")), [list](https://docs.python.org/3/library/stdtypes.html#list
+    "(in Python v3.12)")([str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)"))]'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[UDPOS](#id30)[¶](#udpos "Permalink to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[PRE29]'
+  prefs: []
+  type: TYPE_PRE
+- en: UDPOS Dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: using datapipes is still currently subject to a few caveats. if you wish to
+    use this dataset with shuffling, multi-processing, or distributed learning, please
+    see [this note](#datapipes-warnings) for further instructions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Number of lines per split:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'train: 12543'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'valid: 2002'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'test: 2077'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**root** – Directory where the datasets are saved. Default: os.path.expanduser(‘~/.torchtext/cache’)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**split** – split or splits to be returned. Can be a string or tuple of strings.
+    Default: (train, valid, test)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: DataPipe that yields list of words along with corresponding parts-of-speech
+    tags
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[[list](https://docs.python.org/3/library/stdtypes.html#list "(in Python v3.12)")([str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")), [list](https://docs.python.org/3/library/stdtypes.html#list
+    "(in Python v3.12)")([str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)"))]'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Question Answer](#id31)[¶](#question-answer "Permalink to this heading")'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[SQuAD 1.0](#id32)[¶](#squad-1-0 "Permalink to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[PRE30]'
+  prefs: []
+  type: TYPE_PRE
+- en: SQuAD1 Dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: using datapipes is still currently subject to a few caveats. if you wish to
+    use this dataset with shuffling, multi-processing, or distributed learning, please
+    see [this note](#datapipes-warnings) for further instructions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For additional details refer to [https://rajpurkar.github.io/SQuAD-explorer/](https://rajpurkar.github.io/SQuAD-explorer/)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Number of lines per split:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'train: 87599'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'dev: 10570'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**root** – Directory where the datasets are saved. Default: os.path.expanduser(‘~/.torchtext/cache’)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**split** – split or splits to be returned. Can be a string or tuple of strings.
+    Default: (train, dev)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: DataPipe that yields data points from SQuaAD1 dataset which consist of context,
+    question, list of answers and corresponding index in context
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: ([str](https://docs.python.org/3/library/stdtypes.html#str "(in Python v3.12)"),
+    [str](https://docs.python.org/3/library/stdtypes.html#str "(in Python v3.12)"),
+    [list](https://docs.python.org/3/library/stdtypes.html#list "(in Python v3.12)")([str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")), [list](https://docs.python.org/3/library/stdtypes.html#list
+    "(in Python v3.12)")([int](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")))
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[SQuAD 2.0](#id33)[¶](#squad-2-0 "Permalink to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[PRE31]'
+  prefs: []
+  type: TYPE_PRE
+- en: SQuAD2 Dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: using datapipes is still currently subject to a few caveats. if you wish to
+    use this dataset with shuffling, multi-processing, or distributed learning, please
+    see [this note](#datapipes-warnings) for further instructions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For additional details refer to [https://rajpurkar.github.io/SQuAD-explorer/](https://rajpurkar.github.io/SQuAD-explorer/)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Number of lines per split:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'train: 130319'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'dev: 11873'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**root** – Directory where the datasets are saved. Default: os.path.expanduser(‘~/.torchtext/cache’)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**split** – split or splits to be returned. Can be a string or tuple of strings.
+    Default: (train, dev)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: DataPipe that yields data points from SQuaAD1 dataset which consist of context,
+    question, list of answers and corresponding index in context
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: ([str](https://docs.python.org/3/library/stdtypes.html#str "(in Python v3.12)"),
+    [str](https://docs.python.org/3/library/stdtypes.html#str "(in Python v3.12)"),
+    [list](https://docs.python.org/3/library/stdtypes.html#list "(in Python v3.12)")([str](https://docs.python.org/3/library/stdtypes.html#str
+    "(in Python v3.12)")), [list](https://docs.python.org/3/library/stdtypes.html#list
+    "(in Python v3.12)")([int](https://docs.python.org/3/library/functions.html#int
+    "(in Python v3.12)")))
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Unsupervised Learning](#id34)[¶](#unsupervised-learning "Permalink to this
+    heading")'
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[CC100](#id35)[¶](#cc100 "Permalink to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[PRE32]'
+  prefs: []
+  type: TYPE_PRE
+- en: CC100 Dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: using datapipes is still currently subject to a few caveats. if you wish to
+    use this dataset with shuffling, multi-processing, or distributed learning, please
+    see [this note](#datapipes-warnings) for further instructions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For additional details refer to [https://data.statmt.org/cc-100/](https://data.statmt.org/cc-100/)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**root** – Directory where the datasets are saved. Default: os.path.expanduser(‘~/.torchtext/cache’)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**language_code** – the language of the dataset'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: DataPipe that yields tuple of language code and text
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: ([str](https://docs.python.org/3/library/stdtypes.html#str "(in Python v3.12)"),
+    [str](https://docs.python.org/3/library/stdtypes.html#str "(in Python v3.12)"))
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[EnWik9](#id36)[¶](#enwik9 "Permalink to this heading")'
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[PRE33]'
+  prefs: []
+  type: TYPE_PRE
+- en: EnWik9 dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: using datapipes is still currently subject to a few caveats. if you wish to
+    use this dataset with shuffling, multi-processing, or distributed learning, please
+    see [this note](#datapipes-warnings) for further instructions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For additional details refer to [http://mattmahoney.net/dc/textdata.html](http://mattmahoney.net/dc/textdata.html)
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Number of lines in dataset: 13147026'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**root** – Directory where the datasets are saved. Default: os.path.expanduser(‘~/.torchtext/cache’)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: DataPipe that yields raw text rows from WnWik9 dataset
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Return type:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[str](https://docs.python.org/3/library/stdtypes.html#str "(in Python v3.12)")'
+  prefs: []
+  type: TYPE_NORMAL

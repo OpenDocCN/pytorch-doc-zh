@@ -1,0 +1,1273 @@
+- en: Transforming and augmenting images¶
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/vision/stable/transforms.html](https://pytorch.org/vision/stable/transforms.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Torchvision supports common computer vision transformations in the `torchvision.transforms`
+    and `torchvision.transforms.v2` modules. Transforms can be used to transform or
+    augment data for training or inference of different tasks (image classification,
+    detection, segmentation, video classification).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Transforms are typically passed as the `transform` or `transforms` argument
+    to the [Datasets](datasets.html#datasets).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Start here[¶](#start-here "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Whether you’re new to Torchvision transforms, or you’re already experienced
+    with them, we encourage you to start with [Getting started with transforms v2](auto_examples/transforms/plot_transforms_getting_started.html#sphx-glr-auto-examples-transforms-plot-transforms-getting-started-py)
+    in order to learn more about what can be done with the new v2 transforms.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Then, browse the sections in below this page for general information and performance
+    tips. The available transforms and functionals are listed in the [API reference](#v2-api-ref).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'More information and tutorials can also be found in our [example gallery](auto_examples/index.html#gallery),
+    e.g. [Transforms v2: End-to-end object detection/segmentation example](auto_examples/transforms/plot_transforms_e2e.html#sphx-glr-auto-examples-transforms-plot-transforms-e2e-py)
+    or [How to write your own v2 transforms](auto_examples/transforms/plot_custom_transforms.html#sphx-glr-auto-examples-transforms-plot-custom-transforms-py).'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '## Supported input types and conventions[¶](#supported-input-types-and-conventions
+    "Permalink to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Most transformations accept both [PIL](https://pillow.readthedocs.io) images
+    and tensor inputs. Both CPU and CUDA tensors are supported. The result of both
+    backends (PIL or Tensors) should be very close. In general, we recommend relying
+    on the tensor backend [for performance](#transforms-perf). The [conversion transforms](#conversion-transforms)
+    may be used to convert to and from PIL images, or for converting dtypes and ranges.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Tensor image are expected to be of shape `(C, H, W)`, where `C` is the number
+    of channels, and `H` and `W` refer to height and width. Most transforms support
+    batched tensor input. A batch of Tensor images is a tensor of shape `(N, C, H,
+    W)`, where `N` is a number of images in the batch. The [v2](#v1-or-v2) transforms
+    generally accept an arbitrary number of leading dimensions `(..., C, H, W)` and
+    can handle batched images or batched videos.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '### Dtype and expected value range[¶](#dtype-and-expected-value-range "Permalink
+    to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: The expected range of the values of a tensor image is implicitly defined by
+    the tensor dtype. Tensor images with a float dtype are expected to have values
+    in `[0, 1]`. Tensor images with an integer dtype are expected to have values in
+    `[0, MAX_DTYPE]` where `MAX_DTYPE` is the largest value that can be represented
+    in that dtype. Typically, images of dtype `torch.uint8` are expected to have values
+    in `[0, 255]`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Use [`ToDtype`](generated/torchvision.transforms.v2.ToDtype.html#torchvision.transforms.v2.ToDtype
+    "torchvision.transforms.v2.ToDtype") to convert both the dtype and range of the
+    inputs.  ## V1 or V2? Which one should I use?[¶](#v1-or-v2-which-one-should-i-use
+    "Permalink to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**TL;DR** We recommending using the `torchvision.transforms.v2` transforms
+    instead of those in `torchvision.transforms`. They’re faster and they can do more
+    things. Just change the import and you should be good to go. Moving forward, new
+    features and improvements will only be considered for the v2 transforms.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'In Torchvision 0.15 (March 2023), we released a new set of transforms available
+    in the `torchvision.transforms.v2` namespace. These transforms have a lot of advantages
+    compared to the v1 ones (in `torchvision.transforms`):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'They can transform images **but also** bounding boxes, masks, or videos. This
+    provides support for tasks beyond image classification: detection, segmentation,
+    video classification, etc. See [Getting started with transforms v2](auto_examples/transforms/plot_transforms_getting_started.html#sphx-glr-auto-examples-transforms-plot-transforms-getting-started-py)
+    and [Transforms v2: End-to-end object detection/segmentation example](auto_examples/transforms/plot_transforms_e2e.html#sphx-glr-auto-examples-transforms-plot-transforms-e2e-py).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: They support more transforms like [`CutMix`](generated/torchvision.transforms.v2.CutMix.html#torchvision.transforms.v2.CutMix
+    "torchvision.transforms.v2.CutMix") and [`MixUp`](generated/torchvision.transforms.v2.MixUp.html#torchvision.transforms.v2.MixUp
+    "torchvision.transforms.v2.MixUp"). See [How to use CutMix and MixUp](auto_examples/transforms/plot_cutmix_mixup.html#sphx-glr-auto-examples-transforms-plot-cutmix-mixup-py).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: They’re [faster](#transforms-perf).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: They support arbitrary input structures (dicts, lists, tuples, etc.).
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Future improvements and features will be added to the v2 transforms only.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'These transforms are **fully backward compatible** with the v1 ones, so if
+    you’re already using tranforms from `torchvision.transforms`, all you need to
+    do to is to update the import to `torchvision.transforms.v2`. In terms of output,
+    there might be negligible differences due to implementation differences.  ## Performance
+    considerations[¶](#performance-considerations "Permalink to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'We recommend the following guidelines to get the best performance out of the
+    transforms:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Rely on the v2 transforms from `torchvision.transforms.v2`
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Use tensors instead of PIL images
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Use `torch.uint8` dtype, especially for resizing
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Resize with bilinear or bicubic mode
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'This is what a typical transform pipeline could look like:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: The above should give you the best performance in a typical training environment
+    that relies on the [`torch.utils.data.DataLoader`](https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader
+    "(in PyTorch v2.2)") with `num_workers > 0`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Transforms tend to be sensitive to the input strides / memory format. Some transforms
+    will be faster with channels-first images while others prefer channels-last. Like
+    `torch` operators, most transforms will preserve the memory format of the input,
+    but this may not always be respected due to implementation details. You may want
+    to experiment a bit if you’re chasing the very best performance. Using [`torch.compile()`](https://pytorch.org/docs/stable/generated/torch.compile.html#torch.compile
+    "(in PyTorch v2.2)") on individual transforms may also help factoring out the
+    memory format variable (e.g. on [`Normalize`](generated/torchvision.transforms.v2.Normalize.html#torchvision.transforms.v2.Normalize
+    "torchvision.transforms.v2.Normalize")). Note that we’re talking about **memory
+    format**, not [tensor shape](#conventions).
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Note that resize transforms like [`Resize`](generated/torchvision.transforms.v2.Resize.html#torchvision.transforms.v2.Resize
+    "torchvision.transforms.v2.Resize") and [`RandomResizedCrop`](generated/torchvision.transforms.v2.RandomResizedCrop.html#torchvision.transforms.v2.RandomResizedCrop
+    "torchvision.transforms.v2.RandomResizedCrop") typically prefer channels-last
+    input and tend **not** to benefit from [`torch.compile()`](https://pytorch.org/docs/stable/generated/torch.compile.html#torch.compile
+    "(in PyTorch v2.2)") at this time.  ## Transform classes, functionals, and kernels[¶](#transform-classes-functionals-and-kernels
+    "Permalink to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Transforms are available as classes like [`Resize`](generated/torchvision.transforms.v2.Resize.html#torchvision.transforms.v2.Resize
+    "torchvision.transforms.v2.Resize"), but also as functionals like [`resize()`](generated/torchvision.transforms.v2.functional.resize.html#torchvision.transforms.v2.functional.resize
+    "torchvision.transforms.v2.functional.resize") in the `torchvision.transforms.v2.functional`
+    namespace. This is very much like the [`torch.nn`](https://pytorch.org/docs/stable/nn.html#module-torch.nn
+    "(in PyTorch v2.2)") package which defines both classes and functional equivalents
+    in [`torch.nn.functional`](https://pytorch.org/docs/stable/nn.html#module-torch.nn.functional
+    "(in PyTorch v2.2)").
+  prefs: []
+  type: TYPE_NORMAL
+- en: The functionals support PIL images, pure tensors, or [TVTensors](tv_tensors.html#tv-tensors),
+    e.g. both `resize(image_tensor)` and `resize(boxes)` are valid.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Random transforms like [`RandomCrop`](generated/torchvision.transforms.v2.RandomCrop.html#torchvision.transforms.v2.RandomCrop
+    "torchvision.transforms.v2.RandomCrop") will randomly sample some parameter each
+    time they’re called. Their functional counterpart ([`crop()`](generated/torchvision.transforms.v2.functional.crop.html#torchvision.transforms.v2.functional.crop
+    "torchvision.transforms.v2.functional.crop")) does not do any kind of random sampling
+    and thus have a slighlty different parametrization. The `get_params()` class method
+    of the transforms class can be used to perform parameter sampling when using the
+    functional APIs.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The `torchvision.transforms.v2.functional` namespace also contains what we
+    call the “kernels”. These are the low-level functions that implement the core
+    functionalities for specific types, e.g. `resize_bounding_boxes` or ``resized_crop_mask`.
+    They are public, although not documented. Check the [code](https://github.com/pytorch/vision/blob/main/torchvision/transforms/v2/functional/__init__.py)
+    to see which ones are available (note that those starting with a leading underscore
+    are **not** public!). Kernels are only really useful if you want [torchscript
+    support](#transforms-torchscript) for types like bounding boxes or masks.  ##
+    Torchscript support[¶](#torchscript-support "Permalink to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Most transform classes and functionals support torchscript. For composing transforms,
+    use [`torch.nn.Sequential`](https://pytorch.org/docs/stable/generated/torch.nn.Sequential.html#torch.nn.Sequential
+    "(in PyTorch v2.2)") instead of [`Compose`](generated/torchvision.transforms.v2.Compose.html#torchvision.transforms.v2.Compose
+    "torchvision.transforms.v2.Compose"):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: v2 transforms support torchscript, but if you call `torch.jit.script()` on a
+    v2 **class** transform, you’ll actually end up with its (scripted) v1 equivalent.
+    This may lead to slightly different results between the scripted and eager executions
+    due to implementation differences between v1 and v2.
+  prefs: []
+  type: TYPE_NORMAL
+- en: If you really need torchscript support for the v2 transforms, we recommend scripting
+    the **functionals** from the `torchvision.transforms.v2.functional` namespace
+    to avoid surprises.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Also note that the functionals only support torchscript for pure tensors, which
+    are always treated as images. If you need torchscript support for other types
+    like bounding boxes or masks, you can rely on the [low-level kernels](#functional-transforms).
+  prefs: []
+  type: TYPE_NORMAL
+- en: For any custom transformations to be used with `torch.jit.script`, they should
+    be derived from `torch.nn.Module`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'See also: [Torchscript support](auto_examples/others/plot_scripted_tensor_transforms.html#sphx-glr-auto-examples-others-plot-scripted-tensor-transforms-py).  ##
+    V2 API reference - Recommended[¶](#v2-api-reference-recommended "Permalink to
+    this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Geometry[¶](#geometry "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Resizing[¶](#resizing "Permalink to this heading")
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: '| [`v2.Resize`](generated/torchvision.transforms.v2.Resize.html#torchvision.transforms.v2.Resize
+    "torchvision.transforms.v2.Resize")(size[, interpolation, max_size, ...]) | Resize
+    the input to the given size. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.ScaleJitter`](generated/torchvision.transforms.v2.ScaleJitter.html#torchvision.transforms.v2.ScaleJitter
+    "torchvision.transforms.v2.ScaleJitter")(target_size[, scale_range, ...]) | Perform
+    Large Scale Jitter on the input according to ["Simple Copy-Paste is a Strong Data
+    Augmentation Method for Instance Segmentation"](https://arxiv.org/abs/2012.07177).
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.RandomShortestSize`](generated/torchvision.transforms.v2.RandomShortestSize.html#torchvision.transforms.v2.RandomShortestSize
+    "torchvision.transforms.v2.RandomShortestSize")(min_size[, max_size, ...]) | Randomly
+    resize the input. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.RandomResize`](generated/torchvision.transforms.v2.RandomResize.html#torchvision.transforms.v2.RandomResize
+    "torchvision.transforms.v2.RandomResize")(min_size, max_size[, ...]) | Randomly
+    resize the input. |'
+  prefs: []
+  type: TYPE_TB
+- en: Functionals
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| [`v2.functional.resize`](generated/torchvision.transforms.v2.functional.resize.html#torchvision.transforms.v2.functional.resize
+    "torchvision.transforms.v2.functional.resize")(inpt, size[, ...]) | See [`Resize`](generated/torchvision.transforms.v2.Resize.html#torchvision.transforms.v2.Resize
+    "torchvision.transforms.v2.Resize") for details. |'
+  prefs: []
+  type: TYPE_TB
+- en: Cropping[¶](#cropping "Permalink to this heading")
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: '| [`v2.RandomCrop`](generated/torchvision.transforms.v2.RandomCrop.html#torchvision.transforms.v2.RandomCrop
+    "torchvision.transforms.v2.RandomCrop")(size[, padding, ...]) | Crop the input
+    at a random location. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.RandomResizedCrop`](generated/torchvision.transforms.v2.RandomResizedCrop.html#torchvision.transforms.v2.RandomResizedCrop
+    "torchvision.transforms.v2.RandomResizedCrop")(size[, scale, ratio, ...]) | Crop
+    a random portion of the input and resize it to a given size. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.RandomIoUCrop`](generated/torchvision.transforms.v2.RandomIoUCrop.html#torchvision.transforms.v2.RandomIoUCrop
+    "torchvision.transforms.v2.RandomIoUCrop")([min_scale, max_scale, ...]) | Random
+    IoU crop transformation from ["SSD: Single Shot MultiBox Detector"](https://arxiv.org/abs/1512.02325).
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.CenterCrop`](generated/torchvision.transforms.v2.CenterCrop.html#torchvision.transforms.v2.CenterCrop
+    "torchvision.transforms.v2.CenterCrop")(size) | Crop the input at the center.
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.FiveCrop`](generated/torchvision.transforms.v2.FiveCrop.html#torchvision.transforms.v2.FiveCrop
+    "torchvision.transforms.v2.FiveCrop")(size) | Crop the image or video into four
+    corners and the central crop. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.TenCrop`](generated/torchvision.transforms.v2.TenCrop.html#torchvision.transforms.v2.TenCrop
+    "torchvision.transforms.v2.TenCrop")(size[, vertical_flip]) | Crop the image or
+    video into four corners and the central crop plus the flipped version of these
+    (horizontal flipping is used by default). |'
+  prefs: []
+  type: TYPE_TB
+- en: Functionals
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| [`v2.functional.crop`](generated/torchvision.transforms.v2.functional.crop.html#torchvision.transforms.v2.functional.crop
+    "torchvision.transforms.v2.functional.crop")(inpt, top, left, height, ...) | See
+    [`RandomCrop`](generated/torchvision.transforms.v2.RandomCrop.html#torchvision.transforms.v2.RandomCrop
+    "torchvision.transforms.v2.RandomCrop") for details. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.functional.resized_crop`](generated/torchvision.transforms.v2.functional.resized_crop.html#torchvision.transforms.v2.functional.resized_crop
+    "torchvision.transforms.v2.functional.resized_crop")(inpt, top, left, ...) | See
+    [`RandomResizedCrop`](generated/torchvision.transforms.v2.RandomResizedCrop.html#torchvision.transforms.v2.RandomResizedCrop
+    "torchvision.transforms.v2.RandomResizedCrop") for details. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.functional.ten_crop`](generated/torchvision.transforms.v2.functional.ten_crop.html#torchvision.transforms.v2.functional.ten_crop
+    "torchvision.transforms.v2.functional.ten_crop")(inpt, size[, ...]) | See [`TenCrop`](generated/torchvision.transforms.v2.TenCrop.html#torchvision.transforms.v2.TenCrop
+    "torchvision.transforms.v2.TenCrop") for details. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.functional.center_crop`](generated/torchvision.transforms.v2.functional.center_crop.html#torchvision.transforms.v2.functional.center_crop
+    "torchvision.transforms.v2.functional.center_crop")(inpt, output_size) | See [`RandomCrop`](generated/torchvision.transforms.v2.RandomCrop.html#torchvision.transforms.v2.RandomCrop
+    "torchvision.transforms.v2.RandomCrop") for details. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.functional.five_crop`](generated/torchvision.transforms.v2.functional.five_crop.html#torchvision.transforms.v2.functional.five_crop
+    "torchvision.transforms.v2.functional.five_crop")(inpt, size) | See [`FiveCrop`](generated/torchvision.transforms.v2.FiveCrop.html#torchvision.transforms.v2.FiveCrop
+    "torchvision.transforms.v2.FiveCrop") for details. |'
+  prefs: []
+  type: TYPE_TB
+- en: Others[¶](#others "Permalink to this heading")
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: '| [`v2.RandomHorizontalFlip`](generated/torchvision.transforms.v2.RandomHorizontalFlip.html#torchvision.transforms.v2.RandomHorizontalFlip
+    "torchvision.transforms.v2.RandomHorizontalFlip")([p]) | Horizontally flip the
+    input with a given probability. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.RandomVerticalFlip`](generated/torchvision.transforms.v2.RandomVerticalFlip.html#torchvision.transforms.v2.RandomVerticalFlip
+    "torchvision.transforms.v2.RandomVerticalFlip")([p]) | Vertically flip the input
+    with a given probability. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.Pad`](generated/torchvision.transforms.v2.Pad.html#torchvision.transforms.v2.Pad
+    "torchvision.transforms.v2.Pad")(padding[, fill, padding_mode]) | Pad the input
+    on all sides with the given "pad" value. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.RandomZoomOut`](generated/torchvision.transforms.v2.RandomZoomOut.html#torchvision.transforms.v2.RandomZoomOut
+    "torchvision.transforms.v2.RandomZoomOut")([fill, side_range, p]) | "Zoom out"
+    transformation from ["SSD: Single Shot MultiBox Detector"](https://arxiv.org/abs/1512.02325).
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.RandomRotation`](generated/torchvision.transforms.v2.RandomRotation.html#torchvision.transforms.v2.RandomRotation
+    "torchvision.transforms.v2.RandomRotation")(degrees[, interpolation, ...]) | Rotate
+    the input by angle. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.RandomAffine`](generated/torchvision.transforms.v2.RandomAffine.html#torchvision.transforms.v2.RandomAffine
+    "torchvision.transforms.v2.RandomAffine")(degrees[, translate, scale, ...]) |
+    Random affine transformation the input keeping center invariant. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.RandomPerspective`](generated/torchvision.transforms.v2.RandomPerspective.html#torchvision.transforms.v2.RandomPerspective
+    "torchvision.transforms.v2.RandomPerspective")([distortion_scale, p, ...]) | Perform
+    a random perspective transformation of the input with a given probability. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.ElasticTransform`](generated/torchvision.transforms.v2.ElasticTransform.html#torchvision.transforms.v2.ElasticTransform
+    "torchvision.transforms.v2.ElasticTransform")([alpha, sigma, ...]) | Transform
+    the input with elastic transformations. |'
+  prefs: []
+  type: TYPE_TB
+- en: Functionals
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| [`v2.functional.horizontal_flip`](generated/torchvision.transforms.v2.functional.horizontal_flip.html#torchvision.transforms.v2.functional.horizontal_flip
+    "torchvision.transforms.v2.functional.horizontal_flip")(inpt) | See [`RandomHorizontalFlip`](generated/torchvision.transforms.v2.RandomHorizontalFlip.html#torchvision.transforms.v2.RandomHorizontalFlip
+    "torchvision.transforms.v2.RandomHorizontalFlip") for details. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.functional.vertical_flip`](generated/torchvision.transforms.v2.functional.vertical_flip.html#torchvision.transforms.v2.functional.vertical_flip
+    "torchvision.transforms.v2.functional.vertical_flip")(inpt) | See [`RandomVerticalFlip`](generated/torchvision.transforms.v2.RandomVerticalFlip.html#torchvision.transforms.v2.RandomVerticalFlip
+    "torchvision.transforms.v2.RandomVerticalFlip") for details. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.functional.pad`](generated/torchvision.transforms.v2.functional.pad.html#torchvision.transforms.v2.functional.pad
+    "torchvision.transforms.v2.functional.pad")(inpt, padding[, fill, ...]) | See
+    [`Pad`](generated/torchvision.transforms.v2.Pad.html#torchvision.transforms.v2.Pad
+    "torchvision.transforms.v2.Pad") for details. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.functional.rotate`](generated/torchvision.transforms.v2.functional.rotate.html#torchvision.transforms.v2.functional.rotate
+    "torchvision.transforms.v2.functional.rotate")(inpt, angle[, ...]) | See [`RandomRotation`](generated/torchvision.transforms.v2.RandomRotation.html#torchvision.transforms.v2.RandomRotation
+    "torchvision.transforms.v2.RandomRotation") for details. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.functional.affine`](generated/torchvision.transforms.v2.functional.affine.html#torchvision.transforms.v2.functional.affine
+    "torchvision.transforms.v2.functional.affine")(inpt, angle, translate, ...) |
+    See [`RandomAffine`](generated/torchvision.transforms.v2.RandomAffine.html#torchvision.transforms.v2.RandomAffine
+    "torchvision.transforms.v2.RandomAffine") for details. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.functional.perspective`](generated/torchvision.transforms.v2.functional.perspective.html#torchvision.transforms.v2.functional.perspective
+    "torchvision.transforms.v2.functional.perspective")(inpt, startpoints, ...) |
+    See [`RandomPerspective`](generated/torchvision.transforms.v2.RandomPerspective.html#torchvision.transforms.v2.RandomPerspective
+    "torchvision.transforms.v2.RandomPerspective") for details. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.functional.elastic`](generated/torchvision.transforms.v2.functional.elastic.html#torchvision.transforms.v2.functional.elastic
+    "torchvision.transforms.v2.functional.elastic")(inpt, displacement[, ...]) | See
+    [`ElasticTransform`](generated/torchvision.transforms.v2.ElasticTransform.html#torchvision.transforms.v2.ElasticTransform
+    "torchvision.transforms.v2.ElasticTransform") for details. |'
+  prefs: []
+  type: TYPE_TB
+- en: Color[¶](#color "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '| [`v2.ColorJitter`](generated/torchvision.transforms.v2.ColorJitter.html#torchvision.transforms.v2.ColorJitter
+    "torchvision.transforms.v2.ColorJitter")([brightness, contrast, ...]) | Randomly
+    change the brightness, contrast, saturation and hue of an image or video. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.RandomChannelPermutation`](generated/torchvision.transforms.v2.RandomChannelPermutation.html#torchvision.transforms.v2.RandomChannelPermutation
+    "torchvision.transforms.v2.RandomChannelPermutation")() | Randomly permute the
+    channels of an image or video |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.RandomPhotometricDistort`](generated/torchvision.transforms.v2.RandomPhotometricDistort.html#torchvision.transforms.v2.RandomPhotometricDistort
+    "torchvision.transforms.v2.RandomPhotometricDistort")([brightness, ...]) | Randomly
+    distorts the image or video as used in [SSD: Single Shot MultiBox Detector](https://arxiv.org/abs/1512.02325).
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.Grayscale`](generated/torchvision.transforms.v2.Grayscale.html#torchvision.transforms.v2.Grayscale
+    "torchvision.transforms.v2.Grayscale")([num_output_channels]) | Convert images
+    or videos to grayscale. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.RandomGrayscale`](generated/torchvision.transforms.v2.RandomGrayscale.html#torchvision.transforms.v2.RandomGrayscale
+    "torchvision.transforms.v2.RandomGrayscale")([p]) | Randomly convert image or
+    videos to grayscale with a probability of p (default 0.1). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.GaussianBlur`](generated/torchvision.transforms.v2.GaussianBlur.html#torchvision.transforms.v2.GaussianBlur
+    "torchvision.transforms.v2.GaussianBlur")(kernel_size[, sigma]) | Blurs image
+    with randomly chosen Gaussian blur. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.RandomInvert`](generated/torchvision.transforms.v2.RandomInvert.html#torchvision.transforms.v2.RandomInvert
+    "torchvision.transforms.v2.RandomInvert")([p]) | Inverts the colors of the given
+    image or video with a given probability. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.RandomPosterize`](generated/torchvision.transforms.v2.RandomPosterize.html#torchvision.transforms.v2.RandomPosterize
+    "torchvision.transforms.v2.RandomPosterize")(bits[, p]) | Posterize the image
+    or video with a given probability by reducing the number of bits for each color
+    channel. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.RandomSolarize`](generated/torchvision.transforms.v2.RandomSolarize.html#torchvision.transforms.v2.RandomSolarize
+    "torchvision.transforms.v2.RandomSolarize")(threshold[, p]) | Solarize the image
+    or video with a given probability by inverting all pixel values above a threshold.
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.RandomAdjustSharpness`](generated/torchvision.transforms.v2.RandomAdjustSharpness.html#torchvision.transforms.v2.RandomAdjustSharpness
+    "torchvision.transforms.v2.RandomAdjustSharpness")(sharpness_factor[, p]) | Adjust
+    the sharpness of the image or video with a given probability. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.RandomAutocontrast`](generated/torchvision.transforms.v2.RandomAutocontrast.html#torchvision.transforms.v2.RandomAutocontrast
+    "torchvision.transforms.v2.RandomAutocontrast")([p]) | Autocontrast the pixels
+    of the given image or video with a given probability. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.RandomEqualize`](generated/torchvision.transforms.v2.RandomEqualize.html#torchvision.transforms.v2.RandomEqualize
+    "torchvision.transforms.v2.RandomEqualize")([p]) | Equalize the histogram of the
+    given image or video with a given probability. |'
+  prefs: []
+  type: TYPE_TB
+- en: Functionals
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| [`v2.functional.permute_channels`](generated/torchvision.transforms.v2.functional.permute_channels.html#torchvision.transforms.v2.functional.permute_channels
+    "torchvision.transforms.v2.functional.permute_channels")(inpt, permutation) |
+    Permute the channels of the input according to the given permutation. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.functional.rgb_to_grayscale`](generated/torchvision.transforms.v2.functional.rgb_to_grayscale.html#torchvision.transforms.v2.functional.rgb_to_grayscale
+    "torchvision.transforms.v2.functional.rgb_to_grayscale")(inpt[, ...]) | See [`Grayscale`](generated/torchvision.transforms.v2.Grayscale.html#torchvision.transforms.v2.Grayscale
+    "torchvision.transforms.v2.Grayscale") for details. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.functional.to_grayscale`](generated/torchvision.transforms.v2.functional.to_grayscale.html#torchvision.transforms.v2.functional.to_grayscale
+    "torchvision.transforms.v2.functional.to_grayscale")(inpt[, ...]) | See [`Grayscale`](generated/torchvision.transforms.v2.Grayscale.html#torchvision.transforms.v2.Grayscale
+    "torchvision.transforms.v2.Grayscale") for details. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.functional.gaussian_blur`](generated/torchvision.transforms.v2.functional.gaussian_blur.html#torchvision.transforms.v2.functional.gaussian_blur
+    "torchvision.transforms.v2.functional.gaussian_blur")(inpt, kernel_size) | See
+    [`GaussianBlur`](generated/torchvision.transforms.v2.GaussianBlur.html#torchvision.transforms.v2.GaussianBlur
+    "torchvision.transforms.v2.GaussianBlur") for details. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.functional.invert`](generated/torchvision.transforms.v2.functional.invert.html#torchvision.transforms.v2.functional.invert
+    "torchvision.transforms.v2.functional.invert")(inpt) | See [`RandomInvert()`](generated/torchvision.transforms.v2.RandomInvert.html#torchvision.transforms.v2.RandomInvert
+    "torchvision.transforms.v2.RandomInvert"). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.functional.posterize`](generated/torchvision.transforms.v2.functional.posterize.html#torchvision.transforms.v2.functional.posterize
+    "torchvision.transforms.v2.functional.posterize")(inpt, bits) | See [`RandomPosterize`](generated/torchvision.transforms.v2.RandomPosterize.html#torchvision.transforms.v2.RandomPosterize
+    "torchvision.transforms.v2.RandomPosterize") for details. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.functional.solarize`](generated/torchvision.transforms.v2.functional.solarize.html#torchvision.transforms.v2.functional.solarize
+    "torchvision.transforms.v2.functional.solarize")(inpt, threshold) | See [`RandomSolarize`](generated/torchvision.transforms.v2.RandomSolarize.html#torchvision.transforms.v2.RandomSolarize
+    "torchvision.transforms.v2.RandomSolarize") for details. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.functional.adjust_sharpness`](generated/torchvision.transforms.v2.functional.adjust_sharpness.html#torchvision.transforms.v2.functional.adjust_sharpness
+    "torchvision.transforms.v2.functional.adjust_sharpness")(inpt, ...) | See [`RandomAdjustSharpness`](generated/torchvision.transforms.RandomAdjustSharpness.html#torchvision.transforms.RandomAdjustSharpness
+    "torchvision.transforms.RandomAdjustSharpness") |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.functional.autocontrast`](generated/torchvision.transforms.v2.functional.autocontrast.html#torchvision.transforms.v2.functional.autocontrast
+    "torchvision.transforms.v2.functional.autocontrast")(inpt) | See [`RandomAutocontrast`](generated/torchvision.transforms.v2.RandomAutocontrast.html#torchvision.transforms.v2.RandomAutocontrast
+    "torchvision.transforms.v2.RandomAutocontrast") for details. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.functional.adjust_contrast`](generated/torchvision.transforms.v2.functional.adjust_contrast.html#torchvision.transforms.v2.functional.adjust_contrast
+    "torchvision.transforms.v2.functional.adjust_contrast")(inpt, ...) | See [`RandomAutocontrast`](generated/torchvision.transforms.RandomAutocontrast.html#torchvision.transforms.RandomAutocontrast
+    "torchvision.transforms.RandomAutocontrast") |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.functional.equalize`](generated/torchvision.transforms.v2.functional.equalize.html#torchvision.transforms.v2.functional.equalize
+    "torchvision.transforms.v2.functional.equalize")(inpt) | See [`RandomEqualize`](generated/torchvision.transforms.v2.RandomEqualize.html#torchvision.transforms.v2.RandomEqualize
+    "torchvision.transforms.v2.RandomEqualize") for details. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.functional.adjust_brightness`](generated/torchvision.transforms.v2.functional.adjust_brightness.html#torchvision.transforms.v2.functional.adjust_brightness
+    "torchvision.transforms.v2.functional.adjust_brightness")(inpt, ...) | Adjust
+    brightness. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.functional.adjust_saturation`](generated/torchvision.transforms.v2.functional.adjust_saturation.html#torchvision.transforms.v2.functional.adjust_saturation
+    "torchvision.transforms.v2.functional.adjust_saturation")(inpt, ...) | Adjust
+    saturation. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.functional.adjust_hue`](generated/torchvision.transforms.v2.functional.adjust_hue.html#torchvision.transforms.v2.functional.adjust_hue
+    "torchvision.transforms.v2.functional.adjust_hue")(inpt, hue_factor) | Adjust
+    hue |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.functional.adjust_gamma`](generated/torchvision.transforms.v2.functional.adjust_gamma.html#torchvision.transforms.v2.functional.adjust_gamma
+    "torchvision.transforms.v2.functional.adjust_gamma")(inpt, gamma[, gain]) | Adjust
+    gamma. |'
+  prefs: []
+  type: TYPE_TB
+- en: Composition[¶](#composition "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '| [`v2.Compose`](generated/torchvision.transforms.v2.Compose.html#torchvision.transforms.v2.Compose
+    "torchvision.transforms.v2.Compose")(transforms) | Composes several transforms
+    together. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.RandomApply`](generated/torchvision.transforms.v2.RandomApply.html#torchvision.transforms.v2.RandomApply
+    "torchvision.transforms.v2.RandomApply")(transforms[, p]) | Apply randomly a list
+    of transformations with a given probability. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.RandomChoice`](generated/torchvision.transforms.v2.RandomChoice.html#torchvision.transforms.v2.RandomChoice
+    "torchvision.transforms.v2.RandomChoice")(transforms[, p]) | Apply single transformation
+    randomly picked from a list. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.RandomOrder`](generated/torchvision.transforms.v2.RandomOrder.html#torchvision.transforms.v2.RandomOrder
+    "torchvision.transforms.v2.RandomOrder")(transforms) | Apply a list of transformations
+    in a random order. |'
+  prefs: []
+  type: TYPE_TB
+- en: Miscellaneous[¶](#miscellaneous "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '| [`v2.LinearTransformation`](generated/torchvision.transforms.v2.LinearTransformation.html#torchvision.transforms.v2.LinearTransformation
+    "torchvision.transforms.v2.LinearTransformation")(...) | Transform a tensor image
+    or video with a square transformation matrix and a mean_vector computed offline.
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.Normalize`](generated/torchvision.transforms.v2.Normalize.html#torchvision.transforms.v2.Normalize
+    "torchvision.transforms.v2.Normalize")(mean, std[, inplace]) | Normalize a tensor
+    image or video with mean and standard deviation. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.RandomErasing`](generated/torchvision.transforms.v2.RandomErasing.html#torchvision.transforms.v2.RandomErasing
+    "torchvision.transforms.v2.RandomErasing")([p, scale, ratio, value, ...]) | Randomly
+    select a rectangle region in the input image or video and erase its pixels. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.Lambda`](generated/torchvision.transforms.v2.Lambda.html#torchvision.transforms.v2.Lambda
+    "torchvision.transforms.v2.Lambda")(lambd, *types) | Apply a user-defined function
+    as a transform. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.SanitizeBoundingBoxes`](generated/torchvision.transforms.v2.SanitizeBoundingBoxes.html#torchvision.transforms.v2.SanitizeBoundingBoxes
+    "torchvision.transforms.v2.SanitizeBoundingBoxes")([min_size, ...]) | Remove degenerate/invalid
+    bounding boxes and their corresponding labels and masks. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.ClampBoundingBoxes`](generated/torchvision.transforms.v2.ClampBoundingBoxes.html#torchvision.transforms.v2.ClampBoundingBoxes
+    "torchvision.transforms.v2.ClampBoundingBoxes")() | Clamp bounding boxes to their
+    corresponding image dimensions. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.UniformTemporalSubsample`](generated/torchvision.transforms.v2.UniformTemporalSubsample.html#torchvision.transforms.v2.UniformTemporalSubsample
+    "torchvision.transforms.v2.UniformTemporalSubsample")(num_samples) | Uniformly
+    subsample `num_samples` indices from the temporal dimension of the video. |'
+  prefs: []
+  type: TYPE_TB
+- en: Functionals
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| [`v2.functional.normalize`](generated/torchvision.transforms.v2.functional.normalize.html#torchvision.transforms.v2.functional.normalize
+    "torchvision.transforms.v2.functional.normalize")(inpt, mean, std[, ...]) | See
+    [`Normalize`](generated/torchvision.transforms.v2.Normalize.html#torchvision.transforms.v2.Normalize
+    "torchvision.transforms.v2.Normalize") for details. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.functional.erase`](generated/torchvision.transforms.v2.functional.erase.html#torchvision.transforms.v2.functional.erase
+    "torchvision.transforms.v2.functional.erase")(inpt, i, j, h, w, v[, ...]) | See
+    `RandomErase` for details. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.functional.clamp_bounding_boxes`](generated/torchvision.transforms.v2.functional.clamp_bounding_boxes.html#torchvision.transforms.v2.functional.clamp_bounding_boxes
+    "torchvision.transforms.v2.functional.clamp_bounding_boxes")(inpt[, ...]) | See
+    [`ClampBoundingBoxes()`](generated/torchvision.transforms.v2.ClampBoundingBoxes.html#torchvision.transforms.v2.ClampBoundingBoxes
+    "torchvision.transforms.v2.ClampBoundingBoxes") for details. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.functional.uniform_temporal_subsample`](generated/torchvision.transforms.v2.functional.uniform_temporal_subsample.html#torchvision.transforms.v2.functional.uniform_temporal_subsample
+    "torchvision.transforms.v2.functional.uniform_temporal_subsample")(...) | See
+    [`UniformTemporalSubsample`](generated/torchvision.transforms.v2.UniformTemporalSubsample.html#torchvision.transforms.v2.UniformTemporalSubsample
+    "torchvision.transforms.v2.UniformTemporalSubsample") for details. |'
+  prefs: []
+  type: TYPE_TB
+- en: '### Conversion[¶](#conversion "Permalink to this heading")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Beware, some of these conversion transforms below will scale the values while
+    performing the conversion, while some may not do any scaling. By scaling, we mean
+    e.g. that a `uint8` -> `float32` would map the [0, 255] range into [0, 1] (and
+    vice-versa). See [Dtype and expected value range](#range-and-dtype).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| [`v2.ToImage`](generated/torchvision.transforms.v2.ToImage.html#torchvision.transforms.v2.ToImage
+    "torchvision.transforms.v2.ToImage")() | Convert a tensor, ndarray, or PIL Image
+    to [`Image`](generated/torchvision.tv_tensors.Image.html#torchvision.tv_tensors.Image
+    "torchvision.tv_tensors.Image") ; this does not scale values. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.ToPureTensor`](generated/torchvision.transforms.v2.ToPureTensor.html#torchvision.transforms.v2.ToPureTensor
+    "torchvision.transforms.v2.ToPureTensor")() | Convert all TVTensors to pure tensors,
+    removing associated metadata (if any). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.PILToTensor`](generated/torchvision.transforms.v2.PILToTensor.html#torchvision.transforms.v2.PILToTensor
+    "torchvision.transforms.v2.PILToTensor")() | Convert a PIL Image to a tensor of
+    the same type - this does not scale values. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.ToPILImage`](generated/torchvision.transforms.v2.ToPILImage.html#torchvision.transforms.v2.ToPILImage
+    "torchvision.transforms.v2.ToPILImage")([mode]) | Convert a tensor or an ndarray
+    to PIL Image |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.ToDtype`](generated/torchvision.transforms.v2.ToDtype.html#torchvision.transforms.v2.ToDtype
+    "torchvision.transforms.v2.ToDtype")(dtype[, scale]) | Converts the input to a
+    specific dtype, optionally scaling the values for images or videos. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.ConvertBoundingBoxFormat`](generated/torchvision.transforms.v2.ConvertBoundingBoxFormat.html#torchvision.transforms.v2.ConvertBoundingBoxFormat
+    "torchvision.transforms.v2.ConvertBoundingBoxFormat")(format) | Convert bounding
+    box coordinates to the given `format`, eg from "CXCYWH" to "XYXY". |'
+  prefs: []
+  type: TYPE_TB
+- en: functionals
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| [`v2.functional.to_image`](generated/torchvision.transforms.v2.functional.to_image.html#torchvision.transforms.v2.functional.to_image
+    "torchvision.transforms.v2.functional.to_image")(inpt) | See [`ToImage`](generated/torchvision.transforms.v2.ToImage.html#torchvision.transforms.v2.ToImage
+    "torchvision.transforms.v2.ToImage") for details. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.functional.pil_to_tensor`](generated/torchvision.transforms.v2.functional.pil_to_tensor.html#torchvision.transforms.v2.functional.pil_to_tensor
+    "torchvision.transforms.v2.functional.pil_to_tensor")(pic) | Convert a `PIL Image`
+    to a tensor of the same type. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.functional.to_pil_image`](generated/torchvision.transforms.v2.functional.to_pil_image.html#torchvision.transforms.v2.functional.to_pil_image
+    "torchvision.transforms.v2.functional.to_pil_image")(pic[, mode]) | Convert a
+    tensor or an ndarray to PIL Image. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.functional.to_dtype`](generated/torchvision.transforms.v2.functional.to_dtype.html#torchvision.transforms.v2.functional.to_dtype
+    "torchvision.transforms.v2.functional.to_dtype")(inpt[, dtype, scale]) | See [`ToDtype()`](generated/torchvision.transforms.v2.ToDtype.html#torchvision.transforms.v2.ToDtype
+    "torchvision.transforms.v2.ToDtype") for details. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.functional.convert_bounding_box_format`](generated/torchvision.transforms.v2.functional.convert_bounding_box_format.html#torchvision.transforms.v2.functional.convert_bounding_box_format
+    "torchvision.transforms.v2.functional.convert_bounding_box_format")(inpt) | See
+    [`ConvertBoundingBoxFormat()`](generated/torchvision.transforms.v2.ConvertBoundingBoxFormat.html#torchvision.transforms.v2.ConvertBoundingBoxFormat
+    "torchvision.transforms.v2.ConvertBoundingBoxFormat") for details. |'
+  prefs: []
+  type: TYPE_TB
+- en: Deprecated
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| [`v2.ToTensor`](generated/torchvision.transforms.v2.ToTensor.html#torchvision.transforms.v2.ToTensor
+    "torchvision.transforms.v2.ToTensor")() | [DEPRECATED] Use `v2.Compose([v2.ToImage(),
+    v2.ToDtype(torch.float32, scale=True)])` instead. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.functional.to_tensor`](generated/torchvision.transforms.v2.functional.to_tensor.html#torchvision.transforms.v2.functional.to_tensor
+    "torchvision.transforms.v2.functional.to_tensor")(inpt) | [DEPREACTED] Use to_image()
+    and to_dtype() instead. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.ConvertImageDtype`](generated/torchvision.transforms.v2.ConvertImageDtype.html#torchvision.transforms.v2.ConvertImageDtype
+    "torchvision.transforms.v2.ConvertImageDtype")([dtype]) | [DEPRECATED] Use `v2.ToDtype(dtype,
+    scale=True)` instead. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.functional.convert_image_dtype`](generated/torchvision.transforms.v2.functional.convert_image_dtype.html#torchvision.transforms.v2.functional.convert_image_dtype
+    "torchvision.transforms.v2.functional.convert_image_dtype")(image[, dtype]) |
+    [DEPRECATED] Use to_dtype() instead. |'
+  prefs: []
+  type: TYPE_TB
+- en: Auto-Augmentation[¶](#auto-augmentation "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[AutoAugment](https://arxiv.org/pdf/1805.09501.pdf) is a common Data Augmentation
+    technique that can improve the accuracy of Image Classification models. Though
+    the data augmentation policies are directly linked to their trained dataset, empirical
+    studies show that ImageNet policies provide significant improvements when applied
+    to other datasets. In TorchVision we implemented 3 policies learned on the following
+    datasets: ImageNet, CIFAR10 and SVHN. The new transform can be used standalone
+    or mixed-and-matched with existing transforms:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| [`v2.AutoAugment`](generated/torchvision.transforms.v2.AutoAugment.html#torchvision.transforms.v2.AutoAugment
+    "torchvision.transforms.v2.AutoAugment")([policy, interpolation, fill]) | AutoAugment
+    data augmentation method based on ["AutoAugment: Learning Augmentation Strategies
+    from Data"](https://arxiv.org/pdf/1805.09501.pdf). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.RandAugment`](generated/torchvision.transforms.v2.RandAugment.html#torchvision.transforms.v2.RandAugment
+    "torchvision.transforms.v2.RandAugment")([num_ops, magnitude, ...]) | RandAugment
+    data augmentation method based on ["RandAugment: Practical automated data augmentation
+    with a reduced search space"](https://arxiv.org/abs/1909.13719). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.TrivialAugmentWide`](generated/torchvision.transforms.v2.TrivialAugmentWide.html#torchvision.transforms.v2.TrivialAugmentWide
+    "torchvision.transforms.v2.TrivialAugmentWide")([num_magnitude_bins, ...]) | Dataset-independent
+    data-augmentation with TrivialAugment Wide, as described in ["TrivialAugment:
+    Tuning-free Yet State-of-the-Art Data Augmentation"](https://arxiv.org/abs/2103.10158).
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.AugMix`](generated/torchvision.transforms.v2.AugMix.html#torchvision.transforms.v2.AugMix
+    "torchvision.transforms.v2.AugMix")([severity, mixture_width, ...]) | AugMix data
+    augmentation method based on ["AugMix: A Simple Data Processing Method to Improve
+    Robustness and Uncertainty"](https://arxiv.org/abs/1912.02781). |'
+  prefs: []
+  type: TYPE_TB
+- en: CutMix - MixUp[¶](#cutmix-mixup "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: CutMix and MixUp are special transforms that are meant to be used on batches
+    rather than on individual images, because they are combining pairs of images together.
+    These can be used after the dataloader (once the samples are batched), or part
+    of a collation function. See [How to use CutMix and MixUp](auto_examples/transforms/plot_cutmix_mixup.html#sphx-glr-auto-examples-transforms-plot-cutmix-mixup-py)
+    for detailed usage examples.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| [`v2.CutMix`](generated/torchvision.transforms.v2.CutMix.html#torchvision.transforms.v2.CutMix
+    "torchvision.transforms.v2.CutMix")(*[, alpha, labels_getter]) | Apply CutMix
+    to the provided batch of images and labels. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`v2.MixUp`](generated/torchvision.transforms.v2.MixUp.html#torchvision.transforms.v2.MixUp
+    "torchvision.transforms.v2.MixUp")(*[, alpha, labels_getter]) | Apply MixUp to
+    the provided batch of images and labels. |'
+  prefs: []
+  type: TYPE_TB
+- en: Developer tools[¶](#developer-tools "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '| [`v2.functional.register_kernel`](generated/torchvision.transforms.v2.functional.register_kernel.html#torchvision.transforms.v2.functional.register_kernel
+    "torchvision.transforms.v2.functional.register_kernel")(functional, ...) | Decorate
+    a kernel to register it for a functional and a (custom) tv_tensor type. |'
+  prefs: []
+  type: TYPE_TB
+- en: V1 API Reference[¶](#v1-api-reference "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Geometry[¶](#id3 "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '| [`Resize`](generated/torchvision.transforms.Resize.html#torchvision.transforms.Resize
+    "torchvision.transforms.Resize")(size[, interpolation, max_size, ...]) | Resize
+    the input image to the given size. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`RandomCrop`](generated/torchvision.transforms.RandomCrop.html#torchvision.transforms.RandomCrop
+    "torchvision.transforms.RandomCrop")(size[, padding, pad_if_needed, ...]) | Crop
+    the given image at a random location. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`RandomResizedCrop`](generated/torchvision.transforms.RandomResizedCrop.html#torchvision.transforms.RandomResizedCrop
+    "torchvision.transforms.RandomResizedCrop")(size[, scale, ratio, ...]) | Crop
+    a random portion of image and resize it to a given size. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`CenterCrop`](generated/torchvision.transforms.CenterCrop.html#torchvision.transforms.CenterCrop
+    "torchvision.transforms.CenterCrop")(size) | Crops the given image at the center.
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`FiveCrop`](generated/torchvision.transforms.FiveCrop.html#torchvision.transforms.FiveCrop
+    "torchvision.transforms.FiveCrop")(size) | Crop the given image into four corners
+    and the central crop. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`TenCrop`](generated/torchvision.transforms.TenCrop.html#torchvision.transforms.TenCrop
+    "torchvision.transforms.TenCrop")(size[, vertical_flip]) | Crop the given image
+    into four corners and the central crop plus the flipped version of these (horizontal
+    flipping is used by default). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`Pad`](generated/torchvision.transforms.Pad.html#torchvision.transforms.Pad
+    "torchvision.transforms.Pad")(padding[, fill, padding_mode]) | Pad the given image
+    on all sides with the given "pad" value. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`RandomRotation`](generated/torchvision.transforms.RandomRotation.html#torchvision.transforms.RandomRotation
+    "torchvision.transforms.RandomRotation")(degrees[, interpolation, ...]) | Rotate
+    the image by angle. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`RandomAffine`](generated/torchvision.transforms.RandomAffine.html#torchvision.transforms.RandomAffine
+    "torchvision.transforms.RandomAffine")(degrees[, translate, scale, ...]) | Random
+    affine transformation of the image keeping center invariant. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`RandomPerspective`](generated/torchvision.transforms.RandomPerspective.html#torchvision.transforms.RandomPerspective
+    "torchvision.transforms.RandomPerspective")([distortion_scale, p, ...]) | Performs
+    a random perspective transformation of the given image with a given probability.
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`ElasticTransform`](generated/torchvision.transforms.ElasticTransform.html#torchvision.transforms.ElasticTransform
+    "torchvision.transforms.ElasticTransform")([alpha, sigma, ...]) | Transform a
+    tensor image with elastic transformations. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`RandomHorizontalFlip`](generated/torchvision.transforms.RandomHorizontalFlip.html#torchvision.transforms.RandomHorizontalFlip
+    "torchvision.transforms.RandomHorizontalFlip")([p]) | Horizontally flip the given
+    image randomly with a given probability. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`RandomVerticalFlip`](generated/torchvision.transforms.RandomVerticalFlip.html#torchvision.transforms.RandomVerticalFlip
+    "torchvision.transforms.RandomVerticalFlip")([p]) | Vertically flip the given
+    image randomly with a given probability. |'
+  prefs: []
+  type: TYPE_TB
+- en: Color[¶](#id4 "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '| [`ColorJitter`](generated/torchvision.transforms.ColorJitter.html#torchvision.transforms.ColorJitter
+    "torchvision.transforms.ColorJitter")([brightness, contrast, ...]) | Randomly
+    change the brightness, contrast, saturation and hue of an image. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`Grayscale`](generated/torchvision.transforms.Grayscale.html#torchvision.transforms.Grayscale
+    "torchvision.transforms.Grayscale")([num_output_channels]) | Convert image to
+    grayscale. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`RandomGrayscale`](generated/torchvision.transforms.RandomGrayscale.html#torchvision.transforms.RandomGrayscale
+    "torchvision.transforms.RandomGrayscale")([p]) | Randomly convert image to grayscale
+    with a probability of p (default 0.1). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`GaussianBlur`](generated/torchvision.transforms.GaussianBlur.html#torchvision.transforms.GaussianBlur
+    "torchvision.transforms.GaussianBlur")(kernel_size[, sigma]) | Blurs image with
+    randomly chosen Gaussian blur. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`RandomInvert`](generated/torchvision.transforms.RandomInvert.html#torchvision.transforms.RandomInvert
+    "torchvision.transforms.RandomInvert")([p]) | Inverts the colors of the given
+    image randomly with a given probability. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`RandomPosterize`](generated/torchvision.transforms.RandomPosterize.html#torchvision.transforms.RandomPosterize
+    "torchvision.transforms.RandomPosterize")(bits[, p]) | Posterize the image randomly
+    with a given probability by reducing the number of bits for each color channel.
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`RandomSolarize`](generated/torchvision.transforms.RandomSolarize.html#torchvision.transforms.RandomSolarize
+    "torchvision.transforms.RandomSolarize")(threshold[, p]) | Solarize the image
+    randomly with a given probability by inverting all pixel values above a threshold.
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`RandomAdjustSharpness`](generated/torchvision.transforms.RandomAdjustSharpness.html#torchvision.transforms.RandomAdjustSharpness
+    "torchvision.transforms.RandomAdjustSharpness")(sharpness_factor[, p]) | Adjust
+    the sharpness of the image randomly with a given probability. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`RandomAutocontrast`](generated/torchvision.transforms.RandomAutocontrast.html#torchvision.transforms.RandomAutocontrast
+    "torchvision.transforms.RandomAutocontrast")([p]) | Autocontrast the pixels of
+    the given image randomly with a given probability. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`RandomEqualize`](generated/torchvision.transforms.RandomEqualize.html#torchvision.transforms.RandomEqualize
+    "torchvision.transforms.RandomEqualize")([p]) | Equalize the histogram of the
+    given image randomly with a given probability. |'
+  prefs: []
+  type: TYPE_TB
+- en: Composition[¶](#id5 "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '| [`Compose`](generated/torchvision.transforms.Compose.html#torchvision.transforms.Compose
+    "torchvision.transforms.Compose")(transforms) | Composes several transforms together.
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`RandomApply`](generated/torchvision.transforms.RandomApply.html#torchvision.transforms.RandomApply
+    "torchvision.transforms.RandomApply")(transforms[, p]) | Apply randomly a list
+    of transformations with a given probability. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`RandomChoice`](generated/torchvision.transforms.RandomChoice.html#torchvision.transforms.RandomChoice
+    "torchvision.transforms.RandomChoice")(transforms[, p]) | Apply single transformation
+    randomly picked from a list. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`RandomOrder`](generated/torchvision.transforms.RandomOrder.html#torchvision.transforms.RandomOrder
+    "torchvision.transforms.RandomOrder")(transforms) | Apply a list of transformations
+    in a random order. |'
+  prefs: []
+  type: TYPE_TB
+- en: Miscellaneous[¶](#id6 "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '| [`LinearTransformation`](generated/torchvision.transforms.LinearTransformation.html#torchvision.transforms.LinearTransformation
+    "torchvision.transforms.LinearTransformation")(transformation_matrix, ...) | Transform
+    a tensor image with a square transformation matrix and a mean_vector computed
+    offline. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`Normalize`](generated/torchvision.transforms.Normalize.html#torchvision.transforms.Normalize
+    "torchvision.transforms.Normalize")(mean, std[, inplace]) | Normalize a tensor
+    image with mean and standard deviation. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`RandomErasing`](generated/torchvision.transforms.RandomErasing.html#torchvision.transforms.RandomErasing
+    "torchvision.transforms.RandomErasing")([p, scale, ratio, value, inplace]) | Randomly
+    selects a rectangle region in a torch.Tensor image and erases its pixels. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`Lambda`](generated/torchvision.transforms.Lambda.html#torchvision.transforms.Lambda
+    "torchvision.transforms.Lambda")(lambd) | Apply a user-defined lambda as a transform.
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: Conversion[¶](#id7 "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Beware, some of these conversion transforms below will scale the values while
+    performing the conversion, while some may not do any scaling. By scaling, we mean
+    e.g. that a `uint8` -> `float32` would map the [0, 255] range into [0, 1] (and
+    vice-versa). See [Dtype and expected value range](#range-and-dtype).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| [`ToPILImage`](generated/torchvision.transforms.ToPILImage.html#torchvision.transforms.ToPILImage
+    "torchvision.transforms.ToPILImage")([mode]) | Convert a tensor or an ndarray
+    to PIL Image |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`ToTensor`](generated/torchvision.transforms.ToTensor.html#torchvision.transforms.ToTensor
+    "torchvision.transforms.ToTensor")() | Convert a PIL Image or ndarray to tensor
+    and scale the values accordingly. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`PILToTensor`](generated/torchvision.transforms.PILToTensor.html#torchvision.transforms.PILToTensor
+    "torchvision.transforms.PILToTensor")() | Convert a PIL Image to a tensor of the
+    same type - this does not scale values. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`ConvertImageDtype`](generated/torchvision.transforms.ConvertImageDtype.html#torchvision.transforms.ConvertImageDtype
+    "torchvision.transforms.ConvertImageDtype")(dtype) | Convert a tensor image to
+    the given `dtype` and scale the values accordingly. |'
+  prefs: []
+  type: TYPE_TB
+- en: Auto-Augmentation[¶](#id8 "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[AutoAugment](https://arxiv.org/pdf/1805.09501.pdf) is a common Data Augmentation
+    technique that can improve the accuracy of Image Classification models. Though
+    the data augmentation policies are directly linked to their trained dataset, empirical
+    studies show that ImageNet policies provide significant improvements when applied
+    to other datasets. In TorchVision we implemented 3 policies learned on the following
+    datasets: ImageNet, CIFAR10 and SVHN. The new transform can be used standalone
+    or mixed-and-matched with existing transforms:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| [`AutoAugmentPolicy`](generated/torchvision.transforms.AutoAugmentPolicy.html#torchvision.transforms.AutoAugmentPolicy
+    "torchvision.transforms.AutoAugmentPolicy")(value) | AutoAugment policies learned
+    on different datasets. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`AutoAugment`](generated/torchvision.transforms.AutoAugment.html#torchvision.transforms.AutoAugment
+    "torchvision.transforms.AutoAugment")([policy, interpolation, fill]) | AutoAugment
+    data augmentation method based on ["AutoAugment: Learning Augmentation Strategies
+    from Data"](https://arxiv.org/pdf/1805.09501.pdf). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`RandAugment`](generated/torchvision.transforms.RandAugment.html#torchvision.transforms.RandAugment
+    "torchvision.transforms.RandAugment")([num_ops, magnitude, ...]) | RandAugment
+    data augmentation method based on ["RandAugment: Practical automated data augmentation
+    with a reduced search space"](https://arxiv.org/abs/1909.13719). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`TrivialAugmentWide`](generated/torchvision.transforms.TrivialAugmentWide.html#torchvision.transforms.TrivialAugmentWide
+    "torchvision.transforms.TrivialAugmentWide")([num_magnitude_bins, ...]) | Dataset-independent
+    data-augmentation with TrivialAugment Wide, as described in ["TrivialAugment:
+    Tuning-free Yet State-of-the-Art Data Augmentation"](https://arxiv.org/abs/2103.10158).
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`AugMix`](generated/torchvision.transforms.AugMix.html#torchvision.transforms.AugMix
+    "torchvision.transforms.AugMix")([severity, mixture_width, ...]) | AugMix data
+    augmentation method based on ["AugMix: A Simple Data Processing Method to Improve
+    Robustness and Uncertainty"](https://arxiv.org/abs/1912.02781). |'
+  prefs: []
+  type: TYPE_TB
+- en: Functional Transforms[¶](#id14 "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '| [`adjust_brightness`](generated/torchvision.transforms.functional.adjust_brightness.html#torchvision.transforms.functional.adjust_brightness
+    "torchvision.transforms.functional.adjust_brightness")(img, brightness_factor)
+    | Adjust brightness of an image. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`adjust_contrast`](generated/torchvision.transforms.functional.adjust_contrast.html#torchvision.transforms.functional.adjust_contrast
+    "torchvision.transforms.functional.adjust_contrast")(img, contrast_factor) | Adjust
+    contrast of an image. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`adjust_gamma`](generated/torchvision.transforms.functional.adjust_gamma.html#torchvision.transforms.functional.adjust_gamma
+    "torchvision.transforms.functional.adjust_gamma")(img, gamma[, gain]) | Perform
+    gamma correction on an image. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`adjust_hue`](generated/torchvision.transforms.functional.adjust_hue.html#torchvision.transforms.functional.adjust_hue
+    "torchvision.transforms.functional.adjust_hue")(img, hue_factor) | Adjust hue
+    of an image. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`adjust_saturation`](generated/torchvision.transforms.functional.adjust_saturation.html#torchvision.transforms.functional.adjust_saturation
+    "torchvision.transforms.functional.adjust_saturation")(img, saturation_factor)
+    | Adjust color saturation of an image. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`adjust_sharpness`](generated/torchvision.transforms.functional.adjust_sharpness.html#torchvision.transforms.functional.adjust_sharpness
+    "torchvision.transforms.functional.adjust_sharpness")(img, sharpness_factor) |
+    Adjust the sharpness of an image. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`affine`](generated/torchvision.transforms.functional.affine.html#torchvision.transforms.functional.affine
+    "torchvision.transforms.functional.affine")(img, angle, translate, scale, shear)
+    | Apply affine transformation on the image keeping image center invariant. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`autocontrast`](generated/torchvision.transforms.functional.autocontrast.html#torchvision.transforms.functional.autocontrast
+    "torchvision.transforms.functional.autocontrast")(img) | Maximize contrast of
+    an image by remapping its pixels per channel so that the lowest becomes black
+    and the lightest becomes white. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`center_crop`](generated/torchvision.transforms.functional.center_crop.html#torchvision.transforms.functional.center_crop
+    "torchvision.transforms.functional.center_crop")(img, output_size) | Crops the
+    given image at the center. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`convert_image_dtype`](generated/torchvision.transforms.functional.convert_image_dtype.html#torchvision.transforms.functional.convert_image_dtype
+    "torchvision.transforms.functional.convert_image_dtype")(image[, dtype]) | Convert
+    a tensor image to the given `dtype` and scale the values accordingly This function
+    does not support PIL Image. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`crop`](generated/torchvision.transforms.functional.crop.html#torchvision.transforms.functional.crop
+    "torchvision.transforms.functional.crop")(img, top, left, height, width) | Crop
+    the given image at specified location and output size. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`equalize`](generated/torchvision.transforms.functional.equalize.html#torchvision.transforms.functional.equalize
+    "torchvision.transforms.functional.equalize")(img) | Equalize the histogram of
+    an image by applying a non-linear mapping to the input in order to create a uniform
+    distribution of grayscale values in the output. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`erase`](generated/torchvision.transforms.functional.erase.html#torchvision.transforms.functional.erase
+    "torchvision.transforms.functional.erase")(img, i, j, h, w, v[, inplace]) | Erase
+    the input Tensor Image with given value. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`five_crop`](generated/torchvision.transforms.functional.five_crop.html#torchvision.transforms.functional.five_crop
+    "torchvision.transforms.functional.five_crop")(img, size) | Crop the given image
+    into four corners and the central crop. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`gaussian_blur`](generated/torchvision.transforms.functional.gaussian_blur.html#torchvision.transforms.functional.gaussian_blur
+    "torchvision.transforms.functional.gaussian_blur")(img, kernel_size[, sigma])
+    | Performs Gaussian blurring on the image by given kernel. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`get_dimensions`](generated/torchvision.transforms.functional.get_dimensions.html#torchvision.transforms.functional.get_dimensions
+    "torchvision.transforms.functional.get_dimensions")(img) | Returns the dimensions
+    of an image as [channels, height, width]. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`get_image_num_channels`](generated/torchvision.transforms.functional.get_image_num_channels.html#torchvision.transforms.functional.get_image_num_channels
+    "torchvision.transforms.functional.get_image_num_channels")(img) | Returns the
+    number of channels of an image. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`get_image_size`](generated/torchvision.transforms.functional.get_image_size.html#torchvision.transforms.functional.get_image_size
+    "torchvision.transforms.functional.get_image_size")(img) | Returns the size of
+    an image as [width, height]. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`hflip`](generated/torchvision.transforms.functional.hflip.html#torchvision.transforms.functional.hflip
+    "torchvision.transforms.functional.hflip")(img) | Horizontally flip the given
+    image. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`invert`](generated/torchvision.transforms.functional.invert.html#torchvision.transforms.functional.invert
+    "torchvision.transforms.functional.invert")(img) | Invert the colors of an RGB/grayscale
+    image. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`normalize`](generated/torchvision.transforms.functional.normalize.html#torchvision.transforms.functional.normalize
+    "torchvision.transforms.functional.normalize")(tensor, mean, std[, inplace]) |
+    Normalize a float tensor image with mean and standard deviation. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`pad`](generated/torchvision.transforms.functional.pad.html#torchvision.transforms.functional.pad
+    "torchvision.transforms.functional.pad")(img, padding[, fill, padding_mode]) |
+    Pad the given image on all sides with the given "pad" value. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`perspective`](generated/torchvision.transforms.functional.perspective.html#torchvision.transforms.functional.perspective
+    "torchvision.transforms.functional.perspective")(img, startpoints, endpoints[, ...])
+    | Perform perspective transform of the given image. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`pil_to_tensor`](generated/torchvision.transforms.functional.pil_to_tensor.html#torchvision.transforms.functional.pil_to_tensor
+    "torchvision.transforms.functional.pil_to_tensor")(pic) | Convert a `PIL Image`
+    to a tensor of the same type. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`posterize`](generated/torchvision.transforms.functional.posterize.html#torchvision.transforms.functional.posterize
+    "torchvision.transforms.functional.posterize")(img, bits) | Posterize an image
+    by reducing the number of bits for each color channel. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`resize`](generated/torchvision.transforms.functional.resize.html#torchvision.transforms.functional.resize
+    "torchvision.transforms.functional.resize")(img, size[, interpolation, max_size, ...])
+    | Resize the input image to the given size. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`resized_crop`](generated/torchvision.transforms.functional.resized_crop.html#torchvision.transforms.functional.resized_crop
+    "torchvision.transforms.functional.resized_crop")(img, top, left, height, width, size)
+    | Crop the given image and resize it to desired size. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`rgb_to_grayscale`](generated/torchvision.transforms.functional.rgb_to_grayscale.html#torchvision.transforms.functional.rgb_to_grayscale
+    "torchvision.transforms.functional.rgb_to_grayscale")(img[, num_output_channels])
+    | Convert RGB image to grayscale version of image. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`rotate`](generated/torchvision.transforms.functional.rotate.html#torchvision.transforms.functional.rotate
+    "torchvision.transforms.functional.rotate")(img, angle[, interpolation, expand, ...])
+    | Rotate the image by angle. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`solarize`](generated/torchvision.transforms.functional.solarize.html#torchvision.transforms.functional.solarize
+    "torchvision.transforms.functional.solarize")(img, threshold) | Solarize an RGB/grayscale
+    image by inverting all pixel values above a threshold. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`ten_crop`](generated/torchvision.transforms.functional.ten_crop.html#torchvision.transforms.functional.ten_crop
+    "torchvision.transforms.functional.ten_crop")(img, size[, vertical_flip]) | Generate
+    ten cropped images from the given image. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`to_grayscale`](generated/torchvision.transforms.functional.to_grayscale.html#torchvision.transforms.functional.to_grayscale
+    "torchvision.transforms.functional.to_grayscale")(img[, num_output_channels])
+    | Convert PIL image of any mode (RGB, HSV, LAB, etc) to grayscale version of image.
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`to_pil_image`](generated/torchvision.transforms.functional.to_pil_image.html#torchvision.transforms.functional.to_pil_image
+    "torchvision.transforms.functional.to_pil_image")(pic[, mode]) | Convert a tensor
+    or an ndarray to PIL Image. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`to_tensor`](generated/torchvision.transforms.functional.to_tensor.html#torchvision.transforms.functional.to_tensor
+    "torchvision.transforms.functional.to_tensor")(pic) | Convert a `PIL Image` or
+    `numpy.ndarray` to tensor. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`vflip`](generated/torchvision.transforms.functional.vflip.html#torchvision.transforms.functional.vflip
+    "torchvision.transforms.functional.vflip")(img) | Vertically flip the given image.
+    |'
+  prefs: []
+  type: TYPE_TB

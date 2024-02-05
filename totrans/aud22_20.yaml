@@ -1,0 +1,571 @@
+- en: Accelerated video decoding with NVDEC¶
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/audio/stable/tutorials/nvdec_tutorial.html](https://pytorch.org/audio/stable/tutorials/nvdec_tutorial.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Click [here](#sphx-glr-download-tutorials-nvdec-tutorial-py) to download the
+    full example code
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Author**: [Moto Hira](mailto:moto%40meta.com)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: This tutorial shows how to use NVIDIA’s hardware video decoder (NVDEC) with
+    TorchAudio, and how it improves the performance of video decoding.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: This tutorial requires FFmpeg libraries compiled with HW acceleration enabled.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Please refer to [Enabling GPU video decoder/encoder](../build.ffmpeg.html#enabling-hw-decoder)
+    for how to build FFmpeg with HW acceleration.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Check the prerequisites[¶](#check-the-prerequisites "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: First, we check that TorchAudio correctly detects FFmpeg libraries that support
+    HW decoder/encoder.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: We will use the following video which has the following properties;
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Codec: H.264'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Resolution: 960x540'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'FPS: 29.97'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Pixel format: YUV420P'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: <https://download.pytorch.org/torchaudio/tutorial-assets/stream-api/NASAs_Most_Scientifically_Complex_Space_Observatory_Requires_Precision-MP4_small.mp4>
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: Decoding videos with NVDEC[¶](#decoding-videos-with-nvdec "Permalink to this
+    heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: To use HW video decoder, you need to specify the HW decoder when defining the
+    output video stream by passing `decoder` option to `add_video_stream()` method.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: The video frames are decoded and returned as tensor of NCHW format.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: By default, the decoded frames are sent back to CPU memory, and CPU tensors
+    are created.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: By specifying `hw_accel` option, you can convert the decoded frames to CUDA
+    tensor. `hw_accel` option takes string values and pass it to [`torch.device`](https://pytorch.org/docs/stable/tensor_attributes.html#torch.device
+    "(in PyTorch v2.1)").
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Currently, `hw_accel` option and `add_basic_video_stream()` are not compatible.
+    `add_basic_video_stream` adds post-decoding process, which is designed for frames
+    in CPU memory. Please use `add_video_stream()`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: When there are multiple of GPUs available, `StreamReader` by default uses the
+    first GPU. You can change this by providing `"gpu"` option.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`"gpu"` option and `hw_accel` option can be specified independently. If they
+    do not match, decoded frames are transfered to the device specified by `hw_accell`
+    automatically.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: Visualization[¶](#visualization "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Let’s look at the frames decoded by HW decoder and compare them against equivalent
+    results from software decoders.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The following function seeks into the given timestamp and decode one frame with
+    the specificed decoder.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Currently, HW decoder does not support colorspace conversion. Decoded frames
+    are YUV format. The following function performs YUV to RGB covnersion (and axis
+    shuffling for plotting).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now we visualize the resutls.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: '![Software decoder, HW decoder](../Images/d4497ba54b0fd1a995bc0fbc8df5e736.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: They are indistinguishable to the eyes of the author. Feel free to let us know
+    if you spot something. :)
+  prefs: []
+  type: TYPE_NORMAL
+- en: HW resizing and cropping[¶](#hw-resizing-and-cropping "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: You can use `decoder_option` argument to provide decoder-specific options.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The following options are often relevant in preprocessing.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`resize`: Resize the frame into `(width)x(height)`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`crop`: Crop the frame `(top)x(bottom)x(left)x(right)`. Note that the specified
+    values are the amount of rows/columns removed. The final image size is `(width
+    - left - right)x(height - top -bottom)`. If `crop` and `resize` options are used
+    together, `crop` is performed first.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: For other available options, please run `ffmpeg -h decoder=h264_cuvid`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE26]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE27]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE28]'
+  prefs: []
+  type: TYPE_PRE
+- en: '![Original, Resized, Cropped, Cropped and resized](../Images/6284bf3cc57087b145e22cb725ef3aad.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '[PRE29]'
+  prefs: []
+  type: TYPE_PRE
+- en: Comparing resizing methods[¶](#comparing-resizing-methods "Permalink to this
+    heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Unlike software scaling, NVDEC does not provide an option to choose the scaling
+    algorithm. In ML applicatoins, it is often necessary to construct a preprocessing
+    pipeline with a similar numerical property. So here we compare the result of hardware
+    resizing with software resizing of different algorithms.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We will use the following video, which contains the test pattern generated using
+    the following command.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE30]'
+  prefs: []
+  type: TYPE_PRE
+- en: <https://download.pytorch.org/torchaudio/tutorial-assets/mptestsrc.mp4>
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE31]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE32]'
+  prefs: []
+  type: TYPE_PRE
+- en: The following function decodes video and apply the specified scaling algorithm.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE33]'
+  prefs: []
+  type: TYPE_PRE
+- en: The following function uses HW decoder to decode video and resize.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE34]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now we execute them and visualize the resulting frames.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE35]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE36]'
+  prefs: []
+  type: TYPE_PRE
+- en: '![Original, nearest neighbor, bilinear, bicubic, NVDEC, spline, lanczos(1),
+    lanczos(3), lanczos(5)](../Images/a6d0810accb1b2526f8e2b161b00ff0d.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: None of them is exactly the same. To the eyes of authors, lanczos(1) appears
+    to be most similar to NVDEC. The bicubic looks close as well.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Benchmark NVDEC with StreamReader[¶](#benchmark-nvdec-with-streamreader "Permalink
+    to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: In this section, we compare the performace of software video decoding and HW
+    video decoding.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Decode as CUDA frames[¶](#decode-as-cuda-frames "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: First, we compare the time it takes for software decoder and hardware encoder
+    to decode the same video. To make the result comparable, when using software decoder,
+    we move the resulting tensor to CUDA.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The procedures to test look like the following
+  prefs: []
+  type: TYPE_NORMAL
+- en: Use hardware decoder and place data on CUDA directly
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Use software decoder, generate CPU Tensors and move them to CUDA.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The following function implements the hardware decoder test case.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE37]'
+  prefs: []
+  type: TYPE_PRE
+- en: The following function implements the software decoder test case.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE38]'
+  prefs: []
+  type: TYPE_PRE
+- en: For each resolution of video, we run multiple software decoder test cases with
+    different number of threads.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE39]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now we run the tests with videos of different resolutions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: QVGA[¶](#qvga "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE40]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE41]'
+  prefs: []
+  type: TYPE_PRE
+- en: VGA[¶](#vga "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE42]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE43]'
+  prefs: []
+  type: TYPE_PRE
+- en: XGA[¶](#xga "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE44]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE45]'
+  prefs: []
+  type: TYPE_PRE
+- en: Result[¶](#result "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Now we plot the result.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE46]'
+  prefs: []
+  type: TYPE_PRE
+- en: '![Speed of processing video frames](../Images/46099bf459f9ae731c516d04c0f9ae02.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: We observe couple of things
+  prefs: []
+  type: TYPE_NORMAL
+- en: Increasing the number of threads in software decoding makes the pipeline faster,
+    but the performance saturates around 8 threads.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The performance gain from using hardware decoder depends on the resolution of
+    video.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: At lower resolutions like QVGA, hardware decoding is slower than software decoding
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: At higher resolutions like XGA, hardware decoding is faster than software decoding.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: It is worth noting that the performance gain also depends on the type of GPU.
+    We observed that when decoding VGA videos using V100 or A100 GPUs, hardware decoders
+    are slower than software decoders. But using A10 GPU hardware deocder is faster
+    than software decodr.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Decode and resize[¶](#decode-and-resize "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Next, we add resize operation to the pipeline. We will compare the following
+    pipelines.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Decode video using software decoder and read the frames as PyTorch Tensor. Resize
+    the tensor using [`torch.nn.functional.interpolate()`](https://pytorch.org/docs/stable/generated/torch.nn.functional.interpolate.html#torch.nn.functional.interpolate
+    "(in PyTorch v2.1)"), then send the resulting tensor to CUDA device.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Decode video using software decoder, resize the frame with FFmpeg’s filter graph,
+    read the resized frames as PyTorch tensor, then send it to CUDA device.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Decode and resize video simulaneously with HW decoder, read the resulting frames
+    as CUDA tensor.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: The pipeline 1 represents common video loading implementations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The pipeline 2 uses FFmpeg’s filter graph, which allows to manipulate raw frames
+    before converting them to Tensors.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The pipeline 3 has the minimum amount of data transfer from CPU to CUDA, which
+    significantly contribute to performant data loading.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The following function implements the pipeline 1\. It uses PyTorch’s [`torch.nn.functional.interpolate()`](https://pytorch.org/docs/stable/generated/torch.nn.functional.interpolate.html#torch.nn.functional.interpolate
+    "(in PyTorch v2.1)"). We use `bincubic` mode, as we saw that the resulting frames
+    are closest to NVDEC resizing.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE47]'
+  prefs: []
+  type: TYPE_PRE
+- en: The following function implements the pipeline 2\. Frames are resized as part
+    of decoding process, then sent to CUDA device.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We use `bincubic` mode, to make the result comparable with PyTorch-based implementation
+    above.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE48]'
+  prefs: []
+  type: TYPE_PRE
+- en: The following function implements the pipeline 3\. Resizing is performed by
+    NVDEC and the resulting tensor is placed on CUDA memory.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE49]'
+  prefs: []
+  type: TYPE_PRE
+- en: The following function run the benchmark functions on given sources.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE50]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now we run the tests.
+  prefs: []
+  type: TYPE_NORMAL
+- en: QVGA[¶](#id1 "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE51]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE52]'
+  prefs: []
+  type: TYPE_PRE
+- en: VGA[¶](#id2 "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE53]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE54]'
+  prefs: []
+  type: TYPE_PRE
+- en: XGA[¶](#id3 "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE55]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE56]'
+  prefs: []
+  type: TYPE_PRE
+- en: Result[¶](#id4 "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Now we plot the result.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE57]'
+  prefs: []
+  type: TYPE_PRE
+- en: '![Speed of processing video frames](../Images/3cb5a15ee9fb4f589232f2fb59786df4.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Hardware deocder shows a similar trend as previous experiment. In fact, the
+    performance is almost the same. Hardware resizing has almost zero overhead for
+    scaling down the frames.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Software decoding also shows a similar trend. Performing resizing as part of
+    decoding is faster. One possible explanation is that, video frames are internally
+    stored as YUV420P, which has half the number of pixels compared to RGB24, or YUV444P.
+    This means that if resizing before copying frame data to PyTorch tensor, the number
+    of pixels manipulated and copied are smaller than the case where applying resizing
+    after frames are converted to Tensor.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Tag: [`torchaudio.io`](../io.html#module-torchaudio.io "torchaudio.io")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Total running time of the script:** ( 0 minutes 31.285 seconds)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Python source code: nvdec_tutorial.py`](../_downloads/2c0cb1d7d79d5a5622253c098a75dbf0/nvdec_tutorial.py)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Jupyter notebook: nvdec_tutorial.ipynb`](../_downloads/5e0b0b0d95c7f3b1cf924ca3dad58679/nvdec_tutorial.ipynb)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  prefs: []
+  type: TYPE_NORMAL

@@ -1,0 +1,306 @@
+- en: Filter design tutorial¶
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/audio/stable/tutorials/filter_design_tutorial.html](https://pytorch.org/audio/stable/tutorials/filter_design_tutorial.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Click [here](#sphx-glr-download-tutorials-filter-design-tutorial-py) to download
+    the full example code
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Author**: [Moto Hira](mailto:moto%40meta.com)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: This tutorial shows how to create basic digital filters (impulse responses)
+    and their properties.
+  prefs: []
+  type: TYPE_NORMAL
+- en: We look into low-pass, high-pass and band-pass filters based on windowed-sinc
+    kernels, and frequency sampling method.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: This tutorial requires prototype DSP features, which are available in nightly
+    builds.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Please refer to [https://pytorch.org/get-started/locally](https://pytorch.org/get-started/locally)
+    for instructions for installing a nightly build.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Windowed-Sinc Filter[¶](#windowed-sinc-filter "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[Sinc filter](https://en.wikipedia.org/wiki/Sinc_filter) is an idealized filter
+    which removes frequencies above the cutoff frequency without affecting the lower
+    frequencies.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Sinc filter has infinite filter width in analytical solution. In numerical computation,
+    sinc filter cannot be expressed exactly, so an approximation is required.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Windowed-sinc finite impulse response is an approximation of sinc filter. It
+    is obtained by first evaluating sinc function for given cutoff frequencies, then
+    truncating the filter skirt, and applying a window, such as Hamming window, to
+    reduce the artifacts introduced from the truncation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`sinc_impulse_response()`](../generated/torchaudio.prototype.functional.sinc_impulse_response.html#torchaudio.prototype.functional.sinc_impulse_response
+    "torchaudio.prototype.functional.sinc_impulse_response") generates windowed-sinc
+    impulse response for given cutoff frequencies.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Low-pass filter[¶](#low-pass-filter "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Impulse Response[¶](#impulse-response "Permalink to this heading")
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Creating sinc IR is as easy as passing cutoff frequency values to [`sinc_impulse_response()`](../generated/torchaudio.prototype.functional.sinc_impulse_response.html#torchaudio.prototype.functional.sinc_impulse_response
+    "torchaudio.prototype.functional.sinc_impulse_response").
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Let’s visualize the resulting impulse responses.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: '![Impulse response of sinc low-pass filter for different cut-off frequencies
+    (Frequencies are relative to Nyquist frequency)](../Images/028f20c05a4c635e9b4dc624deff86d9.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Frequency Response[¶](#frequency-response "Permalink to this heading")
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: Next, let’s look at the frequency responses. Simpy applying Fourier transform
+    to the impulse responses will give the frequency responses.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Let’s visualize the resulting frequency responses.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: '![Frequency response of sinc low-pass filter for different cut-off frequencies
+    (Frequencies are relative to Nyquist frequency)](../Images/2140b91b338acf8e081880a8fc4c7276.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: High-pass filter[¶](#high-pass-filter "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: High-pass filter can be obtained by subtracting low-pass impulse response from
+    the Dirac delta function.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Passing `high_pass=True` to [`sinc_impulse_response()`](../generated/torchaudio.prototype.functional.sinc_impulse_response.html#torchaudio.prototype.functional.sinc_impulse_response
+    "torchaudio.prototype.functional.sinc_impulse_response") will change the returned
+    filter kernel to high pass filter.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: Impulse Response[¶](#id1 "Permalink to this heading")
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: '![Impulse response of sinc low-pass filter for different cut-off frequencies
+    (Frequencies are relative to Nyquist frequency)](../Images/65616de3b8352de641f53a45c76f2b1a.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Frequency Response[¶](#id2 "Permalink to this heading")
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: '![Frequency response of sinc low-pass filter for different cut-off frequencies
+    (Frequencies are relative to Nyquist frequency)](../Images/d1dc9cc6065f29c5cad97da638fd2b56.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Band-pass filter[¶](#band-pass-filter "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Band-pass filter can be obtained by subtracting low-pass filter for upper band
+    from that of lower band.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: Impulse Response[¶](#id3 "Permalink to this heading")
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: '![Impulse response of sinc low-pass filter for different cut-off frequencies
+    (Frequencies are relative to Nyquist frequency)](../Images/1ab5671deb5c7117986c9ce609285f6d.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Frequency Response[¶](#id4 "Permalink to this heading")
+  prefs:
+  - PREF_H4
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: '![Frequency response of sinc low-pass filter for different cut-off frequencies
+    (Frequencies are relative to Nyquist frequency)](../Images/82ae1c6a4120b6674596748c5b854b7d.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Frequency Sampling[¶](#frequency-sampling "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The next method we look into starts from a desired frequency response and obtain
+    impulse response by applying inverse Fourier transform.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`frequency_impulse_response()`](../generated/torchaudio.prototype.functional.frequency_impulse_response.html#torchaudio.prototype.functional.frequency_impulse_response
+    "torchaudio.prototype.functional.frequency_impulse_response") takes (unnormalized)
+    magnitude distribution of frequencies and construct impulse response from it.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note however that the resulting impulse response does not produce the desired
+    frequency response.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the following, we create multiple filters and compare the input frequency
+    response and the actual frequency response.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Brick-wall filter[¶](#brick-wall-filter "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Let’s start from brick-wall filter
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: '![Impulse Response, Frequency Response, Frequency Response (log-scale)](../Images/9a28d6032c0d7c50bc347da6d6276d76.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Notice that there are artifacts around the transition band. This is more noticeable
+    when the window size is small.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: '![Impulse Response, Frequency Response, Frequency Response (log-scale)](../Images/cef2de44fa405d105abb8da640338eed.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: Arbitrary shapes[¶](#arbitrary-shapes "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: '![Impulse Response, Frequency Response, Frequency Response (log-scale)](../Images/a414b1b7403f4540005410fb0869d23f.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: '![Impulse Response, Frequency Response, Frequency Response (log-scale)](../Images/e4e2ca2af91e790e0296859449d7e9ed.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: References[¶](#references "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[https://en.wikipedia.org/wiki/Sinc_filter](https://en.wikipedia.org/wiki/Sinc_filter)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[https://www.analog.com/media/en/technical-documentation/dsp-book/dsp_book_Ch16.pdf](https://www.analog.com/media/en/technical-documentation/dsp-book/dsp_book_Ch16.pdf)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[https://courses.engr.illinois.edu/ece401/fa2020/slides/lec10.pdf](https://courses.engr.illinois.edu/ece401/fa2020/slides/lec10.pdf)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[https://ccrma.stanford.edu/~jos/sasp/Windowing_Desired_Impulse_Response.html](https://ccrma.stanford.edu/~jos/sasp/Windowing_Desired_Impulse_Response.html)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**Total running time of the script:** ( 0 minutes 5.087 seconds)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Python source code: filter_design_tutorial.py`](../_downloads/5ff2f7762ef4d114b8d7b7a77e9e6967/filter_design_tutorial.py)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Jupyter notebook: filter_design_tutorial.ipynb`](../_downloads/842a84f824a58d554488a544749d2a2d/filter_design_tutorial.ipynb)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  prefs: []
+  type: TYPE_NORMAL

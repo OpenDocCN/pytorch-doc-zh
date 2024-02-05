@@ -1,0 +1,487 @@
+- en: torio::io::StreamingMediaEncoder¶
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/audio/stable/libtorio.stream_writer.html](https://pytorch.org/audio/stable/libtorio.stream_writer.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: TorchAudio’s C++ API is prototype feature. API/ABI backward compatibility is
+    not guaranteed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: The top-level namespace has been changed from `torchaudio` to `torio`. `StreamWriter`
+    has been renamed to `StreamingMediaEncoder`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`StreamingMediaEncoder` is the implementation used by Python equivalent and
+    provides similar interface. When working with custom I/O, such as in-memory data,
+    `StreamingMediaEncoderCustomIO` class can be used.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Both classes have the same methods defined, so their usages are the same.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Constructors[¶](#constructors "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: StreamingMediaEncoder[¶](#streamingmediaencoder "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: class  StreamingMediaEncoder[¶](#_CPPv4N5torio2io21StreamingMediaEncoderE "Permalink
+    to this definition")
+  prefs: []
+  type: TYPE_NORMAL
+- en: Encode and write audio/video streams chunk by chunk
+  prefs: []
+  type: TYPE_NORMAL
+- en: Subclassed by [torio::io::StreamingMediaEncoderCustomIO](#classtorio_1_1io_1_1StreamingMediaEncoderCustomIO)
+  prefs: []
+  type: TYPE_NORMAL
+- en: explicit  torio::io::[StreamingMediaEncoder](#_CPPv4N5torio2io21StreamingMediaEncoderE
+    "torio::io::StreamingMediaEncoder")::StreamingMediaEncoder(const  std::string  &dst,
+    const  c10::optional<std::string>  &format  =  c10::nullopt)[¶](#_CPPv4N5torio2io21StreamingMediaEncoder21StreamingMediaEncoderERKNSt6stringERKN3c108optionalINSt6stringEEE
+    "Permalink to this definition")
+  prefs: []
+  type: TYPE_NORMAL
+- en: Construct [StreamingMediaEncoder](#classtorio_1_1io_1_1StreamingMediaEncoder)
+    from destination URI
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**dst** – Destination where encoded data are written.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**format** – Specify output format. If not provided, it is guessed from `dst`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: StreamingMediaEncoderCustomIO[¶](#streamingmediaencodercustomio "Permalink to
+    this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'class  StreamingMediaEncoderCustomIO  :  private  detail::CustomOutput,  public  torio::io::[StreamingMediaEncoder](#_CPPv4N5torio2io21StreamingMediaEncoderE
+    "torio::io::StreamingMediaEncoder")[¶](#_CPPv4N5torio2io29StreamingMediaEncoderCustomIOE
+    "Permalink to this definition")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: A subclass of [StreamingMediaDecoder](libtorio.stream_reader.html#classtorio_1_1io_1_1StreamingMediaDecoder)
+    which works with custom read function. Can be used for encoding media into memory
+    or custom object.
+  prefs: []
+  type: TYPE_NORMAL
+- en: torio::io::[StreamingMediaEncoderCustomIO](#_CPPv4N5torio2io29StreamingMediaEncoderCustomIOE
+    "torio::io::StreamingMediaEncoderCustomIO")::StreamingMediaEncoderCustomIO(void  *opaque,
+    const  c10::optional<std::string>  &format, int  buffer_size, int  (*write_packet)(void  *opaque,  uint8_t  *buf,  int  buf_size),
+    int64_t  (*seek)(void  *opaque,  int64_t  offset,  int  whence)  =  nullptr)[¶](#_CPPv4N5torio2io29StreamingMediaEncoderCustomIO29StreamingMediaEncoderCustomIOEPvRKN3c108optionalINSt6stringEEEiPFiPvP7uint8_tiEPF7int64_tPv7int64_tiE
+    "Permalink to this definition")
+  prefs: []
+  type: TYPE_NORMAL
+- en: Construct [StreamingMediaEncoderCustomIO](#classtorio_1_1io_1_1StreamingMediaEncoderCustomIO)
+    with custom write and seek functions.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**opaque** – Custom data used by `write_packet` and `seek` functions.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**format** – Specify output format.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**buffer_size** – The size of the intermediate buffer, which FFmpeg uses to
+    pass data to write_packet function.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**write_packet** – Custom write function that is called from FFmpeg to actually
+    write data to the custom destination.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**seek** – Optional seek function that is used to seek the destination.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Config methods[¶](#config-methods "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: add_audio_stream[¶](#add-audio-stream "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: void  torio::io::[StreamingMediaEncoder](#_CPPv4N5torio2io21StreamingMediaEncoderE
+    "torio::io::StreamingMediaEncoder")::add_audio_stream(int  sample_rate, int  num_channels,
+    const  std::string  &format, const  c10::optional<std::string>  &encoder  =  c10::nullopt,
+    const  c10::optional<OptionDict>  &encoder_option  =  c10::nullopt, const  c10::optional<std::string>  &encoder_format  =  c10::nullopt,
+    const  c10::optional<int>  &encoder_sample_rate  =  c10::nullopt, const  c10::optional<int>  &encoder_num_channels  =  c10::nullopt,
+    const  c10::optional<CodecConfig>  &codec_config  =  c10::nullopt, const  c10::optional<std::string>  &filter_desc  =  c10::nullopt)[¶](#_CPPv4N5torio2io21StreamingMediaEncoder16add_audio_streamEiiRKNSt6stringERKN3c108optionalINSt6stringEEERKN3c108optionalI10OptionDictEERKN3c108optionalINSt6stringEEERKN3c108optionalIiEERKN3c108optionalIiEERKN3c108optionalI11CodecConfigEERKN3c108optionalINSt6stringEEE
+    "Permalink to this definition")
+  prefs: []
+  type: TYPE_NORMAL
+- en: Add an output audio stream.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**sample_rate** – The sample rate.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**num_channels** – The number of channels.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**format** – Input sample format, which determines the dtype of the input tensor.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`"u8"`: The input tensor must be `torch.uint8` type.'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`"s16"`: The input tensor must be `torch.int16` type.'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`"s32"`: The input tensor must be `torch.int32` type.'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`"s64"`: The input tensor must be `torch.int64` type.'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`"flt"`: The input tensor must be `torch.float32` type.'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`"dbl"`: The input tensor must be `torch.float64` type.'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Default: `"flt"`.'
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: '**encoder** – The name of the encoder to be used.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: When provided, use the specified encoder instead of the default one.
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: To list the available encoders, you can use `ffmpeg -encoders` command.
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: '**encoder_option** – Options passed to encoder. To list encoder options for
+    a encoder, you can use `ffmpeg -h encoder=<ENCODER>`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**encoder_format** – Format used to encode media. When encoder supports multiple
+    formats, passing this argument will override the format used for encoding. To
+    list supported formats for the encoder, you can use `ffmpeg -h encoder=<ENCODER>`
+    command.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**encoder_sample_rate** – If provided, perform resampling before encoding.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**encoder_num_channels** – If provided, change channel configuration before
+    encoding.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**codec_config** – Codec configuration.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**filter_desc** – Additional processing to apply before encoding the input
+    data'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: add_video_stream[¶](#add-video-stream "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: void  torio::io::[StreamingMediaEncoder](#_CPPv4N5torio2io21StreamingMediaEncoderE
+    "torio::io::StreamingMediaEncoder")::add_video_stream(double  frame_rate, int  width,
+    int  height, const  std::string  &format, const  c10::optional<std::string>  &encoder  =  c10::nullopt,
+    const  c10::optional<OptionDict>  &encoder_option  =  c10::nullopt, const  c10::optional<std::string>  &encoder_format  =  c10::nullopt,
+    const  c10::optional<double>  &encoder_frame_rate  =  c10::nullopt, const  c10::optional<int>  &encoder_width  =  c10::nullopt,
+    const  c10::optional<int>  &encoder_height  =  c10::nullopt, const  c10::optional<std::string>  &hw_accel  =  c10::nullopt,
+    const  c10::optional<CodecConfig>  &codec_config  =  c10::nullopt, const  c10::optional<std::string>  &filter_desc  =  c10::nullopt)[¶](#_CPPv4N5torio2io21StreamingMediaEncoder16add_video_streamEdiiRKNSt6stringERKN3c108optionalINSt6stringEEERKN3c108optionalI10OptionDictEERKN3c108optionalINSt6stringEEERKN3c108optionalIdEERKN3c108optionalIiEERKN3c108optionalIiEERKN3c108optionalINSt6stringEEERKN3c108optionalI11CodecConfigEERKN3c108optionalINSt6stringEEE
+    "Permalink to this definition")
+  prefs: []
+  type: TYPE_NORMAL
+- en: Add an output video stream.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**frame_rate** – Frame rate'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**width** – Width'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**height** – Height'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**format** – Input pixel format, which determines the color channel order of
+    the input tensor.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`"gray8"`: One channel, grayscale.'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`"rgb24"`: Three channels in the order of RGB.'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`"bgr24"`: Three channels in the order of BGR.'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`"yuv444p"`: Three channels in the order of YUV.'
+  prefs:
+  - PREF_IND
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: In either case, the input tensor has to be `torch.uint8` type and the shape
+    must be (frame, channel, height, width).
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: '**encoder** – See `[add_audio_stream()](#classtorio_1_1io_1_1StreamingMediaEncoder_1af7f8bbbe1d7b6363969eb099c48e5d04)`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**encoder_option** – See `[add_audio_stream()](#classtorio_1_1io_1_1StreamingMediaEncoder_1af7f8bbbe1d7b6363969eb099c48e5d04)`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**encoder_format** – See `[add_audio_stream()](#classtorio_1_1io_1_1StreamingMediaEncoder_1af7f8bbbe1d7b6363969eb099c48e5d04)`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**encoder_frame_rate** – If provided, change frame rate before encoding.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**encoder_width** – If provided, resize image before encoding.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**encoder_height** – If provided, resize image before encoding.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**hw_accel** – Enable hardware acceleration.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**codec_config** – Codec configuration.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: When video is encoded on CUDA hardware, for example `encoder="h264_nvenc"`,
+    passing CUDA device indicator to `hw_accel` (i.e. `hw_accel="cuda:0"`) will make
+    [StreamingMediaEncoder](#classtorio_1_1io_1_1StreamingMediaEncoder) expect video
+    chunk to be a CUDA Tensor. Passing CPU Tensor will result in an error.
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: If `None`, the video chunk Tensor has to be a CPU Tensor.
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: '**filter_desc** – Additional processing to apply before encoding the input
+    data'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: set_metadata[¶](#set-metadata "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: void  torio::io::[StreamingMediaEncoder](#_CPPv4N5torio2io21StreamingMediaEncoderE
+    "torio::io::StreamingMediaEncoder")::set_metadata(const  OptionDict  &metadata)[¶](#_CPPv4N5torio2io21StreamingMediaEncoder12set_metadataERK10OptionDict
+    "Permalink to this definition")
+  prefs: []
+  type: TYPE_NORMAL
+- en: Set file-level metadata
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**metadata** – metadata.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Write methods[¶](#write-methods "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: open[¶](#open "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: void  torio::io::[StreamingMediaEncoder](#_CPPv4N5torio2io21StreamingMediaEncoderE
+    "torio::io::StreamingMediaEncoder")::open(const  c10::optional<OptionDict>  &opt  =  c10::nullopt)[¶](#_CPPv4N5torio2io21StreamingMediaEncoder4openERKN3c108optionalI10OptionDictEE
+    "Permalink to this definition")
+  prefs: []
+  type: TYPE_NORMAL
+- en: Open the output file / device and write the header.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**opt** – Private options for protocol, device and muxer.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: close[¶](#close "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: void  torio::io::[StreamingMediaEncoder](#_CPPv4N5torio2io21StreamingMediaEncoderE
+    "torio::io::StreamingMediaEncoder")::close()[¶](#_CPPv4N5torio2io21StreamingMediaEncoder5closeEv
+    "Permalink to this definition")
+  prefs: []
+  type: TYPE_NORMAL
+- en: Close the output file / device and finalize metadata.
+  prefs: []
+  type: TYPE_NORMAL
+- en: write_audio_chunk[¶](#write-audio-chunk "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: void  torio::io::[StreamingMediaEncoder](#_CPPv4N5torio2io21StreamingMediaEncoderE
+    "torio::io::StreamingMediaEncoder")::write_audio_chunk(int  i, const  torch::Tensor  &frames,
+    const  c10::optional<double>  &pts  =  c10::nullopt)[¶](#_CPPv4N5torio2io21StreamingMediaEncoder17write_audio_chunkEiRKN5torch6TensorERKN3c108optionalIdEE
+    "Permalink to this definition")
+  prefs: []
+  type: TYPE_NORMAL
+- en: Write audio data
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**i** – Stream index.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**frames** – Waveform tensor. Shape: `(frame, channel)`. The `dtype` must match
+    what was passed to `[add_audio_stream()](#classtorio_1_1io_1_1StreamingMediaEncoder_1af7f8bbbe1d7b6363969eb099c48e5d04)`
+    method.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**pts** –'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Presentation timestamp. If provided, it overwrites the PTS of the first frame
+    with the provided one. Otherwise, PTS are incremented per an inverse of sample
+    rate. Only values exceed the PTS values processed internally.
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: '**NOTE**: The provided value is converted to integer value expressed in basis
+    of sample rate. Therefore, it is truncated to the nearest value of `n / sample_rate`.'
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: write_video_chunk[¶](#write-video-chunk "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: void  torio::io::[StreamingMediaEncoder](#_CPPv4N5torio2io21StreamingMediaEncoderE
+    "torio::io::StreamingMediaEncoder")::write_video_chunk(int  i, const  torch::Tensor  &frames,
+    const  c10::optional<double>  &pts  =  c10::nullopt)[¶](#_CPPv4N5torio2io21StreamingMediaEncoder17write_video_chunkEiRKN5torch6TensorERKN3c108optionalIdEE
+    "Permalink to this definition")
+  prefs: []
+  type: TYPE_NORMAL
+- en: Write video data
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**i** – Stream index.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**frames** – Video/image tensor. Shape: `(time, channel, height, width)`. The
+    `dtype` must be `torch.uint8`. The shape `(height, width and the number of channels)`
+    must match what was configured when calling `[add_video_stream()](#classtorio_1_1io_1_1StreamingMediaEncoder_1a5337088220f338d2aa5fddfd3d256579)`.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**pts** –'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Presentation timestamp. If provided, it overwrites the PTS of the first frame
+    with the provided one. Otherwise, PTS are incremented per an inverse of frame
+    rate. Only values exceed the PTS values processed internally.
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: '**NOTE**: The provided value is converted to integer value expressed in basis
+    of frame rate. Therefore, it is truncated to the nearest value of `n / frame_rate`.'
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: flush[¶](#flush "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: void  torio::io::[StreamingMediaEncoder](#_CPPv4N5torio2io21StreamingMediaEncoderE
+    "torio::io::StreamingMediaEncoder")::flush()[¶](#_CPPv4N5torio2io21StreamingMediaEncoder5flushEv
+    "Permalink to this definition")
+  prefs: []
+  type: TYPE_NORMAL
+- en: Flush the frames from encoders and write the frames to the destination.
+  prefs: []
+  type: TYPE_NORMAL

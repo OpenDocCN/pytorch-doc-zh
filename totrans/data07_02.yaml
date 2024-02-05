@@ -1,0 +1,695 @@
+- en: Iterable-style DataPipes¶
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/data/beta/torchdata.datapipes.iter.html](https://pytorch.org/data/beta/torchdata.datapipes.iter.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: An iterable-style dataset is an instance of a subclass of IterableDataset that
+    implements the `__iter__()` protocol, and represents an iterable over data samples.
+    This type of datasets is particularly suitable for cases where random reads are
+    expensive or even improbable, and where the batch size depends on the fetched
+    data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For example, such a dataset, when called `iter(iterdatapipe)`, could return
+    a stream of data reading from a database, a remote server, or even logs generated
+    in real time.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This is an updated version of `IterableDataset` in `torch`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Iterable-style DataPipe.
+  prefs: []
+  type: TYPE_NORMAL
+- en: All DataPipes that represent an iterable of data samples should subclass this.
+    This style of DataPipes is particularly useful when data come from a stream, or
+    when the number of samples is too large to fit them all in memory. `IterDataPipe`
+    is lazily initialized and its elements are computed only when `next()` is called
+    on the iterator of an `IterDataPipe`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: All subclasses should overwrite `__iter__()`, which would return an iterator
+    of samples in this DataPipe. Calling `__iter__` of an `IterDataPipe` automatically
+    invokes its method `reset()`, which by default performs no operation. When writing
+    a custom `IterDataPipe`, users should override `reset()` if necessary. The common
+    usages include resetting buffers, pointers, and various state variables within
+    the custom `IterDataPipe`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Only one iterator can be valid for each `IterDataPipe` at a time, and the creation
+    a second iterator will invalidate the first one. This constraint is necessary
+    because some `IterDataPipe` have internal buffers, whose states can become invalid
+    if there are multiple iterators. The code example below presents details on how
+    this constraint looks in practice. If you have any feedback related to this constraint,
+    please see [GitHub IterDataPipe Single Iterator Issue](https://github.com/pytorch/data/issues/45).
+  prefs: []
+  type: TYPE_NORMAL
+- en: These DataPipes can be invoked in two ways, using the class constructor or applying
+    their functional form onto an existing `IterDataPipe` (recommended, available
+    to most but not all DataPipes). You can chain multiple IterDataPipe together to
+    form a pipeline that will perform multiple operations in succession.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: When a subclass is used with `DataLoader`, each item in the DataPipe will be
+    yielded from the `DataLoader` iterator. When `num_workers > 0`, each worker process
+    will have a different copy of the DataPipe object, so it is often desired to configure
+    each copy independently to avoid having duplicate data returned from the workers.
+    `get_worker_info()`, when called in a worker process, returns information about
+    the worker. It can be used in either the dataset’s `__iter__()` method or the
+    `DataLoader` ‘s `worker_init_fn` option to modify each copy’s behavior.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Examples
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'General Usage:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Single Iterator Constraint Example:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'We have different types of Iterable DataPipes:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Archive - open and decompress archive files of different formats.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Augmenting - augment your samples (e.g. adding index, or cycle through indefinitely).
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Combinatorial - perform combinatorial operations (e.g. sampling, shuffling).
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Combining/Splitting - interact with multiple DataPipes by combining them or
+    splitting one to many.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Grouping - group samples within a DataPipe
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: IO - interacting with the file systems or remote server (e.g. downloading, opening,
+    saving files, and listing the files in directories).
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Mapping - apply the a given function to each element in the DataPipe.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Others - perform miscellaneous set of operations.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Selecting - select specific samples within a DataPipe.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Text - parse, read, and transform text files and data
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Archive DataPipes[¶](#archive-datapipes "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: These DataPipes help opening and decompressing archive files of different formats.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| [`Bz2FileLoader`](generated/torchdata.datapipes.iter.Bz2FileLoader.html#torchdata.datapipes.iter.Bz2FileLoader
+    "torchdata.datapipes.iter.Bz2FileLoader") | Decompresses bz2 binary streams from
+    an Iterable DataPipe which contains tuples of path name and bz2 binary streams,
+    and yields a tuple of path name and extracted binary stream (functional name:
+    `load_from_bz2`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`Decompressor`](generated/torchdata.datapipes.iter.Decompressor.html#torchdata.datapipes.iter.Decompressor
+    "torchdata.datapipes.iter.Decompressor") | Takes tuples of path and compressed
+    stream of data, and returns tuples of path and decompressed stream of data (functional
+    name: `decompress`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`RarArchiveLoader`](generated/torchdata.datapipes.iter.RarArchiveLoader.html#torchdata.datapipes.iter.RarArchiveLoader
+    "torchdata.datapipes.iter.RarArchiveLoader") | Decompresses rar binary streams
+    from input Iterable Datapipes which contains tuples of path name and rar binary
+    stream, and yields a tuple of path name and extracted binary stream (functional
+    name: `load_from_rar`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`TarArchiveLoader`](generated/torchdata.datapipes.iter.TarArchiveLoader.html#torchdata.datapipes.iter.TarArchiveLoader
+    "torchdata.datapipes.iter.TarArchiveLoader") | Opens/decompresses tar binary streams
+    from an Iterable DataPipe which contains tuples of path name and tar binary stream,
+    and yields a tuple of path name and extracted binary stream (functional name:
+    `load_from_tar`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`TFRecordLoader`](generated/torchdata.datapipes.iter.TFRecordLoader.html#torchdata.datapipes.iter.TFRecordLoader
+    "torchdata.datapipes.iter.TFRecordLoader") | Opens/decompresses tfrecord binary
+    streams from an Iterable DataPipe which contains tuples of path name and tfrecord
+    binary stream, and yields the stored records (functional name: `load_from_tfrecord`).
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`WebDataset`](generated/torchdata.datapipes.iter.WebDataset.html#torchdata.datapipes.iter.WebDataset
+    "torchdata.datapipes.iter.WebDataset") | Iterable DataPipe that accepts stream
+    of (path, data) tuples, usually, representing the pathnames and files of a tar
+    archive (functional name: `webdataset`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`XzFileLoader`](generated/torchdata.datapipes.iter.XzFileLoader.html#torchdata.datapipes.iter.XzFileLoader
+    "torchdata.datapipes.iter.XzFileLoader") | Decompresses xz (lzma) binary streams
+    from an Iterable DataPipe which contains tuples of path name and xy binary streams,
+    and yields a tuple of path name and extracted binary stream (functional name:
+    `load_from_xz`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`ZipArchiveLoader`](generated/torchdata.datapipes.iter.ZipArchiveLoader.html#torchdata.datapipes.iter.ZipArchiveLoader
+    "torchdata.datapipes.iter.ZipArchiveLoader") | Opens/decompresses zip binary streams
+    from an Iterable DataPipe which contains a tuple of path name and zip binary stream,
+    and yields a tuple of path name and extracted binary stream (functional name:
+    `load_from_zip`). |'
+  prefs: []
+  type: TYPE_TB
+- en: Augmenting DataPipes[¶](#augmenting-datapipes "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: These DataPipes help to augment your samples.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| [`Cycler`](generated/torchdata.datapipes.iter.Cycler.html#torchdata.datapipes.iter.Cycler
+    "torchdata.datapipes.iter.Cycler") | Cycles the specified input in perpetuity
+    by default, or for the specified number of times (functional name: `cycle`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`Enumerator`](generated/torchdata.datapipes.iter.Enumerator.html#torchdata.datapipes.iter.Enumerator
+    "torchdata.datapipes.iter.Enumerator") | Adds an index to an existing DataPipe
+    through enumeration, with the index starting from 0 by default (functional name:
+    `enumerate`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`IndexAdder`](generated/torchdata.datapipes.iter.IndexAdder.html#torchdata.datapipes.iter.IndexAdder
+    "torchdata.datapipes.iter.IndexAdder") | Adds an index to an existing Iterable
+    DataPipe with (functional name: `add_index`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`Repeater`](generated/torchdata.datapipes.iter.Repeater.html#torchdata.datapipes.iter.Repeater
+    "torchdata.datapipes.iter.Repeater") | Repeatedly yield each element of source
+    DataPipe for the specified number of times before moving onto the next element
+    (functional name: `repeat`). |'
+  prefs: []
+  type: TYPE_TB
+- en: Combinatorial DataPipes[¶](#combinatorial-datapipes "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: These DataPipes help to perform combinatorial operations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| [`InBatchShuffler`](generated/torchdata.datapipes.iter.InBatchShuffler.html#torchdata.datapipes.iter.InBatchShuffler
+    "torchdata.datapipes.iter.InBatchShuffler") | Shuffles each mini-batch from the
+    prior DataPipe (functional name: `in_batch_shuffle`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`Sampler`](generated/torchdata.datapipes.iter.Sampler.html#torchdata.datapipes.iter.Sampler
+    "torchdata.datapipes.iter.Sampler") | Generates sample elements using the provided
+    `Sampler` (defaults to `SequentialSampler`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`Shuffler`](generated/torchdata.datapipes.iter.Shuffler.html#torchdata.datapipes.iter.Shuffler
+    "torchdata.datapipes.iter.Shuffler") | Shuffles the input DataPipe with a buffer
+    (functional name: `shuffle`). |'
+  prefs: []
+  type: TYPE_TB
+- en: Combining/Splitting DataPipes[¶](#combining-splitting-datapipes "Permalink to
+    this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: These tend to involve multiple DataPipes, combining them or splitting one to
+    many.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| [`Concater`](generated/torchdata.datapipes.iter.Concater.html#torchdata.datapipes.iter.Concater
+    "torchdata.datapipes.iter.Concater") | Concatenates multiple Iterable DataPipes
+    (functional name: `concat`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`Demultiplexer`](generated/torchdata.datapipes.iter.Demultiplexer.html#torchdata.datapipes.iter.Demultiplexer
+    "torchdata.datapipes.iter.Demultiplexer") | Splits the input DataPipe into multiple
+    child DataPipes, using the given classification function (functional name: `demux`).
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`Forker`](generated/torchdata.datapipes.iter.Forker.html#torchdata.datapipes.iter.Forker
+    "torchdata.datapipes.iter.Forker") | Creates multiple instances of the same Iterable
+    DataPipe (functional name: `fork`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`IterKeyZipper`](generated/torchdata.datapipes.iter.IterKeyZipper.html#torchdata.datapipes.iter.IterKeyZipper
+    "torchdata.datapipes.iter.IterKeyZipper") | Zips two IterDataPipes together based
+    on the matching key (functional name: `zip_with_iter`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`MapKeyZipper`](generated/torchdata.datapipes.iter.MapKeyZipper.html#torchdata.datapipes.iter.MapKeyZipper
+    "torchdata.datapipes.iter.MapKeyZipper") | Joins the items from the source IterDataPipe
+    with items from a MapDataPipe (functional name: `zip_with_map`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`Multiplexer`](generated/torchdata.datapipes.iter.Multiplexer.html#torchdata.datapipes.iter.Multiplexer
+    "torchdata.datapipes.iter.Multiplexer") | Yields one element at a time from each
+    of the input Iterable DataPipes (functional name: `mux`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`MultiplexerLongest`](generated/torchdata.datapipes.iter.MultiplexerLongest.html#torchdata.datapipes.iter.MultiplexerLongest
+    "torchdata.datapipes.iter.MultiplexerLongest") | Yields one element at a time
+    from each of the input Iterable DataPipes (functional name: `mux_longest`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`RoundRobinDemultiplexer`](generated/torchdata.datapipes.iter.RoundRobinDemultiplexer.html#torchdata.datapipes.iter.RoundRobinDemultiplexer
+    "torchdata.datapipes.iter.RoundRobinDemultiplexer") | Splits the input DataPipe
+    into multiple child DataPipes in the round-robin order (functional name: `round_robin_demux`).
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`SampleMultiplexer`](generated/torchdata.datapipes.iter.SampleMultiplexer.html#torchdata.datapipes.iter.SampleMultiplexer
+    "torchdata.datapipes.iter.SampleMultiplexer") | Takes a Dict of (IterDataPipe,
+    Weight), and yields items by sampling from these DataPipes with respect to their
+    weights. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`UnZipper`](generated/torchdata.datapipes.iter.UnZipper.html#torchdata.datapipes.iter.UnZipper
+    "torchdata.datapipes.iter.UnZipper") | Takes in a DataPipe of Sequences, unpacks
+    each Sequence, and return the elements in separate DataPipes based on their position
+    in the Sequence (functional name: `unzip`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`Zipper`](generated/torchdata.datapipes.iter.Zipper.html#torchdata.datapipes.iter.Zipper
+    "torchdata.datapipes.iter.Zipper") | Aggregates elements into a tuple from each
+    of the input DataPipes (functional name: `zip`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`ZipperLongest`](generated/torchdata.datapipes.iter.ZipperLongest.html#torchdata.datapipes.iter.ZipperLongest
+    "torchdata.datapipes.iter.ZipperLongest") | Aggregates elements into a tuple from
+    each of the input DataPipes (functional name: `zip_longest`). |'
+  prefs: []
+  type: TYPE_TB
+- en: Grouping DataPipes[¶](#grouping-datapipes "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: These DataPipes have you group samples within a DataPipe.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| [`Batcher`](generated/torchdata.datapipes.iter.Batcher.html#torchdata.datapipes.iter.Batcher
+    "torchdata.datapipes.iter.Batcher") | Creates mini-batches of data (functional
+    name: `batch`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`BucketBatcher`](generated/torchdata.datapipes.iter.BucketBatcher.html#torchdata.datapipes.iter.BucketBatcher
+    "torchdata.datapipes.iter.BucketBatcher") | Creates mini-batches of data from
+    sorted bucket (functional name: `bucketbatch`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`Collator`](generated/torchdata.datapipes.iter.Collator.html#torchdata.datapipes.iter.Collator
+    "torchdata.datapipes.iter.Collator") | Collates samples from DataPipe to Tensor(s)
+    by a custom collate function (functional name: `collate`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`Grouper`](generated/torchdata.datapipes.iter.Grouper.html#torchdata.datapipes.iter.Grouper
+    "torchdata.datapipes.iter.Grouper") | Groups data from input IterDataPipe by keys
+    which are generated from `group_key_fn`, and yields a `DataChunk` with batch size
+    up to `group_size` if defined (functional name: `groupby`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`MaxTokenBucketizer`](generated/torchdata.datapipes.iter.MaxTokenBucketizer.html#torchdata.datapipes.iter.MaxTokenBucketizer
+    "torchdata.datapipes.iter.MaxTokenBucketizer") | Creates mini-batches of data
+    from a min-heap with limited size, and the total length of samples returned by
+    `len_fn` within each batch will be limited by `max_token_count` (functional name:
+    `max_token_bucketize`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`UnBatcher`](generated/torchdata.datapipes.iter.UnBatcher.html#torchdata.datapipes.iter.UnBatcher
+    "torchdata.datapipes.iter.UnBatcher") | Undoes batching of data (functional name:
+    `unbatch`). |'
+  prefs: []
+  type: TYPE_TB
+- en: IO DataPipes[¶](#io-datapipes "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: These DataPipes help interacting with the file systems or remote server (e.g.
+    downloading, opening, saving files, and listing the files in directories).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| [`AISFileLister`](generated/torchdata.datapipes.iter.AISFileLister.html#torchdata.datapipes.iter.AISFileLister
+    "torchdata.datapipes.iter.AISFileLister") | Iterable Datapipe that lists files
+    from the AIStore backends with the given URL prefixes (functional name: `list_files_by_ais`).
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`AISFileLoader`](generated/torchdata.datapipes.iter.AISFileLoader.html#torchdata.datapipes.iter.AISFileLoader
+    "torchdata.datapipes.iter.AISFileLoader") | Iterable DataPipe that loads files
+    from AIStore with the given URLs (functional name: `load_files_by_ais`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`FSSpecFileLister`](generated/torchdata.datapipes.iter.FSSpecFileLister.html#torchdata.datapipes.iter.FSSpecFileLister
+    "torchdata.datapipes.iter.FSSpecFileLister") | Lists the contents of the directory
+    at the provided `root` pathname or URL, and yields the full pathname or URL for
+    each file within the directory (functional name: `list_files_by_fsspec`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`FSSpecFileOpener`](generated/torchdata.datapipes.iter.FSSpecFileOpener.html#torchdata.datapipes.iter.FSSpecFileOpener
+    "torchdata.datapipes.iter.FSSpecFileOpener") | Opens files from input datapipe
+    which contains fsspec paths and yields a tuple of pathname and opened file stream
+    (functional name: `open_files_by_fsspec`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`FSSpecSaver`](generated/torchdata.datapipes.iter.FSSpecSaver.html#torchdata.datapipes.iter.FSSpecSaver
+    "torchdata.datapipes.iter.FSSpecSaver") | Takes in a DataPipe of tuples of metadata
+    and data, saves the data to the target path (generated by the filepath_fn and
+    metadata), and yields the resulting fsspec path (functional name: `save_by_fsspec`).
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`FileLister`](generated/torchdata.datapipes.iter.FileLister.html#torchdata.datapipes.iter.FileLister
+    "torchdata.datapipes.iter.FileLister") | Given path(s) to the root directory,
+    yields file pathname(s) (path + filename) of files within the root directory.
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`FileOpener`](generated/torchdata.datapipes.iter.FileOpener.html#torchdata.datapipes.iter.FileOpener
+    "torchdata.datapipes.iter.FileOpener") | Given pathnames, opens files and yield
+    pathname and file stream in a tuple (functional name: `open_files`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`GDriveReader`](generated/torchdata.datapipes.iter.GDriveReader.html#torchdata.datapipes.iter.GDriveReader
+    "torchdata.datapipes.iter.GDriveReader") | Takes URLs pointing at GDrive files,
+    and yields tuples of file name and IO stream (functional name: `read_from_gdrive`).
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`HttpReader`](generated/torchdata.datapipes.iter.HttpReader.html#torchdata.datapipes.iter.HttpReader
+    "torchdata.datapipes.iter.HttpReader") | Takes file URLs (HTTP URLs pointing to
+    files), and yields tuples of file URL and IO stream (functional name: `read_from_http`).
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`HuggingFaceHubReader`](generated/torchdata.datapipes.iter.HuggingFaceHubReader.html#torchdata.datapipes.iter.HuggingFaceHubReader
+    "torchdata.datapipes.iter.HuggingFaceHubReader") | Takes in dataset names and
+    returns an Iterable HuggingFace dataset. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`IoPathFileLister`](generated/torchdata.datapipes.iter.IoPathFileLister.html#torchdata.datapipes.iter.IoPathFileLister
+    "torchdata.datapipes.iter.IoPathFileLister") | Lists the contents of the directory
+    at the provided `root` pathname or URL, and yields the full pathname or URL for
+    each file within the directory (functional name: `list_files_by_iopath`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`IoPathFileOpener`](generated/torchdata.datapipes.iter.IoPathFileOpener.html#torchdata.datapipes.iter.IoPathFileOpener
+    "torchdata.datapipes.iter.IoPathFileOpener") | Opens files from input datapipe
+    which contains pathnames or URLs, and yields a tuple of pathname and opened file
+    stream (functional name: `open_files_by_iopath`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`IoPathSaver`](generated/torchdata.datapipes.iter.IoPathSaver.html#torchdata.datapipes.iter.IoPathSaver
+    "torchdata.datapipes.iter.IoPathSaver") | Takes in a DataPipe of tuples of metadata
+    and data, saves the data to the target path which is generated by the `filepath_fn`
+    and metadata, and yields the resulting path in iopath format (functional name:
+    `save_by_iopath`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`OnlineReader`](generated/torchdata.datapipes.iter.OnlineReader.html#torchdata.datapipes.iter.OnlineReader
+    "torchdata.datapipes.iter.OnlineReader") | Takes file URLs (can be HTTP URLs pointing
+    to files or URLs to GDrive files), and yields tuples of file URL and IO stream
+    (functional name: `read_from_remote`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`ParquetDataFrameLoader`](generated/torchdata.datapipes.iter.ParquetDataFrameLoader.html#torchdata.datapipes.iter.ParquetDataFrameLoader
+    "torchdata.datapipes.iter.ParquetDataFrameLoader") | Takes in paths to Parquet
+    files and return a TorchArrow DataFrame for each row group within a Parquet file
+    (functional name: `load_parquet_as_df`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`S3FileLister`](generated/torchdata.datapipes.iter.S3FileLister.html#torchdata.datapipes.iter.S3FileLister
+    "torchdata.datapipes.iter.S3FileLister") | Iterable DataPipe that lists Amazon
+    S3 file URLs with the given prefixes (functional name: `list_files_by_s3`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`S3FileLoader`](generated/torchdata.datapipes.iter.S3FileLoader.html#torchdata.datapipes.iter.S3FileLoader
+    "torchdata.datapipes.iter.S3FileLoader") | Iterable DataPipe that loads Amazon
+    S3 files from the given S3 URLs (functional name: `load_files_by_s3`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`Saver`](generated/torchdata.datapipes.iter.Saver.html#torchdata.datapipes.iter.Saver
+    "torchdata.datapipes.iter.Saver") | Takes in a DataPipe of tuples of metadata
+    and data, saves the data to the target path generated by the `filepath_fn` and
+    metadata, and yields file path on local file system (functional name: `save_to_disk`).
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: Mapping DataPipes[¶](#mapping-datapipes "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: These DataPipes apply the a given function to each element in the DataPipe.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| [`BatchAsyncMapper`](generated/torchdata.datapipes.iter.BatchAsyncMapper.html#torchdata.datapipes.iter.BatchAsyncMapper
+    "torchdata.datapipes.iter.BatchAsyncMapper") | Combines elements from the source
+    DataPipe to batches and applies a coroutine function over each element within
+    the batch concurrently, then flattens the outpus to a single, unnested IterDataPipe
+    (functional name: `async_map_batches`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`BatchMapper`](generated/torchdata.datapipes.iter.BatchMapper.html#torchdata.datapipes.iter.BatchMapper
+    "torchdata.datapipes.iter.BatchMapper") | Combines elements from the source DataPipe
+    to batches and applies a function over each batch, then flattens the outputs to
+    a single, unnested IterDataPipe (functional name: `map_batches`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`FlatMapper`](generated/torchdata.datapipes.iter.FlatMapper.html#torchdata.datapipes.iter.FlatMapper
+    "torchdata.datapipes.iter.FlatMapper") | Applies a function over each item from
+    the source DataPipe, then flattens the outputs to a single, unnested IterDataPipe
+    (functional name: `flatmap`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`Mapper`](generated/torchdata.datapipes.iter.Mapper.html#torchdata.datapipes.iter.Mapper
+    "torchdata.datapipes.iter.Mapper") | Applies a function over each item from the
+    source DataPipe (functional name: `map`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`ShuffledFlatMapper`](generated/torchdata.datapipes.iter.ShuffledFlatMapper.html#torchdata.datapipes.iter.ShuffledFlatMapper
+    "torchdata.datapipes.iter.ShuffledFlatMapper") | Applies a function over each
+    item from the source DataPipe, then collects the iterables returned in a buffer,
+    then, at every iteration, chooses at random one of the iterables in the buffer
+    and yields one item from this iterable (functional name: `shuffled_flatmap`).
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`ThreadPoolMapper`](generated/torchdata.datapipes.iter.ThreadPoolMapper.html#torchdata.datapipes.iter.ThreadPoolMapper
+    "torchdata.datapipes.iter.ThreadPoolMapper") | Applies a function over each item
+    from the source DataPipe concurrently using `ThreadPoolExecutor` (functional name:
+    `threadpool_map`). |'
+  prefs: []
+  type: TYPE_TB
+- en: Other DataPipes[¶](#other-datapipes "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: A miscellaneous set of DataPipes with different functionalities.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| [`DataFrameMaker`](generated/torchdata.datapipes.iter.DataFrameMaker.html#torchdata.datapipes.iter.DataFrameMaker
+    "torchdata.datapipes.iter.DataFrameMaker") | Takes rows of data, batches a number
+    of them together and creates TorchArrow DataFrames (functional name: `dataframe`).
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`EndOnDiskCacheHolder`](generated/torchdata.datapipes.iter.EndOnDiskCacheHolder.html#torchdata.datapipes.iter.EndOnDiskCacheHolder
+    "torchdata.datapipes.iter.EndOnDiskCacheHolder") | Indicates when the result of
+    prior DataPipe will be saved local files specified by `filepath_fn` (functional
+    name: `end_caching`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`FullSync`](generated/torchdata.datapipes.iter.FullSync.html#torchdata.datapipes.iter.FullSync
+    "torchdata.datapipes.iter.FullSync") | Synchronizes data across distributed processes
+    to prevent hanging during training, which is caused by uneven sharded data (functional
+    name: `fullsync`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`HashChecker`](generated/torchdata.datapipes.iter.HashChecker.html#torchdata.datapipes.iter.HashChecker
+    "torchdata.datapipes.iter.HashChecker") | Computes and checks the hash of each
+    file, from an input DataPipe of tuples of file name and data/stream (functional
+    name: `check_hash`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`InMemoryCacheHolder`](generated/torchdata.datapipes.iter.InMemoryCacheHolder.html#torchdata.datapipes.iter.InMemoryCacheHolder
+    "torchdata.datapipes.iter.InMemoryCacheHolder") | Stores elements from the source
+    DataPipe in memory, up to a size limit if specified (functional name: `in_memory_cache`).
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`IterableWrapper`](generated/torchdata.datapipes.iter.IterableWrapper.html#torchdata.datapipes.iter.IterableWrapper
+    "torchdata.datapipes.iter.IterableWrapper") | Wraps an iterable object to create
+    an IterDataPipe. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`LengthSetter`](generated/torchdata.datapipes.iter.LengthSetter.html#torchdata.datapipes.iter.LengthSetter
+    "torchdata.datapipes.iter.LengthSetter") | Set the length attribute of the DataPipe,
+    which is returned by `__len__` (functional name: `set_length`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`MapToIterConverter`](generated/torchdata.datapipes.iter.MapToIterConverter.html#torchdata.datapipes.iter.MapToIterConverter
+    "torchdata.datapipes.iter.MapToIterConverter") | Convert a `MapDataPipe` to an
+    `IterDataPipe` (functional name: `to_iter_datapipe`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`OnDiskCacheHolder`](generated/torchdata.datapipes.iter.OnDiskCacheHolder.html#torchdata.datapipes.iter.OnDiskCacheHolder
+    "torchdata.datapipes.iter.OnDiskCacheHolder") | Caches the outputs of multiple
+    DataPipe operations to local files, which are typically performance bottleneck
+    such download, decompress, and etc (functional name: `on_disk_cache`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`PinMemory`](generated/torchdata.datapipes.iter.PinMemory.html#torchdata.datapipes.iter.PinMemory
+    "torchdata.datapipes.iter.PinMemory") | Prefetches one element from the source
+    DataPipe and moves it to pinned memory (functional name: `pin_memory`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`Prefetcher`](generated/torchdata.datapipes.iter.Prefetcher.html#torchdata.datapipes.iter.Prefetcher
+    "torchdata.datapipes.iter.Prefetcher") | Prefetches elements from the source DataPipe
+    and puts them into a buffer (functional name: `prefetch`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`RandomSplitter`](generated/torchdata.datapipes.iter.RandomSplitter.html#torchdata.datapipes.iter.RandomSplitter
+    "torchdata.datapipes.iter.RandomSplitter") | Randomly split samples from a source
+    DataPipe into groups (functional name: `random_split`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`ShardExpander`](generated/torchdata.datapipes.iter.ShardExpander.html#torchdata.datapipes.iter.ShardExpander
+    "torchdata.datapipes.iter.ShardExpander") | Expands incoming shard strings into
+    shards. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`ShardingFilter`](generated/torchdata.datapipes.iter.ShardingFilter.html#torchdata.datapipes.iter.ShardingFilter
+    "torchdata.datapipes.iter.ShardingFilter") | Wrapper that allows DataPipe to be
+    sharded (functional name: `sharding_filter`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`ShardingRoundRobinDispatcher`](generated/torchdata.datapipes.iter.ShardingRoundRobinDispatcher.html#torchdata.datapipes.iter.ShardingRoundRobinDispatcher
+    "torchdata.datapipes.iter.ShardingRoundRobinDispatcher") | Wrapper that indicates
+    the prior section of `DataPipe` graph is non-replicable and will be iterated in
+    a separate, single dispatching process to distribute data to worker processes
+    in a round-robin manner when multiprocessing is being used. |'
+  prefs: []
+  type: TYPE_TB
+- en: Selecting DataPipes[¶](#selecting-datapipes "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: These DataPipes helps you select specific samples within a DataPipe.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| [`Filter`](generated/torchdata.datapipes.iter.Filter.html#torchdata.datapipes.iter.Filter
+    "torchdata.datapipes.iter.Filter") | Filters out elements from the source datapipe
+    according to input `filter_fn` (functional name: `filter`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`Header`](generated/torchdata.datapipes.iter.Header.html#torchdata.datapipes.iter.Header
+    "torchdata.datapipes.iter.Header") | Yields elements from the source DataPipe
+    from the start, up to the specfied limit (functional name: `header`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`Dropper`](generated/torchdata.datapipes.iter.Dropper.html#torchdata.datapipes.iter.Dropper
+    "torchdata.datapipes.iter.Dropper") | Drop columns/elements in input DataPipe
+    via its indices (functional name: `drop`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`Slicer`](generated/torchdata.datapipes.iter.Slicer.html#torchdata.datapipes.iter.Slicer
+    "torchdata.datapipes.iter.Slicer") | returns a slice of elements in input DataPipe
+    via start/stop/step or indices (functional name: `slice`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`Flattener`](generated/torchdata.datapipes.iter.Flattener.html#torchdata.datapipes.iter.Flattener
+    "torchdata.datapipes.iter.Flattener") | returns a flattened copy of the input
+    DataPipe at the per sample/element level based on provided indices (functional
+    name: `flatten`). |'
+  prefs: []
+  type: TYPE_TB
+- en: Text DataPipes[¶](#text-datapipes "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: These DataPipes help you parse, read, and transform text files and data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| [`CSVDictParser`](generated/torchdata.datapipes.iter.CSVDictParser.html#torchdata.datapipes.iter.CSVDictParser
+    "torchdata.datapipes.iter.CSVDictParser") | Accepts a DataPipe consists of tuples
+    of file name and CSV data stream, reads and returns the contents within the CSV
+    files one row at a time (functional name: `parse_csv_as_dict`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`CSVParser`](generated/torchdata.datapipes.iter.CSVParser.html#torchdata.datapipes.iter.CSVParser
+    "torchdata.datapipes.iter.CSVParser") | Accepts a DataPipe consists of tuples
+    of file name and CSV data stream, reads and returns the contents within the CSV
+    files one row at a time (functional name: `parse_csv`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`JsonParser`](generated/torchdata.datapipes.iter.JsonParser.html#torchdata.datapipes.iter.JsonParser
+    "torchdata.datapipes.iter.JsonParser") | Reads from JSON data streams and yields
+    a tuple of file name and JSON data (functional name: `parse_json_files`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`LineReader`](generated/torchdata.datapipes.iter.LineReader.html#torchdata.datapipes.iter.LineReader
+    "torchdata.datapipes.iter.LineReader") | Accepts a DataPipe consisting of tuples
+    of file name and string data stream, and for each line in the stream, yields a
+    tuple of file name and the line (functional name: `readlines`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`ParagraphAggregator`](generated/torchdata.datapipes.iter.ParagraphAggregator.html#torchdata.datapipes.iter.ParagraphAggregator
+    "torchdata.datapipes.iter.ParagraphAggregator") | Aggregates lines of text from
+    the same file into a single paragraph (functional name: `lines_to_paragraphs`).
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`RoutedDecoder`](generated/torchdata.datapipes.iter.RoutedDecoder.html#torchdata.datapipes.iter.RoutedDecoder
+    "torchdata.datapipes.iter.RoutedDecoder") | Decodes binary streams from input
+    DataPipe, yields pathname and decoded data in a tuple (functional name: `routed_decode`).
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`Rows2Columnar`](generated/torchdata.datapipes.iter.Rows2Columnar.html#torchdata.datapipes.iter.Rows2Columnar
+    "torchdata.datapipes.iter.Rows2Columnar") | Accepts an input DataPipe with batches
+    of data, and processes one batch at a time and yields a Dict for each batch, with
+    `column_names` as keys and lists of corresponding values from each row as values
+    (functional name: `rows2columnar`). |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`StreamReader`](generated/torchdata.datapipes.iter.StreamReader.html#torchdata.datapipes.iter.StreamReader
+    "torchdata.datapipes.iter.StreamReader") | Given IO streams and their label names,
+    yields bytes with label name in a tuple (functional name: `read_from_stream`).
+    |'
+  prefs: []
+  type: TYPE_TB

@@ -1,0 +1,236 @@
+- en: StreamWriter Advanced Usage¶
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/audio/stable/tutorials/streamwriter_advanced.html](https://pytorch.org/audio/stable/tutorials/streamwriter_advanced.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Click [here](#sphx-glr-download-tutorials-streamwriter-advanced-py) to download
+    the full example code
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Author**: [Moto Hira](mailto:moto%40meta.com)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: This tutorial shows how to use [`torchaudio.io.StreamWriter`](../generated/torchaudio.io.StreamWriter.html#torchaudio.io.StreamWriter
+    "torchaudio.io.StreamWriter") to play audio and video.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: This tutorial uses hardware devices, thus it is not portable across different
+    operating systems.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The tutorial was written and tested on MacBook Pro (M1, 2020).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: This tutorial requires FFmpeg libraries. Please refer to [FFmpeg dependency](../installation.html#ffmpeg-dependency)
+    for the detail.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Warning
+  prefs: []
+  type: TYPE_NORMAL
+- en: TorchAudio dynamically loads compatible FFmpeg libraries installed on the system.
+    The types of supported formats (media format, encoder, encoder options etc) depend
+    on the libraries.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To check the available devices, muxers and encoders, you can use the following
+    commands
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Preparation[¶](#preparation "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Device Availability[¶](#device-availability "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '`StreamWriter` takes advantage of FFmpeg’s IO abstraction and writes the data
+    to media devices such as speakers and GUI.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: To write to devices, provide `format` option to the constructor of `StreamWriter`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Different OS will have different device options and their availabilities depend
+    on the actual installation of FFmpeg.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To check which device is available, you can use ffmpeg -devices command.
+  prefs: []
+  type: TYPE_NORMAL
+- en: “audiotoolbox” (speaker) and “sdl” (video GUI) are available.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: For details about what devices are available on which OS, please check the official
+    FFmpeg documentation. [https://ffmpeg.org/ffmpeg-devices.html](https://ffmpeg.org/ffmpeg-devices.html)
+  prefs: []
+  type: TYPE_NORMAL
+- en: Playing audio[¶](#playing-audio "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: By providing `format="audiotoolbox"` option, the StreamWriter writes data to
+    speaker device.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Writing to “audiotoolbox” is blocking operation, but it will not wait for the
+    aduio playback. The device must be kept open while audio is being played.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The following code will close the device as soon as the audio is written and
+    before the playback is completed. Adding [`time.sleep()`](https://docs.python.org/3/library/time.html#time.sleep
+    "(in Python v3.12)") will help keep the device open until the playback is completed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Playing Video[¶](#playing-video "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: To play video, you can use `format="sdl"` or `format="opengl"`. Again, you need
+    a version of FFmpeg with corresponding integration enabled. The available devices
+    can be checked with `ffmpeg -devices`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Here, we use SDL device ([https://ffmpeg.org/ffmpeg-devices.html#sdl](https://ffmpeg.org/ffmpeg-devices.html#sdl)).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: For we define a helper function that delegates the video loading to a background
+    thread and give chunks
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now we start streaming. Pressing “Q” will stop the video.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: write_video_chunk call against SDL device blocks until SDL finishes playing
+    the video.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: <https://download.pytorch.org/torchaudio/tutorial-assets/torchaudio-sdl-demo.mp4>
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[[code](https://download.pytorch.org/torchaudio/tutorial-assets/sdl.py)]'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Streaming Video[¶](#streaming-video "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: So far, we looked at how to write to hardware devices. There are some alternative
+    methods for video streaming.
+  prefs: []
+  type: TYPE_NORMAL
+- en: RTMP (Real-Time Messaging Protocol)[¶](#rtmp-real-time-messaging-protocol "Permalink
+    to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Using RMTP, you can stream media (video and/or audio) to a single client. This
+    does not require a hardware device, but it requires a separate player.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'To use RMTP, specify the protocol and route in `dst` argument in StreamWriter
+    constructor, then pass `{"listen": "1"}` option when opening the destination.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: StreamWriter will listen to the port and wait for a client to request the video.
+    The call to `open` is blocked until a request is received.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: <https://download.pytorch.org/torchaudio/tutorial-assets/torchaudio-rtmp-demo.mp4>
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[[code](https://download.pytorch.org/torchaudio/tutorial-assets/rtmp.py)]'
+  prefs: []
+  type: TYPE_NORMAL
+- en: UDP (User Datagram Protocol)[¶](#udp-user-datagram-protocol "Permalink to this
+    heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Using UDP, you can stream media (video and/or audio) to socket. This does not
+    require a hardware device, but it requires a separate player.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Unlike RTMP streaming and client processes are disconnected. The streaming process
+    are not aware of client process.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: <https://download.pytorch.org/torchaudio/tutorial-assets/torchaudio-udp-demo.mp4>
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[[code](https://download.pytorch.org/torchaudio/tutorial-assets/udp.py)]'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Tag: [`torchaudio.io`](../io.html#module-torchaudio.io "torchaudio.io")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Total running time of the script:** ( 0 minutes 0.000 seconds)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Python source code: streamwriter_advanced.py`](../_downloads/acd5f4d113437b875fa5999e86a2ba3b/streamwriter_advanced.py)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Jupyter notebook: streamwriter_advanced.ipynb`](../_downloads/95ad2a02082b86065ac66ebb90a9ad5b/streamwriter_advanced.ipynb)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  prefs: []
+  type: TYPE_NORMAL

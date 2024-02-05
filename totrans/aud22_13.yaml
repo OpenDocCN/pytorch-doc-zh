@@ -1,0 +1,279 @@
+- en: Enabling GPU video decoder/encoder¶
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/audio/stable/build.ffmpeg.html](https://pytorch.org/audio/stable/build.ffmpeg.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: TorchAudio can make use of hardware-based video decoding and encoding supported
+    by underlying FFmpeg libraries that are linked at runtime.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Using NVIDIA’s GPU decoder and encoder, it is also possible to pass around CUDA
+    Tensor directly, that is decode video into CUDA tensor or encode video from CUDA
+    tensor, without moving data from/to CPU.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This improves the video throughput significantly. However, please note that
+    not all the video formats are supported by hardware acceleration.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This page goes through how to build FFmpeg with hardware acceleration. For the
+    detail on the performance of GPU decoder and encoder please see [NVDEC tutoial](tutorials/nvdec_tutorial.html#nvdec-tutorial)
+    and [NVENC tutorial](tutorials/nvenc_tutorial.html#nvenc-tutorial).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Overview[¶](#overview "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Using them in TorchAduio requires additional FFmpeg configuration.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the following, we look into how to enable GPU video decoding with [NVIDIA’s
+    Video codec SDK](https://developer.nvidia.com/nvidia-video-codec-sdk). To use
+    NVENC/NVDEC with TorchAudio, the following items are required.
+  prefs: []
+  type: TYPE_NORMAL
+- en: NVIDIA GPU with hardware video decoder/encoder.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: FFmpeg libraries compiled with NVDEC/NVENC support. †
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: PyTorch / TorchAudio with CUDA support.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: TorchAudio’s official binary distributions are compiled to work with FFmpeg
+    libraries, and they contain the logic to use hardware decoding/encoding.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In the following, we build FFmpeg 4 libraries with NVDEC/NVENC support. You
+    can also use FFmpeg 5 or 6.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The following procedure was tested on Ubuntu.
+  prefs: []
+  type: TYPE_NORMAL
+- en: † For details on NVDEC/NVENC and FFmpeg, please refer to the following articles.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[https://docs.nvidia.com/video-technologies/video-codec-sdk/11.1/nvdec-video-decoder-api-prog-guide/](https://docs.nvidia.com/video-technologies/video-codec-sdk/11.1/nvdec-video-decoder-api-prog-guide/)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[https://docs.nvidia.com/video-technologies/video-codec-sdk/11.1/ffmpeg-with-nvidia-gpu/index.html#compiling-ffmpeg](https://docs.nvidia.com/video-technologies/video-codec-sdk/11.1/ffmpeg-with-nvidia-gpu/index.html#compiling-ffmpeg)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[https://developer.nvidia.com/blog/nvidia-ffmpeg-transcoding-guide/](https://developer.nvidia.com/blog/nvidia-ffmpeg-transcoding-guide/)'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Check the GPU and CUDA version[¶](#check-the-gpu-and-cuda-version "Permalink
+    to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: First, check the available GPU. Here, we have Tesla T4 with CUDA Toolkit 11.2
+    installed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Checking the compute capability[¶](#checking-the-compute-capability "Permalink
+    to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Later, we need the version of compute capability supported by this GPU. The
+    following page lists the GPUs and corresponding compute capabilities. The compute
+    capability of T4 is `7.5`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[https://developer.nvidia.com/cuda-gpus](https://developer.nvidia.com/cuda-gpus)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Install NVIDIA Video Codec Headers[¶](#install-nvidia-video-codec-headers "Permalink
+    to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: To build FFmpeg with NVDEC/NVENC, we first need to install the headers that
+    FFmpeg uses to interact with Video Codec SDK.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Since we have CUDA 11 working in the system, we use one of `n11` tag.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: The location of installation can be changed with `make PREFIX=<DESIRED_DIRECTORY>
+    install`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: Install FFmpeg dependencies[¶](#install-ffmpeg-dependencies "Permalink to this
+    heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Next, we install tools and libraries required during the FFmpeg build. The minimum
+    requirement is [Yasm](https://yasm.tortall.net/). Here we additionally install
+    H264 video codec and HTTPS protocol, which we use later for verifying the installation.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: Build FFmpeg with NVDEC/NVENC support[¶](#build-ffmpeg-with-nvdec-nvenc-support
+    "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Next we download the source code of FFmpeg 4\. We use 4.4.2 here.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Next we configure FFmpeg build. Note the following:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: We provide flags like `-I/usr/local/cuda/include`, `-L/usr/local/cuda/lib64`
+    to let the build process know where the CUDA libraries are found.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: We provide flags like `--enable-nvdec` and `--enable-nvenc` to enable NVDEC/NVENC.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: We also provide NVCC flags with compute capability `75`, which corresponds to
+    `7.5` of T4\. †
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: We install the library in `/usr/lib/`.
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: † The configuration script verifies NVCC by compiling a sample code. By default
+    it uses old compute capability such as `30`, which is no longer supported by CUDA
+    11\. So it is required to set a correct compute capability.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now we build and install
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: Checking the intallation[¶](#checking-the-intallation "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: To verify that the FFmpeg we built have CUDA support, we can check the list
+    of available decoders and encoders.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: The following command fetches video from remote server, decode with NVDEC (cuvid)
+    and re-encode with NVENC. If this command does not work, then there is an issue
+    with FFmpeg installation, and TorchAudio would not be able to use them either.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: 'Note that there is `Stream #0:0 -> #0:0 (h264 (h264_cuvid) -> h264 (h264_nvenc))`,
+    which means that video is decoded with `h264_cuvid` decoder and `h264_nvenc` encoder.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: Using the GPU decoder/encoder from TorchAudio[¶](#using-the-gpu-decoder-encoder-from-torchaudio
+    "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Checking the installation[¶](#checking-the-installation "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Once the FFmpeg is properly working with hardware acceleration, we need to check
+    if TorchAudio can pick it up correctly.
+  prefs: []
+  type: TYPE_NORMAL
+- en: There are utility functions to query the capability of FFmpeg in [`torchaudio.utils.ffmpeg_utils`](generated/torchaudio.utils.ffmpeg_utils.html#module-torchaudio.utils.ffmpeg_utils
+    "torchaudio.utils.ffmpeg_utils").
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can first use [`get_video_decoders()`](generated/torchaudio.utils.ffmpeg_utils.html#torchaudio.utils.ffmpeg_utils.get_video_decoders
+    "torchaudio.utils.ffmpeg_utils.get_video_decoders") and [`get_video_encoders()`](generated/torchaudio.utils.ffmpeg_utils.html#torchaudio.utils.ffmpeg_utils.get_video_encoders
+    "torchaudio.utils.ffmpeg_utils.get_video_encoders") to check if GPU decoders and
+    encoders (such as `h264_cuvid` and `h264_nvenc`) are listed.
+  prefs: []
+  type: TYPE_NORMAL
+- en: It is often the case where there are multiple FFmpeg installations in the system,
+    and TorchAudio is loading one different than expected. In such cases, use of `ffmpeg`
+    to check the installation does not help. You can use functions like [`get_build_config()`](generated/torchaudio.utils.ffmpeg_utils.html#torchaudio.utils.ffmpeg_utils.get_build_config
+    "torchaudio.utils.ffmpeg_utils.get_build_config") and [`get_versions()`](generated/torchaudio.utils.ffmpeg_utils.html#torchaudio.utils.ffmpeg_utils.get_versions
+    "torchaudio.utils.ffmpeg_utils.get_versions") to get information about FFmpeg
+    libraries TorchAudio loaded.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: Using the hardware decoder and encoder[¶](#using-the-hardware-decoder-and-encoder
+    "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Once the installation and the runtime linking work fine, then you can test the
+    GPU decoding with the following.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For the detail on the performance of GPU decoder and encoder please see [NVDEC
+    tutoial](tutorials/nvdec_tutorial.html#nvdec-tutorial) and [NVENC tutorial](tutorials/nvenc_tutorial.html#nvenc-tutorial).
+  prefs: []
+  type: TYPE_NORMAL

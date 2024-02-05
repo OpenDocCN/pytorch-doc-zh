@@ -1,0 +1,605 @@
+- en: ReadingService¶
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/data/beta/reading_service.html](https://pytorch.org/data/beta/reading_service.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: '`ReadingService` handles in-place modification of `DataPipe` graph based on
+    different use cases.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Features[¶](#features "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Dynamic Sharding[¶](#dynamic-sharding "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Dynamic sharding is achieved by `MultiProcessingReadingService` and `DistributedReadingService`
+    to shard the pipeline based on the information of corresponding multiprocessing
+    and distributed workers. And, TorchData offers two types of `DataPipe` letting
+    users define the sharding place within the pipeline.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`sharding_filter` ([`ShardingFilter`](generated/torchdata.datapipes.iter.ShardingFilter.html#torchdata.datapipes.iter.ShardingFilter
+    "torchdata.datapipes.iter.ShardingFilter")): When the pipeline is replicable,
+    each distributed/multiprocessing worker loads data from its own replica of the
+    `DataPipe` graph, while skipping samples that do not belong to the corresponding
+    worker at the point where `sharding_filter` is placed.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`sharding_round_robin_dispatch` ([`ShardingRoundRobinDispatcher`](generated/torchdata.datapipes.iter.ShardingRoundRobinDispatcher.html#torchdata.datapipes.iter.ShardingRoundRobinDispatcher
+    "torchdata.datapipes.iter.ShardingRoundRobinDispatcher")): When there is any `sharding_round_robin_dispatch`
+    `DataPipe` in the pipeline, that branch (i.e. all DataPipes prior to `sharding_round_robin_dispatch`)
+    will be treated as a non-replicable branch (in the context of multiprocessing).
+    A single dispatching process will be created to load data from the non-replicable
+    branch and distribute data to the subsequent worker processes.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The following is an example of having two types of sharding strategies in the
+    pipeline.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![digraph Example {'
+  prefs: []
+  type: TYPE_NORMAL
+- en: subgraph cluster_replicable {
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: label="Replicable"
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: a -> b -> c -> d -> l;
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: color=blue;
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: '}'
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: subgraph cluster_non_replicable {
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: style=filled;
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: color=lightgrey;
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: node [style=filled,color=white];
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: label="Non-Replicable"
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: e -> f -> g -> k;
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: h -> i -> j -> k;
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: '}'
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: k -> l -> fullsync -> end;
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: a [label="DP1"];
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: b [label="shuffle"];
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: c [label="sharding_filter", color=blue];
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: d [label="DP4"];
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: e [label="DP2"];
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: f [label="shuffle"];
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: g [label="sharding_round_robin_dispatch", style="filled,rounded", color=red,
+    fillcolor=white];
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: h [label="DP3"];
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: i [label="shuffle"];
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: j [label="sharding_round_robin_dispatch", style="filled,rounded", color=red,
+    fillcolor=white];
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: k [label="DP5 (Lowest common ancestor)"];
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: l [label="DP6"];
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: fullsync;
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: end [shape=box];
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: '}](../Images/ded90db7e9b275c0ce72673dbdb87c9c.png)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'When multiprocessing takes place, the graph becomes:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '![digraph Example {'
+  prefs: []
+  type: TYPE_NORMAL
+- en: subgraph cluster_worker_0 {
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: label="Worker 0"
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: a0 -> b0 -> c0 -> d0 -> l0;
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: m0 -> l0;
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: color=blue;
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: '}'
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: subgraph cluster_worker_1 {
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: label="Worker 1"
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: a1 -> b1 -> c1 -> d1 -> l1;
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: m1 -> l1;
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: color=blue;
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: '}'
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: subgraph cluster_non_replicable {
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: style=filled;
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: color=lightgrey;
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: node [style=filled,color=white];
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: label="Non-Replicable"
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: e -> f -> g -> k;
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: h -> i -> j -> k;
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: k -> round_robin_demux;
+  prefs:
+  - PREF_IND
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: '}'
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: round_robin_demux -> m0;
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: round_robin_demux -> m1;
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: l0 -> n;
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: l1 -> n;
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: n -> fullsync -> end;
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: a0 [label="DP1"];
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: b0 [label="shuffle"];
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: c0 [label="sharding_filter", color=blue];
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: d0 [label="DP4"];
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: a1 [label="DP1"];
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: b1 [label="shuffle"];
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: c1 [label="sharding_filter", color=blue];
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: d1 [label="DP4"];
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: e [label="DP2"];
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: f [label="shuffle"];
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: g [label="sharding_round_robin_dispatch", style="filled,rounded", color=red,
+    fillcolor=white];
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: h [label="DP3"];
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: i [label="shuffle"];
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: j [label="sharding_round_robin_dispatch", style="filled,rounded", color=red,
+    fillcolor=white];
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: k [label="DP5 (Lowest common ancestor)"];
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: fullsync;
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: l0 [label="DP6"];
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: l1 [label="DP6"];
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: m0 [label="Client"]
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: m1 [label="Client"]
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: n [label="Client"]
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: end [shape=box];
+  prefs:
+  - PREF_IND
+  type: TYPE_NORMAL
+- en: '}](../Images/43cb85d64c97047f6451f776a8417bfc.png)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`Client` in the graph is a `DataPipe` that sends a request and receives a response
+    from multiprocessing queues.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Determinism[¶](#determinism "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: In `DataLoader2`, a `SeedGenerator` becomes a single source of randomness and
+    each `ReadingService` would access it via `initialize_iteration()` and generate
+    corresponding random seeds for random `DataPipe` operations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In order to make sure that the Dataset shards are mutually exclusive and collectively
+    exhaustive on multiprocessing processes and distributed nodes, `MultiProcessingReadingService`
+    and `DistributedReadingService` would help [`DataLoader2`](dataloader2.html#torchdata.dataloader2.DataLoader2
+    "torchdata.dataloader2.DataLoader2") to synchronize random states for any random
+    `DataPipe` operation prior to `sharding_filter` or `sharding_round_robin_dispatch`.
+    For the remaining `DataPipe` operations after sharding, unique random states are
+    generated based on the distributed rank and worker process id by each `ReadingService`,
+    in order to perform different random transformations.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Graph Mode[¶](#graph-mode "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: This also allows easier transition of data-preprocessing pipeline from research
+    to production. After the `DataPipe` graph is created and validated with the `ReadingServices`,
+    a different `ReadingService` that configures and connects to the production service/infrastructure
+    such as `AIStore` can be provided to [`DataLoader2`](dataloader2.html#torchdata.dataloader2.DataLoader2
+    "torchdata.dataloader2.DataLoader2") as a drop-in replacement. The `ReadingService`
+    could potentially search the graph, and find `DataPipe` operations that can be
+    delegated to the production service/infrastructure, then modify the graph correspondingly
+    to achieve higher-performant execution.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Extend ReadingService[¶](#extend-readingservice "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The followings are interfaces for custom `ReadingService`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: Interface for `ReadingService`. Please extend custom `ReadingService` based
+    on this interface class.
+  prefs: []
+  type: TYPE_NORMAL
+- en: ReadingService must be picklable prior to `initialize` being called. This is
+    because a copy of it will be created by `DataLoader2` to avoid the situation where
+    the same ReadingService object is used by multiple `DataLoader2`, and its internal
+    state will be modifiable by each of them.
+  prefs: []
+  type: TYPE_NORMAL
+- en: As a result of this constraint, certain initialization steps may need to take
+    place within the `initialize` method rather than `__init__` of the ReadingService
+    class.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: '`ReadingService` cleans up internal states and fully shuts down the service.
+    Called in `DataLoader2`’s `shutdown` and `__del__`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: '`ReadingService` ends service after an epoch is finished. Called when the iterator
+    of `DataLoader2` is depleted.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: '`ReadingService` takes a `DataPipe` graph, adapts it into a new `DataPipe`
+    graph based on the custom need. Called once in creating `DataLoader2` iterator
+    at first time. Prior to calling this method, the `ReadingService` object must
+    be picklable.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**datapipe** – Original `DataPipe` graph.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: An adapted or a new `DataPipe` graph.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: '`ReadingService` spins up service for an epoch. Called at the beginning of
+    every time getting `DataLoader2` iterator.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**seed_generator** – SeedGenerator object created and managed by DataLoader2\.
+    As the single source of randomness, it will govern the determinism for all of
+    random operations with the graph of DataPipes.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**iter_reset_fn** – Optional reset function from the prior `ReadingServcie`
+    when `SequentialReadingService` chains multiple `ReadingServices`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: A new `iter_reset_fn` to be used by subseqeuent `ReadingService`
+  prefs: []
+  type: TYPE_NORMAL
+- en: Example
+  prefs: []
+  type: TYPE_NORMAL
+- en: MultiProcessingReadingService starts setting worker seeds per process and prefetching
+    items from the graph.
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'The checkpoint/snapshotting feature is a work in progress. Here is the preliminary
+    interface (small changes are likely):'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: Extend `ReadingServiceInterface` with two additional methods to save/restore
+    the state of the data-processing graph.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: '`ReadingService` serializes the internal states. Called in `DataLoader2.state_dict`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: '`ReadingService` adapts `DataPipe` graph based on the serialized state. Called
+    once in creating `DataLoader2` iterator at first time. Counterpart of `initialize`,
+    which adapt `DataPipe` graph from scratch.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Parameters:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**datapipe** – original `DataPipe` graph before adapted by `ReadingService`'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '**serialized_state** – The serialized state of internal state used to restore
+    the state of the adapted `DataPipe` graph.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: 'Returns:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Adapted `DataPipe` generated from the serialized state.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Graph Functions[¶](#graph-functions "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: 'And, graph utility functions are provided in `torchdata.dataloader.graph` to
+    help users to do `DataPipe` graph rewrite for custom `ReadingService`:'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '| [`traverse_dps`](generated/torchdata.dataloader2.graph.traverse_dps.html#torchdata.dataloader2.graph.traverse_dps
+    "torchdata.dataloader2.graph.traverse_dps") | Traverse the DataPipes and their
+    attributes to extract the DataPipe graph. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`find_dps`](generated/torchdata.dataloader2.graph.find_dps.html#torchdata.dataloader2.graph.find_dps
+    "torchdata.dataloader2.graph.find_dps") | Given the graph of DataPipe generated
+    by `traverse_dps` function, return DataPipe instances with the provided DataPipe
+    type. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`list_dps`](generated/torchdata.dataloader2.graph.list_dps.html#torchdata.dataloader2.graph.list_dps
+    "torchdata.dataloader2.graph.list_dps") | Given the graph of DataPipe generated
+    by `traverse_dps` function, return a list of all DataPipe instances without duplication.
+    |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`remove_dp`](generated/torchdata.dataloader2.graph.remove_dp.html#torchdata.dataloader2.graph.remove_dp
+    "torchdata.dataloader2.graph.remove_dp") | Given the graph of DataPipe generated
+    by `traverse_dps` function and the DataPipe to be removed, return the new graph
+    of DataPipe. |'
+  prefs: []
+  type: TYPE_TB
+- en: '| [`replace_dp`](generated/torchdata.dataloader2.graph.replace_dp.html#torchdata.dataloader2.graph.replace_dp
+    "torchdata.dataloader2.graph.replace_dp") | Given the graph of DataPipe generated
+    by `traverse_dps` function and the DataPipe to be replaced and the new DataPipe,
+    return the new graph of DataPipe. |'
+  prefs: []
+  type: TYPE_TB

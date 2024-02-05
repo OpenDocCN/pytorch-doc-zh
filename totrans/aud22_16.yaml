@@ -1,0 +1,538 @@
+- en: StreamReader Basic Usages¶
+  prefs:
+  - PREF_H1
+  type: TYPE_NORMAL
+- en: 原文：[https://pytorch.org/audio/stable/tutorials/streamreader_basic_tutorial.html](https://pytorch.org/audio/stable/tutorials/streamreader_basic_tutorial.html)
+  prefs:
+  - PREF_BQ
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: Click [here](#sphx-glr-download-tutorials-streamreader-basic-tutorial-py) to
+    download the full example code
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Author**: [Moto Hira](mailto:moto%40meta.com)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: This tutorial shows how to use [`torchaudio.io.StreamReader`](../generated/torchaudio.io.StreamReader.html#torchaudio.io.StreamReader
+    "torchaudio.io.StreamReader") to fetch and decode audio/video data and apply preprocessings
+    that libavfilter provides.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: This tutorial requires FFmpeg libraries. Please refer to [FFmpeg dependency](../installation.html#ffmpeg-dependency)
+    for the detail.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Overview[¶](#overview "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Streaming API leverages the powerful I/O features of ffmpeg.
+  prefs: []
+  type: TYPE_NORMAL
+- en: It can
+  prefs: []
+  type: TYPE_NORMAL
+- en: Load audio/video in variety of formats
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Load audio/video from local/remote source
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Load audio/video from file-like object
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Load audio/video from microphone, camera and screen
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Generate synthetic audio/video signals.
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Load audio/video chunk by chunk
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Change the sample rate / frame rate, image size, on-the-fly
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: Apply filters and preprocessings
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: The streaming API works in three steps.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Open media source (file, device, synthetic pattern generator)
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Configure output stream
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Stream the media
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: At this moment, the features that the ffmpeg integration provides are limited
+    to the form of
+  prefs: []
+  type: TYPE_NORMAL
+- en: <some media source> -> <optional processing> -> <tensor>
+  prefs: []
+  type: TYPE_NORMAL
+- en: If you have other forms that can be useful to your usecases, (such as integration
+    with torch.Tensor type) please file a feature request.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Preparation[¶](#preparation "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: '[PRE0]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE1]'
+  prefs: []
+  type: TYPE_PRE
+- en: Opening the source[¶](#opening-the-source "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: There are mainly three different sources that streaming API can handle. Whichever
+    source is used, the remaining processes (configuring the output, applying preprocessing)
+    are same.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Common media formats (resource indicator of string type or file-like object)
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Audio / Video devices
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: Synthetic audio / video sources
+  prefs:
+  - PREF_OL
+  type: TYPE_NORMAL
+- en: The following section covers how to open common media formats. For the other
+    streams, please refer to the [StreamReader Advanced Usage](./streamreader_advanced_tutorial.html).
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: The coverage of the supported media (such as containers, codecs and protocols)
+    depend on the FFmpeg libraries found in the system.
+  prefs: []
+  type: TYPE_NORMAL
+- en: If StreamReader raises an error opening a source, please check that ffmpeg command
+    can handle it.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Local files[¶](#local-files "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: To open a media file, you can simply pass the path of the file to the constructor
+    of StreamReader.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE2]'
+  prefs: []
+  type: TYPE_PRE
+- en: This works for image file, video file and video streams.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE3]'
+  prefs: []
+  type: TYPE_PRE
+- en: Network protocols[¶](#network-protocols "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: You can directly pass a URL as well.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE4]'
+  prefs: []
+  type: TYPE_PRE
+- en: File-like objects[¶](#file-like-objects "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: You can also pass a file-like object. A file-like object must implement `read`
+    method conforming to [`io.RawIOBase.read`](https://docs.python.org/3/library/io.html#io.RawIOBase.read
+    "(in Python v3.12)").
+  prefs: []
+  type: TYPE_NORMAL
+- en: If the given file-like object has `seek` method, StreamReader uses it as well.
+    In this case the `seek` method is expected to conform to [`io.IOBase.seek`](https://docs.python.org/3/library/io.html#io.IOBase.seek
+    "(in Python v3.12)").
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE5]'
+  prefs: []
+  type: TYPE_PRE
+- en: In case where third-party libraries implement `seek` so that it raises an error,
+    you can write a wrapper class to mask the `seek` method.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE6]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE7]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE8]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: When using an unseekable file-like object, the source media has to be streamable.
+    For example, a valid MP4-formatted object can have its metadata either at the
+    beginning or at the end of the media data. Those with metadata at the beginning
+    can be opened without method seek, but those with metadata at the end cannot be
+    opened without seek.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Headerless media[¶](#headerless-media "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: If attempting to load headerless raw data, you can use `format` and `option`
+    to specify the format of the data.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Say, you converted an audio file into faw format with `sox` command as follow;
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE9]'
+  prefs: []
+  type: TYPE_PRE
+- en: Such audio can be opened like following.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE10]'
+  prefs: []
+  type: TYPE_PRE
+- en: Checking the source streams[¶](#checking-the-source-streams "Permalink to this
+    heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Once the media is opened, we can inspect the streams and configure the output
+    streams.
+  prefs: []
+  type: TYPE_NORMAL
+- en: You can check the number of source streams with `num_src_streams`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: The number of streams is NOT the number of channels. Each audio stream can contain
+    an arbitrary number of channels.
+  prefs: []
+  type: TYPE_NORMAL
+- en: To check the metadata of source stream you can use `get_src_stream_info()` method
+    and provide the index of the source stream.
+  prefs: []
+  type: TYPE_NORMAL
+- en: This method returns `SourceStream`. If a source stream is audio type, then the
+    return type is `SourceAudioStream`, which is a subclass of SourceStream, with
+    additional audio-specific attributes. Similarly, if a source stream is video type,
+    then the return type is `SourceVideoStream`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: For regular audio formats and still image formats, such as WAV and JPEG, the
+    number of souorce streams is 1.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE11]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE12]'
+  prefs: []
+  type: TYPE_PRE
+- en: Container formats and playlist formats may contain multiple streams of different
+    media type.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE13]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE14]'
+  prefs: []
+  type: TYPE_PRE
+- en: Configuring output streams[¶](#configuring-output-streams "Permalink to this
+    heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: The stream API lets you stream data from an arbitrary combination of the input
+    streams. If your application does not need audio or video, you can omit them.
+    Or if you want to apply different preprocessing to the same source stream, you
+    can duplicate the source stream.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Default streams[¶](#default-streams "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: When there are multiple streams in the source, it is not immediately clear which
+    stream should be used.
+  prefs: []
+  type: TYPE_NORMAL
+- en: FFmpeg implements some heuristics to determine the default stream. The resulting
+    stream index is exposed via
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`default_audio_stream` and `default_video_stream`.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Configuring output streams[¶](#id1 "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Once you know which source stream you want to use, then you can configure output
+    streams with `add_basic_audio_stream()` and `add_basic_video_stream()`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: These methods provide a simple way to change the basic property of media to
+    match the application’s requirements.
+  prefs: []
+  type: TYPE_NORMAL
+- en: The arguments common to both methods are;
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`frames_per_chunk`: How many frames at maximum should be returned at each iteration.
+    For audio, the resulting tensor will be the shape of (frames_per_chunk, num_channels).
+    For video, it will be (frames_per_chunk, num_channels, height, width).'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`buffer_chunk_size`: The maximum number of chunks to be buffered internally.
+    When the StreamReader buffered this number of chunks and is asked to pull more
+    frames, StreamReader drops the old frames/chunks.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`stream_index`: The index of the source stream.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`decoder`: If provided, override the decoder. Useful if it fails to detect
+    the codec.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`decoder_option`: The option for the decoder.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: For audio output stream, you can provide the following additional parameters
+    to change the audio properties.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`format`: By default the StreamReader returns tensor of float32 dtype, with
+    sample values ranging [-1, 1]. By providing `format` argument the resulting dtype
+    and value range is changed.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`sample_rate`: When provided, StreamReader resamples the audio on-the-fly.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: For video output stream, the following parameters are available.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '`format`: Image frame format. By default StreamReader returns frames in 8-bit
+    3 channel, in RGB order.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`frame_rate`: Change the frame rate by dropping or duplicating frames. No interpolation
+    is performed.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '`width`, `height`: Change the image size.'
+  prefs:
+  - PREF_UL
+  type: TYPE_NORMAL
+- en: '[PRE15]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE16]'
+  prefs: []
+  type: TYPE_PRE
+- en: You can check the resulting output streams in a similar manner as checking the
+    source streams. `num_out_streams` reports the number of configured output streams,
+    and `get_out_stream_info()` fetches the information about the output streams.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE17]'
+  prefs: []
+  type: TYPE_PRE
+- en: If you want to remove an output stream, you can do so with `remove_stream()`
+    method.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE18]'
+  prefs: []
+  type: TYPE_PRE
+- en: Streaming[¶](#streaming "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: To stream media data, the streamer alternates the process of fetching and decoding
+    the source data, and passing the resulting audio / video data to client code.
+  prefs: []
+  type: TYPE_NORMAL
+- en: There are low-level methods that performs these operations. `is_buffer_ready()`,
+    `process_packet()` and `pop_chunks()`.
+  prefs: []
+  type: TYPE_NORMAL
+- en: In this tutorial, we will use the high-level API, iterator protocol. It is as
+    simple as a `for` loop.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE19]'
+  prefs: []
+  type: TYPE_PRE
+- en: Example[¶](#example "Permalink to this heading")
+  prefs:
+  - PREF_H2
+  type: TYPE_NORMAL
+- en: Let’s take an example video to configure the output streams. We will use the
+    following video.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[https://www.youtube.com/embed/6zNsc0e3Zns](https://www.youtube.com/embed/6zNsc0e3Zns)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Source: [https://svs.gsfc.nasa.gov/13013](https://svs.gsfc.nasa.gov/13013)
+    (This video is in public domain)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'Credit: NASA’s Goddard Space Flight Center.'
+  prefs: []
+  type: TYPE_NORMAL
+- en: 'NASA’s Media Usage Guidelines: [https://www.nasa.gov/multimedia/guidelines/index.html](https://www.nasa.gov/multimedia/guidelines/index.html)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: Opening the source media[¶](#opening-the-source-media "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Firstly, let’s list the available streams and its properties.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE20]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE21]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now we configure the output stream.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Configuring ouptut streams[¶](#configuring-ouptut-streams "Permalink to this
+    heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: '[PRE22]'
+  prefs: []
+  type: TYPE_PRE
+- en: Note
+  prefs: []
+  type: TYPE_NORMAL
+- en: When configuring multiple output streams, in order to keep all streams synced,
+    set parameters so that the ratio between `frames_per_chunk` and `sample_rate`
+    or `frame_rate` is consistent across output streams.
+  prefs: []
+  type: TYPE_NORMAL
+- en: Checking the output streams.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE23]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE24]'
+  prefs: []
+  type: TYPE_PRE
+- en: Remove the second audio stream.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE25]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE26]'
+  prefs: []
+  type: TYPE_PRE
+- en: Streaming[¶](#id2 "Permalink to this heading")
+  prefs:
+  - PREF_H3
+  type: TYPE_NORMAL
+- en: Jump to the 10 second point.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE27]'
+  prefs: []
+  type: TYPE_PRE
+- en: Now, let’s finally iterate over the output streams.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE28]'
+  prefs: []
+  type: TYPE_PRE
+- en: For audio stream, the chunk Tensor will be the shape of (frames_per_chunk, num_channels),
+    and for video stream, it is (frames_per_chunk, num_color_channels, height, width).
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE29]'
+  prefs: []
+  type: TYPE_PRE
+- en: '[PRE30]'
+  prefs: []
+  type: TYPE_PRE
+- en: Let’s visualize what we received.
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[PRE31]'
+  prefs: []
+  type: TYPE_PRE
+- en: '![Iteration 0, Iteration 1, Iteration 2](../Images/b4b4e717ab69f1911cc59e246f8112cc.png)'
+  prefs: []
+  type: TYPE_IMG
+- en: 'Tag: [`torchaudio.io`](../io.html#module-torchaudio.io "torchaudio.io")'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '**Total running time of the script:** ( 0 minutes 6.077 seconds)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Python source code: streamreader_basic_tutorial.py`](../_downloads/dc81b404e96c6cb650e0c5a8115bc1f1/streamreader_basic_tutorial.py)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[`Download Jupyter notebook: streamreader_basic_tutorial.ipynb`](../_downloads/2b51f71e4505865cc313762deb71d572/streamreader_basic_tutorial.ipynb)'
+  prefs: []
+  type: TYPE_NORMAL
+- en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  prefs: []
+  type: TYPE_NORMAL
