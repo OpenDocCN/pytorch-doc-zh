@@ -1,310 +1,480 @@
 - en: Speech Recognition with Wav2Vec2
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 使用Wav2Vec2进行语音识别
 - en: 原文：[https://pytorch.org/audio/stable/tutorials/speech_recognition_pipeline_tutorial.html](https://pytorch.org/audio/stable/tutorials/speech_recognition_pipeline_tutorial.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/audio/stable/tutorials/speech_recognition_pipeline_tutorial.html](https://pytorch.org/audio/stable/tutorials/speech_recognition_pipeline_tutorial.html)
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-tutorials-speech-recognition-pipeline-tutorial-py)
     to download the full example code
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[这里](#sphx-glr-download-tutorials-speech-recognition-pipeline-tutorial-py)下载完整示例代码
 - en: '**Author**: [Moto Hira](mailto:moto%40meta.com)'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '**作者**：[Moto Hira](mailto:moto%40meta.com)'
 - en: This tutorial shows how to perform speech recognition using using pre-trained
     models from wav2vec 2.0 [[paper](https://arxiv.org/abs/2006.11477)].
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程展示了如何使用来自wav2vec 2.0的预训练模型执行语音识别[[论文](https://arxiv.org/abs/2006.11477)]。
 - en: Overview[](#overview "Permalink to this heading")
+  id: totrans-6
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 概述[](#overview "跳转到此标题")
 - en: The process of speech recognition looks like the following.
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 语音识别的过程如下所示。
 - en: Extract the acoustic features from audio waveform
+  id: totrans-8
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 从音频波形中提取声学特征
 - en: Estimate the class of the acoustic features frame-by-frame
+  id: totrans-9
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 逐帧估计声学特征的类别
 - en: Generate hypothesis from the sequence of the class probabilities
+  id: totrans-10
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 从类概率序列生成假设
 - en: Torchaudio provides easy access to the pre-trained weights and associated information,
     such as the expected sample rate and class labels. They are bundled together and
     available under [`torchaudio.pipelines`](../pipelines.html#module-torchaudio.pipelines
     "torchaudio.pipelines") module.
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: Torchaudio提供了对预训练权重和相关信息的简单访问，例如预期的采样率和类标签。它们被捆绑在一起，并在[`torchaudio.pipelines`](../pipelines.html#module-torchaudio.pipelines
+    "torchaudio.pipelines")模块下提供。
 - en: Preparation[](#preparation "Permalink to this heading")
+  id: totrans-12
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 准备[](#preparation "跳转到此标题")
 - en: '[PRE0]'
+  id: totrans-13
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: '[PRE1]'
+  id: totrans-14
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: '[PRE2]'
+  id: totrans-15
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: '[PRE3]'
+  id: totrans-16
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: Creating a pipeline[](#creating-a-pipeline "Permalink to this heading")
+  id: totrans-17
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 创建管道[](#creating-a-pipeline "跳转到此标题")
 - en: First, we will create a Wav2Vec2 model that performs the feature extraction
     and the classification.
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: 首先，我们将创建一个执行特征提取和分类的Wav2Vec2模型。
 - en: There are two types of Wav2Vec2 pre-trained weights available in torchaudio.
     The ones fine-tuned for ASR task, and the ones not fine-tuned.
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: torchaudio中有两种类型的Wav2Vec2预训练权重。一种是为ASR任务微调的，另一种是未经微调的。
 - en: Wav2Vec2 (and HuBERT) models are trained in self-supervised manner. They are
     firstly trained with audio only for representation learning, then fine-tuned for
     a specific task with additional labels.
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: Wav2Vec2（和HuBERT）模型以自监督方式进行训练。它们首先仅使用音频进行表示学习的训练，然后再使用附加标签进行特定任务的微调。
 - en: The pre-trained weights without fine-tuning can be fine-tuned for other downstream
     tasks as well, but this tutorial does not cover that.
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 未经微调的预训练权重也可以用于其他下游任务的微调，但本教程不涵盖此内容。
 - en: We will use [`torchaudio.pipelines.WAV2VEC2_ASR_BASE_960H`](../generated/torchaudio.pipelines.WAV2VEC2_ASR_BASE_960H.html#torchaudio.pipelines.WAV2VEC2_ASR_BASE_960H
     "torchaudio.pipelines.WAV2VEC2_ASR_BASE_960H") here.
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们将在这里使用[`torchaudio.pipelines.WAV2VEC2_ASR_BASE_960H`](../generated/torchaudio.pipelines.WAV2VEC2_ASR_BASE_960H.html#torchaudio.pipelines.WAV2VEC2_ASR_BASE_960H
+    "torchaudio.pipelines.WAV2VEC2_ASR_BASE_960H")。
 - en: There are multiple pre-trained models available in [`torchaudio.pipelines`](../pipelines.html#module-torchaudio.pipelines
     "torchaudio.pipelines"). Please check the documentation for the detail of how
     they are trained.
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`torchaudio.pipelines`](../pipelines.html#module-torchaudio.pipelines "torchaudio.pipelines")中有多个预训练模型可用。请查看文档以了解它们的训练方式的详细信息。'
 - en: The bundle object provides the interface to instantiate model and other information.
     Sampling rate and the class labels are found as follow.
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: bundle对象提供了实例化模型和其他信息的接口。采样率和类标签如下所示。
 - en: '[PRE4]'
+  id: totrans-25
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: '[PRE5]'
+  id: totrans-26
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: Model can be constructed as following. This process will automatically fetch
     the pre-trained weights and load it into the model.
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 模型可以按以下方式构建。此过程将自动获取预训练权重并将其加载到模型中。
 - en: '[PRE6]'
+  id: totrans-28
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: '[PRE7]'
+  id: totrans-29
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: Loading data[](#loading-data "Permalink to this heading")
+  id: totrans-30
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 加载数据[](#loading-data "跳转到此标题")
 - en: We will use the speech data from [VOiCES dataset](https://iqtlabs.github.io/voices/),
     which is licensed under Creative Commos BY 4.0.
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们将使用[VOiCES数据集](https://iqtlabs.github.io/voices/)中的语音数据，该数据集在Creative Commos
+    BY 4.0下许可。
 - en: '[PRE8]'
+  id: totrans-32
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE8]'
+- en: null
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: To load data, we use [`torchaudio.load()`](../generated/torchaudio.load.html#torchaudio.load
     "torchaudio.load").
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了加载数据，我们使用[`torchaudio.load()`](../generated/torchaudio.load.html#torchaudio.load
+    "torchaudio.load")。
 - en: If the sampling rate is different from what the pipeline expects, then we can
     use [`torchaudio.functional.resample()`](../generated/torchaudio.functional.resample.html#torchaudio.functional.resample
     "torchaudio.functional.resample") for resampling.
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果采样率与管道期望的不同，则可以使用[`torchaudio.functional.resample()`](../generated/torchaudio.functional.resample.html#torchaudio.functional.resample
+    "torchaudio.functional.resample")进行重采样。
 - en: Note
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: '[`torchaudio.functional.resample()`](../generated/torchaudio.functional.resample.html#torchaudio.functional.resample
     "torchaudio.functional.resample") works on CUDA tensors as well.'
+  id: totrans-38
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[`torchaudio.functional.resample()`](../generated/torchaudio.functional.resample.html#torchaudio.functional.resample
+    "torchaudio.functional.resample")也适用于CUDA张量。'
 - en: When performing resampling multiple times on the same set of sample rates, using
     [`torchaudio.transforms.Resample`](../generated/torchaudio.transforms.Resample.html#torchaudio.transforms.Resample
     "torchaudio.transforms.Resample") might improve the performace.
+  id: totrans-39
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在同一组采样率上多次执行重采样时，使用[`torchaudio.transforms.Resample`](../generated/torchaudio.transforms.Resample.html#torchaudio.transforms.Resample
+    "torchaudio.transforms.Resample")可能会提高性能。
 - en: '[PRE9]'
+  id: totrans-40
   prefs: []
   type: TYPE_PRE
-- en: Extracting acoustic features[](#extracting-acoustic-features "Permalink to
-    this heading")
+  zh: '[PRE9]'
+- en: Extracting acoustic features[](#extracting-acoustic-features "Permalink to this
+    heading")
+  id: totrans-41
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 提取声学特征[](#extracting-acoustic-features "跳转到此标题")
 - en: The next step is to extract acoustic features from the audio.
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 下一步是从音频中提取声学特征。
 - en: Note
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Wav2Vec2 models fine-tuned for ASR task can perform feature extraction and classification
     with one step, but for the sake of the tutorial, we also show how to perform feature
     extraction here.
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 为ASR任务微调的Wav2Vec2模型可以一步完成特征提取和分类，但为了教程的目的，我们还展示了如何在此处执行特征提取。
 - en: '[PRE10]'
+  id: totrans-45
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: The returned features is a list of tensors. Each tensor is the output of a transformer
     layer.
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回的特征是一个张量列表。每个张量是一个变换器层的输出。
 - en: '[PRE11]'
+  id: totrans-47
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: '![Feature from transformer layer 1, Feature from transformer layer 2, Feature
     from transformer layer 3, Feature from transformer layer 4, Feature from transformer
     layer 5, Feature from transformer layer 6, Feature from transformer layer 7, Feature
     from transformer layer 8, Feature from transformer layer 9, Feature from transformer
     layer 10, Feature from transformer layer 11, Feature from transformer layer 12](../Images/9f2d3410922166561ebdadfd4981e797.png)'
+  id: totrans-48
   prefs: []
   type: TYPE_IMG
+  zh: '![来自变换器层1的特征，来自变换器层2的特征，来自变换器层3的特征，来自变换器层4的特征，来自变换器层5的特征，来自变换器层6的特征，来自变换器层7的特征，来自变换器层8的特征，来自变换器层9的特征，来自变换器层10的特征，来自变换器层11的特征，来自变换器层12的特征](../Images/9f2d3410922166561ebdadfd4981e797.png)'
 - en: Feature classification[](#feature-classification "Permalink to this heading")
+  id: totrans-49
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 特征分类
 - en: Once the acoustic features are extracted, the next step is to classify them
     into a set of categories.
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: 一旦提取了声学特征，下一步就是将它们分类到一组类别中。
 - en: Wav2Vec2 model provides method to perform the feature extraction and classification
     in one step.
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
+  zh: Wav2Vec2模型提供了一种在一步中执行特征提取和分类的方法。
 - en: '[PRE12]'
+  id: totrans-52
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: The output is in the form of logits. It is not in the form of probability.
+  id: totrans-53
   prefs: []
   type: TYPE_NORMAL
+  zh: 输出以logits的形式呈现，而不是概率的形式。
 - en: Let’s visualize this.
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们可视化这个过程。
 - en: '[PRE13]'
+  id: totrans-55
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: '![Classification result](../Images/ce8601d728900194dc8cb21fbd524cf7.png)'
+  id: totrans-56
   prefs: []
   type: TYPE_IMG
+  zh: '![分类结果](../Images/ce8601d728900194dc8cb21fbd524cf7.png)'
 - en: '[PRE14]'
+  id: totrans-57
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: We can see that there are strong indications to certain labels across the time
     line.
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们可以看到在时间线上有对某些标签的强烈指示。
 - en: Generating transcripts[](#generating-transcripts "Permalink to this heading")
+  id: totrans-59
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 生成转录
 - en: From the sequence of label probabilities, now we want to generate transcripts.
     The process to generate hypotheses is often called “decoding”.
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: 从标签概率序列中，现在我们想生成转录。生成假设的过程通常称为“解码”。
 - en: Decoding is more elaborate than simple classification because decoding at certain
     time step can be affected by surrounding observations.
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: 解码比简单分类更复杂，因为在某个时间步骤的解码可能会受到周围观察的影响。
 - en: For example, take a word like `night` and `knight`. Even if their prior probability
     distribution are differnt (in typical conversations, `night` would occur way more
     often than `knight`), to accurately generate transcripts with `knight`, such as
     `a knight with a sword`, the decoding process has to postpone the final decision
     until it sees enough context.
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
+  zh: 例如，拿一个词像`night`和`knight`。即使它们的先验概率分布不同（在典型对话中，`night`会比`knight`发生得更频繁），为了准确生成带有`knight`的转录，比如`a
+    knight with a sword`，解码过程必须推迟最终决定，直到看到足够的上下文。
 - en: There are many decoding techniques proposed, and they require external resources,
     such as word dictionary and language models.
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: 有许多提出的解码技术，它们需要外部资源，如单词词典和语言模型。
 - en: In this tutorial, for the sake of simplicity, we will perform greedy decoding
     which does not depend on such external components, and simply pick up the best
     hypothesis at each time step. Therefore, the context information are not used,
     and only one transcript can be generated.
+  id: totrans-64
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，为了简单起见，我们将执行贪婪解码，它不依赖于外部组件，并且只在每个时间步骤选择最佳假设。因此，上下文信息未被使用，只能生成一个转录。
 - en: We start by defining greedy decoding algorithm.
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们首先定义贪婪解码算法。
 - en: '[PRE15]'
+  id: totrans-66
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: Now create the decoder object and decode the transcript.
+  id: totrans-67
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在创建解码器对象并解码转录。
 - en: '[PRE16]'
+  id: totrans-68
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: Let’s check the result and listen again to the audio.
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: 让我们检查结果并再次听音频。
 - en: '[PRE17]'
+  id: totrans-70
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: '[PRE18]'
+  id: totrans-71
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE18]'
+- en: null
+  id: totrans-72
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-73
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: The ASR model is fine-tuned using a loss function called Connectionist Temporal
     Classification (CTC). The detail of CTC loss is explained [here](https://distill.pub/2017/ctc/).
     In CTC a blank token (ϵ) is a special token which represents a repetition of the
     previous symbol. In decoding, these are simply ignored.
+  id: totrans-74
   prefs: []
   type: TYPE_NORMAL
+  zh: ASR模型使用一种称为连接主义时间分类（CTC）的损失函数进行微调。CTC损失的详细信息在[这里](https://distill.pub/2017/ctc/)有解释。在CTC中，空白标记（ϵ）是一个特殊标记，表示前一个符号的重复。在解码中，这些标记被简单地忽略。
 - en: Conclusion[](#conclusion "Permalink to this heading")
+  id: totrans-75
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 结论
 - en: In this tutorial, we looked at how to use [`Wav2Vec2ASRBundle`](../generated/torchaudio.pipelines.Wav2Vec2ASRBundle.html#torchaudio.pipelines.Wav2Vec2ASRBundle
     "torchaudio.pipelines.Wav2Vec2ASRBundle") to perform acoustic feature extraction
     and speech recognition. Constructing a model and getting the emission is as short
     as two lines.
+  id: totrans-76
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，我们看了如何使用[`Wav2Vec2ASRBundle`](../generated/torchaudio.pipelines.Wav2Vec2ASRBundle.html#torchaudio.pipelines.Wav2Vec2ASRBundle)执行声学特征提取和语音识别。构建模型并获取发射只需两行代码。
 - en: '[PRE19]'
+  id: totrans-77
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE19]'
 - en: '**Total running time of the script:** ( 0 minutes 6.833 seconds)'
+  id: totrans-78
   prefs: []
   type: TYPE_NORMAL
+  zh: '**脚本的总运行时间：**（0分钟6.833秒）'
 - en: '[`Download Python source code: speech_recognition_pipeline_tutorial.py`](../_downloads/a0b5016bbf34fce4ac5549f4075dd10f/speech_recognition_pipeline_tutorial.py)'
+  id: totrans-79
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Python源代码：speech_recognition_pipeline_tutorial.py`](../_downloads/a0b5016bbf34fce4ac5549f4075dd10f/speech_recognition_pipeline_tutorial.py)'
 - en: '[`Download Jupyter notebook: speech_recognition_pipeline_tutorial.ipynb`](../_downloads/ca83af2ea8d7db05fb63211d515b7fde/speech_recognition_pipeline_tutorial.ipynb)'
+  id: totrans-80
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Jupyter笔记本：speech_recognition_pipeline_tutorial.ipynb`](../_downloads/ca83af2ea8d7db05fb63211d515b7fde/speech_recognition_pipeline_tutorial.ipynb)'
 - en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  id: totrans-81
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Sphinx-Gallery生成的图库](https://sphinx-gallery.github.io)'

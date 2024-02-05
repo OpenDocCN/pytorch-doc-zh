@@ -1,67 +1,94 @@
 - en: Iterable-style DataPipes
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 可迭代式DataPipes
 - en: 原文：[https://pytorch.org/data/beta/torchdata.datapipes.iter.html](https://pytorch.org/data/beta/torchdata.datapipes.iter.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/data/beta/torchdata.datapipes.iter.html](https://pytorch.org/data/beta/torchdata.datapipes.iter.html)
 - en: An iterable-style dataset is an instance of a subclass of IterableDataset that
     implements the `__iter__()` protocol, and represents an iterable over data samples.
     This type of datasets is particularly suitable for cases where random reads are
     expensive or even improbable, and where the batch size depends on the fetched
     data.
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 可迭代式数据集是IterableDataset子类的实例，实现了`__iter__()`协议，并表示数据样本的可迭代。这种类型的数据集特别适用于随机读取昂贵甚至不太可能的情况，批量大小取决于获取的数据。
 - en: For example, such a dataset, when called `iter(iterdatapipe)`, could return
     a stream of data reading from a database, a remote server, or even logs generated
     in real time.
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 例如，这样一个数据集，当调用`iter(iterdatapipe)`时，可以返回从数据库、远程服务器或实时生成的日志中读取的数据流。
 - en: This is an updated version of `IterableDataset` in `torch`.
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 这是`torch`中`IterableDataset`的更新版本。
 - en: '[PRE0]'
+  id: totrans-5
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: Iterable-style DataPipe.
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 可迭代式DataPipe。
 - en: All DataPipes that represent an iterable of data samples should subclass this.
     This style of DataPipes is particularly useful when data come from a stream, or
     when the number of samples is too large to fit them all in memory. `IterDataPipe`
     is lazily initialized and its elements are computed only when `next()` is called
     on the iterator of an `IterDataPipe`.
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 所有表示数据样本可迭代的DataPipes都应该是这样的子类。当数据来自流时，或者样本数量太大无法全部放入内存时，这种DataPipes风格特别有用。`IterDataPipe`是惰性初始化的，只有在对`IterDataPipe`的迭代器调用`next()`时才计算其元素。
 - en: All subclasses should overwrite `__iter__()`, which would return an iterator
     of samples in this DataPipe. Calling `__iter__` of an `IterDataPipe` automatically
     invokes its method `reset()`, which by default performs no operation. When writing
     a custom `IterDataPipe`, users should override `reset()` if necessary. The common
     usages include resetting buffers, pointers, and various state variables within
     the custom `IterDataPipe`.
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 所有子类应该重写`__iter__()`，它将返回此DataPipe中样本的迭代器。调用`IterDataPipe`的`__iter__`会自动调用其方法`reset()`，默认情况下不执行任何操作。当编写自定义`IterDataPipe`时，用户应该根据需要重写`reset()`。常见用法包括重置自定义`IterDataPipe`中的缓冲区、指针和各种状态变量。
 - en: Note
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Only one iterator can be valid for each `IterDataPipe` at a time, and the creation
     a second iterator will invalidate the first one. This constraint is necessary
     because some `IterDataPipe` have internal buffers, whose states can become invalid
     if there are multiple iterators. The code example below presents details on how
     this constraint looks in practice. If you have any feedback related to this constraint,
     please see [GitHub IterDataPipe Single Iterator Issue](https://github.com/pytorch/data/issues/45).
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 每次只能有一个迭代器对`IterDataPipe`有效，创建第二个迭代器将使第一个迭代器无效。这个约束是必要的，因为一些`IterDataPipe`具有内部缓冲区，如果有多个迭代器，其状态可能会变得无效。下面的代码示例详细介绍了这个约束在实践中的样子。如果您对这个约束有任何反馈，请参阅[GitHub
+    IterDataPipe Single Iterator Issue](https://github.com/pytorch/data/issues/45)。
 - en: These DataPipes can be invoked in two ways, using the class constructor or applying
     their functional form onto an existing `IterDataPipe` (recommended, available
     to most but not all DataPipes). You can chain multiple IterDataPipe together to
     form a pipeline that will perform multiple operations in succession.
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 这些DataPipes可以以两种方式调用，使用类构造函数或将它们的函数形式应用于现有的`IterDataPipe`（推荐，大多数但不是所有DataPipes都可用）。您可以将多个IterDataPipe链接在一起，形成一个连续执行多个操作的管道。
 - en: Note
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: When a subclass is used with `DataLoader`, each item in the DataPipe will be
     yielded from the `DataLoader` iterator. When `num_workers > 0`, each worker process
     will have a different copy of the DataPipe object, so it is often desired to configure
@@ -69,627 +96,1031 @@
     `get_worker_info()`, when called in a worker process, returns information about
     the worker. It can be used in either the dataset’s `__iter__()` method or the
     `DataLoader` ‘s `worker_init_fn` option to modify each copy’s behavior.
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: 当子类与`DataLoader`一起使用时，DataPipe中的每个项目将从`DataLoader`迭代器中产生。当`num_workers > 0`时，每个工作进程将拥有DataPipe对象的不同副本，因此通常希望配置每个副本独立以避免从工作进程返回重复数据。`get_worker_info()`在工作进程中调用时，返回有关工作进程的信息。它可以在数据集的`__iter__()`方法或`DataLoader`的`worker_init_fn`选项中使用，以修改每个副本的行为。
 - en: Examples
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例
 - en: 'General Usage:'
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 通用用法：
 - en: '[PRE1]'
+  id: totrans-16
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: 'Single Iterator Constraint Example:'
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 单迭代器约束示例：
 - en: '[PRE2]'
+  id: totrans-18
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: 'We have different types of Iterable DataPipes:'
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们有不同类型的Iterable DataPipes：
 - en: Archive - open and decompress archive files of different formats.
+  id: totrans-20
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 存档 - 打开和解压不同格式的存档文件。
 - en: Augmenting - augment your samples (e.g. adding index, or cycle through indefinitely).
+  id: totrans-21
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 增强 - 增强您的样本（例如添加索引，或无限循环）。
 - en: Combinatorial - perform combinatorial operations (e.g. sampling, shuffling).
+  id: totrans-22
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 组合 - 执行组合操作（例如采样、洗牌）。
 - en: Combining/Splitting - interact with multiple DataPipes by combining them or
     splitting one to many.
+  id: totrans-23
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 组合/拆分 - 通过组合多个DataPipes或将一个DataPipe拆分为多个来进行交互。
 - en: Grouping - group samples within a DataPipe
+  id: totrans-24
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 分组 - 在DataPipe中对样本进行分组
 - en: IO - interacting with the file systems or remote server (e.g. downloading, opening,
     saving files, and listing the files in directories).
+  id: totrans-25
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: IO - 与文件系统或远程服务器交互（例如下载、打开、保存文件，并列出目录中的文件）。
 - en: Mapping - apply the a given function to each element in the DataPipe.
+  id: totrans-26
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 映射 - 将给定函数应用于DataPipe中的每个元素。
 - en: Others - perform miscellaneous set of operations.
+  id: totrans-27
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 其他 - 执行各种操作。
 - en: Selecting - select specific samples within a DataPipe.
+  id: totrans-28
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 选择 - 在DataPipe中选择特定样本。
 - en: Text - parse, read, and transform text files and data
+  id: totrans-29
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 文本 - 解析、读取和转换文本文件和数据
 - en: Archive DataPipes[](#archive-datapipes "Permalink to this heading")
+  id: totrans-30
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 存档DataPipes
 - en: These DataPipes help opening and decompressing archive files of different formats.
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: 这些DataPipes帮助打开和解压不同格式的存档文件。
 - en: '| [`Bz2FileLoader`](generated/torchdata.datapipes.iter.Bz2FileLoader.html#torchdata.datapipes.iter.Bz2FileLoader
     "torchdata.datapipes.iter.Bz2FileLoader") | Decompresses bz2 binary streams from
     an Iterable DataPipe which contains tuples of path name and bz2 binary streams,
     and yields a tuple of path name and extracted binary stream (functional name:
     `load_from_bz2`). |'
+  id: totrans-32
   prefs: []
   type: TYPE_TB
+  zh: '| [`Bz2FileLoader`](generated/torchdata.datapipes.iter.Bz2FileLoader.html#torchdata.datapipes.iter.Bz2FileLoader
+    "torchdata.datapipes.iter.Bz2FileLoader") | 从包含路径名和bz2二进制流元组的可迭代DataPipe中解压缩bz2二进制流，并产生一个路径名和提取的二进制流元组（函数名：`load_from_bz2`）。
+    |'
 - en: '| [`Decompressor`](generated/torchdata.datapipes.iter.Decompressor.html#torchdata.datapipes.iter.Decompressor
     "torchdata.datapipes.iter.Decompressor") | Takes tuples of path and compressed
     stream of data, and returns tuples of path and decompressed stream of data (functional
     name: `decompress`). |'
+  id: totrans-33
   prefs: []
   type: TYPE_TB
+  zh: '| [`Decompressor`](generated/torchdata.datapipes.iter.Decompressor.html#torchdata.datapipes.iter.Decompressor
+    "torchdata.datapipes.iter.Decompressor") | 接受路径和压缩数据流的元组，并返回路径和解压缩数据流的元组（函数名：`decompress`）。
+    |'
 - en: '| [`RarArchiveLoader`](generated/torchdata.datapipes.iter.RarArchiveLoader.html#torchdata.datapipes.iter.RarArchiveLoader
     "torchdata.datapipes.iter.RarArchiveLoader") | Decompresses rar binary streams
     from input Iterable Datapipes which contains tuples of path name and rar binary
     stream, and yields a tuple of path name and extracted binary stream (functional
     name: `load_from_rar`). |'
+  id: totrans-34
   prefs: []
   type: TYPE_TB
+  zh: '| [`RarArchiveLoader`](generated/torchdata.datapipes.iter.RarArchiveLoader.html#torchdata.datapipes.iter.RarArchiveLoader
+    "torchdata.datapipes.iter.RarArchiveLoader") | 从包含路径名和rar二进制流元组的输入可迭代DataPipe中解压缩rar二进制流，并产生一个路径名和提取的二进制流元组（函数名：`load_from_rar`）。
+    |'
 - en: '| [`TarArchiveLoader`](generated/torchdata.datapipes.iter.TarArchiveLoader.html#torchdata.datapipes.iter.TarArchiveLoader
     "torchdata.datapipes.iter.TarArchiveLoader") | Opens/decompresses tar binary streams
     from an Iterable DataPipe which contains tuples of path name and tar binary stream,
     and yields a tuple of path name and extracted binary stream (functional name:
     `load_from_tar`). |'
+  id: totrans-35
   prefs: []
   type: TYPE_TB
+  zh: '| [`TarArchiveLoader`](generated/torchdata.datapipes.iter.TarArchiveLoader.html#torchdata.datapipes.iter.TarArchiveLoader
+    "torchdata.datapipes.iter.TarArchiveLoader") | 从包含路径名和tar二进制流元组的可迭代DataPipe中打开/解压缩tar二进制流，并产生一个路径名和提取的二进制流元组（函数名：`load_from_tar`）。
+    |'
 - en: '| [`TFRecordLoader`](generated/torchdata.datapipes.iter.TFRecordLoader.html#torchdata.datapipes.iter.TFRecordLoader
     "torchdata.datapipes.iter.TFRecordLoader") | Opens/decompresses tfrecord binary
     streams from an Iterable DataPipe which contains tuples of path name and tfrecord
     binary stream, and yields the stored records (functional name: `load_from_tfrecord`).
     |'
+  id: totrans-36
   prefs: []
   type: TYPE_TB
+  zh: '| [`TFRecordLoader`](generated/torchdata.datapipes.iter.TFRecordLoader.html#torchdata.datapipes.iter.TFRecordLoader
+    "torchdata.datapipes.iter.TFRecordLoader") | 从包含路径名和tfrecord二进制流元组的可迭代DataPipe中打开/解压缩tfrecord二进制流，并产生存储的记录（函数名：`load_from_tfrecord`）。
+    |'
 - en: '| [`WebDataset`](generated/torchdata.datapipes.iter.WebDataset.html#torchdata.datapipes.iter.WebDataset
     "torchdata.datapipes.iter.WebDataset") | Iterable DataPipe that accepts stream
     of (path, data) tuples, usually, representing the pathnames and files of a tar
     archive (functional name: `webdataset`). |'
+  id: totrans-37
   prefs: []
   type: TYPE_TB
+  zh: '| [`WebDataset`](generated/torchdata.datapipes.iter.WebDataset.html#torchdata.datapipes.iter.WebDataset
+    "torchdata.datapipes.iter.WebDataset") | 接受（路径，数据）元组流的可迭代DataPipe，通常表示tar存档的路径名和文件（函数名：`webdataset`）。
+    |'
 - en: '| [`XzFileLoader`](generated/torchdata.datapipes.iter.XzFileLoader.html#torchdata.datapipes.iter.XzFileLoader
     "torchdata.datapipes.iter.XzFileLoader") | Decompresses xz (lzma) binary streams
     from an Iterable DataPipe which contains tuples of path name and xy binary streams,
     and yields a tuple of path name and extracted binary stream (functional name:
     `load_from_xz`). |'
+  id: totrans-38
   prefs: []
   type: TYPE_TB
+  zh: '| [`XzFileLoader`](generated/torchdata.datapipes.iter.XzFileLoader.html#torchdata.datapipes.iter.XzFileLoader
+    "torchdata.datapipes.iter.XzFileLoader") | 从包含路径名和xz二进制流元组的可迭代DataPipe中解压缩xz（lzma）二进制流，并产生一个路径名和提取的二进制流元组（函数名：`load_from_xz`）。
+    |'
 - en: '| [`ZipArchiveLoader`](generated/torchdata.datapipes.iter.ZipArchiveLoader.html#torchdata.datapipes.iter.ZipArchiveLoader
     "torchdata.datapipes.iter.ZipArchiveLoader") | Opens/decompresses zip binary streams
     from an Iterable DataPipe which contains a tuple of path name and zip binary stream,
     and yields a tuple of path name and extracted binary stream (functional name:
     `load_from_zip`). |'
+  id: totrans-39
   prefs: []
   type: TYPE_TB
+  zh: '| [`ZipArchiveLoader`](generated/torchdata.datapipes.iter.ZipArchiveLoader.html#torchdata.datapipes.iter.ZipArchiveLoader
+    "torchdata.datapipes.iter.ZipArchiveLoader") | 从包含路径名和zip二进制流元组的可迭代DataPipe中打开/解压缩zip二进制流，并产生一个路径名和提取的二进制流元组（函数名：`load_from_zip`）。
+    |'
 - en: Augmenting DataPipes[](#augmenting-datapipes "Permalink to this heading")
+  id: totrans-40
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 增强DataPipes[](#augmenting-datapipes "Permalink to this heading")
 - en: These DataPipes help to augment your samples.
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 这些DataPipes有助于增强您的样本。
 - en: '| [`Cycler`](generated/torchdata.datapipes.iter.Cycler.html#torchdata.datapipes.iter.Cycler
     "torchdata.datapipes.iter.Cycler") | Cycles the specified input in perpetuity
     by default, or for the specified number of times (functional name: `cycle`). |'
+  id: totrans-42
   prefs: []
   type: TYPE_TB
+  zh: '| [`Cycler`](generated/torchdata.datapipes.iter.Cycler.html#torchdata.datapipes.iter.Cycler
+    "torchdata.datapipes.iter.Cycler") | 默认情况下永久循环指定的输入，或者循环指定次数（函数名：`cycle`）。 |'
 - en: '| [`Enumerator`](generated/torchdata.datapipes.iter.Enumerator.html#torchdata.datapipes.iter.Enumerator
     "torchdata.datapipes.iter.Enumerator") | Adds an index to an existing DataPipe
     through enumeration, with the index starting from 0 by default (functional name:
     `enumerate`). |'
+  id: totrans-43
   prefs: []
   type: TYPE_TB
+  zh: '| [`Enumerator`](generated/torchdata.datapipes.iter.Enumerator.html#torchdata.datapipes.iter.Enumerator
+    "torchdata.datapipes.iter.Enumerator") | 通过枚举向现有DataPipe添加索引，默认情况下索引从0开始（函数名：`enumerate`）。
+    |'
 - en: '| [`IndexAdder`](generated/torchdata.datapipes.iter.IndexAdder.html#torchdata.datapipes.iter.IndexAdder
     "torchdata.datapipes.iter.IndexAdder") | Adds an index to an existing Iterable
     DataPipe with (functional name: `add_index`). |'
+  id: totrans-44
   prefs: []
   type: TYPE_TB
+  zh: '| [`IndexAdder`](generated/torchdata.datapipes.iter.IndexAdder.html#torchdata.datapipes.iter.IndexAdder
+    "torchdata.datapipes.iter.IndexAdder") | 向现有可迭代DataPipe添加索引（函数名：`add_index`）。
+    |'
 - en: '| [`Repeater`](generated/torchdata.datapipes.iter.Repeater.html#torchdata.datapipes.iter.Repeater
     "torchdata.datapipes.iter.Repeater") | Repeatedly yield each element of source
     DataPipe for the specified number of times before moving onto the next element
     (functional name: `repeat`). |'
+  id: totrans-45
   prefs: []
   type: TYPE_TB
+  zh: '| [`Repeater`](生成/torchdata.datapipes.iter.Repeater.html#torchdata.datapipes.iter.Repeater
+    "torchdata.datapipes.iter.Repeater") | 在移动到下一个元素之前，重复为源DataPipe的每个元素指定次数的输出（功能名称：`repeat`）。
+    |'
 - en: Combinatorial DataPipes[](#combinatorial-datapipes "Permalink to this heading")
+  id: totrans-46
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 组合式DataPipes[](#combinatorial-datapipes "跳转到此标题的永久链接")
 - en: These DataPipes help to perform combinatorial operations.
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: 这些DataPipes有助于执行组合操作。
 - en: '| [`InBatchShuffler`](generated/torchdata.datapipes.iter.InBatchShuffler.html#torchdata.datapipes.iter.InBatchShuffler
     "torchdata.datapipes.iter.InBatchShuffler") | Shuffles each mini-batch from the
     prior DataPipe (functional name: `in_batch_shuffle`). |'
+  id: totrans-48
   prefs: []
   type: TYPE_TB
+  zh: '| [`InBatchShuffler`](生成/torchdata.datapipes.iter.InBatchShuffler.html#torchdata.datapipes.iter.InBatchShuffler
+    "torchdata.datapipes.iter.InBatchShuffler") | 对来自先前DataPipe的每个小批次进行洗牌（功能名称：`in_batch_shuffle`）。
+    |'
 - en: '| [`Sampler`](generated/torchdata.datapipes.iter.Sampler.html#torchdata.datapipes.iter.Sampler
     "torchdata.datapipes.iter.Sampler") | Generates sample elements using the provided
     `Sampler` (defaults to `SequentialSampler`). |'
+  id: totrans-49
   prefs: []
   type: TYPE_TB
+  zh: '| [`Sampler`](生成/torchdata.datapipes.iter.Sampler.html#torchdata.datapipes.iter.Sampler
+    "torchdata.datapipes.iter.Sampler") | 使用提供的`Sampler`生成样本元素（默认为`SequentialSampler`）。
+    |'
 - en: '| [`Shuffler`](generated/torchdata.datapipes.iter.Shuffler.html#torchdata.datapipes.iter.Shuffler
     "torchdata.datapipes.iter.Shuffler") | Shuffles the input DataPipe with a buffer
     (functional name: `shuffle`). |'
+  id: totrans-50
   prefs: []
   type: TYPE_TB
+  zh: '| [`Shuffler`](生成/torchdata.datapipes.iter.Shuffler.html#torchdata.datapipes.iter.Shuffler
+    "torchdata.datapipes.iter.Shuffler") | 使用缓冲区对输入DataPipe进行洗牌（功能名称：`shuffle`）。 |'
 - en: Combining/Splitting DataPipes[](#combining-splitting-datapipes "Permalink to
     this heading")
+  id: totrans-51
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 组合/拆分DataPipes[](#combining-splitting-datapipes "跳转到此标题的永久链接")
 - en: These tend to involve multiple DataPipes, combining them or splitting one to
     many.
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
+  zh: '这些通常涉及多个DataPipes，将它们组合在一起或将一个拆分为多个。 '
 - en: '| [`Concater`](generated/torchdata.datapipes.iter.Concater.html#torchdata.datapipes.iter.Concater
     "torchdata.datapipes.iter.Concater") | Concatenates multiple Iterable DataPipes
     (functional name: `concat`). |'
+  id: totrans-53
   prefs: []
   type: TYPE_TB
+  zh: '| [`Concater`](生成/torchdata.datapipes.iter.Concater.html#torchdata.datapipes.iter.Concater
+    "torchdata.datapipes.iter.Concater") | 连接多个Iterable DataPipes（功能名称：`concat`）。
+    |'
 - en: '| [`Demultiplexer`](generated/torchdata.datapipes.iter.Demultiplexer.html#torchdata.datapipes.iter.Demultiplexer
     "torchdata.datapipes.iter.Demultiplexer") | Splits the input DataPipe into multiple
     child DataPipes, using the given classification function (functional name: `demux`).
     |'
+  id: totrans-54
   prefs: []
   type: TYPE_TB
+  zh: '| [`Demultiplexer`](生成/torchdata.datapipes.iter.Demultiplexer.html#torchdata.datapipes.iter.Demultiplexer
+    "torchdata.datapipes.iter.Demultiplexer") | 使用给定的分类函数将输入DataPipe拆分为多个子DataPipes（功能名称：`demux`）。
+    |'
 - en: '| [`Forker`](generated/torchdata.datapipes.iter.Forker.html#torchdata.datapipes.iter.Forker
     "torchdata.datapipes.iter.Forker") | Creates multiple instances of the same Iterable
     DataPipe (functional name: `fork`). |'
+  id: totrans-55
   prefs: []
   type: TYPE_TB
+  zh: '| [`Forker`](生成/torchdata.datapipes.iter.Forker.html#torchdata.datapipes.iter.Forker
+    "torchdata.datapipes.iter.Forker") | 创建相同Iterable DataPipe的多个实例（功能名称：`fork`）。
+    |'
 - en: '| [`IterKeyZipper`](generated/torchdata.datapipes.iter.IterKeyZipper.html#torchdata.datapipes.iter.IterKeyZipper
     "torchdata.datapipes.iter.IterKeyZipper") | Zips two IterDataPipes together based
     on the matching key (functional name: `zip_with_iter`). |'
+  id: totrans-56
   prefs: []
   type: TYPE_TB
+  zh: '| [`IterKeyZipper`](生成/torchdata.datapipes.iter.IterKeyZipper.html#torchdata.datapipes.iter.IterKeyZipper
+    "torchdata.datapipes.iter.IterKeyZipper") | 根据匹配的键将两个IterDataPipes一起压缩（功能名称：`zip_with_iter`）。
+    |'
 - en: '| [`MapKeyZipper`](generated/torchdata.datapipes.iter.MapKeyZipper.html#torchdata.datapipes.iter.MapKeyZipper
     "torchdata.datapipes.iter.MapKeyZipper") | Joins the items from the source IterDataPipe
     with items from a MapDataPipe (functional name: `zip_with_map`). |'
+  id: totrans-57
   prefs: []
   type: TYPE_TB
+  zh: '| [`MapKeyZipper`](生成/torchdata.datapipes.iter.MapKeyZipper.html#torchdata.datapipes.iter.MapKeyZipper
+    "torchdata.datapipes.iter.MapKeyZipper") | 将源IterDataPipe的项目与MapDataPipe的项目结合（功能名称：`zip_with_map`）。
+    |'
 - en: '| [`Multiplexer`](generated/torchdata.datapipes.iter.Multiplexer.html#torchdata.datapipes.iter.Multiplexer
     "torchdata.datapipes.iter.Multiplexer") | Yields one element at a time from each
     of the input Iterable DataPipes (functional name: `mux`). |'
+  id: totrans-58
   prefs: []
   type: TYPE_TB
+  zh: '| [`Multiplexer`](生成/torchdata.datapipes.iter.Multiplexer.html#torchdata.datapipes.iter.Multiplexer
+    "torchdata.datapipes.iter.Multiplexer") | 从输入的每个Iterable DataPipe中一次产生一个元素（功能名称：`mux`）。
+    |'
 - en: '| [`MultiplexerLongest`](generated/torchdata.datapipes.iter.MultiplexerLongest.html#torchdata.datapipes.iter.MultiplexerLongest
     "torchdata.datapipes.iter.MultiplexerLongest") | Yields one element at a time
     from each of the input Iterable DataPipes (functional name: `mux_longest`). |'
+  id: totrans-59
   prefs: []
   type: TYPE_TB
+  zh: '| [`MultiplexerLongest`](生成/torchdata.datapipes.iter.MultiplexerLongest.html#torchdata.datapipes.iter.MultiplexerLongest
+    "torchdata.datapipes.iter.MultiplexerLongest") | 从输入的每个Iterable DataPipe中一次产生一个元素（功能名称：`mux_longest`）。
+    |'
 - en: '| [`RoundRobinDemultiplexer`](generated/torchdata.datapipes.iter.RoundRobinDemultiplexer.html#torchdata.datapipes.iter.RoundRobinDemultiplexer
     "torchdata.datapipes.iter.RoundRobinDemultiplexer") | Splits the input DataPipe
     into multiple child DataPipes in the round-robin order (functional name: `round_robin_demux`).
     |'
+  id: totrans-60
   prefs: []
   type: TYPE_TB
+  zh: '| [`RoundRobinDemultiplexer`](生成/torchdata.datapipes.iter.RoundRobinDemultiplexer.html#torchdata.datapipes.iter.RoundRobinDemultiplexer
+    "torchdata.datapipes.iter.RoundRobinDemultiplexer") | 按照轮询顺序将输入DataPipe拆分为多个子DataPipes（功能名称：`round_robin_demux`）。
+    |'
 - en: '| [`SampleMultiplexer`](generated/torchdata.datapipes.iter.SampleMultiplexer.html#torchdata.datapipes.iter.SampleMultiplexer
     "torchdata.datapipes.iter.SampleMultiplexer") | Takes a Dict of (IterDataPipe,
     Weight), and yields items by sampling from these DataPipes with respect to their
     weights. |'
+  id: totrans-61
   prefs: []
   type: TYPE_TB
+  zh: '| [`SampleMultiplexer`](生成/torchdata.datapipes.iter.SampleMultiplexer.html#torchdata.datapipes.iter.SampleMultiplexer
+    "torchdata.datapipes.iter.SampleMultiplexer") | 接受一个(IterDataPipe, Weight)字典，并根据权重从这些DataPipes中进行采样生成项目。
+    |'
 - en: '| [`UnZipper`](generated/torchdata.datapipes.iter.UnZipper.html#torchdata.datapipes.iter.UnZipper
     "torchdata.datapipes.iter.UnZipper") | Takes in a DataPipe of Sequences, unpacks
     each Sequence, and return the elements in separate DataPipes based on their position
     in the Sequence (functional name: `unzip`). |'
+  id: totrans-62
   prefs: []
   type: TYPE_TB
+  zh: '| [`UnZipper`](生成/torchdata.datapipes.iter.UnZipper.html#torchdata.datapipes.iter.UnZipper
+    "torchdata.datapipes.iter.UnZipper") | 接受一个序列的DataPipe，解压每个序列，并根据序列中的位置将元素分别返回到不同的DataPipes中（功能名称：`unzip`）。
+    |'
 - en: '| [`Zipper`](generated/torchdata.datapipes.iter.Zipper.html#torchdata.datapipes.iter.Zipper
     "torchdata.datapipes.iter.Zipper") | Aggregates elements into a tuple from each
     of the input DataPipes (functional name: `zip`). |'
+  id: totrans-63
   prefs: []
   type: TYPE_TB
+  zh: '| [`Zipper`](generated/torchdata.datapipes.iter.Zipper.html#torchdata.datapipes.iter.Zipper
+    "torchdata.datapipes.iter.Zipper") | 从每个输入DataPipe中聚合元素为元组（功能名称：`zip`）。 |'
 - en: '| [`ZipperLongest`](generated/torchdata.datapipes.iter.ZipperLongest.html#torchdata.datapipes.iter.ZipperLongest
     "torchdata.datapipes.iter.ZipperLongest") | Aggregates elements into a tuple from
     each of the input DataPipes (functional name: `zip_longest`). |'
+  id: totrans-64
   prefs: []
   type: TYPE_TB
+  zh: '| [`ZipperLongest`](generated/torchdata.datapipes.iter.ZipperLongest.html#torchdata.datapipes.iter.ZipperLongest
+    "torchdata.datapipes.iter.ZipperLongest") | 从每个输入DataPipe中聚合元素为元组（功能名称：`zip_longest`）。
+    |'
 - en: Grouping DataPipes[](#grouping-datapipes "Permalink to this heading")
+  id: totrans-65
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: Grouping DataPipes[](#grouping-datapipes "Permalink to this heading")
 - en: These DataPipes have you group samples within a DataPipe.
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: 这些DataPipes让您在DataPipe中对样本进行分组。
 - en: '| [`Batcher`](generated/torchdata.datapipes.iter.Batcher.html#torchdata.datapipes.iter.Batcher
     "torchdata.datapipes.iter.Batcher") | Creates mini-batches of data (functional
     name: `batch`). |'
+  id: totrans-67
   prefs: []
   type: TYPE_TB
+  zh: '| [`Batcher`](generated/torchdata.datapipes.iter.Batcher.html#torchdata.datapipes.iter.Batcher
+    "torchdata.datapipes.iter.Batcher") | 创建数据的小批次（功能名称：`batch`）。 |'
 - en: '| [`BucketBatcher`](generated/torchdata.datapipes.iter.BucketBatcher.html#torchdata.datapipes.iter.BucketBatcher
     "torchdata.datapipes.iter.BucketBatcher") | Creates mini-batches of data from
     sorted bucket (functional name: `bucketbatch`). |'
+  id: totrans-68
   prefs: []
   type: TYPE_TB
+  zh: '| [`BucketBatcher`](generated/torchdata.datapipes.iter.BucketBatcher.html#torchdata.datapipes.iter.BucketBatcher
+    "torchdata.datapipes.iter.BucketBatcher") | 从排序的桶中创建数据的小批次（功能名称：`bucketbatch`）。
+    |'
 - en: '| [`Collator`](generated/torchdata.datapipes.iter.Collator.html#torchdata.datapipes.iter.Collator
     "torchdata.datapipes.iter.Collator") | Collates samples from DataPipe to Tensor(s)
     by a custom collate function (functional name: `collate`). |'
+  id: totrans-69
   prefs: []
   type: TYPE_TB
+  zh: '| [`Collator`](generated/torchdata.datapipes.iter.Collator.html#torchdata.datapipes.iter.Collator
+    "torchdata.datapipes.iter.Collator") | 通过自定义整理函数将DataPipe中的样本整理为张量（功能名称：`collate`）。
+    |'
 - en: '| [`Grouper`](generated/torchdata.datapipes.iter.Grouper.html#torchdata.datapipes.iter.Grouper
     "torchdata.datapipes.iter.Grouper") | Groups data from input IterDataPipe by keys
     which are generated from `group_key_fn`, and yields a `DataChunk` with batch size
     up to `group_size` if defined (functional name: `groupby`). |'
+  id: totrans-70
   prefs: []
   type: TYPE_TB
+  zh: '| [`Grouper`](generated/torchdata.datapipes.iter.Grouper.html#torchdata.datapipes.iter.Grouper
+    "torchdata.datapipes.iter.Grouper") | 通过从`group_key_fn`生成的键对来自输入IterDataPipe的数据进行分组，并在定义了`group_size`的情况下生成具有最大批量大小的`DataChunk`（功能名称：`groupby`）。
+    |'
 - en: '| [`MaxTokenBucketizer`](generated/torchdata.datapipes.iter.MaxTokenBucketizer.html#torchdata.datapipes.iter.MaxTokenBucketizer
     "torchdata.datapipes.iter.MaxTokenBucketizer") | Creates mini-batches of data
     from a min-heap with limited size, and the total length of samples returned by
     `len_fn` within each batch will be limited by `max_token_count` (functional name:
     `max_token_bucketize`). |'
+  id: totrans-71
   prefs: []
   type: TYPE_TB
+  zh: '| [`MaxTokenBucketizer`](generated/torchdata.datapipes.iter.MaxTokenBucketizer.html#torchdata.datapipes.iter.MaxTokenBucketizer
+    "torchdata.datapipes.iter.MaxTokenBucketizer") | 从具有限制大小的最小堆中创建数据的小批次，并且每个批次中由`len_fn`返回的样本的总长度将受到`max_token_count`的限制（功能名称：`max_token_bucketize`）。
+    |'
 - en: '| [`UnBatcher`](generated/torchdata.datapipes.iter.UnBatcher.html#torchdata.datapipes.iter.UnBatcher
     "torchdata.datapipes.iter.UnBatcher") | Undoes batching of data (functional name:
     `unbatch`). |'
+  id: totrans-72
   prefs: []
   type: TYPE_TB
+  zh: '| [`UnBatcher`](generated/torchdata.datapipes.iter.UnBatcher.html#torchdata.datapipes.iter.UnBatcher
+    "torchdata.datapipes.iter.UnBatcher") | 撤消数据的批处理（功能名称：`unbatch`）。 |'
 - en: IO DataPipes[](#io-datapipes "Permalink to this heading")
+  id: totrans-73
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: IO DataPipes[](#io-datapipes "Permalink to this heading")
 - en: These DataPipes help interacting with the file systems or remote server (e.g.
     downloading, opening, saving files, and listing the files in directories).
+  id: totrans-74
   prefs: []
   type: TYPE_NORMAL
+  zh: 这些DataPipes有助于与文件系统或远程服务器进行交互（例如下载、打开、保存文件以及列出目录中的文件）。
 - en: '| [`AISFileLister`](generated/torchdata.datapipes.iter.AISFileLister.html#torchdata.datapipes.iter.AISFileLister
     "torchdata.datapipes.iter.AISFileLister") | Iterable Datapipe that lists files
     from the AIStore backends with the given URL prefixes (functional name: `list_files_by_ais`).
     |'
+  id: totrans-75
   prefs: []
   type: TYPE_TB
+  zh: '| [`AISFileLister`](generated/torchdata.datapipes.iter.AISFileLister.html#torchdata.datapipes.iter.AISFileLister
+    "torchdata.datapipes.iter.AISFileLister") | 可迭代的Datapipe，列出具有给定URL前缀的AIStore后端的文件（功能名称：`list_files_by_ais`）。
+    |'
 - en: '| [`AISFileLoader`](generated/torchdata.datapipes.iter.AISFileLoader.html#torchdata.datapipes.iter.AISFileLoader
     "torchdata.datapipes.iter.AISFileLoader") | Iterable DataPipe that loads files
     from AIStore with the given URLs (functional name: `load_files_by_ais`). |'
+  id: totrans-76
   prefs: []
   type: TYPE_TB
+  zh: '| [`AISFileLoader`](generated/torchdata.datapipes.iter.AISFileLoader.html#torchdata.datapipes.iter.AISFileLoader
+    "torchdata.datapipes.iter.AISFileLoader") | 可迭代的DataPipe，从具有给定URL的AIStore中加载文件（功能名称：`load_files_by_ais`）。
+    |'
 - en: '| [`FSSpecFileLister`](generated/torchdata.datapipes.iter.FSSpecFileLister.html#torchdata.datapipes.iter.FSSpecFileLister
     "torchdata.datapipes.iter.FSSpecFileLister") | Lists the contents of the directory
     at the provided `root` pathname or URL, and yields the full pathname or URL for
     each file within the directory (functional name: `list_files_by_fsspec`). |'
+  id: totrans-77
   prefs: []
   type: TYPE_TB
+  zh: '| [`FSSpecFileLister`](generated/torchdata.datapipes.iter.FSSpecFileLister.html#torchdata.datapipes.iter.FSSpecFileLister
+    "torchdata.datapipes.iter.FSSpecFileLister") | 列出提供的`root`路径名或URL的目录内容，并为目录中的每个文件生成完整的路径名或URL（功能名称：`list_files_by_fsspec`）。
+    |'
 - en: '| [`FSSpecFileOpener`](generated/torchdata.datapipes.iter.FSSpecFileOpener.html#torchdata.datapipes.iter.FSSpecFileOpener
     "torchdata.datapipes.iter.FSSpecFileOpener") | Opens files from input datapipe
     which contains fsspec paths and yields a tuple of pathname and opened file stream
     (functional name: `open_files_by_fsspec`). |'
+  id: totrans-78
   prefs: []
   type: TYPE_TB
+  zh: '| [`FSSpecFileOpener`](generated/torchdata.datapipes.iter.FSSpecFileOpener.html#torchdata.datapipes.iter.FSSpecFileOpener
+    "torchdata.datapipes.iter.FSSpecFileOpener") | 从包含fsspec路径的输入datapipe中打开文件，并生成路径名和打开的文件流的元组（功能名称：`open_files_by_fsspec`）。
+    |'
 - en: '| [`FSSpecSaver`](generated/torchdata.datapipes.iter.FSSpecSaver.html#torchdata.datapipes.iter.FSSpecSaver
     "torchdata.datapipes.iter.FSSpecSaver") | Takes in a DataPipe of tuples of metadata
     and data, saves the data to the target path (generated by the filepath_fn and
     metadata), and yields the resulting fsspec path (functional name: `save_by_fsspec`).
     |'
+  id: totrans-79
   prefs: []
   type: TYPE_TB
+  zh: '| [`FSSpecSaver`](generated/torchdata.datapipes.iter.FSSpecSaver.html#torchdata.datapipes.iter.FSSpecSaver
+    "torchdata.datapipes.iter.FSSpecSaver") | 接收元数据和数据元组的DataPipe，将数据保存到目标路径（由filepath_fn和元数据生成），并产生结果的fsspec路径（函数名：`save_by_fsspec`）。
+    |'
 - en: '| [`FileLister`](generated/torchdata.datapipes.iter.FileLister.html#torchdata.datapipes.iter.FileLister
     "torchdata.datapipes.iter.FileLister") | Given path(s) to the root directory,
     yields file pathname(s) (path + filename) of files within the root directory.
     |'
+  id: totrans-80
   prefs: []
   type: TYPE_TB
+  zh: '| [`FileLister`](generated/torchdata.datapipes.iter.FileLister.html#torchdata.datapipes.iter.FileLister
+    "torchdata.datapipes.iter.FileLister") | 给定根目录的路径，产生根目录中文件的路径名（路径+文件名）。 |'
 - en: '| [`FileOpener`](generated/torchdata.datapipes.iter.FileOpener.html#torchdata.datapipes.iter.FileOpener
     "torchdata.datapipes.iter.FileOpener") | Given pathnames, opens files and yield
     pathname and file stream in a tuple (functional name: `open_files`). |'
+  id: totrans-81
   prefs: []
   type: TYPE_TB
+  zh: '| [`FileOpener`](generated/torchdata.datapipes.iter.FileOpener.html#torchdata.datapipes.iter.FileOpener
+    "torchdata.datapipes.iter.FileOpener") | 给定路径名，打开文件并以元组形式产生路径名和文件流（函数名：`open_files`）。
+    |'
 - en: '| [`GDriveReader`](generated/torchdata.datapipes.iter.GDriveReader.html#torchdata.datapipes.iter.GDriveReader
     "torchdata.datapipes.iter.GDriveReader") | Takes URLs pointing at GDrive files,
     and yields tuples of file name and IO stream (functional name: `read_from_gdrive`).
     |'
+  id: totrans-82
   prefs: []
   type: TYPE_TB
+  zh: '| [`GDriveReader`](generated/torchdata.datapipes.iter.GDriveReader.html#torchdata.datapipes.iter.GDriveReader
+    "torchdata.datapipes.iter.GDriveReader") | 接收指向GDrive文件的URL，并产生文件名和IO流的元组（函数名：`read_from_gdrive`）。
+    |'
 - en: '| [`HttpReader`](generated/torchdata.datapipes.iter.HttpReader.html#torchdata.datapipes.iter.HttpReader
     "torchdata.datapipes.iter.HttpReader") | Takes file URLs (HTTP URLs pointing to
     files), and yields tuples of file URL and IO stream (functional name: `read_from_http`).
     |'
+  id: totrans-83
   prefs: []
   type: TYPE_TB
+  zh: '| [`HttpReader`](generated/torchdata.datapipes.iter.HttpReader.html#torchdata.datapipes.iter.HttpReader
+    "torchdata.datapipes.iter.HttpReader") | 接收文件URL（指向文件的HTTP URL），并产生文件URL和IO流的元组（函数名：`read_from_http`）。
+    |'
 - en: '| [`HuggingFaceHubReader`](generated/torchdata.datapipes.iter.HuggingFaceHubReader.html#torchdata.datapipes.iter.HuggingFaceHubReader
     "torchdata.datapipes.iter.HuggingFaceHubReader") | Takes in dataset names and
     returns an Iterable HuggingFace dataset. |'
+  id: totrans-84
   prefs: []
   type: TYPE_TB
+  zh: '| [`HuggingFaceHubReader`](generated/torchdata.datapipes.iter.HuggingFaceHubReader.html#torchdata.datapipes.iter.HuggingFaceHubReader
+    "torchdata.datapipes.iter.HuggingFaceHubReader") | 接收数据集名称并返回一个可迭代的HuggingFace数据集。
+    |'
 - en: '| [`IoPathFileLister`](generated/torchdata.datapipes.iter.IoPathFileLister.html#torchdata.datapipes.iter.IoPathFileLister
     "torchdata.datapipes.iter.IoPathFileLister") | Lists the contents of the directory
     at the provided `root` pathname or URL, and yields the full pathname or URL for
     each file within the directory (functional name: `list_files_by_iopath`). |'
+  id: totrans-85
   prefs: []
   type: TYPE_TB
+  zh: '| [`IoPathFileLister`](generated/torchdata.datapipes.iter.IoPathFileLister.html#torchdata.datapipes.iter.IoPathFileLister
+    "torchdata.datapipes.iter.IoPathFileLister") | 列出提供的`root`路径名或URL的目录内容，并为目录中的每个文件产生完整的路径名或URL（函数名：`list_files_by_iopath`）。
+    |'
 - en: '| [`IoPathFileOpener`](generated/torchdata.datapipes.iter.IoPathFileOpener.html#torchdata.datapipes.iter.IoPathFileOpener
     "torchdata.datapipes.iter.IoPathFileOpener") | Opens files from input datapipe
     which contains pathnames or URLs, and yields a tuple of pathname and opened file
     stream (functional name: `open_files_by_iopath`). |'
+  id: totrans-86
   prefs: []
   type: TYPE_TB
+  zh: '| [`IoPathFileOpener`](generated/torchdata.datapipes.iter.IoPathFileOpener.html#torchdata.datapipes.iter.IoPathFileOpener
+    "torchdata.datapipes.iter.IoPathFileOpener") | 从包含路径名或URL的输入datapipe中打开文件，并产生路径名和已打开文件流的元组（函数名：`open_files_by_iopath`）。
+    |'
 - en: '| [`IoPathSaver`](generated/torchdata.datapipes.iter.IoPathSaver.html#torchdata.datapipes.iter.IoPathSaver
     "torchdata.datapipes.iter.IoPathSaver") | Takes in a DataPipe of tuples of metadata
     and data, saves the data to the target path which is generated by the `filepath_fn`
     and metadata, and yields the resulting path in iopath format (functional name:
     `save_by_iopath`). |'
+  id: totrans-87
   prefs: []
   type: TYPE_TB
+  zh: '| [`IoPathSaver`](generated/torchdata.datapipes.iter.IoPathSaver.html#torchdata.datapipes.iter.IoPathSaver
+    "torchdata.datapipes.iter.IoPathSaver") | 接收元数据和数据元组的DataPipe，将数据保存到由`filepath_fn`和元数据生成的目标路径，并以iopath格式（函数名：`save_by_iopath`）产生结果路径。
+    |'
 - en: '| [`OnlineReader`](generated/torchdata.datapipes.iter.OnlineReader.html#torchdata.datapipes.iter.OnlineReader
     "torchdata.datapipes.iter.OnlineReader") | Takes file URLs (can be HTTP URLs pointing
     to files or URLs to GDrive files), and yields tuples of file URL and IO stream
     (functional name: `read_from_remote`). |'
+  id: totrans-88
   prefs: []
   type: TYPE_TB
+  zh: '| [`OnlineReader`](generated/torchdata.datapipes.iter.OnlineReader.html#torchdata.datapipes.iter.OnlineReader
+    "torchdata.datapipes.iter.OnlineReader") | 接收文件URL（可以是指向文件的HTTP URL或指向GDrive文件的URL），并产生文件URL和IO流的元组（函数名：`read_from_remote`）。
+    |'
 - en: '| [`ParquetDataFrameLoader`](generated/torchdata.datapipes.iter.ParquetDataFrameLoader.html#torchdata.datapipes.iter.ParquetDataFrameLoader
     "torchdata.datapipes.iter.ParquetDataFrameLoader") | Takes in paths to Parquet
     files and return a TorchArrow DataFrame for each row group within a Parquet file
     (functional name: `load_parquet_as_df`). |'
+  id: totrans-89
   prefs: []
   type: TYPE_TB
+  zh: '| [`ParquetDataFrameLoader`](generated/torchdata.datapipes.iter.ParquetDataFrameLoader.html#torchdata.datapipes.iter.ParquetDataFrameLoader
+    "torchdata.datapipes.iter.ParquetDataFrameLoader") | 接收Parquet文件的路径，并为Parquet文件中的每个行组返回一个TorchArrow
+    DataFrame（函数名：`load_parquet_as_df`）。 |'
 - en: '| [`S3FileLister`](generated/torchdata.datapipes.iter.S3FileLister.html#torchdata.datapipes.iter.S3FileLister
     "torchdata.datapipes.iter.S3FileLister") | Iterable DataPipe that lists Amazon
     S3 file URLs with the given prefixes (functional name: `list_files_by_s3`). |'
+  id: totrans-90
   prefs: []
   type: TYPE_TB
+  zh: '| [`S3FileLister`](generated/torchdata.datapipes.iter.S3FileLister.html#torchdata.datapipes.iter.S3FileLister
+    "torchdata.datapipes.iter.S3FileLister") | 可迭代的DataPipe，列出具有给定前缀的Amazon S3文件URL（函数名：`list_files_by_s3`）。
+    |'
 - en: '| [`S3FileLoader`](generated/torchdata.datapipes.iter.S3FileLoader.html#torchdata.datapipes.iter.S3FileLoader
     "torchdata.datapipes.iter.S3FileLoader") | Iterable DataPipe that loads Amazon
     S3 files from the given S3 URLs (functional name: `load_files_by_s3`). |'
+  id: totrans-91
   prefs: []
   type: TYPE_TB
+  zh: '| [`S3FileLoader`](generated/torchdata.datapipes.iter.S3FileLoader.html#torchdata.datapipes.iter.S3FileLoader
+    "torchdata.datapipes.iter.S3FileLoader") | 可迭代的DataPipe，从给定的S3 URL加载Amazon S3文件（函数名：`load_files_by_s3`）。
+    |'
 - en: '| [`Saver`](generated/torchdata.datapipes.iter.Saver.html#torchdata.datapipes.iter.Saver
     "torchdata.datapipes.iter.Saver") | Takes in a DataPipe of tuples of metadata
     and data, saves the data to the target path generated by the `filepath_fn` and
     metadata, and yields file path on local file system (functional name: `save_to_disk`).
     |'
+  id: totrans-92
   prefs: []
   type: TYPE_TB
+  zh: '| [`Saver`](生成/torchdata.datapipes.iter.Saver.html#torchdata.datapipes.iter.Saver
+    "torchdata.datapipes.iter.Saver") | 接收元数据和数据元组的DataPipe，将数据保存到由`filepath_fn`生成的目标路径和元数据中，并在本地文件系统上生成文件路径（函数名称：`save_to_disk`）。
+    |'
 - en: Mapping DataPipes[](#mapping-datapipes "Permalink to this heading")
+  id: totrans-93
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: Mapping DataPipes[](#mapping-datapipes "跳转到此标题")
 - en: These DataPipes apply the a given function to each element in the DataPipe.
+  id: totrans-94
   prefs: []
   type: TYPE_NORMAL
+  zh: 这些DataPipes将给定的函数应用于DataPipe中的每个元素。
 - en: '| [`BatchAsyncMapper`](generated/torchdata.datapipes.iter.BatchAsyncMapper.html#torchdata.datapipes.iter.BatchAsyncMapper
     "torchdata.datapipes.iter.BatchAsyncMapper") | Combines elements from the source
     DataPipe to batches and applies a coroutine function over each element within
     the batch concurrently, then flattens the outpus to a single, unnested IterDataPipe
     (functional name: `async_map_batches`). |'
+  id: totrans-95
   prefs: []
   type: TYPE_TB
+  zh: '| [`BatchAsyncMapper`](生成/torchdata.datapipes.iter.BatchAsyncMapper.html#torchdata.datapipes.iter.BatchAsyncMapper
+    "torchdata.datapipes.iter.BatchAsyncMapper") | 将源DataPipe中的元素组合成批次，并对每个批次中的每个元素并发地应用协程函数，然后将输出展平为单个、非嵌套的IterDataPipe（函数名称：`async_map_batches`）。
+    |'
 - en: '| [`BatchMapper`](generated/torchdata.datapipes.iter.BatchMapper.html#torchdata.datapipes.iter.BatchMapper
     "torchdata.datapipes.iter.BatchMapper") | Combines elements from the source DataPipe
     to batches and applies a function over each batch, then flattens the outputs to
     a single, unnested IterDataPipe (functional name: `map_batches`). |'
+  id: totrans-96
   prefs: []
   type: TYPE_TB
+  zh: '| [`BatchMapper`](生成/torchdata.datapipes.iter.BatchMapper.html#torchdata.datapipes.iter.BatchMapper
+    "torchdata.datapipes.iter.BatchMapper") | 将源DataPipe中的元素组合成批次，并对每个批次应用函数，然后将输出展平为单个、非嵌套的IterDataPipe（函数名称：`map_batches`）。
+    |'
 - en: '| [`FlatMapper`](generated/torchdata.datapipes.iter.FlatMapper.html#torchdata.datapipes.iter.FlatMapper
     "torchdata.datapipes.iter.FlatMapper") | Applies a function over each item from
     the source DataPipe, then flattens the outputs to a single, unnested IterDataPipe
     (functional name: `flatmap`). |'
+  id: totrans-97
   prefs: []
   type: TYPE_TB
+  zh: '| [`FlatMapper`](生成/torchdata.datapipes.iter.FlatMapper.html#torchdata.datapipes.iter.FlatMapper
+    "torchdata.datapipes.iter.FlatMapper") | 对源DataPipe中的每个项目应用函数，然后将输出展平为单个、非嵌套的IterDataPipe（函数名称：`flatmap`）。
+    |'
 - en: '| [`Mapper`](generated/torchdata.datapipes.iter.Mapper.html#torchdata.datapipes.iter.Mapper
     "torchdata.datapipes.iter.Mapper") | Applies a function over each item from the
     source DataPipe (functional name: `map`). |'
+  id: totrans-98
   prefs: []
   type: TYPE_TB
+  zh: '| [`Mapper`](生成/torchdata.datapipes.iter.Mapper.html#torchdata.datapipes.iter.Mapper
+    "torchdata.datapipes.iter.Mapper") | 对源DataPipe中的每个项目应用函数（函数名称：`map`）。 |'
 - en: '| [`ShuffledFlatMapper`](generated/torchdata.datapipes.iter.ShuffledFlatMapper.html#torchdata.datapipes.iter.ShuffledFlatMapper
     "torchdata.datapipes.iter.ShuffledFlatMapper") | Applies a function over each
     item from the source DataPipe, then collects the iterables returned in a buffer,
     then, at every iteration, chooses at random one of the iterables in the buffer
     and yields one item from this iterable (functional name: `shuffled_flatmap`).
     |'
+  id: totrans-99
   prefs: []
   type: TYPE_TB
+  zh: '| [`ShuffledFlatMapper`](生成/torchdata.datapipes.iter.ShuffledFlatMapper.html#torchdata.datapipes.iter.ShuffledFlatMapper
+    "torchdata.datapipes.iter.ShuffledFlatMapper") | 对源DataPipe中的每个项目应用函数，然后将返回的可迭代对象收集到缓冲区中，然后，在每次迭代时，随机选择缓冲区中的一个可迭代对象，并从该可迭代对象中产生一个项目（函数名称：`shuffled_flatmap`）。
+    |'
 - en: '| [`ThreadPoolMapper`](generated/torchdata.datapipes.iter.ThreadPoolMapper.html#torchdata.datapipes.iter.ThreadPoolMapper
     "torchdata.datapipes.iter.ThreadPoolMapper") | Applies a function over each item
     from the source DataPipe concurrently using `ThreadPoolExecutor` (functional name:
     `threadpool_map`). |'
+  id: totrans-100
   prefs: []
   type: TYPE_TB
+  zh: '| [`ThreadPoolMapper`](生成/torchdata.datapipes.iter.ThreadPoolMapper.html#torchdata.datapipes.iter.ThreadPoolMapper
+    "torchdata.datapipes.iter.ThreadPoolMapper") | 并发地对源DataPipe中的每个项目应用函数，使用`ThreadPoolExecutor`（函数名称：`threadpool_map`）。
+    |'
 - en: Other DataPipes[](#other-datapipes "Permalink to this heading")
+  id: totrans-101
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 其他DataPipes[](#other-datapipes "跳转到此标题")
 - en: A miscellaneous set of DataPipes with different functionalities.
+  id: totrans-102
   prefs: []
   type: TYPE_NORMAL
+  zh: 一组具有不同功能的杂项DataPipes。
 - en: '| [`DataFrameMaker`](generated/torchdata.datapipes.iter.DataFrameMaker.html#torchdata.datapipes.iter.DataFrameMaker
     "torchdata.datapipes.iter.DataFrameMaker") | Takes rows of data, batches a number
     of them together and creates TorchArrow DataFrames (functional name: `dataframe`).
     |'
+  id: totrans-103
   prefs: []
   type: TYPE_TB
+  zh: '| [`DataFrameMaker`](生成/torchdata.datapipes.iter.DataFrameMaker.html#torchdata.datapipes.iter.DataFrameMaker
+    "torchdata.datapipes.iter.DataFrameMaker") | 获取数据行，将其中一些数据批量处理并创建TorchArrow数据框（函数名称：`dataframe`）。
+    |'
 - en: '| [`EndOnDiskCacheHolder`](generated/torchdata.datapipes.iter.EndOnDiskCacheHolder.html#torchdata.datapipes.iter.EndOnDiskCacheHolder
     "torchdata.datapipes.iter.EndOnDiskCacheHolder") | Indicates when the result of
     prior DataPipe will be saved local files specified by `filepath_fn` (functional
     name: `end_caching`). |'
+  id: totrans-104
   prefs: []
   type: TYPE_TB
+  zh: '| [`EndOnDiskCacheHolder`](生成/torchdata.datapipes.iter.EndOnDiskCacheHolder.html#torchdata.datapipes.iter.EndOnDiskCacheHolder
+    "torchdata.datapipes.iter.EndOnDiskCacheHolder") | 指示先前DataPipe的结果将保存在由`filepath_fn`指定的本地文件中（函数名称：`end_caching`）。
+    |'
 - en: '| [`FullSync`](generated/torchdata.datapipes.iter.FullSync.html#torchdata.datapipes.iter.FullSync
     "torchdata.datapipes.iter.FullSync") | Synchronizes data across distributed processes
     to prevent hanging during training, which is caused by uneven sharded data (functional
     name: `fullsync`). |'
+  id: totrans-105
   prefs: []
   type: TYPE_TB
+  zh: '| [`FullSync`](生成/torchdata.datapipes.iter.FullSync.html#torchdata.datapipes.iter.FullSync
+    "torchdata.datapipes.iter.FullSync") | 同步分布式进程中的数据，以防止训练过程中出现挂起，这是由不均匀的分片数据引起的（函数名称：`fullsync`）。
+    |'
 - en: '| [`HashChecker`](generated/torchdata.datapipes.iter.HashChecker.html#torchdata.datapipes.iter.HashChecker
     "torchdata.datapipes.iter.HashChecker") | Computes and checks the hash of each
     file, from an input DataPipe of tuples of file name and data/stream (functional
     name: `check_hash`). |'
+  id: totrans-106
   prefs: []
   type: TYPE_TB
+  zh: '| [`HashChecker`](生成/torchdata.datapipes.iter.HashChecker.html#torchdata.datapipes.iter.HashChecker
+    "torchdata.datapipes.iter.HashChecker") | 计算并检查每个文件的哈希值，从文件名和数据/流的元组输入DataPipe中（函数名称：`check_hash`）。
+    |'
 - en: '| [`InMemoryCacheHolder`](generated/torchdata.datapipes.iter.InMemoryCacheHolder.html#torchdata.datapipes.iter.InMemoryCacheHolder
     "torchdata.datapipes.iter.InMemoryCacheHolder") | Stores elements from the source
     DataPipe in memory, up to a size limit if specified (functional name: `in_memory_cache`).
     |'
+  id: totrans-107
   prefs: []
   type: TYPE_TB
+  zh: '| [`InMemoryCacheHolder`](generated/torchdata.datapipes.iter.InMemoryCacheHolder.html#torchdata.datapipes.iter.InMemoryCacheHolder
+    "torchdata.datapipes.iter.InMemoryCacheHolder") | 将来自源DataPipe的元素存储在内存中，如果指定了大小限制，则存储在内存中（功能名称：`in_memory_cache`）。
+    |'
 - en: '| [`IterableWrapper`](generated/torchdata.datapipes.iter.IterableWrapper.html#torchdata.datapipes.iter.IterableWrapper
     "torchdata.datapipes.iter.IterableWrapper") | Wraps an iterable object to create
     an IterDataPipe. |'
+  id: totrans-108
   prefs: []
   type: TYPE_TB
+  zh: '| [`IterableWrapper`](generated/torchdata.datapipes.iter.IterableWrapper.html#torchdata.datapipes.iter.IterableWrapper
+    "torchdata.datapipes.iter.IterableWrapper") | 包装可迭代对象以创建IterDataPipe。 |'
 - en: '| [`LengthSetter`](generated/torchdata.datapipes.iter.LengthSetter.html#torchdata.datapipes.iter.LengthSetter
     "torchdata.datapipes.iter.LengthSetter") | Set the length attribute of the DataPipe,
     which is returned by `__len__` (functional name: `set_length`). |'
+  id: totrans-109
   prefs: []
   type: TYPE_TB
+  zh: '| [`LengthSetter`](generated/torchdata.datapipes.iter.LengthSetter.html#torchdata.datapipes.iter.LengthSetter
+    "torchdata.datapipes.iter.LengthSetter") | 设置DataPipe的长度属性，该属性由`__len__`返回（功能名称：`set_length`）。
+    |'
 - en: '| [`MapToIterConverter`](generated/torchdata.datapipes.iter.MapToIterConverter.html#torchdata.datapipes.iter.MapToIterConverter
     "torchdata.datapipes.iter.MapToIterConverter") | Convert a `MapDataPipe` to an
     `IterDataPipe` (functional name: `to_iter_datapipe`). |'
+  id: totrans-110
   prefs: []
   type: TYPE_TB
+  zh: '| [`MapToIterConverter`](generated/torchdata.datapipes.iter.MapToIterConverter.html#torchdata.datapipes.iter.MapToIterConverter
+    "torchdata.datapipes.iter.MapToIterConverter") | 将`MapDataPipe`转换为`IterDataPipe`（功能名称：`to_iter_datapipe`）。
+    |'
 - en: '| [`OnDiskCacheHolder`](generated/torchdata.datapipes.iter.OnDiskCacheHolder.html#torchdata.datapipes.iter.OnDiskCacheHolder
     "torchdata.datapipes.iter.OnDiskCacheHolder") | Caches the outputs of multiple
     DataPipe operations to local files, which are typically performance bottleneck
     such download, decompress, and etc (functional name: `on_disk_cache`). |'
+  id: totrans-111
   prefs: []
   type: TYPE_TB
+  zh: '| [`OnDiskCacheHolder`](generated/torchdata.datapipes.iter.OnDiskCacheHolder.html#torchdata.datapipes.iter.OnDiskCacheHolder
+    "torchdata.datapipes.iter.OnDiskCacheHolder") | 将多个DataPipe操作的输出缓存到本地文件中，这些操作通常是性能瓶颈，如下载、解压等（功能名称：`on_disk_cache`）。
+    |'
 - en: '| [`PinMemory`](generated/torchdata.datapipes.iter.PinMemory.html#torchdata.datapipes.iter.PinMemory
     "torchdata.datapipes.iter.PinMemory") | Prefetches one element from the source
     DataPipe and moves it to pinned memory (functional name: `pin_memory`). |'
+  id: totrans-112
   prefs: []
   type: TYPE_TB
+  zh: '| [`PinMemory`](generated/torchdata.datapipes.iter.PinMemory.html#torchdata.datapipes.iter.PinMemory
+    "torchdata.datapipes.iter.PinMemory") | 预取源DataPipe中的一个元素并将其移动到固定内存中（功能名称：`pin_memory`）。
+    |'
 - en: '| [`Prefetcher`](generated/torchdata.datapipes.iter.Prefetcher.html#torchdata.datapipes.iter.Prefetcher
     "torchdata.datapipes.iter.Prefetcher") | Prefetches elements from the source DataPipe
     and puts them into a buffer (functional name: `prefetch`). |'
+  id: totrans-113
   prefs: []
   type: TYPE_TB
+  zh: '| [`Prefetcher`](generated/torchdata.datapipes.iter.Prefetcher.html#torchdata.datapipes.iter.Prefetcher
+    "torchdata.datapipes.iter.Prefetcher") | 预取来自源DataPipe的元素并将它们放入缓冲区（功能名称：`prefetch`）。
+    |'
 - en: '| [`RandomSplitter`](generated/torchdata.datapipes.iter.RandomSplitter.html#torchdata.datapipes.iter.RandomSplitter
     "torchdata.datapipes.iter.RandomSplitter") | Randomly split samples from a source
     DataPipe into groups (functional name: `random_split`). |'
+  id: totrans-114
   prefs: []
   type: TYPE_TB
+  zh: '| [`RandomSplitter`](generated/torchdata.datapipes.iter.RandomSplitter.html#torchdata.datapipes.iter.RandomSplitter
+    "torchdata.datapipes.iter.RandomSplitter") | 将源DataPipe中的样本随机分成组（功能名称：`random_split`）。
+    |'
 - en: '| [`ShardExpander`](generated/torchdata.datapipes.iter.ShardExpander.html#torchdata.datapipes.iter.ShardExpander
     "torchdata.datapipes.iter.ShardExpander") | Expands incoming shard strings into
     shards. |'
+  id: totrans-115
   prefs: []
   type: TYPE_TB
+  zh: '| [`ShardExpander`](generated/torchdata.datapipes.iter.ShardExpander.html#torchdata.datapipes.iter.ShardExpander
+    "torchdata.datapipes.iter.ShardExpander") | 将传入的分片字符串扩展为分片。 |'
 - en: '| [`ShardingFilter`](generated/torchdata.datapipes.iter.ShardingFilter.html#torchdata.datapipes.iter.ShardingFilter
     "torchdata.datapipes.iter.ShardingFilter") | Wrapper that allows DataPipe to be
     sharded (functional name: `sharding_filter`). |'
+  id: totrans-116
   prefs: []
   type: TYPE_TB
+  zh: '| [`ShardingFilter`](generated/torchdata.datapipes.iter.ShardingFilter.html#torchdata.datapipes.iter.ShardingFilter
+    "torchdata.datapipes.iter.ShardingFilter") | 允许DataPipe被分片的包装器（功能名称：`sharding_filter`）。
+    |'
 - en: '| [`ShardingRoundRobinDispatcher`](generated/torchdata.datapipes.iter.ShardingRoundRobinDispatcher.html#torchdata.datapipes.iter.ShardingRoundRobinDispatcher
     "torchdata.datapipes.iter.ShardingRoundRobinDispatcher") | Wrapper that indicates
     the prior section of `DataPipe` graph is non-replicable and will be iterated in
     a separate, single dispatching process to distribute data to worker processes
     in a round-robin manner when multiprocessing is being used. |'
+  id: totrans-117
   prefs: []
   type: TYPE_TB
+  zh: '| [`ShardingRoundRobinDispatcher`](generated/torchdata.datapipes.iter.ShardingRoundRobinDispatcher.html#torchdata.datapipes.iter.ShardingRoundRobinDispatcher
+    "torchdata.datapipes.iter.ShardingRoundRobinDispatcher") | 包装器，指示`DataPipe`图的前一部分是不可复制的，并且在使用多处理时将以循环方式将数据分发到工作进程中（功能名称：`sharding_round_robin_dispatcher`）。
+    |'
 - en: Selecting DataPipes[](#selecting-datapipes "Permalink to this heading")
+  id: totrans-118
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 选择DataPipes[](#selecting-datapipes "Permalink to this heading")
 - en: These DataPipes helps you select specific samples within a DataPipe.
+  id: totrans-119
   prefs: []
   type: TYPE_NORMAL
+  zh: 这些DataPipes帮助您在DataPipe中选择特定的样本。
 - en: '| [`Filter`](generated/torchdata.datapipes.iter.Filter.html#torchdata.datapipes.iter.Filter
     "torchdata.datapipes.iter.Filter") | Filters out elements from the source datapipe
     according to input `filter_fn` (functional name: `filter`). |'
+  id: totrans-120
   prefs: []
   type: TYPE_TB
+  zh: '| [`Filter`](generated/torchdata.datapipes.iter.Filter.html#torchdata.datapipes.iter.Filter
+    "torchdata.datapipes.iter.Filter") | 根据输入的`filter_fn`从源datapipe中过滤出元素（功能名称：`filter`）。
+    |'
 - en: '| [`Header`](generated/torchdata.datapipes.iter.Header.html#torchdata.datapipes.iter.Header
     "torchdata.datapipes.iter.Header") | Yields elements from the source DataPipe
     from the start, up to the specfied limit (functional name: `header`). |'
+  id: totrans-121
   prefs: []
   type: TYPE_TB
+  zh: '| [`Header`](generated/torchdata.datapipes.iter.Header.html#torchdata.datapipes.iter.Header
+    "torchdata.datapipes.iter.Header") | 从源DataPipe中产生元素，直到达到指定的限制为止（功能名称：`header`）。
+    |'
 - en: '| [`Dropper`](generated/torchdata.datapipes.iter.Dropper.html#torchdata.datapipes.iter.Dropper
     "torchdata.datapipes.iter.Dropper") | Drop columns/elements in input DataPipe
     via its indices (functional name: `drop`). |'
+  id: totrans-122
   prefs: []
   type: TYPE_TB
+  zh: '| [`Dropper`](generated/torchdata.datapipes.iter.Dropper.html#torchdata.datapipes.iter.Dropper
+    "torchdata.datapipes.iter.Dropper") | 通过其索引在输入DataPipe中删除列/元素（功能名称：`drop`）。 |'
 - en: '| [`Slicer`](generated/torchdata.datapipes.iter.Slicer.html#torchdata.datapipes.iter.Slicer
     "torchdata.datapipes.iter.Slicer") | returns a slice of elements in input DataPipe
     via start/stop/step or indices (functional name: `slice`). |'
+  id: totrans-123
   prefs: []
   type: TYPE_TB
+  zh: '| [`Slicer`](generated/torchdata.datapipes.iter.Slicer.html#torchdata.datapipes.iter.Slicer
+    "torchdata.datapipes.iter.Slicer") | 通过起始/停止/步长或索引返回输入DataPipe中元素的切片（功能名称：`slice`）。
+    |'
 - en: '| [`Flattener`](generated/torchdata.datapipes.iter.Flattener.html#torchdata.datapipes.iter.Flattener
     "torchdata.datapipes.iter.Flattener") | returns a flattened copy of the input
     DataPipe at the per sample/element level based on provided indices (functional
     name: `flatten`). |'
+  id: totrans-124
   prefs: []
   type: TYPE_TB
+  zh: '| [`Flattener`](generated/torchdata.datapipes.iter.Flattener.html#torchdata.datapipes.iter.Flattener
+    "torchdata.datapipes.iter.Flattener") | 根据提供的索引，在每个样本/元素级别返回输入DataPipe的扁平副本（功能名称：`flatten`）。
+    |'
 - en: Text DataPipes[](#text-datapipes "Permalink to this heading")
+  id: totrans-125
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 文本DataPipes[](#text-datapipes "Permalink to this heading")
 - en: These DataPipes help you parse, read, and transform text files and data.
+  id: totrans-126
   prefs: []
   type: TYPE_NORMAL
+  zh: 这些DataPipes帮助您解析、读取和转换文本文件和数据。
 - en: '| [`CSVDictParser`](generated/torchdata.datapipes.iter.CSVDictParser.html#torchdata.datapipes.iter.CSVDictParser
     "torchdata.datapipes.iter.CSVDictParser") | Accepts a DataPipe consists of tuples
     of file name and CSV data stream, reads and returns the contents within the CSV
     files one row at a time (functional name: `parse_csv_as_dict`). |'
+  id: totrans-127
   prefs: []
   type: TYPE_TB
+  zh: '| [`CSVDictParser`](generated/torchdata.datapipes.iter.CSVDictParser.html#torchdata.datapipes.iter.CSVDictParser
+    "torchdata.datapipes.iter.CSVDictParser") | 接受由文件名和CSV数据流元组组成的DataPipe，逐行读取并返回CSV文件中的内容（功能名称：`parse_csv_as_dict`）。
+    |'
 - en: '| [`CSVParser`](generated/torchdata.datapipes.iter.CSVParser.html#torchdata.datapipes.iter.CSVParser
     "torchdata.datapipes.iter.CSVParser") | Accepts a DataPipe consists of tuples
     of file name and CSV data stream, reads and returns the contents within the CSV
     files one row at a time (functional name: `parse_csv`). |'
+  id: totrans-128
   prefs: []
   type: TYPE_TB
+  zh: '| [`CSVParser`](generated/torchdata.datapipes.iter.CSVParser.html#torchdata.datapipes.iter.CSVParser
+    "torchdata.datapipes.iter.CSVParser") | 接受由文件名和CSV数据流元组组成的DataPipe，逐行读取并返回CSV文件中的内容（功能名称：`parse_csv`）。
+    |'
 - en: '| [`JsonParser`](generated/torchdata.datapipes.iter.JsonParser.html#torchdata.datapipes.iter.JsonParser
     "torchdata.datapipes.iter.JsonParser") | Reads from JSON data streams and yields
     a tuple of file name and JSON data (functional name: `parse_json_files`). |'
+  id: totrans-129
   prefs: []
   type: TYPE_TB
+  zh: '| [`JsonParser`](generated/torchdata.datapipes.iter.JsonParser.html#torchdata.datapipes.iter.JsonParser
+    "torchdata.datapipes.iter.JsonParser") | 从JSON数据流中读取并产生一个由文件名和JSON数据组成的元组（功能名称：`parse_json_files`）。
+    |'
 - en: '| [`LineReader`](generated/torchdata.datapipes.iter.LineReader.html#torchdata.datapipes.iter.LineReader
     "torchdata.datapipes.iter.LineReader") | Accepts a DataPipe consisting of tuples
     of file name and string data stream, and for each line in the stream, yields a
     tuple of file name and the line (functional name: `readlines`). |'
+  id: totrans-130
   prefs: []
   type: TYPE_TB
+  zh: '| [`LineReader`](generated/torchdata.datapipes.iter.LineReader.html#torchdata.datapipes.iter.LineReader
+    "torchdata.datapipes.iter.LineReader") | 接受由文件名和字符串数据流元组组成的DataPipe，对流中的每一行，产生一个由文件名和该行组成的元组（功能名称：`readlines`）。
+    |'
 - en: '| [`ParagraphAggregator`](generated/torchdata.datapipes.iter.ParagraphAggregator.html#torchdata.datapipes.iter.ParagraphAggregator
     "torchdata.datapipes.iter.ParagraphAggregator") | Aggregates lines of text from
     the same file into a single paragraph (functional name: `lines_to_paragraphs`).
     |'
+  id: totrans-131
   prefs: []
   type: TYPE_TB
+  zh: '| [`ParagraphAggregator`](generated/torchdata.datapipes.iter.ParagraphAggregator.html#torchdata.datapipes.iter.ParagraphAggregator
+    "torchdata.datapipes.iter.ParagraphAggregator") | 将同一文件中的文本行聚合成一个段落（功能名称：`lines_to_paragraphs`）。
+    |'
 - en: '| [`RoutedDecoder`](generated/torchdata.datapipes.iter.RoutedDecoder.html#torchdata.datapipes.iter.RoutedDecoder
     "torchdata.datapipes.iter.RoutedDecoder") | Decodes binary streams from input
     DataPipe, yields pathname and decoded data in a tuple (functional name: `routed_decode`).
     |'
+  id: totrans-132
   prefs: []
   type: TYPE_TB
+  zh: '| [`RoutedDecoder`](generated/torchdata.datapipes.iter.RoutedDecoder.html#torchdata.datapipes.iter.RoutedDecoder
+    "torchdata.datapipes.iter.RoutedDecoder") | 从输入DataPipe解码二进制流，以元组形式产生路径名和解码数据（功能名称：`routed_decode`）。
+    |'
 - en: '| [`Rows2Columnar`](generated/torchdata.datapipes.iter.Rows2Columnar.html#torchdata.datapipes.iter.Rows2Columnar
     "torchdata.datapipes.iter.Rows2Columnar") | Accepts an input DataPipe with batches
     of data, and processes one batch at a time and yields a Dict for each batch, with
     `column_names` as keys and lists of corresponding values from each row as values
     (functional name: `rows2columnar`). |'
+  id: totrans-133
   prefs: []
   type: TYPE_TB
+  zh: '| [`Rows2Columnar`](generated/torchdata.datapipes.iter.Rows2Columnar.html#torchdata.datapipes.iter.Rows2Columnar
+    "torchdata.datapipes.iter.Rows2Columnar") | 接受一个带有数据批次的输入DataPipe，逐批处理并为每批产生一个字典，其中`column_names`作为键，每行对应值的列表作为值（功能名称：`rows2columnar`）。
+    |'
 - en: '| [`StreamReader`](generated/torchdata.datapipes.iter.StreamReader.html#torchdata.datapipes.iter.StreamReader
     "torchdata.datapipes.iter.StreamReader") | Given IO streams and their label names,
     yields bytes with label name in a tuple (functional name: `read_from_stream`).
     |'
+  id: totrans-134
   prefs: []
   type: TYPE_TB
+  zh: '| [`StreamReader`](generated/torchdata.datapipes.iter.StreamReader.html#torchdata.datapipes.iter.StreamReader
+    "torchdata.datapipes.iter.StreamReader") | 给定IO流及其标签名称，以元组形式产生带有标签名称的字节（功能名称：`read_from_stream`）。
+    |'

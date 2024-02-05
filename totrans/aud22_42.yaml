@@ -1,334 +1,521 @@
 - en: Text-to-Speech with Tacotron2
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 使用Tacotron2进行文本到语音转换
 - en: 原文：[https://pytorch.org/audio/stable/tutorials/tacotron2_pipeline_tutorial.html](https://pytorch.org/audio/stable/tutorials/tacotron2_pipeline_tutorial.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/audio/stable/tutorials/tacotron2_pipeline_tutorial.html](https://pytorch.org/audio/stable/tutorials/tacotron2_pipeline_tutorial.html)
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-tutorials-tacotron2-pipeline-tutorial-py) to
     download the full example code
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[这里](#sphx-glr-download-tutorials-tacotron2-pipeline-tutorial-py)下载完整示例代码
 - en: '**Author**: [Yao-Yuan Yang](https://github.com/yangarbiter), [Moto Hira](mailto:moto%40meta.com)'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '**作者**：[Yao-Yuan Yang](https://github.com/yangarbiter), [Moto Hira](mailto:moto%40meta.com)'
 - en: Overview[](#overview "Permalink to this heading")
+  id: totrans-5
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 概述[](#overview "跳转到此标题的永久链接")
 - en: This tutorial shows how to build text-to-speech pipeline, using the pretrained
     Tacotron2 in torchaudio.
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程展示了如何构建文本到语音流水线，使用torchaudio中的预训练Tacotron2。
 - en: 'The text-to-speech pipeline goes as follows:'
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 文本到语音流水线的步骤如下：
 - en: Text preprocessing
+  id: totrans-8
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 文本预处理
 - en: First, the input text is encoded into a list of symbols. In this tutorial, we
     will use English characters and phonemes as the symbols.
+  id: totrans-9
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 首先，将输入文本编码为符号列表。在本教程中，我们将使用英文字符和音素作为符号。
 - en: Spectrogram generation
+  id: totrans-10
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 生成频谱图
 - en: From the encoded text, a spectrogram is generated. We use `Tacotron2` model
     for this.
+  id: totrans-11
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 从编码文本生成频谱图。我们使用`Tacotron2`模型进行此操作。
 - en: Time-domain conversion
+  id: totrans-12
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 时域转换
 - en: The last step is converting the spectrogram into the waveform. The process to
     generate speech from spectrogram is also called Vocoder. In this tutorial, three
     different vocoders are used, [`WaveRNN`](../generated/torchaudio.models.WaveRNN.html#torchaudio.models.WaveRNN
     "torchaudio.models.WaveRNN"), [`GriffinLim`](../generated/torchaudio.transforms.GriffinLim.html#torchaudio.transforms.GriffinLim
     "torchaudio.transforms.GriffinLim"), and [Nvidia’s WaveGlow](https://pytorch.org/hub/nvidia_deeplearningexamples_tacotron2/).
+  id: totrans-13
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 最后一步是将频谱图转换为波形。从频谱图生成语音的过程也称为声码器。在本教程中，使用了三种不同的声码器，[`WaveRNN`](../generated/torchaudio.models.WaveRNN.html#torchaudio.models.WaveRNN
+    "torchaudio.models.WaveRNN")、[`GriffinLim`](../generated/torchaudio.transforms.GriffinLim.html#torchaudio.transforms.GriffinLim
+    "torchaudio.transforms.GriffinLim")和[Nvidia的WaveGlow](https://pytorch.org/hub/nvidia_deeplearningexamples_tacotron2/)。
 - en: The following figure illustrates the whole process.
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下图示了整个过程。
 - en: '![https://download.pytorch.org/torchaudio/tutorial-assets/tacotron2_tts_pipeline.png](../Images/209f5b44836c4b1fdfb15fbfce7fd7f0.png)'
+  id: totrans-15
   prefs: []
   type: TYPE_IMG
+  zh: '![https://download.pytorch.org/torchaudio/tutorial-assets/tacotron2_tts_pipeline.png](../Images/209f5b44836c4b1fdfb15fbfce7fd7f0.png)'
 - en: All the related components are bundled in [`torchaudio.pipelines.Tacotron2TTSBundle`](../generated/torchaudio.pipelines.Tacotron2TTSBundle.html#torchaudio.pipelines.Tacotron2TTSBundle
     "torchaudio.pipelines.Tacotron2TTSBundle"), but this tutorial will also cover
     the process under the hood.
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 所有相关组件都打包在[`torchaudio.pipelines.Tacotron2TTSBundle`](../generated/torchaudio.pipelines.Tacotron2TTSBundle.html#torchaudio.pipelines.Tacotron2TTSBundle
+    "torchaudio.pipelines.Tacotron2TTSBundle")中，但本教程还将介绍底层过程。
 - en: Preparation[](#preparation "Permalink to this heading")
+  id: totrans-17
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 准备工作[](#preparation "跳转到此标题的永久链接")
 - en: First, we install the necessary dependencies. In addition to `torchaudio`, `DeepPhonemizer`
     is required to perform phoneme-based encoding.
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: 首先，我们安装必要的依赖项。除了`torchaudio`之外，还需要`DeepPhonemizer`来执行基于音素的编码。
 - en: '[PRE0]'
+  id: totrans-19
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: '[PRE1]'
+  id: totrans-20
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: '[PRE2]'
+  id: totrans-21
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: '[PRE3]'
+  id: totrans-22
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: Text Processing[](#text-processing "Permalink to this heading")
+  id: totrans-23
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 文本处理[](#text-processing "跳转到此标题的永久链接")
 - en: Character-based encoding[](#character-based-encoding "Permalink to this heading")
+  id: totrans-24
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 基于字符的编码[](#character-based-encoding "跳转到此标题的永久链接")
 - en: In this section, we will go through how the character-based encoding works.
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本节中，我们将介绍基于字符的编码工作原理。
 - en: Since the pre-trained Tacotron2 model expects specific set of symbol tables,
     the same functionalities available in `torchaudio`. This section is more for the
     explanation of the basis of encoding.
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于预训练的Tacotron2模型期望特定的符号表集，因此`torchaudio`中提供了相同的功能。本节更多是为了解释编码的基础。
 - en: Firstly, we define the set of symbols. For example, we can use `'_-!\'(),.:;?
     abcdefghijklmnopqrstuvwxyz'`. Then, we will map the each character of the input
     text into the index of the corresponding symbol in the table.
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 首先，我们定义符号集。例如，我们可以使用`'_-!\'(),.:;? abcdefghijklmnopqrstuvwxyz'`。然后，我们将输入文本的每个字符映射到表中相应符号的索引。
 - en: The following is an example of such processing. In the example, symbols that
     are not in the table are ignored.
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下是这种处理的示例。在示例中，表中没有的符号将被忽略。
 - en: '[PRE4]'
+  id: totrans-29
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: '[PRE5]'
+  id: totrans-30
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: As mentioned in the above, the symbol table and indices must match what the
     pretrained Tacotron2 model expects. `torchaudio` provides the transform along
     with the pretrained model. For example, you can instantiate and use such transform
     as follow.
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: 如上所述，符号表和索引必须与预训练的Tacotron2模型期望的相匹配。`torchaudio`提供了该转换以及预训练模型。例如，您可以实例化并使用此类转换如下。
 - en: '[PRE6]'
+  id: totrans-32
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: '[PRE7]'
+  id: totrans-33
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: The `processor` object takes either a text or list of texts as inputs. When
     a list of texts are provided, the returned `lengths` variable represents the valid
     length of each processed tokens in the output batch.
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: '`processor`对象接受文本或文本列表作为输入。当提供文本列表时，返回的`lengths`变量表示输出批次中每个处理的标记的有效长度。'
 - en: The intermediate representation can be retrieved as follow.
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 中间表示可以按以下方式检索。
 - en: '[PRE8]'
+  id: totrans-36
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: '[PRE9]'
+  id: totrans-37
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: Phoneme-based encoding[](#phoneme-based-encoding "Permalink to this heading")
+  id: totrans-38
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 基于音素的编码[](#phoneme-based-encoding "跳转到此标题的永久链接")
 - en: Phoneme-based encoding is similar to character-based encoding, but it uses a
     symbol table based on phonemes and a G2P (Grapheme-to-Phoneme) model.
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 基于音素的编码类似于基于字符的编码，但它使用基于音素的符号表和G2P（字素到音素）模型。
 - en: The detail of the G2P model is out of scope of this tutorial, we will just look
     at what the conversion looks like.
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: G2P模型的详细信息超出了本教程的范围，我们只会看一下转换的样子。
 - en: Similar to the case of character-based encoding, the encoding process is expected
     to match what a pretrained Tacotron2 model is trained on. `torchaudio` has an
     interface to create the process.
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 与基于字符的编码类似，编码过程应与预训练的Tacotron2模型训练的内容相匹配。`torchaudio`具有创建该过程的接口。
 - en: The following code illustrates how to make and use the process. Behind the scene,
     a G2P model is created using `DeepPhonemizer` package, and the pretrained weights
     published by the author of `DeepPhonemizer` is fetched.
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下代码说明了如何进行该过程。在幕后，使用`DeepPhonemizer`包创建了一个G2P模型，并获取了`DeepPhonemizer`作者发布的预训练权重。
 - en: '[PRE10]'
+  id: totrans-43
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: '[PRE11]'
+  id: totrans-44
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: Notice that the encoded values are different from the example of character-based
     encoding.
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，编码值与基于字符的编码示例不同。
 - en: The intermediate representation looks like the following.
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 中间表示如下。
 - en: '[PRE12]'
+  id: totrans-47
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: '[PRE13]'
+  id: totrans-48
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: Spectrogram Generation[](#spectrogram-generation "Permalink to this heading")
+  id: totrans-49
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 频谱图生成[](#spectrogram-generation "跳转到此标题")
 - en: '`Tacotron2` is the model we use to generate spectrogram from the encoded text.
     For the detail of the model, please refer to [the paper](https://arxiv.org/abs/1712.05884).'
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: '`Tacotron2`是我们用来从编码文本生成频谱图的模型。有关模型的详细信息，请参阅[论文](https://arxiv.org/abs/1712.05884)。'
 - en: It is easy to instantiate a Tacotron2 model with pretrained weight, however,
     note that the input to Tacotron2 models need to be processed by the matching text
     processor.
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
+  zh: 实例化一个带有预训练权重的Tacotron2模型很容易，但请注意，Tacotron2模型的输入需要经过匹配的文本处理器处理。
 - en: '[`torchaudio.pipelines.Tacotron2TTSBundle`](../generated/torchaudio.pipelines.Tacotron2TTSBundle.html#torchaudio.pipelines.Tacotron2TTSBundle
     "torchaudio.pipelines.Tacotron2TTSBundle") bundles the matching models and processors
     together so that it is easy to create the pipeline.'
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`torchaudio.pipelines.Tacotron2TTSBundle`](../generated/torchaudio.pipelines.Tacotron2TTSBundle.html#torchaudio.pipelines.Tacotron2TTSBundle
+    "torchaudio.pipelines.Tacotron2TTSBundle")将匹配的模型和处理器捆绑在一起，以便轻松创建流水线。'
 - en: For the available bundles, and its usage, please refer to [`Tacotron2TTSBundle`](../generated/torchaudio.pipelines.Tacotron2TTSBundle.html#torchaudio.pipelines.Tacotron2TTSBundle
     "torchaudio.pipelines.Tacotron2TTSBundle").
+  id: totrans-53
   prefs: []
   type: TYPE_NORMAL
+  zh: 有关可用捆绑包及其用法，请参阅[`Tacotron2TTSBundle`](../generated/torchaudio.pipelines.Tacotron2TTSBundle.html#torchaudio.pipelines.Tacotron2TTSBundle
+    "torchaudio.pipelines.Tacotron2TTSBundle")。
 - en: '[PRE14]'
+  id: totrans-54
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: '![tacotron2 pipeline tutorial](../Images/caf2a228b2d54421e1c3fc64dd482393.png)'
+  id: totrans-55
   prefs: []
   type: TYPE_IMG
+  zh: '![tacotron2流水线教程](../Images/caf2a228b2d54421e1c3fc64dd482393.png)'
 - en: '[PRE15]'
+  id: totrans-56
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: Note that `Tacotron2.infer` method perfoms multinomial sampling, therefor, the
     process of generating the spectrogram incurs randomness.
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，`Tacotron2.infer`方法执行多项抽样，因此生成频谱图的过程会产生随机性。
 - en: '[PRE16]'
+  id: totrans-58
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: '![tacotron2 pipeline tutorial](../Images/b4898a614b73264775a6c5201f2e1bc3.png)'
+  id: totrans-59
   prefs: []
   type: TYPE_IMG
+  zh: '![tacotron2流水线教程](../Images/b4898a614b73264775a6c5201f2e1bc3.png)'
 - en: '[PRE17]'
+  id: totrans-60
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: Waveform Generation[](#waveform-generation "Permalink to this heading")
+  id: totrans-61
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 波形生成[](#waveform-generation "跳转到此标题")
 - en: Once the spectrogram is generated, the last process is to recover the waveform
     from the spectrogram.
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
+  zh: 生成频谱图后，最后一个过程是从频谱图中恢复波形。
 - en: '`torchaudio` provides vocoders based on `GriffinLim` and `WaveRNN`.'
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: '`torchaudio`提供基于`GriffinLim`和`WaveRNN`的声码器。'
 - en: WaveRNN[](#wavernn "Permalink to this heading")
+  id: totrans-64
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: WaveRNN[](#wavernn "跳转到此标题")
 - en: Continuing from the previous section, we can instantiate the matching WaveRNN
     model from the same bundle.
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: 继续上一节，我们可以从相同的捆绑包中实例化匹配的WaveRNN模型。
 - en: '[PRE18]'
+  id: totrans-66
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: '[PRE19]'
+  id: totrans-67
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE19]'
 - en: '[PRE20]'
+  id: totrans-68
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE20]'
 - en: '![tacotron2 pipeline tutorial](../Images/d81f4591e9faa8f9a00d0a4eb78e505d.png)'
+  id: totrans-69
   prefs: []
   type: TYPE_IMG
-- en: 
+  zh: '![tacotron2流水线教程](../Images/d81f4591e9faa8f9a00d0a4eb78e505d.png)'
+- en: null
+  id: totrans-70
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-71
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: Griffin-Lim[](#griffin-lim "Permalink to this heading")
+  id: totrans-72
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: Griffin-Lim[](#griffin-lim "跳转到此标题")
 - en: Using the Griffin-Lim vocoder is same as WaveRNN. You can instantiate the vocode
     object with [`get_vocoder()`](../generated/torchaudio.pipelines.Tacotron2TTSBundle.html#torchaudio.pipelines.Tacotron2TTSBundle.get_vocoder
     "torchaudio.pipelines.Tacotron2TTSBundle.get_vocoder") method and pass the spectrogram.
+  id: totrans-73
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用Griffin-Lim声码器与WaveRNN相同。您可以使用[`get_vocoder()`](../generated/torchaudio.pipelines.Tacotron2TTSBundle.html#torchaudio.pipelines.Tacotron2TTSBundle.get_vocoder
+    "torchaudio.pipelines.Tacotron2TTSBundle.get_vocoder")方法实例化声码器对象并传递频谱图。
 - en: '[PRE21]'
+  id: totrans-74
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE21]'
 - en: '[PRE22]'
+  id: totrans-75
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE22]'
 - en: '[PRE23]'
+  id: totrans-76
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE23]'
 - en: '![tacotron2 pipeline tutorial](../Images/3ce8674d89c25493f24e575fd2377a53.png)'
+  id: totrans-77
   prefs: []
   type: TYPE_IMG
-- en: 
+  zh: '![tacotron2流水线教程](../Images/3ce8674d89c25493f24e575fd2377a53.png)'
+- en: null
+  id: totrans-78
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-79
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: Waveglow[](#waveglow "Permalink to this heading")
+  id: totrans-80
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: Waveglow[](#waveglow "跳转到此标题")
 - en: Waveglow is a vocoder published by Nvidia. The pretrained weights are published
     on Torch Hub. One can instantiate the model using `torch.hub` module.
+  id: totrans-81
   prefs: []
   type: TYPE_NORMAL
+  zh: Waveglow是Nvidia发布的声码器。预训练权重已发布在Torch Hub上。可以使用`torch.hub`模块实例化模型。
 - en: '[PRE24]'
+  id: totrans-82
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE24]'
 - en: '[PRE25]'
+  id: totrans-83
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE25]'
 - en: '[PRE26]'
+  id: totrans-84
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE26]'
 - en: '![tacotron2 pipeline tutorial](../Images/d981c34fe89af30a4e994e3d10e2dad4.png)'
+  id: totrans-85
   prefs: []
   type: TYPE_IMG
-- en: 
+  zh: '![tacotron2流水线教程](../Images/d981c34fe89af30a4e994e3d10e2dad4.png)'
+- en: null
+  id: totrans-86
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-87
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '**Total running time of the script:** ( 1 minutes 41.941 seconds)'
+  id: totrans-88
   prefs: []
   type: TYPE_NORMAL
+  zh: '**脚本的总运行时间：**（1分钟41.941秒）'
 - en: '[`Download Python source code: tacotron2_pipeline_tutorial.py`](../_downloads/9772cbd0af96f57f17a2da758b365a43/tacotron2_pipeline_tutorial.py)'
+  id: totrans-89
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Python源代码：tacotron2_pipeline_tutorial.py`](../_downloads/9772cbd0af96f57f17a2da758b365a43/tacotron2_pipeline_tutorial.py)'
 - en: '[`Download Jupyter notebook: tacotron2_pipeline_tutorial.ipynb`](../_downloads/63ad2005fc24f143f3f078cd2c6b0d60/tacotron2_pipeline_tutorial.ipynb)'
+  id: totrans-90
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Jupyter笔记本：tacotron2_pipeline_tutorial.ipynb`](../_downloads/63ad2005fc24f143f3f078cd2c6b0d60/tacotron2_pipeline_tutorial.ipynb)'
 - en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  id: totrans-91
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Sphinx-Gallery生成的画廊](https://sphinx-gallery.github.io)'

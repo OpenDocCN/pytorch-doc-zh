@@ -1,293 +1,449 @@
 - en: ASR Inference with CUDA CTC Decoder
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 使用CUDA CTC解码器进行ASR推理
 - en: 原文：[https://pytorch.org/audio/stable/tutorials/asr_inference_with_cuda_ctc_decoder_tutorial.html](https://pytorch.org/audio/stable/tutorials/asr_inference_with_cuda_ctc_decoder_tutorial.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/audio/stable/tutorials/asr_inference_with_cuda_ctc_decoder_tutorial.html](https://pytorch.org/audio/stable/tutorials/asr_inference_with_cuda_ctc_decoder_tutorial.html)
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-tutorials-asr-inference-with-cuda-ctc-decoder-tutorial-py)
     to download the full example code
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击这里下载完整示例代码
 - en: '**Author**: [Yuekai Zhang](mailto:yuekaiz%40nvidia.com)'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 作者：Yuekai Zhang
 - en: This tutorial shows how to perform speech recognition inference using a CUDA-based
     CTC beam search decoder. We demonstrate this on a pretrained [Zipformer](https://github.com/k2-fsa/icefall/tree/master/egs/librispeech/ASR/pruned_transducer_stateless7_ctc)
     model from [Next-gen Kaldi](https://nadirapovey.com/next-gen-kaldi-what-is-it)
     project.
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程展示了如何使用基于CUDA的CTC波束搜索解码器执行语音识别推理。我们在来自[Next-gen Kaldi](https://nadirapovey.com/next-gen-kaldi-what-is-it)项目的预训练[Zipformer](https://github.com/k2-fsa/icefall/tree/master/egs/librispeech/ASR/pruned_transducer_stateless7_ctc)模型上演示了这一点。
 - en: Overview[](#overview "Permalink to this heading")
+  id: totrans-6
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 概述
 - en: Beam search decoding works by iteratively expanding text hypotheses (beams)
     with next possible characters, and maintaining only the hypotheses with the highest
     scores at each time step.
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 波束搜索解码通过迭代地扩展文本假设（波束）与下一个可能的字符，并在每个时间步仅保留得分最高的假设来工作。
 - en: The underlying implementation uses cuda to acclerate the whole decoding process
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 底层实现使用cuda来加速整个解码过程
 - en: A mathematical formula for the decoder can be
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 解码器的数学公式可以是
 - en: found in the [paper](https://arxiv.org/pdf/1408.2873.pdf), and a more detailed
     algorithm can be found in this [blog](https://distill.pub/2017/ctc/).
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 在[论文](https://arxiv.org/pdf/1408.2873.pdf)中找到，并且更详细的算法可以在这个[博客](https://distill.pub/2017/ctc/)中找到。
 - en: Running ASR inference using a CUDA CTC Beam Search decoder requires the following
     components
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用CUDA CTC波束搜索解码器运行ASR推理需要以下组件
 - en: 'Acoustic Model: model predicting modeling units (BPE in this tutorial) from
     acoustic features'
+  id: totrans-12
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 声学模型：从声学特征预测建模单元（本教程中为BPE）的模型
 - en: 'BPE Model: the byte-pair encoding (BPE) tokenizer file'
+  id: totrans-13
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: BPE模型：字节对编码（BPE）分词器文件
 - en: Acoustic Model and Set Up[](#acoustic-model-and-set-up "Permalink to this heading")
+  id: totrans-14
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 声学模型和设置
 - en: First we import the necessary utilities and fetch the data that we are working
     with
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 首先，我们导入必要的工具并获取我们要处理的数据
 - en: '[PRE0]'
+  id: totrans-16
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: '[PRE1]'
+  id: totrans-17
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: '[PRE2]'
+  id: totrans-18
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: We use the pretrained [Zipformer](https://huggingface.co/Zengwei/icefall-asr-librispeech-pruned-transducer-stateless7-ctc-2022-12-01)
     model that is trained on the [LibriSpeech dataset](http://www.openslr.org/12).
     The model is jointly trained with CTC and Transducer loss functions. In this tutorial,
     we only use CTC head of the model.
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们使用预训练的[Zipformer](https://huggingface.co/Zengwei/icefall-asr-librispeech-pruned-transducer-stateless7-ctc-2022-12-01)模型，该模型在[LibriSpeech数据集](http://www.openslr.org/12)上进行了训练。该模型同时使用CTC和Transducer损失函数进行训练。在本教程中，我们仅使用模型的CTC头部。
 - en: '[PRE3]'
+  id: totrans-20
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: '[PRE4]'
+  id: totrans-21
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: We will load a sample from the LibriSpeech test-other dataset.
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们将从LibriSpeech测试其他数据集中加载一个样本。
 - en: '[PRE5]'
+  id: totrans-23
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: '[PRE6]'
+  id: totrans-24
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE6]'
+- en: null
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: The transcript corresponding to this audio file is
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 与此音频文件对应的抄本是
 - en: '[PRE7]'
+  id: totrans-28
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: Files and Data for Decoder[](#files-and-data-for-decoder "Permalink to this
     heading")
+  id: totrans-29
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 解码器的文件和数据
 - en: Next, we load in our token from BPE model, which is the tokenizer for decoding.
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，我们从BPE模型中加载我们的标记，这是用于解码的分词器。
 - en: Tokens[](#tokens "Permalink to this heading")
+  id: totrans-31
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 标记
 - en: The tokens are the possible symbols that the acoustic model can predict, including
     the blank symbol in CTC. In this tutorial, it includes 500 BPE tokens. It can
     either be passed in as a file, where each line consists of the tokens corresponding
     to the same index, or as a list of tokens, each mapping to a unique index.
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 标记是声学模型可以预测的可能符号，包括CTC中的空白符号。在本教程中，它包括500个BPE标记。它可以作为文件传入，其中每行包含与相同索引对应的标记，或作为标记列表传入，每个标记映射到一个唯一的索引。
 - en: '[PRE8]'
+  id: totrans-33
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: '[PRE9]'
+  id: totrans-34
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: '[PRE10]'
+  id: totrans-35
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: Construct CUDA Decoder[](#construct-cuda-decoder "Permalink to this heading")
+  id: totrans-36
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 构建CUDA解码器
 - en: In this tutorial, we will construct a CUDA beam search decoder. The decoder
     can be constructed using the factory function [`cuda_ctc_decoder()`](../generated/torchaudio.models.decoder.cuda_ctc_decoder.html#torchaudio.models.decoder.cuda_ctc_decoder
     "torchaudio.models.decoder.cuda_ctc_decoder").
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，我们将构建一个CUDA波束搜索解码器。可以使用工厂函数[`cuda_ctc_decoder()`](../generated/torchaudio.models.decoder.cuda_ctc_decoder.html#torchaudio.models.decoder.cuda_ctc_decoder
+    "torchaudio.models.decoder.cuda_ctc_decoder")来构建解码器。
 - en: '[PRE11]'
+  id: totrans-38
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: Run Inference[](#run-inference "Permalink to this heading")
+  id: totrans-39
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 运行推理
 - en: Now that we have the data, acoustic model, and decoder, we can perform inference.
     The output of the beam search decoder is of type [`CUCTCHypothesis`](../generated/torchaudio.models.decoder.CUCTCDecoder.html#torchaudio.models.decoder.CUCTCHypothesis
     "torchaudio.models.decoder.CUCTCHypothesis"), consisting of the predicted token
     IDs, words (symbols corresponding to the token IDs), and hypothesis scores. Recall
     the transcript corresponding to the waveform is
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们有了数据、声学模型和解码器，我们可以执行推理。波束搜索解码器的输出类型为[`CUCTCHypothesis`](../generated/torchaudio.models.decoder.CUCTCDecoder.html#torchaudio.models.decoder.CUCTCHypothesis
+    "torchaudio.models.decoder.CUCTCHypothesis")，包括预测的标记ID、单词（与标记ID对应的符号）和假设分数。回想一下与波形对应的抄本是
 - en: '[PRE12]'
+  id: totrans-41
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: '[PRE13]'
+  id: totrans-42
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: '[PRE14]'
+  id: totrans-43
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: The cuda ctc decoder gives the following result.
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: cuda ctc解码器给出以下结果。
 - en: '[PRE15]'
+  id: totrans-45
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: '[PRE16]'
+  id: totrans-46
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: Beam Search Decoder Parameters[](#beam-search-decoder-parameters "Permalink
     to this heading")
+  id: totrans-47
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 波束搜索解码器参数
 - en: In this section, we go a little bit more in depth about some different parameters
     and tradeoffs. For the full list of customizable parameters, please refer to the
     [`documentation`](../generated/torchaudio.models.decoder.cuda_ctc_decoder.html#torchaudio.models.decoder.cuda_ctc_decoder
     "torchaudio.models.decoder.cuda_ctc_decoder").
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本节中，我们将更深入地讨论一些不同参数和权衡。有关可自定义参数的完整列表，请参考[`文档`](../generated/torchaudio.models.decoder.cuda_ctc_decoder.html#torchaudio.models.decoder.cuda_ctc_decoder
+    "torchaudio.models.decoder.cuda_ctc_decoder")。
 - en: Helper Function[](#helper-function "Permalink to this heading")
+  id: totrans-49
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 辅助函数[](#helper-function "跳转到此标题")
 - en: '[PRE17]'
+  id: totrans-50
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: nbest[](#nbest "Permalink to this heading")
+  id: totrans-51
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: nbest[](#nbest "跳转到此标题")
 - en: This parameter indicates the number of best hypotheses to return. For instance,
     by setting `nbest=10` when constructing the beam search decoder earlier, we can
     now access the hypotheses with the top 10 scores.
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
+  zh: 此参数表示要返回的最佳假设数量。例如，在之前构建波束搜索解码器时设置 `nbest=10`，现在我们可以访问得分前10名的假设。
 - en: '[PRE18]'
+  id: totrans-53
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: '[PRE19]'
+  id: totrans-54
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE19]'
 - en: beam size[](#beam-size "Permalink to this heading")
+  id: totrans-55
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 波束大小[](#beam-size "跳转到此标题")
 - en: The `beam_size` parameter determines the maximum number of best hypotheses to
     hold after each decoding step. Using larger beam sizes allows for exploring a
     larger range of possible hypotheses which can produce hypotheses with higher scores,
     but it does not provide additional gains beyond a certain point. We recommend
     to set beam_size=10 for cuda beam search decoder.
+  id: totrans-56
   prefs: []
   type: TYPE_NORMAL
+  zh: '`beam_size`参数确定每个解码步骤后保留的最佳假设数量上限。使用更大的波束大小可以探索更广泛的可能假设范围，这可以产生得分更高的假设，但在一定程度上不会提供额外的收益。我们建议为cuda波束搜索解码器设置`beam_size=10`。'
 - en: In the example below, we see improvement in decoding quality as we increase
     beam size from 1 to 3, but notice how using a beam size of 3 provides the same
     output as beam size 10.
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: 在下面的示例中，我们可以看到随着波束大小从1增加到3，解码质量有所提高，但请注意，使用波束大小为3时提供与波束大小为10相同的输出。
 - en: '[PRE20]'
+  id: totrans-58
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE20]'
 - en: '[PRE21]'
+  id: totrans-59
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE21]'
 - en: blank skip threshold[](#blank-skip-threshold "Permalink to this heading")
+  id: totrans-60
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: blank skip threshold[](#blank-skip-threshold "跳转到此标题")
 - en: The `blank_skip_threshold` parameter is used to prune the frames which have
     large blank probability. Pruning these frames with a good blank_skip_threshold
     could speed up decoding process a lot while no accuracy drop. Since the rule of
     CTC, we would keep at least one blank frame between two non-blank frames to avoid
     mistakenly merge two consecutive identical symbols. We recommend to set blank_skip_threshold=0.95
     for cuda beam search decoder.
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: '`blank_skip_threshold`参数用于修剪具有较大空白概率的帧。使用良好的`blank_skip_threshold`修剪这些帧可以大大加快解码过程，而不会降低准确性。根据CTC规则，我们应至少在两个非空白帧之间保留一个空白帧，以避免错误地合并两个连续相同的符号。我们建议为cuda波束搜索解码器设置`blank_skip_threshold=0.95`。'
 - en: '[PRE22]'
+  id: totrans-62
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE22]'
 - en: '[PRE23]'
+  id: totrans-63
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE23]'
 - en: Benchmark with flashlight CPU decoder[](#benchmark-with-flashlight-cpu-decoder
     "Permalink to this heading")
+  id: totrans-64
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 使用手电筒CPU解码器进行基准测试[](#benchmark-with-flashlight-cpu-decoder "跳转到此标题")
 - en: We benchmark the throughput and accuracy between CUDA decoder and CPU decoder
     using librispeech test_other set. To reproduce below benchmark results, you may
     refer [here](https://github.com/pytorch/audio/tree/main/examples/asr/librispeech_cuda_ctc_decoder).
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们使用librispeech test_other数据集对CUDA解码器和CPU解码器之间的吞吐量和准确性进行基准测试。要重现下面的基准测试结果，您可以参考[这里](https://github.com/pytorch/audio/tree/main/examples/asr/librispeech_cuda_ctc_decoder)。
 - en: '| Decoder | Setting | WER (%) | N-Best Oracle WER (%) | Decoder Cost Time (seconds)
     |'
+  id: totrans-66
   prefs: []
   type: TYPE_TB
+  zh: '| 解码器 | 设置 | WER (%) | N-Best Oracle WER (%) | 解码器成本时间 (秒) |'
 - en: '| --- | --- | --- | --- | --- |'
+  id: totrans-67
   prefs: []
   type: TYPE_TB
+  zh: '| --- | --- | --- | --- | --- |'
 - en: '| CUDA decoder | blank_skip_threshold 0.95 | 5.81 | 4.11 | 2.57 |'
+  id: totrans-68
   prefs: []
   type: TYPE_TB
+  zh: '| CUDA解码器 | blank_skip_threshold 0.95 | 5.81 | 4.11 | 2.57 |'
 - en: '| CUDA decoder | blank_skip_threshold 1.0 (no frame-skip) | 5.81 | 4.09 | 6.24
     |'
+  id: totrans-69
   prefs: []
   type: TYPE_TB
+  zh: '| CUDA解码器 | blank_skip_threshold 1.0 (无帧跳过) | 5.81 | 4.09 | 6.24 |'
 - en: '| CPU decoder | beam_size_token 10 | 5.86 | 4.30 | 28.61 |'
+  id: totrans-70
   prefs: []
   type: TYPE_TB
+  zh: '| CPU解码器 | beam_size_token 10 | 5.86 | 4.30 | 28.61 |'
 - en: '| CPU decoder | beam_size_token 500 | 5.86 | 4.30 | 791.80 |'
+  id: totrans-71
   prefs: []
   type: TYPE_TB
+  zh: '| CPU解码器 | beam_size_token 500 | 5.86 | 4.30 | 791.80 |'
 - en: From the above table, CUDA decoder could give a slight improvement in WER and
     a significant increase in throughput.
+  id: totrans-72
   prefs: []
   type: TYPE_NORMAL
+  zh: 从上表中可以看出，CUDA解码器在WER方面略有改善，并且吞吐量显著增加。
 - en: '**Total running time of the script:** ( 0 minutes 8.752 seconds)'
+  id: totrans-73
   prefs: []
   type: TYPE_NORMAL
+  zh: '**脚本的总运行时间:** ( 0 分钟 8.752 秒)'
 - en: '[`Download Python source code: asr_inference_with_cuda_ctc_decoder_tutorial.py`](../_downloads/3956cf493d21711e687e9610c91f9cd1/asr_inference_with_cuda_ctc_decoder_tutorial.py)'
+  id: totrans-74
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Python源代码: asr_inference_with_cuda_ctc_decoder_tutorial.py`](../_downloads/3956cf493d21711e687e9610c91f9cd1/asr_inference_with_cuda_ctc_decoder_tutorial.py)'
 - en: '[`Download Jupyter notebook: asr_inference_with_cuda_ctc_decoder_tutorial.ipynb`](../_downloads/96982138e59c541534342222a3f5c69e/asr_inference_with_cuda_ctc_decoder_tutorial.ipynb)'
+  id: totrans-75
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Jupyter笔记本: asr_inference_with_cuda_ctc_decoder_tutorial.ipynb`](../_downloads/96982138e59c541534342222a3f5c69e/asr_inference_with_cuda_ctc_decoder_tutorial.ipynb)'
 - en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  id: totrans-76
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Sphinx-Gallery生成的图库](https://sphinx-gallery.github.io)'

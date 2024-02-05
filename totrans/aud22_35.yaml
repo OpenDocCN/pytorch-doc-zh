@@ -1,509 +1,774 @@
 - en: ASR Inference with CTC Decoder
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 使用CTC解码器进行ASR推断
 - en: 原文：[https://pytorch.org/audio/stable/tutorials/asr_inference_with_ctc_decoder_tutorial.html](https://pytorch.org/audio/stable/tutorials/asr_inference_with_ctc_decoder_tutorial.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/audio/stable/tutorials/asr_inference_with_ctc_decoder_tutorial.html](https://pytorch.org/audio/stable/tutorials/asr_inference_with_ctc_decoder_tutorial.html)
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-tutorials-asr-inference-with-ctc-decoder-tutorial-py)
     to download the full example code
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[这里](#sphx-glr-download-tutorials-asr-inference-with-ctc-decoder-tutorial-py)下载完整示例代码
 - en: '**Author**: [Caroline Chen](mailto:carolinechen%40meta.com)'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '**作者**：[Caroline Chen](mailto:carolinechen%40meta.com)'
 - en: This tutorial shows how to perform speech recognition inference using a CTC
     beam search decoder with lexicon constraint and KenLM language model support.
     We demonstrate this on a pretrained wav2vec 2.0 model trained using CTC loss.
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程展示了如何使用带有词典约束和KenLM语言模型支持的CTC波束搜索解码器执行语音识别推断。我们在使用CTC损失训练的预训练wav2vec 2.0模型上演示了这一点。
 - en: Overview[](#overview "Permalink to this heading")
+  id: totrans-6
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 概述[](#overview "跳转到此标题的永久链接")
 - en: Beam search decoding works by iteratively expanding text hypotheses (beams)
     with next possible characters, and maintaining only the hypotheses with the highest
     scores at each time step. A language model can be incorporated into the scoring
     computation, and adding a lexicon constraint restricts the next possible tokens
     for the hypotheses so that only words from the lexicon can be generated.
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 波束搜索解码通过迭代扩展文本假设（波束）并使用下一个可能的字符，每个时间步仅保留具有最高分数的假设来工作。语言模型可以并入到得分计算中，添加词典约束会限制假设的下一个可能令牌，以便只能生成词典中的单词。
 - en: The underlying implementation is ported from [Flashlight](https://arxiv.org/pdf/2201.12465.pdf)’s
     beam search decoder. A mathematical formula for the decoder optimization can be
     found in the [Wav2Letter paper](https://arxiv.org/pdf/1609.03193.pdf), and a more
     detailed algorithm can be found in this [blog](https://towardsdatascience.com/boosting-your-sequence-generation-performance-with-beam-search-language-model-decoding-74ee64de435a).
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 底层实现是从[Flashlight](https://arxiv.org/pdf/2201.12465.pdf)的波束搜索解码器移植过来的。解码器优化的数学公式可以在[Wav2Letter论文](https://arxiv.org/pdf/1609.03193.pdf)中找到，更详细的算法可以在这篇[博客](https://towardsdatascience.com/boosting-your-sequence-generation-performance-with-beam-search-language-model-decoding-74ee64de435a)中找到。
 - en: Running ASR inference using a CTC Beam Search decoder with a language model
     and lexicon constraint requires the following components
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用带有语言模型和词典约束的CTC波束搜索解码器进行ASR推断需要以下组件
 - en: 'Acoustic Model: model predicting phonetics from audio waveforms'
+  id: totrans-10
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 声学模型：从音频波形预测语音学的模型
 - en: 'Tokens: the possible predicted tokens from the acoustic model'
+  id: totrans-11
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 令牌：声学模型可能预测的令牌
 - en: 'Lexicon: mapping between possible words and their corresponding tokens sequence'
+  id: totrans-12
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 词典：可能单词与其对应的令牌序列之间的映射
 - en: 'Language Model (LM): n-gram language model trained with the [KenLM library](https://kheafield.com/code/kenlm/),
     or custom language model that inherits [`CTCDecoderLM`](../generated/torchaudio.models.decoder.CTCDecoder.html#torchaudio.models.decoder.CTCDecoderLM
     "torchaudio.models.decoder.CTCDecoderLM")'
+  id: totrans-13
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 语言模型（LM）：使用[KenLM库](https://kheafield.com/code/kenlm/)训练的n-gram语言模型，或者继承了[`CTCDecoderLM`](../generated/torchaudio.models.decoder.CTCDecoder.html#torchaudio.models.decoder.CTCDecoderLM
+    "torchaudio.models.decoder.CTCDecoderLM")的自定义语言模型
 - en: Acoustic Model and Set Up[](#acoustic-model-and-set-up "Permalink to this heading")
+  id: totrans-14
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 声学模型和设置[](#acoustic-model-and-set-up "跳转到此标题的永久链接")
 - en: First we import the necessary utilities and fetch the data that we are working
     with
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 首先，我们导入必要的工具并获取我们正在处理的数据
 - en: '[PRE0]'
+  id: totrans-16
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: '[PRE1]'
+  id: totrans-17
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: '[PRE2]'
+  id: totrans-18
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: We use the pretrained [Wav2Vec 2.0](https://arxiv.org/abs/2006.11477) Base model
     that is finetuned on 10 min of the [LibriSpeech dataset](http://www.openslr.org/12),
     which can be loaded in using [`torchaudio.pipelines.WAV2VEC2_ASR_BASE_10M`](../generated/torchaudio.pipelines.WAV2VEC2_ASR_BASE_10M.html#torchaudio.pipelines.WAV2VEC2_ASR_BASE_10M
     "torchaudio.pipelines.WAV2VEC2_ASR_BASE_10M"). For more detail on running Wav2Vec
     2.0 speech recognition pipelines in torchaudio, please refer to [this tutorial](./speech_recognition_pipeline_tutorial.html).
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们使用预训练的[Wav2Vec 2.0](https://arxiv.org/abs/2006.11477)基础模型，该模型在10分钟的[LibriSpeech数据集](http://www.openslr.org/12)上进行了微调，可以使用[`torchaudio.pipelines.WAV2VEC2_ASR_BASE_10M`](../generated/torchaudio.pipelines.WAV2VEC2_ASR_BASE_10M.html#torchaudio.pipelines.WAV2VEC2_ASR_BASE_10M
+    "torchaudio.pipelines.WAV2VEC2_ASR_BASE_10M")加载。有关在torchaudio中运行Wav2Vec 2.0语音识别流水线的更多详细信息，请参考[此教程](./speech_recognition_pipeline_tutorial.html)。
 - en: '[PRE3]'
+  id: totrans-20
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: '[PRE4]'
+  id: totrans-21
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: We will load a sample from the LibriSpeech test-other dataset.
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们将从LibriSpeech测试集中加载一个样本。
 - en: '[PRE5]'
+  id: totrans-23
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE5]'
+- en: null
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: The transcript corresponding to this audio file is
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 与此音频文件对应的转录本是
 - en: '[PRE6]'
+  id: totrans-27
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: '[PRE7]'
+  id: totrans-28
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: Files and Data for Decoder[](#files-and-data-for-decoder "Permalink to this
     heading")
+  id: totrans-29
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 解码器的文件和数据[](#files-and-data-for-decoder "跳转到此标题的永久链接")
 - en: Next, we load in our token, lexicon, and language model data, which are used
     by the decoder to predict words from the acoustic model output. Pretrained files
     for the LibriSpeech dataset can be downloaded through torchaudio, or the user
     can provide their own files.
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，我们加载我们的令牌、词典和语言模型数据，这些数据由解码器用于从声学模型输出中预测单词。LibriSpeech数据集的预训练文件可以通过torchaudio下载，或者用户可以提供自己的文件。
 - en: Tokens[](#tokens "Permalink to this heading")
+  id: totrans-31
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 令牌[](#tokens "跳转到此标题的永久链接")
 - en: The tokens are the possible symbols that the acoustic model can predict, including
     the blank and silent symbols. It can either be passed in as a file, where each
     line consists of the tokens corresponding to the same index, or as a list of tokens,
     each mapping to a unique index.
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 令牌是声学模型可以预测的可能符号，包括空白和静音符号。它可以作为一个文件传递，其中每一行都包含与相同索引对应的令牌，或者作为令牌列表传递，每个令牌映射到一个唯一的索引。
 - en: '[PRE8]'
+  id: totrans-33
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: '[PRE9]'
+  id: totrans-34
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: '[PRE10]'
+  id: totrans-35
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: Lexicon[](#lexicon "Permalink to this heading")
+  id: totrans-36
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 词典[](#lexicon "跳转到此标题的永久链接")
 - en: The lexicon is a mapping from words to their corresponding tokens sequence,
     and is used to restrict the search space of the decoder to only words from the
     lexicon. The expected format of the lexicon file is a line per word, with a word
     followed by its space-split tokens.
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 词典是从单词到其对应标记序列的映射，并用于将解码器的搜索空间限制为仅来自词典的单词。词典文件的预期格式是每行一个单词，后跟其空格分隔的标记。
 - en: '[PRE11]'
+  id: totrans-38
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: Language Model[](#language-model "Permalink to this heading")
+  id: totrans-39
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 语言模型
 - en: A language model can be used in decoding to improve the results, by factoring
     in a language model score that represents the likelihood of the sequence into
     the beam search computation. Below, we outline the different forms of language
     models that are supported for decoding.
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: 在解码中可以使用语言模型来改善结果，通过将代表序列可能性的语言模型分数纳入到波束搜索计算中。下面，我们概述了支持解码的不同形式的语言模型。
 - en: No Language Model[](#no-language-model "Permalink to this heading")
+  id: totrans-41
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 无语言模型
 - en: To create a decoder instance without a language model, set lm=None when initializing
     the decoder.
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 要创建一个没有语言模型的解码器实例，请在初始化解码器时设置lm=None。
 - en: KenLM[](#kenlm "Permalink to this heading")
+  id: totrans-43
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: KenLM
 - en: This is an n-gram language model trained with the [KenLM library](https://kheafield.com/code/kenlm/).
     Both the `.arpa` or the binarized `.bin` LM can be used, but the binary format
     is recommended for faster loading.
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 这是一个使用KenLM库训练的n-gram语言模型。可以使用`.arpa`或二进制化的`.bin`语言模型，但建议使用二进制格式以加快加载速度。
 - en: The language model used in this tutorial is a 4-gram KenLM trained using [LibriSpeech](http://www.openslr.org/11).
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程中使用的语言模型是使用[LibriSpeech](http://www.openslr.org/11)训练的4-gram KenLM。
 - en: Custom Language Model[](#custom-language-model "Permalink to this heading")
+  id: totrans-46
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 自定义语言模型
 - en: Users can define their own custom language model in Python, whether it be a
     statistical or neural network language model, using [`CTCDecoderLM`](../generated/torchaudio.models.decoder.CTCDecoder.html#torchaudio.models.decoder.CTCDecoderLM
     "torchaudio.models.decoder.CTCDecoderLM") and [`CTCDecoderLMState`](../generated/torchaudio.models.decoder.CTCDecoder.html#torchaudio.models.decoder.CTCDecoderLMState
     "torchaudio.models.decoder.CTCDecoderLMState").
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: 用户可以在Python中定义自己的自定义语言模型，无论是统计还是神经网络语言模型，使用[`CTCDecoderLM`](../generated/torchaudio.models.decoder.CTCDecoder.html#torchaudio.models.decoder.CTCDecoderLM)和[`CTCDecoderLMState`](../generated/torchaudio.models.decoder.CTCDecoder.html#torchaudio.models.decoder.CTCDecoderLMState)。
 - en: For instance, the following code creates a basic wrapper around a PyTorch `torch.nn.Module`
     language model.
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: 例如，以下代码创建了一个围绕PyTorch `torch.nn.Module`语言模型的基本包装器。
 - en: '[PRE12]'
+  id: totrans-49
   prefs: []
   type: TYPE_PRE
-- en: Downloading Pretrained Files[](#downloading-pretrained-files "Permalink to
-    this heading")
+  zh: '[PRE12]'
+- en: Downloading Pretrained Files[](#downloading-pretrained-files "Permalink to this
+    heading")
+  id: totrans-50
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 下载预训练文件
 - en: Pretrained files for the LibriSpeech dataset can be downloaded using [`download_pretrained_files()`](../generated/torchaudio.models.decoder.download_pretrained_files.html#torchaudio.models.decoder.download_pretrained_files
     "torchaudio.models.decoder.download_pretrained_files").
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
+  zh: 可以使用[`download_pretrained_files()`](../generated/torchaudio.models.decoder.download_pretrained_files.html#torchaudio.models.decoder.download_pretrained_files)下载LibriSpeech数据集的预训练文件。
 - en: 'Note: this cell may take a couple of minutes to run, as the language model
     can be large'
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意：此单元格可能需要几分钟才能运行，因为语言模型可能很大
 - en: '[PRE13]'
+  id: totrans-53
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: '[PRE14]'
+  id: totrans-54
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: Construct Decoders[](#construct-decoders "Permalink to this heading")
+  id: totrans-55
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 构建解码器
 - en: In this tutorial, we construct both a beam search decoder and a greedy decoder
     for comparison.
+  id: totrans-56
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，我们构建了波束搜索解码器和贪婪解码器进行比较。
 - en: Beam Search Decoder[](#beam-search-decoder "Permalink to this heading")
+  id: totrans-57
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 波束搜索解码器
 - en: The decoder can be constructed using the factory function [`ctc_decoder()`](../generated/torchaudio.models.decoder.ctc_decoder.html#torchaudio.models.decoder.ctc_decoder
     "torchaudio.models.decoder.ctc_decoder"). In addition to the previously mentioned
     components, it also takes in various beam search decoding parameters and token/word
     parameters.
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: 可以使用工厂函数[`ctc_decoder()`](../generated/torchaudio.models.decoder.ctc_decoder.html#torchaudio.models.decoder.ctc_decoder)构建解码器。除了先前提到的组件外，它还接受各种波束搜索解码参数和标记/单词参数。
 - en: This decoder can also be run without a language model by passing in None into
     the lm parameter.
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个解码器也可以在没有语言模型的情况下运行，通过将None传递给lm参数。
 - en: '[PRE15]'
+  id: totrans-60
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: Greedy Decoder[](#greedy-decoder "Permalink to this heading")
+  id: totrans-61
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 贪婪解码器
 - en: '[PRE16]'
+  id: totrans-62
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: Run Inference[](#run-inference "Permalink to this heading")
+  id: totrans-63
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 运行推理
 - en: Now that we have the data, acoustic model, and decoder, we can perform inference.
     The output of the beam search decoder is of type [`CTCHypothesis`](../generated/torchaudio.models.decoder.CTCDecoder.html#torchaudio.models.decoder.CTCHypothesis
     "torchaudio.models.decoder.CTCHypothesis"), consisting of the predicted token
     IDs, corresponding words (if a lexicon is provided), hypothesis score, and timesteps
     corresponding to the token IDs. Recall the transcript corresponding to the waveform
     is
+  id: totrans-64
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们有了数据、声学模型和解码器，我们可以执行推理。波束搜索解码器的输出类型为[`CTCHypothesis`](../generated/torchaudio.models.decoder.CTCDecoder.html#torchaudio.models.decoder.CTCHypothesis)，包括预测的标记ID、对应的单词（如果提供了词典）、假设分数和与标记ID对应的时间步。回想一下与波形对应的转录是
 - en: '[PRE17]'
+  id: totrans-65
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: '[PRE18]'
+  id: totrans-66
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: The greedy decoder gives the following result.
+  id: totrans-67
   prefs: []
   type: TYPE_NORMAL
+  zh: 贪婪解码器给出以下结果。
 - en: '[PRE19]'
+  id: totrans-68
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE19]'
 - en: '[PRE20]'
+  id: totrans-69
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE20]'
 - en: 'Using the beam search decoder:'
+  id: totrans-70
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用波束搜索解码器：
 - en: '[PRE21]'
+  id: totrans-71
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE21]'
 - en: '[PRE22]'
+  id: totrans-72
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE22]'
 - en: Note
+  id: totrans-73
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: The [`words`](../generated/torchaudio.models.decoder.CTCDecoder.html#torchaudio.models.decoder.CTCHypothesis.words
     "torchaudio.models.decoder.CTCHypothesis.words") field of the output hypotheses
     will be empty if no lexicon is provided to the decoder. To retrieve a transcript
     with lexicon-free decoding, you can perform the following to retrieve the token
     indices, convert them to original tokens, then join them together.
+  id: totrans-74
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果解码器没有提供词典，输出假设的[`words`](../generated/torchaudio.models.decoder.CTCDecoder.html#torchaudio.models.decoder.CTCHypothesis.words
+    "torchaudio.models.decoder.CTCHypothesis.words")字段将为空。要获取无词典解码的转录，可以执行以下操作：检索标记索引，将其转换为原始标记，然后将它们连接在一起。
 - en: '[PRE23]'
+  id: totrans-75
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE23]'
 - en: We see that the transcript with the lexicon-constrained beam search decoder
     produces a more accurate result consisting of real words, while the greedy decoder
     can predict incorrectly spelled words like “affrayd” and “shoktd”.
+  id: totrans-76
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们看到，使用受词典约束的波束搜索解码器的转录产生了更准确的结果，包含真实单词，而贪婪解码器可能会预测拼写错误的单词，如“affrayd”和“shoktd”。
 - en: Incremental decoding[](#incremental-decoding "Permalink to this heading")
+  id: totrans-77
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 增量解码
 - en: If the input speech is long, one can decode the emission in incremental manner.
+  id: totrans-78
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果输入语音很长，可以以增量方式解码排放。
 - en: You need to first initialize the internal state of the decoder with [`decode_begin()`](../generated/torchaudio.models.decoder.CTCDecoder.html#torchaudio.models.decoder.CTCDecoder.decode_begin
     "torchaudio.models.decoder.CTCDecoder.decode_begin").
+  id: totrans-79
   prefs: []
   type: TYPE_NORMAL
+  zh: 您需要首先使用[`decode_begin()`](../generated/torchaudio.models.decoder.CTCDecoder.html#torchaudio.models.decoder.CTCDecoder.decode_begin
+    "torchaudio.models.decoder.CTCDecoder.decode_begin")初始化解码器的内部状态。
 - en: '[PRE24]'
+  id: totrans-80
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE24]'
 - en: Then, you can pass emissions to [`decode_begin()`](../generated/torchaudio.models.decoder.CTCDecoder.html#torchaudio.models.decoder.CTCDecoder.decode_begin
     "torchaudio.models.decoder.CTCDecoder.decode_begin"). Here we use the same emission
     but pass it to the decoder one frame at a time.
+  id: totrans-81
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后，您可以将排放传递给[`decode_begin()`](../generated/torchaudio.models.decoder.CTCDecoder.html#torchaudio.models.decoder.CTCDecoder.decode_begin
+    "torchaudio.models.decoder.CTCDecoder.decode_begin")。在这里，我们使用相同的排放，但是一次将其传递给解码器一个帧。
 - en: '[PRE25]'
+  id: totrans-82
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE25]'
 - en: Finally, finalize the internal state of the decoder, and retrieve the result.
+  id: totrans-83
   prefs: []
   type: TYPE_NORMAL
+  zh: 最后，完成解码器的内部状态，并检索结果。
 - en: '[PRE26]'
+  id: totrans-84
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE26]'
 - en: The result of incremental decoding is identical to batch decoding.
+  id: totrans-85
   prefs: []
   type: TYPE_NORMAL
+  zh: 增量解码的结果与批量解码相同。
 - en: '[PRE27]'
+  id: totrans-86
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE27]'
 - en: '[PRE28]'
+  id: totrans-87
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE28]'
 - en: Timestep Alignments[](#timestep-alignments "Permalink to this heading")
+  id: totrans-88
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 时间步对齐
 - en: Recall that one of the components of the resulting Hypotheses is timesteps corresponding
     to the token IDs.
+  id: totrans-89
   prefs: []
   type: TYPE_NORMAL
+  zh: 回想一下，生成的假设中的一个组成部分是与标记ID对应的时间步。
 - en: '[PRE29]'
+  id: totrans-90
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE29]'
 - en: '[PRE30]'
+  id: totrans-91
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE30]'
 - en: Below, we visualize the token timestep alignments relative to the original waveform.
+  id: totrans-92
   prefs: []
   type: TYPE_NORMAL
+  zh: 下面，我们将标记时间步对齐可视化相对于原始波形。
 - en: '[PRE31]'
+  id: totrans-93
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE31]'
 - en: '![asr inference with ctc decoder tutorial](../Images/e2abf68b7cace07964d5580316ac4575.png)'
+  id: totrans-94
   prefs: []
   type: TYPE_IMG
+  zh: '![带有ctc解码器教程的asr推理](../Images/e2abf68b7cace07964d5580316ac4575.png)'
 - en: Beam Search Decoder Parameters[](#beam-search-decoder-parameters "Permalink
     to this heading")
+  id: totrans-95
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 波束搜索解码器参数
 - en: In this section, we go a little bit more in depth about some different parameters
     and tradeoffs. For the full list of customizable parameters, please refer to the
     [`documentation`](../generated/torchaudio.models.decoder.ctc_decoder.html#torchaudio.models.decoder.ctc_decoder
     "torchaudio.models.decoder.ctc_decoder").
+  id: totrans-96
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本节中，我们将更深入地讨论一些不同的参数和权衡。有关可定制参数的完整列表，请参考[`文档`](../generated/torchaudio.models.decoder.ctc_decoder.html#torchaudio.models.decoder.ctc_decoder
+    "torchaudio.models.decoder.ctc_decoder")。
 - en: Helper Function[](#helper-function "Permalink to this heading")
+  id: totrans-97
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 辅助函数
 - en: '[PRE32]'
+  id: totrans-98
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE32]'
 - en: nbest[](#nbest "Permalink to this heading")
+  id: totrans-99
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: nbest
 - en: This parameter indicates the number of best hypotheses to return, which is a
     property that is not possible with the greedy decoder. For instance, by setting
     `nbest=3` when constructing the beam search decoder earlier, we can now access
     the hypotheses with the top 3 scores.
+  id: totrans-100
   prefs: []
   type: TYPE_NORMAL
+  zh: 此参数指示要返回的最佳假设数，这是贪婪解码器无法实现的属性。例如，在构建波束搜索解码器时设置`nbest=3`，现在我们可以访问得分最高的三个假设。
 - en: '[PRE33]'
+  id: totrans-101
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE33]'
 - en: '[PRE34]'
+  id: totrans-102
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE34]'
 - en: beam size[](#beam-size "Permalink to this heading")
+  id: totrans-103
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 波束大小
 - en: The `beam_size` parameter determines the maximum number of best hypotheses to
     hold after each decoding step. Using larger beam sizes allows for exploring a
     larger range of possible hypotheses which can produce hypotheses with higher scores,
     but it is computationally more expensive and does not provide additional gains
     beyond a certain point.
+  id: totrans-104
   prefs: []
   type: TYPE_NORMAL
+  zh: '`beam_size`参数确定每个解码步骤后保留的最佳假设数的最大值。使用更大的波束大小可以探索更广泛的可能假设范围，这可能会产生得分更高的假设，但在计算上更昂贵，并且在某一点之后不提供额外的收益。'
 - en: In the example below, we see improvement in decoding quality as we increase
     beam size from 1 to 5 to 50, but notice how using a beam size of 500 provides
     the same output as beam size 50 while increase the computation time.
+  id: totrans-105
   prefs: []
   type: TYPE_NORMAL
+  zh: 在下面的示例中，我们看到随着将波束大小从1增加到5再到50，解码质量有所提高，但请注意，使用波束大小为500时提供与波束大小为50相同的输出，同时增加了计算时间。
 - en: '[PRE35]'
+  id: totrans-106
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE35]'
 - en: '[PRE36]'
+  id: totrans-107
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE36]'
 - en: beam size token[](#beam-size-token "Permalink to this heading")
+  id: totrans-108
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 波束大小标记
 - en: The `beam_size_token` parameter corresponds to the number of tokens to consider
     for expanding each hypothesis at the decoding step. Exploring a larger number
     of next possible tokens increases the range of potential hypotheses at the cost
     of computation.
+  id: totrans-109
   prefs: []
   type: TYPE_NORMAL
+  zh: '`beam_size_token`参数对应于在解码步骤中考虑扩展每个假设的标记数。探索更多可能的下一个标记数量会增加潜在假设的范围，但会增加计算成本。'
 - en: '[PRE37]'
+  id: totrans-110
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE37]'
 - en: '[PRE38]'
+  id: totrans-111
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE38]'
 - en: beam threshold[](#beam-threshold "Permalink to this heading")
+  id: totrans-112
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 波束阈值
 - en: The `beam_threshold` parameter is used to prune the stored hypotheses set at
     each decoding step, removing hypotheses whose scores are greater than `beam_threshold`
     away from the highest scoring hypothesis. There is a balance between choosing
     smaller thresholds to prune more hypotheses and reduce the search space, and choosing
     a large enough threshold such that plausible hypotheses are not pruned.
+  id: totrans-113
   prefs: []
   type: TYPE_NORMAL
+  zh: '`beam_threshold`参数用于在每个解码步骤中修剪存储的假设集，删除分数高于距离最高分假设`beam_threshold`的假设。在选择较小的阈值以修剪更多假设并减少搜索空间之间存在平衡，以及选择足够大的阈值以确保不会修剪合理的假设。'
 - en: '[PRE39]'
+  id: totrans-114
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE39]'
 - en: '[PRE40]'
+  id: totrans-115
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE40]'
 - en: language model weight[](#language-model-weight "Permalink to this heading")
+  id: totrans-116
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 语言模型权重[](#language-model-weight "跳转到此标题的永久链接")
 - en: The `lm_weight` parameter is the weight to assign to the language model score
     which to accumulate with the acoustic model score for determining the overall
     scores. Larger weights encourage the model to predict next words based on the
     language model, while smaller weights give more weight to the acoustic model score
     instead.
+  id: totrans-117
   prefs: []
   type: TYPE_NORMAL
+  zh: '`lm_weight`参数是要分配给语言模型分数的权重，该分数将与声学模型分数累积以确定总体分数。较大的权重鼓励模型基于语言模型预测下一个单词，而较小的权重则更多地将权重放在声学模型分数上。'
 - en: '[PRE41]'
+  id: totrans-118
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE41]'
 - en: '[PRE42]'
+  id: totrans-119
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE42]'
 - en: additional parameters[](#additional-parameters "Permalink to this heading")
+  id: totrans-120
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 其他参数[](#additional-parameters "跳转到此标题的永久链接")
 - en: Additional parameters that can be optimized include the following
+  id: totrans-121
   prefs: []
   type: TYPE_NORMAL
+  zh: 可以优化的其他参数包括以下内容
 - en: '`word_score`: score to add when word finishes'
+  id: totrans-122
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`word_score`: 单词结束时要添加的分数'
 - en: '`unk_score`: unknown word appearance score to add'
+  id: totrans-123
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`unk_score`: 添加未知单词出现分数'
 - en: '`sil_score`: silence appearance score to add'
+  id: totrans-124
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`sil_score`: 添加静音出现分数'
 - en: '`log_add`: whether to use log add for lexicon Trie smearing'
+  id: totrans-125
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`log_add`: 是否对词典Trie扩散使用对数相加'
 - en: '**Total running time of the script:** ( 1 minutes 55.312 seconds)'
+  id: totrans-126
   prefs: []
   type: TYPE_NORMAL
+  zh: '**脚本的总运行时间：**（1分钟55.312秒）'
 - en: '[`Download Python source code: asr_inference_with_ctc_decoder_tutorial.py`](../_downloads/da151acc525ba1fb468e2a4904659af1/asr_inference_with_ctc_decoder_tutorial.py)'
+  id: totrans-127
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Python源代码：asr_inference_with_ctc_decoder_tutorial.py`](../_downloads/da151acc525ba1fb468e2a4904659af1/asr_inference_with_ctc_decoder_tutorial.py)'
 - en: '[`Download Jupyter notebook: asr_inference_with_ctc_decoder_tutorial.ipynb`](../_downloads/ade1a3c3b444796d2a34839c7ea75426/asr_inference_with_ctc_decoder_tutorial.ipynb)'
+  id: totrans-128
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Jupyter笔记本：asr_inference_with_ctc_decoder_tutorial.ipynb`](../_downloads/ade1a3c3b444796d2a34839c7ea75426/asr_inference_with_ctc_decoder_tutorial.ipynb)'
 - en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  id: totrans-129
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Sphinx-Gallery生成的图库](https://sphinx-gallery.github.io)'

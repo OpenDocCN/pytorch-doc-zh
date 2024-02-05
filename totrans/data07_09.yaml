@@ -1,78 +1,115 @@
 - en: DataLoader2 Tutorial
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: DataLoader2教程
 - en: 原文：[https://pytorch.org/data/beta/dlv2_tutorial.html](https://pytorch.org/data/beta/dlv2_tutorial.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/data/beta/dlv2_tutorial.html](https://pytorch.org/data/beta/dlv2_tutorial.html)
 - en: This is the tutorial for users to create a `DataPipe` graph and load data via
     `DataLoader2` with different backend systems (`ReadingService`). An usage example
     can be found in [this colab notebook](https://colab.research.google.com/drive/1eSvp-eUDYPj0Sd0X_Mv9s9VkE8RNDg1u).
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 这是用户创建`DataPipe`图并通过不同后端系统(`ReadingService`)加载数据的教程。可以在[此colab笔记本](https://colab.research.google.com/drive/1eSvp-eUDYPj0Sd0X_Mv9s9VkE8RNDg1u)中找到一个使用示例。
 - en: DataPipe[](#datapipe "Permalink to this heading")
+  id: totrans-3
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: DataPipe
 - en: 'Please refer to [DataPipe Tutorial](dp_tutorial.html) for more details. Here
     are the most important caveats necessary: to make sure the data pipeline has different
     order per epoch and data shards are mutually exclusive and collectively exhaustive:'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 有关更多详细信息，请参阅[DataPipe教程](dp_tutorial.html)。以下是必要的最重要注意事项：确保数据管道每个时期具有不同的顺序，并且数据分片是互斥且完全穷尽的。
 - en: Place `sharding_filter` or `sharding_round_robin_dispatch` as early as possible
     in the pipeline to avoid repeating expensive operations in worker/distributed
     processes.
+  id: totrans-5
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 尽早在管道中放置`sharding_filter`或`sharding_round_robin_dispatch`，以避免在工作/分布式进程中重复昂贵的操作。
 - en: Add a `shuffle` DataPipe before sharding to achieve inter-shard shuffling. `ReadingService`
     will handle synchronization of those `shuffle` operations to ensure the order
     of data are the same before sharding so that all shards are mutually exclusive
     and collectively exhaustive.
+  id: totrans-6
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 在分片之前添加一个`shuffle` DataPipe以实现分片间的洗牌。`ReadingService`将处理这些`shuffle`操作的同步，以确保在分片之前数据的顺序相同，以使所有分片互斥且完全穷尽。
 - en: 'Here is an example of a `DataPipe` graph:'
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下是一个`DataPipe`图的示例：
 - en: '[PRE0]'
+  id: totrans-8
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: Multiprocessing[](#multiprocessing "Permalink to this heading")
+  id: totrans-9
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 多进程
 - en: '`MultiProcessingReadingService` handles multiprocessing sharding at the point
     of `sharding_filter` and synchronizes the seeds across worker processes.'
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: '`MultiProcessingReadingService` 在`sharding_filter`点处理多进程分片，并在工作进程之间同步种子。'
 - en: '[PRE1]'
+  id: totrans-11
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Distributed[](#distributed "Permalink to this heading")
+  id: totrans-12
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 分布式
 - en: '`DistributedReadingService` handles distributed sharding at the point of `sharding_filter`
     and synchronizes the seeds across distributed processes. And, in order to balance
     the data shards across distributed nodes, a `fullsync` `DataPipe` will be attached
     to the `DataPipe` graph to align the number of batches across distributed ranks.
     This would prevent hanging issue caused by uneven shards in distributed training.'
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: '`DistributedReadingService` 在`sharding_filter`点处理分布式分片，并在分布式进程之间同步种子。为了平衡分布式节点之间的数据分片，将在`DataPipe`图中附加一个`fullsync`
+    `DataPipe`，以使分布式排名之间的批次数量保持一致。这将防止分布式训练中由不均匀分片引起的挂起问题。'
 - en: '[PRE2]'
+  id: totrans-14
   prefs: []
   type: TYPE_PRE
-- en: Multiprocessing + Distributed[](#multiprocessing-distributed "Permalink to
-    this heading")
+  zh: '[PRE2]'
+- en: Multiprocessing + Distributed[](#multiprocessing-distributed "Permalink to this
+    heading")
+  id: totrans-15
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 多进程+分布式
 - en: '`SequentialReadingService` can be used to combine both `ReadingServices` together
     to achieve multiprocessing and distributed training at the same time.'
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: '`SequentialReadingService`可用于将两个`ReadingServices`组合在一起，以同时实现多进程和分布式训练。'
 - en: '[PRE3]'
+  id: totrans-17
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'

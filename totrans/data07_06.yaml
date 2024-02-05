@@ -1,410 +1,599 @@
 - en: ReadingService
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: ReadingService
 - en: 原文：[https://pytorch.org/data/beta/reading_service.html](https://pytorch.org/data/beta/reading_service.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: '[https://pytorch.org/data/beta/reading_service.html](https://pytorch.org/data/beta/reading_service.html)'
 - en: '`ReadingService` handles in-place modification of `DataPipe` graph based on
     different use cases.'
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: '`ReadingService`处理基于不同用例的`DataPipe`图的原地修改。'
 - en: Features[](#features "Permalink to this heading")
+  id: totrans-3
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 特性[](#features "跳转到此标题")
 - en: Dynamic Sharding[](#dynamic-sharding "Permalink to this heading")
+  id: totrans-4
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 动态分片[](#dynamic-sharding "跳转到此标题")
 - en: Dynamic sharding is achieved by `MultiProcessingReadingService` and `DistributedReadingService`
     to shard the pipeline based on the information of corresponding multiprocessing
     and distributed workers. And, TorchData offers two types of `DataPipe` letting
     users define the sharding place within the pipeline.
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 动态分片是通过`MultiProcessingReadingService`和`DistributedReadingService`实现的，根据相应的多进程和分布式工作者的信息对管道进行分片。TorchData提供了两种类型的`DataPipe`，让用户在管道内定义分片位置。
 - en: '`sharding_filter` ([`ShardingFilter`](generated/torchdata.datapipes.iter.ShardingFilter.html#torchdata.datapipes.iter.ShardingFilter
     "torchdata.datapipes.iter.ShardingFilter")): When the pipeline is replicable,
     each distributed/multiprocessing worker loads data from its own replica of the
     `DataPipe` graph, while skipping samples that do not belong to the corresponding
     worker at the point where `sharding_filter` is placed.'
+  id: totrans-6
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`sharding_filter`（[`ShardingFilter`](generated/torchdata.datapipes.iter.ShardingFilter.html#torchdata.datapipes.iter.ShardingFilter
+    "torchdata.datapipes.iter.ShardingFilter")）: 当管道可复制时，每个分布/多进程工作者从其自己的`DataPipe`图的副本加载数据，同时跳过不属于相应工作者的样本，即在放置`sharding_filter`的点。'
 - en: '`sharding_round_robin_dispatch` ([`ShardingRoundRobinDispatcher`](generated/torchdata.datapipes.iter.ShardingRoundRobinDispatcher.html#torchdata.datapipes.iter.ShardingRoundRobinDispatcher
     "torchdata.datapipes.iter.ShardingRoundRobinDispatcher")): When there is any `sharding_round_robin_dispatch`
     `DataPipe` in the pipeline, that branch (i.e. all DataPipes prior to `sharding_round_robin_dispatch`)
     will be treated as a non-replicable branch (in the context of multiprocessing).
     A single dispatching process will be created to load data from the non-replicable
     branch and distribute data to the subsequent worker processes.'
+  id: totrans-7
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`sharding_round_robin_dispatch`（[`ShardingRoundRobinDispatcher`](generated/torchdata.datapipes.iter.ShardingRoundRobinDispatcher.html#torchdata.datapipes.iter.ShardingRoundRobinDispatcher
+    "torchdata.datapipes.iter.ShardingRoundRobinDispatcher")）: 当管道中存在任何`sharding_round_robin_dispatch`
+    `DataPipe`时，该分支（即所有在`sharding_round_robin_dispatch`之前的DataPipes）将被视为不可复制的分支（在多进程的上下文中）。将创建一个单一的调度过程，从不可复制的分支加载数据并将数据分发给后续的工作进程。'
 - en: The following is an example of having two types of sharding strategies in the
     pipeline.
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下是在管道中使用两种分片策略的示例。
 - en: '![digraph Example {'
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: '![有向图示例{'
 - en: subgraph cluster_replicable {
+  id: totrans-10
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 子图cluster_replicable {
 - en: label="Replicable"
+  id: totrans-11
   prefs:
   - PREF_IND
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 标签="可复制"
 - en: a -> b -> c -> d -> l;
+  id: totrans-12
   prefs:
   - PREF_IND
   - PREF_IND
   type: TYPE_NORMAL
+  zh: a -> b -> c -> d -> l;
 - en: color=blue;
+  id: totrans-13
   prefs:
   - PREF_IND
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 颜色=蓝色;
 - en: '}'
+  id: totrans-14
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: '}'
 - en: subgraph cluster_non_replicable {
+  id: totrans-15
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 子图cluster_non_replicable {
 - en: style=filled;
+  id: totrans-16
   prefs:
   - PREF_IND
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 样式=填充;
 - en: color=lightgrey;
+  id: totrans-17
   prefs:
   - PREF_IND
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 颜色=浅灰色;
 - en: node [style=filled,color=white];
+  id: totrans-18
   prefs:
   - PREF_IND
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 节点[样式=填充,颜色=白色];
 - en: label="Non-Replicable"
+  id: totrans-19
   prefs:
   - PREF_IND
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 标签="不可复制"
 - en: e -> f -> g -> k;
+  id: totrans-20
   prefs:
   - PREF_IND
   - PREF_IND
   type: TYPE_NORMAL
+  zh: e -> f -> g -> k;
 - en: h -> i -> j -> k;
+  id: totrans-21
   prefs:
   - PREF_IND
   - PREF_IND
   type: TYPE_NORMAL
+  zh: h -> i -> j -> k;
 - en: '}'
+  id: totrans-22
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: '}'
 - en: k -> l -> fullsync -> end;
+  id: totrans-23
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: k -> l -> fullsync -> 结束;
 - en: a [label="DP1"];
+  id: totrans-24
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: a [标签="DP1"];
 - en: b [label="shuffle"];
+  id: totrans-25
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: b [标签="洗牌"];
 - en: c [label="sharding_filter", color=blue];
+  id: totrans-26
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: c [标签="分片过滤器", 颜色=蓝色];
 - en: d [label="DP4"];
+  id: totrans-27
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: d [标签="DP4"];
 - en: e [label="DP2"];
+  id: totrans-28
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: e [标签="DP2"];
 - en: f [label="shuffle"];
+  id: totrans-29
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: f [标签="洗牌"];
 - en: g [label="sharding_round_robin_dispatch", style="filled,rounded", color=red,
     fillcolor=white];
+  id: totrans-30
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: g [标签="分片轮询调度", 样式="填充,圆角", 颜色=红色, 填充颜色=白色];
 - en: h [label="DP3"];
+  id: totrans-31
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: h [标签="DP3"];
 - en: i [label="shuffle"];
+  id: totrans-32
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: i [标签="洗牌"];
 - en: j [label="sharding_round_robin_dispatch", style="filled,rounded", color=red,
     fillcolor=white];
+  id: totrans-33
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: j [标签="分片轮询调度", 样式="填充,圆角", 颜色=红色, 填充颜色=白色];
 - en: k [label="DP5 (Lowest common ancestor)"];
+  id: totrans-34
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: k [标签="DP5（最低公共祖先）"];
 - en: l [label="DP6"];
+  id: totrans-35
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: l [标签="DP6"];
 - en: fullsync;
+  id: totrans-36
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: fullsync;
 - en: end [shape=box];
+  id: totrans-37
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 结束[形状=方框];
 - en: '}](../Images/ded90db7e9b275c0ce72673dbdb87c9c.png)'
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: '}](../Images/ded90db7e9b275c0ce72673dbdb87c9c.png)'
 - en: 'When multiprocessing takes place, the graph becomes:'
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: '当多进程发生时，图变为:'
 - en: '![digraph Example {'
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: '![有向图示例{'
 - en: subgraph cluster_worker_0 {
+  id: totrans-41
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 子图cluster_worker_0 {
 - en: label="Worker 0"
+  id: totrans-42
   prefs:
   - PREF_IND
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 标签="工作者0"
 - en: a0 -> b0 -> c0 -> d0 -> l0;
+  id: totrans-43
   prefs:
   - PREF_IND
   - PREF_IND
   type: TYPE_NORMAL
+  zh: a0 -> b0 -> c0 -> d0 -> l0;
 - en: m0 -> l0;
+  id: totrans-44
   prefs:
   - PREF_IND
   - PREF_IND
   type: TYPE_NORMAL
+  zh: m0 -> l0;
 - en: color=blue;
+  id: totrans-45
   prefs:
   - PREF_IND
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 颜色=蓝色;
 - en: '}'
+  id: totrans-46
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: '}'
 - en: subgraph cluster_worker_1 {
+  id: totrans-47
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 子图cluster_worker_1 {
 - en: label="Worker 1"
+  id: totrans-48
   prefs:
   - PREF_IND
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 标签="工作者1"
 - en: a1 -> b1 -> c1 -> d1 -> l1;
+  id: totrans-49
   prefs:
   - PREF_IND
   - PREF_IND
   type: TYPE_NORMAL
+  zh: a1 -> b1 -> c1 -> d1 -> l1;
 - en: m1 -> l1;
+  id: totrans-50
   prefs:
   - PREF_IND
   - PREF_IND
   type: TYPE_NORMAL
+  zh: m1 -> l1;
 - en: color=blue;
+  id: totrans-51
   prefs:
   - PREF_IND
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 颜色=蓝色;
 - en: '}'
+  id: totrans-52
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: '}'
 - en: subgraph cluster_non_replicable {
+  id: totrans-53
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 子图cluster_non_replicable {
 - en: style=filled;
+  id: totrans-54
   prefs:
   - PREF_IND
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 样式=填充;
 - en: color=lightgrey;
+  id: totrans-55
   prefs:
   - PREF_IND
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 颜色=浅灰色;
 - en: node [style=filled,color=white];
+  id: totrans-56
   prefs:
   - PREF_IND
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 节点[样式=填充,颜色=白色];
 - en: label="Non-Replicable"
+  id: totrans-57
   prefs:
   - PREF_IND
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 标签="不可复制"
 - en: e -> f -> g -> k;
+  id: totrans-58
   prefs:
   - PREF_IND
   - PREF_IND
   type: TYPE_NORMAL
+  zh: e -> f -> g -> k;
 - en: h -> i -> j -> k;
+  id: totrans-59
   prefs:
   - PREF_IND
   - PREF_IND
   type: TYPE_NORMAL
+  zh: h -> i -> j -> k;
 - en: k -> round_robin_demux;
+  id: totrans-60
   prefs:
   - PREF_IND
   - PREF_IND
   type: TYPE_NORMAL
+  zh: k -> 轮询解复用;
 - en: '}'
+  id: totrans-61
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: '}'
 - en: round_robin_demux -> m0;
+  id: totrans-62
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 轮询解复用 -> m0;
 - en: round_robin_demux -> m1;
+  id: totrans-63
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 轮询解复用 -> m1;
 - en: l0 -> n;
+  id: totrans-64
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: l0 -> n;
 - en: l1 -> n;
+  id: totrans-65
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: l1 -> n;
 - en: n -> fullsync -> end;
+  id: totrans-66
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: n -> fullsync -> 结束;
 - en: a0 [label="DP1"];
+  id: totrans-67
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: a0 [标签="DP1"];
 - en: b0 [label="shuffle"];
+  id: totrans-68
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: b0 [标签="洗牌"];
 - en: c0 [label="sharding_filter", color=blue];
+  id: totrans-69
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: c0 [标签="分片过滤器", 颜色=蓝色];
 - en: d0 [label="DP4"];
+  id: totrans-70
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: d0 [标签="DP4"];
 - en: a1 [label="DP1"];
+  id: totrans-71
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: a1 [标签="DP1"];
 - en: b1 [label="shuffle"];
+  id: totrans-72
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: b1 [标签="洗牌"];
 - en: c1 [label="sharding_filter", color=blue];
+  id: totrans-73
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: c1 [标签="分片过滤器", 颜色=蓝色];
 - en: d1 [label="DP4"];
+  id: totrans-74
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: d1 [标签="DP4"];
 - en: e [label="DP2"];
+  id: totrans-75
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: e [标签="DP2"];
 - en: f [label="shuffle"];
+  id: totrans-76
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: f [标签="洗牌"];
 - en: g [label="sharding_round_robin_dispatch", style="filled,rounded", color=red,
     fillcolor=white];
+  id: totrans-77
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: g [标签="分片轮询调度", 样式="填充,圆角", 颜色=红色, 填充颜色=白色];
 - en: h [label="DP3"];
+  id: totrans-78
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: h [标签="DP3"];
 - en: i [label="shuffle"];
+  id: totrans-79
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: i [标签="洗牌"];
 - en: j [label="sharding_round_robin_dispatch", style="filled,rounded", color=red,
     fillcolor=white];
+  id: totrans-80
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: j [标签="分片轮询调度", 样式="填充,圆角", 颜色=红色, 填充颜色=白色];
 - en: k [label="DP5 (Lowest common ancestor)"];
+  id: totrans-81
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: k [标签="DP5（最低公共祖先）"];
 - en: fullsync;
+  id: totrans-82
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: fullsync;
 - en: l0 [label="DP6"];
+  id: totrans-83
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: l0 [标签="DP6"];
 - en: l1 [label="DP6"];
+  id: totrans-84
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: l1 [标签="DP6"];
 - en: m0 [label="Client"]
+  id: totrans-85
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: m0 [标签="客户端"]
 - en: m1 [label="Client"]
+  id: totrans-86
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: m1 [标签="客户端"]
 - en: n [label="Client"]
+  id: totrans-87
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: n [标签="客户端"]
 - en: end [shape=box];
+  id: totrans-88
   prefs:
   - PREF_IND
   type: TYPE_NORMAL
+  zh: 结束[形状=方框];
 - en: '}](../Images/43cb85d64c97047f6451f776a8417bfc.png)'
+  id: totrans-89
   prefs: []
   type: TYPE_NORMAL
+  zh: '}](../Images/43cb85d64c97047f6451f776a8417bfc.png)'
 - en: '`Client` in the graph is a `DataPipe` that sends a request and receives a response
     from multiprocessing queues.'
+  id: totrans-90
   prefs: []
   type: TYPE_NORMAL
+  zh: 图中的`客户端`是一个`DataPipe`，它向多进程队列发送请求并接收响应。
 - en: Determinism[](#determinism "Permalink to this heading")
+  id: totrans-91
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 确定性[](#determinism "跳转到此标题")
 - en: In `DataLoader2`, a `SeedGenerator` becomes a single source of randomness and
     each `ReadingService` would access it via `initialize_iteration()` and generate
     corresponding random seeds for random `DataPipe` operations.
+  id: totrans-92
   prefs: []
   type: TYPE_NORMAL
+  zh: 在`DataLoader2`中，`SeedGenerator`成为随机性的单一来源，每个`ReadingService`都可以通过`initialize_iteration()`访问它，并为随机的`DataPipe`操作生成相应的随机种子。
 - en: In order to make sure that the Dataset shards are mutually exclusive and collectively
     exhaustive on multiprocessing processes and distributed nodes, `MultiProcessingReadingService`
     and `DistributedReadingService` would help [`DataLoader2`](dataloader2.html#torchdata.dataloader2.DataLoader2
@@ -413,12 +602,17 @@
     For the remaining `DataPipe` operations after sharding, unique random states are
     generated based on the distributed rank and worker process id by each `ReadingService`,
     in order to perform different random transformations.
+  id: totrans-93
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了确保数据集分片在多进程和分布式节点上是互斥且完全穷尽的，`MultiProcessingReadingService`和`DistributedReadingService`将帮助[`DataLoader2`](dataloader2.html#torchdata.dataloader2.DataLoader2
+    "torchdata.dataloader2.DataLoader2")在`sharding_filter`或`sharding_round_robin_dispatch`之前同步任何随机`DataPipe`操作的随机状态。在分片之后的剩余`DataPipe`操作中，每个`ReadingService`基于分布式排名和工作进程ID生成唯一的随机状态，以执行不同的随机变换。
 - en: Graph Mode[](#graph-mode "Permalink to this heading")
+  id: totrans-94
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 图模式[](#graph-mode "跳转到此标题")
 - en: This also allows easier transition of data-preprocessing pipeline from research
     to production. After the `DataPipe` graph is created and validated with the `ReadingServices`,
     a different `ReadingService` that configures and connects to the production service/infrastructure
@@ -427,179 +621,282 @@
     could potentially search the graph, and find `DataPipe` operations that can be
     delegated to the production service/infrastructure, then modify the graph correspondingly
     to achieve higher-performant execution.
+  id: totrans-95
   prefs: []
   type: TYPE_NORMAL
+  zh: 这也使得从研究到生产的数据预处理流水线更容易过渡。在`DataPipe`图与`ReadingServices`创建和验证后，可以提供一个不同的`ReadingService`，配置并连接到生产服务/基础设施，比如`AIStore`，作为[`DataLoader2`](dataloader2.html#torchdata.dataloader2.DataLoader2
+    "torchdata.dataloader2.DataLoader2")的替换。`ReadingService`可能会搜索图，并找到可以委托给生产服务/基础设施的`DataPipe`操作，然后相应地修改图以实现更高性能的执行。
 - en: Extend ReadingService[](#extend-readingservice "Permalink to this heading")
+  id: totrans-96
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 扩展`ReadingService`[](#extend-readingservice "跳转到此标题")
 - en: The followings are interfaces for custom `ReadingService`.
+  id: totrans-97
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下是自定义`ReadingService`的接口。
 - en: '[PRE0]'
+  id: totrans-98
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: Interface for `ReadingService`. Please extend custom `ReadingService` based
     on this interface class.
+  id: totrans-99
   prefs: []
   type: TYPE_NORMAL
+  zh: '`ReadingService`的接口。请根据这个接口类扩展自定义的`ReadingService`。'
 - en: ReadingService must be picklable prior to `initialize` being called. This is
     because a copy of it will be created by `DataLoader2` to avoid the situation where
     the same ReadingService object is used by multiple `DataLoader2`, and its internal
     state will be modifiable by each of them.
+  id: totrans-100
   prefs: []
   type: TYPE_NORMAL
+  zh: 在调用`initialize`之前，`ReadingService`必须是可picklable的。这是因为`DataLoader2`会创建它的副本，以避免同一个`ReadingService`对象被多个`DataLoader2`使用，并且它的内部状态将被每个对象修改。
 - en: As a result of this constraint, certain initialization steps may need to take
     place within the `initialize` method rather than `__init__` of the ReadingService
     class.
+  id: totrans-101
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于这个限制，某些初始化步骤可能需要在`initialize`方法中进行，而不是在`ReadingService`类的`__init__`中进行。
 - en: '[PRE1]'
+  id: totrans-102
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: '`ReadingService` cleans up internal states and fully shuts down the service.
     Called in `DataLoader2`’s `shutdown` and `__del__`.'
+  id: totrans-103
   prefs: []
   type: TYPE_NORMAL
+  zh: '`ReadingService`清理内部状态并完全关闭服务。在`DataLoader2`的`shutdown`和`__del__`中调用。'
 - en: '[PRE2]'
+  id: totrans-104
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: '`ReadingService` ends service after an epoch is finished. Called when the iterator
     of `DataLoader2` is depleted.'
+  id: totrans-105
   prefs: []
   type: TYPE_NORMAL
+  zh: '`ReadingService`在一个epoch结束后终止服务。当`DataLoader2`的迭代器耗尽时调用。'
 - en: '[PRE3]'
+  id: totrans-106
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: '`ReadingService` takes a `DataPipe` graph, adapts it into a new `DataPipe`
     graph based on the custom need. Called once in creating `DataLoader2` iterator
     at first time. Prior to calling this method, the `ReadingService` object must
     be picklable.'
+  id: totrans-107
   prefs: []
   type: TYPE_NORMAL
+  zh: '`ReadingService`接受一个`DataPipe`图，根据自定义需求将其调整为一个新的`DataPipe`图。在首次创建`DataLoader2`迭代器时调用一次。在调用此方法之前，`ReadingService`对象必须是可picklable的。'
 - en: 'Parameters:'
+  id: totrans-108
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数：
 - en: '**datapipe** – Original `DataPipe` graph.'
+  id: totrans-109
   prefs: []
   type: TYPE_NORMAL
+  zh: '**datapipe** - 原始的`DataPipe`图。'
 - en: 'Returns:'
+  id: totrans-110
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回值：
 - en: An adapted or a new `DataPipe` graph.
+  id: totrans-111
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个调整或新的`DataPipe`图。
 - en: '[PRE4]'
+  id: totrans-112
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: '`ReadingService` spins up service for an epoch. Called at the beginning of
     every time getting `DataLoader2` iterator.'
+  id: totrans-113
   prefs: []
   type: TYPE_NORMAL
+  zh: '`ReadingService`为一个epoch启动服务。在每次获取`DataLoader2`迭代器时调用。'
 - en: 'Parameters:'
+  id: totrans-114
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数：
 - en: '**seed_generator** – SeedGenerator object created and managed by DataLoader2\.
     As the single source of randomness, it will govern the determinism for all of
     random operations with the graph of DataPipes.'
+  id: totrans-115
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**seed_generator** - 由`DataLoader2`创建和管理的SeedGenerator对象。作为随机性的单一来源，它将控制所有DataPipes图中的随机操作的确定性。'
 - en: '**iter_reset_fn** – Optional reset function from the prior `ReadingServcie`
     when `SequentialReadingService` chains multiple `ReadingServices`'
+  id: totrans-116
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**iter_reset_fn** - 当`SequentialReadingService`链多个`ReadingServices`时，来自先前`ReadingServcie`的可选重置函数'
 - en: 'Returns:'
+  id: totrans-117
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回值：
 - en: A new `iter_reset_fn` to be used by subseqeuent `ReadingService`
+  id: totrans-118
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个新的`iter_reset_fn`供后续`ReadingService`使用
 - en: Example
+  id: totrans-119
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例
 - en: MultiProcessingReadingService starts setting worker seeds per process and prefetching
     items from the graph.
+  id: totrans-120
   prefs: []
   type: TYPE_NORMAL
+  zh: MultiProcessingReadingService开始为每个进程设置工作器种子，并从图中预取项目。
 - en: 'The checkpoint/snapshotting feature is a work in progress. Here is the preliminary
     interface (small changes are likely):'
+  id: totrans-121
   prefs: []
   type: TYPE_NORMAL
+  zh: 检查点/快照功能正在进行中。这是初步接口（可能会有小的更改）：
 - en: '[PRE5]'
+  id: totrans-122
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: Extend `ReadingServiceInterface` with two additional methods to save/restore
     the state of the data-processing graph.
+  id: totrans-123
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过两个额外的方法扩展`ReadingServiceInterface`以保存/恢复数据处理图的状态。
 - en: '[PRE6]'
+  id: totrans-124
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: '`ReadingService` serializes the internal states. Called in `DataLoader2.state_dict`.'
+  id: totrans-125
   prefs: []
   type: TYPE_NORMAL
+  zh: '`ReadingService`序列化内部状态。在`DataLoader2.state_dict`中调用。'
 - en: '[PRE7]'
+  id: totrans-126
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: '`ReadingService` adapts `DataPipe` graph based on the serialized state. Called
     once in creating `DataLoader2` iterator at first time. Counterpart of `initialize`,
     which adapt `DataPipe` graph from scratch.'
+  id: totrans-127
   prefs: []
   type: TYPE_NORMAL
+  zh: '`ReadingService` 根据序列化状态调整 `DataPipe` 图。在首次创建 `DataLoader2` 迭代器时调用一次。与 `initialize`
+    相对应，从头开始调整 `DataPipe` 图。'
 - en: 'Parameters:'
+  id: totrans-128
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数：
 - en: '**datapipe** – original `DataPipe` graph before adapted by `ReadingService`'
+  id: totrans-129
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**datapipe** – 在被 `ReadingService` 调整之前的原始 `DataPipe` 图。'
 - en: '**serialized_state** – The serialized state of internal state used to restore
     the state of the adapted `DataPipe` graph.'
+  id: totrans-130
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**serialized_state** – 用于恢复适应的 `DataPipe` 图状态的内部状态的序列化状态。'
 - en: 'Returns:'
+  id: totrans-131
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回：
 - en: Adapted `DataPipe` generated from the serialized state.
+  id: totrans-132
   prefs: []
   type: TYPE_NORMAL
+  zh: 根据序列化状态生成的适应的 `DataPipe`。
 - en: Graph Functions[](#graph-functions "Permalink to this heading")
+  id: totrans-133
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 图函数[](#graph-functions "Permalink to this heading")
 - en: 'And, graph utility functions are provided in `torchdata.dataloader.graph` to
     help users to do `DataPipe` graph rewrite for custom `ReadingService`:'
+  id: totrans-134
   prefs: []
   type: TYPE_NORMAL
+  zh: 另外，`torchdata.dataloader.graph` 中提供了图实用函数，帮助用户为自定义 `ReadingService` 进行 `DataPipe`
+    图重写：
 - en: '| [`traverse_dps`](generated/torchdata.dataloader2.graph.traverse_dps.html#torchdata.dataloader2.graph.traverse_dps
     "torchdata.dataloader2.graph.traverse_dps") | Traverse the DataPipes and their
     attributes to extract the DataPipe graph. |'
+  id: totrans-135
   prefs: []
   type: TYPE_TB
+  zh: '| [`traverse_dps`](generated/torchdata.dataloader2.graph.traverse_dps.html#torchdata.dataloader2.graph.traverse_dps
+    "torchdata.dataloader2.graph.traverse_dps") | 遍历 DataPipes 及其属性以提取 DataPipe 图。
+    |'
 - en: '| [`find_dps`](generated/torchdata.dataloader2.graph.find_dps.html#torchdata.dataloader2.graph.find_dps
     "torchdata.dataloader2.graph.find_dps") | Given the graph of DataPipe generated
     by `traverse_dps` function, return DataPipe instances with the provided DataPipe
     type. |'
+  id: totrans-136
   prefs: []
   type: TYPE_TB
+  zh: '| [`find_dps`](generated/torchdata.dataloader2.graph.find_dps.html#torchdata.dataloader2.graph.find_dps
+    "torchdata.dataloader2.graph.find_dps") | 给定由 `traverse_dps` 函数生成的 DataPipe 图，返回具有提供的
+    DataPipe 类型的 DataPipe 实例。 |'
 - en: '| [`list_dps`](generated/torchdata.dataloader2.graph.list_dps.html#torchdata.dataloader2.graph.list_dps
     "torchdata.dataloader2.graph.list_dps") | Given the graph of DataPipe generated
     by `traverse_dps` function, return a list of all DataPipe instances without duplication.
     |'
+  id: totrans-137
   prefs: []
   type: TYPE_TB
+  zh: '| [`list_dps`](generated/torchdata.dataloader2.graph.list_dps.html#torchdata.dataloader2.graph.list_dps
+    "torchdata.dataloader2.graph.list_dps") | 给定由 `traverse_dps` 函数生成的 DataPipe 图，返回所有
+    DataPipe 实例的列表，不重复。 |'
 - en: '| [`remove_dp`](generated/torchdata.dataloader2.graph.remove_dp.html#torchdata.dataloader2.graph.remove_dp
     "torchdata.dataloader2.graph.remove_dp") | Given the graph of DataPipe generated
     by `traverse_dps` function and the DataPipe to be removed, return the new graph
     of DataPipe. |'
+  id: totrans-138
   prefs: []
   type: TYPE_TB
+  zh: '| [`remove_dp`](generated/torchdata.dataloader2.graph.remove_dp.html#torchdata.dataloader2.graph.remove_dp
+    "torchdata.dataloader2.graph.remove_dp") | 给定由 `traverse_dps` 函数生成的 DataPipe 图以及要移除的
+    DataPipe，返回新的 DataPipe 图。 |'
 - en: '| [`replace_dp`](generated/torchdata.dataloader2.graph.replace_dp.html#torchdata.dataloader2.graph.replace_dp
     "torchdata.dataloader2.graph.replace_dp") | Given the graph of DataPipe generated
     by `traverse_dps` function and the DataPipe to be replaced and the new DataPipe,
     return the new graph of DataPipe. |'
+  id: totrans-139
   prefs: []
   type: TYPE_TB
+  zh: '| [`replace_dp`](generated/torchdata.dataloader2.graph.replace_dp.html#torchdata.dataloader2.graph.replace_dp
+    "torchdata.dataloader2.graph.replace_dp") | 给定由 `traverse_dps` 函数生成的 DataPipe
+    图以及要替换的 DataPipe 和新的 DataPipe，返回新的 DataPipe 图。 |'

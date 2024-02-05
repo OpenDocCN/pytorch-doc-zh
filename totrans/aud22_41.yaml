@@ -1,828 +1,1305 @@
 - en: Forced alignment for multilingual data
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 多语言数据的强制对齐
 - en: 原文：[https://pytorch.org/audio/stable/tutorials/forced_alignment_for_multilingual_data_tutorial.html](https://pytorch.org/audio/stable/tutorials/forced_alignment_for_multilingual_data_tutorial.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/audio/stable/tutorials/forced_alignment_for_multilingual_data_tutorial.html](https://pytorch.org/audio/stable/tutorials/forced_alignment_for_multilingual_data_tutorial.html)
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-tutorials-forced-alignment-for-multilingual-data-tutorial-py)
     to download the full example code
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[这里](#sphx-glr-download-tutorials-forced-alignment-for-multilingual-data-tutorial-py)下载完整示例代码
 - en: '**Authors**: [Xiaohui Zhang](mailto:xiaohuizhang%40meta.com), [Moto Hira](mailto:moto%40meta.com).'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '**作者**：[Xiaohui Zhang](mailto:xiaohuizhang%40meta.com), [Moto Hira](mailto:moto%40meta.com)。'
 - en: This tutorial shows how to align transcript to speech for non-English languages.
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程展示了如何为非英语语言对齐转录和语音。
 - en: The process of aligning non-English (normalized) transcript is identical to
     aligning English (normalized) transcript, and the process for English is covered
     in detail in [CTC forced alignment tutorial](./ctc_forced_alignment_api_tutorial.html).
     In this tutorial, we use TorchAudio’s high-level API, [`torchaudio.pipelines.Wav2Vec2FABundle`](../generated/torchaudio.pipelines.Wav2Vec2FABundle.html#torchaudio.pipelines.Wav2Vec2FABundle
     "torchaudio.pipelines.Wav2Vec2FABundle"), which packages the pre-trained model,
     tokenizer and aligner, to perform the forced alignment with less code.
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 对齐非英语（标准化）转录的过程与对齐英语（标准化）转录的过程相同，对于英语的过程在[CTC强制对齐教程](./ctc_forced_alignment_api_tutorial.html)中有详细介绍。在本教程中，我们使用TorchAudio的高级API，[`torchaudio.pipelines.Wav2Vec2FABundle`](../generated/torchaudio.pipelines.Wav2Vec2FABundle.html#torchaudio.pipelines.Wav2Vec2FABundle
+    "torchaudio.pipelines.Wav2Vec2FABundle")，它打包了预训练模型、分词器和对齐器，以更少的代码执行强制对齐。
 - en: '[PRE0]'
+  id: totrans-7
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: '[PRE1]'
+  id: totrans-8
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: '[PRE2]'
+  id: totrans-9
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Creating the pipeline[](#creating-the-pipeline "Permalink to this heading")
+  id: totrans-10
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 创建流程[](#creating-the-pipeline "Permalink to this heading")
 - en: First, we instantiate the model and pre/post-processing pipelines.
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 首先，我们实例化模型和前/后处理流程。
 - en: The following diagram illustrates the process of alignment.
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下图示了对齐的过程。
 - en: '![https://download.pytorch.org/torchaudio/doc-assets/pipelines-wav2vec2fabundle.png](../Images/81159a1c90b6bf1cc96789ecb75c13f0.png)'
+  id: totrans-13
   prefs: []
   type: TYPE_IMG
+  zh: '![https://download.pytorch.org/torchaudio/doc-assets/pipelines-wav2vec2fabundle.png](../Images/81159a1c90b6bf1cc96789ecb75c13f0.png)'
 - en: The waveform is passed to an acoustic model, which produces the sequence of
     probability distribution of tokens. The transcript is passed to tokenizer, which
     converts the transcript to sequence of tokens. Aligner takes the results from
     the acoustic model and the tokenizer and generate timestamps for each token.
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 波形被传递给声学模型，该模型生成标记的概率分布序列。转录被传递给分词器，将转录转换为标记序列。对齐器获取声学模型和分词器的结果，并为每个标记生成时间戳。
 - en: Note
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: This process expects that the input transcript is already normalized. The process
     of normalization, which involves romanization of non-English languages, is language-dependent,
     so it is not covered in this tutorial, but we will breifly look into it.
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 该过程期望输入的转录已经被标准化。标准化的过程涉及非英语语言的罗马化，是与语言相关的，因此本教程不涵盖，但我们将简要介绍。
 - en: The acoustic model and the tokenizer must use the same set of tokens. To facilitate
     the creation of matching processors, [`Wav2Vec2FABundle`](../generated/torchaudio.pipelines.Wav2Vec2FABundle.html#torchaudio.pipelines.Wav2Vec2FABundle
     "torchaudio.pipelines.Wav2Vec2FABundle") associates a pre-trained accoustic model
     and a tokenizer. [`torchaudio.pipelines.MMS_FA`](../generated/torchaudio.pipelines.MMS_FA.html#torchaudio.pipelines.MMS_FA
     "torchaudio.pipelines.MMS_FA") is one of such instance.
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 声学模型和分词器必须使用相同的标记集。为了便于创建匹配的处理器，[`Wav2Vec2FABundle`](../generated/torchaudio.pipelines.Wav2Vec2FABundle.html#torchaudio.pipelines.Wav2Vec2FABundle
+    "torchaudio.pipelines.Wav2Vec2FABundle")关联了一个预训练的声学模型和一个分词器。[`torchaudio.pipelines.MMS_FA`](../generated/torchaudio.pipelines.MMS_FA.html#torchaudio.pipelines.MMS_FA
+    "torchaudio.pipelines.MMS_FA")就是这样一个实例。
 - en: The following code instantiates a pre-trained acoustic model, a tokenizer which
     uses the same set of tokens as the model, and an aligner.
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下代码实例化了一个预训练的声学模型，一个使用与模型相同的标记集的分词器，以及一个对齐器。
 - en: '[PRE3]'
+  id: totrans-19
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: Note
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: The model instantiated by [`MMS_FA`](../generated/torchaudio.pipelines.MMS_FA.html#torchaudio.pipelines.MMS_FA
     "torchaudio.pipelines.MMS_FA")’s [`get_model()`](../generated/torchaudio.pipelines.Wav2Vec2FABundle.html#torchaudio.pipelines.Wav2Vec2FABundle.get_model
     "torchaudio.pipelines.Wav2Vec2FABundle.get_model") method by default includes
     the feature dimension for `<star>` token. You can disable this by passing `with_star=False`.
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过[`MMS_FA`](../generated/torchaudio.pipelines.MMS_FA.html#torchaudio.pipelines.MMS_FA
+    "torchaudio.pipelines.MMS_FA")的[`get_model()`](../generated/torchaudio.pipelines.Wav2Vec2FABundle.html#torchaudio.pipelines.Wav2Vec2FABundle.get_model
+    "torchaudio.pipelines.Wav2Vec2FABundle.get_model")方法实例化的模型默认包含`<star>`标记的特征维度。您可以通过传递`with_star=False`来禁用此功能。
 - en: The acoustic model of [`MMS_FA`](../generated/torchaudio.pipelines.MMS_FA.html#torchaudio.pipelines.MMS_FA
     "torchaudio.pipelines.MMS_FA") was created and open-sourced as part of the research
     project, [Scaling Speech Technology to 1,000+ Languages](https://research.facebook.com/publications/scaling-speech-technology-to-1000-languages/).
     It was trained with 23,000 hours of audio from 1100+ languages.
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`MMS_FA`](../generated/torchaudio.pipelines.MMS_FA.html#torchaudio.pipelines.MMS_FA
+    "torchaudio.pipelines.MMS_FA")的声学模型是作为研究项目[将语音技术扩展到1000多种语言](https://research.facebook.com/publications/scaling-speech-technology-to-1000-languages/)的一部分创建并开源的。它使用来自1100多种语言的23000小时音频进行训练。'
 - en: The tokenizer simply maps the normalized characters to integers. You can check
     the mapping as follow;
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 分词器简单地将标准化字符映射为整数。您可以按以下方式检查映射；
 - en: '[PRE4]'
+  id: totrans-24
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: '[PRE5]'
+  id: totrans-25
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: The aligner internally uses [`torchaudio.functional.forced_align()`](../generated/torchaudio.functional.forced_align.html#torchaudio.functional.forced_align
     "torchaudio.functional.forced_align") and [`torchaudio.functional.merge_tokens()`](../generated/torchaudio.functional.merge_tokens.html#torchaudio.functional.merge_tokens
     "torchaudio.functional.merge_tokens") to infer the time stamps of the input tokens.
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 对齐器内部使用[`torchaudio.functional.forced_align()`](../generated/torchaudio.functional.forced_align.html#torchaudio.functional.forced_align
+    "torchaudio.functional.forced_align")和[`torchaudio.functional.merge_tokens()`](../generated/torchaudio.functional.merge_tokens.html#torchaudio.functional.merge_tokens
+    "torchaudio.functional.merge_tokens")来推断输入标记的时间戳。
 - en: The detail of the underlying mechanism is covered in [CTC forced alignment API
     tutorial](./ctc_forced_alignment_api_tutorial.html), so please refer to it.
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 底层机制的详细信息在[CTC强制对齐API教程](./ctc_forced_alignment_api_tutorial.html)中介绍，请参考。
 - en: We define a utility function that performs the forced alignment with the above
     model, the tokenizer and the aligner.
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们定义了一个实用函数，使用上述模型、分词器和对齐器执行强制对齐。
 - en: '[PRE6]'
+  id: totrans-29
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: We also define utility functions for plotting the result and previewing the
     audio segments.
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们还定义了用于绘制结果和预览音频片段的实用函数。
 - en: '[PRE7]'
+  id: totrans-31
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: '[PRE8]'
+  id: totrans-32
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: Normalizing the transcript[](#normalizing-the-transcript "Permalink to this
     heading")
+  id: totrans-33
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 将文本标准化[](#normalizing-the-transcript "跳转到此标题")
 - en: The transcripts passed to the pipeline must be normalized beforehand. The exact
     process of normalization depends on language.
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 传递到流水线的文本必须事先进行标准化。标准化的确切过程取决于语言。
 - en: Languages that do not have explicit word boundaries (such as Chinese, Japanese
     and Korean) require segmentation first. There are dedicated tools for this, but
     let’s say we have segmented transcript.
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 没有明确单词边界的语言（如中文、日文和韩文）需要首先进行分词。有专门的工具可以做到这一点，但假设我们已经对文本进行了分词。
 - en: The first step of normalization is romanization. [uroman](https://github.com/isi-nlp/uroman)
     is a tool that supports many languages.
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 标准化的第一步是罗马化。[uroman](https://github.com/isi-nlp/uroman)是一个支持多种语言的工具。
 - en: Here is a BASH commands to romanize the input text file and write the output
     to another text file using `uroman`.
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下是一个BASH命令，用于罗马化输入文本文件并使用`uroman`将输出写入另一个文本文件。
 - en: '[PRE9]'
+  id: totrans-38
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: '[PRE10]'
+  id: totrans-39
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: The next step is to remove non-alphabets and punctuations. The following snippet
     normalizes the romanized transcript.
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: 下一步是删除非字母和标点符号。以下代码段标准化了罗马化的文本。
 - en: '[PRE11]'
+  id: totrans-41
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: Running the script on the above exanple produces the following.
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 在上述示例上运行脚本会产生以下结果。
 - en: '[PRE12]'
+  id: totrans-43
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: Note that, in this example, since “1882” was not romanized by `uroman`, it was
     removed in the normalization step. To avoid this, one needs to romanize numbers,
     but this is known to be a non-trivial task.
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 请注意，在此示例中，“1882”未被`uroman`罗马化，因此在标准化步骤中被移除。为了避免这种情况，需要罗马化数字，但这被认为是一个非常困难的任务。
 - en: Aligning transcripts to speech[](#aligning-transcripts-to-speech "Permalink
     to this heading")
+  id: totrans-45
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 将文本对齐到语音[](#aligning-transcripts-to-speech "跳转到此标题")
 - en: Now we perform the forced alignment for multiple languages.
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在我们为多种语言执行强制对齐。
 - en: German[](#german "Permalink to this heading")
+  id: totrans-47
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 德语[](#german "跳转到此标题")
 - en: '[PRE13]'
+  id: totrans-48
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: '[PRE14]'
+  id: totrans-49
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: '[PRE15]'
+  id: totrans-50
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: '![Emission](../Images/ae919088b5d459e4f9ccbdc7d3fc7a22.png)'
+  id: totrans-51
   prefs: []
   type: TYPE_IMG
+  zh: '![发射](../Images/ae919088b5d459e4f9ccbdc7d3fc7a22.png)'
 - en: '[PRE16]'
+  id: totrans-52
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE16]'
+- en: null
+  id: totrans-53
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE17]'
+  id: totrans-55
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: '[PRE18]'
+  id: totrans-56
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE18]'
+- en: null
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE19]'
+  id: totrans-59
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE19]'
 - en: '[PRE20]'
+  id: totrans-60
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE20]'
+- en: null
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE21]'
+  id: totrans-63
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE21]'
 - en: '[PRE22]'
+  id: totrans-64
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE22]'
+- en: null
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE23]'
+  id: totrans-67
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE23]'
 - en: '[PRE24]'
+  id: totrans-68
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE24]'
+- en: null
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-70
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE25]'
+  id: totrans-71
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE25]'
 - en: '[PRE26]'
+  id: totrans-72
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE26]'
+- en: null
+  id: totrans-73
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-74
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE27]'
+  id: totrans-75
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE27]'
 - en: '[PRE28]'
+  id: totrans-76
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE28]'
+- en: null
+  id: totrans-77
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-78
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE29]'
+  id: totrans-79
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE29]'
 - en: '[PRE30]'
+  id: totrans-80
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE30]'
+- en: null
+  id: totrans-81
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-82
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE31]'
+  id: totrans-83
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE31]'
 - en: '[PRE32]'
+  id: totrans-84
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE32]'
+- en: null
+  id: totrans-85
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-86
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: Chinese[](#chinese "Permalink to this heading")
+  id: totrans-87
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 中文[](#chinese "跳转到此标题")
 - en: Chinese is a character-based language, and there is not explicit word-level
     tokenization (separated by spaces) in its raw written form. In order to obtain
     word level alignments, you need to first tokenize the transcripts at the word
     level using a word tokenizer like [“Stanford Tokenizer”](https://michelleful.github.io/code-blog/2015/09/10/parsing-chinese-with-stanford/).
     However this is not needed if you only want character-level alignments.
+  id: totrans-88
   prefs: []
   type: TYPE_NORMAL
+  zh: 中文是一种基于字符的语言，在其原始书面形式中没有明确的单词级标记化（由空格分隔）。为了获得单词级别的对齐，您需要首先使用像[“斯坦福分词器”](https://michelleful.github.io/code-blog/2015/09/10/parsing-chinese-with-stanford/)这样的单词分词器对文本进行单词级别的标记化。但是，如果您只需要字符级别的对齐，则不需要这样做。
 - en: '[PRE33]'
+  id: totrans-89
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE33]'
 - en: '[PRE34]'
+  id: totrans-90
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE34]'
 - en: '[PRE35]'
+  id: totrans-91
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE35]'
 - en: '[PRE36]'
+  id: totrans-92
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE36]'
 - en: '![Emission](../Images/331a9b3d8f84020b493b73104b8177af.png)'
+  id: totrans-93
   prefs: []
   type: TYPE_IMG
+  zh: '![发射](../Images/331a9b3d8f84020b493b73104b8177af.png)'
 - en: '[PRE37]'
+  id: totrans-94
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE37]'
+- en: null
+  id: totrans-95
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-96
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE38]'
+  id: totrans-97
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE38]'
 - en: '[PRE39]'
+  id: totrans-98
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE39]'
+- en: null
+  id: totrans-99
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-100
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE40]'
+  id: totrans-101
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE40]'
 - en: '[PRE41]'
+  id: totrans-102
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE41]'
+- en: null
+  id: totrans-103
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-104
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE42]'
+  id: totrans-105
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE42]'
 - en: '[PRE43]'
+  id: totrans-106
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE43]'
+- en: null
+  id: totrans-107
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-108
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE44]'
+  id: totrans-109
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE44]'
 - en: '[PRE45]'
+  id: totrans-110
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE45]'
+- en: null
+  id: totrans-111
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-112
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE46]'
+  id: totrans-113
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE46]'
 - en: '[PRE47]'
+  id: totrans-114
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE47]'
+- en: null
+  id: totrans-115
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-116
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE48]'
+  id: totrans-117
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE48]'
 - en: '[PRE49]'
+  id: totrans-118
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE49]'
+- en: null
+  id: totrans-119
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-120
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE50]'
+  id: totrans-121
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE50]'
 - en: '[PRE51]'
+  id: totrans-122
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE51]'
+- en: null
+  id: totrans-123
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-124
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE52]'
+  id: totrans-125
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE52]'
 - en: '[PRE53]'
+  id: totrans-126
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE53]'
+- en: null
+  id: totrans-127
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-128
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE54]'
+  id: totrans-129
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE54]'
 - en: '[PRE55]'
+  id: totrans-130
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE55]'
+- en: null
+  id: totrans-131
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-132
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: Polish[](#polish "Permalink to this heading")
+  id: totrans-133
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 波兰语[](#polish "跳转到此标题")
 - en: '[PRE56]'
+  id: totrans-134
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE56]'
 - en: '[PRE57]'
+  id: totrans-135
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE57]'
 - en: '[PRE58]'
+  id: totrans-136
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE58]'
 - en: '![Emission](../Images/0ec75a66e47434dd967d9a79a1ff6920.png)'
+  id: totrans-137
   prefs: []
   type: TYPE_IMG
+  zh: '![发射](../Images/0ec75a66e47434dd967d9a79a1ff6920.png)'
 - en: '[PRE59]'
+  id: totrans-138
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE59]'
+- en: null
+  id: totrans-139
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-140
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE60]'
+  id: totrans-141
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE60]'
 - en: '[PRE61]'
+  id: totrans-142
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE61]'
+- en: null
+  id: totrans-143
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-144
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE62]'
+  id: totrans-145
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE62]'
 - en: '[PRE63]'
+  id: totrans-146
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE63]'
+- en: null
+  id: totrans-147
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-148
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE64]'
+  id: totrans-149
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE64]'
 - en: '[PRE65]'
+  id: totrans-150
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE65]'
+- en: null
+  id: totrans-151
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-152
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE66]'
+  id: totrans-153
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE66]'
 - en: '[PRE67]'
+  id: totrans-154
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE67]'
+- en: null
+  id: totrans-155
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-156
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE68]'
+  id: totrans-157
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE68]'
 - en: '[PRE69]'
+  id: totrans-158
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE69]'
+- en: null
+  id: totrans-159
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-160
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE70]'
+  id: totrans-161
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE70]'
 - en: '[PRE71]'
+  id: totrans-162
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE71]'
+- en: null
+  id: totrans-163
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-164
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE72]'
+  id: totrans-165
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE72]'
 - en: '[PRE73]'
+  id: totrans-166
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE73]'
+- en: null
+  id: totrans-167
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-168
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE74]'
+  id: totrans-169
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE74]'
 - en: '[PRE75]'
+  id: totrans-170
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE75]'
+- en: null
+  id: totrans-171
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-172
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: Portuguese[](#portuguese "Permalink to this heading")
+  id: totrans-173
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 葡萄牙语[](#portuguese "跳转到此标题的永久链接")
 - en: '[PRE76]'
+  id: totrans-174
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE76]'
 - en: '[PRE77]'
+  id: totrans-175
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE77]'
 - en: '[PRE78]'
+  id: totrans-176
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE78]'
 - en: '![Emission](../Images/83cad3306c52b6f77872c504153d9294.png)'
+  id: totrans-177
   prefs: []
   type: TYPE_IMG
+  zh: '![发射](../Images/83cad3306c52b6f77872c504153d9294.png)'
 - en: '[PRE79]'
+  id: totrans-178
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE79]'
+- en: null
+  id: totrans-179
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-180
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE80]'
+  id: totrans-181
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE80]'
 - en: '[PRE81]'
+  id: totrans-182
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE81]'
+- en: null
+  id: totrans-183
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-184
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE82]'
+  id: totrans-185
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE82]'
 - en: '[PRE83]'
+  id: totrans-186
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE83]'
+- en: null
+  id: totrans-187
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-188
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE84]'
+  id: totrans-189
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE84]'
 - en: '[PRE85]'
+  id: totrans-190
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE85]'
+- en: null
+  id: totrans-191
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-192
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE86]'
+  id: totrans-193
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE86]'
 - en: '[PRE87]'
+  id: totrans-194
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE87]'
+- en: null
+  id: totrans-195
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-196
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE88]'
+  id: totrans-197
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE88]'
 - en: '[PRE89]'
+  id: totrans-198
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE89]'
+- en: null
+  id: totrans-199
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-200
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE90]'
+  id: totrans-201
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE90]'
 - en: '[PRE91]'
+  id: totrans-202
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE91]'
+- en: null
+  id: totrans-203
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-204
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE92]'
+  id: totrans-205
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE92]'
 - en: '[PRE93]'
+  id: totrans-206
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE93]'
+- en: null
+  id: totrans-207
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-208
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE94]'
+  id: totrans-209
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE94]'
 - en: '[PRE95]'
+  id: totrans-210
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE95]'
+- en: null
+  id: totrans-211
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-212
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE96]'
+  id: totrans-213
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE96]'
 - en: '[PRE97]'
+  id: totrans-214
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE97]'
+- en: null
+  id: totrans-215
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-216
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: Italian[](#italian "Permalink to this heading")
+  id: totrans-217
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 意大利语[](#italian "跳转到此标题的永久链接")
 - en: '[PRE98]'
+  id: totrans-218
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE98]'
 - en: '[PRE99]'
+  id: totrans-219
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE99]'
 - en: '[PRE100]'
+  id: totrans-220
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE100]'
 - en: '![Emission](../Images/731d611433f5cf2db8c00bfa366eced7.png)'
+  id: totrans-221
   prefs: []
   type: TYPE_IMG
+  zh: '![发射](../Images/731d611433f5cf2db8c00bfa366eced7.png)'
 - en: '[PRE101]'
+  id: totrans-222
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE101]'
+- en: null
+  id: totrans-223
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-224
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE102]'
+  id: totrans-225
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE102]'
 - en: '[PRE103]'
+  id: totrans-226
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE103]'
+- en: null
+  id: totrans-227
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-228
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE104]'
+  id: totrans-229
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE104]'
 - en: '[PRE105]'
+  id: totrans-230
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE105]'
+- en: null
+  id: totrans-231
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-232
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE106]'
+  id: totrans-233
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE106]'
 - en: '[PRE107]'
+  id: totrans-234
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE107]'
+- en: null
+  id: totrans-235
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-236
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE108]'
+  id: totrans-237
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE108]'
 - en: '[PRE109]'
+  id: totrans-238
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE109]'
+- en: null
+  id: totrans-239
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-240
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE110]'
+  id: totrans-241
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE110]'
 - en: '[PRE111]'
+  id: totrans-242
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE111]'
+- en: null
+  id: totrans-243
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-244
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE112]'
+  id: totrans-245
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE112]'
 - en: '[PRE113]'
+  id: totrans-246
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE113]'
+- en: null
+  id: totrans-247
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-248
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: Conclusion[](#conclusion "Permalink to this heading")
+  id: totrans-249
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 结论[](#conclusion "跳转到此标题的永久链接")
 - en: In this tutorial, we looked at how to use torchaudio’s forced alignment API
     and a Wav2Vec2 pre-trained mulilingual acoustic model to align speech data to
     transcripts in five languages.
+  id: totrans-250
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，我们看了如何使用torchaudio的强制对齐API和一个Wav2Vec2预训练的多语言声学模型来将五种语言的语音数据与文本对齐。
 - en: Acknowledgement[](#acknowledgement "Permalink to this heading")
+  id: totrans-251
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 致谢[](#acknowledgement "跳转到此标题的永久链接")
 - en: Thanks to [Vineel Pratap](mailto:vineelkpratap%40meta.com) and [Zhaoheng Ni](mailto:zni%40meta.com)
     for developing and open-sourcing the forced aligner API.
+  id: totrans-252
   prefs: []
   type: TYPE_NORMAL
+  zh: 感谢[Vineel Pratap](mailto:vineelkpratap%40meta.com)和[Zhaoheng Ni](mailto:zni%40meta.com)开发并开源了强制对齐器API。
 - en: '**Total running time of the script:** ( 0 minutes 4.115 seconds)'
+  id: totrans-253
   prefs: []
   type: TYPE_NORMAL
+  zh: '**脚本的总运行时间：**（0分钟4.115秒）'
 - en: '[`Download Python source code: forced_alignment_for_multilingual_data_tutorial.py`](../_downloads/a662d1f1f11633103b4b95ad4b68013c/forced_alignment_for_multilingual_data_tutorial.py)'
+  id: totrans-254
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Python源代码：forced_alignment_for_multilingual_data_tutorial.py`](../_downloads/a662d1f1f11633103b4b95ad4b68013c/forced_alignment_for_multilingual_data_tutorial.py)'
 - en: '[`Download Jupyter notebook: forced_alignment_for_multilingual_data_tutorial.ipynb`](../_downloads/454ce4c8debdfeda1ab0ab945c52976d/forced_alignment_for_multilingual_data_tutorial.ipynb)'
+  id: totrans-255
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Jupyter笔记本：forced_alignment_for_multilingual_data_tutorial.ipynb`](../_downloads/454ce4c8debdfeda1ab0ab945c52976d/forced_alignment_for_multilingual_data_tutorial.ipynb)'
 - en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  id: totrans-256
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Sphinx-Gallery生成的图库](https://sphinx-gallery.github.io)'

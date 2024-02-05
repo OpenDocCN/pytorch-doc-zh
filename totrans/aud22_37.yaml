@@ -1,378 +1,598 @@
 - en: Online ASR with Emformer RNN-T
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 使用Emformer RNN-T进行在线ASR
 - en: 原文：[https://pytorch.org/audio/stable/tutorials/online_asr_tutorial.html](https://pytorch.org/audio/stable/tutorials/online_asr_tutorial.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/audio/stable/tutorials/online_asr_tutorial.html](https://pytorch.org/audio/stable/tutorials/online_asr_tutorial.html)
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-tutorials-online-asr-tutorial-py) to download
     the full example code
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[这里](#sphx-glr-download-tutorials-online-asr-tutorial-py)下载完整示例代码
 - en: '**Author**: [Jeff Hwang](mailto:jeffhwang%40meta.com), [Moto Hira](mailto:moto%40meta.com)'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '**作者**：[Jeff Hwang](mailto:jeffhwang%40meta.com), [Moto Hira](mailto:moto%40meta.com)'
 - en: This tutorial shows how to use Emformer RNN-T and streaming API to perform online
     speech recognition.
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程展示了如何使用Emformer RNN-T和流式API执行在线语音识别。
 - en: Note
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: This tutorial requires FFmpeg libraries and SentencePiece.
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程需要使用FFmpeg库和SentencePiece。
 - en: Please refer to [Optional Dependencies](../installation.html#optional-dependencies)
     for the detail.
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 有关详细信息，请参阅[可选依赖项](../installation.html#optional-dependencies)。
 - en: 1\. Overview[](#overview "Permalink to this heading")
+  id: totrans-9
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 1\. 概述[](#overview "跳转到此标题的永久链接")
 - en: Performing online speech recognition is composed of the following steps
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 在线语音识别的执行由以下步骤组成
 - en: 'Build the inference pipeline Emformer RNN-T is composed of three components:
     feature extractor, decoder and token processor.'
+  id: totrans-11
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 构建推理管道Emformer RNN-T由三个组件组成：特征提取器、解码器和标记处理器。
 - en: Format the waveform into chunks of expected sizes.
+  id: totrans-12
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 将波形格式化为预期大小的块。
 - en: Pass data through the pipeline.
+  id: totrans-13
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 通过管道传递数据。
 - en: 2\. Preparation[](#preparation "Permalink to this heading")
+  id: totrans-14
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 2\. 准备[](#preparation "跳转到此标题的永久链接")
 - en: '[PRE0]'
+  id: totrans-15
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: '[PRE1]'
+  id: totrans-16
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: 3\. Construct the pipeline[](#construct-the-pipeline "Permalink to this heading")
+  id: totrans-17
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 3\. 构建管道[](#construct-the-pipeline "跳转到此标题的永久链接")
 - en: Pre-trained model weights and related pipeline components are bundled as [`torchaudio.pipelines.RNNTBundle`](../generated/torchaudio.pipelines.RNNTBundle.html#torchaudio.pipelines.RNNTBundle
     "torchaudio.pipelines.RNNTBundle").
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: 预训练模型权重和相关管道组件被捆绑为[`torchaudio.pipelines.RNNTBundle`](../generated/torchaudio.pipelines.RNNTBundle.html#torchaudio.pipelines.RNNTBundle)。
 - en: We use [`torchaudio.pipelines.EMFORMER_RNNT_BASE_LIBRISPEECH`](../generated/torchaudio.pipelines.EMFORMER_RNNT_BASE_LIBRISPEECH.html#torchaudio.pipelines.EMFORMER_RNNT_BASE_LIBRISPEECH
     "torchaudio.pipelines.EMFORMER_RNNT_BASE_LIBRISPEECH"), which is a Emformer RNN-T
     model trained on LibriSpeech dataset.
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们使用[`torchaudio.pipelines.EMFORMER_RNNT_BASE_LIBRISPEECH`](../generated/torchaudio.pipelines.EMFORMER_RNNT_BASE_LIBRISPEECH.html#torchaudio.pipelines.EMFORMER_RNNT_BASE_LIBRISPEECH)，这是在LibriSpeech数据集上训练的Emformer
+    RNN-T模型。
 - en: '[PRE2]'
+  id: totrans-20
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: '[PRE3]'
+  id: totrans-21
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: Streaming inference works on input data with overlap. Emformer RNN-T model treats
     the newest portion of the input data as the “right context” — a preview of future
     context. In each inference call, the model expects the main segment to start from
     this right context from the previous inference call. The following figure illustrates
     this.
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 流式推理适用于具有重叠的输入数据。Emformer RNN-T模型将输入数据的最新部分视为“右上下文” —— 未来上下文的预览。在每次推理调用中，模型期望主段从上一次推理调用的右上下文开始。以下图示说明了这一点。
 - en: '![https://download.pytorch.org/torchaudio/tutorial-assets/emformer_rnnt_context.png](../Images/0e1c9a1ab0a1725ac44a8f5ae79784d9.png)'
+  id: totrans-23
   prefs: []
   type: TYPE_IMG
+  zh: '![https://download.pytorch.org/torchaudio/tutorial-assets/emformer_rnnt_context.png](../Images/0e1c9a1ab0a1725ac44a8f5ae79784d9.png)'
 - en: The size of main segment and right context, along with the expected sample rate
     can be retrieved from bundle.
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 主段和右上下文的大小，以及预期的采样率可以从bundle中检索。
 - en: '[PRE4]'
+  id: totrans-25
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: '[PRE5]'
+  id: totrans-26
   prefs: []
   type: TYPE_PRE
-- en: 4\. Configure the audio stream[](#configure-the-audio-stream "Permalink to
-    this heading")
+  zh: '[PRE5]'
+- en: 4\. Configure the audio stream[](#configure-the-audio-stream "Permalink to this
+    heading")
+  id: totrans-27
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 4\. 配置音频流[](#configure-the-audio-stream "跳转到此标题的永久链接")
 - en: Next, we configure the input audio stream using [`torchaudio.io.StreamReader`](../generated/torchaudio.io.StreamReader.html#torchaudio.io.StreamReader
     "torchaudio.io.StreamReader").
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，我们使用[`torchaudio.io.StreamReader`](../generated/torchaudio.io.StreamReader.html#torchaudio.io.StreamReader)配置输入音频流。
 - en: For the detail of this API, please refer to the [StreamReader Basic Usage](./streamreader_basic_tutorial.html).
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 有关此API的详细信息，请参阅[StreamReader基本用法](./streamreader_basic_tutorial.html)。
 - en: The following audio file was originally published by LibriVox project, and it
     is in the public domain.
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下音频文件最初由LibriVox项目发布，属于公共领域。
 - en: '[https://librivox.org/great-pirate-stories-by-joseph-lewis-french/](https://librivox.org/great-pirate-stories-by-joseph-lewis-french/)'
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: '[https://librivox.org/great-pirate-stories-by-joseph-lewis-french/](https://librivox.org/great-pirate-stories-by-joseph-lewis-french/)'
 - en: It was re-uploaded for the sake of the tutorial.
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 出于教程目的，它被重新上传。
 - en: '[PRE6]'
+  id: totrans-33
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: '[PRE7]'
+  id: totrans-34
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: As previously explained, Emformer RNN-T model expects input data with overlaps;
     however, Streamer iterates the source media without overlap, so we make a helper
     structure that caches a part of input data from Streamer as right context and
     then appends it to the next input data from Streamer.
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 如前所述，Emformer RNN-T模型期望具有重叠的输入数据；然而，Streamer在没有重叠的情况下迭代源媒体，因此我们制作了一个辅助结构，从Streamer缓存一部分输入数据作为右上下文，然后将其附加到来自Streamer的下一个输入数据。
 - en: The following figure illustrates this.
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下图示说明了这一点。
 - en: '![https://download.pytorch.org/torchaudio/tutorial-assets/emformer_rnnt_streamer_context.png](../Images/a57362a983bfc8977c146b9cec1fbdc5.png)'
+  id: totrans-37
   prefs: []
   type: TYPE_IMG
+  zh: '![https://download.pytorch.org/torchaudio/tutorial-assets/emformer_rnnt_streamer_context.png](../Images/a57362a983bfc8977c146b9cec1fbdc5.png)'
 - en: '[PRE8]'
+  id: totrans-38
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: 5\. Run stream inference[](#run-stream-inference "Permalink to this heading")
+  id: totrans-39
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 5\. 运行流推理[](#run-stream-inference "跳转到此标题的永久链接")
 - en: Finally, we run the recognition.
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: 最后，我们运行识别。
 - en: First, we initialize the stream iterator, context cacher, and state and hypothesis
     that are used by decoder to carry over the decoding state between inference calls.
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 首先，我们初始化流迭代器、上下文缓存器以及解码器使用的状态和假设，用于在推理调用之间传递解码状态。
 - en: '[PRE9]'
+  id: totrans-42
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: Next we, run the inference.
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来，我们运行推理。
 - en: For the sake of better display, we create a helper function which processes
     the source stream up to the given times and call it repeatedly.
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了更好地显示，我们创建了一个辅助函数，该函数处理源流直到给定次数，并重复调用它。
 - en: '[PRE10]'
+  id: totrans-45
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: '[PRE11]'
+  id: totrans-46
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: '![MelSpectrogram Feature](../Images/6f88cad1fa15680732704d2ab1568895.png)'
+  id: totrans-47
   prefs: []
   type: TYPE_IMG
+  zh: '![MelSpectrogram特征](../Images/6f88cad1fa15680732704d2ab1568895.png)'
 - en: '[PRE12]'
+  id: totrans-48
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE12]'
+- en: null
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE13]'
+  id: totrans-51
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: '![MelSpectrogram Feature](../Images/63ea9ff950b6828668774e9e16e2da72.png)'
+  id: totrans-52
   prefs: []
   type: TYPE_IMG
+  zh: '![Mel频谱特征](../Images/63ea9ff950b6828668774e9e16e2da72.png)'
 - en: '[PRE14]'
+  id: totrans-53
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE14]'
+- en: null
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-55
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE15]'
+  id: totrans-56
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: '![MelSpectrogram Feature](../Images/9fd0eaf340cc4769da822a728893c8d0.png)'
+  id: totrans-57
   prefs: []
   type: TYPE_IMG
+  zh: '![Mel频谱特征](../Images/9fd0eaf340cc4769da822a728893c8d0.png)'
 - en: '[PRE16]'
+  id: totrans-58
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE16]'
+- en: null
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE17]'
+  id: totrans-61
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: '![MelSpectrogram Feature](../Images/27361e962edf9ff4e1dc7a554b09d885.png)'
+  id: totrans-62
   prefs: []
   type: TYPE_IMG
+  zh: '![Mel频谱特征](../Images/27361e962edf9ff4e1dc7a554b09d885.png)'
 - en: '[PRE18]'
+  id: totrans-63
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE18]'
+- en: null
+  id: totrans-64
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE19]'
+  id: totrans-66
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE19]'
 - en: '![MelSpectrogram Feature](../Images/78b4f08b9d73ca155002dca9b67d5139.png)'
+  id: totrans-67
   prefs: []
   type: TYPE_IMG
+  zh: '![Mel频谱特征](../Images/78b4f08b9d73ca155002dca9b67d5139.png)'
 - en: '[PRE20]'
+  id: totrans-68
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE20]'
+- en: null
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-70
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE21]'
+  id: totrans-71
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE21]'
 - en: '![MelSpectrogram Feature](../Images/8e43113644bb019dfc4bb4603e5bc696.png)'
+  id: totrans-72
   prefs: []
   type: TYPE_IMG
+  zh: '![Mel频谱特征](../Images/8e43113644bb019dfc4bb4603e5bc696.png)'
 - en: '[PRE22]'
+  id: totrans-73
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE22]'
+- en: null
+  id: totrans-74
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-75
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE23]'
+  id: totrans-76
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE23]'
 - en: '![MelSpectrogram Feature](../Images/74f496d6db06d496150b2e6b919a7fea.png)'
+  id: totrans-77
   prefs: []
   type: TYPE_IMG
+  zh: '![Mel频谱特征](../Images/74f496d6db06d496150b2e6b919a7fea.png)'
 - en: '[PRE24]'
+  id: totrans-78
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE24]'
+- en: null
+  id: totrans-79
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-80
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE25]'
+  id: totrans-81
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE25]'
 - en: '![MelSpectrogram Feature](../Images/1d8004d0bd1aaa132e299f5e7b3f4d65.png)'
+  id: totrans-82
   prefs: []
   type: TYPE_IMG
+  zh: '![Mel频谱特征](../Images/1d8004d0bd1aaa132e299f5e7b3f4d65.png)'
 - en: '[PRE26]'
+  id: totrans-83
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE26]'
+- en: null
+  id: totrans-84
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-85
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE27]'
+  id: totrans-86
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE27]'
 - en: '![MelSpectrogram Feature](../Images/078602e6329acdc28d9f151361d84fa4.png)'
+  id: totrans-87
   prefs: []
   type: TYPE_IMG
+  zh: '![Mel频谱特征](../Images/078602e6329acdc28d9f151361d84fa4.png)'
 - en: '[PRE28]'
+  id: totrans-88
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE28]'
+- en: null
+  id: totrans-89
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-90
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE29]'
+  id: totrans-91
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE29]'
 - en: '![MelSpectrogram Feature](../Images/09c62d29a7ebfdca810fb7715b4d6deb.png)'
+  id: totrans-92
   prefs: []
   type: TYPE_IMG
+  zh: '![Mel频谱特征](../Images/09c62d29a7ebfdca810fb7715b4d6deb.png)'
 - en: '[PRE30]'
+  id: totrans-93
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE30]'
+- en: null
+  id: totrans-94
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-95
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE31]'
+  id: totrans-96
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE31]'
 - en: '![MelSpectrogram Feature](../Images/bd6f77d39b92dab706c4579cee78d49b.png)'
+  id: totrans-97
   prefs: []
   type: TYPE_IMG
+  zh: '![Mel频谱特征](../Images/bd6f77d39b92dab706c4579cee78d49b.png)'
 - en: '[PRE32]'
+  id: totrans-98
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE32]'
+- en: null
+  id: totrans-99
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-100
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE33]'
+  id: totrans-101
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE33]'
 - en: '![MelSpectrogram Feature](../Images/1d08a0f2dfb8662795d4a456d55369b9.png)'
+  id: totrans-102
   prefs: []
   type: TYPE_IMG
+  zh: '![Mel频谱特征](../Images/1d08a0f2dfb8662795d4a456d55369b9.png)'
 - en: '[PRE34]'
+  id: totrans-103
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE34]'
+- en: null
+  id: totrans-104
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-105
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE35]'
+  id: totrans-106
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE35]'
 - en: '![MelSpectrogram Feature](../Images/b5ffe860eeae95b44bae565c68a36a14.png)'
+  id: totrans-107
   prefs: []
   type: TYPE_IMG
+  zh: '![Mel频谱特征](../Images/b5ffe860eeae95b44bae565c68a36a14.png)'
 - en: '[PRE36]'
+  id: totrans-108
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE36]'
+- en: null
+  id: totrans-109
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-110
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: 'Tag: [`torchaudio.io`](../io.html#module-torchaudio.io "torchaudio.io")'
+  id: totrans-111
   prefs: []
   type: TYPE_NORMAL
+  zh: 标签：[`torchaudio.io`](../io.html#module-torchaudio.io "torchaudio.io")
 - en: '**Total running time of the script:** ( 1 minutes 34.955 seconds)'
+  id: totrans-112
   prefs: []
   type: TYPE_NORMAL
+  zh: '**脚本的总运行时间：**（1分钟34.955秒）'
 - en: '[`Download Python source code: online_asr_tutorial.py`](../_downloads/f9f593098569966df0b815e29c13dd20/online_asr_tutorial.py)'
+  id: totrans-113
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Python源代码：online_asr_tutorial.py`](../_downloads/f9f593098569966df0b815e29c13dd20/online_asr_tutorial.py)'
 - en: '[`Download Jupyter notebook: online_asr_tutorial.ipynb`](../_downloads/bd34dff0656a1aa627d444a8d1a5957f/online_asr_tutorial.ipynb)'
+  id: totrans-114
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Jupyter笔记本：online_asr_tutorial.ipynb`](../_downloads/bd34dff0656a1aa627d444a8d1a5957f/online_asr_tutorial.ipynb)'
 - en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  id: totrans-115
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Sphinx-Gallery生成的图库](https://sphinx-gallery.github.io)'

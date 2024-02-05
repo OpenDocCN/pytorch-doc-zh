@@ -1,433 +1,674 @@
 - en: Forced Alignment with Wav2Vec2
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 使用Wav2Vec2进行强制对齐
 - en: 原文：[https://pytorch.org/audio/stable/tutorials/forced_alignment_tutorial.html](https://pytorch.org/audio/stable/tutorials/forced_alignment_tutorial.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/audio/stable/tutorials/forced_alignment_tutorial.html](https://pytorch.org/audio/stable/tutorials/forced_alignment_tutorial.html)
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-tutorials-forced-alignment-tutorial-py) to download
     the full example code
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[这里](#sphx-glr-download-tutorials-forced-alignment-tutorial-py)下载完整示例代码
 - en: '**Author**: [Moto Hira](mailto:moto%40meta.com)'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '**作者**：[Moto Hira](mailto:moto%40meta.com)'
 - en: This tutorial shows how to align transcript to speech with `torchaudio`, using
     CTC segmentation algorithm described in [CTC-Segmentation of Large Corpora for
     German End-to-end Speech Recognition](https://arxiv.org/abs/2007.09127).
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程展示了如何使用`torchaudio`将转录对齐到语音，使用[CTC-Segmentation of Large Corpora for German
+    End-to-end Speech Recognition](https://arxiv.org/abs/2007.09127)中描述的CTC分割算法。
 - en: Note
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: This tutorial was originally written to illustrate a usecase for Wav2Vec2 pretrained
     model.
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程最初是为了说明Wav2Vec2预训练模型的用例而编写的。
 - en: TorchAudio now has a set of APIs designed for forced alignment. The [CTC forced
     alignment API tutorial](./ctc_forced_alignment_api_tutorial.html) illustrates
     the usage of [`torchaudio.functional.forced_align()`](../generated/torchaudio.functional.forced_align.html#torchaudio.functional.forced_align
     "torchaudio.functional.forced_align"), which is the core API.
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: TorchAudio现在有一组专为强制对齐设计的API。[CTC强制对齐API教程](./ctc_forced_alignment_api_tutorial.html)说明了[`torchaudio.functional.forced_align()`](../generated/torchaudio.functional.forced_align.html#torchaudio.functional.forced_align
+    "torchaudio.functional.forced_align")的用法，这是核心API。
 - en: If you are looking to align your corpus, we recommend to use [`torchaudio.pipelines.Wav2Vec2FABundle`](../generated/torchaudio.pipelines.Wav2Vec2FABundle.html#torchaudio.pipelines.Wav2Vec2FABundle
     "torchaudio.pipelines.Wav2Vec2FABundle"), which combines [`forced_align()`](../generated/torchaudio.functional.forced_align.html#torchaudio.functional.forced_align
     "torchaudio.functional.forced_align") and other support functions with pre-trained
     model specifically trained for forced-alignment. Please refer to the [Forced alignment
     for multilingual data](forced_alignment_for_multilingual_data_tutorial.html) which
     illustrates its usage.
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您想要对齐您的语料库，我们建议使用[`torchaudio.pipelines.Wav2Vec2FABundle`](../generated/torchaudio.pipelines.Wav2Vec2FABundle.html#torchaudio.pipelines.Wav2Vec2FABundle
+    "torchaudio.pipelines.Wav2Vec2FABundle")，它结合了[`forced_align()`](../generated/torchaudio.functional.forced_align.html#torchaudio.functional.forced_align
+    "torchaudio.functional.forced_align")和其他支持函数，专门针对强制对齐进行了训练的预训练模型。请参考[多语言数据的强制对齐](forced_alignment_for_multilingual_data_tutorial.html)以了解其用法。
 - en: '[PRE0]'
+  id: totrans-10
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: '[PRE1]'
+  id: totrans-11
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Overview[](#overview "Permalink to this heading")
+  id: totrans-12
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 概述[](#overview "跳转到此标题的永久链接")
 - en: The process of alignment looks like the following.
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: 对齐过程如下所示。
 - en: Estimate the frame-wise label probability from audio waveform
+  id: totrans-14
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 从音频波形中估计逐帧标签概率
 - en: Generate the trellis matrix which represents the probability of labels aligned
     at time step.
+  id: totrans-15
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 生成表示时间步对齐标签概率的状态图矩阵。
 - en: Find the most likely path from the trellis matrix.
+  id: totrans-16
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 从状态图中找到最可能的路径。
 - en: In this example, we use `torchaudio`’s `Wav2Vec2` model for acoustic feature
     extraction.
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本示例中，我们使用`torchaudio`的`Wav2Vec2`模型进行声学特征提取。
 - en: Preparation[](#preparation "Permalink to this heading")
+  id: totrans-18
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 准备工作[](#preparation "跳转到此标题的永久链接")
 - en: First we import the necessary packages, and fetch data that we work on.
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 首先导入必要的包，并获取我们要处理的数据。
 - en: '[PRE2]'
+  id: totrans-20
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Generate frame-wise label probability[](#generate-frame-wise-label-probability
     "Permalink to this heading")
+  id: totrans-21
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 生成逐帧标签概率[](#generate-frame-wise-label-probability "跳转到此标题的永久链接")
 - en: The first step is to generate the label class porbability of each audio frame.
     We can use a Wav2Vec2 model that is trained for ASR. Here we use [`torchaudio.pipelines.WAV2VEC2_ASR_BASE_960H()`](../generated/torchaudio.pipelines.WAV2VEC2_ASR_BASE_960H.html#torchaudio.pipelines.WAV2VEC2_ASR_BASE_960H
     "torchaudio.pipelines.WAV2VEC2_ASR_BASE_960H").
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 第一步是生成每个音频帧的标签类概率。我们可以使用为ASR训练的Wav2Vec2模型。这里我们使用[`torchaudio.pipelines.WAV2VEC2_ASR_BASE_960H()`](../generated/torchaudio.pipelines.WAV2VEC2_ASR_BASE_960H.html#torchaudio.pipelines.WAV2VEC2_ASR_BASE_960H
+    "torchaudio.pipelines.WAV2VEC2_ASR_BASE_960H")。
 - en: '`torchaudio` provides easy access to pretrained models with associated labels.'
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: '`torchaudio`提供了易于访问的预训练模型和相关标签。'
 - en: Note
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: In the subsequent sections, we will compute the probability in log-domain to
     avoid numerical instability. For this purpose, we normalize the `emission` with
     `torch.log_softmax()`.
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: 在接下来的部分中，我们将在对数域中计算概率，以避免数值不稳定性。为此，我们使用`torch.log_softmax()`对`emission`进行归一化。
 - en: '[PRE3]'
+  id: totrans-26
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: '[PRE4]'
+  id: totrans-27
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: Visualization[](#visualization "Permalink to this heading")
+  id: totrans-28
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 可视化[](#visualization "跳转到此标题的永久链接")
 - en: '[PRE5]'
+  id: totrans-29
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: '![Frame-wise class probability](../Images/efb61f2d411fc5066755dd6b78a9a867.png)'
+  id: totrans-30
   prefs: []
   type: TYPE_IMG
+  zh: '![逐帧类概率](../Images/efb61f2d411fc5066755dd6b78a9a867.png)'
 - en: Generate alignment probability (trellis)[](#generate-alignment-probability-trellis
     "Permalink to this heading")
+  id: totrans-31
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 生成对齐概率（状态图）[](#generate-alignment-probability-trellis "跳转到此标题的永久链接")
 - en: From the emission matrix, next we generate the trellis which represents the
     probability of transcript labels occur at each time frame.
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 从发射矩阵中，接下来我们生成表示每个时间帧发生转录标签概率的状态图。
 - en: Trellis is 2D matrix with time axis and label axis. The label axis represents
     the transcript that we are aligning. In the following, we use \(t\) to denote
     the index in time axis and \(j\) to denote the index in label axis. \(c_j\) represents
     the label at label index \(j\).
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: 状态图是一个二维矩阵，具有时间轴和标签轴。标签轴表示我们正在对齐的转录。在下文中，我们使用\(t\)表示时间轴中的索引，使用\(j\)表示标签轴中的索引。\(c_j\)表示标签索引\(j\)处的标签。
 - en: To generate, the probability of time step \(t+1\), we look at the trellis from
     time step \(t\) and emission at time step \(t+1\). There are two path to reach
     to time step \(t+1\) with label \(c_{j+1}\). The first one is the case where the
     label was \(c_{j+1}\) at \(t\) and there was no label change from \(t\) to \(t+1\).
     The other case is where the label was \(c_j\) at \(t\) and it transitioned to
     the next label \(c_{j+1}\) at \(t+1\).
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了生成时间步长\(t+1\)的概率，我们查看从时间步长\(t\)到时间步长\(t+1\)的格子和发射。有两种路径可以到达时间步长\(t+1\)，标签为\(c_{j+1}\)。第一种情况是标签在\(t\)时为\(c_{j+1}\)，从\(t\)到\(t+1\)没有标签变化。另一种情况是标签在\(t\)时为\(c_j\)，在\(t+1\)转换为下一个标签\(c_{j+1}\)。
 - en: The follwoing diagram illustrates this transition.
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下图表说明了这种转变。
 - en: '![https://download.pytorch.org/torchaudio/tutorial-assets/ctc-forward.png](../Images/cb0c89f6f8c29828d4d4d04ded7193b6.png)'
+  id: totrans-36
   prefs: []
   type: TYPE_IMG
+  zh: ！[https://download.pytorch.org/torchaudio/tutorial-assets/ctc-forward.png](../Images/cb0c89f6f8c29828d4d4d04ded7193b6.png)
 - en: Since we are looking for the most likely transitions, we take the more likely
     path for the value of \(k_{(t+1, j+1)}\), that is
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于我们正在寻找最可能的转换，因此我们为\(k_{(t+1, j+1)}\)的更可能路径取更可能的路径，即
 - en: \(k_{(t+1, j+1)} = max( k_{(t, j)} p(t+1, c_{j+1}), k_{(t, j+1)} p(t+1, repeat)
     )\)
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: \(k_{(t+1, j+1)} = max( k_{(t, j)} p(t+1, c_{j+1}), k_{(t, j+1)} p(t+1, repeat)
+    )\)
 - en: where \(k\) represents is trellis matrix, and \(p(t, c_j)\) represents the probability
     of label \(c_j\) at time step \(t\). \(repeat\) represents the blank token from
     CTC formulation. (For the detail of CTC algorithm, please refer to the *Sequence
     Modeling with CTC* [[distill.pub](https://distill.pub/2017/ctc/)])
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 其中\(k\)代表格子矩阵，\(p(t, c_j)\)代表时间步长\(t\)处标签\(c_j\)的概率。\(repeat\)代表CTC公式中的空白标记。（有关CTC算法的详细信息，请参阅*使用CTC进行序列建模*[[distill.pub](https://distill.pub/2017/ctc/)）
 - en: '[PRE6]'
+  id: totrans-40
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: '[PRE7]'
+  id: totrans-41
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: Visualization[](#id1 "Permalink to this heading")
+  id: totrans-42
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 可视化[]（＃id1“此标题的永久链接”）
 - en: '[PRE8]'
+  id: totrans-43
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: '![forced alignment tutorial](../Images/9cba4b626edb17a6e4b5838fd55a4e90.png)'
+  id: totrans-44
   prefs: []
   type: TYPE_IMG
+  zh: ！[强制对齐教程](../Images/9cba4b626edb17a6e4b5838fd55a4e90.png)
 - en: In the above visualization, we can see that there is a trace of high probability
     crossing the matrix diagonally.
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: 在上面的可视化中，我们可以看到有一个高概率的痕迹对角穿过矩阵。
 - en: Find the most likely path (backtracking)[](#find-the-most-likely-path-backtracking
     "Permalink to this heading")
+  id: totrans-46
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 找到最可能的路径（回溯）[]（＃find-the-most-likely-path-backtracking“此标题的永久链接”）
 - en: Once the trellis is generated, we will traverse it following the elements with
     high probability.
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: 生成了格子后，我们将沿着具有高概率元素的路径遍历它。
 - en: We will start from the last label index with the time step of highest probability,
     then, we traverse back in time, picking stay (\(c_j \rightarrow c_j\)) or transition
     (\(c_j \rightarrow c_{j+1}\)), based on the post-transition probability \(k_{t,
     j} p(t+1, c_{j+1})\) or \(k_{t, j+1} p(t+1, repeat)\).
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们将从具有最高概率时间步长的最后标签索引开始，然后，我们向后遍历时间，根据过渡后概率\(k_{t, j} p(t+1, c_{j+1})\)或\(k_{t,
+    j+1} p(t+1, repeat)\)选择停留（\(c_j \rightarrow c_j\)）或过渡（\(c_j \rightarrow c_{j+1}\)）。
 - en: Transition is done once the label reaches the beginning.
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: 一旦标签到达开头，转换就完成了。
 - en: The trellis matrix is used for path-finding, but for the final probability of
     each segment, we take the frame-wise probability from emission matrix.
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: 格子矩阵用于寻找路径，但对于每个段的最终概率，我们从发射矩阵中获取逐帧概率。
 - en: '[PRE9]'
+  id: totrans-51
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: '[PRE10]'
+  id: totrans-52
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: Visualization[](#id2 "Permalink to this heading")
+  id: totrans-53
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 可视化[]（＃id2“此标题的永久链接”）
 - en: '[PRE11]'
+  id: totrans-54
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: '![The path found by backtracking](../Images/bfe239f26439c642dad7b47fc213e358.png)'
+  id: totrans-55
   prefs: []
   type: TYPE_IMG
+  zh: ！[通过回溯找到的路径](../Images/bfe239f26439c642dad7b47fc213e358.png)
 - en: Looking good.
+  id: totrans-56
   prefs: []
   type: TYPE_NORMAL
+  zh: 看起来不错。
 - en: Segment the path[](#segment-the-path "Permalink to this heading")
+  id: totrans-57
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 分割路径[]（＃segment-the-path“此标题的永久链接”）
 - en: Now this path contains repetations for the same labels, so let’s merge them
     to make it close to the original transcript.
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在这条路径包含相同标签的重复，所以让我们合并它们使其接近原始文本。
 - en: When merging the multiple path points, we simply take the average probability
     for the merged segments.
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: 在合并多个路径点时，我们简单地取合并段的平均概率。
 - en: '[PRE12]'
+  id: totrans-60
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: '[PRE13]'
+  id: totrans-61
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: Visualization[](#id3 "Permalink to this heading")
+  id: totrans-62
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 可视化[]（＃id3“此标题的永久链接”）
 - en: '[PRE14]'
+  id: totrans-63
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: '![Path, label and probability for each label, Label probability with and without
     repetation](../Images/f07166f8b26588977594bdaa39644315.png)'
+  id: totrans-64
   prefs: []
   type: TYPE_IMG
+  zh: ！[路径，标签和每个标签的概率，带和不带重复的标签概率](../Images/f07166f8b26588977594bdaa39644315.png)
 - en: Looks good.
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: 看起来不错。
 - en: Merge the segments into words[](#merge-the-segments-into-words "Permalink to
     this heading")
+  id: totrans-66
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 将段合并成单词[]（＃merge-the-segments-into-words“此标题的永久链接”）
 - en: Now let’s merge the words. The Wav2Vec2 model uses `'|'` as the word boundary,
     so we merge the segments before each occurance of `'|'`.
+  id: totrans-67
   prefs: []
   type: TYPE_NORMAL
+  zh: 现在让我们合并这些单词。Wav2Vec2模型使用`'|'`作为单词边界，因此我们在每次出现`'|'`之前合并段。
 - en: Then, finally, we segment the original audio into segmented audio and listen
     to them to see if the segmentation is correct.
+  id: totrans-68
   prefs: []
   type: TYPE_NORMAL
+  zh: 最后，我们将原始音频分割成分段音频，并听取它们以查看分割是否正确。
 - en: '[PRE15]'
+  id: totrans-69
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: '[PRE16]'
+  id: totrans-70
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: Visualization[](#id4 "Permalink to this heading")
+  id: totrans-71
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 可视化[]（＃id4“此标题的永久链接”）
 - en: '[PRE17]'
+  id: totrans-72
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: '![forced alignment tutorial](../Images/5f304131dabeba702068f67a1e4db351.png)'
+  id: totrans-73
   prefs: []
   type: TYPE_IMG
+  zh: ！[强制对齐教程](../Images/5f304131dabeba702068f67a1e4db351.png)
 - en: Audio Samples[](#audio-samples "Permalink to this heading")
+  id: totrans-74
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 音频样本[]（＃audio-samples“此标题的永久链接”）
 - en: '[PRE18]'
+  id: totrans-75
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: '[PRE19]'
+  id: totrans-76
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE19]'
 - en: '[PRE20]'
+  id: totrans-77
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE20]'
+- en: null
+  id: totrans-78
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-79
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE21]'
+  id: totrans-80
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE21]'
 - en: '[PRE22]'
+  id: totrans-81
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE22]'
+- en: null
+  id: totrans-82
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-83
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE23]'
+  id: totrans-84
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE23]'
 - en: '[PRE24]'
+  id: totrans-85
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE24]'
+- en: null
+  id: totrans-86
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-87
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE25]'
+  id: totrans-88
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE25]'
 - en: '[PRE26]'
+  id: totrans-89
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE26]'
+- en: null
+  id: totrans-90
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-91
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE27]'
+  id: totrans-92
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE27]'
 - en: '[PRE28]'
+  id: totrans-93
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE28]'
+- en: null
+  id: totrans-94
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-95
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE29]'
+  id: totrans-96
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE29]'
 - en: '[PRE30]'
+  id: totrans-97
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE30]'
+- en: null
+  id: totrans-98
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-99
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE31]'
+  id: totrans-100
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE31]'
 - en: '[PRE32]'
+  id: totrans-101
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE32]'
+- en: null
+  id: totrans-102
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-103
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE33]'
+  id: totrans-104
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE33]'
 - en: '[PRE34]'
+  id: totrans-105
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE34]'
+- en: null
+  id: totrans-106
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-107
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE35]'
+  id: totrans-108
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE35]'
 - en: '[PRE36]'
+  id: totrans-109
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE36]'
+- en: null
+  id: totrans-110
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-111
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE37]'
+  id: totrans-112
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE37]'
 - en: '[PRE38]'
+  id: totrans-113
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE38]'
+- en: null
+  id: totrans-114
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-115
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: Conclusion[](#conclusion "Permalink to this heading")
+  id: totrans-116
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 结论[]（＃conclusion“此标题的永久链接”）
 - en: In this tutorial, we looked how to use torchaudio’s Wav2Vec2 model to perform
     CTC segmentation for forced alignment.
+  id: totrans-117
   prefs: []
   type: TYPE_NORMAL
+  zh: 在本教程中，我们看了如何使用torchaudio的Wav2Vec2模型执行强制对齐的CTC分割。
 - en: '**Total running time of the script:** ( 0 minutes 1.734 seconds)'
+  id: totrans-118
   prefs: []
   type: TYPE_NORMAL
+  zh: 脚本的总运行时间：（0分钟1.734秒）
 - en: '[`Download Python source code: forced_alignment_tutorial.py`](../_downloads/fa57890a830bd47c0baa254781b3a8e1/forced_alignment_tutorial.py)'
+  id: totrans-119
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Python源代码：forced_alignment_tutorial.py`](../_downloads/fa57890a830bd47c0baa254781b3a8e1/forced_alignment_tutorial.py)'
 - en: '[`Download Jupyter notebook: forced_alignment_tutorial.ipynb`](../_downloads/160356f33d521341c47ec6b1406a3c2e/forced_alignment_tutorial.ipynb)'
+  id: totrans-120
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Jupyter笔记本：forced_alignment_tutorial.ipynb`](../_downloads/160356f33d521341c47ec6b1406a3c2e/forced_alignment_tutorial.ipynb)'
 - en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  id: totrans-121
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Sphinx-Gallery生成的图库](https://sphinx-gallery.github.io)'

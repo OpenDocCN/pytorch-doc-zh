@@ -1,62 +1,94 @@
 - en: Device AV-ASR with Emformer RNN-T
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 使用Emformer RNN-T的设备AV-ASR
 - en: 原文：[https://pytorch.org/audio/stable/tutorials/device_avsr.html](https://pytorch.org/audio/stable/tutorials/device_avsr.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/audio/stable/tutorials/device_avsr.html](https://pytorch.org/audio/stable/tutorials/device_avsr.html)
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-tutorials-device-avsr-py) to download the full
     example code
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[这里](#sphx-glr-download-tutorials-device-avsr-py)下载完整示例代码
 - en: '**Author**: [Pingchuan Ma](mailto:pingchuanma%40meta.com), [Moto Hira](mailto:moto%40meta.com).'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '**作者**：[Pingchuan Ma](mailto:pingchuanma%40meta.com), [Moto Hira](mailto:moto%40meta.com)。'
 - en: This tutorial shows how to run on-device audio-visual speech recognition (AV-ASR,
     or AVSR) with TorchAudio on a streaming device input, i.e. microphone on laptop.
     AV-ASR is the task of transcribing text from audio and visual streams, which has
     recently attracted a lot of research attention due to its robustness against noise.
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程展示了如何在流设备输入上（即笔记本电脑上的麦克风）使用TorchAudio运行设备上的音频-视觉语音识别（AV-ASR或AVSR）。AV-ASR是从音频和视觉流中转录文本的任务，最近因其对噪声的稳健性而引起了许多研究的关注。
 - en: Note
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: This tutorial requires ffmpeg, sentencepiece, mediapipe, opencv-python and scikit-image
     libraries.
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 此教程需要ffmpeg、sentencepiece、mediapipe、opencv-python和scikit-image库。
 - en: There are multiple ways to install ffmpeg libraries. If you are using Anaconda
     Python distribution, `conda install -c conda-forge 'ffmpeg<7'` will install compatible
     FFmpeg libraries.
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 有多种安装ffmpeg库的方法。如果您使用Anaconda Python发行版，`conda install -c conda-forge 'ffmpeg<7'`将安装兼容的FFmpeg库。
 - en: You can run `pip install sentencepiece mediapipe opencv-python scikit-image`
     to install the other libraries mentioned.
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 您可以运行`pip install sentencepiece mediapipe opencv-python scikit-image`来安装其他提到的库。
 - en: Note
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: To run this tutorial, please make sure you are in the tutorial folder.
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 要运行此教程，请确保您在教程文件夹中。
 - en: Note
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: We tested the tutorial on torchaudio version 2.0.2 on Macbook Pro (M1 Pro).
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们在Macbook Pro（M1 Pro）上测试了torchaudio版本2.0.2上的教程。
 - en: '[PRE0]'
+  id: totrans-14
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: Overview[](#overview "Permalink to this heading")
+  id: totrans-15
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 概述[](#overview "Permalink to this heading")
 - en: The real-time AV-ASR system is presented as follows, which consists of three
     components, a data collection module, a pre-processing module and an end-to-end
     model. The data collection module is hardware, such as a microphone and camera.
@@ -64,140 +96,217 @@
     collected, the pre-processing module location and crop out face. Next, we feed
     the raw audio stream and the pre-processed video stream into our end-to-end model
     for inference.
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 实时AV-ASR系统如下所示，由三个组件组成，即数据收集模块、预处理模块和端到端模型。数据收集模块是硬件，如麦克风和摄像头。它的作用是从现实世界收集信息。一旦信息被收集，预处理模块会定位和裁剪出脸部。接下来，我们将原始音频流和预处理的视频流馈送到我们的端到端模型进行推断。
 - en: '![https://download.pytorch.org/torchaudio/doc-assets/avsr/overview.png](../Images/757b2c4226d175a3a1b0d10e928d909c.png)'
+  id: totrans-17
   prefs: []
   type: TYPE_IMG
+  zh: '![https://download.pytorch.org/torchaudio/doc-assets/avsr/overview.png](../Images/757b2c4226d175a3a1b0d10e928d909c.png)'
 - en: 1\. Data acquisition[](#data-acquisition "Permalink to this heading")
+  id: totrans-18
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 1\. 数据采集[](#data-acquisition "Permalink to this heading")
 - en: Firstly, we define the function to collect videos from microphone and camera.
     To be specific, we use [`StreamReader`](../generated/torchaudio.io.StreamReader.html#torchaudio.io.StreamReader
     "torchaudio.io.StreamReader") class for the purpose of data collection, which
     supports capturing audio/video from microphone and camera. For the detailed usage
     of this class, please refer to the [tutorial](./streamreader_basic_tutorial.html).
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 首先，我们定义了从麦克风和摄像头收集视频的函数。具体来说，我们使用[`StreamReader`](../generated/torchaudio.io.StreamReader.html#torchaudio.io.StreamReader
+    "torchaudio.io.StreamReader")类来进行数据收集，该类支持从麦克风和摄像头捕获音频/视频。有关此类的详细用法，请参考[教程](./streamreader_basic_tutorial.html)。
 - en: '[PRE1]'
+  id: totrans-20
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: 2\. Pre-processing[](#pre-processing "Permalink to this heading")
+  id: totrans-21
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 2\. 预处理[](#pre-processing "Permalink to this heading")
 - en: Before feeding the raw stream into our model, each video sequence has to undergo
     a specific pre-processing procedure. This involves three critical steps. The first
     step is to perform face detection. Following that, each individual frame is aligned
     to a referenced frame, commonly known as the mean face, in order to normalize
     rotation and size differences across frames. The final step in the pre-processing
     module is to crop the face region from the aligned face image.
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 在将原始流馈送到我们的模型之前，每个视频序列都必须经过特定的预处理过程。这涉及三个关键步骤。第一步是进行人脸检测。随后，将每个单独的帧对齐到一个参考帧，通常称为平均脸，以规范化帧之间的旋转和大小差异。预处理模块中的最后一步是从对齐的人脸图像中裁剪出脸部区域。
 - en: '| ![https://download.pytorch.org/torchaudio/doc-assets/avsr/original.gif](../Images/b9142268a9c0666c9697c22b10755a18.png)
     | ![https://download.pytorch.org/torchaudio/doc-assets/avsr/detected.gif](../Images/b44fd7d78a200f7ef203259295e21a8a.png)
     | ![https://download.pytorch.org/torchaudio/doc-assets/avsr/transformed.gif](../Images/7029d284337ec7c2222d6b4344ac49d0.png)
     | ![https://download.pytorch.org/torchaudio/doc-assets/avsr/cropped.gif](../Images/5aa4bb57e0b31b6d34ac3b4766e5503f.png)
     |'
+  id: totrans-23
   prefs: []
   type: TYPE_TB
+  zh: '| ![https://download.pytorch.org/torchaudio/doc-assets/avsr/original.gif](../Images/b9142268a9c0666c9697c22b10755a18.png)
+    | ![https://download.pytorch.org/torchaudio/doc-assets/avsr/detected.gif](../Images/b44fd7d78a200f7ef203259295e21a8a.png)
+    | ![https://download.pytorch.org/torchaudio/doc-assets/avsr/transformed.gif](../Images/7029d284337ec7c2222d6b4344ac49d0.png)
+    | ![https://download.pytorch.org/torchaudio/doc-assets/avsr/cropped.gif](../Images/5aa4bb57e0b31b6d34ac3b4766e5503f.png)
+    |'
 - en: '|'
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: '|'
 - en: Original
+  id: totrans-25
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 原
 - en: '|'
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: '|'
 - en: Detected
+  id: totrans-27
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 检测
 - en: '|'
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: '|'
 - en: Transformed
+  id: totrans-29
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 转换
 - en: '|'
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: '|'
 - en: Cropped
+  id: totrans-31
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 裁剪
 - en: '|'
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: '|'
 - en: '[PRE2]'
+  id: totrans-33
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: 3\. Building inference pipeline[](#building-inference-pipeline "Permalink to
     this heading")
+  id: totrans-34
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 3\. 构建推断管道[](#building-inference-pipeline "Permalink to this heading")
 - en: The next step is to create components required for pipeline.
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 下一步是创建管道所需的组件。
 - en: We use convolutional-based front-ends to extract features from both the raw
     audio and video streams. These features are then passed through a two-layer MLP
     for fusion. For our transducer model, we leverage the TorchAudio library, which
     incorporates an encoder (Emformer), a predictor, and a joint network. The architecture
     of the proposed AV-ASR model is illustrated as follows.
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们使用基于卷积的前端从原始音频和视频流中提取特征。然后，这些特征通过两层MLP进行融合。对于我们的转录器模型，我们利用了TorchAudio库，该库包含一个编码器（Emformer）、一个预测器和一个联合网络。所提出的AV-ASR模型的架构如下所示。
 - en: '![https://download.pytorch.org/torchaudio/doc-assets/avsr/architecture.png](../Images/ed7f525d50ee520d70b7e9c6f6b7fd66.png)'
+  id: totrans-37
   prefs: []
   type: TYPE_IMG
+  zh: '![https://download.pytorch.org/torchaudio/doc-assets/avsr/architecture.png](../Images/ed7f525d50ee520d70b7e9c6f6b7fd66.png)'
 - en: '[PRE3]'
+  id: totrans-38
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: 4\. The main process[](#the-main-process "Permalink to this heading")
+  id: totrans-39
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 4. 主进程[](#the-main-process "Permalink to this heading")
 - en: 'The execution flow of the main process is as follows:'
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: 主进程的执行流程如下：
 - en: Initialize the inference pipeline.
+  id: totrans-41
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 初始化推断流程。
 - en: Launch data acquisition subprocess.
+  id: totrans-42
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 启动数据采集子进程。
 - en: Run inference.
+  id: totrans-43
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 运行推断。
 - en: Clean up
+  id: totrans-44
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 清理
 - en: '[PRE4]'
+  id: totrans-45
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: '[PRE5]'
+  id: totrans-46
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: 'Tag: [`torchaudio.io`](../io.html#module-torchaudio.io "torchaudio.io")'
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: 标签：[`torchaudio.io`](../io.html#module-torchaudio.io "torchaudio.io")
 - en: '**Total running time of the script:** ( 0 minutes 0.000 seconds)'
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: '**脚本的总运行时间：**（0分钟0.000秒）'
 - en: '[`Download Python source code: device_avsr.py`](../_downloads/e10abb57121274b0bbaca74dbbd1fbc4/device_avsr.py)'
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: 下载Python源代码：device_avsr.py
 - en: '[`Download Jupyter notebook: device_avsr.ipynb`](../_downloads/eb72a6f2273304a15352dfcf3b824b42/device_avsr.ipynb)'
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: 下载Jupyter笔记本：device_avsr.ipynb
 - en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Sphinx-Gallery生成的图库](https://sphinx-gallery.github.io)'

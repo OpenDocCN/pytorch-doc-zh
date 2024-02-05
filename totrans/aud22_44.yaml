@@ -1,282 +1,432 @@
 - en: Music Source Separation with Hybrid Demucs
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 使用混合Demucs进行音乐源分离
 - en: 原文：[https://pytorch.org/audio/stable/tutorials/hybrid_demucs_tutorial.html](https://pytorch.org/audio/stable/tutorials/hybrid_demucs_tutorial.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/audio/stable/tutorials/hybrid_demucs_tutorial.html](https://pytorch.org/audio/stable/tutorials/hybrid_demucs_tutorial.html)
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-tutorials-hybrid-demucs-tutorial-py) to download
     the full example code
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[这里](#sphx-glr-download-tutorials-hybrid-demucs-tutorial-py)下载完整示例代码
 - en: '**Author**: [Sean Kim](https://github.com/skim0514)'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '**作者**：[Sean Kim](https://github.com/skim0514)'
 - en: This tutorial shows how to use the Hybrid Demucs model in order to perform music
     separation
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程展示了如何使用混合Demucs模型进行音乐分离
 - en: 1\. Overview[](#overview "Permalink to this heading")
+  id: totrans-6
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 1\. 概述[](#overview "跳转到此标题的永久链接")
 - en: Performing music separation is composed of the following steps
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 进行音乐分离包括以下步骤
 - en: Build the Hybrid Demucs pipeline.
+  id: totrans-8
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 构建混合Demucs管道。
 - en: Format the waveform into chunks of expected sizes and loop through chunks (with
     overlap) and feed into pipeline.
+  id: totrans-9
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 将波形格式化为预期大小的块，并循环遍历块（带有重叠），并将其馈送到管道中。
 - en: Collect output chunks and combine according to the way they have been overlapped.
+  id: totrans-10
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 收集输出块并根据它们的重叠方式进行组合。
 - en: The Hybrid Demucs [[Défossez, 2021](https://arxiv.org/abs/2111.03600)] model
     is a developed version of the [Demucs](https://github.com/facebookresearch/demucs)
     model, a waveform based model which separates music into its respective sources,
     such as vocals, bass, and drums. Hybrid Demucs effectively uses spectrogram to
     learn through the frequency domain and also moves to time convolutions.
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 混合Demucs[[Défossez, 2021](https://arxiv.org/abs/2111.03600)]模型是[Demucs](https://github.com/facebookresearch/demucs)模型的进化版本，这是一个基于波形的模型，将音乐分离为其各自的源，如人声、低音和鼓。混合Demucs有效地使用频谱图来学习频域，并且还移动到时间卷积。
 - en: 2\. Preparation[](#preparation "Permalink to this heading")
+  id: totrans-12
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 2\. 准备工作[](#preparation "跳转到此标题的永久链接")
 - en: First, we install the necessary dependencies. The first requirement is `torchaudio`
     and `torch`
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: 首先，我们安装必要的依赖项。第一个要求是`torchaudio`和`torch`
 - en: '[PRE0]'
+  id: totrans-14
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: '[PRE1]'
+  id: totrans-15
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: In addition to `torchaudio`, `mir_eval` is required to perform signal-to-distortion
     ratio (SDR) calculations. To install `mir_eval` please use `pip3 install mir_eval`.
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 除了`torchaudio`，还需要`mir_eval`来执行信号失真比（SDR）计算。要安装`mir_eval`，请使用`pip3 install mir_eval`。
 - en: '[PRE2]'
+  id: totrans-17
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: 3\. Construct the pipeline[](#construct-the-pipeline "Permalink to this heading")
+  id: totrans-18
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 3\. 构建管道[](#construct-the-pipeline "跳转到此标题的永久链接")
 - en: Pre-trained model weights and related pipeline components are bundled as [`torchaudio.pipelines.HDEMUCS_HIGH_MUSDB_PLUS()`](../generated/torchaudio.pipelines.HDEMUCS_HIGH_MUSDB_PLUS.html#torchaudio.pipelines.HDEMUCS_HIGH_MUSDB_PLUS
     "torchaudio.pipelines.HDEMUCS_HIGH_MUSDB_PLUS"). This is a [`torchaudio.models.HDemucs`](../generated/torchaudio.models.HDemucs.html#torchaudio.models.HDemucs
     "torchaudio.models.HDemucs") model trained on [MUSDB18-HQ](https://zenodo.org/record/3338373)
     and additional internal extra training data. This specific model is suited for
     higher sample rates, around 44.1 kHZ and has a nfft value of 4096 with a depth
     of 6 in the model implementation.
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 预训练模型权重和相关管道组件被捆绑为[`torchaudio.pipelines.HDEMUCS_HIGH_MUSDB_PLUS()`](../generated/torchaudio.pipelines.HDEMUCS_HIGH_MUSDB_PLUS.html#torchaudio.pipelines.HDEMUCS_HIGH_MUSDB_PLUS)。这是一个在[MUSDB18-HQ](https://zenodo.org/record/3338373)和额外的内部额外训练数据上训练的[`torchaudio.models.HDemucs`](../generated/torchaudio.models.HDemucs.html#torchaudio.models.HDemucs)模型。这个特定的模型适用于更高的采样率，大约为44.1
+    kHZ，并且在模型实现中具有4096的nfft值和6的深度。
 - en: '[PRE3]'
+  id: totrans-20
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: '[PRE4]'
+  id: totrans-21
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: 4\. Configure the application function[](#configure-the-application-function
     "Permalink to this heading")
+  id: totrans-22
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 4\. 配置应用程序功能[](#configure-the-application-function "跳转到此标题的永久链接")
 - en: Because `HDemucs` is a large and memory-consuming model it is very difficult
     to have sufficient memory to apply the model to an entire song at once. To work
     around this limitation, obtain the separated sources of a full song by chunking
     the song into smaller segments and run through the model piece by piece, and then
     rearrange back together.
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于`HDemucs`是一个占用大量内存的模型，很难有足够的内存一次性将模型应用于整首歌曲。为了解决这个限制，通过将歌曲分成较小的片段并逐段通过模型运行，然后重新排列在一起，获得完整歌曲的分离源。
 - en: When doing this, it is important to ensure some overlap between each of the
     chunks, to accommodate for artifacts at the edges. Due to the nature of the model,
     sometimes the edges have inaccurate or undesired sounds included.
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 在进行此操作时，重要的是确保每个块之间有一定的重叠，以适应边缘处的伪影。由于模型的性质，有时边缘会包含不准确或不希望的声音。
 - en: We provide a sample implementation of chunking and arrangement below. This implementation
     takes an overlap of 1 second on each side, and then does a linear fade in and
     fade out on each side. Using the faded overlaps, I add these segments together,
     to ensure a constant volume throughout. This accommodates for the artifacts by
     using less of the edges of the model outputs.
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们提供了一个分块和排列的示例实现。该实现在每一侧都有1秒的重叠，并在每一侧进行线性淡入和淡出。使用淡化的重叠，我将这些段添加在一起，以确保整个过程中的音量恒定。通过使用模型输出的边缘较少的部分，可以适应伪影。
 - en: '![https://download.pytorch.org/torchaudio/tutorial-assets/HDemucs_Drawing.jpg](../Images/6e9f5cb6983d007601e3ca05feb269f2.png)'
+  id: totrans-26
   prefs: []
   type: TYPE_IMG
+  zh: '![https://download.pytorch.org/torchaudio/tutorial-assets/HDemucs_Drawing.jpg](../Images/6e9f5cb6983d007601e3ca05feb269f2.png)'
 - en: '[PRE5]'
+  id: totrans-27
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: 5\. Run Model[](#run-model "Permalink to this heading")
+  id: totrans-28
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 5\. 运行模型[](#run-model "跳转到此标题的永久链接")
 - en: Finally, we run the model and store the separate source files in a directory
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 最后，我们运行模型并将单独的源文件存储在一个目录中
 - en: As a test song, we will be using A Classic Education by NightOwl from MedleyDB
     (Creative Commons BY-NC-SA 4.0). This is also located in [MUSDB18-HQ](https://zenodo.org/record/3338373)
     dataset within the `train` sources.
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 作为测试歌曲，我们将使用MedleyDB中NightOwl演唱的A Classic Education（知识共享署名-非商业-相同方式共享4.0）。这也位于[MUSDB18-HQ](https://zenodo.org/record/3338373)数据集中的`train`来源中。
 - en: In order to test with a different song, the variable names and urls below can
     be changed alongside with the parameters to test the song separator in different
     ways.
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了测试不同歌曲，下面的变量名称和网址可以随着参数的改变而改变，以不同方式测试歌曲分离器。
 - en: '[PRE6]'
+  id: totrans-32
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: '[PRE7]'
+  id: totrans-33
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: 5.1 Separate Track[](#separate-track "Permalink to this heading")
+  id: totrans-34
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 5.1 分离轨道[](#separate-track "跳转到此标题的永久链接")
 - en: 'The default set of pretrained weights that has been loaded has 4 sources that
     it is separated into: drums, bass, other, and vocals in that order. They have
     been stored into the dict “audios” and therefore can be accessed there. For the
     four sources, there is a separate cell for each, that will create the audio, the
     spectrogram graph, and also calculate the SDR score. SDR is the signal-to-distortion
     ratio, essentially a representation to the “quality” of an audio track.'
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 已加载的默认预训练权重集将其分为4个来源：鼓、低音、其他和人声，按顺序存储在字典“audios”中，因此可以在那里访问。对于这四个来源，每个都有一个单独的单元格，将创建音频、频谱图并计算SDR分数。SDR是信号失真比，本质上是音频轨道“质量”的表示。
 - en: '[PRE8]'
+  id: totrans-36
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: 5.2 Audio Segmenting and Processing[](#audio-segmenting-and-processing "Permalink
     to this heading")
+  id: totrans-37
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 5.2 音频分段和处理[](#audio-segmenting-and-processing "跳转到此标题的永久链接")
 - en: Below is the processing steps and segmenting 5 seconds of the tracks in order
     to feed into the spectrogram and to caclulate the respective SDR scores.
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下是处理步骤和将曲目分段为5秒以供输入频谱图和计算相应SDR分数。
 - en: '[PRE9]'
+  id: totrans-39
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: '[PRE10]'
+  id: totrans-40
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: 5.3 Spectrograms and Audio[](#spectrograms-and-audio "Permalink to this heading")
+  id: totrans-41
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 5.3 频谱图和音频[](#spectrograms-and-audio "跳转到此标题的永久链接")
 - en: In the next 5 cells, you can see the spectrograms with the respective audios.
     The audios can be clearly visualized using the spectrogram.
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 在接下来的5个单元格中，您可以看到具有相应音频的频谱图。可以使用频谱图清晰地可视化音频。
 - en: The mixture clip comes from the original track, and the remaining tracks are
     the model output
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: 混音片段来自原始曲目，其余曲目是模型输出
 - en: '[PRE11]'
+  id: totrans-44
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: '![Spectrogram - Mixture](../Images/903b3c24f56fbd7403f05bea8407e0e1.png)'
+  id: totrans-45
   prefs: []
   type: TYPE_IMG
-- en: 
+  zh: '![频谱图 - 混音](../Images/903b3c24f56fbd7403f05bea8407e0e1.png)'
+- en: null
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: Drums SDR, Spectrogram, and Audio
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: 鼓SDR、频谱图和音频
 - en: '[PRE12]'
+  id: totrans-49
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: '![Spectrogram - drums](../Images/7450ec09b4ac750ff99261d0424d93ad.png)'
+  id: totrans-50
   prefs: []
   type: TYPE_IMG
+  zh: '![频谱图 - 鼓](../Images/7450ec09b4ac750ff99261d0424d93ad.png)'
 - en: '[PRE13]'
+  id: totrans-51
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE13]'
+- en: null
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-53
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: Bass SDR, Spectrogram, and Audio
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: 低音SDR、频谱图和音频
 - en: '[PRE14]'
+  id: totrans-55
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: '![Spectrogram - bass](../Images/285241ea561b69a0ed0bde347e065a4b.png)'
+  id: totrans-56
   prefs: []
   type: TYPE_IMG
+  zh: '![频谱图 - 低音](../Images/285241ea561b69a0ed0bde347e065a4b.png)'
 - en: '[PRE15]'
+  id: totrans-57
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE15]'
+- en: null
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: Vocals SDR, Spectrogram, and Audio
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: 人声SDR、频谱图和音频
 - en: '[PRE16]'
+  id: totrans-61
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: '![Spectrogram - vocals](../Images/74dae62c693575aeeec23910e8c6a8d2.png)'
+  id: totrans-62
   prefs: []
   type: TYPE_IMG
+  zh: '![频谱图 - 人声](../Images/74dae62c693575aeeec23910e8c6a8d2.png)'
 - en: '[PRE17]'
+  id: totrans-63
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE17]'
+- en: null
+  id: totrans-64
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: Other SDR, Spectrogram, and Audio
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: 其他SDR、频谱图和音频
 - en: '[PRE18]'
+  id: totrans-67
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: '![Spectrogram - other](../Images/560e3f4afb279402f99bd339b3fdc12d.png)'
+  id: totrans-68
   prefs: []
   type: TYPE_IMG
+  zh: '![频谱图 - 其他](../Images/560e3f4afb279402f99bd339b3fdc12d.png)'
 - en: '[PRE19]'
+  id: totrans-69
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE19]'
+- en: null
+  id: totrans-70
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-71
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '[PRE20]'
+  id: totrans-72
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE20]'
 - en: '**Total running time of the script:** ( 0 minutes 22.977 seconds)'
+  id: totrans-73
   prefs: []
   type: TYPE_NORMAL
+  zh: '**脚本的总运行时间：**（0分钟22.977秒）'
 - en: '[`Download Python source code: hybrid_demucs_tutorial.py`](../_downloads/d7783185e54fb77cb13eb7133fa130a3/hybrid_demucs_tutorial.py)'
+  id: totrans-74
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Python源代码：hybrid_demucs_tutorial.py`](../_downloads/d7783185e54fb77cb13eb7133fa130a3/hybrid_demucs_tutorial.py)'
 - en: '[`Download Jupyter notebook: hybrid_demucs_tutorial.ipynb`](../_downloads/c9521dfc1feb227de7d892f0131bbc95/hybrid_demucs_tutorial.ipynb)'
+  id: totrans-75
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Jupyter笔记本：hybrid_demucs_tutorial.ipynb`](../_downloads/c9521dfc1feb227de7d892f0131bbc95/hybrid_demucs_tutorial.ipynb)'
 - en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  id: totrans-76
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Sphinx-Gallery生成的画廊](https://sphinx-gallery.github.io)'

@@ -1,261 +1,411 @@
 - en: DataLoader2
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: DataLoader2
 - en: 原文：[https://pytorch.org/data/beta/dataloader2.html](https://pytorch.org/data/beta/dataloader2.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/data/beta/dataloader2.html](https://pytorch.org/data/beta/dataloader2.html)
 - en: A new, light-weight [`DataLoader2`](#torchdata.dataloader2.DataLoader2 "torchdata.dataloader2.DataLoader2")
     is introduced to decouple the overloaded data-manipulation functionalities from
     `torch.utils.data.DataLoader` to `DataPipe` operations. Besides, certain features
     can only be achieved with [`DataLoader2`](#torchdata.dataloader2.DataLoader2 "torchdata.dataloader2.DataLoader2")
     like snapshotting and switching backend services to perform high-performant operations.
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 引入了一个新的轻量级 [`DataLoader2`](#torchdata.dataloader2.DataLoader2 "torchdata.dataloader2.DataLoader2")，以将过载的数据操作功能与
+    `torch.utils.data.DataLoader` 分离，转移到 `DataPipe` 操作。此外，某些功能只能通过 [`DataLoader2`](#torchdata.dataloader2.DataLoader2
+    "torchdata.dataloader2.DataLoader2") 实现，如快照和切换后端服务以执行高性能操作。
 - en: DataLoader2[](#id1 "Permalink to this heading")
+  id: totrans-3
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: DataLoader2[](#id1 "跳转到此标题")
 - en: '[PRE0]'
+  id: totrans-4
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: '`DataLoader2` is used to optimize and execute the given `DataPipe` graph based
     on `ReadingService` and `Adapter` functions, with support for'
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: '`DataLoader2` 用于优化和执行给定的 `DataPipe` 图，基于 `ReadingService` 和 `Adapter` 函数，支持'
 - en: Dynamic sharding for multiprocess and distributed data loading
+  id: totrans-6
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 动态分片用于多进程和分布式数据加载
 - en: Multiple backend `ReadingServices`
+  id: totrans-7
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 多个后端 `ReadingServices`
 - en: '`DataPipe` graph in-place modification like shuffle control, memory pinning,
     etc.'
+  id: totrans-8
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`DataPipe` 图的原地修改，如洗牌控制、内存固定等。'
 - en: Snapshot the state of data-preprocessing pipeline (WIP)
+  id: totrans-9
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 快照数据预处理流水线的状态（WIP）
 - en: 'Parameters:'
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数：
 - en: '**datapipe** (`IterDataPipe` or `MapDataPipe`) – `DataPipe` from which to load
     the data. A deepcopy of this datapipe will be made during initialization, allowing
     the input to be re-used in a different `DataLoader2` without sharing states. Input
     `None` can only be used if `load_state_dict` is called right after the creation
     of the DataLoader.'
+  id: totrans-11
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**datapipe** (`IterDataPipe` 或 `MapDataPipe`) – 用于加载数据的 `DataPipe`。在初始化期间将对此
+    datapipe 进行深拷贝，允许在不共享状态的情况下在不同的 `DataLoader2` 中重复使用输入。只有在创建 DataLoader 后立即调用 `load_state_dict`
+    才能使用输入 `None`。'
 - en: '**datapipe_adapter_fn** (`Iterable[Adapter]` or `Adapter`, optional) – `Adapter`
     function(s) that will be applied to the DataPipe (default: `None`).'
+  id: totrans-12
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**datapipe_adapter_fn** (`Iterable[Adapter]` 或 `Adapter`，可选) – 将应用于 DataPipe
+    的 `Adapter` 函数（默认值：`None`）。'
 - en: '**reading_service** ([*ReadingServiceInterface*](reading_service.html#torchdata.dataloader2.ReadingServiceInterface
     "torchdata.dataloader2.ReadingServiceInterface")*,* *optional*) – defines how
     `DataLoader2` should execute operations over the `DataPipe`, e.g. multiprocessing/distributed
     (default: `None`). A deepcopy of this will be created during initialization, allowing
     the ReadingService to be re-used in a different `DataLoader2` without sharing
     states.'
+  id: totrans-13
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**reading_service** ([*ReadingServiceInterface*](reading_service.html#torchdata.dataloader2.ReadingServiceInterface
+    "torchdata.dataloader2.ReadingServiceInterface")*,* *可选*) – 定义 `DataLoader2` 应如何在
+    `DataPipe` 上执行操作，例如多进程/分布式（默认值：`None`）。在初始化期间将对此进行深拷贝，允许在不共享状态的情况下在不同的 `DataLoader2`
+    中重复使用 ReadingService。'
 - en: Note
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: When a `MapDataPipe` is passed into `DataLoader2`, in order to iterate through
     the data, `DataLoader2` will attempt to create an iterator via `iter(datapipe)`.
     If the object has a non-zero-indexed indices, this may fail. Consider using `.shuffle()`
     (which converts `MapDataPipe` to `IterDataPipe`) or `datapipe.to_iter_datapipe(custom_indices)`.
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 当将 `MapDataPipe` 传递给 `DataLoader2` 时，为了遍历数据，`DataLoader2` 将尝试通过 `iter(datapipe)`
+    创建迭代器。如果对象具有非零索引的索引，这可能会失败。考虑使用 `.shuffle()`（将 `MapDataPipe` 转换为 `IterDataPipe`）或
+    `datapipe.to_iter_datapipe(custom_indices)`。
 - en: '[PRE1]'
+  id: totrans-16
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: Return a singleton iterator from the `DataPipe` graph adapted by `ReadingService`.
     `DataPipe` will be restored if the serialized state is provided to construct `DataLoader2`.
     And, `initialize_iteration` and `finalize_iterator` will be invoked at the beginning
     and end of the iteration correspondingly.
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 从由 `ReadingService` 调整的 `DataPipe` 图返回一个单例迭代器。如果提供了序列化状态以构建 `DataLoader2`，则将恢复
+    `DataPipe`。并且，将在迭代开始和结束时分别调用 `initialize_iteration` 和 `finalize_iterator`。
 - en: '[PRE2]'
+  id: totrans-18
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Create new `DataLoader2` with `DataPipe` graph and `ReadingService` restored
     from the serialized state.
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 创建新的 `DataLoader2`，其中包含从序列化状态恢复的 `DataPipe` 图和 `ReadingService`。
 - en: '[PRE3]'
+  id: totrans-20
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: For the existing `DataLoader2`, load serialized state to restore `DataPipe`
     graph and reset the internal state of `ReadingService`.
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于现有的 `DataLoader2`，加载序列化状态以恢复 `DataPipe` 图并重置 `ReadingService` 的内部状态。
 - en: '[PRE4]'
+  id: totrans-22
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: Set random seed for DataLoader2 to control determinism.
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 设置 DataLoader2 的随机种子以控制确定性。
 - en: 'Parameters:'
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数：
 - en: '**seed** – Random uint64 seed'
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: '**seed** – 随机的 uint64 种子'
 - en: '[PRE5]'
+  id: totrans-26
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: Shuts down `ReadingService` and clean up iterator.
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 关闭 `ReadingService` 并清理迭代器。
 - en: '[PRE6]'
+  id: totrans-28
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: 'Return a dictionary to represent the state of data-processing pipeline with
     keys:'
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回一个表示数据处理流水线状态的字典，其中包含键：
 - en: '`serialized_datapipe`:Serialized `DataPipe` before `ReadingService` adaption.'
+  id: totrans-30
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`serialized_datapipe`：`ReadingService` 适配之前序列化的 `DataPipe`。'
 - en: '`reading_service_state`: The state of `ReadingService` and adapted `DataPipe`.'
+  id: totrans-31
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`reading_service_state`：`ReadingService` 的状态和适配的 `DataPipe`。'
 - en: 'Note: [`DataLoader2`](#torchdata.dataloader2.DataLoader2 "torchdata.dataloader2.DataLoader2")
     doesn’t support `torch.utils.data.Dataset` or `torch.utils.data.IterableDataset`.
     Please wrap each of them with the corresponding `DataPipe` below:'
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意：[`DataLoader2`](#torchdata.dataloader2.DataLoader2 "torchdata.dataloader2.DataLoader2")
+    不支持 `torch.utils.data.Dataset` 或 `torch.utils.data.IterableDataset`。请使用下面对应的 `DataPipe`
+    包装每一个：
 - en: '[`torchdata.datapipes.map.SequenceWrapper`](generated/torchdata.datapipes.map.SequenceWrapper.html#torchdata.datapipes.map.SequenceWrapper
     "torchdata.datapipes.map.SequenceWrapper"): `torch.utils.data.Dataset`'
+  id: totrans-33
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[`torchdata.datapipes.map.SequenceWrapper`](generated/torchdata.datapipes.map.SequenceWrapper.html#torchdata.datapipes.map.SequenceWrapper
+    "torchdata.datapipes.map.SequenceWrapper")：`torch.utils.data.Dataset`'
 - en: '[`torchdata.datapipes.iter.IterableWrapper`](generated/torchdata.datapipes.iter.IterableWrapper.html#torchdata.datapipes.iter.IterableWrapper
     "torchdata.datapipes.iter.IterableWrapper"): `torch.utils.data.IterableDataset`'
+  id: totrans-34
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[`torchdata.datapipes.iter.IterableWrapper`](generated/torchdata.datapipes.iter.IterableWrapper.html#torchdata.datapipes.iter.IterableWrapper
+    "torchdata.datapipes.iter.IterableWrapper")：`torch.utils.data.IterableDataset`'
 - en: ReadingService[](#readingservice "Permalink to this heading")
+  id: totrans-35
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: ReadingService[](#readingservice "跳转到此标题")
 - en: '`ReadingService` specifies the execution backend for the data-processing graph.
     There are three types of `ReadingServices` provided in TorchData:'
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: '`ReadingService`指定数据处理图的执行后端。TorchData提供了三种类型的`ReadingServices`：'
 - en: '| [`DistributedReadingService`](generated/torchdata.dataloader2.DistributedReadingService.html#torchdata.dataloader2.DistributedReadingService
     "torchdata.dataloader2.DistributedReadingService") | `DistributedReadingSerivce`
     handles distributed sharding on the graph of `DataPipe` and guarantee the randomness
     by sharing the same seed across the distributed processes. |'
+  id: totrans-37
   prefs: []
   type: TYPE_TB
+  zh: '| [`DistributedReadingService`](generated/torchdata.dataloader2.DistributedReadingService.html#torchdata.dataloader2.DistributedReadingService
+    "torchdata.dataloader2.DistributedReadingService") | `DistributedReadingSerivce`处理`DataPipe`图上的分布式分片，并通过在分布式进程之间共享相同的种子来保证随机性。
+    |'
 - en: '| [`InProcessReadingService`](generated/torchdata.dataloader2.InProcessReadingService.html#torchdata.dataloader2.InProcessReadingService
     "torchdata.dataloader2.InProcessReadingService") | Default ReadingService to serve
     the [``](#id2)DataPipe` graph in the main process, and apply graph settings like
     determinism control to the graph. |'
+  id: totrans-38
   prefs: []
   type: TYPE_TB
+  zh: '| [`InProcessReadingService`](generated/torchdata.dataloader2.InProcessReadingService.html#torchdata.dataloader2.InProcessReadingService
+    "torchdata.dataloader2.InProcessReadingService") | 默认的ReadingService，用于在主进程中为`DataPipe`图提供服务，并应用图设置，如确定性控制。
+    |'
 - en: '| [`MultiProcessingReadingService`](generated/torchdata.dataloader2.MultiProcessingReadingService.html#torchdata.dataloader2.MultiProcessingReadingService
     "torchdata.dataloader2.MultiProcessingReadingService") | Spawns multiple worker
     processes to load data from the `DataPipe` graph. |'
+  id: totrans-39
   prefs: []
   type: TYPE_TB
+  zh: '| [`MultiProcessingReadingService`](generated/torchdata.dataloader2.MultiProcessingReadingService.html#torchdata.dataloader2.MultiProcessingReadingService
+    "torchdata.dataloader2.MultiProcessingReadingService") | 生成多个工作进程来从`DataPipe`图中加载数据。
+    |'
 - en: '| [`SequentialReadingService`](generated/torchdata.dataloader2.SequentialReadingService.html#torchdata.dataloader2.SequentialReadingService
     "torchdata.dataloader2.SequentialReadingService") |  |'
+  id: totrans-40
   prefs: []
   type: TYPE_TB
+  zh: '| [`SequentialReadingService`](generated/torchdata.dataloader2.SequentialReadingService.html#torchdata.dataloader2.SequentialReadingService
+    "torchdata.dataloader2.SequentialReadingService") |  |'
 - en: Each `ReadingServices` would take the `DataPipe` graph and rewrite it to achieve
     a few features like dynamic sharding, sharing random seeds and snapshoting for
     multi-/distributed processes. For more detail about those features, please refer
     to [the documentation](reading_service.html).
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 每个`ReadingServices`都会接收`DataPipe`图并重写它，以实现一些功能，如动态分片、共享随机种子和多/分布式进程的快照。有关这些功能的更多详细信息，请参阅[文档](reading_service.html)。
 - en: Adapter[](#adapter "Permalink to this heading")
+  id: totrans-42
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 适配器[](#adapter "跳转到此标题")
 - en: '`Adapter` is used to configure, modify and extend the `DataPipe` graph in [`DataLoader2`](#torchdata.dataloader2.DataLoader2
     "torchdata.dataloader2.DataLoader2"). It allows in-place modification or replace
     the pre-assembled `DataPipe` graph provided by PyTorch domains. For example, `Shuffle(False)`
     can be provided to [`DataLoader2`](#torchdata.dataloader2.DataLoader2 "torchdata.dataloader2.DataLoader2"),
     which would disable any `shuffle` operations in the `DataPipes` graph.'
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: '`Adapter`用于配置、修改和扩展[`DataLoader2`](#torchdata.dataloader2.DataLoader2 "torchdata.dataloader2.DataLoader2")中的`DataPipe`图。它允许就地修改或替换由PyTorch领域提供的预组装的`DataPipe`图。例如，可以向[`DataLoader2`](#torchdata.dataloader2.DataLoader2
+    "torchdata.dataloader2.DataLoader2")提供`Shuffle(False)`，这将禁用`DataPipes`图中的任何`shuffle`操作。'
 - en: '[PRE7]'
+  id: totrans-44
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: Adapter Base Class that follows python Callable protocol.
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: 遵循Python Callable协议的适配器基类。
 - en: '[PRE8]'
+  id: totrans-46
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: Callable function that either runs in-place modification of the `DataPipe` graph,
     or returns a new `DataPipe` graph.
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: 可调用函数，可以就地修改`DataPipe`图，也可以返回一个新的`DataPipe`图。
 - en: 'Parameters:'
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数：
 - en: '**datapipe** – `DataPipe` that needs to be adapted.'
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: '**datapipe** - 需要适配的`DataPipe`。'
 - en: 'Returns:'
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回：
 - en: Adapted `DataPipe` or new `DataPipe`.
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
+  zh: 适配的`DataPipe`或新的`DataPipe`。
 - en: 'Here are the list of [`Adapter`](#torchdata.dataloader2.adapter.Adapter "torchdata.dataloader2.adapter.Adapter")
     provided by TorchData in `torchdata.dataloader2.adapter`:'
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下是TorchData在`torchdata.dataloader2.adapter`中提供的[`Adapter`](#torchdata.dataloader2.adapter.Adapter
+    "torchdata.dataloader2.adapter.Adapter")列表：
 - en: '| [`Shuffle`](generated/torchdata.dataloader2.adapter.Shuffle.html#torchdata.dataloader2.adapter.Shuffle
     "torchdata.dataloader2.adapter.Shuffle") | Shuffle DataPipes adapter allows control
     over all existing Shuffler (`shuffle`) DataPipes in the graph. |'
+  id: totrans-53
   prefs: []
   type: TYPE_TB
+  zh: '| [`Shuffle`](generated/torchdata.dataloader2.adapter.Shuffle.html#torchdata.dataloader2.adapter.Shuffle
+    "torchdata.dataloader2.adapter.Shuffle") | Shuffle DataPipes适配器允许控制图中所有现有的Shuffler（`shuffle`）DataPipes。
+    |'
 - en: '| [`CacheTimeout`](generated/torchdata.dataloader2.adapter.CacheTimeout.html#torchdata.dataloader2.adapter.CacheTimeout
     "torchdata.dataloader2.adapter.CacheTimeout") | CacheTimeout DataPipes adapter
     allows control over timeouts of all existing EndOnDiskCacheHolder (`end_caching`)
     in the graph. |'
+  id: totrans-54
   prefs: []
   type: TYPE_TB
+  zh: '| [`CacheTimeout`](generated/torchdata.dataloader2.adapter.CacheTimeout.html#torchdata.dataloader2.adapter.CacheTimeout
+    "torchdata.dataloader2.adapter.CacheTimeout") | CacheTimeout DataPipes适配器允许控制图中所有现有的EndOnDiskCacheHolder（`end_caching`）的超时时间。
+    |'
 - en: 'And, we will provide more `Adapters` to cover data-processing options:'
+  id: totrans-55
   prefs: []
   type: TYPE_NORMAL
+  zh: 此外，我们将提供更多的`Adapters`来覆盖数据处理选项：
 - en: '`PinMemory`: Attach a `DataPipe` at the end of the data-processing graph that
     coverts output data to `torch.Tensor` in pinned memory.'
+  id: totrans-56
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`PinMemory`：在数据处理图的末尾附加一个`DataPipe`，将输出数据转换为固定内存中的`torch.Tensor`。'
 - en: '`FullSync`: Attach a `DataPipe` to make sure the data-processing graph synchronized
     between distributed processes to prevent hanging.'
+  id: totrans-57
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`FullSync`：附加一个`DataPipe`，以确保分布式进程之间的数据处理图同步，以防止挂起。'
 - en: '`ShardingPolicy`: Modify sharding policy if `sharding_filter` is presented
     in the `DataPipe` graph.'
+  id: totrans-58
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`ShardingPolicy`：如果`DataPipe`图中存在`sharding_filter`，则修改分片策略。'
 - en: '`PrefetchPolicy`, `InvalidateCache`, etc.'
+  id: totrans-59
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '`PrefetchPolicy`，`InvalidateCache`等。'
 - en: If you have feature requests about the `Adapters` you’d like to be provided,
     please open a GitHub issue. For specific needs, `DataLoader2` also accepts any
     custom `Adapter` as long as it inherits from the `Adapter` class.
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果您对希望提供的`Adapters`有功能请求，请提交一个GitHub问题。对于特定需求，`DataLoader2`还接受任何自定义`Adapter`，只要它继承自`Adapter`类。

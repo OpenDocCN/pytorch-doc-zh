@@ -1,34 +1,48 @@
 - en: torchaudio.pipelines
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: torchaudio.pipelines
 - en: 原文：[https://pytorch.org/audio/stable/pipelines.html](https://pytorch.org/audio/stable/pipelines.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/audio/stable/pipelines.html](https://pytorch.org/audio/stable/pipelines.html)
 - en: The `torchaudio.pipelines` module packages pre-trained models with support functions
     and meta-data into simple APIs tailored to perform specific tasks.
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: '`torchaudio.pipelines`模块将预训练模型与支持函数和元数据打包成简单的API，以执行特定任务。'
 - en: When using pre-trained models to perform a task, in addition to instantiating
     the model with pre-trained weights, the client code also needs to build pipelines
     for feature extractions and post processing in the same way they were done during
     the training. This requires to carrying over information used during the training,
     such as the type of transforms and the their parameters (for example, sampling
     rate the number of FFT bins).
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 当使用预训练模型执行任务时，除了使用预训练权重实例化模型外，客户端代码还需要以与训练期间相同的方式构建特征提取和后处理流水线。这需要将训练期间使用的信息传递过去，比如变换的类型和参数（例如，采样率和FFT频率数量）。
 - en: To make this information tied to a pre-trained model and easily accessible,
     `torchaudio.pipelines` module uses the concept of a Bundle class, which defines
     a set of APIs to instantiate pipelines, and the interface of the pipelines.
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 为了将这些信息与预训练模型绑定并轻松访问，`torchaudio.pipelines`模块使用Bundle类的概念，该类定义了一组API来实例化流水线和流水线的接口。
 - en: The following figure illustrates this.
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 以下图示说明了这一点。
 - en: '![https://download.pytorch.org/torchaudio/doc-assets/pipelines-intro.png](../Images/7dc27a33a67f5b02c554368a2500bcb8.png)'
+  id: totrans-6
   prefs: []
   type: TYPE_IMG
+  zh: '![https://download.pytorch.org/torchaudio/doc-assets/pipelines-intro.png](../Images/7dc27a33a67f5b02c554368a2500bcb8.png)'
 - en: A pre-trained model and associated pipelines are expressed as an instance of
     `Bundle`. Different instances of same `Bundle` share the interface, but their
     implementations are not constrained to be of same types. For example, [`SourceSeparationBundle`](generated/torchaudio.pipelines.SourceSeparationBundle.html#torchaudio.pipelines.SourceSeparationBundle
@@ -39,72 +53,117 @@
     "torchaudio.pipelines.HDEMUCS_HIGH_MUSDB") instantiates a model of [`HDemucs`](generated/torchaudio.models.HDemucs.html#torchaudio.models.HDemucs
     "torchaudio.models.HDemucs"). Still, because they share the same interface, the
     usage is the same.
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 预训练模型和相关流水线被表示为`Bundle`的实例。相同`Bundle`的不同实例共享接口，但它们的实现不受限于相同类型。例如，[`SourceSeparationBundle`](generated/torchaudio.pipelines.SourceSeparationBundle.html#torchaudio.pipelines.SourceSeparationBundle
+    "torchaudio.pipelines.SourceSeparationBundle")定义了执行源分离的接口，但其实例[`CONVTASNET_BASE_LIBRI2MIX`](generated/torchaudio.pipelines.CONVTASNET_BASE_LIBRI2MIX.html#torchaudio.pipelines.CONVTASNET_BASE_LIBRI2MIX
+    "torchaudio.pipelines.CONVTASNET_BASE_LIBRI2MIX")实例化了一个[`ConvTasNet`](generated/torchaudio.models.ConvTasNet.html#torchaudio.models.ConvTasNet
+    "torchaudio.models.ConvTasNet")模型，而[`HDEMUCS_HIGH_MUSDB`](generated/torchaudio.pipelines.HDEMUCS_HIGH_MUSDB.html#torchaudio.pipelines.HDEMUCS_HIGH_MUSDB
+    "torchaudio.pipelines.HDEMUCS_HIGH_MUSDB")实例化了一个[`HDemucs`](generated/torchaudio.models.HDemucs.html#torchaudio.models.HDemucs
+    "torchaudio.models.HDemucs")模型。尽管如此，因为它们共享相同的接口，使用方式是相同的。
 - en: Note
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Under the hood, the implementations of `Bundle` use components from other `torchaudio`
     modules, such as [`torchaudio.models`](models.html#module-torchaudio.models "torchaudio.models")
     and [`torchaudio.transforms`](transforms.html#module-torchaudio.transforms "torchaudio.transforms"),
     or even third party libraries like [SentencPiece](https://github.com/google/sentencepiece)
     and [DeepPhonemizer](https://github.com/as-ideas/DeepPhonemizer). But this implementation
     detail is abstracted away from library users.
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
-- en: '## RNN-T Streaming/Non-Streaming ASR[](#rnn-t-streaming-non-streaming-asr
-    "Permalink to this heading")'
+  zh: 在底层，`Bundle`的实现使用了来自其他`torchaudio`模块的组件，比如[`torchaudio.models`](models.html#module-torchaudio.models
+    "torchaudio.models")和[`torchaudio.transforms`](transforms.html#module-torchaudio.transforms
+    "torchaudio.transforms")，甚至第三方库如[SentencPiece](https://github.com/google/sentencepiece)和[DeepPhonemizer](https://github.com/as-ideas/DeepPhonemizer)。但这些实现细节对库用户是抽象的。
+- en: '## RNN-T Streaming/Non-Streaming ASR[](#rnn-t-streaming-non-streaming-asr "Permalink
+    to this heading")'
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: '## RNN-T流式/非流式ASR[](#rnn-t-streaming-non-streaming-asr "Permalink to this heading")'
 - en: Interface[](#interface "Permalink to this heading")
+  id: totrans-11
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 接口[](#interface "Permalink to this heading")
 - en: '`RNNTBundle` defines ASR pipelines and consists of three steps: feature extraction,
     inference, and de-tokenization.'
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: '`RNNTBundle`定义了ASR流水线，包括三个步骤：特征提取、推理和去标记化。'
 - en: '![https://download.pytorch.org/torchaudio/doc-assets/pipelines-rnntbundle.png](../Images/d53f88ebd8f526f56982a4de4848dcaf.png)'
+  id: totrans-13
   prefs: []
   type: TYPE_IMG
+  zh: '![https://download.pytorch.org/torchaudio/doc-assets/pipelines-rnntbundle.png](../Images/d53f88ebd8f526f56982a4de4848dcaf.png)'
 - en: '| [`RNNTBundle`](generated/torchaudio.pipelines.RNNTBundle.html#torchaudio.pipelines.RNNTBundle
     "torchaudio.pipelines.RNNTBundle") | Dataclass that bundles components for performing
     automatic speech recognition (ASR, speech-to-text) inference with an RNN-T model.
     |'
+  id: totrans-14
   prefs: []
   type: TYPE_TB
+  zh: '| [`RNNTBundle`](generated/torchaudio.pipelines.RNNTBundle.html#torchaudio.pipelines.RNNTBundle
+    "torchaudio.pipelines.RNNTBundle") | 用于执行自动语音识别（ASR，语音转文本）推理的RNN-T模型的组件捆绑数据类。
+    |'
 - en: '| [`RNNTBundle.FeatureExtractor`](generated/torchaudio.pipelines.RNNTBundle.FeatureExtractor.html#torchaudio.pipelines.RNNTBundle.FeatureExtractor
     "torchaudio.pipelines.RNNTBundle.FeatureExtractor") | Interface of the feature
     extraction part of RNN-T pipeline |'
+  id: totrans-15
   prefs: []
   type: TYPE_TB
+  zh: '| [`RNNTBundle.FeatureExtractor`](generated/torchaudio.pipelines.RNNTBundle.FeatureExtractor.html#torchaudio.pipelines.RNNTBundle.FeatureExtractor
+    "torchaudio.pipelines.RNNTBundle.FeatureExtractor") | RNN-T流水线中特征提取部分的接口 |'
 - en: '| [`RNNTBundle.TokenProcessor`](generated/torchaudio.pipelines.RNNTBundle.TokenProcessor.html#torchaudio.pipelines.RNNTBundle.TokenProcessor
     "torchaudio.pipelines.RNNTBundle.TokenProcessor") | Interface of the token processor
     part of RNN-T pipeline |'
+  id: totrans-16
   prefs: []
   type: TYPE_TB
+  zh: '| [`RNNTBundle.TokenProcessor`](generated/torchaudio.pipelines.RNNTBundle.TokenProcessor.html#torchaudio.pipelines.RNNTBundle.TokenProcessor
+    "torchaudio.pipelines.RNNTBundle.TokenProcessor") | RNN-T流水线中标记处理器部分的接口 |'
 - en: Tutorials using `RNNTBundle`
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用`RNNTBundle`的教程
 - en: '![Online ASR with Emformer RNN-T](../Images/200081d049505bef5c1ce8e3c321134d.png)'
+  id: totrans-18
   prefs: []
   type: TYPE_IMG
+  zh: '![在线 ASR 与 Emformer RNN-T](../Images/200081d049505bef5c1ce8e3c321134d.png)'
 - en: '[Online ASR with Emformer RNN-T](tutorials/online_asr_tutorial.html#sphx-glr-tutorials-online-asr-tutorial-py)'
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: '[在线 ASR 与 Emformer RNN-T](tutorials/online_asr_tutorial.html#sphx-glr-tutorials-online-asr-tutorial-py)'
 - en: Online ASR with Emformer RNN-T![Device ASR with Emformer RNN-T](../Images/62ca7f96e6d3a3011aa85c2a9228f03f.png)
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 在线 ASR 与 Emformer RNN-T![设备 ASR 与 Emformer RNN-T](../Images/62ca7f96e6d3a3011aa85c2a9228f03f.png)
 - en: '[Device ASR with Emformer RNN-T](tutorials/device_asr.html#sphx-glr-tutorials-device-asr-py)'
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: '[设备 ASR 与 Emformer RNN-T](tutorials/device_asr.html#sphx-glr-tutorials-device-asr-py)'
 - en: Device ASR with Emformer RNN-T
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 设备 ASR 与 Emformer RNN-T
 - en: Pretrained Models[](#pretrained-models "Permalink to this heading")
+  id: totrans-23
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 预训练模型[](#pretrained-models "跳转到此标题")
 - en: '| [`EMFORMER_RNNT_BASE_LIBRISPEECH`](generated/torchaudio.pipelines.EMFORMER_RNNT_BASE_LIBRISPEECH.html#torchaudio.pipelines.EMFORMER_RNNT_BASE_LIBRISPEECH
     "torchaudio.pipelines.EMFORMER_RNNT_BASE_LIBRISPEECH") | ASR pipeline based on
     Emformer-RNNT, pretrained on *LibriSpeech* dataset [[Panayotov *et al.*, 2015](references.html#id13
@@ -113,34 +172,56 @@
     on Acoustics, Speech and Signal Processing (ICASSP), volume, 5206-5210\. 2015\.
     doi:10.1109/ICASSP.2015.7178964.")], capable of performing both streaming and
     non-streaming inference. |'
+  id: totrans-24
   prefs: []
   type: TYPE_TB
+  zh: '| [`EMFORMER_RNNT_BASE_LIBRISPEECH`](generated/torchaudio.pipelines.EMFORMER_RNNT_BASE_LIBRISPEECH.html#torchaudio.pipelines.EMFORMER_RNNT_BASE_LIBRISPEECH
+    "torchaudio.pipelines.EMFORMER_RNNT_BASE_LIBRISPEECH") | 基于 Emformer-RNNT 的 ASR
+    流水线，在 *LibriSpeech* 数据集上进行预训练[[Panayotov *et al.*, 2015](references.html#id13
+    "Vassil Panayotov, Guoguo Chen, Daniel Povey, and Sanjeev Khudanpur. Librispeech:
+    an asr corpus based on public domain audio books. In 2015 IEEE International Conference
+    on Acoustics, Speech and Signal Processing (ICASSP), volume, 5206-5210\. 2015\.
+    doi:10.1109/ICASSP.2015.7178964.")], 能够执行流式和非流式推理。 |'
 - en: wav2vec 2.0 / HuBERT / WavLM - SSL[](#wav2vec-2-0-hubert-wavlm-ssl "Permalink
     to this heading")
+  id: totrans-25
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: wav2vec 2.0 / HuBERT / WavLM - SSL[](#wav2vec-2-0-hubert-wavlm-ssl "跳转到此标题")
 - en: Interface[](#id2 "Permalink to this heading")
+  id: totrans-26
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 界面[](#id2 "跳转到此标题")
 - en: '`Wav2Vec2Bundle` instantiates models that generate acoustic features that can
     be used for downstream inference and fine-tuning.'
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: '`Wav2Vec2Bundle` 实例化生成声学特征的模型，可用于下游推理和微调。'
 - en: '![https://download.pytorch.org/torchaudio/doc-assets/pipelines-wav2vec2bundle.png](../Images/7a92fa41c1718aa05693226b9462514d.png)'
+  id: totrans-28
   prefs: []
   type: TYPE_IMG
+  zh: '![https://download.pytorch.org/torchaudio/doc-assets/pipelines-wav2vec2bundle.png](../Images/7a92fa41c1718aa05693226b9462514d.png)'
 - en: '| [`Wav2Vec2Bundle`](generated/torchaudio.pipelines.Wav2Vec2Bundle.html#torchaudio.pipelines.Wav2Vec2Bundle
     "torchaudio.pipelines.Wav2Vec2Bundle") | Data class that bundles associated information
     to use pretrained [`Wav2Vec2Model`](generated/torchaudio.models.Wav2Vec2Model.html#torchaudio.models.Wav2Vec2Model
     "torchaudio.models.Wav2Vec2Model"). |'
+  id: totrans-29
   prefs: []
   type: TYPE_TB
+  zh: '| [`Wav2Vec2Bundle`](generated/torchaudio.pipelines.Wav2Vec2Bundle.html#torchaudio.pipelines.Wav2Vec2Bundle
+    "torchaudio.pipelines.Wav2Vec2Bundle") | 数据类，捆绑相关信息以使用预训练的 [`Wav2Vec2Model`](generated/torchaudio.models.Wav2Vec2Model.html#torchaudio.models.Wav2Vec2Model
+    "torchaudio.models.Wav2Vec2Model")。 |'
 - en: Pretrained Models[](#id3 "Permalink to this heading")
+  id: totrans-30
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 预训练模型[](#id3 "跳转到此标题")
 - en: '| [`WAV2VEC2_BASE`](generated/torchaudio.pipelines.WAV2VEC2_BASE.html#torchaudio.pipelines.WAV2VEC2_BASE
     "torchaudio.pipelines.WAV2VEC2_BASE") | Wav2vec 2.0 model ("base" architecture),
     pre-trained on 960 hours of unlabeled audio from *LibriSpeech* dataset [[Panayotov
@@ -150,8 +231,17 @@
     (ICASSP), volume, 5206-5210\. 2015\. doi:10.1109/ICASSP.2015.7178964.")] (the
     combination of "train-clean-100", "train-clean-360", and "train-other-500"), not
     fine-tuned. |'
+  id: totrans-31
   prefs: []
   type: TYPE_TB
+  zh: '| [`WAV2VEC2_BASE`](generated/torchaudio.pipelines.WAV2VEC2_BASE.html#torchaudio.pipelines.WAV2VEC2_BASE
+    "torchaudio.pipelines.WAV2VEC2_BASE") | Wav2vec 2.0 模型（“基础”架构），在 *LibriSpeech*
+    数据集的 960 小时未标记音频上进行预训练[[Panayotov *et al.*, 2015](references.html#id13 "Vassil
+    Panayotov, Guoguo Chen, Daniel Povey, and Sanjeev Khudanpur. Librispeech: an asr
+    corpus based on public domain audio books. In 2015 IEEE International Conference
+    on Acoustics, Speech and Signal Processing (ICASSP), volume, 5206-5210\. 2015\.
+    doi:10.1109/ICASSP.2015.7178964.")]（"train-clean-100"、"train-clean-360" 和 "train-other-500"
+    的组合），未进行微调。 |'
 - en: '| [`WAV2VEC2_LARGE`](generated/torchaudio.pipelines.WAV2VEC2_LARGE.html#torchaudio.pipelines.WAV2VEC2_LARGE
     "torchaudio.pipelines.WAV2VEC2_LARGE") | Wav2vec 2.0 model ("large" architecture),
     pre-trained on 960 hours of unlabeled audio from *LibriSpeech* dataset [[Panayotov
@@ -161,8 +251,17 @@
     (ICASSP), volume, 5206-5210\. 2015\. doi:10.1109/ICASSP.2015.7178964.")] (the
     combination of "train-clean-100", "train-clean-360", and "train-other-500"), not
     fine-tuned. |'
+  id: totrans-32
   prefs: []
   type: TYPE_TB
+  zh: '| [`WAV2VEC2_LARGE`](generated/torchaudio.pipelines.WAV2VEC2_LARGE.html#torchaudio.pipelines.WAV2VEC2_LARGE
+    "torchaudio.pipelines.WAV2VEC2_LARGE") | Wav2vec 2.0 模型（“大”架构），在 *LibriSpeech*
+    数据集的 960 小时未标记音频上进行预训练[[Panayotov *et al.*, 2015](references.html#id13 "Vassil
+    Panayotov, Guoguo Chen, Daniel Povey, and Sanjeev Khudanpur. Librispeech: an asr
+    corpus based on public domain audio books. In 2015 IEEE International Conference
+    on Acoustics, Speech and Signal Processing (ICASSP), volume, 5206-5210\. 2015\.
+    doi:10.1109/ICASSP.2015.7178964.")]（"train-clean-100"、"train-clean-360" 和 "train-other-500"
+    的组合），未进行微调。 |'
 - en: '| [`WAV2VEC2_LARGE_LV60K`](generated/torchaudio.pipelines.WAV2VEC2_LARGE_LV60K.html#torchaudio.pipelines.WAV2VEC2_LARGE_LV60K
     "torchaudio.pipelines.WAV2VEC2_LARGE_LV60K") | Wav2vec 2.0 model ("large-lv60k"
     architecture), pre-trained on 60,000 hours of unlabeled audio from *Libri-Light*
@@ -173,8 +272,12 @@
     - 2020 IEEE International Conference on Acoustics, Speech and Signal Processing
     (ICASSP), 7669-7673\. 2020\. \url https://github.com/facebookresearch/libri-light.")],
     not fine-tuned. |'
+  id: totrans-33
   prefs: []
   type: TYPE_TB
+  zh: '| [`WAV2VEC2_LARGE_LV60K`](generated/torchaudio.pipelines.WAV2VEC2_LARGE_LV60K.html#torchaudio.pipelines.WAV2VEC2_LARGE_LV60K
+    "torchaudio.pipelines.WAV2VEC2_LARGE_LV60K") | Wav2vec 2.0 模型（“large-lv60k”架构），在
+    *Libri-Light* 数据集的 60,000 小时未标记音频上进行预训练，未进行微调。 |'
 - en: '| [`WAV2VEC2_XLSR53`](generated/torchaudio.pipelines.WAV2VEC2_XLSR53.html#torchaudio.pipelines.WAV2VEC2_XLSR53
     "torchaudio.pipelines.WAV2VEC2_XLSR53") | Wav2vec 2.0 model ("base" architecture),
     pre-trained on 56,000 hours of unlabeled audio from multiple datasets ( *Multilingual
@@ -189,8 +292,12 @@
     Kate Knill, Anton Ragni, and Shakti Prasad Rath. Speech recognition and keyword
     spotting for low-resource languages: babel project research at cued. In SLTU.
     2014.")]), not fine-tuned. |'
+  id: totrans-34
   prefs: []
   type: TYPE_TB
+  zh: '| [`WAV2VEC2_XLSR53`](generated/torchaudio.pipelines.WAV2VEC2_XLSR53.html#torchaudio.pipelines.WAV2VEC2_XLSR53
+    "torchaudio.pipelines.WAV2VEC2_XLSR53") | Wav2vec 2.0 模型（“基础”架构），在多个数据集的 56,000
+    小时未标记音频上进行预训练（*多语言 LibriSpeech*，*CommonVoice* 和 *BABEL*），未进行微调。 |'
 - en: '| [`WAV2VEC2_XLSR_300M`](generated/torchaudio.pipelines.WAV2VEC2_XLSR_300M.html#torchaudio.pipelines.WAV2VEC2_XLSR_300M
     "torchaudio.pipelines.WAV2VEC2_XLSR_300M") | XLS-R model with 300 million parameters,
     pre-trained on 436,000 hours of unlabeled audio from multiple datasets ( *Multilingual
@@ -213,8 +320,13 @@
     corpus for representation learning, semi-supervised learning and interpretation.
     CoRR, 2021\. URL: https://arxiv.org/abs/2101.00390, arXiv:2101.00390.")]) in 128
     languages, not fine-tuned. |'
+  id: totrans-35
   prefs: []
   type: TYPE_TB
+  zh: '| [`WAV2VEC2_XLSR_300M`](generated/torchaudio.pipelines.WAV2VEC2_XLSR_300M.html#torchaudio.pipelines.WAV2VEC2_XLSR_300M
+    "torchaudio.pipelines.WAV2VEC2_XLSR_300M") | XLS-R 模型，具有 3 亿个参数，在多个数据集的 436,000
+    小时未标记音频上进行预训练（*多语言 LibriSpeech*，*CommonVoice*，*VoxLingua107*，*BABEL* 和 *VoxPopuli*）涵盖
+    128 种语言，未进行微调。 |'
 - en: '| [`WAV2VEC2_XLSR_1B`](generated/torchaudio.pipelines.WAV2VEC2_XLSR_1B.html#torchaudio.pipelines.WAV2VEC2_XLSR_1B
     "torchaudio.pipelines.WAV2VEC2_XLSR_1B") | XLS-R model with 1 billion parameters,
     pre-trained on 436,000 hours of unlabeled audio from multiple datasets ( *Multilingual
@@ -237,8 +349,13 @@
     corpus for representation learning, semi-supervised learning and interpretation.
     CoRR, 2021\. URL: https://arxiv.org/abs/2101.00390, arXiv:2101.00390.")]) in 128
     languages, not fine-tuned. |'
+  id: totrans-36
   prefs: []
   type: TYPE_TB
+  zh: '| [`WAV2VEC2_XLSR_1B`](generated/torchaudio.pipelines.WAV2VEC2_XLSR_1B.html#torchaudio.pipelines.WAV2VEC2_XLSR_1B
+    "torchaudio.pipelines.WAV2VEC2_XLSR_1B") | XLS-R 模型，具有 10 亿个参数，在多个数据集的 436,000
+    小时未标记音频上进行了预训练（*多语言 LibriSpeech*，*CommonVoice*，*VoxLingua107*，*BABEL* 和 *VoxPopuli*）共
+    128 种语言，未进行微调。|'
 - en: '| [`WAV2VEC2_XLSR_2B`](generated/torchaudio.pipelines.WAV2VEC2_XLSR_2B.html#torchaudio.pipelines.WAV2VEC2_XLSR_2B
     "torchaudio.pipelines.WAV2VEC2_XLSR_2B") | XLS-R model with 2 billion parameters,
     pre-trained on 436,000 hours of unlabeled audio from multiple datasets ( *Multilingual
@@ -261,8 +378,13 @@
     corpus for representation learning, semi-supervised learning and interpretation.
     CoRR, 2021\. URL: https://arxiv.org/abs/2101.00390, arXiv:2101.00390.")]) in 128
     languages, not fine-tuned. |'
+  id: totrans-37
   prefs: []
   type: TYPE_TB
+  zh: '| [`WAV2VEC2_XLSR_2B`](generated/torchaudio.pipelines.WAV2VEC2_XLSR_2B.html#torchaudio.pipelines.WAV2VEC2_XLSR_2B
+    "torchaudio.pipelines.WAV2VEC2_XLSR_2B") | XLS-R 模型，具有 20 亿个参数，在多个数据集的 436,000
+    小时未标记音频上进行了预训练（*多语言 LibriSpeech*，*CommonVoice*，*VoxLingua107*，*BABEL* 和 *VoxPopuli*）共
+    128 种语言，未进行微调。|'
 - en: '| [`HUBERT_BASE`](generated/torchaudio.pipelines.HUBERT_BASE.html#torchaudio.pipelines.HUBERT_BASE
     "torchaudio.pipelines.HUBERT_BASE") | HuBERT model ("base" architecture), pre-trained
     on 960 hours of unlabeled audio from *LibriSpeech* dataset [[Panayotov *et al.*,
@@ -272,8 +394,15 @@
     volume, 5206-5210\. 2015\. doi:10.1109/ICASSP.2015.7178964.")] (the combination
     of "train-clean-100", "train-clean-360", and "train-other-500"), not fine-tuned.
     |'
+  id: totrans-38
   prefs: []
   type: TYPE_TB
+  zh: '| [`HUBERT_BASE`](generated/torchaudio.pipelines.HUBERT_BASE.html#torchaudio.pipelines.HUBERT_BASE
+    "torchaudio.pipelines.HUBERT_BASE") | HuBERT模型（“基础”架构），在*LibriSpeech*数据集的960小时未标记音频上进行预训练[[Panayotov等人，2015年](references.html#id13
+    "Vassil Panayotov, Guoguo Chen, Daniel Povey, and Sanjeev Khudanpur. Librispeech:
+    an asr corpus based on public domain audio books. In 2015 IEEE International Conference
+    on Acoustics, Speech and Signal Processing (ICASSP), volume, 5206-5210. 2015.
+    doi:10.1109/ICASSP.2015.7178964.")]（包括“train-clean-100”，“train-clean-360”和“train-other-500”），未进行微调。|'
 - en: '| [`HUBERT_LARGE`](generated/torchaudio.pipelines.HUBERT_LARGE.html#torchaudio.pipelines.HUBERT_LARGE
     "torchaudio.pipelines.HUBERT_LARGE") | HuBERT model ("large" architecture), pre-trained
     on 60,000 hours of unlabeled audio from *Libri-Light* dataset [[Kahn *et al.*,
@@ -283,8 +412,16 @@
     asr with limited or no supervision. In ICASSP 2020 - 2020 IEEE International Conference
     on Acoustics, Speech and Signal Processing (ICASSP), 7669-7673\. 2020\. \url https://github.com/facebookresearch/libri-light.")],
     not fine-tuned. |'
+  id: totrans-39
   prefs: []
   type: TYPE_TB
+  zh: '| [`HUBERT_LARGE`](generated/torchaudio.pipelines.HUBERT_LARGE.html#torchaudio.pipelines.HUBERT_LARGE
+    "torchaudio.pipelines.HUBERT_LARGE") | HuBERT模型（“大”架构），在*Libri-Light*数据集的60,000小时未标记音频上进行预训练[[Kahn等人，2020年](references.html#id12
+    "J. Kahn, M. Rivière, W. Zheng, E. Kharitonov, Q. Xu, P. E. Mazaré, J. Karadayi,
+    V. Liptchinsky, R. Collobert, C. Fuegen, T. Likhomanenko, G. Synnaeve, A. Joulin,
+    A. Mohamed, and E. Dupoux. Libri-light: a benchmark for asr with limited or no
+    supervision. In ICASSP 2020 - 2020 IEEE International Conference on Acoustics,
+    Speech and Signal Processing (ICASSP), 7669-7673. 2020. \url https://github.com/facebookresearch/libri-light.")]，未进行微调。|'
 - en: '| [`HUBERT_XLARGE`](generated/torchaudio.pipelines.HUBERT_XLARGE.html#torchaudio.pipelines.HUBERT_XLARGE
     "torchaudio.pipelines.HUBERT_XLARGE") | HuBERT model ("extra large" architecture),
     pre-trained on 60,000 hours of unlabeled audio from *Libri-Light* dataset [[Kahn
@@ -295,8 +432,16 @@
     International Conference on Acoustics, Speech and Signal Processing (ICASSP),
     7669-7673\. 2020\. \url https://github.com/facebookresearch/libri-light.")], not
     fine-tuned. |'
+  id: totrans-40
   prefs: []
   type: TYPE_TB
+  zh: '| [`HUBERT_XLARGE`](generated/torchaudio.pipelines.HUBERT_XLARGE.html#torchaudio.pipelines.HUBERT_XLARGE
+    "torchaudio.pipelines.HUBERT_XLARGE") | HuBERT模型（“超大”架构），在*Libri-Light*数据集的60,000小时未标记音频上进行预训练[[Kahn等人，2020年](references.html#id12
+    "J. Kahn, M. Rivière, W. Zheng, E. Kharitonov, Q. Xu, P. E. Mazaré, J. Karadayi,
+    V. Liptchinsky, R. Collobert, C. Fuegen, T. Likhomanenko, G. Synnaeve, A. Joulin,
+    A. Mohamed, and E. Dupoux. Libri-light: a benchmark for asr with limited or no
+    supervision. In ICASSP 2020 - 2020 IEEE International Conference on Acoustics,
+    Speech and Signal Processing (ICASSP), 7669-7673. 2020. \url https://github.com/facebookresearch/libri-light.")]，未进行微调。|'
 - en: '| [`WAVLM_BASE`](generated/torchaudio.pipelines.WAVLM_BASE.html#torchaudio.pipelines.WAVLM_BASE
     "torchaudio.pipelines.WAVLM_BASE") | WavLM Base model ("base" architecture), pre-trained
     on 960 hours of unlabeled audio from *LibriSpeech* dataset [[Panayotov *et al.*,
@@ -305,8 +450,15 @@
     IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP),
     volume, 5206-5210\. 2015\. doi:10.1109/ICASSP.2015.7178964.")], not fine-tuned.
     |'
+  id: totrans-41
   prefs: []
   type: TYPE_TB
+  zh: '| [`WAVLM_BASE`](generated/torchaudio.pipelines.WAVLM_BASE.html#torchaudio.pipelines.WAVLM_BASE
+    "torchaudio.pipelines.WAVLM_BASE") | WavLM基础模型（“基础”架构），在*LibriSpeech*数据集的960小时未标记音频上进行预训练[[Panayotov等人，2015年](references.html#id13
+    "Vassil Panayotov, Guoguo Chen, Daniel Povey, and Sanjeev Khudanpur. Librispeech:
+    an asr corpus based on public domain audio books. In 2015 IEEE International Conference
+    on Acoustics, Speech and Signal Processing (ICASSP), volume, 5206-5210. 2015.
+    doi:10.1109/ICASSP.2015.7178964.")]，未进行微调。|'
 - en: '| [`WAVLM_BASE_PLUS`](generated/torchaudio.pipelines.WAVLM_BASE_PLUS.html#torchaudio.pipelines.WAVLM_BASE_PLUS
     "torchaudio.pipelines.WAVLM_BASE_PLUS") | WavLM Base+ model ("base" architecture),
     pre-trained on 60,000 hours of Libri-Light dataset [[Kahn *et al.*, 2020](references.html#id12
@@ -327,8 +479,28 @@
     corpus for representation learning, semi-supervised learning and interpretation.
     CoRR, 2021\. URL: https://arxiv.org/abs/2101.00390, arXiv:2101.00390.")], not
     fine-tuned. |'
+  id: totrans-42
   prefs: []
   type: TYPE_TB
+  zh: '| [`WAVLM_BASE_PLUS`](generated/torchaudio.pipelines.WAVLM_BASE_PLUS.html#torchaudio.pipelines.WAVLM_BASE_PLUS
+    "torchaudio.pipelines.WAVLM_BASE_PLUS") | WavLM 基础+ 模型（"base" 架构），在 60,000 小时的
+    Libri-Light 数据集上进行了预训练[[Kahn *et al.*, 2020](references.html#id12 "J. Kahn, M.
+    Rivière, W. Zheng, E. Kharitonov, Q. Xu, P. E. Mazaré, J. Karadayi, V. Liptchinsky,
+    R. Collobert, C. Fuegen, T. Likhomanenko, G. Synnaeve, A. Joulin, A. Mohamed,
+    and E. Dupoux. Libri-light: a benchmark for asr with limited or no supervision.
+    In ICASSP 2020 - 2020 IEEE International Conference on Acoustics, Speech and Signal
+    Processing (ICASSP), 7669-7673\. 2020\. \url https://github.com/facebookresearch/libri-light.")]，10,000
+    小时的 GigaSpeech[[Chen *et al.*, 2021](references.html#id56 "Guoguo Chen, Shuzhou
+    Chai, Guanbo Wang, Jiayu Du, Wei-Qiang Zhang, Chao Weng, Dan Su, Daniel Povey,
+    Jan Trmal, Junbo Zhang, Mingjie Jin, Sanjeev Khudanpur, Shinji Watanabe, Shuaijiang
+    Zhao, Wei Zou, Xiangang Li, Xuchen Yao, Yongqing Wang, Yujun Wang, Zhao You, and
+    Zhiyong Yan. Gigaspeech: an evolving, multi-domain asr corpus with 10,000 hours
+    of transcribed audio. In Proc. Interspeech 2021\. 2021.")]，以及 24,000 小时的 *VoxPopuli*[[Wang
+    *et al.*, 2021](references.html#id5 "Changhan Wang, Morgane Rivière, Ann Lee,
+    Anne Wu, Chaitanya Talnikar, Daniel Haziza, Mary Williamson, Juan Miguel Pino,
+    and Emmanuel Dupoux. Voxpopuli: A large-scale multilingual speech corpus for representation
+    learning, semi-supervised learning and interpretation. CoRR, 2021\. URL: https://arxiv.org/abs/2101.00390,
+    arXiv:2101.00390.")]，未进行微调。|'
 - en: '| [`WAVLM_LARGE`](generated/torchaudio.pipelines.WAVLM_LARGE.html#torchaudio.pipelines.WAVLM_LARGE
     "torchaudio.pipelines.WAVLM_LARGE") | WavLM Large model ("large" architecture),
     pre-trained on 60,000 hours of Libri-Light dataset [[Kahn *et al.*, 2020](references.html#id12
@@ -349,58 +521,109 @@
     corpus for representation learning, semi-supervised learning and interpretation.
     CoRR, 2021\. URL: https://arxiv.org/abs/2101.00390, arXiv:2101.00390.")], not
     fine-tuned. |'
+  id: totrans-43
   prefs: []
   type: TYPE_TB
-- en: wav2vec 2.0 / HuBERT - Fine-tuned ASR[](#wav2vec-2-0-hubert-fine-tuned-asr
-    "Permalink to this heading")
+  zh: '[`WAVLM_LARGE`](generated/torchaudio.pipelines.WAVLM_LARGE.html#torchaudio.pipelines.WAVLM_LARGE
+    "torchaudio.pipelines.WAVLM_LARGE") | WavLM 大型模型（"large" 架构），在 60,000 小时的 Libri-Light
+    数据集上进行了预训练[[Kahn *et al.*, 2020](references.html#id12 "J. Kahn, M. Rivière, W.
+    Zheng, E. Kharitonov, Q. Xu, P. E. Mazaré, J. Karadayi, V. Liptchinsky, R. Collobert,
+    C. Fuegen, T. Likhomanenko, G. Synnaeve, A. Joulin, A. Mohamed, and E. Dupoux.
+    Libri-light: a benchmark for asr with limited or no supervision. In ICASSP 2020
+    - 2020 IEEE International Conference on Acoustics, Speech and Signal Processing
+    (ICASSP), 7669-7673\. 2020\. \url https://github.com/facebookresearch/libri-light.")]，10,000
+    小时的 GigaSpeech[[Chen *et al.*, 2021](references.html#id56 "Guoguo Chen, Shuzhou
+    Chai, Guanbo Wang, Jiayu Du, Wei-Qiang Zhang, Chao Weng, Dan Su, Daniel Povey,
+    Jan Trmal, Junbo Zhang, Mingjie Jin, Sanjeev Khudanpur, Shinji Watanabe, Shuaijiang
+    Zhao, Wei Zou, Xiangang Li, Xuchen Yao, Yongqing Wang, Yujun Wang, Zhao You, and
+    Zhiyong Yan. Gigaspeech: an evolving, multi-domain asr corpus with 10,000 hours
+    of transcribed audio. In Proc. Interspeech 2021\. 2021.")]，以及 24,000 小时的 *VoxPopuli*[[Wang
+    *et al.*, 2021](references.html#id5 "Changhan Wang, Morgane Rivière, Ann Lee,
+    Anne Wu, Chaitanya Talnikar, Daniel Haziza, Mary Williamson, Juan Miguel Pino,
+    and Emmanuel Dupoux. Voxpopuli: A large-scale multilingual speech corpus for representation
+    learning, semi-supervised learning and interpretation. CoRR, 2021\. URL: https://arxiv.org/abs/2101.00390,
+    arXiv:2101.00390.")]，未进行微调。|'
+- en: wav2vec 2.0 / HuBERT - Fine-tuned ASR[](#wav2vec-2-0-hubert-fine-tuned-asr "Permalink
+    to this heading")
+  id: totrans-44
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: wav2vec 2.0 / HuBERT - 微调 ASR[](#wav2vec-2-0-hubert-fine-tuned-asr "Permalink
+    to this heading")
 - en: Interface[](#id35 "Permalink to this heading")
+  id: totrans-45
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: Interface[](#id35 "Permalink to this heading")
 - en: '`Wav2Vec2ASRBundle` instantiates models that generate probability distribution
     over pre-defined labels, that can be used for ASR.'
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: '`Wav2Vec2ASRBundle` 实例化了生成预定义标签上的概率分布的模型，可用于 ASR。'
 - en: '![https://download.pytorch.org/torchaudio/doc-assets/pipelines-wav2vec2asrbundle.png](../Images/5f9b45dac675bb2cb840209162a85158.png)'
+  id: totrans-47
   prefs: []
   type: TYPE_IMG
+  zh: '![https://download.pytorch.org/torchaudio/doc-assets/pipelines-wav2vec2asrbundle.png](../Images/5f9b45dac675bb2cb840209162a85158.png)'
 - en: '| [`Wav2Vec2ASRBundle`](generated/torchaudio.pipelines.Wav2Vec2ASRBundle.html#torchaudio.pipelines.Wav2Vec2ASRBundle
     "torchaudio.pipelines.Wav2Vec2ASRBundle") | Data class that bundles associated
     information to use pretrained [`Wav2Vec2Model`](generated/torchaudio.models.Wav2Vec2Model.html#torchaudio.models.Wav2Vec2Model
     "torchaudio.models.Wav2Vec2Model"). |'
+  id: totrans-48
   prefs: []
   type: TYPE_TB
+  zh: '| [`Wav2Vec2ASRBundle`](generated/torchaudio.pipelines.Wav2Vec2ASRBundle.html#torchaudio.pipelines.Wav2Vec2ASRBundle
+    "torchaudio.pipelines.Wav2Vec2ASRBundle") | 数据类，捆绑了与预训练的 [`Wav2Vec2Model`](generated/torchaudio.models.Wav2Vec2Model.html#torchaudio.models.Wav2Vec2Model
+    "torchaudio.models.Wav2Vec2Model") 相关的信息。 |'
 - en: Tutorials using `Wav2Vec2ASRBundle`
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用 `Wav2Vec2ASRBundle` 的教程
 - en: '![Speech Recognition with Wav2Vec2](../Images/a6aefab61852740b8a11d3cfd1ac6866.png)'
+  id: totrans-50
   prefs: []
   type: TYPE_IMG
+  zh: '![使用 Wav2Vec2 进行语音识别](../Images/a6aefab61852740b8a11d3cfd1ac6866.png)'
 - en: '[Speech Recognition with Wav2Vec2](tutorials/speech_recognition_pipeline_tutorial.html#sphx-glr-tutorials-speech-recognition-pipeline-tutorial-py)'
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
+  zh: '[使用 Wav2Vec2 进行语音识别](tutorials/speech_recognition_pipeline_tutorial.html#sphx-glr-tutorials-speech-recognition-pipeline-tutorial-py)'
 - en: Speech Recognition with Wav2Vec2![ASR Inference with CTC Decoder](../Images/260e63239576cae8ee00cfcba8e4889e.png)
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用 Wav2Vec2 进行语音识别![CTC 解码器进行 ASR 推断](../Images/260e63239576cae8ee00cfcba8e4889e.png)
 - en: '[ASR Inference with CTC Decoder](tutorials/asr_inference_with_ctc_decoder_tutorial.html#sphx-glr-tutorials-asr-inference-with-ctc-decoder-tutorial-py)'
+  id: totrans-53
   prefs: []
   type: TYPE_NORMAL
+  zh: '[CTC 解码器进行 ASR 推断](tutorials/asr_inference_with_ctc_decoder_tutorial.html#sphx-glr-tutorials-asr-inference-with-ctc-decoder-tutorial-py)'
 - en: ASR Inference with CTC Decoder![Forced Alignment with Wav2Vec2](../Images/6658c9fe256ea584e84432cc92cd4db9.png)
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: CTC 解码器进行 ASR 推断![使用 Wav2Vec2 进行强制对齐](../Images/6658c9fe256ea584e84432cc92cd4db9.png)
 - en: '[Forced Alignment with Wav2Vec2](tutorials/forced_alignment_tutorial.html#sphx-glr-tutorials-forced-alignment-tutorial-py)'
+  id: totrans-55
   prefs: []
   type: TYPE_NORMAL
+  zh: '[使用 Wav2Vec2 进行强制对齐](tutorials/forced_alignment_tutorial.html#sphx-glr-tutorials-forced-alignment-tutorial-py)'
 - en: Forced Alignment with Wav2Vec2
+  id: totrans-56
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用 Wav2Vec2 进行强制对齐
 - en: Pretrained Models[](#id36 "Permalink to this heading")
+  id: totrans-57
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 预训练模型[](#id36 "跳转到此标题的永久链接")
 - en: '| [`WAV2VEC2_ASR_BASE_10M`](generated/torchaudio.pipelines.WAV2VEC2_ASR_BASE_10M.html#torchaudio.pipelines.WAV2VEC2_ASR_BASE_10M
     "torchaudio.pipelines.WAV2VEC2_ASR_BASE_10M") | Wav2vec 2.0 model ("base" architecture
     with an extra linear module), pre-trained on 960 hours of unlabeled audio from
@@ -417,8 +640,23 @@
     In ICASSP 2020 - 2020 IEEE International Conference on Acoustics, Speech and Signal
     Processing (ICASSP), 7669-7673\. 2020\. \url https://github.com/facebookresearch/libri-light.")]
     ("train-10min" subset). |'
+  id: totrans-58
   prefs: []
   type: TYPE_TB
+  zh: '| [`WAV2VEC2_ASR_BASE_10M`](generated/torchaudio.pipelines.WAV2VEC2_ASR_BASE_10M.html#torchaudio.pipelines.WAV2VEC2_ASR_BASE_10M
+    "torchaudio.pipelines.WAV2VEC2_ASR_BASE_10M") | Wav2vec 2.0 模型（带有额外线性模块的“基础”架构），在
+    *LibriSpeech* 数据集的 960 小时未标记音频上进行预训练[[Panayotov *et al.*, 2015](references.html#id13
+    "Vassil Panayotov, Guoguo Chen, Daniel Povey, and Sanjeev Khudanpur. Librispeech:
+    an asr corpus based on public domain audio books. In 2015 IEEE International Conference
+    on Acoustics, Speech and Signal Processing (ICASSP), volume, 5206-5210\. 2015\.
+    doi:10.1109/ICASSP.2015.7178964.")]（由 "train-clean-100"、"train-clean-360" 和 "train-other-500"
+    组成），并在 *Libri-Light* 数据集的 10 分钟转录音频上进行了 ASR 微调[[Kahn *et al.*, 2020](references.html#id12
+    "J. Kahn, M. Rivière, W. Zheng, E. Kharitonov, Q. Xu, P. E. Mazaré, J. Karadayi,
+    V. Liptchinsky, R. Collobert, C. Fuegen, T. Likhomanenko, G. Synnaeve, A. Joulin,
+    A. Mohamed, and E. Dupoux. Libri-light: a benchmark for asr with limited or no
+    supervision. In ICASSP 2020 - 2020 IEEE International Conference on Acoustics,
+    Speech and Signal Processing (ICASSP), 7669-7673\. 2020\. \url https://github.com/facebookresearch/libri-light.")]（"train-10min"
+    子集）。 |'
 - en: '| [`WAV2VEC2_ASR_BASE_100H`](generated/torchaudio.pipelines.WAV2VEC2_ASR_BASE_100H.html#torchaudio.pipelines.WAV2VEC2_ASR_BASE_100H
     "torchaudio.pipelines.WAV2VEC2_ASR_BASE_100H") | Wav2vec 2.0 model ("base" architecture
     with an extra linear module), pre-trained on 960 hours of unlabeled audio from
@@ -429,8 +667,17 @@
     doi:10.1109/ICASSP.2015.7178964.")] (the combination of "train-clean-100", "train-clean-360",
     and "train-other-500"), and fine-tuned for ASR on 100 hours of transcribed audio
     from "train-clean-100" subset. |'
+  id: totrans-59
   prefs: []
   type: TYPE_TB
+  zh: '| [`WAV2VEC2_ASR_BASE_100H`](generated/torchaudio.pipelines.WAV2VEC2_ASR_BASE_100H.html#torchaudio.pipelines.WAV2VEC2_ASR_BASE_100H
+    "torchaudio.pipelines.WAV2VEC2_ASR_BASE_100H") | Wav2vec 2.0 模型（带有额外线性模块的“基础”架构），在
+    *LibriSpeech* 数据集的 960 小时未标记音频上进行预训练[[Panayotov *et al.*, 2015](references.html#id13
+    "Vassil Panayotov, Guoguo Chen, Daniel Povey, and Sanjeev Khudanpur. Librispeech:
+    an asr corpus based on public domain audio books. In 2015 IEEE International Conference
+    on Acoustics, Speech and Signal Processing (ICASSP), volume, 5206-5210\. 2015\.
+    doi:10.1109/ICASSP.2015.7178964.")]（由 "train-clean-100"、"train-clean-360" 和 "train-other-500"
+    组成），并在 "train-clean-100" 子集的 100 小时转录音频上进行了 ASR 微调。 |'
 - en: '| [`WAV2VEC2_ASR_BASE_960H`](generated/torchaudio.pipelines.WAV2VEC2_ASR_BASE_960H.html#torchaudio.pipelines.WAV2VEC2_ASR_BASE_960H
     "torchaudio.pipelines.WAV2VEC2_ASR_BASE_960H") | Wav2vec 2.0 model ("base" architecture
     with an extra linear module), pre-trained on 960 hours of unlabeled audio from
@@ -441,8 +688,17 @@
     doi:10.1109/ICASSP.2015.7178964.")] (the combination of "train-clean-100", "train-clean-360",
     and "train-other-500"), and fine-tuned for ASR on the same audio with the corresponding
     transcripts. |'
+  id: totrans-60
   prefs: []
   type: TYPE_TB
+  zh: '| [`WAV2VEC2_ASR_BASE_960H`](generated/torchaudio.pipelines.WAV2VEC2_ASR_BASE_960H.html#torchaudio.pipelines.WAV2VEC2_ASR_BASE_960H
+    "torchaudio.pipelines.WAV2VEC2_ASR_BASE_960H") | Wav2vec 2.0 模型（"base" 架构，带有额外的线性模块），在
+    *LibriSpeech* 数据集的 960 小时未标记音频上进行预训练[[Panayotov *et al.*, 2015](references.html#id13
+    "Vassil Panayotov, Guoguo Chen, Daniel Povey, and Sanjeev Khudanpur. Librispeech:
+    an asr corpus based on public domain audio books. In 2015 IEEE International Conference
+    on Acoustics, Speech and Signal Processing (ICASSP), volume, 5206-5210\. 2015\.
+    doi:10.1109/ICASSP.2015.7178964.")]（"train-clean-100"、"train-clean-360" 和 "train-other-500"
+    的组合），并在相同音频上与相应的转录进行了 ASR 微调。 |'
 - en: '| [`WAV2VEC2_ASR_LARGE_10M`](generated/torchaudio.pipelines.WAV2VEC2_ASR_LARGE_10M.html#torchaudio.pipelines.WAV2VEC2_ASR_LARGE_10M
     "torchaudio.pipelines.WAV2VEC2_ASR_LARGE_10M") | Wav2vec 2.0 model ("large" architecture
     with an extra linear module), pre-trained on 960 hours of unlabeled audio from
@@ -459,8 +715,23 @@
     In ICASSP 2020 - 2020 IEEE International Conference on Acoustics, Speech and Signal
     Processing (ICASSP), 7669-7673\. 2020\. \url https://github.com/facebookresearch/libri-light.")]
     ("train-10min" subset). |'
+  id: totrans-61
   prefs: []
   type: TYPE_TB
+  zh: '| [`WAV2VEC2_ASR_LARGE_10M`](generated/torchaudio.pipelines.WAV2VEC2_ASR_LARGE_10M.html#torchaudio.pipelines.WAV2VEC2_ASR_LARGE_10M
+    "torchaudio.pipelines.WAV2VEC2_ASR_LARGE_10M") | Wav2vec 2.0 模型（"large" 架构，带有额外的线性模块），在
+    *LibriSpeech* 数据集的 960 小时未标记音频上进行预训练[[Panayotov *et al.*, 2015](references.html#id13
+    "Vassil Panayotov, Guoguo Chen, Daniel Povey, and Sanjeev Khudanpur. Librispeech:
+    an asr corpus based on public domain audio books. In 2015 IEEE International Conference
+    on Acoustics, Speech and Signal Processing (ICASSP), volume, 5206-5210\. 2015\.
+    doi:10.1109/ICASSP.2015.7178964.")]（"train-clean-100"、"train-clean-360" 和 "train-other-500"
+    的组合），并在 *Libri-Light* 数据集的 10 分钟转录音频上进行了 ASR 微调[[Kahn *et al.*, 2020](references.html#id12
+    "J. Kahn, M. Rivière, W. Zheng, E. Kharitonov, Q. Xu, P. E. Mazaré, J. Karadayi,
+    V. Liptchinsky, R. Collobert, C. Fuegen, T. Likhomanenko, G. Synnaeve, A. Joulin,
+    A. Mohamed, and E. Dupoux. Libri-light: a benchmark for asr with limited or no
+    supervision. In ICASSP 2020 - 2020 IEEE International Conference on Acoustics,
+    Speech and Signal Processing (ICASSP), 7669-7673\. 2020\. \url https://github.com/facebookresearch/libri-light.")]（"train-10min"
+    子集）。 |'
 - en: '| [`WAV2VEC2_ASR_LARGE_100H`](generated/torchaudio.pipelines.WAV2VEC2_ASR_LARGE_100H.html#torchaudio.pipelines.WAV2VEC2_ASR_LARGE_100H
     "torchaudio.pipelines.WAV2VEC2_ASR_LARGE_100H") | Wav2vec 2.0 model ("large" architecture
     with an extra linear module), pre-trained on 960 hours of unlabeled audio from
@@ -471,8 +742,17 @@
     doi:10.1109/ICASSP.2015.7178964.")] (the combination of "train-clean-100", "train-clean-360",
     and "train-other-500"), and fine-tuned for ASR on 100 hours of transcribed audio
     from the same dataset ("train-clean-100" subset). |'
+  id: totrans-62
   prefs: []
   type: TYPE_TB
+  zh: '| [`WAV2VEC2_ASR_LARGE_100H`](generated/torchaudio.pipelines.WAV2VEC2_ASR_LARGE_100H.html#torchaudio.pipelines.WAV2VEC2_ASR_LARGE_100H
+    "torchaudio.pipelines.WAV2VEC2_ASR_LARGE_100H") | Wav2vec 2.0 模型（"large" 架构，带有额外的线性模块），在
+    *LibriSpeech* 数据集的 960 小时未标记音频上进行预训练[[Panayotov *et al.*, 2015](references.html#id13
+    "Vassil Panayotov, Guoguo Chen, Daniel Povey, and Sanjeev Khudanpur. Librispeech:
+    an asr corpus based on public domain audio books. In 2015 IEEE International Conference
+    on Acoustics, Speech and Signal Processing (ICASSP), volume, 5206-5210\. 2015\.
+    doi:10.1109/ICASSP.2015.7178964.")]（"train-clean-100"、"train-clean-360" 和 "train-other-500"
+    的组合），并在相同数据集的 100 小时转录音频上进行了 ASR 微调（"train-clean-100" 子集）。 |'
 - en: '| [`WAV2VEC2_ASR_LARGE_960H`](generated/torchaudio.pipelines.WAV2VEC2_ASR_LARGE_960H.html#torchaudio.pipelines.WAV2VEC2_ASR_LARGE_960H
     "torchaudio.pipelines.WAV2VEC2_ASR_LARGE_960H") | Wav2vec 2.0 model ("large" architecture
     with an extra linear module), pre-trained on 960 hours of unlabeled audio from
@@ -483,8 +763,17 @@
     doi:10.1109/ICASSP.2015.7178964.")] (the combination of "train-clean-100", "train-clean-360",
     and "train-other-500"), and fine-tuned for ASR on the same audio with the corresponding
     transcripts. |'
+  id: totrans-63
   prefs: []
   type: TYPE_TB
+  zh: '| [`WAV2VEC2_ASR_LARGE_960H`](generated/torchaudio.pipelines.WAV2VEC2_ASR_LARGE_960H.html#torchaudio.pipelines.WAV2VEC2_ASR_LARGE_960H
+    "torchaudio.pipelines.WAV2VEC2_ASR_LARGE_960H") | Wav2vec 2.0 模型（"large" 架构，带有额外的线性模块），在
+    *LibriSpeech* 数据集的 960 小时未标记音频上进行预训练[[Panayotov *et al.*, 2015](references.html#id13
+    "Vassil Panayotov, Guoguo Chen, Daniel Povey, and Sanjeev Khudanpur. Librispeech:
+    an asr corpus based on public domain audio books. In 2015 IEEE International Conference
+    on Acoustics, Speech and Signal Processing (ICASSP), volume, 5206-5210\. 2015\.
+    doi:10.1109/ICASSP.2015.7178964.")]（"train-clean-100"、"train-clean-360" 和 "train-other-500"
+    的组合），并在相同音频上与相应的转录进行了 ASR 微调。 |'
 - en: '| [`WAV2VEC2_ASR_LARGE_LV60K_10M`](generated/torchaudio.pipelines.WAV2VEC2_ASR_LARGE_LV60K_10M.html#torchaudio.pipelines.WAV2VEC2_ASR_LARGE_LV60K_10M
     "torchaudio.pipelines.WAV2VEC2_ASR_LARGE_LV60K_10M") | Wav2vec 2.0 model ("large-lv60k"
     architecture with an extra linear module), pre-trained on 60,000 hours of unlabeled
@@ -496,8 +785,18 @@
     Speech and Signal Processing (ICASSP), 7669-7673\. 2020\. \url https://github.com/facebookresearch/libri-light.")],
     and fine-tuned for ASR on 10 minutes of transcribed audio from the same dataset
     ("train-10min" subset). |'
+  id: totrans-64
   prefs: []
   type: TYPE_TB
+  zh: '| [`WAV2VEC2_ASR_LARGE_LV60K_10M`](generated/torchaudio.pipelines.WAV2VEC2_ASR_LARGE_LV60K_10M.html#torchaudio.pipelines.WAV2VEC2_ASR_LARGE_LV60K_10M
+    "torchaudio.pipelines.WAV2VEC2_ASR_LARGE_LV60K_10M") | Wav2vec 2.0 模型（"large-lv60k"
+    架构，带有额外的线性模块），在 *Libri-Light* 数据集的 60,000 小时未标记音频上进行预训练[[Kahn 等人，2020](references.html#id12
+    "J. Kahn, M. Rivière, W. Zheng, E. Kharitonov, Q. Xu, P. E. Mazaré, J. Karadayi,
+    V. Liptchinsky, R. Collobert, C. Fuegen, T. Likhomanenko, G. Synnaeve, A. Joulin,
+    A. Mohamed, and E. Dupoux. Libri-light: a benchmark for asr with limited or no
+    supervision. In ICASSP 2020 - 2020 IEEE International Conference on Acoustics,
+    Speech and Signal Processing (ICASSP), 7669-7673\. 2020\. \url https://github.com/facebookresearch/libri-light.")]，并在相同数据集的经过转录的音频上进行了
+    ASR 的微调（"train-10min" 子集）。 |'
 - en: '| [`WAV2VEC2_ASR_LARGE_LV60K_100H`](generated/torchaudio.pipelines.WAV2VEC2_ASR_LARGE_LV60K_100H.html#torchaudio.pipelines.WAV2VEC2_ASR_LARGE_LV60K_100H
     "torchaudio.pipelines.WAV2VEC2_ASR_LARGE_LV60K_100H") | Wav2vec 2.0 model ("large-lv60k"
     architecture with an extra linear module), pre-trained on 60,000 hours of unlabeled
@@ -513,8 +812,22 @@
     domain audio books. In 2015 IEEE International Conference on Acoustics, Speech
     and Signal Processing (ICASSP), volume, 5206-5210\. 2015\. doi:10.1109/ICASSP.2015.7178964.")]
     ("train-clean-100" subset). |'
+  id: totrans-65
   prefs: []
   type: TYPE_TB
+  zh: '| [`WAV2VEC2_ASR_LARGE_LV60K_100H`](generated/torchaudio.pipelines.WAV2VEC2_ASR_LARGE_LV60K_100H.html#torchaudio.pipelines.WAV2VEC2_ASR_LARGE_LV60K_100H
+    "torchaudio.pipelines.WAV2VEC2_ASR_LARGE_LV60K_100H") | Wav2vec 2.0 模型（"large-lv60k"
+    架构，带有额外的线性模块），在 *Libri-Light* 数据集的 60,000 小时未标记音频上进行预训练[[Kahn 等人，2020](references.html#id12
+    "J. Kahn, M. Rivière, W. Zheng, E. Kharitonov, Q. Xu, P. E. Mazaré, J. Karadayi,
+    V. Liptchinsky, R. Collobert, C. Fuegen, T. Likhomanenko, G. Synnaeve, A. Joulin,
+    A. Mohamed, and E. Dupoux. Libri-light: a benchmark for asr with limited or no
+    supervision. In ICASSP 2020 - 2020 IEEE International Conference on Acoustics,
+    Speech and Signal Processing (ICASSP), 7669-7673\. 2020\. \url https://github.com/facebookresearch/libri-light.")]，并在
+    *LibriSpeech* 数据集的经过转录的音频上进行了 ASR 的微调，微调时长为 100 小时[[Panayotov 等人，2015](references.html#id13
+    "Vassil Panayotov, Guoguo Chen, Daniel Povey, and Sanjeev Khudanpur. Librispeech:
+    an asr corpus based on public domain audio books. In 2015 IEEE International Conference
+    on Acoustics, Speech and Signal Processing (ICASSP), volume, 5206-5210\. 2015\.
+    doi:10.1109/ICASSP.2015.7178964.")]（"train-clean-100" 子集）。 |'
 - en: '| [`WAV2VEC2_ASR_LARGE_LV60K_960H`](generated/torchaudio.pipelines.WAV2VEC2_ASR_LARGE_LV60K_960H.html#torchaudio.pipelines.WAV2VEC2_ASR_LARGE_LV60K_960H
     "torchaudio.pipelines.WAV2VEC2_ASR_LARGE_LV60K_960H") | Wav2vec 2.0 model ("large-lv60k"
     architecture with an extra linear module), pre-trained on 60,000 hours of unlabeled
@@ -531,8 +844,23 @@
     Speech and Signal Processing (ICASSP), volume, 5206-5210\. 2015\. doi:10.1109/ICASSP.2015.7178964.")]
     (the combination of "train-clean-100", "train-clean-360", and "train-other-500").
     |'
+  id: totrans-66
   prefs: []
   type: TYPE_TB
+  zh: '| [`WAV2VEC2_ASR_LARGE_LV60K_960H`](generated/torchaudio.pipelines.WAV2VEC2_ASR_LARGE_LV60K_960H.html#torchaudio.pipelines.WAV2VEC2_ASR_LARGE_LV60K_960H
+    "torchaudio.pipelines.WAV2VEC2_ASR_LARGE_LV60K_960H") | Wav2vec 2.0 模型（"large-lv60k"
+    架构，带有额外的线性模块），在 *Libri-Light* 数据集的 60,000 小时未标记音频上进行预训练[[Kahn 等人，2020](references.html#id12
+    "J. Kahn, M. Rivière, W. Zheng, E. Kharitonov, Q. Xu, P. E. Mazaré, J. Karadayi,
+    V. Liptchinsky, R. Collobert, C. Fuegen, T. Likhomanenko, G. Synnaeve, A. Joulin,
+    A. Mohamed, and E. Dupoux. Libri-light: a benchmark for asr with limited or no
+    supervision. In ICASSP 2020 - 2020 IEEE International Conference on Acoustics,
+    Speech and Signal Processing (ICASSP), 7669-7673\. 2020\. \url https://github.com/facebookresearch/libri-light.")]
+    数据集，并在 *LibriSpeech* 数据集的经过转录的音频上进行了 ASR 的微调，微调时长为 960 小时[[Panayotov 等人，2015](references.html#id13
+    "Vassil Panayotov, Guoguo Chen, Daniel Povey, and Sanjeev Khudanpur. Librispeech:
+    an asr corpus based on public domain audio books. In 2015 IEEE International Conference
+    on Acoustics, Speech and Signal Processing (ICASSP), volume, 5206-5210\. 2015\.
+    doi:10.1109/ICASSP.2015.7178964.")]（"train-clean-100"、"train-clean-360" 和 "train-other-500"
+    的组合）。 |'
 - en: '| [`VOXPOPULI_ASR_BASE_10K_DE`](generated/torchaudio.pipelines.VOXPOPULI_ASR_BASE_10K_DE.html#torchaudio.pipelines.VOXPOPULI_ASR_BASE_10K_DE
     "torchaudio.pipelines.VOXPOPULI_ASR_BASE_10K_DE") | wav2vec 2.0 model ("base"
     architecture), pre-trained on 10k hours of unlabeled audio from *VoxPopuli* dataset
@@ -543,8 +871,16 @@
     2021\. URL: https://arxiv.org/abs/2101.00390, arXiv:2101.00390.")] ("10k" subset,
     consisting of 23 languages), and fine-tuned for ASR on 282 hours of transcribed
     audio from "de" subset. |'
+  id: totrans-67
   prefs: []
   type: TYPE_TB
+  zh: '| [`VOXPOPULI_ASR_BASE_10K_DE`](generated/torchaudio.pipelines.VOXPOPULI_ASR_BASE_10K_DE.html#torchaudio.pipelines.VOXPOPULI_ASR_BASE_10K_DE
+    "torchaudio.pipelines.VOXPOPULI_ASR_BASE_10K_DE") | wav2vec 2.0 模型（“基础”架构），在 *VoxPopuli*
+    数据集的 10k 小时未标记音频上进行预训练[[Wang 等人，2021](references.html#id5 "Changhan Wang, Morgane
+    Rivière, Ann Lee, Anne Wu, Chaitanya Talnikar, Daniel Haziza, Mary Williamson,
+    Juan Miguel Pino, 和 Emmanuel Dupoux. Voxpopuli: 用于表示学习、半监督学习和解释的大规模多语言语音语料库。CoRR，2021。URL:
+    https://arxiv.org/abs/2101.00390, arXiv:2101.00390。")]（由 23 种语言组成的“10k”子集），并在来自“de”子集的
+    282 小时转录音频上进行了 ASR 微调。|'
 - en: '| [`VOXPOPULI_ASR_BASE_10K_EN`](generated/torchaudio.pipelines.VOXPOPULI_ASR_BASE_10K_EN.html#torchaudio.pipelines.VOXPOPULI_ASR_BASE_10K_EN
     "torchaudio.pipelines.VOXPOPULI_ASR_BASE_10K_EN") | wav2vec 2.0 model ("base"
     architecture), pre-trained on 10k hours of unlabeled audio from *VoxPopuli* dataset
@@ -555,8 +891,16 @@
     2021\. URL: https://arxiv.org/abs/2101.00390, arXiv:2101.00390.")] ("10k" subset,
     consisting of 23 languages), and fine-tuned for ASR on 543 hours of transcribed
     audio from "en" subset. |'
+  id: totrans-68
   prefs: []
   type: TYPE_TB
+  zh: '| [`VOXPOPULI_ASR_BASE_10K_EN`](generated/torchaudio.pipelines.VOXPOPULI_ASR_BASE_10K_EN.html#torchaudio.pipelines.VOXPOPULI_ASR_BASE_10K_EN
+    "torchaudio.pipelines.VOXPOPULI_ASR_BASE_10K_EN") | wav2vec 2.0 模型（“基础”架构），在 *VoxPopuli*
+    数据集的 10k 小时未标记音频上进行预训练[[Wang 等人，2021](references.html#id5 "Changhan Wang, Morgane
+    Rivière, Ann Lee, Anne Wu, Chaitanya Talnikar, Daniel Haziza, Mary Williamson,
+    Juan Miguel Pino, 和 Emmanuel Dupoux. Voxpopuli: 用于表示学习、半监督学习和解释的大规模多语言语音语料库。CoRR，2021。URL:
+    https://arxiv.org/abs/2101.00390, arXiv:2101.00390。")]（由 23 种语言组成的“10k”子集），并在来自“en”子集的
+    543 小时转录音频上进行了 ASR 微调。|'
 - en: '| [`VOXPOPULI_ASR_BASE_10K_ES`](generated/torchaudio.pipelines.VOXPOPULI_ASR_BASE_10K_ES.html#torchaudio.pipelines.VOXPOPULI_ASR_BASE_10K_ES
     "torchaudio.pipelines.VOXPOPULI_ASR_BASE_10K_ES") | wav2vec 2.0 model ("base"
     architecture), pre-trained on 10k hours of unlabeled audio from *VoxPopuli* dataset
@@ -567,8 +911,16 @@
     2021\. URL: https://arxiv.org/abs/2101.00390, arXiv:2101.00390.")] ("10k" subset,
     consisting of 23 languages), and fine-tuned for ASR on 166 hours of transcribed
     audio from "es" subset. |'
+  id: totrans-69
   prefs: []
   type: TYPE_TB
+  zh: '| [`VOXPOPULI_ASR_BASE_10K_ES`](generated/torchaudio.pipelines.VOXPOPULI_ASR_BASE_10K_ES.html#torchaudio.pipelines.VOXPOPULI_ASR_BASE_10K_ES
+    "torchaudio.pipelines.VOXPOPULI_ASR_BASE_10K_ES") | wav2vec 2.0 模型（“基础”架构），在 *VoxPopuli*
+    数据集的 10k 小时未标记音频上进行预训练[[Wang 等人，2021](references.html#id5 "Changhan Wang, Morgane
+    Rivière, Ann Lee, Anne Wu, Chaitanya Talnikar, Daniel Haziza, Mary Williamson,
+    Juan Miguel Pino, 和 Emmanuel Dupoux. Voxpopuli: 用于表示学习、半监督学习和解释的大规模多语言语音语料库。CoRR，2021。URL:
+    https://arxiv.org/abs/2101.00390, arXiv:2101.00390。")]（由 23 种语言组成的“10k”子集），并在来自“es”子集的
+    166 小时转录音频上进行了 ASR 微调。|'
 - en: '| [`VOXPOPULI_ASR_BASE_10K_FR`](generated/torchaudio.pipelines.VOXPOPULI_ASR_BASE_10K_FR.html#torchaudio.pipelines.VOXPOPULI_ASR_BASE_10K_FR
     "torchaudio.pipelines.VOXPOPULI_ASR_BASE_10K_FR") | wav2vec 2.0 model ("base"
     architecture), pre-trained on 10k hours of unlabeled audio from *VoxPopuli* dataset
@@ -579,8 +931,16 @@
     2021\. URL: https://arxiv.org/abs/2101.00390, arXiv:2101.00390.")] ("10k" subset,
     consisting of 23 languages), and fine-tuned for ASR on 211 hours of transcribed
     audio from "fr" subset. |'
+  id: totrans-70
   prefs: []
   type: TYPE_TB
+  zh: '| [`VOXPOPULI_ASR_BASE_10K_FR`](generated/torchaudio.pipelines.VOXPOPULI_ASR_BASE_10K_FR.html#torchaudio.pipelines.VOXPOPULI_ASR_BASE_10K_FR
+    "torchaudio.pipelines.VOXPOPULI_ASR_BASE_10K_FR") | wav2vec 2.0 模型（“基础”架构），在 *VoxPopuli*
+    数据集的 10k 小时未标记音频上进行预训练[[Wang 等人，2021](references.html#id5 "Changhan Wang, Morgane
+    Rivière, Ann Lee, Anne Wu, Chaitanya Talnikar, Daniel Haziza, Mary Williamson,
+    Juan Miguel Pino, 和 Emmanuel Dupoux. Voxpopuli: 用于表示学习、半监督学习和解释的大规模多语言语音语料库。CoRR，2021。URL:
+    https://arxiv.org/abs/2101.00390, arXiv:2101.00390。")]（由 23 种语言组成的“10k”子集），并在来自“fr”子集的
+    211 小时转录音频上进行了 ASR 微调。|'
 - en: '| [`VOXPOPULI_ASR_BASE_10K_IT`](generated/torchaudio.pipelines.VOXPOPULI_ASR_BASE_10K_IT.html#torchaudio.pipelines.VOXPOPULI_ASR_BASE_10K_IT
     "torchaudio.pipelines.VOXPOPULI_ASR_BASE_10K_IT") | wav2vec 2.0 model ("base"
     architecture), pre-trained on 10k hours of unlabeled audio from *VoxPopuli* dataset
@@ -591,8 +951,17 @@
     2021\. URL: https://arxiv.org/abs/2101.00390, arXiv:2101.00390.")] ("10k" subset,
     consisting of 23 languages), and fine-tuned for ASR on 91 hours of transcribed
     audio from "it" subset. |'
+  id: totrans-71
   prefs: []
   type: TYPE_TB
+  zh: '| [`VOXPOPULI_ASR_BASE_10K_IT`](generated/torchaudio.pipelines.VOXPOPULI_ASR_BASE_10K_IT.html#torchaudio.pipelines.VOXPOPULI_ASR_BASE_10K_IT
+    "torchaudio.pipelines.VOXPOPULI_ASR_BASE_10K_IT") | wav2vec 2.0 模型（“base” 架构），在
+    *VoxPopuli* 数据集的 10,000 小时未标记音频上进行预训练[[Wang *et al.*, 2021](references.html#id5
+    "Changhan Wang, Morgane Rivière, Ann Lee, Anne Wu, Chaitanya Talnikar, Daniel
+    Haziza, Mary Williamson, Juan Miguel Pino, and Emmanuel Dupoux. Voxpopuli: A large-scale
+    multilingual speech corpus for representation learning, semi-supervised learning
+    and interpretation. CoRR, 2021\. URL: https://arxiv.org/abs/2101.00390, arXiv:2101.00390.")]（由
+    23 种语言组成的“10k”子集），并在来自“it”子集的 91 小时转录音频上进行了 ASR 微调。 |'
 - en: '| [`HUBERT_ASR_LARGE`](generated/torchaudio.pipelines.HUBERT_ASR_LARGE.html#torchaudio.pipelines.HUBERT_ASR_LARGE
     "torchaudio.pipelines.HUBERT_ASR_LARGE") | HuBERT model ("large" architecture),
     pre-trained on 60,000 hours of unlabeled audio from *Libri-Light* dataset [[Kahn
@@ -609,8 +978,19 @@
     and Signal Processing (ICASSP), volume, 5206-5210\. 2015\. doi:10.1109/ICASSP.2015.7178964.")]
     (the combination of "train-clean-100", "train-clean-360", and "train-other-500").
     |'
+  id: totrans-72
   prefs: []
   type: TYPE_TB
+  zh: '| [`HUBERT_ASR_LARGE`](generated/torchaudio.pipelines.HUBERT_ASR_LARGE.html#torchaudio.pipelines.HUBERT_ASR_LARGE
+    "torchaudio.pipelines.HUBERT_ASR_LARGE") | HuBERT 模型（“large” 架构），在 *Libri-Light*
+    数据集的 60,000 小时未标记音频上进行预训练[[Kahn *et al.*, 2020](references.html#id12 "J. Kahn,
+    M. Rivière, W. Zheng, E. Kharitonov, Q. Xu, P. E. Mazaré, J. Karadayi, V. Liptchinsky,
+    R. Collobert, C. Fuegen, T. Likhomanenko, G. Synnaeve, A. Joulin, A. Mohamed,
+    and E. Dupoux. Libri-light: a benchmark for asr with limited or no supervision.
+    In ICASSP 2020 - 2020 IEEE International Conference on Acoustics, Speech and Signal
+    Processing (ICASSP), 7669-7673\. 2020\. \url https://github.com/facebookresearch/libri-light.")],
+    并在来自 *LibriSpeech* 数据集的 960 小时转录音频上进行了 ASR 微调（由 "train-clean-100", "train-clean-360",
+    和 "train-other-500" 组成）。 |'
 - en: '| [`HUBERT_ASR_XLARGE`](generated/torchaudio.pipelines.HUBERT_ASR_XLARGE.html#torchaudio.pipelines.HUBERT_ASR_XLARGE
     "torchaudio.pipelines.HUBERT_ASR_XLARGE") | HuBERT model ("extra large" architecture),
     pre-trained on 60,000 hours of unlabeled audio from *Libri-Light* dataset [[Kahn
@@ -627,67 +1007,115 @@
     and Signal Processing (ICASSP), volume, 5206-5210\. 2015\. doi:10.1109/ICASSP.2015.7178964.")]
     (the combination of "train-clean-100", "train-clean-360", and "train-other-500").
     |'
+  id: totrans-73
   prefs: []
   type: TYPE_TB
+  zh: '| [`HUBERT_ASR_XLARGE`](generated/torchaudio.pipelines.HUBERT_ASR_XLARGE.html#torchaudio.pipelines.HUBERT_ASR_XLARGE
+    "torchaudio.pipelines.HUBERT_ASR_XLARGE") | HuBERT 模型（“extra large” 架构），在 *Libri-Light*
+    数据集的 60,000 小时未标记音频上进行预训练[[Kahn *et al.*, 2020](references.html#id12 "J. Kahn,
+    M. Rivière, W. Zheng, E. Kharitonov, Q. Xu, P. E. Mazaré, J. Karadayi, V. Liptchinsky,
+    R. Collobert, C. Fuegen, T. Likhomanenko, G. Synnaeve, A. Joulin, A. Mohamed,
+    and E. Dupoux. Libri-light: a benchmark for asr with limited or no supervision.
+    In ICASSP 2020 - 2020 IEEE International Conference on Acoustics, Speech and Signal
+    Processing (ICASSP), 7669-7673\. 2020\. \url https://github.com/facebookresearch/libri-light.")],
+    并在来自 *LibriSpeech* 数据集的 960 小时转录音频上进行了 ASR 微调（由 "train-clean-100", "train-clean-360",
+    和 "train-other-500" 组成）。 |'
 - en: wav2vec 2.0 / HuBERT - Forced Alignment[](#wav2vec-2-0-hubert-forced-alignment
     "Permalink to this heading")
+  id: totrans-74
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: wav2vec 2.0 / HuBERT - 强制对齐[](#wav2vec-2-0-hubert-forced-alignment "Permalink
+    to this heading")
 - en: Interface[](#id59 "Permalink to this heading")
+  id: totrans-75
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 界面[](#id59 "Permalink to this heading")
 - en: '`Wav2Vec2FABundle` bundles pre-trained model and its associated dictionary.
     Additionally, it supports appending `star` token dimension.'
+  id: totrans-76
   prefs: []
   type: TYPE_NORMAL
+  zh: '`Wav2Vec2FABundle` 包含预训练模型及其相关字典。此外，它支持附加 `star` 标记维度。'
 - en: '![https://download.pytorch.org/torchaudio/doc-assets/pipelines-wav2vec2fabundle.png](../Images/81159a1c90b6bf1cc96789ecb75c13f0.png)'
+  id: totrans-77
   prefs: []
   type: TYPE_IMG
+  zh: '![https://download.pytorch.org/torchaudio/doc-assets/pipelines-wav2vec2fabundle.png](../Images/81159a1c90b6bf1cc96789ecb75c13f0.png)'
 - en: '| [`Wav2Vec2FABundle`](generated/torchaudio.pipelines.Wav2Vec2FABundle.html#torchaudio.pipelines.Wav2Vec2FABundle
     "torchaudio.pipelines.Wav2Vec2FABundle") | Data class that bundles associated
     information to use pretrained [`Wav2Vec2Model`](generated/torchaudio.models.Wav2Vec2Model.html#torchaudio.models.Wav2Vec2Model
     "torchaudio.models.Wav2Vec2Model") for forced alignment. |'
+  id: totrans-78
   prefs: []
   type: TYPE_TB
+  zh: '| [`Wav2Vec2FABundle`](generated/torchaudio.pipelines.Wav2Vec2FABundle.html#torchaudio.pipelines.Wav2Vec2FABundle
+    "torchaudio.pipelines.Wav2Vec2FABundle") | 数据类，捆绑了与预训练的[`Wav2Vec2Model`](generated/torchaudio.models.Wav2Vec2Model.html#torchaudio.models.Wav2Vec2Model
+    "torchaudio.models.Wav2Vec2Model")用于强制对齐的相关信息。 |'
 - en: '| [`Wav2Vec2FABundle.Tokenizer`](generated/torchaudio.pipelines.Wav2Vec2FABundle.Tokenizer.html#torchaudio.pipelines.Wav2Vec2FABundle.Tokenizer
     "torchaudio.pipelines.Wav2Vec2FABundle.Tokenizer") | Interface of the tokenizer
     |'
+  id: totrans-79
   prefs: []
   type: TYPE_TB
+  zh: '| [`Wav2Vec2FABundle.Tokenizer`](generated/torchaudio.pipelines.Wav2Vec2FABundle.Tokenizer.html#torchaudio.pipelines.Wav2Vec2FABundle.Tokenizer
+    "torchaudio.pipelines.Wav2Vec2FABundle.Tokenizer") | 分词器的接口 |'
 - en: '| [`Wav2Vec2FABundle.Aligner`](generated/torchaudio.pipelines.Wav2Vec2FABundle.Aligner.html#torchaudio.pipelines.Wav2Vec2FABundle.Aligner
     "torchaudio.pipelines.Wav2Vec2FABundle.Aligner") | Interface of the aligner |'
+  id: totrans-80
   prefs: []
   type: TYPE_TB
+  zh: '| [`Wav2Vec2FABundle.Aligner`](generated/torchaudio.pipelines.Wav2Vec2FABundle.Aligner.html#torchaudio.pipelines.Wav2Vec2FABundle.Aligner
+    "torchaudio.pipelines.Wav2Vec2FABundle.Aligner") | 对齐器的接口 |'
 - en: Tutorials using `Wav2Vec2FABundle`
+  id: totrans-81
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用`Wav2Vec2FABundle`的教程
 - en: '![CTC forced alignment API tutorial](../Images/644afa8c7cc662a8465d389ef96d587c.png)'
+  id: totrans-82
   prefs: []
   type: TYPE_IMG
+  zh: '![CTC强制对齐API教程](../Images/644afa8c7cc662a8465d389ef96d587c.png)'
 - en: '[CTC forced alignment API tutorial](tutorials/ctc_forced_alignment_api_tutorial.html#sphx-glr-tutorials-ctc-forced-alignment-api-tutorial-py)'
+  id: totrans-83
   prefs: []
   type: TYPE_NORMAL
+  zh: '[CTC强制对齐API教程](tutorials/ctc_forced_alignment_api_tutorial.html#sphx-glr-tutorials-ctc-forced-alignment-api-tutorial-py)'
 - en: CTC forced alignment API tutorial![Forced alignment for multilingual data](../Images/ca023cbba331b61f65d37937f8a25beb.png)
+  id: totrans-84
   prefs: []
   type: TYPE_NORMAL
+  zh: CTC强制对齐API教程![多语言数据的强制对齐](../Images/ca023cbba331b61f65d37937f8a25beb.png)
 - en: '[Forced alignment for multilingual data](tutorials/forced_alignment_for_multilingual_data_tutorial.html#sphx-glr-tutorials-forced-alignment-for-multilingual-data-tutorial-py)'
+  id: totrans-85
   prefs: []
   type: TYPE_NORMAL
+  zh: '[多语言数据的强制对齐](tutorials/forced_alignment_for_multilingual_data_tutorial.html#sphx-glr-tutorials-forced-alignment-for-multilingual-data-tutorial-py)'
 - en: Forced alignment for multilingual data![Forced Alignment with Wav2Vec2](../Images/6658c9fe256ea584e84432cc92cd4db9.png)
+  id: totrans-86
   prefs: []
   type: TYPE_NORMAL
+  zh: 多语言数据的强制对齐![使用Wav2Vec2进行强制对齐](../Images/6658c9fe256ea584e84432cc92cd4db9.png)
 - en: '[Forced Alignment with Wav2Vec2](tutorials/forced_alignment_tutorial.html#sphx-glr-tutorials-forced-alignment-tutorial-py)'
+  id: totrans-87
   prefs: []
   type: TYPE_NORMAL
+  zh: '[使用Wav2Vec2进行强制对齐](tutorials/forced_alignment_tutorial.html#sphx-glr-tutorials-forced-alignment-tutorial-py)'
 - en: Forced Alignment with Wav2Vec2
+  id: totrans-88
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用Wav2Vec2进行强制对齐
 - en: Pertrained Models[](#pertrained-models "Permalink to this heading")
+  id: totrans-89
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 预训练模型[](#pertrained-models "跳转到此标题的永久链接")
 - en: '| [`MMS_FA`](generated/torchaudio.pipelines.MMS_FA.html#torchaudio.pipelines.MMS_FA
     "torchaudio.pipelines.MMS_FA") | Trained on 31K hours of data in 1,130 languages
     from *Scaling Speech Technology to 1,000+ Languages* [[Pratap *et al.*, 2023](references.html#id71
@@ -695,65 +1123,106 @@
     Kundu, Ali Elkahky, Zhaoheng Ni, Apoorv Vyas, Maryam Fazel-Zarandi, Alexei Baevski,
     Yossi Adi, Xiaohui Zhang, Wei-Ning Hsu, Alexis Conneau, and Michael Auli. Scaling
     speech technology to 1,000+ languages. 2023\. arXiv:2305.13516.")]. |'
+  id: totrans-90
   prefs: []
   type: TYPE_TB
+  zh: '| [`MMS_FA`](generated/torchaudio.pipelines.MMS_FA.html#torchaudio.pipelines.MMS_FA
+    "torchaudio.pipelines.MMS_FA") | 在来自*将语音技术扩展到1000多种语言*的1,130种语言的31,000小时数据上训练[[Pratap等人，2023](references.html#id71
+    "Vineel Pratap, Andros Tjandra, Bowen Shi, Paden Tomasello, Arun Babu, Sayani
+    Kundu, Ali Elkahky, Zhaoheng Ni, Apoorv Vyas, Maryam Fazel-Zarandi, Alexei Baevski,
+    Yossi Adi, Xiaohui Zhang, Wei-Ning Hsu, Alexis Conneau, and Michael Auli. Scaling
+    speech technology to 1,000+ languages. 2023\. arXiv:2305.13516.")] |'
 - en: '## Tacotron2 Text-To-Speech[](#tacotron2-text-to-speech "Permalink to this
     heading")'
+  id: totrans-91
   prefs: []
   type: TYPE_NORMAL
+  zh: '## Tacotron2文本到语音[](#tacotron2-text-to-speech "跳转到此标题的永久链接")'
 - en: '`Tacotron2TTSBundle` defines text-to-speech pipelines and consists of three
     steps: tokenization, spectrogram generation and vocoder. The spectrogram generation
     is based on [`Tacotron2`](generated/torchaudio.models.Tacotron2.html#torchaudio.models.Tacotron2
     "torchaudio.models.Tacotron2") model.'
+  id: totrans-92
   prefs: []
   type: TYPE_NORMAL
+  zh: '`Tacotron2TTSBundle`定义了文本到语音流水线，包括三个步骤：分词、频谱图生成和声码器。频谱图生成基于[`Tacotron2`](generated/torchaudio.models.Tacotron2.html#torchaudio.models.Tacotron2
+    "torchaudio.models.Tacotron2")模型。'
 - en: '![https://download.pytorch.org/torchaudio/doc-assets/pipelines-tacotron2bundle.png](../Images/97c575d1ba15c954a23c68df0d5b0471.png)'
+  id: totrans-93
   prefs: []
   type: TYPE_IMG
+  zh: '![https://download.pytorch.org/torchaudio/doc-assets/pipelines-tacotron2bundle.png](../Images/97c575d1ba15c954a23c68df0d5b0471.png)'
 - en: '`TextProcessor` can be rule-based tokenization in the case of characters, or
     it can be a neural-netowrk-based G2P model that generates sequence of phonemes
     from input text.'
+  id: totrans-94
   prefs: []
   type: TYPE_NORMAL
+  zh: '`TextProcessor`可以是基于规则的字符分词，也可以是一个神经网络的G2P模型，从输入文本生成音素序列。'
 - en: Similarly `Vocoder` can be an algorithm without learning parameters, like Griffin-Lim,
     or a neural-network-based model like Waveglow.
+  id: totrans-95
   prefs: []
   type: TYPE_NORMAL
+  zh: 同样，`Vocoder`可以是一个没有学习参数的算法，比如Griffin-Lim，也可以是一个基于神经网络的模型，比如Waveglow。
 - en: Interface[](#id61 "Permalink to this heading")
+  id: totrans-96
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 接口[](#id61 "跳转到此标题的永久链接")
 - en: '| [`Tacotron2TTSBundle`](generated/torchaudio.pipelines.Tacotron2TTSBundle.html#torchaudio.pipelines.Tacotron2TTSBundle
     "torchaudio.pipelines.Tacotron2TTSBundle") | Data class that bundles associated
     information to use pretrained Tacotron2 and vocoder. |'
+  id: totrans-97
   prefs: []
   type: TYPE_TB
+  zh: '| [`Tacotron2TTSBundle`](generated/torchaudio.pipelines.Tacotron2TTSBundle.html#torchaudio.pipelines.Tacotron2TTSBundle
+    "torchaudio.pipelines.Tacotron2TTSBundle") | 数据类，捆绑了与预训练的Tacotron2和声码器相关信息。 |'
 - en: '| [`Tacotron2TTSBundle.TextProcessor`](generated/torchaudio.pipelines.Tacotron2TTSBundle.TextProcessor.html#torchaudio.pipelines.Tacotron2TTSBundle.TextProcessor
     "torchaudio.pipelines.Tacotron2TTSBundle.TextProcessor") | Interface of the text
     processing part of Tacotron2TTS pipeline |'
+  id: totrans-98
   prefs: []
   type: TYPE_TB
+  zh: '| [`Tacotron2TTSBundle.TextProcessor`](generated/torchaudio.pipelines.Tacotron2TTSBundle.TextProcessor.html#torchaudio.pipelines.Tacotron2TTSBundle.TextProcessor
+    "torchaudio.pipelines.Tacotron2TTSBundle.TextProcessor") | Tacotron2TTS流水线文本处理部分的接口
+    |'
 - en: '| [`Tacotron2TTSBundle.Vocoder`](generated/torchaudio.pipelines.Tacotron2TTSBundle.Vocoder.html#torchaudio.pipelines.Tacotron2TTSBundle.Vocoder
     "torchaudio.pipelines.Tacotron2TTSBundle.Vocoder") | Interface of the vocoder
     part of Tacotron2TTS pipeline |'
+  id: totrans-99
   prefs: []
   type: TYPE_TB
+  zh: '| [`Tacotron2TTSBundle.Vocoder`](generated/torchaudio.pipelines.Tacotron2TTSBundle.Vocoder.html#torchaudio.pipelines.Tacotron2TTSBundle.Vocoder
+    "torchaudio.pipelines.Tacotron2TTSBundle.Vocoder") | Tacotron2TTS流水线的声码器部分的接口
+    |'
 - en: Tutorials using `Tacotron2TTSBundle`
+  id: totrans-100
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用`Tacotron2TTSBundle`的教程
 - en: '![Text-to-Speech with Tacotron2](../Images/5a248f30c367f9fb17d182966714fd7d.png)'
+  id: totrans-101
   prefs: []
   type: TYPE_IMG
+  zh: '![使用Tacotron2进行文本到语音转换](../Images/5a248f30c367f9fb17d182966714fd7d.png)'
 - en: '[Text-to-Speech with Tacotron2](tutorials/tacotron2_pipeline_tutorial.html#sphx-glr-tutorials-tacotron2-pipeline-tutorial-py)'
+  id: totrans-102
   prefs: []
   type: TYPE_NORMAL
+  zh: '[使用Tacotron2进行文本到语音转换](tutorials/tacotron2_pipeline_tutorial.html#sphx-glr-tutorials-tacotron2-pipeline-tutorial-py)'
 - en: Text-to-Speech with Tacotron2
+  id: totrans-103
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用Tacotron2进行文本到语音转换
 - en: Pretrained Models[](#id62 "Permalink to this heading")
+  id: totrans-104
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 预训练模型[](#id62 "跳转到此标题")
 - en: '| [`TACOTRON2_WAVERNN_PHONE_LJSPEECH`](generated/torchaudio.pipelines.TACOTRON2_WAVERNN_PHONE_LJSPEECH.html#torchaudio.pipelines.TACOTRON2_WAVERNN_PHONE_LJSPEECH
     "torchaudio.pipelines.TACOTRON2_WAVERNN_PHONE_LJSPEECH") | Phoneme-based TTS pipeline
     with [`Tacotron2`](generated/torchaudio.models.Tacotron2.html#torchaudio.models.Tacotron2
@@ -764,8 +1233,13 @@
     [[Ito and Johnson, 2017](references.html#id7 "Keith Ito and Linda Johnson. The
     lj speech dataset. \url https://keithito.com/LJ-Speech-Dataset/, 2017.")] for
     10,000 epochs. |'
+  id: totrans-105
   prefs: []
   type: TYPE_TB
+  zh: '| [`TACOTRON2_WAVERNN_PHONE_LJSPEECH`](generated/torchaudio.pipelines.TACOTRON2_WAVERNN_PHONE_LJSPEECH.html#torchaudio.pipelines.TACOTRON2_WAVERNN_PHONE_LJSPEECH
+    "torchaudio.pipelines.TACOTRON2_WAVERNN_PHONE_LJSPEECH") | 基于音素的TTS流水线，使用在*LJSpeech*上训练的[`Tacotron2`](generated/torchaudio.models.Tacotron2.html#torchaudio.models.Tacotron2
+    "torchaudio.models.Tacotron2")，训练了1,500个时代，并使用在*LJSpeech*的8位深度波形上训练了10,000个时代的[`WaveRNN`](generated/torchaudio.models.WaveRNN.html#torchaudio.models.WaveRNN
+    "torchaudio.models.WaveRNN")声码器。 |'
 - en: '| [`TACOTRON2_WAVERNN_CHAR_LJSPEECH`](generated/torchaudio.pipelines.TACOTRON2_WAVERNN_CHAR_LJSPEECH.html#torchaudio.pipelines.TACOTRON2_WAVERNN_CHAR_LJSPEECH
     "torchaudio.pipelines.TACOTRON2_WAVERNN_CHAR_LJSPEECH") | Character-based TTS
     pipeline with [`Tacotron2`](generated/torchaudio.models.Tacotron2.html#torchaudio.models.Tacotron2
@@ -776,8 +1250,13 @@
     [[Ito and Johnson, 2017](references.html#id7 "Keith Ito and Linda Johnson. The
     lj speech dataset. \url https://keithito.com/LJ-Speech-Dataset/, 2017.")] for
     10,000 epochs. |'
+  id: totrans-106
   prefs: []
   type: TYPE_TB
+  zh: '| [`TACOTRON2_WAVERNN_CHAR_LJSPEECH`](generated/torchaudio.pipelines.TACOTRON2_WAVERNN_CHAR_LJSPEECH.html#torchaudio.pipelines.TACOTRON2_WAVERNN_CHAR_LJSPEECH
+    "torchaudio.pipelines.TACOTRON2_WAVERNN_CHAR_LJSPEECH") | 基于字符的TTS流水线，使用在*LJSpeech*上训练的[`Tacotron2`](generated/torchaudio.models.Tacotron2.html#torchaudio.models.Tacotron2
+    "torchaudio.models.Tacotron2")，训练了1,500个时代，并使用在*LJSpeech*的8位深度波形上训练了10,000个时代的[`WaveRNN`](generated/torchaudio.models.WaveRNN.html#torchaudio.models.WaveRNN
+    "torchaudio.models.WaveRNN")声码器。 |'
 - en: '| [`TACOTRON2_GRIFFINLIM_PHONE_LJSPEECH`](generated/torchaudio.pipelines.TACOTRON2_GRIFFINLIM_PHONE_LJSPEECH.html#torchaudio.pipelines.TACOTRON2_GRIFFINLIM_PHONE_LJSPEECH
     "torchaudio.pipelines.TACOTRON2_GRIFFINLIM_PHONE_LJSPEECH") | Phoneme-based TTS
     pipeline with [`Tacotron2`](generated/torchaudio.models.Tacotron2.html#torchaudio.models.Tacotron2
@@ -785,8 +1264,13 @@
     "Keith Ito and Linda Johnson. The lj speech dataset. \url https://keithito.com/LJ-Speech-Dataset/,
     2017.")] for 1,500 epochs and [`GriffinLim`](generated/torchaudio.transforms.GriffinLim.html#torchaudio.transforms.GriffinLim
     "torchaudio.transforms.GriffinLim") as vocoder. |'
+  id: totrans-107
   prefs: []
   type: TYPE_TB
+  zh: '| [`TACOTRON2_GRIFFINLIM_PHONE_LJSPEECH`](generated/torchaudio.pipelines.TACOTRON2_GRIFFINLIM_PHONE_LJSPEECH.html#torchaudio.pipelines.TACOTRON2_GRIFFINLIM_PHONE_LJSPEECH
+    "torchaudio.pipelines.TACOTRON2_GRIFFINLIM_PHONE_LJSPEECH") | 基于音素的TTS流水线，使用在*LJSpeech*上训练的[`Tacotron2`](generated/torchaudio.models.Tacotron2.html#torchaudio.models.Tacotron2
+    "torchaudio.models.Tacotron2")，训练了1,500个时代，并使用[`GriffinLim`](generated/torchaudio.transforms.GriffinLim.html#torchaudio.transforms.GriffinLim
+    "torchaudio.transforms.GriffinLim")作为声码器。 |'
 - en: '| [`TACOTRON2_GRIFFINLIM_CHAR_LJSPEECH`](generated/torchaudio.pipelines.TACOTRON2_GRIFFINLIM_CHAR_LJSPEECH.html#torchaudio.pipelines.TACOTRON2_GRIFFINLIM_CHAR_LJSPEECH
     "torchaudio.pipelines.TACOTRON2_GRIFFINLIM_CHAR_LJSPEECH") | Character-based TTS
     pipeline with [`Tacotron2`](generated/torchaudio.models.Tacotron2.html#torchaudio.models.Tacotron2
@@ -794,44 +1278,70 @@
     "Keith Ito and Linda Johnson. The lj speech dataset. \url https://keithito.com/LJ-Speech-Dataset/,
     2017.")] for 1,500 epochs, and [`GriffinLim`](generated/torchaudio.transforms.GriffinLim.html#torchaudio.transforms.GriffinLim
     "torchaudio.transforms.GriffinLim") as vocoder. |'
+  id: totrans-108
   prefs: []
   type: TYPE_TB
+  zh: '| [`TACOTRON2_GRIFFINLIM_CHAR_LJSPEECH`](generated/torchaudio.pipelines.TACOTRON2_GRIFFINLIM_CHAR_LJSPEECH.html#torchaudio.pipelines.TACOTRON2_GRIFFINLIM_CHAR_LJSPEECH
+    "torchaudio.pipelines.TACOTRON2_GRIFFINLIM_CHAR_LJSPEECH") | 基于字符的TTS流水线，使用在*LJSpeech*上训练的[`Tacotron2`](generated/torchaudio.models.Tacotron2.html#torchaudio.models.Tacotron2
+    "torchaudio.models.Tacotron2")，训练了1,500个时代，并使用[`GriffinLim`](generated/torchaudio.transforms.GriffinLim.html#torchaudio.transforms.GriffinLim
+    "torchaudio.transforms.GriffinLim")作为声码器。 |'
 - en: Source Separation[](#source-separation "Permalink to this heading")
+  id: totrans-109
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 声源分离[](#source-separation "跳转到此标题")
 - en: Interface[](#id69 "Permalink to this heading")
+  id: totrans-110
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 界面[](#id69 "跳转到此标题")
 - en: '`SourceSeparationBundle` instantiates source separation models which take single
     channel audio and generates multi-channel audio.'
+  id: totrans-111
   prefs: []
   type: TYPE_NORMAL
+  zh: '`SourceSeparationBundle`实例化声源分离模型，该模型接收单声道音频并生成多声道音频。'
 - en: '![https://download.pytorch.org/torchaudio/doc-assets/pipelines-sourceseparationbundle.png](../Images/69b4503224dac9c3e845bd309a996829.png)'
+  id: totrans-112
   prefs: []
   type: TYPE_IMG
+  zh: '![https://download.pytorch.org/torchaudio/doc-assets/pipelines-sourceseparationbundle.png](../Images/69b4503224dac9c3e845bd309a996829.png)'
 - en: '| [`SourceSeparationBundle`](generated/torchaudio.pipelines.SourceSeparationBundle.html#torchaudio.pipelines.SourceSeparationBundle
     "torchaudio.pipelines.SourceSeparationBundle") | Dataclass that bundles components
     for performing source separation. |'
+  id: totrans-113
   prefs: []
   type: TYPE_TB
+  zh: '| [`SourceSeparationBundle`](generated/torchaudio.pipelines.SourceSeparationBundle.html#torchaudio.pipelines.SourceSeparationBundle
+    "torchaudio.pipelines.SourceSeparationBundle") | 用于执行源分离的组件的数据类。 |'
 - en: Tutorials using `SourceSeparationBundle`
+  id: totrans-114
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用`SourceSeparationBundle`的教程
 - en: '![Music Source Separation with Hybrid Demucs](../Images/f822c0c06abbbf25ee5b2b2573665977.png)'
+  id: totrans-115
   prefs: []
   type: TYPE_IMG
+  zh: '![使用混合Demucs进行音乐源分离](../Images/f822c0c06abbbf25ee5b2b2573665977.png)'
 - en: '[Music Source Separation with Hybrid Demucs](tutorials/hybrid_demucs_tutorial.html#sphx-glr-tutorials-hybrid-demucs-tutorial-py)'
+  id: totrans-116
   prefs: []
   type: TYPE_NORMAL
+  zh: '[使用混合Demucs进行音乐源分离](tutorials/hybrid_demucs_tutorial.html#sphx-glr-tutorials-hybrid-demucs-tutorial-py)'
 - en: Music Source Separation with Hybrid Demucs
+  id: totrans-117
   prefs: []
   type: TYPE_NORMAL
+  zh: 使用混合Demucs进行音乐源分离
 - en: Pretrained Models[](#id70 "Permalink to this heading")
+  id: totrans-118
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 预训练模型[](#id70 "跳转到此标题")
 - en: '| [`CONVTASNET_BASE_LIBRI2MIX`](generated/torchaudio.pipelines.CONVTASNET_BASE_LIBRI2MIX.html#torchaudio.pipelines.CONVTASNET_BASE_LIBRI2MIX
     "torchaudio.pipelines.CONVTASNET_BASE_LIBRI2MIX") | Pre-trained Source Separation
     pipeline with *ConvTasNet* [[Luo and Mesgarani, 2019](references.html#id22 "Yi
@@ -842,8 +1352,15 @@
     *et al.*, 2020](references.html#id37 "Joris Cosentino, Manuel Pariente, Samuele
     Cornell, Antoine Deleforge, and Emmanuel Vincent. Librimix: an open-source dataset
     for generalizable speech separation. 2020\. arXiv:2005.11262.")]. |'
+  id: totrans-119
   prefs: []
   type: TYPE_TB
+  zh: '| [`CONVTASNET_BASE_LIBRI2MIX`](generated/torchaudio.pipelines.CONVTASNET_BASE_LIBRI2MIX.html#torchaudio.pipelines.CONVTASNET_BASE_LIBRI2MIX
+    "torchaudio.pipelines.CONVTASNET_BASE_LIBRI2MIX") | 使用*ConvTasNet*预训练的源分离流水线[[Luo和Mesgarani，2019](references.html#id22
+    "Yi Luo和Nima Mesgarani。Conv-tasnet: 超越理想的时频幅度掩蔽进行语音分离。IEEE/ACM音频、语音和语言处理交易，27(8):1256–1266，2019年8月。URL:
+    http://dx.doi.org/10.1109/TASLP.2019.2915167, doi:10.1109/taslp.2019.2915167。")]，在*Libri2Mix数据集*上进行训练[[Cosentino等，2020](references.html#id37
+    "Joris Cosentino, Manuel Pariente, Samuele Cornell, Antoine Deleforge和Emmanuel
+    Vincent。Librimix: 用于通用语音分离的开源数据集。2020年。arXiv:2005.11262。")]. |'
 - en: '| [`HDEMUCS_HIGH_MUSDB_PLUS`](generated/torchaudio.pipelines.HDEMUCS_HIGH_MUSDB_PLUS.html#torchaudio.pipelines.HDEMUCS_HIGH_MUSDB_PLUS
     "torchaudio.pipelines.HDEMUCS_HIGH_MUSDB_PLUS") | Pre-trained music source separation
     pipeline with *Hybrid Demucs* [[Défossez, 2021](references.html#id50 "Alexandre
@@ -855,8 +1372,12 @@
     URL: https://doi.org/10.5281/zenodo.3338373, doi:10.5281/zenodo.3338373.")] and
     an additional 150 extra songs from an internal database that was specifically
     produced for Meta. |'
+  id: totrans-120
   prefs: []
   type: TYPE_TB
+  zh: '| [`HDEMUCS_HIGH_MUSDB_PLUS`](generated/torchaudio.pipelines.HDEMUCS_HIGH_MUSDB_PLUS.html#torchaudio.pipelines.HDEMUCS_HIGH_MUSDB_PLUS
+    "torchaudio.pipelines.HDEMUCS_HIGH_MUSDB_PLUS") | 使用*Hybrid Demucs*预训练的音乐源分离流水线[[Défossez,
+    2021](references.html#id50 "Alexandre Défossez. 混合频谱图和波形源分离。在ISMIR 2021音乐源分离研讨会论文集中。2021年。")]，在MUSDB-HQ的训练集和测试集以及专门为Meta制作的内部数据库中的额外150首歌曲上进行训练。|'
 - en: '| [`HDEMUCS_HIGH_MUSDB`](generated/torchaudio.pipelines.HDEMUCS_HIGH_MUSDB.html#torchaudio.pipelines.HDEMUCS_HIGH_MUSDB
     "torchaudio.pipelines.HDEMUCS_HIGH_MUSDB") | Pre-trained music source separation
     pipeline with *Hybrid Demucs* [[Défossez, 2021](references.html#id50 "Alexandre
@@ -866,32 +1387,52 @@
     Liutkus, Fabian-Robert Stöter, Stylianos Ioannis Mimilakis, and Rachel Bittner.
     MUSDB18-HQ - an uncompressed version of musdb18\. December 2019\. URL: https://doi.org/10.5281/zenodo.3338373,
     doi:10.5281/zenodo.3338373.")]. |'
+  id: totrans-121
   prefs: []
   type: TYPE_TB
+  zh: '| [`HDEMUCS_HIGH_MUSDB`](generated/torchaudio.pipelines.HDEMUCS_HIGH_MUSDB.html#torchaudio.pipelines.HDEMUCS_HIGH_MUSDB
+    "torchaudio.pipelines.HDEMUCS_HIGH_MUSDB") | 使用*Hybrid Demucs*预训练的音乐源分离流水线[[Défossez,
+    2021](references.html#id50 "Alexandre Défossez. 混合频谱图和波形源分离。在ISMIR 2021音乐源分离研讨会论文集中。2021年。")]，在MUSDB-HQ的训练集上进行训练[[Rafii等，2019](references.html#id47
+    "Zafar Rafii, Antoine Liutkus, Fabian-Robert Stöter, Stylianos Ioannis Mimilakis和Rachel
+    Bittner。MUSDB18-HQ - musdb18的未压缩版本。2019年12月。URL: https://doi.org/10.5281/zenodo.3338373,
+    doi:10.5281/zenodo.3338373。")]. |'
 - en: Squim Objective[](#squim-objective "Permalink to this heading")
+  id: totrans-122
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: Squim目标[](#squim-objective "跳转到此标题")
 - en: Interface[](#id77 "Permalink to this heading")
+  id: totrans-123
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 界面[](#id77 "跳转到此标题")
 - en: '[`SquimObjectiveBundle`](generated/torchaudio.pipelines.SquimObjectiveBundle.html#torchaudio.pipelines.SquimObjectiveBundle
     "torchaudio.pipelines.SquimObjectiveBundle") defines speech quality and intelligibility
     measurement (SQUIM) pipeline that can predict **objecive** metric scores given
     the input waveform.'
+  id: totrans-124
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`SquimObjectiveBundle`](generated/torchaudio.pipelines.SquimObjectiveBundle.html#torchaudio.pipelines.SquimObjectiveBundle
+    "torchaudio.pipelines.SquimObjectiveBundle")定义了语音质量和可懂度测量（SQUIM）流水线，可以根据输入波形预测**客观**度量分数。'
 - en: '| [`SquimObjectiveBundle`](generated/torchaudio.pipelines.SquimObjectiveBundle.html#torchaudio.pipelines.SquimObjectiveBundle
     "torchaudio.pipelines.SquimObjectiveBundle") | Data class that bundles associated
     information to use pretrained [`SquimObjective`](generated/torchaudio.models.SquimObjective.html#torchaudio.models.SquimObjective
     "torchaudio.models.SquimObjective") model. |'
+  id: totrans-125
   prefs: []
   type: TYPE_TB
+  zh: '| [`SquimObjectiveBundle`](generated/torchaudio.pipelines.SquimObjectiveBundle.html#torchaudio.pipelines.SquimObjectiveBundle
+    "torchaudio.pipelines.SquimObjectiveBundle") | 封装了与预训练[`SquimObjective`](generated/torchaudio.models.SquimObjective.html#torchaudio.models.SquimObjective
+    "torchaudio.models.SquimObjective")模型使用相关信息的数据类。 |'
 - en: Pretrained Models[](#id78 "Permalink to this heading")
+  id: totrans-126
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 预训练模型[](#id78 "跳转到此标题")
 - en: '| [`SQUIM_OBJECTIVE`](generated/torchaudio.pipelines.SQUIM_OBJECTIVE.html#torchaudio.pipelines.SQUIM_OBJECTIVE
     "torchaudio.pipelines.SQUIM_OBJECTIVE") | SquimObjective pipeline trained using
     approach described in [[Kumar *et al.*, 2023](references.html#id69 "Anurag Kumar,
@@ -903,32 +1444,56 @@
     Robert Aichner, Ashkan Aazami, Sebastian Braun, and others. The interspeech 2020
     deep noise suppression challenge: datasets, subjective testing framework, and
     challenge results. arXiv preprint arXiv:2005.13981, 2020.")]. |'
+  id: totrans-127
   prefs: []
   type: TYPE_TB
+  zh: '| [`SQUIM_OBJECTIVE`](generated/torchaudio.pipelines.SQUIM_OBJECTIVE.html#torchaudio.pipelines.SQUIM_OBJECTIVE
+    "torchaudio.pipelines.SQUIM_OBJECTIVE") | 使用[[Kumar等人，2023年](references.html#id69
+    "Anurag Kumar, Ke Tan, Zhaoheng Ni, Pranay Manocha, Xiaohui Zhang, Ethan Henderson,
+    and Buye Xu. Torchaudio-squim: reference-less speech quality and intelligibility
+    measures in torchaudio. arXiv preprint arXiv:2304.01448, 2023.")]中描述的方法训练的SquimObjective管道，基于*DNS
+    2020数据集*[[Reddy等人，2020年](references.html#id65 "Chandan KA Reddy, Vishak Gopal,
+    Ross Cutler, Ebrahim Beyrami, Roger Cheng, Harishchandra Dubey, Sergiy Matusevych,
+    Robert Aichner, Ashkan Aazami, Sebastian Braun, and others. The interspeech 2020
+    deep noise suppression challenge: datasets, subjective testing framework, and
+    challenge results. arXiv preprint arXiv:2005.13981, 2020.")]。 |'
 - en: Squim Subjective[](#squim-subjective "Permalink to this heading")
+  id: totrans-128
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: Squim Subjective[](#squim-subjective "跳转到此标题的永久链接")
 - en: Interface[](#id81 "Permalink to this heading")
+  id: totrans-129
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 接口[](#id81 "跳转到此标题的永久链接")
 - en: '[`SquimSubjectiveBundle`](generated/torchaudio.pipelines.SquimSubjectiveBundle.html#torchaudio.pipelines.SquimSubjectiveBundle
     "torchaudio.pipelines.SquimSubjectiveBundle") defines speech quality and intelligibility
     measurement (SQUIM) pipeline that can predict **subjective** metric scores given
     the input waveform.'
+  id: totrans-130
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`SquimSubjectiveBundle`](generated/torchaudio.pipelines.SquimSubjectiveBundle.html#torchaudio.pipelines.SquimSubjectiveBundle
+    "torchaudio.pipelines.SquimSubjectiveBundle")定义了可以根据输入波形预测**主观**度量分数的语音质量和可懂度测量（SQUIM）管道。'
 - en: '| [`SquimSubjectiveBundle`](generated/torchaudio.pipelines.SquimSubjectiveBundle.html#torchaudio.pipelines.SquimSubjectiveBundle
     "torchaudio.pipelines.SquimSubjectiveBundle") | Data class that bundles associated
     information to use pretrained [`SquimSubjective`](generated/torchaudio.models.SquimSubjective.html#torchaudio.models.SquimSubjective
     "torchaudio.models.SquimSubjective") model. |'
+  id: totrans-131
   prefs: []
   type: TYPE_TB
+  zh: '| [`SquimSubjectiveBundle`](generated/torchaudio.pipelines.SquimSubjectiveBundle.html#torchaudio.pipelines.SquimSubjectiveBundle
+    "torchaudio.pipelines.SquimSubjectiveBundle") | 数据类，捆绑了相关信息以使用预训练的[`SquimSubjective`](generated/torchaudio.models.SquimSubjective.html#torchaudio.models.SquimSubjective
+    "torchaudio.models.SquimSubjective")模型。 |'
 - en: Pretrained Models[](#id82 "Permalink to this heading")
+  id: totrans-132
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 预训练模型[](#id82 "跳转到此标题的永久链接")
 - en: '| [`SQUIM_SUBJECTIVE`](generated/torchaudio.pipelines.SQUIM_SUBJECTIVE.html#torchaudio.pipelines.SQUIM_SUBJECTIVE
     "torchaudio.pipelines.SQUIM_SUBJECTIVE") | SquimSubjective pipeline trained as
     described in [[Manocha and Kumar, 2022](references.html#id66 "Pranay Manocha and
@@ -944,5 +1509,19 @@
     in real-world environments into professional production quality speech?—a dataset,
     insights, and challenges. IEEE Signal Processing Letters, 22(8):1006–1010, 2014.")]
     datasets. |'
+  id: totrans-133
   prefs: []
   type: TYPE_TB
+  zh: '| [`SQUIM_SUBJECTIVE`](generated/torchaudio.pipelines.SQUIM_SUBJECTIVE.html#torchaudio.pipelines.SQUIM_SUBJECTIVE
+    "torchaudio.pipelines.SQUIM_SUBJECTIVE") | 如[[Manocha和Kumar，2022年](references.html#id66
+    "Pranay Manocha and Anurag Kumar. Speech quality assessment through mos using
+    non-matching references. arXiv preprint arXiv:2206.12285, 2022.")]和[[Kumar等人，2023年](references.html#id69
+    "Anurag Kumar, Ke Tan, Zhaoheng Ni, Pranay Manocha, Xiaohui Zhang, Ethan Henderson,
+    and Buye Xu. Torchaudio-squim: reference-less speech quality and intelligibility
+    measures in torchaudio. arXiv preprint arXiv:2304.01448, 2023.")]中描述的方法训练的SquimSubjective管道，基于*BVCC*[[Cooper和Yamagishi，2021年](references.html#id67
+    "Erica Cooper and Junichi Yamagishi. How do voices from past speech synthesis
+    challenges compare today? arXiv preprint arXiv:2105.02373, 2021.")]和*DAPS*[[Mysore，2014年](references.html#id68
+    "Gautham J Mysore. Can we automatically transform speech recorded on common consumer
+    devices in real-world environments into professional production quality speech?—a
+    dataset, insights, and challenges. IEEE Signal Processing Letters, 22(8):1006–1010,
+    2014.")]数据集。 |'

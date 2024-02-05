@@ -1,422 +1,650 @@
 - en: Speech Enhancement with MVDR Beamforming
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 使用MVDR波束形成进行语音增强
 - en: 原文：[https://pytorch.org/audio/stable/tutorials/mvdr_tutorial.html](https://pytorch.org/audio/stable/tutorials/mvdr_tutorial.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: '[https://pytorch.org/audio/stable/tutorials/mvdr_tutorial.html](https://pytorch.org/audio/stable/tutorials/mvdr_tutorial.html)'
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-tutorials-mvdr-tutorial-py) to download the
     full example code
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[这里](#sphx-glr-download-tutorials-mvdr-tutorial-py)下载完整示例代码
 - en: '**Author**: [Zhaoheng Ni](mailto:zni%40meta.com)'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '**作者**：[Zhaoheng Ni](mailto:zni%40meta.com)'
 - en: 1\. Overview[](#overview "Permalink to this heading")
+  id: totrans-5
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 1\. 概述[](#overview "跳转到此标题的永久链接")
 - en: This is a tutorial on applying Minimum Variance Distortionless Response (MVDR)
     beamforming to estimate enhanced speech with TorchAudio.
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 这是一个关于如何应用最小方差无失真响应（MVDR）波束形成来估计增强语音的TorchAudio教程。
 - en: 'Steps:'
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 步骤：
 - en: Generate an ideal ratio mask (IRM) by dividing the clean/noise magnitude by
     the mixture magnitude.
+  id: totrans-8
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 通过将干净/噪声幅度除以混合幅度生成理想比掩模（IRM）。
 - en: Estimate power spectral density (PSD) matrices using [`torchaudio.transforms.PSD()`](../generated/torchaudio.transforms.PSD.html#torchaudio.transforms.PSD
     "torchaudio.transforms.PSD").
+  id: totrans-9
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 使用[`torchaudio.transforms.PSD()`](../generated/torchaudio.transforms.PSD.html#torchaudio.transforms.PSD
+    "torchaudio.transforms.PSD")来估计功率谱密度（PSD）矩阵。
 - en: Estimate enhanced speech using MVDR modules ([`torchaudio.transforms.SoudenMVDR()`](../generated/torchaudio.transforms.SoudenMVDR.html#torchaudio.transforms.SoudenMVDR
     "torchaudio.transforms.SoudenMVDR") and [`torchaudio.transforms.RTFMVDR()`](../generated/torchaudio.transforms.RTFMVDR.html#torchaudio.transforms.RTFMVDR
     "torchaudio.transforms.RTFMVDR")).
+  id: totrans-10
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 使用MVDR模块（[`torchaudio.transforms.SoudenMVDR()`](../generated/torchaudio.transforms.SoudenMVDR.html#torchaudio.transforms.SoudenMVDR
+    "torchaudio.transforms.SoudenMVDR")和[`torchaudio.transforms.RTFMVDR()`](../generated/torchaudio.transforms.RTFMVDR.html#torchaudio.transforms.RTFMVDR
+    "torchaudio.transforms.RTFMVDR")）估计增强语音。
 - en: Benchmark the two methods ([`torchaudio.functional.rtf_evd()`](../generated/torchaudio.functional.rtf_evd.html#torchaudio.functional.rtf_evd
     "torchaudio.functional.rtf_evd") and [`torchaudio.functional.rtf_power()`](../generated/torchaudio.functional.rtf_power.html#torchaudio.functional.rtf_power
     "torchaudio.functional.rtf_power")) for computing the relative transfer function
     (RTF) matrix of the reference microphone.
+  id: totrans-11
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 为计算参考麦克风的相对传递函数（RTF）矩阵，对两种方法（[`torchaudio.functional.rtf_evd()`](../generated/torchaudio.functional.rtf_evd.html#torchaudio.functional.rtf_evd
+    "torchaudio.functional.rtf_evd")和[`torchaudio.functional.rtf_power()`](../generated/torchaudio.functional.rtf_power.html#torchaudio.functional.rtf_power
+    "torchaudio.functional.rtf_power")）进行基准测试。
 - en: '[PRE0]'
+  id: totrans-12
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: '[PRE1]'
+  id: totrans-13
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: 2\. Preparation[](#preparation "Permalink to this heading")
+  id: totrans-14
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 2\. 准备工作[](#preparation "跳转到此标题的永久链接")
 - en: 2.1\. Import the packages[](#import-the-packages "Permalink to this heading")
+  id: totrans-15
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 2.1\. 导入包[](#import-the-packages "跳转到此标题的永久链接")
 - en: First, we install and import the necessary packages.
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 首先，我们安装并导入必要的包。
 - en: '`mir_eval`, `pesq`, and `pystoi` packages are required for evaluating the speech
     enhancement performance.'
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 评估语音增强性能需要`mir_eval`、`pesq`和`pystoi`包。
 - en: '[PRE2]'
+  id: totrans-18
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: 2.2\. Download audio data[](#download-audio-data "Permalink to this heading")
+  id: totrans-19
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 2.2\. 下载音频数据[](#download-audio-data "跳转到此标题的永久链接")
 - en: The multi-channel audio example is selected from [ConferencingSpeech](https://github.com/ConferencingSpeech/ConferencingSpeech2021)
     dataset.
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 多通道音频示例选自[ConferencingSpeech](https://github.com/ConferencingSpeech/ConferencingSpeech2021)数据集。
 - en: The original filename is
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 原始文件名为
 - en: '`SSB07200001\#noise-sound-bible-0038\#7.86_6.16_3.00_3.14_4.84_134.5285_191.7899_0.4735\#15217\#25.16333303751458\#0.2101221178590021.wav`'
+  id: totrans-22
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: '`SSB07200001\#noise-sound-bible-0038\#7.86_6.16_3.00_3.14_4.84_134.5285_191.7899_0.4735\#15217\#25.16333303751458\#0.2101221178590021.wav`'
 - en: 'which was generated with:'
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 这是通过以下方式生成的：
 - en: '`SSB07200001.wav` from [AISHELL-3](https://www.openslr.org/93/) (Apache License
     v.2.0)'
+  id: totrans-24
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 从[AISHELL-3](https://www.openslr.org/93/)（Apache许可证v.2.0）中获取`SSB07200001.wav`
 - en: '`noise-sound-bible-0038.wav` from [MUSAN](http://www.openslr.org/17/) (Attribution
     4.0 International — CC BY 4.0)'
+  id: totrans-25
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 从[MUSAN](http://www.openslr.org/17/)（署名4.0国际-CC BY 4.0）中获取`noise-sound-bible-0038.wav`
 - en: '[PRE3]'
+  id: totrans-26
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: '[PRE4]'
+  id: totrans-27
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: 2.3\. Helper functions[](#helper-functions "Permalink to this heading")
+  id: totrans-28
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 2.3\. 辅助函数[](#helper-functions "跳转到此标题的永久链接")
 - en: '[PRE5]'
+  id: totrans-29
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: 3\. Generate Ideal Ratio Masks (IRMs)[](#generate-ideal-ratio-masks-irms "Permalink
     to this heading")
+  id: totrans-30
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 3\. 生成理想比掩模（IRMs）[](#generate-ideal-ratio-masks-irms "跳转到此标题的永久链接")
 - en: 3.1\. Load audio data[](#load-audio-data "Permalink to this heading")
+  id: totrans-31
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 3.1\. 加载音频数据[](#load-audio-data "跳转到此标题的永久链接")
 - en: '[PRE6]'
+  id: totrans-32
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: 'Note: To improve computational robustness, it is recommended to represent the
     waveforms as double-precision floating point (`torch.float64` or `torch.double`)
     values.'
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意：为了提高计算的稳健性，建议将波形表示为双精度浮点数（`torch.float64`或`torch.double`）值。
 - en: '[PRE7]'
+  id: totrans-34
   prefs: []
   type: TYPE_PRE
-- en: 3.2\. Compute STFT coefficients[](#compute-stft-coefficients "Permalink to
-    this heading")
+  zh: '[PRE7]'
+- en: 3.2\. Compute STFT coefficients[](#compute-stft-coefficients "Permalink to this
+    heading")
+  id: totrans-35
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 3.2\. 计算STFT系数[](#compute-stft-coefficients "跳转到此标题的永久链接")
 - en: '[PRE8]'
+  id: totrans-36
   prefs: []
   type: TYPE_PRE
-- en: 3.2.1\. Visualize mixture speech[](#visualize-mixture-speech "Permalink to
-    this heading")
+  zh: '[PRE8]'
+- en: 3.2.1\. Visualize mixture speech[](#visualize-mixture-speech "Permalink to this
+    heading")
+  id: totrans-37
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 3.2.1\. 可视化混合语音[](#visualize-mixture-speech "跳转到此标题的永久链接")
 - en: 'We evaluate the quality of the mixture speech or the enhanced speech using
     the following three metrics:'
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们使用以下三个指标评估混合语音或增强语音的质量：
 - en: signal-to-distortion ratio (SDR)
+  id: totrans-39
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 信号与失真比（SDR）
 - en: scale-invariant signal-to-noise ratio (Si-SNR, or Si-SDR in some papers)
+  id: totrans-40
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 尺度不变信噪比（Si-SNR，在一些论文中为Si-SDR）
 - en: Perceptual Evaluation of Speech Quality (PESQ)
+  id: totrans-41
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 语音质量的感知评估（PESQ）
 - en: We also evaluate the intelligibility of the speech with the Short-Time Objective
     Intelligibility (STOI) metric.
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们还使用短时客观可懂性（STOI）指标评估语音的可懂性。
 - en: '[PRE9]'
+  id: totrans-43
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: '![Spectrogram of Mixture Speech (dB)](../Images/649354a23fa7ffa055a7ebbc4cc794ee.png)'
+  id: totrans-44
   prefs: []
   type: TYPE_IMG
+  zh: '![混合语音的频谱图（dB）](../Images/649354a23fa7ffa055a7ebbc4cc794ee.png)'
 - en: '[PRE10]'
+  id: totrans-45
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE10]'
+- en: null
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: 3.2.2\. Visualize clean speech[](#visualize-clean-speech "Permalink to this
     heading")
+  id: totrans-48
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 3.2.2\. 可视化干净语音[](#visualize-clean-speech "跳转到此标题的永久链接")
 - en: '[PRE11]'
+  id: totrans-49
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: '![Spectrogram of Clean Speech (dB)](../Images/8c0ec6c7b70ba3381f01f4ca1aa64cc3.png)'
+  id: totrans-50
   prefs: []
   type: TYPE_IMG
-- en: 
+  zh: '![干净语音的频谱图（dB）](../Images/8c0ec6c7b70ba3381f01f4ca1aa64cc3.png)'
+- en: null
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: 3.2.3\. Visualize noise[](#visualize-noise "Permalink to this heading")
+  id: totrans-53
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 3.2.3\. 可视化噪声[](#visualize-noise "跳转到此标题的永久链接")
 - en: '[PRE12]'
+  id: totrans-54
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: '![Spectrogram of Noise (dB)](../Images/6fcdfd90b4d1cf9de948387124b33fbc.png)'
+  id: totrans-55
   prefs: []
   type: TYPE_IMG
-- en: 
+  zh: '![噪声的频谱图（dB）](../Images/6fcdfd90b4d1cf9de948387124b33fbc.png)'
+- en: null
+  id: totrans-56
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: 3.3\. Define the reference microphone[](#define-the-reference-microphone "Permalink
     to this heading")
+  id: totrans-58
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 3.3\. 定义参考麦克风
 - en: We choose the first microphone in the array as the reference channel for demonstration.
     The selection of the reference channel may depend on the design of the microphone
     array.
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们选择阵列中的第一个麦克风作为演示的参考通道。参考通道的选择可能取决于麦克风阵列的设计。
 - en: You can also apply an end-to-end neural network which estimates both the reference
     channel and the PSD matrices, then obtains the enhanced STFT coefficients by the
     MVDR module.
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: 您还可以应用一个端到端的神经网络，该网络估计参考通道和PSD矩阵，然后通过MVDR模块获得增强的STFT系数。
 - en: '[PRE13]'
+  id: totrans-61
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: 3.4\. Compute IRMs[](#compute-irms "Permalink to this heading")
+  id: totrans-62
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 3.4\. 计算IRM
 - en: '[PRE14]'
+  id: totrans-63
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: 3.4.1\. Visualize IRM of target speech[](#visualize-irm-of-target-speech "Permalink
     to this heading")
+  id: totrans-64
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 3.4.1\. 可视化目标语音的IRM
 - en: '[PRE15]'
+  id: totrans-65
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: '![IRM of the Target Speech](../Images/554c74b7aceb3610533b6c17013955ed.png)'
+  id: totrans-66
   prefs: []
   type: TYPE_IMG
+  zh: '![目标语音的IRM](../Images/554c74b7aceb3610533b6c17013955ed.png)'
 - en: 3.4.2\. Visualize IRM of noise[](#visualize-irm-of-noise "Permalink to this
     heading")
+  id: totrans-67
   prefs:
   - PREF_H4
   type: TYPE_NORMAL
+  zh: 3.4.2\. 可视化噪声的IRM
 - en: '[PRE16]'
+  id: totrans-68
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: '![IRM of the Noise](../Images/f8e3d909efad92e7bbf8a4a89c77afe9.png)'
+  id: totrans-69
   prefs: []
   type: TYPE_IMG
+  zh: '![噪声的IRM](../Images/f8e3d909efad92e7bbf8a4a89c77afe9.png)'
 - en: 4\. Compute PSD matrices[](#compute-psd-matrices "Permalink to this heading")
+  id: totrans-70
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 4\. 计算PSD矩阵
 - en: '[`torchaudio.transforms.PSD()`](../generated/torchaudio.transforms.PSD.html#torchaudio.transforms.PSD
     "torchaudio.transforms.PSD") computes the time-invariant PSD matrix given the
     multi-channel complex-valued STFT coefficients of the mixture speech and the time-frequency
     mask.'
+  id: totrans-71
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`torchaudio.transforms.PSD()`](../generated/torchaudio.transforms.PSD.html#torchaudio.transforms.PSD
+    "torchaudio.transforms.PSD") 计算给定混合语音的多通道复值STFT系数和时间频率掩模的时不变PSD矩阵。'
 - en: The shape of the PSD matrix is (…, freq, channel, channel).
+  id: totrans-72
   prefs: []
   type: TYPE_NORMAL
+  zh: PSD矩阵的形状为（…，频率，通道，通道）。
 - en: '[PRE17]'
+  id: totrans-73
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: 5\. Beamforming using SoudenMVDR[](#beamforming-using-soudenmvdr "Permalink
     to this heading")
+  id: totrans-74
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 5\. 使用SoudenMVDR进行波束成形
 - en: 5.1\. Apply beamforming[](#apply-beamforming "Permalink to this heading")
+  id: totrans-75
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 5.1\. 应用波束成形
 - en: '[`torchaudio.transforms.SoudenMVDR()`](../generated/torchaudio.transforms.SoudenMVDR.html#torchaudio.transforms.SoudenMVDR
     "torchaudio.transforms.SoudenMVDR") takes the multi-channel complexed-valued STFT
     coefficients of the mixture speech, PSD matrices of target speech and noise, and
     the reference channel inputs.'
+  id: totrans-76
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`torchaudio.transforms.SoudenMVDR()`](../generated/torchaudio.transforms.SoudenMVDR.html#torchaudio.transforms.SoudenMVDR
+    "torchaudio.transforms.SoudenMVDR") 接受混合语音的多通道复值STFT系数，目标语音和噪声的PSD矩阵，以及参考通道输入。'
 - en: The output is a single-channel complex-valued STFT coefficients of the enhanced
     speech. We can then obtain the enhanced waveform by passing this output to the
     [`torchaudio.transforms.InverseSpectrogram()`](../generated/torchaudio.transforms.InverseSpectrogram.html#torchaudio.transforms.InverseSpectrogram
     "torchaudio.transforms.InverseSpectrogram") module.
+  id: totrans-77
   prefs: []
   type: TYPE_NORMAL
+  zh: 输出是增强语音的单通道复值STFT系数。然后，我们可以通过将此输出传递给[`torchaudio.transforms.InverseSpectrogram()`](../generated/torchaudio.transforms.InverseSpectrogram.html#torchaudio.transforms.InverseSpectrogram
+    "torchaudio.transforms.InverseSpectrogram")模块来获得增强的波形。
 - en: '[PRE18]'
+  id: totrans-78
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: 5.2\. Result for SoudenMVDR[](#result-for-soudenmvdr "Permalink to this heading")
+  id: totrans-79
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 5.2\. SoudenMVDR的结果
 - en: '[PRE19]'
+  id: totrans-80
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE19]'
 - en: '![Enhanced Spectrogram by SoudenMVDR (dB)](../Images/538460f3f3101c43956f055d758c19d8.png)'
+  id: totrans-81
   prefs: []
   type: TYPE_IMG
+  zh: '![SoudenMVDR增强的频谱图（dB）](../Images/538460f3f3101c43956f055d758c19d8.png)'
 - en: '[PRE20]'
+  id: totrans-82
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE20]'
+- en: null
+  id: totrans-83
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-84
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: 6\. Beamforming using RTFMVDR[](#beamforming-using-rtfmvdr "Permalink to this
     heading")
+  id: totrans-85
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 6\. 使用RTFMVDR进行波束成形
 - en: 6.1\. Compute RTF[](#compute-rtf "Permalink to this heading")
+  id: totrans-86
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 6.1\. 计算RTF
 - en: 'TorchAudio offers two methods for computing the RTF matrix of a target speech:'
+  id: totrans-87
   prefs: []
   type: TYPE_NORMAL
+  zh: TorchAudio提供了两种计算目标语音RTF矩阵的方法：
 - en: '[`torchaudio.functional.rtf_evd()`](../generated/torchaudio.functional.rtf_evd.html#torchaudio.functional.rtf_evd
     "torchaudio.functional.rtf_evd"), which applies eigenvalue decomposition to the
     PSD matrix of target speech to get the RTF matrix.'
+  id: totrans-88
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[`torchaudio.functional.rtf_evd()`](../generated/torchaudio.functional.rtf_evd.html#torchaudio.functional.rtf_evd
+    "torchaudio.functional.rtf_evd")，它对目标语音的PSD矩阵应用特征值分解以获得RTF矩阵。'
 - en: '[`torchaudio.functional.rtf_power()`](../generated/torchaudio.functional.rtf_power.html#torchaudio.functional.rtf_power
     "torchaudio.functional.rtf_power"), which applies the power iteration method.
     You can specify the number of iterations with argument `n_iter`.'
+  id: totrans-89
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '[`torchaudio.functional.rtf_power()`](../generated/torchaudio.functional.rtf_power.html#torchaudio.functional.rtf_power
+    "torchaudio.functional.rtf_power")，它应用幂迭代方法。您可以使用参数`n_iter`指定迭代次数。'
 - en: '[PRE21]'
+  id: totrans-90
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE21]'
 - en: 6.2\. Apply beamforming[](#id1 "Permalink to this heading")
+  id: totrans-91
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 6.2\. 使用波束成形
 - en: '[`torchaudio.transforms.RTFMVDR()`](../generated/torchaudio.transforms.RTFMVDR.html#torchaudio.transforms.RTFMVDR
     "torchaudio.transforms.RTFMVDR") takes the multi-channel complexed-valued STFT
     coefficients of the mixture speech, RTF matrix of target speech, PSD matrix of
     noise, and the reference channel inputs.'
+  id: totrans-92
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`torchaudio.transforms.RTFMVDR()`](../generated/torchaudio.transforms.RTFMVDR.html#torchaudio.transforms.RTFMVDR
+    "torchaudio.transforms.RTFMVDR") 接受混合语音的多通道复值STFT系数，目标语音的RTF矩阵，噪声的PSD矩阵，以及参考通道输入。'
 - en: The output is a single-channel complex-valued STFT coefficients of the enhanced
     speech. We can then obtain the enhanced waveform by passing this output to the
     [`torchaudio.transforms.InverseSpectrogram()`](../generated/torchaudio.transforms.InverseSpectrogram.html#torchaudio.transforms.InverseSpectrogram
     "torchaudio.transforms.InverseSpectrogram") module.
+  id: totrans-93
   prefs: []
   type: TYPE_NORMAL
+  zh: 输出是增强语音的单通道复值STFT系数。然后，我们可以通过将此输出传递给[`torchaudio.transforms.InverseSpectrogram()`](../generated/torchaudio.transforms.InverseSpectrogram.html#torchaudio.transforms.InverseSpectrogram
+    "torchaudio.transforms.InverseSpectrogram")模块来获得增强的波形。
 - en: '[PRE22]'
+  id: totrans-94
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE22]'
 - en: 6.3\. Result for RTFMVDR with rtf_evd[](#result-for-rtfmvdr-with-rtf-evd "Permalink
     to this heading")
+  id: totrans-95
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 6.3\. 使用rtf_evd的RTFMVDR的结果
 - en: '[PRE23]'
+  id: totrans-96
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE23]'
 - en: '![Enhanced Spectrogram by RTFMVDR and F.rtf_evd (dB)](../Images/370db6cebd6277dbdb20615483979e75.png)'
+  id: totrans-97
   prefs: []
   type: TYPE_IMG
+  zh: '![RTFMVDR和F.rtf_evd（dB）增强的频谱图](../Images/370db6cebd6277dbdb20615483979e75.png)'
 - en: '[PRE24]'
+  id: totrans-98
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE24]'
+- en: null
+  id: totrans-99
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-100
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: 6.4\. Result for RTFMVDR with rtf_power[](#result-for-rtfmvdr-with-rtf-power
     "Permalink to this heading")
+  id: totrans-101
   prefs:
   - PREF_H3
   type: TYPE_NORMAL
+  zh: 6.4\. 使用rtf_power的RTFMVDR结果[](#result-for-rtfmvdr-with-rtf-power "跳转到此标题")
 - en: '[PRE25]'
+  id: totrans-102
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE25]'
 - en: '![Enhanced Spectrogram by RTFMVDR and F.rtf_power (dB)](../Images/1c0783f4375432452c0ab411fa8bb3a5.png)'
+  id: totrans-103
   prefs: []
   type: TYPE_IMG
+  zh: '![RTFMVDR和F.rtf_power（dB）增强的频谱图](../Images/1c0783f4375432452c0ab411fa8bb3a5.png)'
 - en: '[PRE26]'
+  id: totrans-104
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE26]'
+- en: null
+  id: totrans-105
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-106
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: '**Total running time of the script:** ( 0 minutes 1.792 seconds)'
+  id: totrans-107
   prefs: []
   type: TYPE_NORMAL
+  zh: '**脚本的总运行时间：**（0分钟1.792秒）'
 - en: '[`Download Python source code: mvdr_tutorial.py`](../_downloads/50de4231f2cfe5d85bac91915f27f92c/mvdr_tutorial.py)'
+  id: totrans-108
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Python源代码：mvdr_tutorial.py`](../_downloads/50de4231f2cfe5d85bac91915f27f92c/mvdr_tutorial.py)'
 - en: '[`Download Jupyter notebook: mvdr_tutorial.ipynb`](../_downloads/ad8cfe3c85e0370f75a48f091e5a301d/mvdr_tutorial.ipynb)'
+  id: totrans-109
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Jupyter笔记本：mvdr_tutorial.ipynb`](../_downloads/ad8cfe3c85e0370f75a48f091e5a301d/mvdr_tutorial.ipynb)'
 - en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  id: totrans-110
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Sphinx-Gallery生成的图库](https://sphinx-gallery.github.io)'

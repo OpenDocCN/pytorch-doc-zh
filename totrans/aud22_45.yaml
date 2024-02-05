@@ -1,340 +1,536 @@
 - en: 'Torchaudio-Squim: Non-intrusive Speech Assessment in TorchAudio'
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: Torchaudio-Squim：TorchAudio中的非侵入式语音评估
 - en: 原文：[https://pytorch.org/audio/stable/tutorials/squim_tutorial.html](https://pytorch.org/audio/stable/tutorials/squim_tutorial.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 链接：[https://pytorch.org/audio/stable/tutorials/squim_tutorial.html](https://pytorch.org/audio/stable/tutorials/squim_tutorial.html)
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-tutorials-squim-tutorial-py) to download the
     full example code
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[这里](#sphx-glr-download-tutorials-squim-tutorial-py)下载完整示例代码
 - en: 'Author: [Anurag Kumar](mailto:anuragkr90%40meta.com), [Zhaoheng Ni](mailto:zni%40meta.com)'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 作者：[Anurag Kumar](mailto:anuragkr90%40meta.com)，[Zhaoheng Ni](mailto:zni%40meta.com)
 - en: 1\. Overview[](#overview "Permalink to this heading")
+  id: totrans-5
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 1\. 概述[](#overview "跳转到此标题的永久链接")
 - en: This tutorial shows uses of Torchaudio-Squim to estimate objective and subjective
     metrics for assessment of speech quality and intelligibility.
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程展示了使用Torchaudio-Squim来估计语音质量和可懂度的客观和主观度量的用法。
 - en: 'TorchAudio-Squim enables speech assessment in Torchaudio. It provides interface
     and pre-trained models to estimate various speech quality and intelligibility
     metrics. Currently, Torchaudio-Squim [1] supports reference-free estimation 3
     widely used objective metrics:'
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: TorchAudio-Squim使得在TorchAudio中进行语音评估成为可能。它提供接口和预训练模型来估计各种语音质量和可懂度度量。目前，Torchaudio-Squim
+    [1]支持无参考估计3种广泛使用的客观度量：
 - en: Wideband Perceptual Estimation of Speech Quality (PESQ) [2]
+  id: totrans-8
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 宽带感知语音质量估计（PESQ）[2]
 - en: Short-Time Objective Intelligibility (STOI) [3]
+  id: totrans-9
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 短时客观可懂度（STOI）[3]
 - en: Scale-Invariant Signal-to-Distortion Ratio (SI-SDR) [4]
+  id: totrans-10
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 标度不变信号失真比（SI-SDR）[4]
 - en: It also supports estimation of subjective Mean Opinion Score (MOS) for a given
     audio waveform using Non-Matching References [1, 5].
+  id: totrans-11
   prefs: []
   type: TYPE_NORMAL
+  zh: 它还支持使用非匹配参考[1, 5]对给定音频波形进行主观平均意见分数（MOS）的估计。
 - en: '**References**'
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: '**参考文献**'
 - en: '[1] Kumar, Anurag, et al. “TorchAudio-Squim: Reference-less Speech Quality
     and Intelligibility measures in TorchAudio.” ICASSP 2023-2023 IEEE International
     Conference on Acoustics, Speech and Signal Processing (ICASSP). IEEE, 2023.'
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: '[1] Kumar, Anurag, et al.“TorchAudio-Squim：TorchAudio中的无参考语音质量和可懂度度量。”ICASSP
+    2023-2023 IEEE国际声学、语音和信号处理会议（ICASSP）。IEEE，2023年。'
 - en: '[2] I. Rec, “P.862.2: Wideband extension to recommendation P.862 for the assessment
     of wideband telephone networks and speech codecs,” International Telecommunication
     Union, CH–Geneva, 2005.'
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: '[2] I. Rec，“P.862.2：推荐P.862的宽带扩展，用于评估宽带电话网络和语音编解码器”，国际电信联盟，瑞士日内瓦，2005年。'
 - en: '[3] Taal, C. H., Hendriks, R. C., Heusdens, R., & Jensen, J. (2010, March).
     A short-time objective intelligibility measure for time-frequency weighted noisy
     speech. In 2010 IEEE international conference on acoustics, speech and signal
     processing (pp. 4214-4217). IEEE.'
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: '[3] Taal, C. H., Hendriks, R. C., Heusdens, R., & Jensen, J.（2010年3月）。一种用于时频加权嘈杂语音的短时客观可懂度测量。在2010年IEEE国际声学、语音和信号处理会议上（第4214-4217页）。IEEE。'
 - en: '[4] Le Roux, Jonathan, et al. “SDR–half-baked or well done?.” ICASSP 2019-2019
     IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP).
     IEEE, 2019.'
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: '[4] Le Roux, Jonathan, et al.“SDR–半成品还是成品？。”ICASSP 2019-2019 IEEE国际声学、语音和信号处理会议（ICASSP）。IEEE，2019年。'
 - en: '[5] Manocha, Pranay, and Anurag Kumar. “Speech quality assessment through MOS
     using non-matching references.” Interspeech, 2022.'
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: '[5] Manocha, Pranay, and Anurag Kumar. “使用非匹配参考进行MOS的语音质量评估。” Interspeech，2022年。'
 - en: '[PRE0]'
+  id: totrans-18
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: '[PRE1]'
+  id: totrans-19
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: 2\. Preparation[](#preparation "Permalink to this heading")
+  id: totrans-20
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 2\. 准备工作[](#preparation "跳转到此标题的永久链接")
 - en: First import the modules and define the helper functions.
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 首先导入模块并定义辅助函数。
 - en: We will need torch, torchaudio to use Torchaudio-squim, Matplotlib to plot data,
     pystoi, pesq for computing reference metrics.
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们需要使用torch、torchaudio来使用Torchaudio-squim，使用Matplotlib来绘制数据，使用pystoi、pesq来计算参考度量。
 - en: '[PRE2]'
+  id: totrans-23
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: '[PRE3]'
+  id: totrans-24
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: 3\. Load Speech and Noise Sample[](#load-speech-and-noise-sample "Permalink
     to this heading")
+  id: totrans-25
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 3\. 加载语音和噪声样本[](#load-speech-and-noise-sample "跳转到此标题的永久链接")
 - en: '[PRE4]'
+  id: totrans-26
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: '[PRE5]'
+  id: totrans-27
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: '[PRE6]'
+  id: totrans-28
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: Currently, Torchaudio-Squim model only supports 16000 Hz sampling rate. Resample
     the waveforms if necessary.
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 目前，Torchaudio-Squim模型仅支持16000 Hz的采样率。如有必要，请重新采样波形。
 - en: '[PRE7]'
+  id: totrans-30
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: Trim waveforms so that they have the same number of frames.
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: 修剪波形，使其具有相同数量的帧。
 - en: '[PRE8]'
+  id: totrans-32
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: Play speech sample
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: 播放语音样本
 - en: '[PRE9]'
+  id: totrans-34
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE9]'
+- en: null
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: Play noise sample
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 播放噪声样本
 - en: '[PRE10]'
+  id: totrans-38
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE10]'
+- en: null
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: 4\. Create distorted (noisy) speech samples[](#create-distorted-noisy-speech-samples
     "Permalink to this heading")
+  id: totrans-41
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 4\. 创建失真（嘈杂）语音样本[](#create-distorted-noisy-speech-samples "跳转到此标题的永久链接")
 - en: '[PRE11]'
+  id: totrans-42
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: Play distorted speech with 20dB SNR
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: 播放信噪比为20dB的失真语音
 - en: '[PRE12]'
+  id: totrans-44
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE12]'
+- en: null
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: Play distorted speech with -5dB SNR
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: 播放信噪比为-5dB的失真语音
 - en: '[PRE13]'
+  id: totrans-48
   prefs: []
   type: TYPE_PRE
-- en: 
+  zh: '[PRE13]'
+- en: null
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
 - en: Your browser does not support the audio element.
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: 您的浏览器不支持音频元素。
 - en: 5\. Visualize the waveforms[](#visualize-the-waveforms "Permalink to this heading")
+  id: totrans-51
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 5\. 可视化波形[](#visualize-the-waveforms "跳转到此标题的永久链接")
 - en: Visualize speech sample
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
+  zh: 可视化语音样本
 - en: '[PRE14]'
+  id: totrans-53
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: '![Clean Speech](../Images/1a1bff08b20cbd26590cca35888077e0.png)'
+  id: totrans-54
   prefs: []
   type: TYPE_IMG
+  zh: '![干净语音](../Images/1a1bff08b20cbd26590cca35888077e0.png)'
 - en: Visualize noise sample
+  id: totrans-55
   prefs: []
   type: TYPE_NORMAL
+  zh: 可视化噪声样本
 - en: '[PRE15]'
+  id: totrans-56
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: '![Noise](../Images/cf255965754a39d367fd8c4d7cc5021b.png)'
+  id: totrans-57
   prefs: []
   type: TYPE_IMG
+  zh: '![噪声](../Images/cf255965754a39d367fd8c4d7cc5021b.png)'
 - en: Visualize distorted speech with 20dB SNR
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: 可视化信噪比为20dB的失真语音
 - en: '[PRE16]'
+  id: totrans-59
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: '![Distorted Speech with 20dB SNR](../Images/c0d401a9d6195aa0fd526c9507f14b87.png)'
+  id: totrans-60
   prefs: []
   type: TYPE_IMG
+  zh: '![信噪比为20dB的失真语音](../Images/c0d401a9d6195aa0fd526c9507f14b87.png)'
 - en: Visualize distorted speech with -5dB SNR
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: 可视化信噪比为-5dB的失真语音
 - en: '[PRE17]'
+  id: totrans-62
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: '![Distorted Speech with -5dB SNR](../Images/f71c3c56743ba5d56f22d8064d2e12ef.png)'
+  id: totrans-63
   prefs: []
   type: TYPE_IMG
+  zh: '![信噪比为-5dB的失真语音](../Images/f71c3c56743ba5d56f22d8064d2e12ef.png)'
 - en: 6\. Predict Objective Metrics[](#predict-objective-metrics "Permalink to this
     heading")
+  id: totrans-64
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 6\. 预测客观度量[](#predict-objective-metrics "跳转到此标题的永久链接")
 - en: Get the pre-trained `SquimObjective`model.
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: 获取预训练的`SquimObjective`模型。
 - en: '[PRE18]'
+  id: totrans-66
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: '[PRE19]'
+  id: totrans-67
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE19]'
 - en: Compare model outputs with ground truths for distorted speech with 20dB SNR
+  id: totrans-68
   prefs: []
   type: TYPE_NORMAL
+  zh: 比较模型输出和信噪比为20dB的失真语音的真实值
 - en: '[PRE20]'
+  id: totrans-69
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE20]'
 - en: '[PRE21]'
+  id: totrans-70
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE21]'
 - en: Compare model outputs with ground truths for distorted speech with -5dB SNR
+  id: totrans-71
   prefs: []
   type: TYPE_NORMAL
+  zh: 比较模型输出和信噪比为-5dB的失真语音的真实值
 - en: '[PRE22]'
+  id: totrans-72
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE22]'
 - en: '[PRE23]'
+  id: totrans-73
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE23]'
 - en: 7\. Predict Mean Opinion Scores (Subjective) Metric[](#predict-mean-opinion-scores-subjective-metric
     "Permalink to this heading")
+  id: totrans-74
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 7\. 预测主观平均意见分数（MOS）度量[](#predict-mean-opinion-scores-subjective-metric "跳转到此标题的永久链接")
 - en: Get the pre-trained `SquimSubjective` model.
+  id: totrans-75
   prefs: []
   type: TYPE_NORMAL
+  zh: 获取预训练的`SquimSubjective`模型。
 - en: '[PRE24]'
+  id: totrans-76
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE24]'
 - en: '[PRE25]'
+  id: totrans-77
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE25]'
 - en: Load a non-matching reference (NMR)
+  id: totrans-78
   prefs: []
   type: TYPE_NORMAL
+  zh: 加载一个不匹配的参考(NMR)
 - en: '[PRE26]'
+  id: totrans-79
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE26]'
 - en: Compute MOS metric for distorted speech with 20dB SNR
+  id: totrans-80
   prefs: []
   type: TYPE_NORMAL
+  zh: 计算信噪比为20dB的失真语音的MOS指标
 - en: '[PRE27]'
+  id: totrans-81
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE27]'
 - en: '[PRE28]'
+  id: totrans-82
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE28]'
 - en: Compute MOS metric for distorted speech with -5dB SNR
+  id: totrans-83
   prefs: []
   type: TYPE_NORMAL
+  zh: 计算信噪比为-5dB的失真语音的MOS指标
 - en: '[PRE29]'
+  id: totrans-84
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE29]'
 - en: '[PRE30]'
+  id: totrans-85
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE30]'
 - en: 8\. Comparison with ground truths and baselines[](#comparison-with-ground-truths-and-baselines
     "Permalink to this heading")
+  id: totrans-86
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 8. 与基准和基线的比较[](#comparison-with-ground-truths-and-baselines "跳转到此标题的永久链接")
 - en: 'Visualizing the estimated metrics by the `SquimObjective` and `SquimSubjective`
     models can help users better understand how the models can be applicable in real
     scenario. The graph below shows scatter plots of three different systems: MOSA-Net
     [1], AMSA [2], and the `SquimObjective` model, where y axis represents the estimated
     STOI, PESQ, and Si-SDR scores, and x axis represents the corresponding ground
     truth.'
+  id: totrans-87
   prefs: []
   type: TYPE_NORMAL
+  zh: 通过可视化`SquimObjective`和`SquimSubjective`模型估计的指标，可以帮助用户更好地理解这些模型在实际场景中的应用。下面的图表显示了三种不同系统的散点图：MOSA-Net
+    [1]、AMSA [2] 和`SquimObjective`模型，其中y轴表示估计的STOI、PESQ和Si-SDR分数，x轴表示相应的基准。
 - en: '[![https://download.pytorch.org/torchaudio/tutorial-assets/objective_plot.png](../Images/beab25bd56b59ea05c29a2fee467b3a7.png)](https://download.pytorch.org/torchaudio/tutorial-assets/objective_plot.png)'
+  id: totrans-88
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![https://download.pytorch.org/torchaudio/tutorial-assets/objective_plot.png](../Images/beab25bd56b59ea05c29a2fee467b3a7.png)](https://download.pytorch.org/torchaudio/tutorial-assets/objective_plot.png)'
 - en: '[1] Zezario, Ryandhimas E., Szu-Wei Fu, Fei Chen, Chiou-Shann Fuh, Hsin-Min
     Wang, and Yu Tsao. “Deep learning-based non-intrusive multi-objective speech assessment
     model with cross-domain features.” IEEE/ACM Transactions on Audio, Speech, and
     Language Processing 31 (2022): 54-70.'
+  id: totrans-89
   prefs: []
   type: TYPE_NORMAL
+  zh: '[1] Zezario, Ryandhimas E., Szu-Wei Fu, Fei Chen, Chiou-Shann Fuh, Hsin-Min
+    Wang, and Yu Tsao. “基于深度学习的非侵入式多目标语音评估模型与跨领域特征。”IEEE/ACM Transactions on Audio,
+    Speech, and Language Processing 31 (2022): 54-70.'
 - en: '[2] Dong, Xuan, and Donald S. Williamson. “An attention enhanced multi-task
     model for objective speech assessment in real-world environments.” In ICASSP 2020-2020
     IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP),
     pp. 911-915\. IEEE, 2020.'
+  id: totrans-90
   prefs: []
   type: TYPE_NORMAL
+  zh: '[2] Dong, Xuan, and Donald S. Williamson. “一种增强注意力的多任务模型，用于实际环境中的客观语音评估。”在ICASSP
+    2020-2020 IEEE国际声学、语音和信号处理会议(ICASSP)中，第 911-915 页。IEEE, 2020.'
 - en: The graph below shows scatter plot of the `SquimSubjective` model, where y axis
     represents the estimated MOS metric score, and x axis represents the corresponding
     ground truth.
+  id: totrans-91
   prefs: []
   type: TYPE_NORMAL
+  zh: 下面的图表显示了`SquimSubjective`模型的散点图，其中y轴表示估计的MOS指标分数，x轴表示相应的基准。
 - en: '[![https://download.pytorch.org/torchaudio/tutorial-assets/subjective_plot.png](../Images/6f51f5b6f641de3a35830b1d0e9a0d57.png)](https://download.pytorch.org/torchaudio/tutorial-assets/subjective_plot.png)'
+  id: totrans-92
   prefs: []
   type: TYPE_NORMAL
+  zh: '[![https://download.pytorch.org/torchaudio/tutorial-assets/subjective_plot.png](../Images/6f51f5b6f641de3a35830b1d0e9a0d57.png)](https://download.pytorch.org/torchaudio/tutorial-assets/subjective_plot.png)'
 - en: '**Total running time of the script:** ( 0 minutes 6.527 seconds)'
+  id: totrans-93
   prefs: []
   type: TYPE_NORMAL
+  zh: '**脚本的总运行时间:** (0 分钟 6.527 秒)'
 - en: '[`Download Python source code: squim_tutorial.py`](../_downloads/c943e35bc7cad6e8d9b1df2a7034a8fc/squim_tutorial.py)'
+  id: totrans-94
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载 Python 源代码：squim_tutorial.py`](../_downloads/c943e35bc7cad6e8d9b1df2a7034a8fc/squim_tutorial.py)'
 - en: '[`Download Jupyter notebook: squim_tutorial.ipynb`](../_downloads/242b4f86f5d51a9a90d3080d8ce32681/squim_tutorial.ipynb)'
+  id: totrans-95
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载 Jupyter 笔记本：squim_tutorial.ipynb`](../_downloads/242b4f86f5d51a9a90d3080d8ce32681/squim_tutorial.ipynb)'
 - en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  id: totrans-96
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Sphinx-Gallery 生成的图库](https://sphinx-gallery.github.io)'

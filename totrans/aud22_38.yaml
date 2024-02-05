@@ -1,218 +1,338 @@
 - en: Device ASR with Emformer RNN-T
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 使用Emformer RNN-T的设备ASR
 - en: 原文：[https://pytorch.org/audio/stable/tutorials/device_asr.html](https://pytorch.org/audio/stable/tutorials/device_asr.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/audio/stable/tutorials/device_asr.html](https://pytorch.org/audio/stable/tutorials/device_asr.html)
 - en: Note
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: Click [here](#sphx-glr-download-tutorials-device-asr-py) to download the full
     example code
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 点击[这里](#sphx-glr-download-tutorials-device-asr-py)下载完整示例代码
 - en: '**Author**: [Moto Hira](mailto:moto%40meta.com), [Jeff Hwang](mailto:jeffhwang%40meta.com).'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '**作者**：[Moto Hira](mailto:moto%40meta.com), [Jeff Hwang](mailto:jeffhwang%40meta.com)。'
 - en: This tutorial shows how to use Emformer RNN-T and streaming API to perform speech
     recognition on a streaming device input, i.e. microphone on laptop.
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程展示了如何使用Emformer RNN-T和流式API在流式设备输入上执行语音识别，即笔记本电脑上的麦克风。
 - en: Note
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: This tutorial requires FFmpeg libraries. Please refer to [FFmpeg dependency](../installation.html#ffmpeg-dependency)
     for the detail.
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程需要FFmpeg库。请参考[FFmpeg依赖](../installation.html#ffmpeg-dependency)获取详细信息。
 - en: Note
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: This tutorial was tested on MacBook Pro and Dynabook with Windows 10.
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程在MacBook Pro和安装了Windows 10的Dynabook上进行了测试。
 - en: This tutorial does NOT work on Google Colab because the server running this
     tutorial does not have a microphone that you can talk to.
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 本教程在Google Colab上不起作用，因为运行本教程的服务器没有可以与之交谈的麦克风。
 - en: 1\. Overview[](#overview "Permalink to this heading")
+  id: totrans-11
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 1\. 概述[](#overview "Permalink to this heading")
 - en: We use streaming API to fetch audio from audio device (microphone) chunk by
     chunk, then run inference using Emformer RNN-T.
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们使用流式API逐块从音频设备（麦克风）获取音频，然后使用Emformer RNN-T进行推理。
 - en: For the basic usage of the streaming API and Emformer RNN-T please refer to
     [StreamReader Basic Usage](./streamreader_basic_tutorial.html) and [Online ASR
     with Emformer RNN-T](./online_asr_tutorial.html).
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: 有关流式API和Emformer RNN-T的基本用法，请参考[StreamReader基本用法](./streamreader_basic_tutorial.html)和[使用Emformer
+    RNN-T进行在线ASR](./online_asr_tutorial.html)。
 - en: 2\. Checking the supported devices[](#checking-the-supported-devices "Permalink
     to this heading")
+  id: totrans-14
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 2\. 检查支持的设备[](#checking-the-supported-devices "Permalink to this heading")
 - en: Firstly, we need to check the devices that Streaming API can access, and figure
     out the arguments (`src` and `format`) we need to pass to [`StreamReader()`](../generated/torchaudio.io.StreamReader.html#torchaudio.io.StreamReader
     "torchaudio.io.StreamReader") class.
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: 首先，我们需要检查流式API可以访问的设备，并找出我们需要传递给[`StreamReader()`](../generated/torchaudio.io.StreamReader.html#torchaudio.io.StreamReader
+    "torchaudio.io.StreamReader")类的参数（`src`和`format`）。
 - en: We use `ffmpeg` command for this. `ffmpeg` abstracts away the difference of
     underlying hardware implementations, but the expected value for `format` varies
     across OS and each `format` defines different syntax for `src`.
+  id: totrans-16
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们使用`ffmpeg`命令来实现。`ffmpeg`抽象了底层硬件实现的差异，但`format`的预期值在不同操作系统上有所不同，每个`format`定义了不同的`src`语法。
 - en: The details of supported `format` values and `src` syntax can be found in [https://ffmpeg.org/ffmpeg-devices.html](https://ffmpeg.org/ffmpeg-devices.html).
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 有关支持的`format`值和`src`语法的详细信息，请参考[https://ffmpeg.org/ffmpeg-devices.html](https://ffmpeg.org/ffmpeg-devices.html)。
 - en: For macOS, the following command will list the available devices.
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于macOS，以下命令将列出可用设备。
 - en: '[PRE0]'
+  id: totrans-19
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: We will use the following values for Streaming API.
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们将使用以下值进行流式API。
 - en: '[PRE1]'
+  id: totrans-21
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: For Windows, `dshow` device should work.
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 对于Windows，`dshow`设备应该可以工作。
 - en: '[PRE2]'
+  id: totrans-23
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: In the above case, the following value can be used to stream from microphone.
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 在上述情况下，可以使用以下值从麦克风进行流式传输。
 - en: '[PRE3]'
+  id: totrans-25
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: 3\. Data acquisition[](#data-acquisition "Permalink to this heading")
+  id: totrans-26
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 3\. 数据采集[](#data-acquisition "Permalink to this heading")
 - en: Streaming audio from microphone input requires properly timing data acquisition.
     Failing to do so may introduce discontinuities in the data stream.
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 从麦克风输入流式音频需要正确计时数据采集。如果未能这样做，可能会导致数据流中出现不连续性。
 - en: For this reason, we will run the data acquisition in a subprocess.
+  id: totrans-28
   prefs: []
   type: TYPE_NORMAL
+  zh: 因此，我们将在子进程中运行数据采集。
 - en: Firstly, we create a helper function that encapsulates the whole process executed
     in the subprocess.
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 首先，我们创建一个封装在子进程中执行的整个过程的辅助函数。
 - en: This function initializes the streaming API, acquires data then puts it in a
     queue, which the main process is watching.
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 此函数初始化流式API，获取数据然后将其放入队列，主进程正在监视该队列。
 - en: '[PRE4]'
+  id: totrans-31
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: The notable difference from the non-device streaming is that, we provide `timeout`
     and `backoff` parameters to `stream` method.
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 与非设备流式的显着区别在于，我们为`stream`方法提供了`timeout`和`backoff`参数。
 - en: When acquiring data, if the rate of acquisition requests is higher than that
     at which the hardware can prepare the data, then the underlying implementation
     reports special error code, and expects client code to retry.
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: 在获取数据时，如果获取请求的速率高于硬件准备数据的速率，则底层实现会报告特殊的错误代码，并期望客户端代码重试。
 - en: Precise timing is the key for smooth streaming. Reporting this error from low-level
     implementation all the way back to Python layer, before retrying adds undesired
     overhead. For this reason, the retry behavior is implemented in C++ layer, and
     `timeout` and `backoff` parameters allow client code to control the behavior.
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 精确的时序是流畅流媒体的关键。从低级实现报告此错误一直返回到Python层，在重试之前会增加不必要的开销。因此，重试行为是在C++层实现的，`timeout`和`backoff`参数允许客户端代码控制行为。
 - en: For the detail of `timeout` and `backoff` parameters, please refer to the documentation
     of `stream()` method.
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 有关`timeout`和`backoff`参数的详细信息，请参考`stream()`方法的文档。
 - en: Note
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: The proper value of `backoff` depends on the system configuration. One way to
     see if `backoff` value is appropriate is to save the series of acquired chunks
     as a continuous audio and listen to it. If `backoff` value is too large, then
     the data stream is discontinuous. The resulting audio sounds sped up. If `backoff`
     value is too small or zero, the audio stream is fine, but the data acquisition
     process enters busy-waiting state, and this increases the CPU consumption.
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: '`backoff`的适当值取决于系统配置。检查`backoff`值是否合适的一种方法是将获取的一系列块保存为连续音频并进行听取。如果`backoff`值太大，则数据流是不连续的。生成的音频听起来加快了。如果`backoff`值太小或为零，则音频流正常，但数据采集过程进入忙等待状态，这会增加CPU消耗。'
 - en: 4\. Building inference pipeline[](#building-inference-pipeline "Permalink to
     this heading")
+  id: totrans-38
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 4\. 构建推理流程[](#building-inference-pipeline "跳转到此标题")
 - en: The next step is to create components required for inference.
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 接下来的步骤是创建推理所需的组件。
 - en: This is the same process as [Online ASR with Emformer RNN-T](./online_asr_tutorial.html).
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: 这与[使用Emformer RNN-T进行在线ASR](./online_asr_tutorial.html)是相同的流程。
 - en: '[PRE5]'
+  id: totrans-41
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: '[PRE6]'
+  id: totrans-42
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: 5\. The main process[](#the-main-process "Permalink to this heading")
+  id: totrans-43
   prefs:
   - PREF_H2
   type: TYPE_NORMAL
+  zh: 5\. 主要流程[](#the-main-process "跳转到此标题")
 - en: 'The execution flow of the main process is as follows:'
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 主进程的执行流程如下：
 - en: Initialize the inference pipeline.
+  id: totrans-45
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 初始化推理流程。
 - en: Launch data acquisition subprocess.
+  id: totrans-46
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 启动数据获取子进程。
 - en: Run inference.
+  id: totrans-47
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 运行推理。
 - en: Clean up
+  id: totrans-48
   prefs:
   - PREF_OL
   type: TYPE_NORMAL
+  zh: 清理
 - en: Note
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: 注意
 - en: As the data acquisition subprocess will be launched with “spawn” method, all
     the code on global scope are executed on the subprocess as well.
+  id: totrans-50
   prefs: []
   type: TYPE_NORMAL
+  zh: 由于数据获取子进程将使用“spawn”方法启动，全局范围的所有代码也将在子进程中执行。
 - en: We want to instantiate pipeline only in the main process, so we put them in
     a function and invoke it within __name__ == “__main__” guard.
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
+  zh: 我们希望只在主进程中实例化流程，因此我们将它们放在一个函数中，并在`__name__ == "__main__"`保护内调用它。
 - en: '[PRE7]'
+  id: totrans-52
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: '[PRE8]'
+  id: totrans-53
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: 'Tag: [`torchaudio.io`](../io.html#module-torchaudio.io "torchaudio.io")'
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: 标签：[`torchaudio.io`](../io.html#module-torchaudio.io "torchaudio.io")
 - en: '**Total running time of the script:** ( 0 minutes 0.000 seconds)'
+  id: totrans-55
   prefs: []
   type: TYPE_NORMAL
+  zh: '**脚本的总运行时间：**（0分钟0.000秒）'
 - en: '[`Download Python source code: device_asr.py`](../_downloads/8009eae2a3a1a322f175ecc138597775/device_asr.py)'
+  id: totrans-56
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Python源代码：device_asr.py`](../_downloads/8009eae2a3a1a322f175ecc138597775/device_asr.py)'
 - en: '[`Download Jupyter notebook: device_asr.ipynb`](../_downloads/c8265c298ed19ff44b504d5c3aa72563/device_asr.ipynb)'
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`下载Jupyter笔记本：device_asr.ipynb`](../_downloads/c8265c298ed19ff44b504d5c3aa72563/device_asr.ipynb)'
 - en: '[Gallery generated by Sphinx-Gallery](https://sphinx-gallery.github.io)'
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: '[Sphinx-Gallery生成的画廊](https://sphinx-gallery.github.io)'
