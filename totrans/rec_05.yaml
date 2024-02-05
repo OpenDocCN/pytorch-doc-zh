@@ -1,1390 +1,2219 @@
 - en: torchrec.distributed.planner
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: torchrec.distributed.planner
 - en: 原文：[https://pytorch.org/torchrec/torchrec.distributed.planner.html](https://pytorch.org/torchrec/torchrec.distributed.planner.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/torchrec/torchrec.distributed.planner.html](https://pytorch.org/torchrec/torchrec.distributed.planner.html)
 - en: Torchrec Planner
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: Torchrec规划者
 - en: The planner provides the specifications necessary for a module to be sharded,
     considering the possible options to build an optimized plan.
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 规划者提供了模块被分片所需的规格，考虑了构建优化计划的可能选项。
 - en: 'The features includes:'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 该功能包括：
 - en: generating all possible sharding options.
+  id: totrans-5
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 生成所有可能的分片选项。
 - en: estimating perf and storage for every shard.
+  id: totrans-6
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 为每个分片估算性能和存储。
 - en: estimating peak memory usage to eliminate sharding plans that might OOM.
+  id: totrans-7
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 估算峰值内存使用量，以消除可能导致OOM的分片计划。
 - en: customizability for parameter constraints, partitioning, proposers, or performance
     modeling.
+  id: totrans-8
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 参数约束、分区、提议者或性能建模的可定制性。
 - en: automatically building and selecting an optimized sharding plan.
+  id: totrans-9
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 自动构建和选择优化的分片计划。
 - en: '## torchrec.distributed.planner.constants[](#module-torchrec.distributed.planner.constants
     "Permalink to this heading")'
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: '## torchrec.distributed.planner.constants[](#module-torchrec.distributed.planner.constants
+    "Permalink to this heading")'
 - en: '[PRE0]'
+  id: totrans-11
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: Calculates the device bandwidth based on given compute device, compute kernel,
     and caching ratio.
+  id: totrans-12
   prefs: []
   type: TYPE_NORMAL
+  zh: 根据给定的计算设备、计算内核和缓存比率计算设备带宽。
 - en: 'Parameters:'
+  id: totrans-13
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数：
 - en: '**compute_kernel** (*str*) – compute kernel.'
+  id: totrans-14
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**compute_kernel** (*str*) – 计算内核。'
 - en: '**compute_device** (*str*) – compute device.'
+  id: totrans-15
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**compute_device** (*str*) – 计算设备。'
 - en: '**hbm_mem_bw** (*float*) – the bandwidth of the device HBM.'
+  id: totrans-16
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**hbm_mem_bw** (*float*) – 设备HBM的带宽。'
 - en: '**ddr_mem_bw** (*float*) – the bandwidth of the system DDR memory.'
+  id: totrans-17
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**ddr_mem_bw** (*float*) – 系统DDR内存的带宽。'
 - en: '**caching_ratio** (*Optional**[**float**]*) – caching ratio used to determine
     device bandwidth if UVM caching is enabled.'
+  id: totrans-18
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**caching_ratio** (*Optional**[**float**]*) – 用于确定设备带宽的缓存比率，如果启用了UVM缓存。'
 - en: '**prefetch_pipeline** (*bool*) – whether prefetch pipeline is enabled.'
+  id: totrans-19
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**prefetch_pipeline** (*bool*) – 是否启用预取管道。'
 - en: 'Returns:'
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回：
 - en: the device bandwidth.
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 设备带宽。
 - en: 'Return type:'
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型：
 - en: 'Optional[float]  ## torchrec.distributed.planner.enumerators[](#module-torchrec.distributed.planner.enumerators
     "Permalink to this heading")'
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: '可选[float]  ## torchrec.distributed.planner.enumerators[](#module-torchrec.distributed.planner.enumerators
+    "Permalink to this heading")'
 - en: '[PRE1]'
+  id: totrans-24
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: 'Bases: [`Enumerator`](#torchrec.distributed.planner.types.Enumerator "torchrec.distributed.planner.types.Enumerator")'
+  id: totrans-25
   prefs: []
   type: TYPE_NORMAL
+  zh: 基类：[`Enumerator`](#torchrec.distributed.planner.types.Enumerator "torchrec.distributed.planner.types.Enumerator")
 - en: Generates embedding sharding options for given nn.Module, considering user provided
     constraints.
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 为给定的nn.Module生成嵌入分片选项，考虑用户提供的约束。
 - en: 'Parameters:'
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数：
 - en: '**topology** ([*Topology*](#torchrec.distributed.planner.types.Topology "torchrec.distributed.planner.types.Topology"))
     – device topology.'
+  id: totrans-28
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**topology** ([*Topology*](#torchrec.distributed.planner.types.Topology "torchrec.distributed.planner.types.Topology"))
+    – 设备拓扑。'
 - en: '**batch_size** (*int*) – batch size.'
+  id: totrans-29
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**batch_size** (*int*) – 批量大小。'
 - en: '**constraints** (*Optional**[**Dict**[**str**,* [*ParameterConstraints*](#torchrec.distributed.planner.types.ParameterConstraints
     "torchrec.distributed.planner.types.ParameterConstraints")*]**]*) – dict of parameter
     names to provided ParameterConstraints.'
+  id: totrans-30
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**constraints** (*Optional**[**Dict**[**str**,* [*ParameterConstraints*](#torchrec.distributed.planner.types.ParameterConstraints
+    "torchrec.distributed.planner.types.ParameterConstraints")*]**]*) – 参数名称到提供的ParameterConstraints的字典。'
 - en: '[PRE2]'
+  id: totrans-31
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Generates relevant sharding options given module and sharders.
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 生成给定模块和分片器的相关分片选项。
 - en: 'Parameters:'
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数：
 - en: '**module** (*nn.Module*) – module to be sharded.'
+  id: totrans-34
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**module** (*nn.Module*) – 要分片的模块。'
 - en: '**sharders** (*List**[*[*ModuleSharder*](torchrec.distributed.html#torchrec.distributed.types.ModuleSharder
     "torchrec.distributed.types.ModuleSharder")*[**nn.Module**]**]*) – provided sharders
     for module.'
+  id: totrans-35
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**sharders** (*List**[*[*ModuleSharder*](torchrec.distributed.html#torchrec.distributed.types.ModuleSharder
+    "torchrec.distributed.types.ModuleSharder")*[**nn.Module**]**]*) – 模块的提供的分片器。'
 - en: 'Returns:'
+  id: totrans-36
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回：
 - en: valid sharding options with values populated.
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 填充值的有效分片选项。
 - en: 'Return type:'
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型：
 - en: List[[ShardingOption](#torchrec.distributed.planner.types.ShardingOption "torchrec.distributed.planner.types.ShardingOption")]
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: List[[ShardingOption](#torchrec.distributed.planner.types.ShardingOption "torchrec.distributed.planner.types.ShardingOption")]
 - en: '[PRE3]'
+  id: totrans-40
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: See class description.
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 查看类描述。
 - en: '[PRE4]'
+  id: totrans-42
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: Gets corresponding partition by type for provided sharding type.
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: 根据提供的分片类型获取相应的分区。
 - en: 'Parameters:'
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数：
 - en: '**sharding_type** (*str*) – sharding type string.'
+  id: totrans-45
   prefs: []
   type: TYPE_NORMAL
+  zh: '**sharding_type** (*str*) – 分片类型字符串。'
 - en: 'Returns:'
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回：
 - en: the corresponding PartitionByType value.
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: 相应的PartitionByType值。
 - en: 'Return type:'
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型：
 - en: 'str  ## torchrec.distributed.planner.partitioners[](#module-torchrec.distributed.planner.partitioners
     "Permalink to this heading")'
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: 'str  ## torchrec.distributed.planner.partitioners[](#module-torchrec.distributed.planner.partitioners
+    "Permalink to this heading")'
 - en: '[PRE5]'
+  id: totrans-50
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: 'Bases: [`Partitioner`](#torchrec.distributed.planner.types.Partitioner "torchrec.distributed.planner.types.Partitioner")'
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
+  zh: 基类：[`Partitioner`](#torchrec.distributed.planner.types.Partitioner "torchrec.distributed.planner.types.Partitioner")
 - en: Greedy Partitioner
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
+  zh: 贪婪分区器
 - en: 'Parameters:'
+  id: totrans-53
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数：
 - en: '**sort_by** ([*SortBy*](#torchrec.distributed.planner.partitioners.SortBy "torchrec.distributed.planner.partitioners.SortBy"))
     – Sort sharding options by storage or perf in descending order (i.e., large tables
     will be placed first).'
+  id: totrans-54
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**sort_by** ([*SortBy*](#torchrec.distributed.planner.partitioners.SortBy "torchrec.distributed.planner.partitioners.SortBy"))
+    – 按存储或性能降序排序分片选项（即，大表将首先放置）。'
 - en: '**balance_modules** (*bool*) – Whether to sort by modules first, where smaller
     modules will be sorted first. In effect, this will place tables in each module
     in a balanced way.'
+  id: totrans-55
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**balance_modules** (*bool*) – 是否首先按模块排序，其中较小的模块将首先排序。实际上，这将以平衡的方式在每个模块中放置表。'
 - en: '[PRE6]'
+  id: totrans-56
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: Places sharding options on topology based on each sharding option’s partition_by
     attribute. The topology, storage, and perfs are updated at the end of the placement.
+  id: totrans-57
   prefs: []
   type: TYPE_NORMAL
+  zh: 根据每个分片选项的partition_by属性将分片选项放置在拓扑上。在放置结束时，拓扑、存储和性能将被更新。
 - en: 'Parameters:'
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数：
 - en: '**proposal** (*List**[*[*ShardingOption*](#torchrec.distributed.planner.types.ShardingOption
     "torchrec.distributed.planner.types.ShardingOption")*]*) – list of populated sharding
     options.'
+  id: totrans-59
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**proposal** (*List**[*[*ShardingOption*](#torchrec.distributed.planner.types.ShardingOption
+    "torchrec.distributed.planner.types.ShardingOption")*]*) – 填充的分片选项列表。'
 - en: '**storage_constraint** ([*Topology*](#torchrec.distributed.planner.types.Topology
     "torchrec.distributed.planner.types.Topology")) – device topology.'
+  id: totrans-60
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**storage_constraint**（[*Topology*](#torchrec.distributed.planner.types.Topology
+    "torchrec.distributed.planner.types.Topology")）-设备拓扑。'
 - en: 'Returns:'
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回：
 - en: list of sharding options for selected plan.
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
+  zh: 所选计划的分片选项列表。
 - en: 'Return type:'
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型：
 - en: List[[ShardingOption](#torchrec.distributed.planner.types.ShardingOption "torchrec.distributed.planner.types.ShardingOption")]
+  id: totrans-64
   prefs: []
   type: TYPE_NORMAL
+  zh: List[[ShardingOption](#torchrec.distributed.planner.types.ShardingOption "torchrec.distributed.planner.types.ShardingOption")]
 - en: 'Example:'
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例：
 - en: '[PRE7]'
+  id: totrans-66
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: '[PRE8]'
+  id: totrans-67
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: 'Bases: [`Partitioner`](#torchrec.distributed.planner.types.Partitioner "torchrec.distributed.planner.types.Partitioner")'
+  id: totrans-68
   prefs: []
   type: TYPE_NORMAL
+  zh: 基类：[`Partitioner`](#torchrec.distributed.planner.types.Partitioner "torchrec.distributed.planner.types.Partitioner")
 - en: Memory balanced Partitioner.
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: 内存平衡分区器。
 - en: 'Parameters:'
+  id: totrans-70
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数：
 - en: '**max_search_count** (*int*) – Maximum number of times to call the GreedyPartitioner.'
+  id: totrans-71
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**max_search_count**（*整数*）-调用GreedyPartitioner的最大次数。'
 - en: '**tolerance** (*float*) – The maximum acceptable difference between the original
     plan and the new plan. If tolerance is 1, that means a new plan will be rejected
     if its perf is 200% of the original plan (i.e., the plan is 100% worse).'
+  id: totrans-72
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**容差**（*浮点数*）-原始计划和新计划之间的最大可接受差异。如果容差为1，这意味着如果新计划的性能是原始计划的200％（即计划比原计划差100％），则将拒绝新计划。'
 - en: '**balance_modules** (*bool*) – Whether to sort by modules first, where smaller
     modules will be sorted first. In effect, this will place tables in each module
     in a balanced way.'
+  id: totrans-73
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**balance_modules**（*布尔值*）-是否首先按模块排序，其中较小的模块将首先排序。实际上，这将以平衡的方式放置每个模块中的表。'
 - en: '[PRE9]'
+  id: totrans-74
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: Repeatedly calls the GreedyPerfPartitioner to find a plan with perf within the
     tolerance of the original plan that uses the least amount of memory.
+  id: totrans-75
   prefs: []
   type: TYPE_NORMAL
+  zh: 重复调用GreedyPerfPartitioner，以找到性能在原始计划容差范围内且使用最少内存量的计划。
 - en: '[PRE10]'
+  id: totrans-76
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: 'Bases: `object`'
+  id: totrans-77
   prefs: []
   type: TYPE_NORMAL
+  zh: 基类：`object`
 - en: '[PRE11]'
+  id: totrans-78
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: '[PRE12]'
+  id: totrans-79
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: '[PRE13]'
+  id: totrans-80
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: 'Bases: `object`'
+  id: totrans-81
   prefs: []
   type: TYPE_NORMAL
+  zh: 基类：`object`
 - en: '[PRE14]'
+  id: totrans-82
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: '[PRE15]'
+  id: totrans-83
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: '[PRE16]'
+  id: totrans-84
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: '[PRE17]'
+  id: totrans-85
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: '[PRE18]'
+  id: totrans-86
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE18]'
 - en: 'Bases: `Enum`'
+  id: totrans-87
   prefs: []
   type: TYPE_NORMAL
+  zh: 基类：`Enum`
 - en: An enumeration.
+  id: totrans-88
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个枚举。
 - en: '[PRE19]'
+  id: totrans-89
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE19]'
 - en: '[PRE20]'
+  id: totrans-90
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE20]'
 - en: '[PRE21]  ## torchrec.distributed.planner.perf_models[](#module-torchrec.distributed.planner.perf_models
     "Permalink to this heading")'
+  id: totrans-91
   prefs: []
   type: TYPE_NORMAL
+  zh: '[PRE21]  ## torchrec.distributed.planner.perf_models[](#module-torchrec.distributed.planner.perf_models
+    "Permalink to this heading")'
 - en: '[PRE22]'
+  id: totrans-92
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE22]'
 - en: 'Bases: [`PerfModel`](#torchrec.distributed.planner.types.PerfModel "torchrec.distributed.planner.types.PerfModel")'
+  id: totrans-93
   prefs: []
   type: TYPE_NORMAL
+  zh: 基类：[`PerfModel`](#torchrec.distributed.planner.types.PerfModel "torchrec.distributed.planner.types.PerfModel")
 - en: '[PRE23]  ## torchrec.distributed.planner.planners[](#module-torchrec.distributed.planner.planners
     "Permalink to this heading")'
+  id: totrans-94
   prefs: []
   type: TYPE_NORMAL
+  zh: '[PRE23]  ## torchrec.distributed.planner.planners[](#module-torchrec.distributed.planner.planners
+    "Permalink to this heading")'
 - en: '[PRE24]'
+  id: totrans-95
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE24]'
 - en: 'Bases: [`ShardingPlanner`](torchrec.distributed.html#torchrec.distributed.types.ShardingPlanner
     "torchrec.distributed.types.ShardingPlanner")'
+  id: totrans-96
   prefs: []
   type: TYPE_NORMAL
+  zh: 基类：[`ShardingPlanner`](torchrec.distributed.html#torchrec.distributed.types.ShardingPlanner
+    "torchrec.distributed.types.ShardingPlanner")
 - en: Provides an optimized sharding plan for a given module with shardable parameters
     according to the provided sharders, topology, and constraints.
+  id: totrans-97
   prefs: []
   type: TYPE_NORMAL
+  zh: 根据提供的分片器、拓扑和约束为给定模块提供优化的分片计划。
 - en: '[PRE25]'
+  id: totrans-98
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE25]'
 - en: Call self.plan(…) on rank 0 and broadcast
+  id: totrans-99
   prefs: []
   type: TYPE_NORMAL
+  zh: 在rank 0上调用self.plan(…)并广播
 - en: '[PRE26]'
+  id: totrans-100
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE26]'
 - en: Plans sharding for provided module and given sharders.
+  id: totrans-101
   prefs: []
   type: TYPE_NORMAL
+  zh: 为提供的模块和给定的分片器进行分片。
 - en: 'Parameters:'
+  id: totrans-102
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数：
 - en: '**module** (*nn.Module*) – module that sharding is planned for.'
+  id: totrans-103
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**module**（*nn.Module*）-计划分片的模块。'
 - en: '**sharders** (*List**[*[*ModuleSharder*](torchrec.distributed.html#torchrec.distributed.types.ModuleSharder
     "torchrec.distributed.types.ModuleSharder")*[**nn.Module**]**]*) – provided sharders
     for module.'
+  id: totrans-104
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**sharders**（*List**[*[*ModuleSharder*](torchrec.distributed.html#torchrec.distributed.types.ModuleSharder
+    "torchrec.distributed.types.ModuleSharder")*[**nn.Module**]**]*)-模块的提供的分片器。'
 - en: 'Returns:'
+  id: totrans-105
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回：
 - en: the computed sharding plan.
+  id: totrans-106
   prefs: []
   type: TYPE_NORMAL
+  zh: 计算得到的分片计划。
 - en: 'Return type:'
+  id: totrans-107
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型：
 - en: '[ShardingPlan](torchrec.distributed.html#torchrec.distributed.types.ShardingPlan
     "torchrec.distributed.types.ShardingPlan")  ## torchrec.distributed.planner.proposers[](#module-torchrec.distributed.planner.proposers
     "Permalink to this heading")'
+  id: totrans-108
   prefs: []
   type: TYPE_NORMAL
+  zh: '[ShardingPlan](torchrec.distributed.html#torchrec.distributed.types.ShardingPlan
+    "torchrec.distributed.types.ShardingPlan")  ## torchrec.distributed.planner.proposers[](#module-torchrec.distributed.planner.proposers
+    "Permalink to this heading")'
 - en: '[PRE27]'
+  id: totrans-109
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE27]'
 - en: 'Bases: [`Proposer`](#torchrec.distributed.planner.types.Proposer "torchrec.distributed.planner.types.Proposer")'
+  id: totrans-110
   prefs: []
   type: TYPE_NORMAL
+  zh: 基类：[`Proposer`](#torchrec.distributed.planner.types.Proposer "torchrec.distributed.planner.types.Proposer")
 - en: '[PRE28]'
+  id: totrans-111
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE28]'
 - en: '[PRE29]'
+  id: totrans-112
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE29]'
 - en: '[PRE30]'
+  id: totrans-113
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE30]'
 - en: '[PRE31]'
+  id: totrans-114
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE31]'
 - en: '[PRE32]'
+  id: totrans-115
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE32]'
 - en: returns additional HBM budget available for GPU caches.
+  id: totrans-116
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回额外的HBM预算，可用于GPU缓存。
 - en: '[PRE33]'
+  id: totrans-117
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE33]'
 - en: '[PRE34]'
+  id: totrans-118
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE34]'
 - en: '[PRE35]'
+  id: totrans-119
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE35]'
 - en: '[PRE36]'
+  id: totrans-120
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE36]'
 - en: '[PRE37]'
+  id: totrans-121
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE37]'
 - en: '[PRE38]'
+  id: totrans-122
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE38]'
 - en: 'Bases: [`Proposer`](#torchrec.distributed.planner.types.Proposer "torchrec.distributed.planner.types.Proposer")'
+  id: totrans-123
   prefs: []
   type: TYPE_NORMAL
+  zh: 基类：[`Proposer`](#torchrec.distributed.planner.types.Proposer "torchrec.distributed.planner.types.Proposer")
 - en: Proposes sharding plans in greedy fashion.
+  id: totrans-124
   prefs: []
   type: TYPE_NORMAL
+  zh: 以贪婪的方式提出分片计划。
 - en: Sorts sharding options for each shardable parameter by perf. On each iteration,
     finds parameter with largest current storage usage and tries its next sharding
     option.
+  id: totrans-125
   prefs: []
   type: TYPE_NORMAL
+  zh: 按性能对每个可分片参数的分片选项进行排序。在每次迭代中，找到当前存储使用量最大的参数，并尝试其下一个分片选项。
 - en: 'Parameters:'
+  id: totrans-126
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数：
 - en: '**use_depth** (*bool*) – When enabled, sharding_options of a fqn are sorted
     based on max(shard.perf.total), otherwise sharding_options are sorted by sum(shard.perf.total).'
+  id: totrans-127
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**use_depth**（*布尔值*）-启用时，根据max(shard.perf.total)对fqn的sharding_options进行排序，否则根据sum(shard.perf.total)对sharding_options进行排序。'
 - en: '**threshold** (*Optional**[**int**]*) – Threshold for early stopping. When
     specified, the proposer stops proposing when the proposals have consecutive worse
     perf_rating than best_perf_rating.'
+  id: totrans-128
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**threshold**（*可选**[**整数**]**）-提前停止的阈值。当指定时，当提议的性能连续比最佳性能差时，提议者停止提议。'
 - en: '[PRE39]'
+  id: totrans-129
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE39]'
 - en: '[PRE40]'
+  id: totrans-130
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE40]'
 - en: '[PRE41]'
+  id: totrans-131
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE41]'
 - en: '[PRE42]'
+  id: totrans-132
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE42]'
 - en: 'Bases: [`Proposer`](#torchrec.distributed.planner.types.Proposer "torchrec.distributed.planner.types.Proposer")'
+  id: totrans-133
   prefs: []
   type: TYPE_NORMAL
+  zh: 基类：[`Proposer`](#torchrec.distributed.planner.types.Proposer "torchrec.distributed.planner.types.Proposer")
 - en: '[PRE43]'
+  id: totrans-134
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE43]'
 - en: '[PRE44]'
+  id: totrans-135
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE44]'
 - en: '[PRE45]'
+  id: totrans-136
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE45]'
 - en: '[PRE46]'
+  id: totrans-137
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE46]'
 - en: 'Bases: [`Proposer`](#torchrec.distributed.planner.types.Proposer "torchrec.distributed.planner.types.Proposer")'
+  id: totrans-138
   prefs: []
   type: TYPE_NORMAL
+  zh: 基类：[`Proposer`](#torchrec.distributed.planner.types.Proposer "torchrec.distributed.planner.types.Proposer")
 - en: Proposes uniform sharding plans, plans that have the same sharding type for
     all sharding options.
+  id: totrans-139
   prefs: []
   type: TYPE_NORMAL
+  zh: 提出统一的分片计划，即所有分片选项都具有相同的分片类型的计划。
 - en: '[PRE47]'
+  id: totrans-140
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE47]'
 - en: '[PRE48]'
+  id: totrans-141
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE48]'
 - en: '[PRE49]'
+  id: totrans-142
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE49]'
 - en: '[PRE50]'
+  id: totrans-143
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE50]'
 - en: 'only works for static_feedback proposers (the path of proposals to check is
     independent of the performance of the proposals)  ## torchrec.distributed.planner.shard_estimators[](#module-torchrec.distributed.planner.shard_estimators
     "Permalink to this heading")'
+  id: totrans-144
   prefs: []
   type: TYPE_NORMAL
+  zh: 仅适用于静态反馈提议者（要检查的提议路径与提议的性能无关）## torchrec.distributed.planner.shard_estimators[](#module-torchrec.distributed.planner.shard_estimators
+    "Permalink to this heading")
 - en: '[PRE51]'
+  id: totrans-145
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE51]'
 - en: 'Bases: [`CacheStatistics`](torchrec.distributed.html#torchrec.distributed.types.CacheStatistics
     "torchrec.distributed.types.CacheStatistics")'
+  id: totrans-146
   prefs: []
   type: TYPE_NORMAL
+  zh: 基类：[`CacheStatistics`](torchrec.distributed.html#torchrec.distributed.types.CacheStatistics
+    "torchrec.distributed.types.CacheStatistics")
 - en: Computes cache statistics for uvm_fused_cache tables.
+  id: totrans-147
   prefs: []
   type: TYPE_NORMAL
+  zh: 为uvm_fused_cache表计算缓存统计信息。
 - en: 'Args:'
+  id: totrans-148
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数：
 - en: 'cachebility (float):'
+  id: totrans-149
   prefs: []
   type: TYPE_NORMAL
+  zh: 'cachebility (float):'
 - en: The area-under-the-curve of miss-ratio curve.
+  id: totrans-150
   prefs: []
   type: TYPE_NORMAL
+  zh: 未命中率曲线的曲线下面积。
 - en: 'expected_lookups (float):'
+  id: totrans-151
   prefs: []
   type: TYPE_NORMAL
+  zh: 'expected_lookups (float):'
 - en: The expected number of unique embedding ids per global batch.
+  id: totrans-152
   prefs: []
   type: TYPE_NORMAL
+  zh: 全局批次中预期的唯一嵌入id数量。
 - en: 'mrc_hist_counts (torch.Tensor):'
+  id: totrans-153
   prefs: []
   type: TYPE_NORMAL
+  zh: 'mrc_hist_counts (torch.Tensor):'
 - en: A 1d tensor (size n) holding a histogram of LRU miss ratio curve. Each bin represents
     1/nth of possible LRU cache sizes (from load_factor 0 to load_factor 1.0). The
     bin contains the number of expected LRU operations that could be handled without
     a cache miss if the LRU load_factor was at least that size.
+  id: totrans-154
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个1维张量（大小为n），保存LRU未命中率曲线的直方图。每个bin代表可能的LRU缓存大小的1/n（从load_factor 0到load_factor
+    1.0）。如果LRU load_factor至少为该大小，则bin包含可以处理的预期LRU操作数量，而不会发生缓存未命中。
 - en: 'height (int):'
+  id: totrans-155
   prefs: []
   type: TYPE_NORMAL
+  zh: 高度（int）：
 - en: The height (num_embeddings) of the embedding table.
+  id: totrans-156
   prefs: []
   type: TYPE_NORMAL
+  zh: 嵌入表的高度（num_embeddings）。
 - en: '[PRE52]'
+  id: totrans-157
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE52]'
 - en: Summarized measure of the difficulty to cache a dataset that is independent
     of cache size. A score of 0 means the dataset is very cacheable (e.g. high locality
     between accesses), a score of 1 is very difficult to cache.
+  id: totrans-158
   prefs: []
   type: TYPE_NORMAL
+  zh: 缓存数据集的难度的总结度量，独立于缓存大小。得分为0表示数据集非常适合缓存（例如，访问之间的局部性很高），得分为1表示非常难以缓存。
 - en: '[PRE53]'
+  id: totrans-159
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE53]'
 - en: Calculate estimated cache miss ratio for the proposed cache_sizes, given the
     MRC histogram.
+  id: totrans-160
   prefs: []
   type: TYPE_NORMAL
+  zh: 根据提议的cache_sizes计算给定MRC直方图的估计缓存未命中率。
 - en: '[PRE54]'
+  id: totrans-161
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE54]'
 - en: Number of expected cache lookups per training step.
+  id: totrans-162
   prefs: []
   type: TYPE_NORMAL
+  zh: 每个训练步骤的预期缓存查找次数。
 - en: This is the expected number of distinct values in a global training batch.
+  id: totrans-163
   prefs: []
   type: TYPE_NORMAL
+  zh: 这是全局训练批次中预期的不同值的数量。
 - en: '[PRE55]'
+  id: totrans-164
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE55]'
 - en: Expected cache lookup miss rate for a given cache size.
+  id: totrans-165
   prefs: []
   type: TYPE_NORMAL
+  zh: 给定缓存大小的预期缓存查找未命中率。
 - en: When clf (cache load factor) is 0, returns 1.0 (100% miss). When clf is 1.0,
     returns 0 (100% hit). For values of clf between these extremes, returns the estimated
     miss rate of the cache, e.g. based on knowledge of the statistical properties
     of the training data set.
+  id: totrans-166
   prefs: []
   type: TYPE_NORMAL
+  zh: 当clf（缓存加载因子）为0时，返回1.0（100%未命中）。当clf为1.0时，返回0（100%命中）。对于介于这些极端之间的clf值，根据对训练数据集的统计属性的了解，返回缓存的估计未命中率。
 - en: '[PRE56]'
+  id: totrans-167
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE56]'
 - en: 'Bases: [`ShardEstimator`](#torchrec.distributed.planner.types.ShardEstimator
     "torchrec.distributed.planner.types.ShardEstimator")'
+  id: totrans-168
   prefs: []
   type: TYPE_NORMAL
+  zh: 基类：[`ShardEstimator`](#torchrec.distributed.planner.types.ShardEstimator "torchrec.distributed.planner.types.ShardEstimator")
 - en: Embedding Wall Time Perf Estimator
+  id: totrans-169
   prefs: []
   type: TYPE_NORMAL
+  zh: 嵌入墙时间性能估计器
 - en: '[PRE57]'
+  id: totrans-170
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE57]'
 - en: '[PRE58]'
+  id: totrans-171
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE58]'
 - en: 'Bases: [`ShardEstimator`](#torchrec.distributed.planner.types.ShardEstimator
     "torchrec.distributed.planner.types.ShardEstimator")'
+  id: totrans-172
   prefs: []
   type: TYPE_NORMAL
+  zh: 基类：[`ShardEstimator`](#torchrec.distributed.planner.types.ShardEstimator "torchrec.distributed.planner.types.ShardEstimator")
 - en: Embedding Storage Usage Estimator
+  id: totrans-173
   prefs: []
   type: TYPE_NORMAL
+  zh: 嵌入存储使用量估计器
 - en: '[PRE59]'
+  id: totrans-174
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE59]'
 - en: '[PRE60]'
+  id: totrans-175
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE60]'
 - en: Calculates estimated storage sizes for each sharded tensor, comprised of input,
     output, tensor, gradient, and optimizer sizes.
+  id: totrans-176
   prefs: []
   type: TYPE_NORMAL
+  zh: 计算每个分片张量的估计存储大小，包括输入、输出、张量、梯度和优化器大小。
 - en: 'Parameters:'
+  id: totrans-177
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数：
 - en: '**sharder** ([*ModuleSharder*](torchrec.distributed.html#torchrec.distributed.types.ModuleSharder
     "torchrec.distributed.types.ModuleSharder")*[**nn.Module**]*) – sharder for module
     that supports sharding.'
+  id: totrans-178
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**sharder** ([*ModuleSharder*](torchrec.distributed.html#torchrec.distributed.types.ModuleSharder
+    "torchrec.distributed.types.ModuleSharder")*[**nn.Module**]*) – 支持分片的模块的分片器。'
 - en: '**sharding_type** (*str*) – provided ShardingType value.'
+  id: totrans-179
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**sharding_type** (*str*) – 提供的ShardingType值。'
 - en: '**tensor** (*torch.Tensor*) – tensor to be sharded.'
+  id: totrans-180
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**tensor** (*torch.Tensor*) – 要分片的张量。'
 - en: '**compute_device** (*str*) – compute device to be used.'
+  id: totrans-181
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**compute_device** (*str*) – 要使用的计算设备。'
 - en: '**compute_kernel** (*str*) – compute kernel to be used.'
+  id: totrans-182
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**compute_kernel** (*str*) – 要使用的计算内核。'
 - en: '**shard_sizes** (*List**[**List**[**int**]**]*) – list of dimensions of each
     sharded tensor.'
+  id: totrans-183
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**shard_sizes** (*List**[**List**[**int**]**]*) – 每个分片张量的维度列表。'
 - en: '**batch_sizes** (*List**[**int**]*) – batch size for each input feature.'
+  id: totrans-184
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**batch_sizes** (*List**[**int**]*) – 每个输入特征的批次大小。'
 - en: '**world_size** (*int*) – total number of devices in topology.'
+  id: totrans-185
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**world_size** (*int*) – 拓扑中的设备总数。'
 - en: '**local_world_size** (*int*) – total number of devices in host group topology.'
+  id: totrans-186
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**local_world_size** (*int*) – 主机组拓扑中的设备总数。'
 - en: '**input_lengths** (*List**[**float**]*) – average input lengths synonymous
     with pooling factors.'
+  id: totrans-187
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**input_lengths** (*List**[**float**]*) – 平均输入长度，与池化因子相同。'
 - en: '**num_poolings** (*List**[**float**]*) – average number of poolings per sample
     (typically 1.0).'
+  id: totrans-188
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**num_poolings** (*List**[**float**]*) – 每个样本的平均池化次数（通常为1.0）。'
 - en: '**caching_ratio** (*float*) – ratio of HBM to DDR memory for UVM caching.'
+  id: totrans-189
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**caching_ratio** (*float*) – HBM到DDR内存的UVM缓存比率。'
 - en: '**is_pooled** (*bool*) – True if embedding output is pooled (ie. EmbeddingBag),
     False if unpooled/sequential (ie. Embedding).'
+  id: totrans-190
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**is_pooled** (*bool*) – 如果嵌入输出是池化的（即EmbeddingBag），则为True，如果是未池化/顺序的（即Embedding），则为False。'
 - en: 'Returns:'
+  id: totrans-191
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回：
 - en: storage object for each device in topology.
+  id: totrans-192
   prefs: []
   type: TYPE_NORMAL
+  zh: 拓扑中每个设备的存储对象。
 - en: 'Return type:'
+  id: totrans-193
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型：
 - en: List[[Storage](#torchrec.distributed.planner.types.Storage "torchrec.distributed.planner.types.Storage")]
+  id: totrans-194
   prefs: []
   type: TYPE_NORMAL
+  zh: List[[Storage](#torchrec.distributed.planner.types.Storage "torchrec.distributed.planner.types.Storage")]
 - en: '[PRE61]'
+  id: totrans-195
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE61]'
 - en: Attempts to model perfs as a function of relative wall times.
+  id: totrans-196
   prefs: []
   type: TYPE_NORMAL
+  zh: 尝试将性能建模为相对墙时间的函数。
 - en: 'Parameters:'
+  id: totrans-197
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数：
 - en: '**shard_sizes** (*List**[**List**[**int**]**]*) – the list of (local_rows,
     local_cols) of each shard.'
+  id: totrans-198
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**shard_sizes** (*List**[**List**[**int**]**]*) – 每个分片的（local_rows, local_cols）列表。'
 - en: '**compute_kernel** (*str*) – compute kernel.'
+  id: totrans-199
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**compute_kernel** (*str*) – 计算内核。'
 - en: '**compute_device** (*str*) – compute device.'
+  id: totrans-200
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**compute_device** (*str*) – 计算设备。'
 - en: '**sharding_type** (*str*) – tw, rw, cw, twrw, dp.'
+  id: totrans-201
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**sharding_type** (*str*) – tw, rw, cw, twrw, dp。'
 - en: '**batch_sizes** (*List**[**int**]*) – batch size for each input feature.'
+  id: totrans-202
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**batch_sizes** (*List**[**int**]*) – 每个输入特征的批次大小。'
 - en: '**world_size** (*int*) – the number of devices for all hosts.'
+  id: totrans-203
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**world_size** (*int*) – 所有主机的设备数量。'
 - en: '**local_world_size** (*int*) – the number of the device for each host.'
+  id: totrans-204
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**local_world_size** (*int*) – 每个主机的设备数量。'
 - en: '**input_lengths** (*List**[**float**]*) – the list of the average number of
     lookups of each input query feature.'
+  id: totrans-205
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**input_lengths** (*List**[**float**]*) – 每个输入查询特征的平均查找次数列表。'
 - en: '**input_data_type_size** (*float*) – the data type size of the distributed
     data_parallel input.'
+  id: totrans-206
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**input_data_type_size** (*float*) – 分布式数据并行输入的数据类型大小。'
 - en: '**table_data_type_size** (*float*) – the data type size of the table.'
+  id: totrans-207
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**table_data_type_size** (*float*) – 表格的数据类型大小。'
 - en: '**fwd_comm_data_type_size** (*float*) – the data type size of the distributed
     data_parallel input during forward communication.'
+  id: totrans-208
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**fwd_comm_data_type_size** (*float*) – 正向通信期间分布式数据并行输入的数据类型大小。'
 - en: '**bwd_comm_data_type_size** (*float*) – the data type size of the distributed
     data_parallel input during backward communication.'
+  id: totrans-209
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**bwd_comm_data_type_size** (*float*) – 反向通信期间分布式数据并行输入的数据类型大小。'
 - en: '**num_poolings** (*List**[**float**]*) – number of poolings per sample, typically
     1.0.'
+  id: totrans-210
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**num_poolings** (*List**[**float**]*) – 每个样本的池化次数，通常为1.0。'
 - en: '**hbm_mem_bw** (*float*) – the bandwidth of the device HBM.'
+  id: totrans-211
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**hbm_mem_bw** (*float*) – 设备HBM的带宽。'
 - en: '**ddr_mem_bw** (*float*) – the bandwidth of the system DDR memory.'
+  id: totrans-212
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**ddr_mem_bw** (*float*) – 系统DDR内存的带宽。'
 - en: '**intra_host_bw** (*float*) – the bandwidth within a single host like multiple
     threads.'
+  id: totrans-213
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**intra_host_bw** (*float*) – 单个主机内的带宽，如多个线程。'
 - en: '**inter_host_bw** (*float*) – the bandwidth between two hosts like multiple
     machines.'
+  id: totrans-214
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**inter_host_bw** (*float*) – 两个主机之间的带宽，如多台机器。'
 - en: '**is_pooled** (*bool*) – True if embedding output is pooled (ie. EmbeddingBag),
     False if unpooled/sequential (ie. Embedding).'
+  id: totrans-215
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**is_pooled** (*bool*) – 如果嵌入输出是池化的（即EmbeddingBag），则为True；如果未池化/顺序（即Embedding），则为False。'
 - en: '**is_weighted** (*bool = False*) – if the module is an EBC and is weighted,
     typically signifying an id score list feature.'
+  id: totrans-216
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**is_weighted** (*bool = False*) – 如果模块是EBC并且是加权的，则为True，通常表示id分数列表特征。'
 - en: '**is_inference** (*bool = False*) – if planning for inference.'
+  id: totrans-217
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**is_inference** (*bool = False*) – 是否为推断进行规划。'
 - en: '**caching_ratio** (*Optional**[**float**]* *= None*) – cache ratio to determine
     the bandwidth of device.'
+  id: totrans-218
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**caching_ratio** (*Optional**[**float**]* *= None*) – 缓存比例，用于确定设备的带宽。'
 - en: '**prefetch_pipeline** (*bool = False*) – whether prefetch pipeline is enabled.'
+  id: totrans-219
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**prefetch_pipeline** (*bool = False*) – 是否启用预取管道。'
 - en: '**expected_cache_fetches** (*float*) – number of expected cache fetches across
     global batch'
+  id: totrans-220
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**expected_cache_fetches** (*float*) – 全局批次中预期的缓存获取次数'
 - en: 'Returns:'
+  id: totrans-221
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回：
 - en: the list of perf for each shard.
+  id: totrans-222
   prefs: []
   type: TYPE_NORMAL
+  zh: 每个分片的性能列表。
 - en: 'Return type:'
+  id: totrans-223
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型：
 - en: 'List[float]  ## torchrec.distributed.planner.stats[](#module-torchrec.distributed.planner.stats
     "Permalink to this heading")'
+  id: totrans-224
   prefs: []
   type: TYPE_NORMAL
+  zh: 'List[float]  ## torchrec.distributed.planner.stats[](#module-torchrec.distributed.planner.stats
+    "Permalink to this heading")'
 - en: '[PRE62]'
+  id: totrans-225
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE62]'
 - en: 'Bases: [`Stats`](#torchrec.distributed.planner.types.Stats "torchrec.distributed.planner.types.Stats")'
+  id: totrans-226
   prefs: []
   type: TYPE_NORMAL
+  zh: 基类：[`Stats`](#torchrec.distributed.planner.types.Stats "torchrec.distributed.planner.types.Stats")
 - en: Stats for a sharding planner execution.
+  id: totrans-227
   prefs: []
   type: TYPE_NORMAL
+  zh: 用于分片规划执行的统计信息。
 - en: '[PRE63]'
+  id: totrans-228
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE63]'
 - en: Logs stats for a given sharding plan.
+  id: totrans-229
   prefs: []
   type: TYPE_NORMAL
+  zh: 记录给定分片计划的统计信息。
 - en: Provides a tabular view of stats for the given sharding plan with per device
     storage usage (HBM and DDR), perf, input, output, and number/type of shards.
+  id: totrans-230
   prefs: []
   type: TYPE_NORMAL
+  zh: 提供给定分片计划的每个设备存储使用情况（HBM和DDR）、性能、输入、输出和分片数量/类型的统计表格视图。
 - en: 'Parameters:'
+  id: totrans-231
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数：
 - en: '**sharding_plan** ([*ShardingPlan*](torchrec.distributed.html#torchrec.distributed.types.ShardingPlan
     "torchrec.distributed.types.ShardingPlan")) – sharding plan chosen by the planner.'
+  id: totrans-232
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**sharding_plan** ([*ShardingPlan*](torchrec.distributed.html#torchrec.distributed.types.ShardingPlan
+    "torchrec.distributed.types.ShardingPlan")) – 规划者选择的分片计划。'
 - en: '**topology** ([*Topology*](#torchrec.distributed.planner.types.Topology "torchrec.distributed.planner.types.Topology"))
     – device topology.'
+  id: totrans-233
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**topology** ([*Topology*](#torchrec.distributed.planner.types.Topology "torchrec.distributed.planner.types.Topology"))
+    – 设备拓扑结构。'
 - en: '**batch_size** (*int*) – batch size.'
+  id: totrans-234
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**batch_size** (*int*) – 批次大小。'
 - en: '**storage_reservation** ([*StorageReservation*](#torchrec.distributed.planner.types.StorageReservation
     "torchrec.distributed.planner.types.StorageReservation")) – reserves storage for
     unsharded parts of the model'
+  id: totrans-235
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**storage_reservation** ([*StorageReservation*](#torchrec.distributed.planner.types.StorageReservation
+    "torchrec.distributed.planner.types.StorageReservation")) – 为模型的未分片部分保留存储空间'
 - en: '**num_proposals** (*int*) – number of proposals evaluated.'
+  id: totrans-236
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**num_proposals** (*int*) – 评估的提案数量。'
 - en: '**num_plans** (*int*) – number of proposals successfully partitioned.'
+  id: totrans-237
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**num_plans** (*int*) – 成功分区的提案数量。'
 - en: '**run_time** (*float*) – time taken to find plan (in seconds).'
+  id: totrans-238
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**run_time** (*float*) – 找到计划所需的时间（以秒为单位）。'
 - en: '**best_plan** (*List**[*[*ShardingOption*](#torchrec.distributed.planner.types.ShardingOption
     "torchrec.distributed.planner.types.ShardingOption")*]*) – plan with expected
     performance.'
+  id: totrans-239
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**best_plan** (*List**[*[*ShardingOption*](#torchrec.distributed.planner.types.ShardingOption
+    "torchrec.distributed.planner.types.ShardingOption")*]*) – 预期性能的计划。'
 - en: '**constraints** (*Optional**[**Dict**[**str**,* [*ParameterConstraints*](#torchrec.distributed.planner.types.ParameterConstraints
     "torchrec.distributed.planner.types.ParameterConstraints")*]**]*) – dict of parameter
     names to provided ParameterConstraints.'
+  id: totrans-240
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**constraints** (*Optional**[**Dict**[**str**,* [*ParameterConstraints*](#torchrec.distributed.planner.types.ParameterConstraints
+    "torchrec.distributed.planner.types.ParameterConstraints")*]**]*) – 参数名称到提供的参数约束的字典。'
 - en: '**debug** (*bool*) – whether to enable debug mode.'
+  id: totrans-241
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**debug** (*bool*) – 是否启用调试模式。'
 - en: '[PRE64]'
+  id: totrans-242
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE64]'
 - en: 'Bases: [`Stats`](#torchrec.distributed.planner.types.Stats "torchrec.distributed.planner.types.Stats")'
+  id: totrans-243
   prefs: []
   type: TYPE_NORMAL
+  zh: 基类：[`Stats`](#torchrec.distributed.planner.types.Stats "torchrec.distributed.planner.types.Stats")
 - en: Noop Stats for a sharding planner execution.
+  id: totrans-244
   prefs: []
   type: TYPE_NORMAL
+  zh: 用于分片规划执行的Noop统计。
 - en: '[PRE65]'
+  id: totrans-245
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE65]'
 - en: See class description
+  id: totrans-246
   prefs: []
   type: TYPE_NORMAL
+  zh: 查看类描述
 - en: '[PRE66]  ## torchrec.distributed.planner.storage_reservations[](#module-torchrec.distributed.planner.storage_reservations
     "Permalink to this heading")'
+  id: totrans-247
   prefs: []
   type: TYPE_NORMAL
+  zh: '[PRE66]  ## torchrec.distributed.planner.storage_reservations[](#module-torchrec.distributed.planner.storage_reservations
+    "Permalink to this heading")'
 - en: '[PRE67]'
+  id: totrans-248
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE67]'
 - en: 'Bases: [`StorageReservation`](#torchrec.distributed.planner.types.StorageReservation
     "torchrec.distributed.planner.types.StorageReservation")'
+  id: totrans-249
   prefs: []
   type: TYPE_NORMAL
+  zh: 基类：[`StorageReservation`](#torchrec.distributed.planner.types.StorageReservation
+    "torchrec.distributed.planner.types.StorageReservation")
 - en: '[PRE68]'
+  id: totrans-250
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE68]'
 - en: '[PRE69]'
+  id: totrans-251
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE69]'
 - en: 'Bases: [`StorageReservation`](#torchrec.distributed.planner.types.StorageReservation
     "torchrec.distributed.planner.types.StorageReservation")'
+  id: totrans-252
   prefs: []
   type: TYPE_NORMAL
+  zh: 基类：[`StorageReservation`](#torchrec.distributed.planner.types.StorageReservation
+    "torchrec.distributed.planner.types.StorageReservation")
 - en: Reserves storage for model to be sharded with heuristical calculation. The storage
     reservation is comprised of dense tensor storage, KJT storage, and an extra percentage
     of total storage.
+  id: totrans-253
   prefs: []
   type: TYPE_NORMAL
+  zh: 为要分片的模型保留存储空间，使用启发式计算。存储保留包括稠密张量存储、KJT存储和总存储的额外百分比。
 - en: 'Parameters:'
+  id: totrans-254
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数：
 - en: '**percentage** (*float*) – extra storage percent to reserve that acts as a
     margin of error beyond heuristic calculation of storage.'
+  id: totrans-255
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**百分比**（*浮点数*）- 额外的存储百分比，作为启发式计算存储空间之外的误差边界。'
 - en: '**parameter_multiplier** (*float*) – heuristic multiplier for total parameter
     storage.'
+  id: totrans-256
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: 参数乘数（*浮点数*）- 用于总参数存储的启发式乘数。
 - en: '**dense_tensor_estimate** (*Optional**[**int**]*) – storage estimate for dense
     tensors, uses default heuristic estimate if not provided.'
+  id: totrans-257
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**dense_tensor_estimate**（*可选**[**int**]*）- 稠密张量的存储估计，如果未提供，则使用默认的启发式估计。'
 - en: '[PRE70]'
+  id: totrans-258
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE70]'
 - en: '[PRE71]'
+  id: totrans-259
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE71]'
 - en: 'Bases: [`StorageReservation`](#torchrec.distributed.planner.types.StorageReservation
     "torchrec.distributed.planner.types.StorageReservation")'
+  id: totrans-260
   prefs: []
   type: TYPE_NORMAL
+  zh: 基类：[`StorageReservation`](#torchrec.distributed.planner.types.StorageReservation
+    "torchrec.distributed.planner.types.StorageReservation")
 - en: Reserves storage for model to be sharded for inference. The storage reservation
     is comprised of dense tensor storage, KJT storage, and an extra percentage of
     total storage. Note that when estimating for storage, dense modules are assumed
     to be on GPUs and replicated across ranks. If this is not the case, please override
     the estimates with dense_tensor_estimate.
+  id: totrans-261
   prefs: []
   type: TYPE_NORMAL
+  zh: 为要分片进行推理而保留存储空间。存储保留包括稠密张量存储、KJT存储和总存储的额外百分比。请注意，在估算存储空间时，假定稠密模块位于GPU上，并在各个秩上复制。如果不是这种情况，请使用dense_tensor_estimate覆盖估算。
 - en: 'Parameters:'
+  id: totrans-262
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数：
 - en: '**percentage** (*float*) – extra storage percentage to reserve that acts as
     a margin of error beyond storage calculation.'
+  id: totrans-263
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**百分比**（*浮点数*）- 保留的额外存储百分比，作为存储计算之外的误差边界。'
 - en: '**dense_tensor_estimate** (*Optional**[**int**]*) – storage estimate for dense
     tensors, use default heuristic estimate if not provided.'
+  id: totrans-264
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**dense_tensor_estimate**（*可选**[**int**]*）- 稠密张量的存储估计，如果未提供，则使用默认的启发式估计。'
 - en: '[PRE72]  ## torchrec.distributed.planner.types[](#module-torchrec.distributed.planner.types
     "Permalink to this heading")'
+  id: totrans-265
   prefs: []
   type: TYPE_NORMAL
+  zh: '[PRE72]  ## torchrec.distributed.planner.types[](#module-torchrec.distributed.planner.types
+    "Permalink to this heading")'
 - en: '[PRE73]'
+  id: totrans-266
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE73]'
 - en: 'Bases: `object`'
+  id: totrans-267
   prefs: []
   type: TYPE_NORMAL
+  zh: 基类：`object`
 - en: Representation of a device in a process group. ‘perf’ is an estimation of network,
     CPU, and storage usages.
+  id: totrans-268
   prefs: []
   type: TYPE_NORMAL
+  zh: 表示进程组中设备的存储容量。‘perf’是网络、CPU和存储使用的估计。
 - en: '[PRE74]'
+  id: totrans-269
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE74]'
 - en: '[PRE75]'
+  id: totrans-270
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE75]'
 - en: '[PRE76]'
+  id: totrans-271
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE76]'
 - en: '[PRE77]'
+  id: totrans-272
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE77]'
 - en: 'Bases: `ABC`'
+  id: totrans-273
   prefs: []
   type: TYPE_NORMAL
+  zh: 基类：`ABC`
 - en: Generates all relevant sharding options for given topology, constraints, nn.Module,
     and sharders.
+  id: totrans-274
   prefs: []
   type: TYPE_NORMAL
+  zh: 为给定拓扑、约束、nn.Module和分片器生成所有相关的分片选项。
 - en: '[PRE78]'
+  id: totrans-275
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE78]'
 - en: See class description.
+  id: totrans-276
   prefs: []
   type: TYPE_NORMAL
+  zh: 查看类描述。
 - en: '[PRE79]'
+  id: totrans-277
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE79]'
 - en: See class description.
+  id: totrans-278
   prefs: []
   type: TYPE_NORMAL
+  zh: 查看类描述。
 - en: '[PRE80]'
+  id: totrans-279
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE80]'
 - en: 'Bases: `object`'
+  id: totrans-280
   prefs: []
   type: TYPE_NORMAL
+  zh: 基类：`object`
 - en: Stores user provided constraints around the sharding plan.
+  id: totrans-281
   prefs: []
   type: TYPE_NORMAL
+  zh: 存储用户提供的关于分片计划的约束。
 - en: If provided, pooling_factors, num_poolings, and batch_sizes must match in length,
     as per sample.
+  id: totrans-282
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果提供了pooling_factors、num_poolings和batch_sizes，必须与样本中的长度匹配。
 - en: '[PRE81]'
+  id: totrans-283
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE81]'
 - en: '[PRE82]'
+  id: totrans-284
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE82]'
 - en: '[PRE83]'
+  id: totrans-285
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE83]'
 - en: '[PRE84]'
+  id: totrans-286
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE84]'
 - en: '[PRE85]'
+  id: totrans-287
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE85]'
 - en: '[PRE86]'
+  id: totrans-288
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE86]'
 - en: '[PRE87]'
+  id: totrans-289
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE87]'
 - en: '[PRE88]'
+  id: totrans-290
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE88]'
 - en: '[PRE89]'
+  id: totrans-291
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE89]'
 - en: '[PRE90]'
+  id: totrans-292
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE90]'
 - en: '[PRE91]'
+  id: totrans-293
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE91]'
 - en: '[PRE92]'
+  id: totrans-294
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE92]'
 - en: 'Bases: `Enum`'
+  id: totrans-295
   prefs: []
   type: TYPE_NORMAL
+  zh: 基类：`Enum`
 - en: Well-known partition types.
+  id: totrans-296
   prefs: []
   type: TYPE_NORMAL
+  zh: 众所周知的分区类型。
 - en: '[PRE93]'
+  id: totrans-297
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE93]'
 - en: '[PRE94]'
+  id: totrans-298
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE94]'
 - en: '[PRE95]'
+  id: totrans-299
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE95]'
 - en: '[PRE96]'
+  id: totrans-300
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE96]'
 - en: 'Bases: `ABC`'
+  id: totrans-301
   prefs: []
   type: TYPE_NORMAL
+  zh: 基类：`ABC`
 - en: Partitions shards.
+  id: totrans-302
   prefs: []
   type: TYPE_NORMAL
+  zh: 分区分片。
 - en: Today we have multiple strategies ie. (Greedy, BLDM, Linear).
+  id: totrans-303
   prefs: []
   type: TYPE_NORMAL
+  zh: 今天我们有多种策略，即（贪婪、BLDM、线性）。
 - en: '[PRE97]'
+  id: totrans-304
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE97]'
 - en: '[PRE98]'
+  id: totrans-305
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE98]'
 - en: 'Bases: `object`'
+  id: totrans-306
   prefs: []
   type: TYPE_NORMAL
+  zh: 基类：`object`
 - en: Representation of the breakdown of the perf estimate a single shard of an embedding
     table.
+  id: totrans-307
   prefs: []
   type: TYPE_NORMAL
+  zh: 表示单个嵌入表分片的性能估计的细分。
 - en: '[PRE99]'
+  id: totrans-308
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE99]'
 - en: '[PRE100]'
+  id: totrans-309
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE100]'
 - en: '[PRE101]'
+  id: totrans-310
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE101]'
 - en: '[PRE102]'
+  id: totrans-311
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE102]'
 - en: '[PRE103]'
+  id: totrans-312
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE103]'
 - en: '[PRE104]'
+  id: totrans-313
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE104]'
 - en: '[PRE105]'
+  id: totrans-314
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE105]'
 - en: 'Bases: `ABC`'
+  id: totrans-315
   prefs: []
   type: TYPE_NORMAL
+  zh: 基类：`ABC`
 - en: '[PRE106]'
+  id: totrans-316
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE106]'
 - en: '[PRE107]'
+  id: totrans-317
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE107]'
 - en: 'Bases: `Exception`'
+  id: totrans-318
   prefs: []
   type: TYPE_NORMAL
+  zh: 基类：`Exception`
 - en: '[PRE108]'
+  id: totrans-319
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE108]'
 - en: 'Bases: `Enum`'
+  id: totrans-320
   prefs: []
   type: TYPE_NORMAL
+  zh: 基类：`Enum`
 - en: Classify PlannerError based on the following cases.
+  id: totrans-321
   prefs: []
   type: TYPE_NORMAL
+  zh: 根据以下情况分类PlannerError。
 - en: '[PRE109]'
+  id: totrans-322
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE109]'
 - en: '[PRE110]'
+  id: totrans-323
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE110]'
 - en: '[PRE111]'
+  id: totrans-324
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE111]'
 - en: '[PRE112]'
+  id: totrans-325
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE112]'
 - en: '[PRE113]'
+  id: totrans-326
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE113]'
 - en: 'Bases: `ABC`'
+  id: totrans-327
   prefs: []
   type: TYPE_NORMAL
+  zh: 基类：`ABC`
 - en: Prosposes complete lists of sharding options which can be parititioned to generate
     a plan.
+  id: totrans-328
   prefs: []
   type: TYPE_NORMAL
+  zh: 提出可以分区生成计划的分片选项的完整列表。
 - en: '[PRE114]'
+  id: totrans-329
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE114]'
 - en: '[PRE115]'
+  id: totrans-330
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE115]'
 - en: '[PRE116]'
+  id: totrans-331
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE116]'
 - en: '[PRE117]'
+  id: totrans-332
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE117]'
 - en: 'Bases: `object`'
+  id: totrans-333
   prefs: []
   type: TYPE_NORMAL
+  zh: 基类：`object`
 - en: Representation of a subset of an embedding table. ‘size’ and ‘offset’ fully
     determine the tensors in the shard. ‘storage’ is an estimation of how much it
     takes to store the shard with an estimation ‘perf’.
+  id: totrans-334
   prefs: []
   type: TYPE_NORMAL
+  zh: 表示嵌入表的子集。‘size’和‘offset’完全确定了分片中的张量。‘storage’是存储分片所需的估计‘perf’。
 - en: '[PRE118]'
+  id: totrans-335
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE118]'
 - en: '[PRE119]'
+  id: totrans-336
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE119]'
 - en: '[PRE120]'
+  id: totrans-337
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE120]'
 - en: '[PRE121]'
+  id: totrans-338
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE121]'
 - en: '[PRE122]'
+  id: totrans-339
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE122]'
 - en: '[PRE123]'
+  id: totrans-340
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE123]'
 - en: 'Bases: `ABC`'
+  id: totrans-341
   prefs: []
   type: TYPE_NORMAL
+  zh: 基类：`ABC`
 - en: Estimates shard perf or storage, requires fully specified sharding options.
+  id: totrans-342
   prefs: []
   type: TYPE_NORMAL
+  zh: 估算分片的性能或存储，需要完全指定的分片选项。
 - en: '[PRE124]'
+  id: totrans-343
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE124]'
 - en: '[PRE125]'
+  id: totrans-344
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE125]'
 - en: 'Bases: `object`'
+  id: totrans-345
   prefs: []
   type: TYPE_NORMAL
+  zh: 基类：`object`
 - en: One way of sharding an embedding table.
+  id: totrans-346
   prefs: []
   type: TYPE_NORMAL
+  zh: 分片嵌入表的一种方式。
 - en: '[PRE126]'
+  id: totrans-347
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE126]'
 - en: '[PRE127]'
+  id: totrans-348
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE127]'
 - en: '[PRE128]'
+  id: totrans-349
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE128]'
 - en: '[PRE129]'
+  id: totrans-350
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE129]'
 - en: '[PRE130]'
+  id: totrans-351
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE130]'
 - en: Determine if module pools output (e.g. EmbeddingBag) or uses unpooled/sequential
     output.
+  id: totrans-352
   prefs: []
   type: TYPE_NORMAL
+  zh: 确定模块是否池化输出（例如EmbeddingBag）或使用未池化/顺序输出。
 - en: '[PRE131]'
+  id: totrans-353
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE131]'
 - en: '[PRE132]'
+  id: totrans-354
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE132]'
 - en: '[PRE133]'
+  id: totrans-355
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE133]'
 - en: '[PRE134]'
+  id: totrans-356
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE134]'
 - en: '[PRE135]'
+  id: totrans-357
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE135]'
 - en: '[PRE136]'
+  id: totrans-358
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE136]'
 - en: '[PRE137]'
+  id: totrans-359
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE137]'
 - en: 'Bases: `ABC`'
+  id: totrans-360
   prefs: []
   type: TYPE_NORMAL
+  zh: 基类：`ABC`
 - en: Logs statistics related to the sharding plan.
+  id: totrans-361
   prefs: []
   type: TYPE_NORMAL
+  zh: 记录与分片计划相关的统计信息。
 - en: '[PRE138]'
+  id: totrans-362
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE138]'
 - en: See class description
+  id: totrans-363
   prefs: []
   type: TYPE_NORMAL
+  zh: 查看类描述
 - en: '[PRE139]'
+  id: totrans-364
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE139]'
 - en: 'Bases: `object`'
+  id: totrans-365
   prefs: []
   type: TYPE_NORMAL
+  zh: 基类：`object`
 - en: Representation of the storage capacities of a hardware used in training.
+  id: totrans-366
   prefs: []
   type: TYPE_NORMAL
+  zh: 表示用于训练的硬件的存储容量。
 - en: '[PRE140]'
+  id: totrans-367
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE140]'
 - en: '[PRE141]'
+  id: totrans-368
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE141]'
 - en: '[PRE142]'
+  id: totrans-369
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE142]'
 - en: '[PRE143]'
+  id: totrans-370
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE143]'
 - en: 'Bases: `ABC`'
+  id: totrans-371
   prefs: []
   type: TYPE_NORMAL
+  zh: 基类：`ABC`
 - en: Reserves storage space for non-sharded parts of the model.
+  id: totrans-372
   prefs: []
   type: TYPE_NORMAL
+  zh: 为模型的非分片部分保留存储空间。
 - en: '[PRE144]'
+  id: totrans-373
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE144]'
 - en: '[PRE145]'
+  id: totrans-374
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE145]'
 - en: 'Bases: `object`'
+  id: totrans-375
   prefs: []
   type: TYPE_NORMAL
+  zh: 基类：`object`
 - en: '[PRE146]'
+  id: totrans-376
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE146]'
 - en: '[PRE147]'
+  id: totrans-377
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE147]'
 - en: '[PRE148]'
+  id: totrans-378
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE148]'
 - en: '[PRE149]'
+  id: totrans-379
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE149]'
 - en: '[PRE150]'
+  id: totrans-380
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE150]'
 - en: '[PRE151]'
+  id: totrans-381
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE151]'
 - en: '[PRE152]'
+  id: totrans-382
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE152]'
 - en: '[PRE153]'
+  id: totrans-383
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE153]'
 - en: '[PRE154]  ## torchrec.distributed.planner.utils[](#module-torchrec.distributed.planner.utils
     "Permalink to this heading")'
+  id: totrans-384
   prefs: []
   type: TYPE_NORMAL
+  zh: '[PRE154]  ## torchrec.distributed.planner.utils[](#module-torchrec.distributed.planner.utils
+    "Permalink to this heading")'
 - en: '[PRE155]'
+  id: totrans-385
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE155]'
 - en: 'Bases: `object`'
+  id: totrans-386
   prefs: []
   type: TYPE_NORMAL
+  zh: 基类：`object`
 - en: Generates values of X between A & B to invoke on an external predicate F(X)
     to discover the largest X for which F(X) is true. Uses binary search to minimize
     the number of invocations of F. Assumes F is a step function, i.e. if F(X) is
     false, there is no point trying F(X+1).
+  id: totrans-387
   prefs: []
   type: TYPE_NORMAL
+  zh: 生成X在A和B之间的值，以调用外部谓词F(X)以发现F(X)为真的最大X。使用二进制搜索来最小化对F的调用次数。假设F是一个阶跃函数，即如果F(X)为假，则没有必要尝试F(X+1)。
 - en: '[PRE156]'
+  id: totrans-388
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE156]'
 - en: next() returns the next value to probe, given the result of the prior probe.
     The first time next() is invoked the prior_result is ignored. Returns None if
     entire range explored or threshold reached.
+  id: totrans-389
   prefs: []
   type: TYPE_NORMAL
+  zh: next()返回下一个要探测的值，给定先前探测的结果。第一次调用next()时，忽略prior_result。如果探索整个范围或达到阈值，则返回None。
 - en: '[PRE157]'
+  id: totrans-390
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE157]'
 - en: '[PRE158]'
+  id: totrans-391
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE158]'
 - en: '[PRE159]'
+  id: totrans-392
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE159]'
 - en: '[PRE160]'
+  id: totrans-393
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE160]'
 - en: Returns placement, formatted as string
+  id: totrans-394
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回放置，格式化为字符串
 - en: '[PRE161]'
+  id: totrans-395
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE161]'
 - en: '[PRE162]'
+  id: totrans-396
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE162]'
 - en: '[PRE163]'
+  id: totrans-397
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE163]'
 - en: '[PRE164]'
+  id: totrans-398
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE164]'
