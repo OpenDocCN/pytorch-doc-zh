@@ -1,42 +1,62 @@
 - en: Generic Join Context Manager
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 通用加入上下文管理器
 - en: 原文：[https://pytorch.org/docs/stable/distributed.algorithms.join.html](https://pytorch.org/docs/stable/distributed.algorithms.join.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/docs/stable/distributed.algorithms.join.html](https://pytorch.org/docs/stable/distributed.algorithms.join.html)
 - en: 'The generic join context manager facilitates distributed training on uneven
     inputs. This page outlines the API of the relevant classes: `Join`, `Joinable`,
     and `JoinHook`. For a tutorial, see [Distributed Training with Uneven Inputs Using
     the Join Context Manager](https://pytorch.org/tutorials/advanced/generic_join.html).'
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 通用加入上下文管理器促进了不均匀输入的分布式训练。本页概述了相关类的API：`Join`、`Joinable`和`JoinHook`。有关教程，请参阅[使用加入上下文管理器进行不均匀输入的分布式训练](https://pytorch.org/tutorials/advanced/generic_join.html)。
 - en: '[PRE0]'
+  id: totrans-3
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: This class defines the generic join context manager, which allows custom hooks
     to be called after a process joins.
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: 此类定义了通用加入上下文管理器，允许在进程加入后调用自定义钩子。
 - en: These hooks should shadow the collective communications of non-joined processes
     to prevent hanging and erroring and to ensure algorithmic correctness. Refer to
     [`JoinHook`](#torch.distributed.algorithms.JoinHook "torch.distributed.algorithms.JoinHook")
     for details about the hook definition.
+  id: totrans-5
   prefs: []
   type: TYPE_NORMAL
+  zh: 这些钩子应该遮蔽未加入进程的集体通信，以防止挂起和出错，并确保算法的正确性。有关钩子定义的详细信息，请参阅[`JoinHook`](#torch.distributed.algorithms.JoinHook
+    "torch.distributed.algorithms.JoinHook")。
 - en: Warning
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: The context manager requires each participating [`Joinable`](#torch.distributed.algorithms.Joinable
     "torch.distributed.algorithms.Joinable") to call the method [`notify_join_context()`](#torch.distributed.algorithms.Join.notify_join_context
     "torch.distributed.algorithms.Join.notify_join_context") before its own per- iteration
     collective communications to ensure correctness.
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 上下文管理器要求每个参与的[`Joinable`](#torch.distributed.algorithms.Joinable "torch.distributed.algorithms.Joinable")在自己的每次迭代集体通信之前调用方法[`notify_join_context()`](#torch.distributed.algorithms.Join.notify_join_context
+    "torch.distributed.algorithms.Join.notify_join_context")以确保正确性。
 - en: Warning
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: The context manager requires that all `process_group` attributes in the [`JoinHook`](#torch.distributed.algorithms.JoinHook
     "torch.distributed.algorithms.JoinHook") objects are the same. If there are multiple
     [`JoinHook`](#torch.distributed.algorithms.JoinHook "torch.distributed.algorithms.JoinHook")
@@ -44,80 +64,122 @@
     information is used for checking for non- joined processes and for notifying processes
     to throw an exception if `throw_on_early_termination` is enabled, both of which
     using an all- reduce.
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: 上下文管理器要求[`JoinHook`](#torch.distributed.algorithms.JoinHook "torch.distributed.algorithms.JoinHook")对象中的所有`process_group`属性都相同。如果有多个[`JoinHook`](#torch.distributed.algorithms.JoinHook
+    "torch.distributed.algorithms.JoinHook")对象，则使用第一个的`device`。进程组和设备信息用于检查未加入的进程，并通知进程在启用`throw_on_early_termination`时抛出异常，两者都使用全局归约。
 - en: Parameters
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**joinables** (*List**[*[*Joinable*](#torch.distributed.algorithms.Joinable
     "torch.distributed.algorithms.Joinable")*]*) – a list of the participating [`Joinable`](#torch.distributed.algorithms.Joinable
     "torch.distributed.algorithms.Joinable") s; their hooks are iterated over in the
     given order.'
+  id: totrans-11
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**joinables**（*List**[*[*Joinable*](#torch.distributed.algorithms.Joinable
+    "torch.distributed.algorithms.Joinable")*]*) - 参与的[`Joinable`](#torch.distributed.algorithms.Joinable
+    "torch.distributed.algorithms.Joinable")对象的列表；它们的钩子按给定顺序迭代。'
 - en: '**enable** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")) – a flag enabling uneven input detection; setting to `False`
     disables the context manager’s functionality and should only be set when the user
     knows the inputs will not be uneven (default: `True`).'
+  id: totrans-12
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**enable**（[*bool*](https://docs.python.org/3/library/functions.html#bool "(in
+    Python v3.12)")） - 一个标志，用于启用不均匀输入检测；设置为`False`会禁用上下文管理器的功能，只有在用户知道输入不会不均匀时才应设置（默认值：`True`）。'
 - en: '**throw_on_early_termination** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")) – a flag controlling whether to throw an exception upon
     detecting uneven inputs (default: `False`).'
+  id: totrans-13
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**throw_on_early_termination**（[*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")） - 一个控制是否在检测到不均匀输入时抛出异常的标志（默认值：`False`）。'
 - en: 'Example:'
+  id: totrans-14
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例：
 - en: '[PRE1]'
+  id: totrans-15
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: '[PRE2]'
+  id: totrans-16
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Notifies the join context manager that the calling process has not yet joined.
+  id: totrans-17
   prefs: []
   type: TYPE_NORMAL
+  zh: 通知加入上下文管理器，调用进程尚未加入。
 - en: Then, if `throw_on_early_termination=True`, checks if uneven inputs have been
     detected (i.e. if one process has already joined) and throws an exception if so.
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: 然后，如果`throw_on_early_termination=True`，则检查是否检测到不均匀的输入（即如果一个进程已经加入），如果是，则抛出异常。
 - en: This method should be called from a [`Joinable`](#torch.distributed.algorithms.Joinable
     "torch.distributed.algorithms.Joinable") object before its per-iteration collective
     communications. For example, this should be called at the beginning of the forward
     pass in `DistributedDataParallel`.
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 此方法应该在[`Joinable`](#torch.distributed.algorithms.Joinable "torch.distributed.algorithms.Joinable")对象的每次迭代集体通信之前调用。例如，在`DistributedDataParallel`的前向传递开始时应调用此方法。
 - en: Only the first [`Joinable`](#torch.distributed.algorithms.Joinable "torch.distributed.algorithms.Joinable")
     object passed into the context manager performs the collective communications
     in this method, and for the others, this method is vacuous.
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 只有第一个传递到上下文管理器的[`Joinable`](#torch.distributed.algorithms.Joinable "torch.distributed.algorithms.Joinable")对象在此方法中执行集体通信，对于其他对象，此方法为空。
 - en: Parameters
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**joinable** ([*Joinable*](#torch.distributed.algorithms.Joinable "torch.distributed.algorithms.Joinable"))
     – the [`Joinable`](#torch.distributed.algorithms.Joinable "torch.distributed.algorithms.Joinable")
     object calling this method.'
+  id: totrans-22
   prefs: []
   type: TYPE_NORMAL
+  zh: '**joinable**（[*Joinable*](#torch.distributed.algorithms.Joinable "torch.distributed.algorithms.Joinable")）
+    - 调用此方法的[`Joinable`](#torch.distributed.algorithms.Joinable "torch.distributed.algorithms.Joinable")对象。'
 - en: Returns
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回
 - en: An async work handle for the all-reduce meant to notify the context manager
     that the process has not yet joined if `joinable` is the first one passed into
     the context manager; `None` otherwise.
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个用于全局归约的异步工作句柄，用于通知上下文管理器进程尚未加入，如果`joinable`是传递到上下文管理器的第一个；否则为`None`。
 - en: '[PRE3]'
+  id: totrans-25
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: This defines an abstract base class for joinable classes.
+  id: totrans-26
   prefs: []
   type: TYPE_NORMAL
+  zh: 这为可加入类定义了一个抽象基类。
 - en: A joinable class (inheriting from [`Joinable`](#torch.distributed.algorithms.Joinable
     "torch.distributed.algorithms.Joinable")) should implement [`join_hook()`](#torch.distributed.algorithms.Joinable.join_hook
     "torch.distributed.algorithms.Joinable.join_hook"), which returns a [`JoinHook`](#torch.distributed.algorithms.JoinHook
@@ -125,87 +187,143 @@
     "torch.distributed.algorithms.Joinable.join_device") and [`join_process_group()`](#torch.distributed.algorithms.Joinable.join_process_group
     "torch.distributed.algorithms.Joinable.join_process_group") that return device
     and process group information, respectively.
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: 一个可加入的类（从[`Joinable`](#torch.distributed.algorithms.Joinable "torch.distributed.algorithms.Joinable")继承）应该实现[`join_hook()`](#torch.distributed.algorithms.Joinable.join_hook
+    "torch.distributed.algorithms.Joinable.join_hook")，它返回一个[`JoinHook`](#torch.distributed.algorithms.JoinHook
+    "torch.distributed.algorithms.JoinHook")实例，另外还应该实现[`join_device()`](#torch.distributed.algorithms.Joinable.join_device
+    "torch.distributed.algorithms.Joinable.join_device")和[`join_process_group()`](#torch.distributed.algorithms.Joinable.join_process_group
+    "torch.distributed.algorithms.Joinable.join_process_group")来分别返回设备和进程组信息。
 - en: '[PRE4]'
+  id: totrans-28
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: Return the device from which to perform collective communications needed by
     the join context manager.
+  id: totrans-29
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回执行加入上下文管理器所需的集体通信的设备。
 - en: '[PRE5]'
+  id: totrans-30
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: Return a [`JoinHook`](#torch.distributed.algorithms.JoinHook "torch.distributed.algorithms.JoinHook")
     instance for the given [`Joinable`](#torch.distributed.algorithms.Joinable "torch.distributed.algorithms.Joinable").
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: 为给定的[`Joinable`](#torch.distributed.algorithms.Joinable "torch.distributed.algorithms.Joinable")返回一个[`JoinHook`](#torch.distributed.algorithms.JoinHook
+    "torch.distributed.algorithms.JoinHook")实例。
 - en: Parameters
+  id: totrans-32
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**kwargs** ([*dict*](https://docs.python.org/3/library/stdtypes.html#dict "(in
     Python v3.12)")) – a [`dict`](https://docs.python.org/3/library/stdtypes.html#dict
     "(in Python v3.12)") containing any keyword arguments to modify the behavior of
     the join hook at run time; all [`Joinable`](#torch.distributed.algorithms.Joinable
     "torch.distributed.algorithms.Joinable") instances sharing the same join context
     manager are forwarded the same value for `kwargs`.'
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: '**kwargs**（[*dict*](https://docs.python.org/3/library/stdtypes.html#dict "(in
+    Python v3.12)")） - 包含任何关键字参数以在运行时修改加入钩子行为的[`dict`](https://docs.python.org/3/library/stdtypes.html#dict
+    "(in Python v3.12)")；所有共享相同加入上下文管理器的[`Joinable`](#torch.distributed.algorithms.Joinable
+    "torch.distributed.algorithms.Joinable")实例将被转发相同的`kwargs`值。'
 - en: Return type
+  id: totrans-34
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*JoinHook*](#torch.distributed.algorithms.JoinHook "torch.distributed.algorithms.join.JoinHook")'
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*JoinHook*](#torch.distributed.algorithms.JoinHook "torch.distributed.algorithms.join.JoinHook")'
 - en: '[PRE6]'
+  id: totrans-36
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: Returns the process group for the collective communications needed by the join
     context manager itself.
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回加入上下文管理器本身所需的集体通信的进程组。
 - en: '[PRE7]'
+  id: totrans-38
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: This defines a join hook, which provides two entry points in the join context
     manager.
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 这定义了一个加入钩子，在加入上下文管理器中提供了两个入口点。
 - en: 'Entry points : a main hook, which is called repeatedly while there exists a
     non-joined process, and a post-hook, which is called once all processes have joined.'
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: 入口点：一个主要的钩子，当存在一个未加入的进程时会被重复调用，以及一个后置钩子，当所有进程都已加入时会被调用一次。
 - en: To implement a join hook for the generic join context manager, define a class
     that inherits from [`JoinHook`](#torch.distributed.algorithms.JoinHook "torch.distributed.algorithms.JoinHook")
     and override `main_hook()` and `post_hook()` as appropriate.
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 要为通用加入上下文管理器实现一个加入钩子，需要定义一个从[`JoinHook`](#torch.distributed.algorithms.JoinHook
+    "torch.distributed.algorithms.JoinHook")继承的类，并适当地重写`main_hook()`和`post_hook()`。
 - en: '[PRE8]'
+  id: totrans-42
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: Call this hook while there exists a non-joined process to shadow collective
     communications in a training iteration.
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: 在训练迭代中，当存在一个未加入的进程时调用此钩子以隐藏集体通信。
 - en: Training iteration i.e., in one forward pass, backward pass, and optimizer step.
+  id: totrans-44
   prefs: []
   type: TYPE_NORMAL
+  zh: 训练迭代，即在一个前向传播、反向传播和优化器步骤中。
 - en: '[PRE9]'
+  id: totrans-45
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: Call hook after all processes have joined.
+  id: totrans-46
   prefs: []
   type: TYPE_NORMAL
+  zh: 在所有进程都已加入后调用钩子。
 - en: It is passed an additional `bool` argument `is_last_joiner`, which indicates
     if the rank is one of the last to join.
+  id: totrans-47
   prefs: []
   type: TYPE_NORMAL
+  zh: 它接受一个额外的`bool`参数`is_last_joiner`，指示该排名是否是最后加入的之一。
 - en: Parameters
+  id: totrans-48
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**is_last_joiner** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")) – `True` if the rank is one of the last to join; `False`
     otherwise.'
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: '**is_last_joiner**（[*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")） - 如果排名是最后加入的之一，则为`True`；否则为`False`。'

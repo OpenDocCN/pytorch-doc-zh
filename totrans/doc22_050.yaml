@@ -1,36 +1,53 @@
 - en: Distributed Optimizers
+  id: totrans-0
   prefs:
   - PREF_H1
   type: TYPE_NORMAL
+  zh: 分布式优化器
 - en: 原文：[https://pytorch.org/docs/stable/distributed.optim.html](https://pytorch.org/docs/stable/distributed.optim.html)
+  id: totrans-1
   prefs:
   - PREF_BQ
   type: TYPE_NORMAL
+  zh: 原文：[https://pytorch.org/docs/stable/distributed.optim.html](https://pytorch.org/docs/stable/distributed.optim.html)
 - en: Warning
+  id: totrans-2
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: Distributed optimizer is not currently supported when using CUDA tensors
+  id: totrans-3
   prefs: []
   type: TYPE_NORMAL
+  zh: 在使用CUDA张量时，不支持分布式优化器
 - en: '[`torch.distributed.optim`](#module-torch.distributed.optim "torch.distributed.optim")
     exposes DistributedOptimizer, which takes a list of remote parameters (`RRef`)
     and runs the optimizer locally on the workers where the parameters live. The distributed
     optimizer can use any of the local optimizer [Base class](optim.html#optimizer-algorithms)
     to apply the gradients on each worker.'
+  id: totrans-4
   prefs: []
   type: TYPE_NORMAL
+  zh: '[`torch.distributed.optim`](#module-torch.distributed.optim "torch.distributed.optim")
+    暴露了DistributedOptimizer，它接受一个远程参数（`RRef`）的列表，并在参数所在的工作节点上本地运行优化器。分布式优化器可以使用任何本地优化器[基类](optim.html#optimizer-algorithms)来在每个工作节点上应用梯度。'
 - en: '[PRE0]'
+  id: totrans-5
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE0]'
 - en: DistributedOptimizer takes remote references to parameters scattered across
     workers and applies the given optimizer locally for each parameter.
+  id: totrans-6
   prefs: []
   type: TYPE_NORMAL
+  zh: DistributedOptimizer接受分布在工作节点上的参数的远程引用，并为每个参数本地应用给定的优化器。
 - en: This class uses [`get_gradients()`](rpc.html#torch.distributed.autograd.get_gradients
     "torch.distributed.autograd.get_gradients") in order to retrieve the gradients
     for specific parameters.
+  id: totrans-7
   prefs: []
   type: TYPE_NORMAL
+  zh: 这个类使用[`get_gradients()`](rpc.html#torch.distributed.autograd.get_gradients "torch.distributed.autograd.get_gradients")来检索特定参数的梯度。
 - en: Concurrent calls to [`step()`](#torch.distributed.optim.DistributedOptimizer.step
     "torch.distributed.optim.DistributedOptimizer.step"), either from the same or
     different clients, will be serialized on each worker – as each worker’s optimizer
@@ -39,175 +56,265 @@
     at a time. This means that the gradients being applied may not correspond to the
     latest forward pass executed on a given worker. Also, there is no guaranteed ordering
     across workers.
+  id: totrans-8
   prefs: []
   type: TYPE_NORMAL
+  zh: 来自同一客户端或不同客户端的对[`step()`](#torch.distributed.optim.DistributedOptimizer.step
+    "torch.distributed.optim.DistributedOptimizer.step")的并发调用将在每个工作节点上串行化 - 因为每个工作节点的优化器一次只能处理一组梯度。但是，不能保证一个客户端一次只执行一个完整的前向-反向-优化器序列。这意味着应用的梯度可能不对应于给定工作节点上执行的最新前向传递。此外，工作节点之间也没有保证的顺序。
 - en: DistributedOptimizer creates the local optimizer with TorchScript enabled by
     default, so that optimizer updates are not blocked by the Python Global Interpreter
     Lock (GIL) in the case of multithreaded training (e.g. Distributed Model Parallel).
     This feature is currently enabled for most optimizers. You can also follow [the
     recipe](https://github.com/pytorch/tutorials/pull/1465) in PyTorch tutorials to
     enable TorchScript support for your own custom optimizers.
+  id: totrans-9
   prefs: []
   type: TYPE_NORMAL
+  zh: DistributedOptimizer默认启用了启用了TorchScript的本地优化器，以便在多线程训练（例如分布式模型并行）的情况下，优化器更新不会受到Python全局解释器锁（GIL）的阻塞。目前大多数优化器都启用了这一特性。您也可以按照[教程](https://github.com/pytorch/tutorials/pull/1465)中的步骤为自定义优化器启用TorchScript支持。
 - en: Parameters
+  id: totrans-10
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**optimizer_class** ([*optim.Optimizer*](optim.html#torch.optim.Optimizer "torch.optim.Optimizer"))
     – the class of optimizer to instantiate on each worker.'
+  id: totrans-11
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**optimizer_class** ([*optim.Optimizer*](optim.html#torch.optim.Optimizer "torch.optim.Optimizer"))
+    – 在每个工作节点上实例化的优化器类。'
 - en: '**params_rref** ([*list*](https://docs.python.org/3/library/stdtypes.html#list
     "(in Python v3.12)")*[**RRef**]*) – list of RRefs to local or remote parameters
     to optimize.'
+  id: totrans-12
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**params_rref** ([*list*](https://docs.python.org/3/library/stdtypes.html#list
+    "(in Python v3.12)")*[**RRef**]*) – 用于优化的本地或远程参数的RRef列表。'
 - en: '**args** – arguments to pass to the optimizer constructor on each worker.'
+  id: totrans-13
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**args** – 传递给每个工作节点上优化器构造函数的参数。'
 - en: '**kwargs** – arguments to pass to the optimizer constructor on each worker.'
+  id: totrans-14
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**kwargs** – 传递给每个工作节点上优化器构造函数的参数。'
 - en: 'Example::'
+  id: totrans-15
   prefs: []
   type: TYPE_NORMAL
+  zh: '示例::'
 - en: '[PRE1]'
+  id: totrans-16
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE1]'
 - en: '[PRE2]'
+  id: totrans-17
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE2]'
 - en: Performs a single optimization step.
+  id: totrans-18
   prefs: []
   type: TYPE_NORMAL
+  zh: 执行单个优化步骤。
 - en: This will call [`torch.optim.Optimizer.step()`](generated/torch.optim.Optimizer.step.html#torch.optim.Optimizer.step
     "torch.optim.Optimizer.step") on each worker containing parameters to be optimized,
     and will block until all workers return. The provided `context_id` will be used
     to retrieve the corresponding [`context`](rpc.html#torch.distributed.autograd.context
     "torch.distributed.autograd.context") that contains the gradients that should
     be applied to the parameters.
+  id: totrans-19
   prefs: []
   type: TYPE_NORMAL
+  zh: 这将在包含要优化的参数的每个工作节点上调用[`torch.optim.Optimizer.step()`](generated/torch.optim.Optimizer.step.html#torch.optim.Optimizer.step
+    "torch.optim.Optimizer.step")，并将阻塞直到所有工作节点返回。提供的`context_id`将用于检索包含应该应用于参数的梯度的相应[`context`](rpc.html#torch.distributed.autograd.context
+    "torch.distributed.autograd.context")。
 - en: Parameters
+  id: totrans-20
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**context_id** – the autograd context id for which we should run the optimizer
     step.'
+  id: totrans-21
   prefs: []
   type: TYPE_NORMAL
+  zh: '**context_id** – 我们应该运行优化器步骤的自动求导上下文id。'
 - en: '[PRE3]'
+  id: totrans-22
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE3]'
 - en: Wraps an arbitrary [`torch.optim.Optimizer`](optim.html#torch.optim.Optimizer
     "torch.optim.Optimizer") and runs [post-local SGD](https://arxiv.org/abs/1808.07217),
     This optimizer runs local optimizer at every step. After the warm-up stage, it
     averages parameters periodically afer the local optimizer is applied.
+  id: totrans-23
   prefs: []
   type: TYPE_NORMAL
+  zh: 包装任意[`torch.optim.Optimizer`](optim.html#torch.optim.Optimizer "torch.optim.Optimizer")并运行[后局部SGD](https://arxiv.org/abs/1808.07217)，此优化器在每一步都运行本地优化器。在热身阶段之后，它会定期平均参数，然后应用本地优化器。
 - en: Parameters
+  id: totrans-24
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**optim** ([*Optimizer*](optim.html#torch.optim.Optimizer "torch.optim.optimizer.Optimizer"))
     – The local optimizer.'
+  id: totrans-25
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**optim** ([*Optimizer*](optim.html#torch.optim.Optimizer "torch.optim.optimizer.Optimizer"))
+    – 本地优化器。'
 - en: '**averager** (*ModelAverager*) – A model averager instance to run post-localSGD
     algorithm.'
+  id: totrans-26
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**averager** (*ModelAverager*) – 一个模型平均器实例，用于运行后局部SGD算法。'
 - en: 'Example:'
+  id: totrans-27
   prefs: []
   type: TYPE_NORMAL
+  zh: '示例:'
 - en: '[PRE4]'
+  id: totrans-28
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE4]'
 - en: '[PRE5]'
+  id: totrans-29
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE5]'
 - en: This is the same as [`torch.optim.Optimizer`](optim.html#torch.optim.Optimizer
     "torch.optim.Optimizer") [`load_state_dict()`](#torch.distributed.optim.PostLocalSGDOptimizer.load_state_dict
     "torch.distributed.optim.PostLocalSGDOptimizer.load_state_dict"), but also restores
     model averager’s step value to the one saved in the provided `state_dict`.
+  id: totrans-30
   prefs: []
   type: TYPE_NORMAL
+  zh: 这与[`torch.optim.Optimizer`](optim.html#torch.optim.Optimizer "torch.optim.Optimizer")
+    [`load_state_dict()`](#torch.distributed.optim.PostLocalSGDOptimizer.load_state_dict
+    "torch.distributed.optim.PostLocalSGDOptimizer.load_state_dict")相同，但还将模型平均器的步骤值恢复为提供的`state_dict`中保存的值。
 - en: If there is no `"step"` entry in `state_dict`, it will raise a warning and initialize
     the model averager’s step to 0.
+  id: totrans-31
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果`state_dict`中没有`"step"`条目，它将引发警告并将模型平均器的步骤初始化为0。
 - en: '[PRE6]'
+  id: totrans-32
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE6]'
 - en: This is the same as [`torch.optim.Optimizer`](optim.html#torch.optim.Optimizer
     "torch.optim.Optimizer") [`state_dict()`](#torch.distributed.optim.PostLocalSGDOptimizer.state_dict
     "torch.distributed.optim.PostLocalSGDOptimizer.state_dict"), but adds an extra
     entry to record model averager’s step to the checkpoint to ensure reload does
     not cause unnecessary warm up again.
+  id: totrans-33
   prefs: []
   type: TYPE_NORMAL
+  zh: 这与[`torch.optim.Optimizer`](optim.html#torch.optim.Optimizer "torch.optim.Optimizer")
+    [`state_dict()`](#torch.distributed.optim.PostLocalSGDOptimizer.state_dict "torch.distributed.optim.PostLocalSGDOptimizer.state_dict")相同，但添加了一个额外的条目来记录模型平均器的步骤到检查点，以确保重新加载不会导致不必要的再次热身。
 - en: '[PRE7]'
+  id: totrans-34
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE7]'
 - en: Performs a single optimization step (parameter update).
+  id: totrans-35
   prefs: []
   type: TYPE_NORMAL
+  zh: 执行单个优化步骤（参数更新）。
 - en: '[PRE8]'
+  id: totrans-36
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE8]'
 - en: Wrap an arbitrary [`optim.Optimizer`](optim.html#torch.optim.Optimizer "torch.optim.Optimizer")
     and shards its states across ranks in the group.
+  id: totrans-37
   prefs: []
   type: TYPE_NORMAL
+  zh: 将任意的[`optim.Optimizer`](optim.html#torch.optim.Optimizer "torch.optim.Optimizer")包装起来，并将其状态在组中分片。
 - en: The sharing is done as described by [ZeRO](https://arxiv.org/abs/1910.02054).
+  id: totrans-38
   prefs: []
   type: TYPE_NORMAL
+  zh: 共享的方式如[ZeRO](https://arxiv.org/abs/1910.02054)所描述。
 - en: The local optimizer instance in each rank is only responsible for updating approximately
     `1 / world_size` parameters and hence only needs to keep `1 / world_size` optimizer
     states. After parameters are updated locally, each rank will broadcast its parameters
     to all other peers to keep all model replicas in the same state. `ZeroRedundancyOptimizer`
     can be used in conjunction with [`torch.nn.parallel.DistributedDataParallel`](generated/torch.nn.parallel.DistributedDataParallel.html#torch.nn.parallel.DistributedDataParallel
     "torch.nn.parallel.DistributedDataParallel") to reduce per-rank peak memory consumption.
+  id: totrans-39
   prefs: []
   type: TYPE_NORMAL
+  zh: 每个rank中的本地优化器实例只负责更新大约`1 / world_size`的参数，因此只需要保留`1 / world_size`的优化器状态。在本地更新参数后，每个rank将向所有其他对等体广播其参数，以保持所有模型副本处于相同状态。`ZeroRedundancyOptimizer`可以与[`torch.nn.parallel.DistributedDataParallel`](generated/torch.nn.parallel.DistributedDataParallel.html#torch.nn.parallel.DistributedDataParallel
+    "torch.nn.parallel.DistributedDataParallel")一起使用，以减少每个rank的内存消耗峰值。
 - en: '`ZeroRedundancyOptimizer` uses a sorted-greedy algorithm to pack a number of
     parameters at each rank. Each parameter belongs to a single rank and is not divided
     among ranks. The partition is arbitrary and might not match the the parameter
     registration or usage order.'
+  id: totrans-40
   prefs: []
   type: TYPE_NORMAL
+  zh: '`ZeroRedundancyOptimizer`使用一种排序贪婪算法在每个rank上打包一定数量的参数。每个参数属于单个rank，不会在各个rank之间分割。分区是任意的，可能与参数注册或使用顺序不匹配。'
 - en: Parameters
+  id: totrans-41
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**params** (`Iterable`) – an `Iterable` of [`torch.Tensor`](tensors.html#torch.Tensor
     "torch.Tensor") s or [`dict`](https://docs.python.org/3/library/stdtypes.html#dict
     "(in Python v3.12)") s giving all parameters, which will be sharded across ranks.'
+  id: totrans-42
   prefs: []
   type: TYPE_NORMAL
+  zh: '**params** (`Iterable`) – 一个包含所有参数的`Iterable`，这些参数将在各个rank之间进行分片。'
 - en: Keyword Arguments
+  id: totrans-43
   prefs: []
   type: TYPE_NORMAL
+  zh: 关键字参数
 - en: '**optimizer_class** (`torch.nn.Optimizer`) – the class of the local optimizer.'
+  id: totrans-44
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**optimizer_class** (`torch.nn.Optimizer`) – 本地优化器的类。'
 - en: '**process_group** (`ProcessGroup`, optional) – `torch.distributed` `ProcessGroup`
     (default: `dist.group.WORLD` initialized by [`torch.distributed.init_process_group()`](distributed.html#torch.distributed.init_process_group
     "torch.distributed.init_process_group")).'
+  id: totrans-45
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**process_group** (`ProcessGroup`, optional) – `torch.distributed` `ProcessGroup`（默认值：由[`torch.distributed.init_process_group()`](distributed.html#torch.distributed.init_process_group
+    "torch.distributed.init_process_group")初始化的`dist.group.WORLD`）。'
 - en: '**parameters_as_bucket_view** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")*,* *optional*) – if `True`, parameters are packed into buckets
     to speed up communication, and `param.data` fields point to bucket views at different
     offsets; if `False`, each individual parameter is communicated separately, and
     each `params.data` stays intact (default: `False`).'
+  id: totrans-46
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**parameters_as_bucket_view** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")*,* *optional*) – 如果为`True`，参数将被打包成桶以加快通信速度，并且`param.data`字段指向不同偏移量的桶视图；如果为`False`，每个单独的参数将被单独传输，每个`params.data`保持不变（默认值：`False`）。'
 - en: '**overlap_with_ddp** ([*bool*](https://docs.python.org/3/library/functions.html#bool
     "(in Python v3.12)")*,* *optional*) – if `True`, [`step()`](#torch.distributed.optim.ZeroRedundancyOptimizer.step
     "torch.distributed.optim.ZeroRedundancyOptimizer.step") is overlapped with `DistributedDataParallel`
@@ -218,29 +325,46 @@
     meaning that the `parameters_as_bucket_view` argument is ignored. If `False`,
     [`step()`](#torch.distributed.optim.ZeroRedundancyOptimizer.step "torch.distributed.optim.ZeroRedundancyOptimizer.step")
     runs disjointly after the backward pass (per normal). (default: `False`)'
+  id: totrans-47
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '**overlap_with_ddp** ([*bool*](https://docs.python.org/3/library/functions.html#bool
+    "(in Python v3.12)")*,* *optional*) – 如果为`True`，[`step()`](#torch.distributed.optim.ZeroRedundancyOptimizer.step
+    "torch.distributed.optim.ZeroRedundancyOptimizer.step")将与`DistributedDataParallel`的梯度同步重叠；这需要（1）为`optimizer_class`参数提供一个功能性优化器，或者具有功能等效的优化器，并且（2）注册一个由`ddp_zero_hook.py`中的函数构建的DDP通信钩子；参数被打包成与`DistributedDataParallel`中相匹配的桶，这意味着`parameters_as_bucket_view`参数将被忽略。如果为`False`，[`step()`](#torch.distributed.optim.ZeroRedundancyOptimizer.step
+    "torch.distributed.optim.ZeroRedundancyOptimizer.step")在反向传播后（正常情况下）独立运行。 （默认值：`False`）'
 - en: '****defaults** – any trailing arguments, which are forwarded to the local optimizer.'
+  id: totrans-48
   prefs:
   - PREF_UL
   type: TYPE_NORMAL
+  zh: '****defaults** – 任何后续参数，将被转发给本地优化器。'
 - en: 'Example:'
+  id: totrans-49
   prefs: []
   type: TYPE_NORMAL
+  zh: 示例：
 - en: '[PRE9]'
+  id: totrans-50
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE9]'
 - en: Warning
+  id: totrans-51
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: Currently, `ZeroRedundancyOptimizer` requires that all of the passed-in parameters
     are the same dense type.
+  id: totrans-52
   prefs: []
   type: TYPE_NORMAL
+  zh: 目前，`ZeroRedundancyOptimizer`要求传入的所有参数都是相同的密集类型。
 - en: Warning
+  id: totrans-53
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: 'If you pass `overlap_with_ddp=True`, be wary of the following: Given the way
     that overlapping `DistributedDataParallel` with [`ZeroRedundancyOptimizer`](#torch.distributed.optim.ZeroRedundancyOptimizer
     "torch.distributed.optim.ZeroRedundancyOptimizer") is currently implemented, the
@@ -250,143 +374,224 @@
     by `DistributedDataParallel`, which is not finalized until the second forward
     pass if `static_graph=False` or until the third forward pass if `static_graph=True`.
     To adjust for this, one option is to prepend dummy inputs.'
+  id: totrans-54
   prefs: []
   type: TYPE_NORMAL
+  zh: 如果传递`overlap_with_ddp=True`，请注意以下事项：鉴于当前实现了与[`ZeroRedundancyOptimizer`](#torch.distributed.optim.ZeroRedundancyOptimizer)重叠的`DistributedDataParallel`的方式，前两个或三个训练迭代不会在优化器步骤中执行参数更新，具体取决于`static_graph=False`或`static_graph=True`。这是因为它需要关于`DistributedDataParallel`使用的梯度桶策略的信息，该信息在第二次前向传递（如果`static_graph=False`）或第三次前向传递（如果`static_graph=True`）之前不会最终确定。为了调整此问题，一个选项是在前面添加虚拟输入。
 - en: Warning
+  id: totrans-55
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: ZeroRedundancyOptimizer is experimental and subject to change.
+  id: totrans-56
   prefs: []
   type: TYPE_NORMAL
+  zh: ZeroRedundancyOptimizer是实验性的，可能会发生变化。
 - en: '[PRE10]'
+  id: totrans-57
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE10]'
 - en: Add a parameter group to the `Optimizer` ‘s `param_groups`.
+  id: totrans-58
   prefs: []
   type: TYPE_NORMAL
+  zh: 向`Optimizer`的`param_groups`添加一个参数组。
 - en: This can be useful when fine tuning a pre-trained network, as frozen layers
     can be made trainable and added to the `Optimizer` as training progresses.
+  id: totrans-59
   prefs: []
   type: TYPE_NORMAL
+  zh: 在微调预训练网络时，这可能很有用，因为冻结的层可以在训练进行时变为可训练，并添加到`Optimizer`中。
 - en: Parameters
+  id: totrans-60
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**param_group** ([*dict*](https://docs.python.org/3/library/stdtypes.html#dict
     "(in Python v3.12)")) – specifies the parameters to be optimized and group-specific
     optimization options.'
+  id: totrans-61
   prefs: []
   type: TYPE_NORMAL
+  zh: '**param_group**（[*dict*](https://docs.python.org/3/library/stdtypes.html#dict)）
+    - 指定要优化的参数和特定于组的优化选项。'
 - en: Warning
+  id: totrans-62
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: This method handles updating the shards on all partitions but needs to be called
     on all ranks. Calling this on a subset of the ranks will cause the training to
     hang because communication primitives are called depending on the managed parameters
     and expect all the ranks to participate on the same set of parameters.
+  id: totrans-63
   prefs: []
   type: TYPE_NORMAL
+  zh: 此方法处理所有分区上的碎片更新，但需要在所有等级上调用。在部分等级上调用此方法将导致训练挂起，因为通信原语是根据受管理的参数调用的，并且期望所有等级参与相同的参数集。
 - en: '[PRE11]'
+  id: totrans-64
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE11]'
 - en: Consolidate a list of `state_dict` s (one per rank) on the target rank.
+  id: totrans-65
   prefs: []
   type: TYPE_NORMAL
+  zh: 在目标等级上合并`state_dict`列表（每个等级一个）。
 - en: Parameters
+  id: totrans-66
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**to** ([*int*](https://docs.python.org/3/library/functions.html#int "(in Python
     v3.12)")) – the rank that receives the optimizer states (default: 0).'
+  id: totrans-67
   prefs: []
   type: TYPE_NORMAL
+  zh: '**to**（[*int*](https://docs.python.org/3/library/functions.html#int)） - 接收优化器状态的等级（默认值：0）。'
 - en: Raises
+  id: totrans-68
   prefs: []
   type: TYPE_NORMAL
+  zh: 引发
 - en: '[**RuntimeError**](https://docs.python.org/3/library/exceptions.html#RuntimeError
     "(in Python v3.12)") – if `overlap_with_ddp=True` and this method is called before
     this [`ZeroRedundancyOptimizer`](#torch.distributed.optim.ZeroRedundancyOptimizer
     "torch.distributed.optim.ZeroRedundancyOptimizer") instance has been fully initialized,
     which happens once `DistributedDataParallel` gradient buckets have been rebuilt.'
+  id: totrans-69
   prefs: []
   type: TYPE_NORMAL
+  zh: '[**RuntimeError**](https://docs.python.org/3/library/exceptions.html#RuntimeError)
+    - 如果`overlap_with_ddp=True`，并且在此[`ZeroRedundancyOptimizer`](#torch.distributed.optim.ZeroRedundancyOptimizer)实例完全初始化之前调用此方法，这会在`DistributedDataParallel`梯度桶被重建后发生。'
 - en: Warning
+  id: totrans-70
   prefs: []
   type: TYPE_NORMAL
+  zh: 警告
 - en: This needs to be called on all ranks.
+  id: totrans-71
   prefs: []
   type: TYPE_NORMAL
+  zh: 这需要在所有等级上调用。
 - en: '[PRE12]'
+  id: totrans-72
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE12]'
 - en: Return default device.
+  id: totrans-73
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回默认设备。
 - en: '[PRE13]'
+  id: totrans-74
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE13]'
 - en: Return the ZeRO join hook.
+  id: totrans-75
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回ZeRO连接钩子。
 - en: It enables training on uneven inputs by shadowing the collective communications
     in the optimizer step.
+  id: totrans-76
   prefs: []
   type: TYPE_NORMAL
+  zh: 它通过在优化器步骤中模拟集体通信来支持不均匀输入的训练。
 - en: Gradients must be properly set before this hook is called.
+  id: totrans-77
   prefs: []
   type: TYPE_NORMAL
+  zh: 在调用此钩子之前必须正确设置梯度。
 - en: Parameters
+  id: totrans-78
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**kwargs** ([*dict*](https://docs.python.org/3/library/stdtypes.html#dict "(in
     Python v3.12)")) – a [`dict`](https://docs.python.org/3/library/stdtypes.html#dict
     "(in Python v3.12)") containing any keyword arguments to modify the behavior of
     the join hook at run time; all `Joinable` instances sharing the same join context
     manager are forwarded the same value for `kwargs`.'
+  id: totrans-79
   prefs: []
   type: TYPE_NORMAL
+  zh: '**kwargs**（[*dict*](https://docs.python.org/3/library/stdtypes.html#dict)）
+    - 包含任何关键字参数以在运行时修改连接钩子行为的[`dict`](https://docs.python.org/3/library/stdtypes.html#dict)；所有共享相同连接上下文管理器的`Joinable`实例将在运行时转发相同的`kwargs`值。'
 - en: This hook does not support any keyword arguments; i.e. `kwargs` is unused.
+  id: totrans-80
   prefs: []
   type: TYPE_NORMAL
+  zh: 此钩子不支持任何关键字参数；即`kwargs`未使用。
 - en: '[PRE14]'
+  id: totrans-81
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE14]'
 - en: Return process group.
+  id: totrans-82
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回进程组。
 - en: '[PRE15]'
+  id: totrans-83
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE15]'
 - en: Load the state pertaining to the given rank from the input `state_dict`, updating
     the local optimizer as needed.
+  id: totrans-84
   prefs: []
   type: TYPE_NORMAL
+  zh: 从输入`state_dict`中加载与给定等级相关的状态，根据需要更新本地优化器。
 - en: Parameters
+  id: totrans-85
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**state_dict** ([*dict*](https://docs.python.org/3/library/stdtypes.html#dict
     "(in Python v3.12)")) – optimizer state; should be an object returned from a call
     to [`state_dict()`](#torch.distributed.optim.ZeroRedundancyOptimizer.state_dict
     "torch.distributed.optim.ZeroRedundancyOptimizer.state_dict").'
+  id: totrans-86
   prefs: []
   type: TYPE_NORMAL
+  zh: '**state_dict**（[*dict*](https://docs.python.org/3/library/stdtypes.html#dict)）
+    - 优化器状态；应该是从调用[`state_dict()`](#torch.distributed.optim.ZeroRedundancyOptimizer.state_dict)返回的对象。'
 - en: Raises
+  id: totrans-87
   prefs: []
   type: TYPE_NORMAL
+  zh: 引发
 - en: '[**RuntimeError**](https://docs.python.org/3/library/exceptions.html#RuntimeError
     "(in Python v3.12)") – if `overlap_with_ddp=True` and this method is called before
     this [`ZeroRedundancyOptimizer`](#torch.distributed.optim.ZeroRedundancyOptimizer
     "torch.distributed.optim.ZeroRedundancyOptimizer") instance has been fully initialized,
     which happens once `DistributedDataParallel` gradient buckets have been rebuilt.'
+  id: totrans-88
   prefs: []
   type: TYPE_NORMAL
+  zh: '[**RuntimeError**](https://docs.python.org/3/library/exceptions.html#RuntimeError)
+    - 如果`overlap_with_ddp=True`，并且在此[`ZeroRedundancyOptimizer`](#torch.distributed.optim.ZeroRedundancyOptimizer)实例完全初始化之前调用此方法，这会在`DistributedDataParallel`梯度桶被重建后发生。'
 - en: '[PRE16]'
+  id: totrans-89
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE16]'
 - en: Return the last global optimizer state known to this rank.
+  id: totrans-90
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回此等级已知的最后一个全局优化器状态。
 - en: Raises
+  id: totrans-91
   prefs: []
   type: TYPE_NORMAL
+  zh: 引发
 - en: '[**RuntimeError**](https://docs.python.org/3/library/exceptions.html#RuntimeError
     "(in Python v3.12)") – if `overlap_with_ddp=True` and this method is called before
     this [`ZeroRedundancyOptimizer`](#torch.distributed.optim.ZeroRedundancyOptimizer
@@ -394,41 +599,72 @@
     which happens once `DistributedDataParallel` gradient buckets have been rebuilt;
     or if this method is called without a preceding call to [`consolidate_state_dict()`](#torch.distributed.optim.ZeroRedundancyOptimizer.consolidate_state_dict
     "torch.distributed.optim.ZeroRedundancyOptimizer.consolidate_state_dict").'
+  id: totrans-92
   prefs: []
   type: TYPE_NORMAL
+  zh: '[**RuntimeError**](https://docs.python.org/3/library/exceptions.html#RuntimeError
+    "(在 Python v3.12 中)") - 如果 `overlap_with_ddp=True` 并且在此 [`ZeroRedundancyOptimizer`](#torch.distributed.optim.ZeroRedundancyOptimizer
+    "torch.distributed.optim.ZeroRedundancyOptimizer") 实例完全初始化之前调用此方法，这会在 `DistributedDataParallel`
+    梯度桶重建后发生；或者如果在调用此方法之前没有调用 [`consolidate_state_dict()`](#torch.distributed.optim.ZeroRedundancyOptimizer.consolidate_state_dict
+    "torch.distributed.optim.ZeroRedundancyOptimizer.consolidate_state_dict")。'
 - en: Return type
+  id: totrans-93
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*Dict*](https://docs.python.org/3/library/typing.html#typing.Dict "(in Python
     v3.12)")[[str](https://docs.python.org/3/library/stdtypes.html#str "(in Python
     v3.12)"), [*Any*](https://docs.python.org/3/library/typing.html#typing.Any "(in
     Python v3.12)")]'
+  id: totrans-94
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*字典*](https://docs.python.org/3/library/typing.html#typing.Dict "(在 Python
+    v3.12 中)")[[str](https://docs.python.org/3/library/stdtypes.html#str "(在 Python
+    v3.12 中)"), [*任意*](https://docs.python.org/3/library/typing.html#typing.Any "(在
+    Python v3.12 中)")]'
 - en: '[PRE17]'
+  id: totrans-95
   prefs: []
   type: TYPE_PRE
+  zh: '[PRE17]'
 - en: Perform a single optimizer step and syncs parameters across all ranks.
+  id: totrans-96
   prefs: []
   type: TYPE_NORMAL
+  zh: 执行单个优化器步骤并同步所有排名的参数。
 - en: Parameters
+  id: totrans-97
   prefs: []
   type: TYPE_NORMAL
+  zh: 参数
 - en: '**closure** (*Callable*) – a closure that re-evaluates the model and returns
     the loss; optional for most optimizers.'
+  id: totrans-98
   prefs: []
   type: TYPE_NORMAL
+  zh: '**closure** (*Callable*) - 重新评估模型并返回损失的闭包；对大多数优化器来说是可选的。'
 - en: Returns
+  id: totrans-99
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回
 - en: Optional loss depending on the underlying local optimizer.
+  id: totrans-100
   prefs: []
   type: TYPE_NORMAL
+  zh: 根据底层本地优化器而定的可选损失。
 - en: Return type
+  id: totrans-101
   prefs: []
   type: TYPE_NORMAL
+  zh: 返回类型
 - en: '[*Optional*](https://docs.python.org/3/library/typing.html#typing.Optional
     "(in Python v3.12)")[[float](https://docs.python.org/3/library/functions.html#float
     "(in Python v3.12)")]'
+  id: totrans-102
   prefs: []
   type: TYPE_NORMAL
+  zh: '[*可选*](https://docs.python.org/3/library/typing.html#typing.Optional "(在 Python
+    v3.12 中)")[[float](https://docs.python.org/3/library/functions.html#float "(在
+    Python v3.12 中)")]'
