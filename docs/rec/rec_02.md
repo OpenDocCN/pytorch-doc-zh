@@ -1,6 +1,6 @@
 # torchrec.datasets
 
-> 原文：[https://pytorch.org/torchrec/torchrec.datasets.html](https://pytorch.org/torchrec/torchrec.datasets.html)
+> 原文：[`pytorch.org/torchrec/torchrec.datasets.html`](https://pytorch.org/torchrec/torchrec.datasets.html)
 
 ## torchrec.datasets.criteo[](#torchrec-datasets-criteo "此标题的永久链接")
 

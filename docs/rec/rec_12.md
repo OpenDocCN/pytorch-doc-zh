@@ -1,10 +1,10 @@
 # torchrec.quant
 
-> [https://pytorch.org/torchrec/torchrec.quant.html](https://pytorch.org/torchrec/torchrec.quant.html)
+> [`pytorch.org/torchrec/torchrec.quant.html`](https://pytorch.org/torchrec/torchrec.quant.html)
 
-Torchrec量化
+Torchrec 量化
 
-Torchrec为推断提供了EmbeddingBagCollection的量化版本。它依赖于fbgemm量化操作。这减少了模型权重的大小并加快了模型执行速度。
+Torchrec 为推断提供了 EmbeddingBagCollection 的量化版本。它依赖于 fbgemm 量化操作。这减少了模型权重的大小并加快了模型执行速度。
 
 示例
 
@@ -34,21 +34,21 @@ Torchrec为推断提供了EmbeddingBagCollection的量化版本。它依赖于fb
 class torchrec.quant.embedding_modules.EmbeddingBagCollection(tables: List[EmbeddingBagConfig], is_weighted: bool, device: device, output_dtype: dtype = torch.float32, table_name_to_quantized_weights: Optional[Dict[str, Tuple[Tensor, Tensor]]] = None, register_tbes: bool = False, quant_state_dict_split_scale_bias: bool = False, row_alignment: int = 16)¶
 ```
 
-基础：[`EmbeddingBagCollectionInterface`](torchrec.modules.html#torchrec.modules.embedding_modules.EmbeddingBagCollectionInterface "torchrec.modules.embedding_modules.EmbeddingBagCollectionInterface"), `ModuleNoCopyMixin`
+基础：`EmbeddingBagCollectionInterface`, `ModuleNoCopyMixin`
 
-EmbeddingBagCollection表示池化嵌入（EmbeddingBags）的集合。这个EmbeddingBagCollection被量化为较低的精度。它依赖于fbgemm量化操作并提供表批处理。
+EmbeddingBagCollection 表示池化嵌入（EmbeddingBags）的集合。这个 EmbeddingBagCollection 被量化为较低的精度。它依赖于 fbgemm 量化操作并提供表批处理。
 
-它处理形式为 [F X B X L] 的KeyedJaggedTensor的稀疏数据 F: 特征（键） B: 批量大小 L: 稀疏特征的长度（不规则）
+它处理形式为 [F X B X L] 的 KeyedJaggedTensor 的稀疏数据 F: 特征（键） B: 批量大小 L: 稀疏特征的长度（不规则）
 
-并输出形式为 [B * (F * D)] 的KeyedTensor，其中 F: 特征（键） D: 每个特征（键）的嵌入维度 B: 批量大小
+并输出形式为 [B * (F * D)] 的 KeyedTensor，其中 F: 特征（键） D: 每个特征（键）的嵌入维度 B: 批量大小
 
 参数：
 
 +   **table_name_to_quantized_weights**（*字典**[**str**,* *元组**[**张量**,* *张量**]**]*）- 表到量化权重的映射
 
-+   **embedding_configs**（*列表**[*[*EmbeddingBagConfig*](torchrec.modules.html#torchrec.modules.embedding_configs.EmbeddingBagConfig "torchrec.modules.embedding_configs.EmbeddingBagConfig")*]*）- 嵌入表的列表
++   **embedding_configs**（*列表***[*EmbeddingBagConfig**]*）- 嵌入表的列表
 
-+   **is_weighted** - (布尔值)：输入的KeyedJaggedTensor是否加权
++   **is_weighted** - (布尔值)：输入的 KeyedJaggedTensor 是否加权
 
 +   **设备** - （可选[torch.device]）：默认计算设备
 
@@ -107,14 +107,7 @@ forward(features: KeyedJaggedTensor) → KeyedTensor¶
 
 参数：
 
-**特征**（[*KeyedJaggedTensor*](torchrec.sparse.html#torchrec.sparse.jagged_tensor.KeyedJaggedTensor "torchrec.sparse.jagged_tensor.KeyedJaggedTensor"））- 形式为 [F X B X L] 的 KJT。
-
-返回：
-
-KeyedTensor
-
-```py
-classmethod from_float(module: EmbeddingBagCollection) → EmbeddingBagCollection¶
+**特征**（*KeyedJaggedTensor* → EmbeddingBagCollection¶
 ```
 
 ```py
@@ -133,11 +126,11 @@ training: bool¶
 class torchrec.quant.embedding_modules.EmbeddingCollection(tables: List[EmbeddingConfig], device: device, need_indices: bool = False, output_dtype: dtype = torch.float32, table_name_to_quantized_weights: Optional[Dict[str, Tuple[Tensor, Tensor]]] = None, register_tbes: bool = False, quant_state_dict_split_scale_bias: bool = False, row_alignment: int = 16)¶
 ```
 
-基础：[`EmbeddingCollectionInterface`](torchrec.modules.html#torchrec.modules.embedding_modules.EmbeddingCollectionInterface "torchrec.modules.embedding_modules.EmbeddingCollectionInterface"), `ModuleNoCopyMixin`
+基础：`EmbeddingCollectionInterface`, `ModuleNoCopyMixin`
 
-EmbeddingCollection表示非池化嵌入的集合。
+EmbeddingCollection 表示非池化嵌入的集合。
 
-它处理形式为 [F X B X L] 的KeyedJaggedTensor的稀疏数据，其中：
+它处理形式为 [F X B X L] 的 KeyedJaggedTensor 的稀疏数据，其中：
 
 +   F: 特征（键）
 
@@ -145,7 +138,7 @@ EmbeddingCollection表示非池化嵌入的集合。
 
 +   L: 稀疏特征的长度（可变）
 
-并输出Dict[特征（键），JaggedTensor]。每个JaggedTensor包含形式为 (B * L) X D 的值，其中：
+并输出 Dict[特征（键），JaggedTensor]。每个 JaggedTensor 包含形式为 (B * L) X D 的值，其中：
 
 +   B: 批量大小
 
@@ -155,7 +148,7 @@ EmbeddingCollection表示非池化嵌入的集合。
 
 参数：
 
-+   **tables**（*列表**[*[*EmbeddingConfig*](torchrec.modules.html#torchrec.modules.embedding_configs.EmbeddingConfig "torchrec.modules.embedding_configs.EmbeddingConfig")*]*）- 嵌入表的列表。
++   **tables**（*列表***[*EmbeddingConfig**]*）- 嵌入表的列表。
 
 +   **设备**（*可选**[**torch.device**]*）- 默认计算设备。
 
@@ -215,14 +208,7 @@ forward(features: KeyedJaggedTensor) → Dict[str, JaggedTensor]¶
 
 参数：
 
-**特征**（[*KeyedJaggedTensor*](torchrec.sparse.html#torchrec.sparse.jagged_tensor.KeyedJaggedTensor "torchrec.sparse.jagged_tensor.KeyedJaggedTensor"））- 形式为 [F X B X L] 的 KJT。
-
-返回：
-
-Dict[str, JaggedTensor]
-
-```py
-classmethod from_float(module: EmbeddingCollection) → EmbeddingCollection¶
+**特征**（*KeyedJaggedTensor* → EmbeddingCollection¶
 ```
 
 ```py
@@ -241,7 +227,7 @@ training: bool¶
 class torchrec.quant.embedding_modules.FeatureProcessedEmbeddingBagCollection(tables: List[EmbeddingBagConfig], is_weighted: bool, device: device, output_dtype: dtype = torch.float32, table_name_to_quantized_weights: Optional[Dict[str, Tuple[Tensor, Tensor]]] = None, register_tbes: bool = False, quant_state_dict_split_scale_bias: bool = False, row_alignment: int = 16, feature_processor: Optional[FeatureProcessorsCollection] = None)¶
 ```
 
-基础：[`EmbeddingBagCollection`](#torchrec.quant.embedding_modules.EmbeddingBagCollection "torchrec.quant.embedding_modules.EmbeddingBagCollection")
+基础：`EmbeddingBagCollection`
 
 ```py
 embedding_bags: nn.ModuleDict¶
@@ -253,14 +239,7 @@ forward(features: KeyedJaggedTensor) → KeyedTensor¶
 
 参数：
 
-**特征**（[*KeyedJaggedTensor*](torchrec.sparse.html#torchrec.sparse.jagged_tensor.KeyedJaggedTensor "torchrec.sparse.jagged_tensor.KeyedJaggedTensor"））- 形式为 [F X B X L] 的 KJT。
-
-返回：
-
-KeyedTensor
-
-```py
-classmethod from_float(module: FeatureProcessedEmbeddingBagCollection) → FeatureProcessedEmbeddingBagCollection¶
+**特征**（*KeyedJaggedTensor* → FeatureProcessedEmbeddingBagCollection¶
 ```
 
 ```py
@@ -299,9 +278,9 @@ torchrec.quant.embedding_modules.quant_prep_enable_register_tbes(module: Module,
 torchrec.quant.embedding_modules.quantize_state_dict(module: Module, table_name_to_quantized_weights: Dict[str, Tuple[Tensor, Tensor]], table_name_to_data_type: Dict[str, DataType], table_name_to_pruning_indices_mapping: Optional[Dict[str, Tensor]] = None) → device¶
 ```  ## 模块内容[](#module-0 "Permalink to this heading")
 
-Torchrec量化
+Torchrec 量化
 
-Torchrec为推断提供了EmbeddingBagCollection的量化版本。它依赖于fbgemm量化操作。这减少了模型权重的大小并加快了模型执行速度。
+Torchrec 为推断提供了 EmbeddingBagCollection 的量化版本。它依赖于 fbgemm 量化操作。这减少了模型权重的大小并加快了模型执行速度。
 
 示例
 

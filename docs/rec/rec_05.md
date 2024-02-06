@@ -1,8 +1,8 @@
 # torchrec.distributed.planner
 
-> 原文：[https://pytorch.org/torchrec/torchrec.distributed.planner.html](https://pytorch.org/torchrec/torchrec.distributed.planner.html)
+> 原文：[`pytorch.org/torchrec/torchrec.distributed.planner.html`](https://pytorch.org/torchrec/torchrec.distributed.planner.html)
 
-Torchrec规划者
+Torchrec 规划者
 
 规划者提供了模块被分片所需的规格，考虑了构建优化计划的可能选项。
 
@@ -12,7 +12,7 @@ Torchrec规划者
 
 +   为每个分片估算性能和存储。
 
-+   估算峰值内存使用量，以消除可能导致OOM的分片计划。
++   估算峰值内存使用量，以消除可能导致 OOM 的分片计划。
 
 +   参数约束、分区、提议者或性能建模的可定制性。
 
@@ -32,11 +32,11 @@ torchrec.distributed.planner.constants.kernel_bw_lookup(compute_device: str, com
 
 +   **compute_device** (*str*) – 计算设备。
 
-+   **hbm_mem_bw** (*float*) – 设备HBM的带宽。
++   **hbm_mem_bw** (*float*) – 设备 HBM 的带宽。
 
-+   **ddr_mem_bw** (*float*) – 系统DDR内存的带宽。
++   **ddr_mem_bw** (*float*) – 系统 DDR 内存的带宽。
 
-+   **caching_ratio** (*Optional**[**float**]*) – 用于确定设备带宽的缓存比率，如果启用了UVM缓存。
++   **caching_ratio** (*Optional**[**float**]*) – 用于确定设备带宽的缓存比率，如果启用了 UVM 缓存。
 
 +   **prefetch_pipeline** (*bool*) – 是否启用预取管道。
 
@@ -52,17 +52,17 @@ torchrec.distributed.planner.constants.kernel_bw_lookup(compute_device: str, com
 class torchrec.distributed.planner.enumerators.EmbeddingEnumerator(topology: Topology, batch_size: int, constraints: Optional[Dict[str, ParameterConstraints]] = None, estimator: Optional[Union[ShardEstimator, List[ShardEstimator]]] = None)¶
 ```
 
-基类：[`Enumerator`](#torchrec.distributed.planner.types.Enumerator "torchrec.distributed.planner.types.Enumerator")
+基类：`Enumerator`
 
-为给定的nn.Module生成嵌入分片选项，考虑用户提供的约束。
+为给定的 nn.Module 生成嵌入分片选项，考虑用户提供的约束。
 
 参数：
 
-+   **topology** ([*Topology*](#torchrec.distributed.planner.types.Topology "torchrec.distributed.planner.types.Topology")) – 设备拓扑。
++   **topology** (*Topology*) – 设备拓扑。
 
 +   **batch_size** (*int*) – 批量大小。
 
-+   **constraints** (*Optional**[**Dict**[**str**,* [*ParameterConstraints*](#torchrec.distributed.planner.types.ParameterConstraints "torchrec.distributed.planner.types.ParameterConstraints")*]**]*) – 参数名称到提供的ParameterConstraints的字典。
++   **constraints** (*Optional****Dict**[**str**,* [*ParameterConstraints**]**]*) – 参数名称到提供的 ParameterConstraints 的字典。
 
 ```py
 enumerate(module: Module, sharders: List[ModuleSharder[Module]]) → List[ShardingOption]¶
@@ -74,7 +74,7 @@ enumerate(module: Module, sharders: List[ModuleSharder[Module]]) → List[Shardi
 
 +   **module** (*nn.Module*) – 要分片的模块。
 
-+   **sharders** (*List**[*[*ModuleSharder*](torchrec.distributed.html#torchrec.distributed.types.ModuleSharder "torchrec.distributed.types.ModuleSharder")*[**nn.Module**]**]*) – 模块的提供的分片器。
++   **sharders** (*List***[*ModuleSharder**[**nn.Module**]**]*) – 模块的提供的分片器。
 
 返回：
 
@@ -82,7 +82,7 @@ enumerate(module: Module, sharders: List[ModuleSharder[Module]]) → List[Shardi
 
 返回类型：
 
-List[[ShardingOption](#torchrec.distributed.planner.types.ShardingOption "torchrec.distributed.planner.types.ShardingOption")]
+List[ShardingOption]
 
 ```py
 populate_estimates(sharding_options: List[ShardingOption]) → None¶
@@ -102,7 +102,7 @@ torchrec.distributed.planner.enumerators.get_partition_by_type(sharding_type: st
 
 返回：
 
-相应的PartitionByType值。
+相应的 PartitionByType 值。
 
 返回类型：
 
@@ -112,13 +112,13 @@ str  ## torchrec.distributed.planner.partitioners[](#module-torchrec.distributed
 class torchrec.distributed.planner.partitioners.GreedyPerfPartitioner(sort_by: SortBy = SortBy.STORAGE, balance_modules: bool = False)¶
 ```
 
-基类：[`Partitioner`](#torchrec.distributed.planner.types.Partitioner "torchrec.distributed.planner.types.Partitioner")
+基类：`Partitioner`
 
 贪婪分区器
 
 参数：
 
-+   **sort_by** ([*SortBy*](#torchrec.distributed.planner.partitioners.SortBy "torchrec.distributed.planner.partitioners.SortBy")) – 按存储或性能降序排序分片选项（即，大表将首先放置）。
++   **sort_by** (*SortBy*) – 按存储或性能降序排序分片选项（即，大表将首先放置）。
 
 +   **balance_modules** (*bool*) – 是否首先按模块排序，其中较小的模块将首先排序。实际上，这将以平衡的方式在每个模块中放置表。
 
@@ -126,13 +126,13 @@ class torchrec.distributed.planner.partitioners.GreedyPerfPartitioner(sort_by: S
 partition(proposal: List[ShardingOption], storage_constraint: Topology) → List[ShardingOption]¶
 ```
 
-根据每个分片选项的partition_by属性将分片选项放置在拓扑上。在放置结束时，拓扑、存储和性能将被更新。
+根据每个分片选项的 partition_by 属性将分片选项放置在拓扑上。在放置结束时，拓扑、存储和性能将被更新。
 
 参数：
 
-+   **proposal** (*List**[*[*ShardingOption*](#torchrec.distributed.planner.types.ShardingOption "torchrec.distributed.planner.types.ShardingOption")*]*) – 填充的分片选项列表。
++   **proposal** (*List***[*ShardingOption**]*) – 填充的分片选项列表。
 
-+   **storage_constraint**（[*Topology*](#torchrec.distributed.planner.types.Topology "torchrec.distributed.planner.types.Topology")）-设备拓扑。
++   **storage_constraint**（*Topology*）-设备拓扑。
 
 返回：
 
@@ -140,7 +140,7 @@ partition(proposal: List[ShardingOption], storage_constraint: Topology) → List
 
 返回类型：
 
-List[[ShardingOption](#torchrec.distributed.planner.types.ShardingOption "torchrec.distributed.planner.types.ShardingOption")]
+List[ShardingOption]
 
 示例：
 
@@ -190,15 +190,15 @@ topology.devices[1].perf.total = (1,2) + (3,4)
 class torchrec.distributed.planner.partitioners.MemoryBalancedPartitioner(max_search_count: int = 10, tolerance: float = 0.02, balance_modules: bool = False)¶
 ```
 
-基类：[`Partitioner`](#torchrec.distributed.planner.types.Partitioner "torchrec.distributed.planner.types.Partitioner")
+基类：`Partitioner`
 
 内存平衡分区器。
 
 参数：
 
-+   **max_search_count**（*整数*）-调用GreedyPartitioner的最大次数。
++   **max_search_count**（*整数*）-调用 GreedyPartitioner 的最大次数。
 
-+   **容差**（*浮点数*）-原始计划和新计划之间的最大可接受差异。如果容差为1，这意味着如果新计划的性能是原始计划的200％（即计划比原计划差100％），则将拒绝新计划。
++   **容差**（*浮点数*）-原始计划和新计划之间的最大可接受差异。如果容差为 1，这意味着如果新计划的性能是原始计划的 200％（即计划比原计划差 100％），则将拒绝新计划。
 
 +   **balance_modules**（*布尔值*）-是否首先按模块排序，其中较小的模块将首先排序。实际上，这将以平衡的方式放置每个模块中的表。
 
@@ -206,7 +206,7 @@ class torchrec.distributed.planner.partitioners.MemoryBalancedPartitioner(max_se
 partition(proposal: List[ShardingOption], storage_constraint: Topology) → List[ShardingOption]¶
 ```
 
-重复调用GreedyPerfPartitioner，以找到性能在原始计划容差范围内且使用最少内存量的计划。
+重复调用 GreedyPerfPartitioner，以找到性能在原始计划容差范围内且使用最少内存量的计划。
 
 ```py
 class torchrec.distributed.planner.partitioners.OrderedDeviceHardware(device: torchrec.distributed.planner.types.DeviceHardware, local_world_size: int)¶
@@ -268,7 +268,7 @@ torchrec.distributed.planner.partitioners.set_hbm_per_device(storage_constraint:
 class torchrec.distributed.planner.perf_models.NoopPerfModel(topology: Topology)¶
 ```
 
-基类：[`PerfModel`](#torchrec.distributed.planner.types.PerfModel "torchrec.distributed.planner.types.PerfModel")
+基类：`PerfModel`
 
 ```py
 rate(plan: List[ShardingOption]) → float¶
@@ -278,7 +278,7 @@ rate(plan: List[ShardingOption]) → float¶
 class torchrec.distributed.planner.planners.EmbeddingShardingPlanner(topology: Optional[Topology] = None, batch_size: Optional[int] = None, enumerator: Optional[Enumerator] = None, storage_reservation: Optional[StorageReservation] = None, proposer: Optional[Union[Proposer, List[Proposer]]] = None, partitioner: Optional[Partitioner] = None, performance_model: Optional[PerfModel] = None, stats: Optional[Union[Stats, List[Stats]]] = None, constraints: Optional[Dict[str, ParameterConstraints]] = None, debug: bool = True)¶
 ```
 
-基类：[`ShardingPlanner`](torchrec.distributed.html#torchrec.distributed.types.ShardingPlanner "torchrec.distributed.types.ShardingPlanner")
+基类：`ShardingPlanner`
 
 根据提供的分片器、拓扑和约束为给定模块提供优化的分片计划。
 
@@ -286,7 +286,7 @@ class torchrec.distributed.planner.planners.EmbeddingShardingPlanner(topology: O
 collective_plan(module: Module, sharders: Optional[List[ModuleSharder[Module]]] = None, pg: Optional[ProcessGroup] = None) → ShardingPlan¶
 ```
 
-在rank 0上调用self.plan(…)并广播
+在 rank 0 上调用 self.plan(…)并广播
 
 ```py
 plan(module: Module, sharders: List[ModuleSharder[Module]]) → ShardingPlan¶
@@ -298,7 +298,7 @@ plan(module: Module, sharders: List[ModuleSharder[Module]]) → ShardingPlan¶
 
 +   **module**（*nn.Module*）-计划分片的模块。
 
-+   **sharders**（*List**[*[*ModuleSharder*](torchrec.distributed.html#torchrec.distributed.types.ModuleSharder "torchrec.distributed.types.ModuleSharder")*[**nn.Module**]**]*)-模块的提供的分片器。
++   **sharders**（*List***[*ModuleSharder**[**nn.Module**]**]*)-模块的提供的分片器。
 
 返回：
 
@@ -306,13 +306,13 @@ plan(module: Module, sharders: List[ModuleSharder[Module]]) → ShardingPlan¶
 
 返回类型：
 
-[ShardingPlan](torchrec.distributed.html#torchrec.distributed.types.ShardingPlan "torchrec.distributed.types.ShardingPlan")  ## torchrec.distributed.planner.proposers[](#module-torchrec.distributed.planner.proposers "Permalink to this heading")
+ShardingPlan  ## torchrec.distributed.planner.proposers[](#module-torchrec.distributed.planner.proposers "Permalink to this heading")
 
 ```py
 class torchrec.distributed.planner.proposers.EmbeddingOffloadScaleupProposer(use_depth: bool = True)¶
 ```
 
-基类：[`Proposer`](#torchrec.distributed.planner.types.Proposer "torchrec.distributed.planner.types.Proposer")
+基类：`Proposer`
 
 ```py
 static allocate_budget(model: Tensor, clfs: Tensor, budget: int, allocation_priority: Tensor) → Tensor¶
@@ -334,7 +334,7 @@ feedback(partitionable: bool, plan: Optional[List[ShardingOption]] = None, perf_
 static get_budget(proposal: List[ShardingOption], storage_constraint: Topology) → int¶
 ```
 
-返回额外的HBM预算，可用于GPU缓存。
+返回额外的 HBM 预算，可用于 GPU 缓存。
 
 ```py
 static get_cacheability(sharding_option: ShardingOption) → Optional[float]¶
@@ -360,7 +360,7 @@ propose() → Optional[List[ShardingOption]]¶
 class torchrec.distributed.planner.proposers.GreedyProposer(use_depth: bool = True, threshold: Optional[int] = None)¶
 ```
 
-基类：[`Proposer`](#torchrec.distributed.planner.types.Proposer "torchrec.distributed.planner.types.Proposer")
+基类：`Proposer`
 
 以贪婪的方式提出分片计划。
 
@@ -368,7 +368,7 @@ class torchrec.distributed.planner.proposers.GreedyProposer(use_depth: bool = Tr
 
 参数：
 
-+   **use_depth**（*布尔值*）-启用时，根据max(shard.perf.total)对fqn的sharding_options进行排序，否则根据sum(shard.perf.total)对sharding_options进行排序。
++   **use_depth**（*布尔值*）-启用时，根据 max(shard.perf.total)对 fqn 的 sharding_options 进行排序，否则根据 sum(shard.perf.total)对 sharding_options 进行排序。
 
 +   **threshold**（*可选**[**整数**]**）-提前停止的阈值。当指定时，当提议的性能连续比最佳性能差时，提议者停止提议。
 
@@ -388,7 +388,7 @@ propose() → Optional[List[ShardingOption]]¶
 class torchrec.distributed.planner.proposers.GridSearchProposer(max_proposals: int = 10000)¶
 ```
 
-基类：[`Proposer`](#torchrec.distributed.planner.types.Proposer "torchrec.distributed.planner.types.Proposer")
+基类：`Proposer`
 
 ```py
 feedback(partitionable: bool, plan: Optional[List[ShardingOption]] = None, perf_rating: Optional[float] = None, storage_constraint: Optional[Topology] = None) → None¶
@@ -406,7 +406,7 @@ propose() → Optional[List[ShardingOption]]¶
 class torchrec.distributed.planner.proposers.UniformProposer(use_depth: bool = True)¶
 ```
 
-基类：[`Proposer`](#torchrec.distributed.planner.types.Proposer "torchrec.distributed.planner.types.Proposer")
+基类：`Proposer`
 
 提出统一的分片计划，即所有分片选项都具有相同的分片类型的计划。
 
@@ -432,9 +432,9 @@ torchrec.distributed.planner.proposers.proposers_to_proposals_list(proposers_lis
 class torchrec.distributed.planner.shard_estimators.EmbeddingOffloadStats(cacheability: float, expected_lookups: int, mrc_hist_counts: Tensor, height: int)¶
 ```
 
-基类：[`CacheStatistics`](torchrec.distributed.html#torchrec.distributed.types.CacheStatistics "torchrec.distributed.types.CacheStatistics")
+基类：`CacheStatistics`
 
-为uvm_fused_cache表计算缓存统计信息。
+为 uvm_fused_cache 表计算缓存统计信息。
 
 参数：
 
@@ -444,11 +444,11 @@ cachebility (float):
 
 expected_lookups (float):
 
-全局批次中预期的唯一嵌入id数量。
+全局批次中预期的唯一嵌入 id 数量。
 
 mrc_hist_counts (torch.Tensor):
 
-一个1维张量（大小为n），保存LRU未命中率曲线的直方图。每个bin代表可能的LRU缓存大小的1/n（从load_factor 0到load_factor 1.0）。如果LRU load_factor至少为该大小，则bin包含可以处理的预期LRU操作数量，而不会发生缓存未命中。
+一个 1 维张量（大小为 n），保存 LRU 未命中率曲线的直方图。每个 bin 代表可能的 LRU 缓存大小的 1/n（从 load_factor 0 到 load_factor 1.0）。如果 LRU load_factor 至少为该大小，则 bin 包含可以处理的预期 LRU 操作数量，而不会发生缓存未命中。
 
 高度（int）：
 
@@ -458,13 +458,13 @@ mrc_hist_counts (torch.Tensor):
 property cacheability: float¶
 ```
 
-缓存数据集的难度的总结度量，独立于缓存大小。得分为0表示数据集非常适合缓存（例如，访问之间的局部性很高），得分为1表示非常难以缓存。
+缓存数据集的难度的总结度量，独立于缓存大小。得分为 0 表示数据集非常适合缓存（例如，访问之间的局部性很高），得分为 1 表示非常难以缓存。
 
 ```py
 static estimate_cache_miss_rate(cache_sizes: Tensor, hist: Tensor, bins: Tensor) → Tensor¶
 ```
 
-根据提议的cache_sizes计算给定MRC直方图的估计缓存未命中率。
+根据提议的 cache_sizes 计算给定 MRC 直方图的估计缓存未命中率。
 
 ```py
 property expected_lookups: int¶
@@ -480,13 +480,13 @@ expected_miss_rate(clf: float) → float¶
 
 给定缓存大小的预期缓存查找未命中率。
 
-当clf（缓存加载因子）为0时，返回1.0（100%未命中）。当clf为1.0时，返回0（100%命中）。对于介于这些极端之间的clf值，根据对训练数据集的统计属性的了解，返回缓存的估计未命中率。
+当 clf（缓存加载因子）为 0 时，返回 1.0（100%未命中）。当 clf 为 1.0 时，返回 0（100%命中）。对于介于这些极端之间的 clf 值，根据对训练数据集的统计属性的了解，返回缓存的估计未命中率。
 
 ```py
 class torchrec.distributed.planner.shard_estimators.EmbeddingPerfEstimator(topology: Topology, constraints: Optional[Dict[str, ParameterConstraints]] = None, is_inference: bool = False)¶
 ```
 
-基类：[`ShardEstimator`](#torchrec.distributed.planner.types.ShardEstimator "torchrec.distributed.planner.types.ShardEstimator")
+基类：`ShardEstimator`
 
 嵌入墙时间性能估计器
 
@@ -498,7 +498,7 @@ estimate(sharding_options: List[ShardingOption], sharder_map: Optional[Dict[str,
 class torchrec.distributed.planner.shard_estimators.EmbeddingStorageEstimator(topology: Topology, constraints: Optional[Dict[str, ParameterConstraints]] = None)¶
 ```
 
-基类：[`ShardEstimator`](#torchrec.distributed.planner.types.ShardEstimator "torchrec.distributed.planner.types.ShardEstimator")
+基类：`ShardEstimator`
 
 嵌入存储使用量估计器
 
@@ -514,9 +514,9 @@ torchrec.distributed.planner.shard_estimators.calculate_shard_storages(sharder: 
 
 参数：
 
-+   **sharder** ([*ModuleSharder*](torchrec.distributed.html#torchrec.distributed.types.ModuleSharder "torchrec.distributed.types.ModuleSharder")*[**nn.Module**]*) – 支持分片的模块的分片器。
++   **sharder** (*ModuleSharder**[**nn.Module**]*) – 支持分片的模块的分片器。
 
-+   **sharding_type** (*str*) – 提供的ShardingType值。
++   **sharding_type** (*str*) – 提供的 ShardingType 值。
 
 +   **tensor** (*torch.Tensor*) – 要分片的张量。
 
@@ -534,11 +534,11 @@ torchrec.distributed.planner.shard_estimators.calculate_shard_storages(sharder: 
 
 +   **input_lengths** (*List**[**float**]*) – 平均输入长度，与池化因子相同。
 
-+   **num_poolings** (*List**[**float**]*) – 每个样本的平均池化次数（通常为1.0）。
++   **num_poolings** (*List**[**float**]*) – 每个样本的平均池化次数（通常为 1.0）。
 
-+   **caching_ratio** (*float*) – HBM到DDR内存的UVM缓存比率。
++   **caching_ratio** (*float*) – HBM 到 DDR 内存的 UVM 缓存比率。
 
-+   **is_pooled** (*bool*) – 如果嵌入输出是池化的（即EmbeddingBag），则为True，如果是未池化/顺序的（即Embedding），则为False。
++   **is_pooled** (*bool*) – 如果嵌入输出是池化的（即 EmbeddingBag），则为 True，如果是未池化/顺序的（即 Embedding），则为 False。
 
 返回：
 
@@ -546,7 +546,7 @@ torchrec.distributed.planner.shard_estimators.calculate_shard_storages(sharder: 
 
 返回类型：
 
-List[[Storage](#torchrec.distributed.planner.types.Storage "torchrec.distributed.planner.types.Storage")]
+List[Storage]
 
 ```py
 torchrec.distributed.planner.shard_estimators.perf_func_emb_wall_time(shard_sizes: List[List[int]], compute_kernel: str, compute_device: str, sharding_type: str, batch_sizes: List[int], world_size: int, local_world_size: int, input_lengths: List[float], input_data_type_size: float, table_data_type_size: float, fwd_a2a_comm_data_type_size: float, bwd_a2a_comm_data_type_size: float, fwd_sr_comm_data_type_size: float, bwd_sr_comm_data_type_size: float, num_poolings: List[float], hbm_mem_bw: float, ddr_mem_bw: float, intra_host_bw: float, inter_host_bw: float, bwd_compute_multiplier: float, is_pooled: bool, is_weighted: bool = False, caching_ratio: Optional[float] = None, is_inference: bool = False, prefetch_pipeline: bool = False, expected_cache_fetches: float = 0) → List[Perf]¶
@@ -580,19 +580,19 @@ torchrec.distributed.planner.shard_estimators.perf_func_emb_wall_time(shard_size
 
 +   **bwd_comm_data_type_size** (*float*) – 反向通信期间分布式数据并行输入的数据类型大小。
 
-+   **num_poolings** (*List**[**float**]*) – 每个样本的池化次数，通常为1.0。
++   **num_poolings** (*List**[**float**]*) – 每个样本的池化次数，通常为 1.0。
 
-+   **hbm_mem_bw** (*float*) – 设备HBM的带宽。
++   **hbm_mem_bw** (*float*) – 设备 HBM 的带宽。
 
-+   **ddr_mem_bw** (*float*) – 系统DDR内存的带宽。
++   **ddr_mem_bw** (*float*) – 系统 DDR 内存的带宽。
 
 +   **intra_host_bw** (*float*) – 单个主机内的带宽，如多个线程。
 
 +   **inter_host_bw** (*float*) – 两个主机之间的带宽，如多台机器。
 
-+   **is_pooled** (*bool*) – 如果嵌入输出是池化的（即EmbeddingBag），则为True；如果未池化/顺序（即Embedding），则为False。
++   **is_pooled** (*bool*) – 如果嵌入输出是池化的（即 EmbeddingBag），则为 True；如果未池化/顺序（即 Embedding），则为 False。
 
-+   **is_weighted** (*bool = False*) – 如果模块是EBC并且是加权的，则为True，通常表示id分数列表特征。
++   **is_weighted** (*bool = False*) – 如果模块是 EBC 并且是加权的，则为 True，通常表示 id 分数列表特征。
 
 +   **is_inference** (*bool = False*) – 是否为推断进行规划。
 
@@ -614,7 +614,7 @@ List[float]  ## torchrec.distributed.planner.stats[](#module-torchrec.distribute
 class torchrec.distributed.planner.stats.EmbeddingStats¶
 ```
 
-基类：[`Stats`](#torchrec.distributed.planner.types.Stats "torchrec.distributed.planner.types.Stats")
+基类：`Stats`
 
 用于分片规划执行的统计信息。
 
@@ -624,17 +624,17 @@ log(sharding_plan: ShardingPlan, topology: Topology, batch_size: int, storage_re
 
 记录给定分片计划的统计信息。
 
-提供给定分片计划的每个设备存储使用情况（HBM和DDR）、性能、输入、输出和分片数量/类型的统计表格视图。
+提供给定分片计划的每个设备存储使用情况（HBM 和 DDR）、性能、输入、输出和分片数量/类型的统计表格视图。
 
 参数：
 
-+   **sharding_plan** ([*ShardingPlan*](torchrec.distributed.html#torchrec.distributed.types.ShardingPlan "torchrec.distributed.types.ShardingPlan")) – 规划者选择的分片计划。
++   **sharding_plan** (*ShardingPlan*) – 规划者选择的分片计划。
 
-+   **topology** ([*Topology*](#torchrec.distributed.planner.types.Topology "torchrec.distributed.planner.types.Topology")) – 设备拓扑结构。
++   **topology** (*Topology*) – 设备拓扑结构。
 
 +   **batch_size** (*int*) – 批次大小。
 
-+   **storage_reservation** ([*StorageReservation*](#torchrec.distributed.planner.types.StorageReservation "torchrec.distributed.planner.types.StorageReservation")) – 为模型的未分片部分保留存储空间
++   **storage_reservation** (*StorageReservation*) – 为模型的未分片部分保留存储空间
 
 +   **num_proposals** (*int*) – 评估的提案数量。
 
@@ -642,9 +642,9 @@ log(sharding_plan: ShardingPlan, topology: Topology, batch_size: int, storage_re
 
 +   **run_time** (*float*) – 找到计划所需的时间（以秒为单位）。
 
-+   **best_plan** (*List**[*[*ShardingOption*](#torchrec.distributed.planner.types.ShardingOption "torchrec.distributed.planner.types.ShardingOption")*]*) – 预期性能的计划。
++   **best_plan** (*List***[*ShardingOption**]*) – 预期性能的计划。
 
-+   **constraints** (*Optional**[**Dict**[**str**,* [*ParameterConstraints*](#torchrec.distributed.planner.types.ParameterConstraints "torchrec.distributed.planner.types.ParameterConstraints")*]**]*) – 参数名称到提供的参数约束的字典。
++   **constraints** (*Optional****Dict**[**str**,* [*ParameterConstraints**]**]*) – 参数名称到提供的参数约束的字典。
 
 +   **debug** (*bool*) – 是否启用调试模式。
 
@@ -652,9 +652,9 @@ log(sharding_plan: ShardingPlan, topology: Topology, batch_size: int, storage_re
 class torchrec.distributed.planner.stats.NoopEmbeddingStats¶
 ```
 
-基类：[`Stats`](#torchrec.distributed.planner.types.Stats "torchrec.distributed.planner.types.Stats")
+基类：`Stats`
 
-用于分片规划执行的Noop统计。
+用于分片规划执行的 Noop 统计。
 
 ```py
 log(sharding_plan: ShardingPlan, topology: Topology, batch_size: int, storage_reservation: StorageReservation, num_proposals: int, num_plans: int, run_time: float, best_plan: List[ShardingOption], constraints: Optional[Dict[str, ParameterConstraints]] = None, sharders: Optional[List[ModuleSharder[Module]]] = None, debug: bool = True) → None¶
@@ -670,7 +670,7 @@ torchrec.distributed.planner.stats.round_to_one_sigfig(x: float) → str¶
 class torchrec.distributed.planner.storage_reservations.FixedPercentageStorageReservation(percentage: float)¶
 ```
 
-基类：[`StorageReservation`](#torchrec.distributed.planner.types.StorageReservation "torchrec.distributed.planner.types.StorageReservation")
+基类：`StorageReservation`
 
 ```py
 reserve(topology: Topology, batch_size: int, module: Module, sharders: List[ModuleSharder[Module]], constraints: Optional[Dict[str, ParameterConstraints]] = None) → Topology¶
@@ -680,9 +680,9 @@ reserve(topology: Topology, batch_size: int, module: Module, sharders: List[Modu
 class torchrec.distributed.planner.storage_reservations.HeuristicalStorageReservation(percentage: float, parameter_multiplier: float = 6.0, dense_tensor_estimate: Optional[int] = None)¶
 ```
 
-基类：[`StorageReservation`](#torchrec.distributed.planner.types.StorageReservation "torchrec.distributed.planner.types.StorageReservation")
+基类：`StorageReservation`
 
-为要分片的模型保留存储空间，使用启发式计算。存储保留包括稠密张量存储、KJT存储和总存储的额外百分比。
+为要分片的模型保留存储空间，使用启发式计算。存储保留包括稠密张量存储、KJT 存储和总存储的额外百分比。
 
 参数：
 
@@ -700,9 +700,9 @@ reserve(topology: Topology, batch_size: int, module: Module, sharders: List[Modu
 class torchrec.distributed.planner.storage_reservations.InferenceStorageReservation(percentage: float, dense_tensor_estimate: Optional[int] = None)¶
 ```
 
-基类：[`StorageReservation`](#torchrec.distributed.planner.types.StorageReservation "torchrec.distributed.planner.types.StorageReservation")
+基类：`StorageReservation`
 
-为要分片进行推理而保留存储空间。存储保留包括稠密张量存储、KJT存储和总存储的额外百分比。请注意，在估算存储空间时，假定稠密模块位于GPU上，并在各个秩上复制。如果不是这种情况，请使用dense_tensor_estimate覆盖估算。
+为要分片进行推理而保留存储空间。存储保留包括稠密张量存储、KJT 存储和总存储的额外百分比。请注意，在估算存储空间时，假定稠密模块位于 GPU 上，并在各个秩上复制。如果不是这种情况，请使用 dense_tensor_estimate 覆盖估算。
 
 参数：
 
@@ -720,7 +720,7 @@ class torchrec.distributed.planner.types.DeviceHardware(rank: int, storage: Stor
 
 基类：`object`
 
-表示进程组中设备的存储容量。‘perf’是网络、CPU和存储使用的估计。
+表示进程组中设备的存储容量。‘perf’是网络、CPU 和存储使用的估计。
 
 ```py
 perf: Perf¶
@@ -740,7 +740,7 @@ class torchrec.distributed.planner.types.Enumerator(topology: Topology, batch_si
 
 基类：`ABC`
 
-为给定拓扑、约束、nn.Module和分片器生成所有相关的分片选项。
+为给定拓扑、约束、nn.Module 和分片器生成所有相关的分片选项。
 
 ```py
 abstract enumerate(module: Module, sharders: List[ModuleSharder[Module]]) → List[ShardingOption]¶
@@ -762,7 +762,7 @@ class torchrec.distributed.planner.types.ParameterConstraints(sharding_types: ~t
 
 存储用户提供的关于分片计划的约束。
 
-如果提供了pooling_factors、num_poolings和batch_sizes，必须与样本中的长度匹配。
+如果提供了 pooling_factors、num_poolings 和 batch_sizes，必须与样本中的长度匹配。
 
 ```py
 batch_sizes: Optional[List[int]] = None¶
@@ -896,7 +896,7 @@ class torchrec.distributed.planner.types.PlannerErrorType(value)¶
 
 基类：`Enum`
 
-根据以下情况分类PlannerError。
+根据以下情况分类 PlannerError。
 
 ```py
 INSUFFICIENT_STORAGE = 'insufficient_storage'¶
@@ -1002,7 +1002,7 @@ property module: Tuple[str, Module]¶
 static module_pooled(module: Module, sharding_option_name: str) → bool¶
 ```
 
-确定模块是否池化输出（例如EmbeddingBag）或使用未池化/顺序输出。
+确定模块是否池化输出（例如 EmbeddingBag）或使用未池化/顺序输出。
 
 ```py
 property num_inputs: int¶
@@ -1122,13 +1122,13 @@ class torchrec.distributed.planner.utils.BinarySearchPredicate(A: int, B: int, t
 
 基类：`object`
 
-生成X在A和B之间的值，以调用外部谓词F(X)以发现F(X)为真的最大X。使用二进制搜索来最小化对F的调用次数。假设F是一个阶跃函数，即如果F(X)为假，则没有必要尝试F(X+1)。
+生成 X 在 A 和 B 之间的值，以调用外部谓词 F(X)以发现 F(X)为真的最大 X。使用二进制搜索来最小化对 F 的调用次数。假设 F 是一个阶跃函数，即如果 F(X)为假，则没有必要尝试 F(X+1)。
 
 ```py
 next(prior_result: bool) → Optional[int]¶
 ```
 
-next()返回下一个要探测的值，给定先前探测的结果。第一次调用next()时，忽略prior_result。如果探索整个范围或达到阈值，则返回None。
+next()返回下一个要探测的值，给定先前探测的结果。第一次调用 next()时，忽略 prior_result。如果探索整个范围或达到阈值，则返回 None。
 
 ```py
 torchrec.distributed.planner.utils.bytes_to_gb(num_bytes: int) → float¶

@@ -1,22 +1,22 @@
 # torchrec.sparse
 
-> 原文：[https://pytorch.org/torchrec/torchrec.sparse.html](https://pytorch.org/torchrec/torchrec.sparse.html)
+> 原文：[`pytorch.org/torchrec/torchrec.sparse.html`](https://pytorch.org/torchrec/torchrec.sparse.html)
 
 Torchrec Jagged Tensors
 
-它有3个类：JaggedTensor，KeyedJaggedTensor，KeyedTensor。
+它有 3 个类：JaggedTensor，KeyedJaggedTensor，KeyedTensor。
 
 JaggedTensor
 
-它表示一个（可选加权）不规则张量。JaggedTensor是一个具有不规则维度的张量，其切片可能具有不同的长度。请参考KeyedJaggedTensor docstring以获取完整示例和更多信息。
+它表示一个（可选加权）不规则张量。JaggedTensor 是一个具有不规则维度的张量，其切片可能具有不同的长度。请参考 KeyedJaggedTensor docstring 以获取完整示例和更多信息。
 
 KeyedJaggedTensor
 
-KeyedJaggedTensor具有额外的“Key”信息。以第一维为键，最后一维为不规则。请参考KeyedJaggedTensor docstring以获取完整示例和更多信息。
+KeyedJaggedTensor 具有额外的“Key”信息。以第一维为键，最后一维为不规则。请参考 KeyedJaggedTensor docstring 以获取完整示例和更多信息。
 
 KeyedTensor
 
-KeyedTensor保存了一个可以通过键访问的密集张量列表，每个张量可以通过键访问。键维度可以是可变长度（每个键的长度）。常见用例包括存储不同维度的池化嵌入。请参考KeyedTensor docstring以获取完整示例和更多信息。
+KeyedTensor 保存了一个可以通过键访问的密集张量列表，每个张量可以通过键访问。键维度可以是可变长度（每个键的长度）。常见用例包括存储不同维度的池化嵌入。请参考 KeyedTensor docstring 以获取完整示例和更多信息。
 
 ## torchrec.sparse.jagged_tensor[](#module-torchrec.sparse.jagged_tensor "Permalink to this heading")
 
@@ -26,9 +26,9 @@ class torchrec.sparse.jagged_tensor.ComputeJTDictToKJT(*args, **kwargs)¶
 
 基类：`Module`
 
-将JaggedTensors的字典转换为KeyedJaggedTensor。参数：
+将 JaggedTensors 的字典转换为 KeyedJaggedTensor。参数：
 
-示例：传入jt_dict
+示例：传入 jt_dict
 
 > {
 > 
@@ -36,7 +36,7 @@ class torchrec.sparse.jagged_tensor.ComputeJTDictToKJT(*args, **kwargs)¶
 > 
 > }
 
-返回：带有内容的kjt：# 0 1 2 <– dim_1 # “Feature0” [V0,V1] None [V2] # “Feature1” [V3] [V4] [V5,V6,V7] # ^ # dim_0
+返回：带有内容的 kjt：# 0 1 2 <– dim_1 # “Feature0” [V0,V1] None [V2] # “Feature1” [V3] [V4] [V5,V6,V7] # ^ # dim_0
 
 ```py
 forward(jt_dict: Dict[str, JaggedTensor]) → KeyedJaggedTensor¶
@@ -44,7 +44,7 @@ forward(jt_dict: Dict[str, JaggedTensor]) → KeyedJaggedTensor¶
 
 参数：
 
-**jt_dict** – 一个JaggedTensor的字典
+**jt_dict** – 一个 JaggedTensor 的字典
 
 返回：
 
@@ -60,7 +60,7 @@ class torchrec.sparse.jagged_tensor.ComputeKJTToJTDict(*args, **kwargs)¶
 
 基类：`Module`
 
-将KeyedJaggedTensor转换为JaggedTensors的字典。
+将 KeyedJaggedTensor 转换为 JaggedTensors 的字典。
 
 参数：
 
@@ -80,11 +80,11 @@ class torchrec.sparse.jagged_tensor.ComputeKJTToJTDict(*args, **kwargs)¶
 forward(keyed_jagged_tensor: KeyedJaggedTensor) → Dict[str, JaggedTensor]¶
 ```
 
-将KeyedJaggedTensor转换为JaggedTensors的字典。
+将 KeyedJaggedTensor 转换为 JaggedTensors 的字典。
 
 参数：
 
-**keyed_jagged_tensor** ([*KeyedJaggedTensor*](#torchrec.sparse.jagged_tensor.KeyedJaggedTensor "torchrec.sparse.jagged_tensor.KeyedJaggedTensor")) – 要转换的张量
+**keyed_jagged_tensor** (*KeyedJaggedTensor*) – 要转换的张量
 
 返回：
 
@@ -102,9 +102,9 @@ class torchrec.sparse.jagged_tensor.JaggedTensor(*args, **kwargs)¶
 
 表示一个（可选加权）不规则张量。
 
-JaggedTensor是一个具有*不规则维度*的张量，其切片可能具有不同的长度。请参考KeyedJaggedTensor以获取完整示例。
+JaggedTensor 是一个具有*不规则维度*的张量，其切片可能具有不同的长度。请参考 KeyedJaggedTensor 以获取完整示例。
 
-实现可以进行torch.jit.script。
+实现可以进行 torch.jit.script。
 
 注意
 
@@ -128,7 +128,7 @@ static empty(is_weighted: bool = False, device: Optional[device] = None, values_
 static from_dense(values: List[Tensor], weights: Optional[List[Tensor]] = None) → JaggedTensor¶
 ```
 
-从形状为(B, N,)的密集值/权重构建JaggedTensor。
+从形状为(B, N,)的密集值/权重构建 JaggedTensor。
 
 请注意，长度和偏移仍然是形状为(B,)的。
 
@@ -140,11 +140,11 @@ static from_dense(values: List[Tensor], weights: Optional[List[Tensor]] = None) 
 
 返回：
 
-从2D密集张量创建的JaggedTensor。
+从 2D 密集张量创建的 JaggedTensor。
 
 返回类型：
 
-[JaggedTensor](#torchrec.sparse.jagged_tensor.JaggedTensor "torchrec.sparse.jagged_tensor.JaggedTensor")
+JaggedTensor
 
 示例：
 
@@ -173,7 +173,7 @@ j1 = JaggedTensor.from_dense(
 static from_dense_lengths(values: Tensor, lengths: Tensor, weights: Optional[Tensor] = None) → JaggedTensor¶
 ```
 
-从形状为(B, N,)的密集值/权重构建JaggedTensor。
+从形状为(B, N,)的密集值/权重构建 JaggedTensor。
 
 请注意，长度仍然是形状为(B,)的。
 
@@ -197,19 +197,19 @@ offsets_or_none() → Optional[Tensor]¶
 record_stream(stream: Stream) → None¶
 ```
 
-参见[https://pytorch.org/docs/stable/generated/torch.Tensor.record_stream.html](https://pytorch.org/docs/stable/generated/torch.Tensor.record_stream.html)
+参见[`pytorch.org/docs/stable/generated/torch.Tensor.record_stream.html`](https://pytorch.org/docs/stable/generated/torch.Tensor.record_stream.html)
 
 ```py
 to(device: device, non_blocking: bool = False) → JaggedTensor¶
 ```
 
-请注意，根据[https://pytorch.org/docs/stable/generated/torch.Tensor.to.html](https://pytorch.org/docs/stable/generated/torch.Tensor.to.html)，to可能返回self或self的副本。因此，请记住要使用赋值运算符to，例如，in = in.to(new_device)。
+请注意，根据[`pytorch.org/docs/stable/generated/torch.Tensor.to.html`](https://pytorch.org/docs/stable/generated/torch.Tensor.to.html)，to 可能返回 self 或 self 的副本。因此，请记住要使用赋值运算符 to，例如，in = in.to(new_device)。
 
 ```py
 to_dense() → List[Tensor]¶
 ```
 
-构建JT值的密集表示。
+构建 JT 值的密集表示。
 
 返回：
 
@@ -242,11 +242,11 @@ values_list = jt.to_dense()
 to_dense_weights() → Optional[List[Tensor]]¶
 ```
 
-构造JT的权重的稠密表示。
+构造 JT 的权重的稠密表示。
 
 返回：
 
-张量列表，如果没有权重则为None。
+张量列表，如果没有权重则为 None。
 
 返回类型：
 
@@ -276,11 +276,11 @@ weights_list = jt.to_dense_weights()
 to_padded_dense(desired_length: Optional[int] = None, padding_value: float = 0.0) → Tensor¶
 ```
 
-从JT的值构造一个形状为(B, N,)的2D稠密张量。
+从 JT 的值构造一个形状为(B, N,)的 2D 稠密张量。
 
-请注意，B是self.lengths()的长度，N是最长的特征长度或desired_length。
+请注意，B 是 self.lengths()的长度，N 是最长的特征长度或 desired_length。
 
-如果desired_length > length，则将使用padding_value进行填充，否则将选择desired_length处的最后一个值。
+如果 desired_length > length，则将使用 padding_value 进行填充，否则将选择 desired_length 处的最后一个值。
 
 参数：
 
@@ -290,7 +290,7 @@ to_padded_dense(desired_length: Optional[int] = None, padding_value: float = 0.0
 
 返回：
 
-2d稠密张量。
+2d 稠密张量。
 
 返回类型：
 
@@ -322,11 +322,11 @@ dt = jt.to_padded_dense(
 to_padded_dense_weights(desired_length: Optional[int] = None, padding_value: float = 0.0) → Optional[Tensor]¶
 ```
 
-从JT的权重构造一个形状为(B, N,)的2D稠密张量。
+从 JT 的权重构造一个形状为(B, N,)的 2D 稠密张量。
 
-请注意，B是self.lengths()的长度，N是最长的特征长度或desired_length。
+请注意，B 是 self.lengths()的长度，N 是最长的特征长度或 desired_length。
 
-如果desired_length > length，则将使用padding_value进行填充，否则将选择desired_length处的最后一个值。
+如果 desired_length > length，则将使用 padding_value 进行填充，否则将选择 desired_length 处的最后一个值。
 
 参数：
 
@@ -336,7 +336,7 @@ to_padded_dense_weights(desired_length: Optional[int] = None, padding_value: flo
 
 返回：
 
-2d稠密张量，如果没有权重则为None。
+2d 稠密张量，如果没有权重则为 None。
 
 返回类型：
 
@@ -391,13 +391,13 @@ class torchrec.sparse.jagged_tensor.KeyedJaggedTensor(*args, **kwargs)¶
 
 表示一个（可选加权）键控不规则张量。
 
-KeyedJaggedTensor是一个具有*jagged dimension*的张量，其切片可能具有不同的长度。在第一维上键入，在最后一维上不规则。
+KeyedJaggedTensor 是一个具有*jagged dimension*的张量，其切片可能具有不同的长度。在第一维上键入，在最后一维上不规则。
 
-实现为torch.jit.script-able。
+实现为 torch.jit.script-able。
 
 参数：
 
-+   **keys** (*列表**[**字符串**]*) - Jagged Tensor的键。
++   **keys** (*列表**[**字符串**]*) - Jagged Tensor 的键。
 
 +   **values** (*torch.Tensor*) - 稠密表示中的值张量。
 
@@ -417,7 +417,7 @@ KeyedJaggedTensor是一个具有*jagged dimension*的张量，其切片可能具
 
 +   **index_per_key** (*可选**[**字典**[**字符串**,* *整数**]**]*) - 每个键的索引。
 
-+   **jt_dict** (*可选**[**字典**[**字符串**,* [*JaggedTensor*](#torchrec.sparse.jagged_tensor.JaggedTensor "torchrec.sparse.jagged_tensor.JaggedTensor")*]**]*) -
++   **jt_dict** (*可选****字典**[**字符串**,* [*JaggedTensor**]**]*) -
 
 +   **inverse_indices** (*可选**[**元组**[**列表**[**字符串**]**,* *torch.Tensor**]**]*) - 用于为每个键的可变步幅扩展去重嵌入输出的逆索引。
 
@@ -485,25 +485,25 @@ flatten_lengths() → KeyedJaggedTensor¶
 static from_jt_dict(jt_dict: Dict[str, JaggedTensor]) → KeyedJaggedTensor¶
 ```
 
-从Dict[str, JaggedTensor]构造一个KeyedJaggedTensor，但是如果JaggedTensors都具有相同的“隐式”batch_size维度，则此函数将仅起作用。
+从 Dict[str, JaggedTensor]构造一个 KeyedJaggedTensor，但是如果 JaggedTensors 都具有相同的“隐式”batch_size 维度，则此函数将仅起作用。
 
-基本上，我们可以将JaggedTensors可视化为格式为[batch_size x variable_feature_dim]的2-D张量。如果有一些批次没有特征值，输入的JaggedTensor可以不包含任何值。
+基本上，我们可以将 JaggedTensors 可视化为格式为[batch_size x variable_feature_dim]的 2-D 张量。如果有一些批次没有特征值，输入的 JaggedTensor 可以不包含任何值。
 
-但KeyedJaggedTensor（默认情况下）通常会填充“None”，以便存储在KeyedJaggedTensor中的所有JaggedTensors具有相同的batch_size维度。也就是说，在这种情况下，JaggedTensor输入没有自动为空批次填充，此函数将出错/无法工作。
+但 KeyedJaggedTensor（默认情况下）通常会填充“None”，以便存储在 KeyedJaggedTensor 中的所有 JaggedTensors 具有相同的 batch_size 维度。也就是说，在这种情况下，JaggedTensor 输入没有自动为空批次填充，此函数将出错/无法工作。
 
-考虑以下KeyedJaggedTensor的可视化：# 0 1 2 <– dim_1 # “Feature0” [V0,V1] None [V2] # “Feature1” [V3] [V4] [V5,V6,V7] # ^ # dim_0
+考虑以下 KeyedJaggedTensor 的可视化：# 0 1 2 <– dim_1 # “Feature0” [V0,V1] None [V2] # “Feature1” [V3] [V4] [V5,V6,V7] # ^ # dim_0
 
-请注意，这个KeyedJaggedTensor的输入看起来像：
+请注意，这个 KeyedJaggedTensor 的输入看起来像：
 
-values: torch.Tensor = [V0, V1, V2, V3, V4, V5, V6, V7] # V == 任何张量数据类型 weights: torch.Tensor = [W0, W1, W2, W3, W4, W5, W6, W7] # W == 任何张量数据类型 lengths: torch.Tensor = [2, 0, 1, 1, 1, 3] # 表示Jagged切片的偏移量: torch.Tensor = [0, 2, 2, 3, 4, 5, 8] # 每个Jagged切片的偏移量从0开始 keys: List[str] = [“Feature0”, “Feature1”] # 对应于dim_0索引的每个值 index_per_key: Dict[str, int] = {“Feature0”: 0, “Feature1”: 1} # 每个键的索引 offset_per_key: List[int] = [0, 3, 8] # 每个键的起始偏移和最终偏移
+values: torch.Tensor = [V0, V1, V2, V3, V4, V5, V6, V7] # V == 任何张量数据类型 weights: torch.Tensor = [W0, W1, W2, W3, W4, W5, W6, W7] # W == 任何张量数据类型 lengths: torch.Tensor = [2, 0, 1, 1, 1, 3] # 表示 Jagged 切片的偏移量: torch.Tensor = [0, 2, 2, 3, 4, 5, 8] # 每个 Jagged 切片的偏移量从 0 开始 keys: List[str] = [“Feature0”, “Feature1”] # 对应于 dim_0 索引的每个值 index_per_key: Dict[str, int] = {“Feature0”: 0, “Feature1”: 1} # 每个键的索引 offset_per_key: List[int] = [0, 3, 8] # 每个键的起始偏移和最终偏移
 
-现在，如果输入jt_dict = {
+现在，如果输入 jt_dict = {
 
 # “Feature0” [V0,V1] [V2] # “Feature1” [V3] [V4] [V5,V6,V7]
 
-}并且每个JaggedTensor中都省略了“None”，那么此函数将失败，因为我们无法正确地填充“None”，因为它在技术上不知道在JaggedTensor中正确的批次/位置进行填充。
+}并且每个 JaggedTensor 中都省略了“None”，那么此函数将失败，因为我们无法正确地填充“None”，因为它在技术上不知道在 JaggedTensor 中正确的批次/位置进行填充。
 
-基本上，此函数推断的长度张量将是[2, 1, 1, 1, 3]，表示可变的batch_size dim_1违反了现有的假设/前提，即KeyedJaggedTensor应该具有固定的batch_size维度。
+基本上，此函数推断的长度张量将是[2, 1, 1, 1, 3]，表示可变的 batch_size dim_1 违反了现有的假设/前提，即 KeyedJaggedTensor 应该具有固定的 batch_size 维度。
 
 ```py
 static from_lengths_sync(keys: List[str], values: Tensor, lengths: Tensor, weights: Optional[Tensor] = None, stride: Optional[int] = None, stride_per_key_per_rank: Optional[List[List[int]]] = None, inverse_indices: Optional[Tuple[List[str], Tensor]] = None) → KeyedJaggedTensor¶
@@ -573,7 +573,7 @@ pin_memory() → KeyedJaggedTensor¶
 record_stream(stream: Stream) → None¶
 ```
 
-请参阅[https://pytorch.org/docs/stable/generated/torch.Tensor.record_stream.html](https://pytorch.org/docs/stable/generated/torch.Tensor.record_stream.html)
+请参阅[`pytorch.org/docs/stable/generated/torch.Tensor.record_stream.html`](https://pytorch.org/docs/stable/generated/torch.Tensor.record_stream.html)
 
 ```py
 split(segments: List[int]) → List[KeyedJaggedTensor]¶
@@ -599,7 +599,7 @@ sync() → KeyedJaggedTensor¶
 to(device: device, non_blocking: bool = False, dtype: Optional[dtype] = None) → KeyedJaggedTensor¶
 ```
 
-请注意，根据[https://pytorch.org/docs/stable/generated/torch.Tensor.to.html](https://pytorch.org/docs/stable/generated/torch.Tensor.to.html)，to可能返回self或self的副本。因此，请记住使用赋值运算符to，例如，in = in.to(new_device)。
+请注意，根据[`pytorch.org/docs/stable/generated/torch.Tensor.to.html`](https://pytorch.org/docs/stable/generated/torch.Tensor.to.html)，to 可能返回 self 或 self 的副本。因此，请记住使用赋值运算符 to，例如，in = in.to(new_device)。
 
 ```py
 to_dict() → Dict[str, JaggedTensor]¶
@@ -631,11 +631,11 @@ class torchrec.sparse.jagged_tensor.KeyedTensor(*args, **kwargs)¶
 
 基类：`Pipelineable`
 
-KeyedTensor保存了一个稠密张量的连接列表，每个张量可以通过一个键访问。
+KeyedTensor 保存了一个稠密张量的连接列表，每个张量可以通过一个键访问。
 
 键维度可以是可变长度（length_per_key）。常见用例包括存储不同维度的池化嵌入。
 
-实现为torch.jit.script-able。
+实现为 torch.jit.script-able。
 
 参数：
 
@@ -645,7 +645,7 @@ KeyedTensor保存了一个稠密张量的连接列表，每个张量可以通过
 
 +   **values**（*torch.Tensor*） - 稠密张量，通常沿键维度连接。
 
-+   **key_dim**（*int*） - 键维度，从零开始索引，默认为1（通常B是0维）。
++   **key_dim**（*int*） - 键维度，从零开始索引，默认为 1（通常 B 是 0 维）。
 
 示例：
 
@@ -704,7 +704,7 @@ offset_per_key() → List[int]¶
 record_stream(stream: Stream) → None¶
 ```
 
-请参阅[https://pytorch.org/docs/stable/generated/torch.Tensor.record_stream.html](https://pytorch.org/docs/stable/generated/torch.Tensor.record_stream.html)
+请参阅[`pytorch.org/docs/stable/generated/torch.Tensor.record_stream.html`](https://pytorch.org/docs/stable/generated/torch.Tensor.record_stream.html)
 
 ```py
 static regroup(keyed_tensors: List[KeyedTensor], groups: List[List[str]]) → List[Tensor]¶
@@ -718,7 +718,7 @@ static regroup_as_dict(keyed_tensors: List[KeyedTensor], groups: List[List[str]]
 to(device: device, non_blocking: bool = False) → KeyedTensor¶
 ```
 
-请注意，根据[https://pytorch.org/docs/stable/generated/torch.Tensor.to.html](https://pytorch.org/docs/stable/generated/torch.Tensor.to.html)，to可能返回self或self的副本。因此，请记住使用赋值运算符to，例如，in = in.to(new_device)。
+请注意，根据[`pytorch.org/docs/stable/generated/torch.Tensor.to.html`](https://pytorch.org/docs/stable/generated/torch.Tensor.to.html)，to 可能返回 self 或 self 的副本。因此，请记住使用赋值运算符 to，例如，in = in.to(new_device)。
 
 ```py
 to_dict() → Dict[str, Tensor]¶
@@ -732,54 +732,41 @@ values() → Tensor¶
 torchrec.sparse.jagged_tensor.jt_is_equal(jt_1: JaggedTensor, jt_2: JaggedTensor) → bool¶
 ```
 
-此函数通过比较它们的内部表示来检查两个JaggedTensors是否相等。比较是通过比较内部表示的值来完成的。对于可选字段，将None值视为相等。
+此函数通过比较它们的内部表示来检查两个 JaggedTensors 是否相等。比较是通过比较内部表示的值来完成的。对于可选字段，将 None 值视为相等。
 
 参数：
 
-+   **jt_1**（[*JaggedTensor*](#torchrec.sparse.jagged_tensor.JaggedTensor "torchrec.sparse.jagged_tensor.JaggedTensor"） - 第一个JaggedTensor
-
-+   **jt_2**（[*JaggedTensor*](#torchrec.sparse.jagged_tensor.JaggedTensor "torchrec.sparse.jagged_tensor.JaggedTensor"） - 第二个JaggedTensor
-
-返回：
-
-如果两个JaggedTensors具有相同的值，则返回True
-
-返回类型：
-
-布尔值
-
-```py
-torchrec.sparse.jagged_tensor.kjt_is_equal(kjt_1: KeyedJaggedTensor, kjt_2: KeyedJaggedTensor) → bool¶
++   **jt_1**（*JaggedTensor* → bool¶
 ```
 
-此函数通过比较它们的内部表示来检查两个KeyedJaggedTensors是否相等。比较是通过比较内部表示的值来完成的。对于可选字段，将None值视为相等。我们通过确保它们具有相同长度并且相应的键是相同顺序和相同值来比较键。
+此函数通过比较它们的内部表示来检查两个 KeyedJaggedTensors 是否相等。比较是通过比较内部表示的值来完成的。对于可选字段，将 None 值视为相等。我们通过确保它们具有相同长度并且相应的键是相同顺序和相同值来比较键。
 
 参数：
 
-+   **kjt_1**（[*KeyedJaggedTensor*](#torchrec.sparse.jagged_tensor.KeyedJaggedTensor "torchrec.sparse.jagged_tensor.KeyedJaggedTensor"） - 第一个KeyedJaggedTensor
++   **kjt_1**（[*KeyedJaggedTensor*](#torchrec.sparse.jagged_tensor.KeyedJaggedTensor "torchrec.sparse.jagged_tensor.KeyedJaggedTensor"） - 第一个 KeyedJaggedTensor
 
-+   **kjt_2**（[*KeyedJaggedTensor*](#torchrec.sparse.jagged_tensor.KeyedJaggedTensor "torchrec.sparse.jagged_tensor.KeyedJaggedTensor"） - 第二个KeyedJaggedTensor
++   **kjt_2**（[*KeyedJaggedTensor*](#torchrec.sparse.jagged_tensor.KeyedJaggedTensor "torchrec.sparse.jagged_tensor.KeyedJaggedTensor"） - 第二个 KeyedJaggedTensor
 
 返回：
 
-如果两个KeyedJaggedTensors具有相同的值，则为True
+如果两个 KeyedJaggedTensors 具有相同的值，则为 True
 
 返回类型：
 
 bool  ## 模块内容[]（＃module-0“此标题的永久链接”）
 
-Torchrec不规则张量
+Torchrec 不规则张量
 
-它有3个类：JaggedTensor，KeyedJaggedTensor，KeyedTensor。
+它有 3 个类：JaggedTensor，KeyedJaggedTensor，KeyedTensor。
 
 JaggedTensor
 
-它表示一个（可选加权）不规则张量。 JaggedTensor是一个具有不规则维度的张量，其切片可能具有不同的长度。 请参考KeyedJaggedTensor文档字符串以获取完整示例和更多信息。
+它表示一个（可选加权）不规则张量。 JaggedTensor 是一个具有不规则维度的张量，其切片可能具有不同的长度。 请参考 KeyedJaggedTensor 文档字符串以获取完整示例和更多信息。
 
 KeyedJaggedTensor
 
-KeyedJaggedTensor具有额外的“Key”信息。 键在第一个维度上，最后一个维度上是不规则的。 请参考KeyedJaggedTensor文档字符串以获取完整示例和更多信息。
+KeyedJaggedTensor 具有额外的“Key”信息。 键在第一个维度上，最后一个维度上是不规则的。 请参考 KeyedJaggedTensor 文档字符串以获取完整示例和更多信息。
 
 KeyedTensor
 
-KeyedTensor保存了一个连接的密集张量列表，每个张量可以通过键访问。 键的维度可以是可变长度（每个键的长度）。 常见用例包括存储不同维度的池化嵌入。 请参考KeyedTensor文档字符串以获取完整示例和更多信息。
+KeyedTensor 保存了一个连接的密集张量列表，每个张量可以通过键访问。 键的维度可以是可变长度（每个键的长度）。 常见用例包括存储不同维度的池化嵌入。 请参考 KeyedTensor 文档字符串以获取完整示例和更多信息。
