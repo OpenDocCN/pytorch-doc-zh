@@ -6,3 +6,8 @@
 +   [PyTorch 0.4 中文文档](docs/0.4/README.md)
 +   [PyTorch 0.3 中文文档 & 教程](docs/0.3/README.md)
 +   [PyTorch 0.2 中文文档](docs/0.2/README.md)
++   [TorchAudio 2.2 中文文档](docs/aud_2.2/README.md)
++   [TorchData 0.7 中文文档](docs/data_0.7/README.md)
++   [TorchRec 中文文档](docs/rec/README.md)
++   [TorchText 0.17 中文文档](docs/txt_0.17/README.md)
++   [TorchVision 0.17 中文文档](docs/vis_0.17/README.md)
