@@ -77,13 +77,13 @@ class torchrec.modules.crossnet.CrossNet(in_features: int, num_layers: int)
 
 [交叉网络](https://arxiv.org/abs/1708.05123)：
 
-Cross Net 是对形状为\((*, N)\)的张量进行一系列“交叉”操作，使其形状相同，有效地创建\(N\)个可学习的多项式函数。
+Cross Net 是对形状为$(*, N)$的张量进行一系列“交叉”操作，使其形状相同，有效地创建$N$个可学习的多项式函数。
 
 在这个模块中，交叉操作是基于一个满秩矩阵（NxN）定义的，这样交叉效应可以覆盖每一层上的所有位。在每一层 l 上，张量被转换为：
 
-\[x_{l+1} = x_0 * (W_l \cdot x_l + b_l) + x_l\]
+$$x_{l+1} = x_0 * (W_l \cdot x_l + b_l) + x_l$$
 
-其中\(W_l\)是一个方阵\((NxN)\)，\(*)表示逐元素乘法，\(\cdot\)表示矩阵乘法。
+其中$W_l$是一个方阵$(NxN)$，$*)表示逐元素乘法，$\cdot$表示矩阵乘法。
 
 参数：
 
@@ -128,17 +128,17 @@ class torchrec.modules.crossnet.LowRankCrossNet(in_features: int, num_layers: in
 
 基类：`Module`
 
-低秩交叉网络是一个高效的交叉网络。它不是在每一层使用满秩交叉矩阵（NxN），而是使用两个核\(W (N x r)\)和\(V (r x N)\)，其中 r << N，以简化矩阵乘法。
+低秩交叉网络是一个高效的交叉网络。它不是在每一层使用满秩交叉矩阵（NxN），而是使用两个核$W (N x r)$和$V (r x N)$，其中 r << N，以简化矩阵乘法。
 
 在每一层 l 上，张量被转换为：
 
-\[x_{l+1} = x_0 * (W_l \cdot (V_l \cdot x_l) + b_l) + x_l\]
+$$x_{l+1} = x_0 * (W_l \cdot (V_l \cdot x_l) + b_l) + x_l$$
 
-其中\(W_l\)可以是一个向量，\(*)表示逐元素乘法，\(\cdot\)表示矩阵乘法。
+其中$W_l$可以是一个向量，$*)表示逐元素乘法，$\cdot$表示矩阵乘法。
 
 注意
 
-秩 r 应该被聪明地选择。通常，我们期望 r < N/2 以节省计算；我们应该期望\(r ~= N/4\)以保持完整秩交叉网络的准确性。
+秩 r 应该被聪明地选择。通常，我们期望 r < N/2 以节省计算；我们应该期望$r ~= N/4$以保持完整秩交叉网络的准确性。
 
 参数：
 
@@ -187,17 +187,17 @@ class torchrec.modules.crossnet.LowRankMixtureCrossNet(in_features: int, num_lay
 
 低秩混合交叉网络是来自[论文](https://arxiv.org/pdf/2008.13535.pdf)的 DCN V2 实现：
 
-LowRankMixtureCrossNet 将每层的可学习交叉参数定义为一个低秩矩阵\((N*r)\)以及专家混合。与 LowRankCrossNet 相比，这个模块不依赖于单个专家来学习特征交叉，而是利用这样的\(K\)专家；每个专家在不同子空间中学习特征交互，并通过依赖于输入\(x\)的门控机制自适应地组合学习到的交叉。
+LowRankMixtureCrossNet 将每层的可学习交叉参数定义为一个低秩矩阵$(N*r)$以及专家混合。与 LowRankCrossNet 相比，这个模块不依赖于单个专家来学习特征交叉，而是利用这样的$K$专家；每个专家在不同子空间中学习特征交互，并通过依赖于输入$x$的门控机制自适应地组合学习到的交叉。
 
 在每一层 l 上，张量被转换为：
 
-\[x_{l+1} = MoE({expert_i : i \in K_{experts}}) + x_l\]
+$$x_{l+1} = MoE({expert_i : i \in K_{experts}}) + x_l$$
 
-每个\(expert_i\)被定义为：
+每个$expert_i$被定义为：
 
-\[expert_i = x_0 * (U_{li} \cdot g(C_{li} \cdot g(V_{li} \cdot x_l)) + b_l)\]
+$$expert_i = x_0 * (U_{li} \cdot g(C_{li} \cdot g(V_{li} \cdot x_l)) + b_l)$$
 
-其中\(U_{li} (N, r)\)，\(C_{li} (r, r)\)和\(V_{li} (r, N)\)是低秩矩阵，\(*)表示逐元素乘法，\(x\)表示矩阵乘法，\(g()\)是非线性激活函数。
+其中$U_{li} (N, r)$，$C_{li} (r, r)$和$V_{li} (r, N)$是低秩矩阵，$*)表示逐元素乘法，$x$表示矩阵乘法，$g()$是非线性激活函数。
 
 当 num_expert 为 1 时，门控评估和 MOE 将被跳过以节省计算。
 
@@ -254,9 +254,9 @@ class torchrec.modules.crossnet.VectorCrossNet(in_features: int, num_layers: int
 
 在每一层 l 上，张量被转换为
 
-\[x_{l+1} = x_0 * (W_l . x_l + b_l) + x_l\]
+$$x_{l+1} = x_0 * (W_l . x_l + b_l) + x_l$$
 
-其中\(W_l\)是一个向量，\(*)表示逐元素乘法；\(.\)表示点操作。
+其中$W_l$是一个向量，$*)表示逐元素乘法；$.$表示点操作。
 
 参数：
 
