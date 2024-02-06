@@ -2,10 +2,10 @@
 
 > 原文：[`pytorch.org/torchrec/torchrec.distributed.sharding.html`](https://pytorch.org/torchrec/torchrec.distributed.sharding.html)
 
-## torchrec.distributed.sharding.cw_sharding[](#module-torchrec.distributed.sharding.cw_sharding "Permalink to this heading")
+## torchrec.distributed.sharding.cw_sharding
 
 ```py
-class torchrec.distributed.sharding.cw_sharding.BaseCwEmbeddingSharding(sharding_infos: List[EmbeddingShardingInfo], env: ShardingEnv, device: Optional[device] = None, permute_embeddings: bool = False, qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)¶
+class torchrec.distributed.sharding.cw_sharding.BaseCwEmbeddingSharding(sharding_infos: List[EmbeddingShardingInfo], env: ShardingEnv, device: Optional[device] = None, permute_embeddings: bool = False, qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)
 ```
 
 基类：`BaseTwEmbeddingSharding`[`C`, `F`, `T`, `W`]
@@ -13,23 +13,23 @@ class torchrec.distributed.sharding.cw_sharding.BaseCwEmbeddingSharding(sharding
 列式分片的基类。
 
 ```py
-embedding_dims() → List[int]¶
+embedding_dims() → List[int]
 ```
 
 ```py
-embedding_names() → List[str]¶
+embedding_names() → List[str]
 ```
 
 ```py
-uncombined_embedding_dims() → List[int]¶
+uncombined_embedding_dims() → List[int]
 ```
 
 ```py
-uncombined_embedding_names() → List[str]¶
+uncombined_embedding_names() → List[str]
 ```
 
 ```py
-class torchrec.distributed.sharding.cw_sharding.CwPooledEmbeddingSharding(sharding_infos: List[EmbeddingShardingInfo], env: ShardingEnv, device: Optional[device] = None, permute_embeddings: bool = False, qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)¶
+class torchrec.distributed.sharding.cw_sharding.CwPooledEmbeddingSharding(sharding_infos: List[EmbeddingShardingInfo], env: ShardingEnv, device: Optional[device] = None, permute_embeddings: bool = False, qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)
 ```
 
 基类：`BaseCwEmbeddingSharding`[`EmbeddingShardingContext`, `KeyedJaggedTensor`, `Tensor`, `Tensor`]
@@ -37,25 +37,25 @@ class torchrec.distributed.sharding.cw_sharding.CwPooledEmbeddingSharding(shardi
 按列切分嵌入包，即。给定的嵌入表沿其列进行分区，并放置在指定的秩上。
 
 ```py
-create_input_dist(device: Optional[device] = None) → BaseSparseFeaturesDist[KeyedJaggedTensor]¶
+create_input_dist(device: Optional[device] = None) → BaseSparseFeaturesDist[KeyedJaggedTensor]
 ```
 
 ```py
-create_lookup(device: Optional[device] = None, fused_params: Optional[Dict[str, Any]] = None, feature_processor: Optional[BaseGroupedFeatureProcessor] = None) → BaseEmbeddingLookup¶
+create_lookup(device: Optional[device] = None, fused_params: Optional[Dict[str, Any]] = None, feature_processor: Optional[BaseGroupedFeatureProcessor] = None) → BaseEmbeddingLookup
 ```
 
 ```py
-create_output_dist(device: Optional[device] = None) → BaseEmbeddingDist[EmbeddingShardingContext, Tensor, Tensor]¶
+create_output_dist(device: Optional[device] = None) → BaseEmbeddingDist[EmbeddingShardingContext, Tensor, Tensor]
 ```
 
 ```py
-class torchrec.distributed.sharding.cw_sharding.InferCwPooledEmbeddingDist(device: device, world_size: int)¶
+class torchrec.distributed.sharding.cw_sharding.InferCwPooledEmbeddingDist(device: device, world_size: int)
 ```
 
 基类：`BaseEmbeddingDist`[`NullShardingContext`, `List`[`Tensor`], `Tensor`]
 
 ```py
-forward(local_embs: List[Tensor], sharding_ctx: Optional[NullShardingContext] = None) → Tensor¶
+forward(local_embs: List[Tensor], sharding_ctx: Optional[NullShardingContext] = None) → Tensor
 ```
 
 定义每次调用时执行的计算。
@@ -67,17 +67,17 @@ forward(local_embs: List[Tensor], sharding_ctx: Optional[NullShardingContext] = 
 尽管前向传递的方法需要在此函数内定义，但应该在此之后调用`Module`实例，而不是这个，因为前者负责运行注册的钩子，而后者会默默地忽略它们。
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.distributed.sharding.cw_sharding.InferCwPooledEmbeddingDistWithPermute(device: device, world_size: int, embedding_dims: List[int], permute: List[int])¶
+class torchrec.distributed.sharding.cw_sharding.InferCwPooledEmbeddingDistWithPermute(device: device, world_size: int, embedding_dims: List[int], permute: List[int])
 ```
 
 基类：`BaseEmbeddingDist`[`NullShardingContext`, `List`[`Tensor`], `Tensor`]
 
 ```py
-forward(local_embs: List[Tensor], sharding_ctx: Optional[NullShardingContext] = None) → Tensor¶
+forward(local_embs: List[Tensor], sharding_ctx: Optional[NullShardingContext] = None) → Tensor
 ```
 
 定义每次调用时执行的计算。
@@ -89,29 +89,29 @@ forward(local_embs: List[Tensor], sharding_ctx: Optional[NullShardingContext] = 
 尽管前向传递的方法需要在此函数内定义，但应该在此之后调用`Module`实例，而不是这个，因为前者负责运行注册的钩子，而后者会默默地忽略它们。
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.distributed.sharding.cw_sharding.InferCwPooledEmbeddingSharding(sharding_infos: List[EmbeddingShardingInfo], env: ShardingEnv, device: Optional[device] = None, permute_embeddings: bool = False, qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)¶
+class torchrec.distributed.sharding.cw_sharding.InferCwPooledEmbeddingSharding(sharding_infos: List[EmbeddingShardingInfo], env: ShardingEnv, device: Optional[device] = None, permute_embeddings: bool = False, qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)
 ```
 
 基类：`BaseCwEmbeddingSharding`[`NullShardingContext`, `KJTList`, `List`[`Tensor`], `Tensor`]
 
 ```py
-create_input_dist(device: Optional[device] = None) → BaseSparseFeaturesDist[KJTList]¶
+create_input_dist(device: Optional[device] = None) → BaseSparseFeaturesDist[KJTList]
 ```
 
 ```py
-create_lookup(device: Optional[device] = None, fused_params: Optional[Dict[str, Any]] = None, feature_processor: Optional[BaseGroupedFeatureProcessor] = None) → BaseEmbeddingLookup[KJTList, List[Tensor]]¶
+create_lookup(device: Optional[device] = None, fused_params: Optional[Dict[str, Any]] = None, feature_processor: Optional[BaseGroupedFeatureProcessor] = None) → BaseEmbeddingLookup[KJTList, List[Tensor]]
 ```
 
 ```py
-create_output_dist(device: Optional[device] = None) → BaseEmbeddingDist[NullShardingContext, List[Tensor], Tensor]¶
-```  ## torchrec.distributed.dist_data[](#module-torchrec.distributed.dist_data "Permalink to this heading")
+create_output_dist(device: Optional[device] = None) → BaseEmbeddingDist[NullShardingContext, List[Tensor], Tensor]
+```  ## torchrec.distributed.dist_data
 
 ```py
-class torchrec.distributed.dist_data.EmbeddingsAllToOne(device: device, world_size: int, cat_dim: int)¶
+class torchrec.distributed.dist_data.EmbeddingsAllToOne(device: device, world_size: int, cat_dim: int)
 ```
 
 基类：`Module`
@@ -127,7 +127,7 @@ class torchrec.distributed.dist_data.EmbeddingsAllToOne(device: device, world_si
 +   **cat_dim** (*int*) – 您希望在哪个维度上进行连接。对于池化嵌入，它是 1；对于序列嵌入，它是 0。
 
 ```py
-forward(tensors: List[Tensor]) → Tensor¶
+forward(tensors: List[Tensor]) → Tensor
 ```
 
 对池化/序列嵌入张量执行 AlltoOne 操作。
@@ -145,15 +145,15 @@ forward(tensors: List[Tensor]) → Tensor¶
 Awaitable[torch.Tensor]
 
 ```py
-set_device(device_str: str) → None¶
+set_device(device_str: str) → None
 ```
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.distributed.dist_data.EmbeddingsAllToOneReduce(device: device, world_size: int)¶
+class torchrec.distributed.dist_data.EmbeddingsAllToOneReduce(device: device, world_size: int)
 ```
 
 基类：`Module`
@@ -167,7 +167,7 @@ class torchrec.distributed.dist_data.EmbeddingsAllToOneReduce(device: device, wo
 +   **world_size**（*int*）- 拓扑中的设备数量。
 
 ```py
-forward(tensors: List[Tensor]) → Tensor¶
+forward(tensors: List[Tensor]) → Tensor
 ```
 
 使用 Reduce 对汇总嵌入张量执行 AlltoOne 操作。
@@ -185,15 +185,15 @@ forward(tensors: List[Tensor]) → Tensor¶
 Awaitable[torch.Tensor]
 
 ```py
-set_device(device_str: str) → None¶
+set_device(device_str: str) → None
 ```
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.distributed.dist_data.KJTAllToAll(pg: ProcessGroup, splits: List[int], stagger: int = 1)¶
+class torchrec.distributed.dist_data.KJTAllToAll(pg: ProcessGroup, splits: List[int], stagger: int = 1)
 ```
 
 基础：`Module`
@@ -250,7 +250,7 @@ rank0_output = awaitable.wait()
 ```
 
 ```py
-forward(input: KeyedJaggedTensor) → Awaitable[KJTAllToAllTensorsAwaitable]¶
+forward(input: KeyedJaggedTensor) → Awaitable[KJTAllToAllTensorsAwaitable]
 ```
 
 将输入发送到相关的 ProcessGroup 等级。
@@ -270,11 +270,11 @@ forward(input: KeyedJaggedTensor) → Awaitable[KJTAllToAllTensorsAwaitable]¶
 Awaitable[KJTAllToAllTensorsAwaitable]
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.distributed.dist_data.KJTAllToAllSplitsAwaitable(pg: ProcessGroup, input: KeyedJaggedTensor, splits: List[int], labels: List[str], tensor_splits: List[List[int]], input_tensors: List[Tensor], keys: List[str], device: device, stagger: int)¶
+class torchrec.distributed.dist_data.KJTAllToAllSplitsAwaitable(pg: ProcessGroup, input: KeyedJaggedTensor, splits: List[int], labels: List[str], tensor_splits: List[List[int]], input_tensors: List[Tensor], keys: List[str], device: device, stagger: int)
 ```
 
 基础：`Awaitable`[`KJTAllToAllTensorsAwaitable`]
@@ -300,7 +300,7 @@ KJT 张量拆分 AlltoAll 的等待。
 +   **stagger**（*int*）- 要应用于 recat 张量的间隔值。
 
 ```py
-class torchrec.distributed.dist_data.KJTAllToAllTensorsAwaitable(pg: ProcessGroup, input: KeyedJaggedTensor, splits: List[int], input_splits: List[List[int]], output_splits: List[List[int]], input_tensors: List[Tensor], labels: List[str], keys: List[str], device: device, stagger: int, stride_per_rank: Optional[List[int]])¶
+class torchrec.distributed.dist_data.KJTAllToAllTensorsAwaitable(pg: ProcessGroup, input: KeyedJaggedTensor, splits: List[int], input_splits: List[List[int]], output_splits: List[List[int]], input_tensors: List[Tensor], labels: List[str], keys: List[str], device: device, stagger: int, stride_per_rank: Optional[List[int]])
 ```
 
 基础：`Awaitable`[`KeyedJaggedTensor`]
@@ -332,7 +332,7 @@ KJT 张量 AlltoAll 的等待。
 +   **stride_per_rank**（*可选**[**List**[**int**]**]*）- 在非变量批次特征情况下每个排名的步幅。
 
 ```py
-class torchrec.distributed.dist_data.KJTOneToAll(splits: List[int], world_size: int, device: Optional[device] = None)¶
+class torchrec.distributed.dist_data.KJTOneToAll(splits: List[int], world_size: int, device: Optional[device] = None)
 ```
 
 基类：`Module`
@@ -350,7 +350,7 @@ class torchrec.distributed.dist_data.KJTOneToAll(splits: List[int], world_size: 
 +   **device**（*torch.device*）- 将分配 KJTs 的设备。
 
 ```py
-forward(kjt: KeyedJaggedTensor) → KJTList¶
+forward(kjt: KeyedJaggedTensor) → KJTList
 ```
 
 首先拆分特征，然后将切片发送到相应的设备。
@@ -368,11 +368,11 @@ KeyedJaggedTensor 拆分的可等待对象。
 AwaitableList[[KeyedJaggedTensor]]
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.distributed.dist_data.PooledEmbeddingsAllGather(pg: ProcessGroup, codecs: Optional[QuantizedCommCodecs] = None)¶
+class torchrec.distributed.dist_data.PooledEmbeddingsAllGather(pg: ProcessGroup, codecs: Optional[QuantizedCommCodecs] = None)
 ```
 
 基类：`Module`
@@ -401,7 +401,7 @@ tensor = output.wait()
 ```
 
 ```py
-forward(local_emb: Tensor) → PooledEmbeddingsAwaitable¶
+forward(local_emb: Tensor) → PooledEmbeddingsAwaitable
 ```
 
 在池化嵌入张量上执行减少散布操作。
@@ -419,11 +419,11 @@ forward(local_emb: Tensor) → PooledEmbeddingsAwaitable¶
 PooledEmbeddingsAwaitable
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.distributed.dist_data.PooledEmbeddingsAllToAll(pg: ProcessGroup, dim_sum_per_rank: List[int], device: Optional[device] = None, callbacks: Optional[List[Callable[[Tensor], Tensor]]] = None, codecs: Optional[QuantizedCommCodecs] = None)¶
+class torchrec.distributed.dist_data.PooledEmbeddingsAllToAll(pg: ProcessGroup, dim_sum_per_rank: List[int], device: Optional[device] = None, callbacks: Optional[List[Callable[[Tensor], Tensor]]] = None, codecs: Optional[QuantizedCommCodecs] = None)
 ```
 
 基类：`Module`
@@ -461,11 +461,11 @@ print(rank1_output.size())
 ```
 
 ```py
-property callbacks: List[Callable[[Tensor], Tensor]]¶
+property callbacks: List[Callable[[Tensor], Tensor]]
 ```
 
 ```py
-forward(local_embs: Tensor, batch_size_per_rank: Optional[List[int]] = None) → PooledEmbeddingsAwaitable¶
+forward(local_embs: Tensor, batch_size_per_rank: Optional[List[int]] = None) → PooledEmbeddingsAwaitable
 ```
 
 在池化嵌入张量上执行全收集操作。
@@ -485,11 +485,11 @@ forward(local_embs: Tensor, batch_size_per_rank: Optional[List[int]] = None) →
 PooledEmbeddingsAwaitable
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.distributed.dist_data.PooledEmbeddingsAwaitable(tensor_awaitable: Awaitable[Tensor])¶
+class torchrec.distributed.dist_data.PooledEmbeddingsAwaitable(tensor_awaitable: Awaitable[Tensor])
 ```
 
 基类：`Awaitable`[`Tensor`]
@@ -501,11 +501,11 @@ class torchrec.distributed.dist_data.PooledEmbeddingsAwaitable(tensor_awaitable:
 **tensor_awaitable**（*Awaitable**[**torch.Tensor**]*）- 集体后来自组中所有进程的张量的连接张量的可等待。
 
 ```py
-property callbacks: List[Callable[[Tensor], Tensor]]¶
+property callbacks: List[Callable[[Tensor], Tensor]]
 ```
 
 ```py
-class torchrec.distributed.dist_data.PooledEmbeddingsReduceScatter(pg: ProcessGroup, codecs: Optional[QuantizedCommCodecs] = None)¶
+class torchrec.distributed.dist_data.PooledEmbeddingsReduceScatter(pg: ProcessGroup, codecs: Optional[QuantizedCommCodecs] = None)
 ```
 
 基类：`Module`
@@ -523,7 +523,7 @@ class torchrec.distributed.dist_data.PooledEmbeddingsReduceScatter(pg: ProcessGr
 +   **codecs** - 量化通信编解码器。
 
 ```py
-forward(local_embs: Tensor, input_splits: Optional[List[int]] = None) → PooledEmbeddingsAwaitable¶
+forward(local_embs: Tensor, input_splits: Optional[List[int]] = None) → PooledEmbeddingsAwaitable
 ```
 
 在汇总嵌入张量上执行减少散列操作。
@@ -543,11 +543,11 @@ forward(local_embs: Tensor, input_splits: Optional[List[int]] = None) → Pooled
 PooledEmbeddingsAwaitable
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.distributed.dist_data.SeqEmbeddingsAllToOne(device: device, world_size: int)¶
+class torchrec.distributed.dist_data.SeqEmbeddingsAllToOne(device: device, world_size: int)
 ```
 
 基类：`Module`
@@ -563,7 +563,7 @@ class torchrec.distributed.dist_data.SeqEmbeddingsAllToOne(device: device, world
 +   **cat_dim**（*int*）- 您希望在其上连接的维度。对于汇总嵌入，它是 1；对于序列嵌入，它是 0。
 
 ```py
-forward(tensors: List[Tensor]) → List[Tensor]¶
+forward(tensors: List[Tensor]) → List[Tensor]
 ```
 
 在汇总嵌入张量上执行 AlltoOne 操作。
@@ -581,15 +581,15 @@ forward(tensors: List[Tensor]) → List[Tensor]¶
 Awaitable[torch.Tensor]
 
 ```py
-set_device(device_str: str) → None¶
+set_device(device_str: str) → None
 ```
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.distributed.dist_data.SequenceEmbeddingsAllToAll(pg: ProcessGroup, features_per_rank: List[int], device: Optional[device] = None, codecs: Optional[QuantizedCommCodecs] = None)¶
+class torchrec.distributed.dist_data.SequenceEmbeddingsAllToAll(pg: ProcessGroup, features_per_rank: List[int], device: Optional[device] = None, codecs: Optional[QuantizedCommCodecs] = None)
 ```
 
 基类：`Module`
@@ -626,7 +626,7 @@ tensor = output.wait()
 ```
 
 ```py
-forward(local_embs: Tensor, lengths: Tensor, input_splits: List[int], output_splits: List[int], unbucketize_permute_tensor: Optional[Tensor] = None, batch_size_per_rank: Optional[List[int]] = None, sparse_features_recat: Optional[Tensor] = None) → SequenceEmbeddingsAwaitable¶
+forward(local_embs: Tensor, lengths: Tensor, input_splits: List[int], output_splits: List[int], unbucketize_permute_tensor: Optional[Tensor] = None, batch_size_per_rank: Optional[List[int]] = None, sparse_features_recat: Optional[Tensor] = None) → SequenceEmbeddingsAwaitable
 ```
 
 在序列嵌入张量上执行 AlltoAll 操作。
@@ -656,11 +656,11 @@ forward(local_embs: Tensor, lengths: Tensor, input_splits: List[int], output_spl
 SequenceEmbeddingsAwaitable
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.distributed.dist_data.SequenceEmbeddingsAwaitable(tensor_awaitable: Awaitable[Tensor], unbucketize_permute_tensor: Optional[Tensor], embedding_dim: int)¶
+class torchrec.distributed.dist_data.SequenceEmbeddingsAwaitable(tensor_awaitable: Awaitable[Tensor], unbucketize_permute_tensor: Optional[Tensor], embedding_dim: int)
 ```
 
 基类：`Awaitable`[`Tensor`]
@@ -676,7 +676,7 @@ class torchrec.distributed.dist_data.SequenceEmbeddingsAwaitable(tensor_awaitabl
 +   **embedding_dim**（*int*）- 嵌入维度。
 
 ```py
-class torchrec.distributed.dist_data.SplitsAllToAllAwaitable(input_tensors: List[Tensor], pg: ProcessGroup)¶
+class torchrec.distributed.dist_data.SplitsAllToAllAwaitable(input_tensors: List[Tensor], pg: ProcessGroup)
 ```
 
 基类：`Awaitable`[`List`[`List`[`int`]]]
@@ -690,7 +690,7 @@ class torchrec.distributed.dist_data.SplitsAllToAllAwaitable(input_tensors: List
 +   **pg**（*dist.ProcessGroup*）- 用于 AlltoAll 通信的 ProcessGroup。
 
 ```py
-class torchrec.distributed.dist_data.VariableBatchPooledEmbeddingsAllToAll(pg: ProcessGroup, emb_dim_per_rank_per_feature: List[List[int]], device: Optional[device] = None, callbacks: Optional[List[Callable[[Tensor], Tensor]]] = None, codecs: Optional[QuantizedCommCodecs] = None)¶
+class torchrec.distributed.dist_data.VariableBatchPooledEmbeddingsAllToAll(pg: ProcessGroup, emb_dim_per_rank_per_feature: List[List[int]], device: Optional[device] = None, callbacks: Optional[List[Callable[[Tensor], Tensor]]] = None, codecs: Optional[QuantizedCommCodecs] = None)
 ```
 
 基类：`Module`
@@ -756,11 +756,11 @@ print(rank1_output.size())
 ```
 
 ```py
-property callbacks: List[Callable[[Tensor], Tensor]]¶
+property callbacks: List[Callable[[Tensor], Tensor]]
 ```
 
 ```py
-forward(local_embs: Tensor, batch_size_per_rank_per_feature: List[List[int]], batch_size_per_feature_pre_a2a: List[int]) → PooledEmbeddingsAwaitable¶
+forward(local_embs: Tensor, batch_size_per_rank_per_feature: List[List[int]], batch_size_per_feature_pre_a2a: List[int]) → PooledEmbeddingsAwaitable
 ```
 
 对池化嵌入张量进行具有每个特征可变批量大小的 AlltoAll 池化操作。
@@ -782,11 +782,11 @@ forward(local_embs: Tensor, batch_size_per_rank_per_feature: List[List[int]], ba
 PooledEmbeddingsAwaitable
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.distributed.dist_data.VariableBatchPooledEmbeddingsReduceScatter(pg: ProcessGroup, codecs: Optional[QuantizedCommCodecs] = None)¶
+class torchrec.distributed.dist_data.VariableBatchPooledEmbeddingsReduceScatter(pg: ProcessGroup, codecs: Optional[QuantizedCommCodecs] = None)
 ```
 
 基类：`Module`
@@ -804,7 +804,7 @@ class torchrec.distributed.dist_data.VariableBatchPooledEmbeddingsReduceScatter(
 +   **codecs** - 量化通信编解码器。
 
 ```py
-forward(local_embs: Tensor, batch_size_per_rank_per_feature: List[List[int]], embedding_dims: List[int]) → PooledEmbeddingsAwaitable¶
+forward(local_embs: Tensor, batch_size_per_rank_per_feature: List[List[int]], embedding_dims: List[int]) → PooledEmbeddingsAwaitable
 ```
 
 对池化嵌入张量执行 reduce scatter 操作。
@@ -826,11 +826,11 @@ forward(local_embs: Tensor, batch_size_per_rank_per_feature: List[List[int]], em
 PooledEmbeddingsAwaitable
 
 ```py
-training: bool¶
-```  ## torchrec.distributed.sharding.dp_sharding[](#module-torchrec.distributed.sharding.dp_sharding "跳转到此标题")
+training: bool
+```  ## torchrec.distributed.sharding.dp_sharding
 
 ```py
-class torchrec.distributed.sharding.dp_sharding.BaseDpEmbeddingSharding(sharding_infos: List[EmbeddingShardingInfo], env: ShardingEnv, device: Optional[device] = None)¶
+class torchrec.distributed.sharding.dp_sharding.BaseDpEmbeddingSharding(sharding_infos: List[EmbeddingShardingInfo], env: ShardingEnv, device: Optional[device] = None)
 ```
 
 基类：`EmbeddingSharding`[`C`, `F`, `T`, `W`]
@@ -838,31 +838,31 @@ class torchrec.distributed.sharding.dp_sharding.BaseDpEmbeddingSharding(sharding
 基类用于数据并行分片。
 
 ```py
-embedding_dims() → List[int]¶
+embedding_dims() → List[int]
 ```
 
 ```py
-embedding_names() → List[str]¶
+embedding_names() → List[str]
 ```
 
 ```py
-embedding_names_per_rank() → List[List[str]]¶
+embedding_names_per_rank() → List[List[str]]
 ```
 
 ```py
-embedding_shard_metadata() → List[Optional[ShardMetadata]]¶
+embedding_shard_metadata() → List[Optional[ShardMetadata]]
 ```
 
 ```py
-embedding_tables() → List[ShardedEmbeddingTable]¶
+embedding_tables() → List[ShardedEmbeddingTable]
 ```
 
 ```py
-feature_names() → List[str]¶
+feature_names() → List[str]
 ```
 
 ```py
-class torchrec.distributed.sharding.dp_sharding.DpPooledEmbeddingDist¶
+class torchrec.distributed.sharding.dp_sharding.DpPooledEmbeddingDist
 ```
 
 基类：`BaseEmbeddingDist`[`EmbeddingShardingContext`, `Tensor`, `Tensor`]
@@ -870,7 +870,7 @@ class torchrec.distributed.sharding.dp_sharding.DpPooledEmbeddingDist¶
 将池化嵌入分发为数据并行。
 
 ```py
-forward(local_embs: Tensor, sharding_ctx: Optional[EmbeddingShardingContext] = None) → Awaitable[Tensor]¶
+forward(local_embs: Tensor, sharding_ctx: Optional[EmbeddingShardingContext] = None) → Awaitable[Tensor]
 ```
 
 由于池化嵌入已经以数据并行方式分布，因此无操作。
@@ -888,11 +888,11 @@ forward(local_embs: Tensor, sharding_ctx: Optional[EmbeddingShardingContext] = N
 Awaitable[torch.Tensor]
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.distributed.sharding.dp_sharding.DpPooledEmbeddingSharding(sharding_infos: List[EmbeddingShardingInfo], env: ShardingEnv, device: Optional[device] = None)¶
+class torchrec.distributed.sharding.dp_sharding.DpPooledEmbeddingSharding(sharding_infos: List[EmbeddingShardingInfo], env: ShardingEnv, device: Optional[device] = None)
 ```
 
 基类：`BaseDpEmbeddingSharding`[`EmbeddingShardingContext`, `KeyedJaggedTensor`, `Tensor`, `Tensor`]
@@ -900,19 +900,19 @@ class torchrec.distributed.sharding.dp_sharding.DpPooledEmbeddingSharding(shardi
 将嵌入包数据并行分片，没有表分片，即给定的嵌入表在所有等级上都复制。
 
 ```py
-create_input_dist(device: Optional[device] = None) → BaseSparseFeaturesDist[KeyedJaggedTensor]¶
+create_input_dist(device: Optional[device] = None) → BaseSparseFeaturesDist[KeyedJaggedTensor]
 ```
 
 ```py
-create_lookup(device: Optional[device] = None, fused_params: Optional[Dict[str, Any]] = None, feature_processor: Optional[BaseGroupedFeatureProcessor] = None) → BaseEmbeddingLookup¶
+create_lookup(device: Optional[device] = None, fused_params: Optional[Dict[str, Any]] = None, feature_processor: Optional[BaseGroupedFeatureProcessor] = None) → BaseEmbeddingLookup
 ```
 
 ```py
-create_output_dist(device: Optional[device] = None) → BaseEmbeddingDist[EmbeddingShardingContext, Tensor, Tensor]¶
+create_output_dist(device: Optional[device] = None) → BaseEmbeddingDist[EmbeddingShardingContext, Tensor, Tensor]
 ```
 
 ```py
-class torchrec.distributed.sharding.dp_sharding.DpSparseFeaturesDist¶
+class torchrec.distributed.sharding.dp_sharding.DpSparseFeaturesDist
 ```
 
 基类：`BaseSparseFeaturesDist`[`KeyedJaggedTensor`]
@@ -920,7 +920,7 @@ class torchrec.distributed.sharding.dp_sharding.DpSparseFeaturesDist¶
 将稀疏特征（输入）分发为数据并行。
 
 ```py
-forward(sparse_features: KeyedJaggedTensor) → Awaitable[Awaitable[KeyedJaggedTensor]]¶
+forward(sparse_features: KeyedJaggedTensor) → Awaitable[Awaitable[KeyedJaggedTensor]]
 ```
 
 由于稀疏特征已经以数据并行方式分布，因此无操作。
@@ -938,11 +938,11 @@ forward(sparse_features: KeyedJaggedTensor) → Awaitable[Awaitable[KeyedJaggedT
 Awaitable[Awaitable[SparseFeatures]]
 
 ```py
-training: bool¶
-```  ## torchrec.distributed.sharding.rw_sharding[](#module-torchrec.distributed.sharding.rw_sharding "跳转到此标题")
+training: bool
+```  ## torchrec.distributed.sharding.rw_sharding
 
 ```py
-class torchrec.distributed.sharding.rw_sharding.BaseRwEmbeddingSharding(sharding_infos: List[EmbeddingShardingInfo], env: ShardingEnv, device: Optional[device] = None, need_pos: bool = False, qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)¶
+class torchrec.distributed.sharding.rw_sharding.BaseRwEmbeddingSharding(sharding_infos: List[EmbeddingShardingInfo], env: ShardingEnv, device: Optional[device] = None, need_pos: bool = False, qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)
 ```
 
 基类：`EmbeddingSharding`[`C`, `F`, `T`, `W`]
@@ -950,31 +950,31 @@ class torchrec.distributed.sharding.rw_sharding.BaseRwEmbeddingSharding(sharding
 基类用于按行分片。
 
 ```py
-embedding_dims() → List[int]¶
+embedding_dims() → List[int]
 ```
 
 ```py
-embedding_names() → List[str]¶
+embedding_names() → List[str]
 ```
 
 ```py
-embedding_names_per_rank() → List[List[str]]¶
+embedding_names_per_rank() → List[List[str]]
 ```
 
 ```py
-embedding_shard_metadata() → List[Optional[ShardMetadata]]¶
+embedding_shard_metadata() → List[Optional[ShardMetadata]]
 ```
 
 ```py
-embedding_tables() → List[ShardedEmbeddingTable]¶
+embedding_tables() → List[ShardedEmbeddingTable]
 ```
 
 ```py
-feature_names() → List[str]¶
+feature_names() → List[str]
 ```
 
 ```py
-class torchrec.distributed.sharding.rw_sharding.InferRwPooledEmbeddingDist(device: device, world_size: int)¶
+class torchrec.distributed.sharding.rw_sharding.InferRwPooledEmbeddingDist(device: device, world_size: int)
 ```
 
 基类：`BaseEmbeddingDist`[`NullShardingContext`, `List`[`Tensor`], `Tensor`]
@@ -988,7 +988,7 @@ class torchrec.distributed.sharding.rw_sharding.InferRwPooledEmbeddingDist(devic
 +   **world_size** (*int*) – 拓扑中的设备数量。
 
 ```py
-forward(local_embs: List[Tensor], sharding_ctx: Optional[NullShardingContext] = None) → Tensor¶
+forward(local_embs: List[Tensor], sharding_ctx: Optional[NullShardingContext] = None) → Tensor
 ```
 
 在序列嵌入张量上执行 AlltoOne 操作。
@@ -1006,35 +1006,35 @@ forward(local_embs: List[Tensor], sharding_ctx: Optional[NullShardingContext] = 
 Awaitable[torch.Tensor]
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.distributed.sharding.rw_sharding.InferRwPooledEmbeddingSharding(sharding_infos: List[EmbeddingShardingInfo], env: ShardingEnv, device: Optional[device] = None, need_pos: bool = False, qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)¶
+class torchrec.distributed.sharding.rw_sharding.InferRwPooledEmbeddingSharding(sharding_infos: List[EmbeddingShardingInfo], env: ShardingEnv, device: Optional[device] = None, need_pos: bool = False, qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)
 ```
 
 基类：`BaseRwEmbeddingSharding`[`NullShardingContext`, `KJTList`, `List`[`Tensor`], `Tensor`]
 
 ```py
-create_input_dist(device: Optional[device] = None) → BaseSparseFeaturesDist[KJTList]¶
+create_input_dist(device: Optional[device] = None) → BaseSparseFeaturesDist[KJTList]
 ```
 
 ```py
-create_lookup(device: Optional[device] = None, fused_params: Optional[Dict[str, Any]] = None, feature_processor: Optional[BaseGroupedFeatureProcessor] = None) → BaseEmbeddingLookup[KJTList, List[Tensor]]¶
+create_lookup(device: Optional[device] = None, fused_params: Optional[Dict[str, Any]] = None, feature_processor: Optional[BaseGroupedFeatureProcessor] = None) → BaseEmbeddingLookup[KJTList, List[Tensor]]
 ```
 
 ```py
-create_output_dist(device: Optional[device] = None) → BaseEmbeddingDist[NullShardingContext, List[Tensor], Tensor]¶
+create_output_dist(device: Optional[device] = None) → BaseEmbeddingDist[NullShardingContext, List[Tensor], Tensor]
 ```
 
 ```py
-class torchrec.distributed.sharding.rw_sharding.InferRwSparseFeaturesDist(world_size: int, num_features: int, feature_hash_sizes: List[int], device: Optional[device] = None, is_sequence: bool = False, has_feature_processor: bool = False, need_pos: bool = False, embedding_shard_metadata: Optional[List[List[int]]] = None)¶
+class torchrec.distributed.sharding.rw_sharding.InferRwSparseFeaturesDist(world_size: int, num_features: int, feature_hash_sizes: List[int], device: Optional[device] = None, is_sequence: bool = False, has_feature_processor: bool = False, need_pos: bool = False, embedding_shard_metadata: Optional[List[List[int]]] = None)
 ```
 
 基类：`BaseSparseFeaturesDist`[`KJTList`]
 
 ```py
-forward(sparse_features: KeyedJaggedTensor) → KJTList¶
+forward(sparse_features: KeyedJaggedTensor) → KJTList
 ```
 
 定义每次调用时执行的计算。
@@ -1046,11 +1046,11 @@ forward(sparse_features: KeyedJaggedTensor) → KJTList¶
 尽管前向传递的步骤需要在此函数内定义，但应该在此之后调用`Module`实例，而不是在此处调用，因为前者会负责运行注册的钩子，而后者会默默忽略它们。
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.distributed.sharding.rw_sharding.RwPooledEmbeddingDist(pg: ProcessGroup, embedding_dims: List[int], qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)¶
+class torchrec.distributed.sharding.rw_sharding.RwPooledEmbeddingDist(pg: ProcessGroup, embedding_dims: List[int], qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)
 ```
 
 基类：`BaseEmbeddingDist`[`EmbeddingShardingContext`, `Tensor`, `Tensor`]
@@ -1062,7 +1062,7 @@ class torchrec.distributed.sharding.rw_sharding.RwPooledEmbeddingDist(pg: Proces
 **pg** (*dist.ProcessGroup*) – 用于 reduce-scatter 通信的 ProcessGroup。
 
 ```py
-forward(local_embs: Tensor, sharding_ctx: Optional[EmbeddingShardingContext] = None) → Awaitable[Tensor]¶
+forward(local_embs: Tensor, sharding_ctx: Optional[EmbeddingShardingContext] = None) → Awaitable[Tensor]
 ```
 
 在汇集的嵌入张量上执行 reduce-scatter 池化操作。
@@ -1082,11 +1082,11 @@ forward(local_embs: Tensor, sharding_ctx: Optional[EmbeddingShardingContext] = N
 Awaitable[torch.Tensor]
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.distributed.sharding.rw_sharding.RwPooledEmbeddingSharding(sharding_infos: List[EmbeddingShardingInfo], env: ShardingEnv, device: Optional[device] = None, need_pos: bool = False, qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)¶
+class torchrec.distributed.sharding.rw_sharding.RwPooledEmbeddingSharding(sharding_infos: List[EmbeddingShardingInfo], env: ShardingEnv, device: Optional[device] = None, need_pos: bool = False, qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)
 ```
 
 基类：`BaseRwEmbeddingSharding`[`EmbeddingShardingContext`, `KeyedJaggedTensor`, `Tensor`, `Tensor`]
@@ -1094,19 +1094,19 @@ class torchrec.distributed.sharding.rw_sharding.RwPooledEmbeddingSharding(shardi
 按行分片嵌入包，即。给定的嵌入表按行均匀分布，表切片放置在所有秩上。
 
 ```py
-create_input_dist(device: Optional[device] = None) → BaseSparseFeaturesDist[KeyedJaggedTensor]¶
+create_input_dist(device: Optional[device] = None) → BaseSparseFeaturesDist[KeyedJaggedTensor]
 ```
 
 ```py
-create_lookup(device: Optional[device] = None, fused_params: Optional[Dict[str, Any]] = None, feature_processor: Optional[BaseGroupedFeatureProcessor] = None) → BaseEmbeddingLookup¶
+create_lookup(device: Optional[device] = None, fused_params: Optional[Dict[str, Any]] = None, feature_processor: Optional[BaseGroupedFeatureProcessor] = None) → BaseEmbeddingLookup
 ```
 
 ```py
-create_output_dist(device: Optional[device] = None) → BaseEmbeddingDist[EmbeddingShardingContext, Tensor, Tensor]¶
+create_output_dist(device: Optional[device] = None) → BaseEmbeddingDist[EmbeddingShardingContext, Tensor, Tensor]
 ```
 
 ```py
-class torchrec.distributed.sharding.rw_sharding.RwSparseFeaturesDist(pg: ProcessGroup, num_features: int, feature_hash_sizes: List[int], device: Optional[device] = None, is_sequence: bool = False, has_feature_processor: bool = False, need_pos: bool = False)¶
+class torchrec.distributed.sharding.rw_sharding.RwSparseFeaturesDist(pg: ProcessGroup, num_features: int, feature_hash_sizes: List[int], device: Optional[device] = None, is_sequence: bool = False, has_feature_processor: bool = False, need_pos: bool = False)
 ```
 
 基类：`BaseSparseFeaturesDist`[`KeyedJaggedTensor`]
@@ -1130,7 +1130,7 @@ class torchrec.distributed.sharding.rw_sharding.RwSparseFeaturesDist(pg: Process
 +   **has_feature_processor** (*bool*) - 特征处理器的存在（即位置加权特征）。
 
 ```py
-forward(sparse_features: KeyedJaggedTensor) → Awaitable[Awaitable[KeyedJaggedTensor]]¶
+forward(sparse_features: KeyedJaggedTensor) → Awaitable[Awaitable[KeyedJaggedTensor]]
 ```
 
 将稀疏特征值分桶为拓扑中设备数量的桶，然后执行 AlltoAll 操作。
@@ -1148,19 +1148,19 @@ forward(sparse_features: KeyedJaggedTensor) → Awaitable[Awaitable[KeyedJaggedT
 Awaitable[Awaitable[KeyedJaggedTensor]]
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-torchrec.distributed.sharding.rw_sharding.get_block_sizes_runtime_device(block_sizes: List[int], runtime_device: device, tensor_cache: Dict[str, Tuple[Tensor, List[Tensor]]], embedding_shard_metadata: Optional[List[List[int]]] = None, dtype: dtype = torch.int32) → Tuple[Tensor, List[Tensor]]¶
+torchrec.distributed.sharding.rw_sharding.get_block_sizes_runtime_device(block_sizes: List[int], runtime_device: device, tensor_cache: Dict[str, Tuple[Tensor, List[Tensor]]], embedding_shard_metadata: Optional[List[List[int]]] = None, dtype: dtype = torch.int32) → Tuple[Tensor, List[Tensor]]
 ```
 
 ```py
-torchrec.distributed.sharding.rw_sharding.get_embedding_shard_metadata(grouped_embedding_configs_per_rank: List[List[GroupedEmbeddingConfig]]) → Tuple[List[List[int]], bool]¶
-```  ## torchrec.distributed.sharding.tw_sharding[](#module-torchrec.distributed.sharding.tw_sharding "Permalink to this heading")
+torchrec.distributed.sharding.rw_sharding.get_embedding_shard_metadata(grouped_embedding_configs_per_rank: List[List[GroupedEmbeddingConfig]]) → Tuple[List[List[int]], bool]
+```  ## torchrec.distributed.sharding.tw_sharding
 
 ```py
-class torchrec.distributed.sharding.tw_sharding.BaseTwEmbeddingSharding(sharding_infos: List[EmbeddingShardingInfo], env: ShardingEnv, device: Optional[device] = None, qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)¶
+class torchrec.distributed.sharding.tw_sharding.BaseTwEmbeddingSharding(sharding_infos: List[EmbeddingShardingInfo], env: ShardingEnv, device: Optional[device] = None, qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)
 ```
 
 基类：`EmbeddingSharding`[`C`, `F`, `T`, `W`]
@@ -1168,39 +1168,39 @@ class torchrec.distributed.sharding.tw_sharding.BaseTwEmbeddingSharding(sharding
 表格智能分片的基类。
 
 ```py
-embedding_dims() → List[int]¶
+embedding_dims() → List[int]
 ```
 
 ```py
-embedding_names() → List[str]¶
+embedding_names() → List[str]
 ```
 
 ```py
-embedding_names_per_rank() → List[List[str]]¶
+embedding_names_per_rank() → List[List[str]]
 ```
 
 ```py
-embedding_shard_metadata() → List[Optional[ShardMetadata]]¶
+embedding_shard_metadata() → List[Optional[ShardMetadata]]
 ```
 
 ```py
-embedding_tables() → List[ShardedEmbeddingTable]¶
+embedding_tables() → List[ShardedEmbeddingTable]
 ```
 
 ```py
-feature_names() → List[str]¶
+feature_names() → List[str]
 ```
 
 ```py
-feature_names_per_rank() → List[List[str]]¶
+feature_names_per_rank() → List[List[str]]
 ```
 
 ```py
-features_per_rank() → List[int]¶
+features_per_rank() → List[int]
 ```
 
 ```py
-class torchrec.distributed.sharding.tw_sharding.InferTwEmbeddingSharding(sharding_infos: List[EmbeddingShardingInfo], env: ShardingEnv, device: Optional[device] = None, qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)¶
+class torchrec.distributed.sharding.tw_sharding.InferTwEmbeddingSharding(sharding_infos: List[EmbeddingShardingInfo], env: ShardingEnv, device: Optional[device] = None, qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)
 ```
 
 基类：`BaseTwEmbeddingSharding`[`NullShardingContext`, `KJTList`, `List`[`Tensor`], `Tensor`]
@@ -1208,19 +1208,19 @@ class torchrec.distributed.sharding.tw_sharding.InferTwEmbeddingSharding(shardin
 为推断分片嵌入包表格
 
 ```py
-create_input_dist(device: Optional[device] = None) → BaseSparseFeaturesDist[KJTList]¶
+create_input_dist(device: Optional[device] = None) → BaseSparseFeaturesDist[KJTList]
 ```
 
 ```py
-create_lookup(device: Optional[device] = None, fused_params: Optional[Dict[str, Any]] = None, feature_processor: Optional[BaseGroupedFeatureProcessor] = None) → BaseEmbeddingLookup[KJTList, List[Tensor]]¶
+create_lookup(device: Optional[device] = None, fused_params: Optional[Dict[str, Any]] = None, feature_processor: Optional[BaseGroupedFeatureProcessor] = None) → BaseEmbeddingLookup[KJTList, List[Tensor]]
 ```
 
 ```py
-create_output_dist(device: Optional[device] = None) → BaseEmbeddingDist[NullShardingContext, List[Tensor], Tensor]¶
+create_output_dist(device: Optional[device] = None) → BaseEmbeddingDist[NullShardingContext, List[Tensor], Tensor]
 ```
 
 ```py
-class torchrec.distributed.sharding.tw_sharding.InferTwPooledEmbeddingDist(device: device, world_size: int)¶
+class torchrec.distributed.sharding.tw_sharding.InferTwPooledEmbeddingDist(device: device, world_size: int)
 ```
 
 基类：`BaseEmbeddingDist`[`NullShardingContext`, `List`[`Tensor`], `Tensor`]
@@ -1234,7 +1234,7 @@ class torchrec.distributed.sharding.tw_sharding.InferTwPooledEmbeddingDist(devic
 +   **world_size** (*int*) - 拓扑中设备的数量。
 
 ```py
-forward(local_embs: List[Tensor], sharding_ctx: Optional[NullShardingContext] = None) → Tensor¶
+forward(local_embs: List[Tensor], sharding_ctx: Optional[NullShardingContext] = None) → Tensor
 ```
 
 对汇总嵌入张量执行 AlltoOne 操作。
@@ -1252,11 +1252,11 @@ forward(local_embs: List[Tensor], sharding_ctx: Optional[NullShardingContext] = 
 Awaitable[torch.Tensor]
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.distributed.sharding.tw_sharding.InferTwSparseFeaturesDist(features_per_rank: List[int], world_size: int, device: Optional[device] = None)¶
+class torchrec.distributed.sharding.tw_sharding.InferTwSparseFeaturesDist(features_per_rank: List[int], world_size: int, device: Optional[device] = None)
 ```
 
 基类：`BaseSparseFeaturesDist`[`KJTList`]
@@ -1272,7 +1272,7 @@ class torchrec.distributed.sharding.tw_sharding.InferTwSparseFeaturesDist(featur
 +   **fused_params** (*Dict**[**str**,* *Any**]*) - 模型的融合参数。
 
 ```py
-forward(sparse_features: KeyedJaggedTensor) → KJTList¶
+forward(sparse_features: KeyedJaggedTensor) → KJTList
 ```
 
 对稀疏特征执行 OnetoAll 操作。
@@ -1290,11 +1290,11 @@ forward(sparse_features: KeyedJaggedTensor) → KJTList¶
 Awaitable[Awaitable[KeyedJaggedTensor]]
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.distributed.sharding.tw_sharding.TwPooledEmbeddingDist(pg: ProcessGroup, dim_sum_per_rank: List[int], emb_dim_per_rank_per_feature: List[List[int]], device: Optional[device] = None, callbacks: Optional[List[Callable[[Tensor], Tensor]]] = None, qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)¶
+class torchrec.distributed.sharding.tw_sharding.TwPooledEmbeddingDist(pg: ProcessGroup, dim_sum_per_rank: List[int], emb_dim_per_rank_per_feature: List[List[int]], device: Optional[device] = None, callbacks: Optional[List[Callable[[Tensor], Tensor]]] = None, qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)
 ```
 
 基类：`BaseEmbeddingDist`[`EmbeddingShardingContext`, `Tensor`, `Tensor`]
@@ -1316,7 +1316,7 @@ class torchrec.distributed.sharding.tw_sharding.TwPooledEmbeddingDist(pg: Proces
 +   **qcomm_codecs_registry**（*Optional****Dict**[**str**,* [*QuantizedCommCodecs**]**]*）-
 
 ```py
-forward(local_embs: Tensor, sharding_ctx: Optional[EmbeddingShardingContext] = None) → Awaitable[Tensor]¶
+forward(local_embs: Tensor, sharding_ctx: Optional[EmbeddingShardingContext] = None) → Awaitable[Tensor]
 ```
 
 对池化的嵌入张量执行 AlltoAll 操作。
@@ -1336,11 +1336,11 @@ forward(local_embs: Tensor, sharding_ctx: Optional[EmbeddingShardingContext] = N
 Awaitable[torch.Tensor]
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.distributed.sharding.tw_sharding.TwPooledEmbeddingSharding(sharding_infos: List[EmbeddingShardingInfo], env: ShardingEnv, device: Optional[device] = None, qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)¶
+class torchrec.distributed.sharding.tw_sharding.TwPooledEmbeddingSharding(sharding_infos: List[EmbeddingShardingInfo], env: ShardingEnv, device: Optional[device] = None, qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)
 ```
 
 基类：`BaseTwEmbeddingSharding`[`EmbeddingShardingContext`, `KeyedJaggedTensor`, `Tensor`, `Tensor`]
@@ -1348,19 +1348,19 @@ class torchrec.distributed.sharding.tw_sharding.TwPooledEmbeddingSharding(shardi
 按表格划分嵌入包，即。给定的嵌入表完全放置在选定的 rank 上。
 
 ```py
-create_input_dist(device: Optional[device] = None) → BaseSparseFeaturesDist[KeyedJaggedTensor]¶
+create_input_dist(device: Optional[device] = None) → BaseSparseFeaturesDist[KeyedJaggedTensor]
 ```
 
 ```py
-create_lookup(device: Optional[device] = None, fused_params: Optional[Dict[str, Any]] = None, feature_processor: Optional[BaseGroupedFeatureProcessor] = None) → BaseEmbeddingLookup¶
+create_lookup(device: Optional[device] = None, fused_params: Optional[Dict[str, Any]] = None, feature_processor: Optional[BaseGroupedFeatureProcessor] = None) → BaseEmbeddingLookup
 ```
 
 ```py
-create_output_dist(device: Optional[device] = None) → BaseEmbeddingDist[EmbeddingShardingContext, Tensor, Tensor]¶
+create_output_dist(device: Optional[device] = None) → BaseEmbeddingDist[EmbeddingShardingContext, Tensor, Tensor]
 ```
 
 ```py
-class torchrec.distributed.sharding.tw_sharding.TwSparseFeaturesDist(pg: ProcessGroup, features_per_rank: List[int])¶
+class torchrec.distributed.sharding.tw_sharding.TwSparseFeaturesDist(pg: ProcessGroup, features_per_rank: List[int])
 ```
 
 基类：`BaseSparseFeaturesDist`[`KeyedJaggedTensor`]
@@ -1374,7 +1374,7 @@ class torchrec.distributed.sharding.tw_sharding.TwSparseFeaturesDist(pg: Process
 +   **features_per_rank**（*List**[**int**]*）- 发送到每个 rank 的特征数量。
 
 ```py
-forward(sparse_features: KeyedJaggedTensor) → Awaitable[Awaitable[KeyedJaggedTensor]]¶
+forward(sparse_features: KeyedJaggedTensor) → Awaitable[Awaitable[KeyedJaggedTensor]]
 ```
 
 对稀疏特征执行 AlltoAll 操作。
@@ -1392,19 +1392,19 @@ forward(sparse_features: KeyedJaggedTensor) → Awaitable[Awaitable[KeyedJaggedT
 可等待对象[可等待对象[KeyedJaggedTensor]]
 
 ```py
-training: bool¶
-```  ## torchrec.distributed.sharding.twcw_sharding[](#module-torchrec.distributed.sharding.twcw_sharding "Permalink to this heading")
+training: bool
+```  ## torchrec.distributed.sharding.twcw_sharding
 
 ```py
-class torchrec.distributed.sharding.twcw_sharding.TwCwPooledEmbeddingSharding(sharding_infos: List[EmbeddingShardingInfo], env: ShardingEnv, device: Optional[device] = None, permute_embeddings: bool = False, qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)¶
+class torchrec.distributed.sharding.twcw_sharding.TwCwPooledEmbeddingSharding(sharding_infos: List[EmbeddingShardingInfo], env: ShardingEnv, device: Optional[device] = None, permute_embeddings: bool = False, qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)
 ```
 
 基类：`CwPooledEmbeddingSharding`
 
-按表格方式分片嵌入包，即给定的嵌入表按列进行分区，并将表切片放置在主机组内的所有秩上。  ## torchrec.distributed.sharding.twrw_sharding[](#module-torchrec.distributed.sharding.twrw_sharding "Permalink to this heading")
+按表格方式分片嵌入包，即给定的嵌入表按列进行分区，并将表切片放置在主机组内的所有秩上。  ## torchrec.distributed.sharding.twrw_sharding
 
 ```py
-class torchrec.distributed.sharding.twrw_sharding.BaseTwRwEmbeddingSharding(sharding_infos: List[EmbeddingShardingInfo], env: ShardingEnv, device: Optional[device] = None, need_pos: bool = False, qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)¶
+class torchrec.distributed.sharding.twrw_sharding.BaseTwRwEmbeddingSharding(sharding_infos: List[EmbeddingShardingInfo], env: ShardingEnv, device: Optional[device] = None, need_pos: bool = False, qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)
 ```
 
 基类：`EmbeddingSharding`[`C`, `F`, `T`, `W`]
@@ -1412,27 +1412,27 @@ class torchrec.distributed.sharding.twrw_sharding.BaseTwRwEmbeddingSharding(shar
 表格智能行智能分片的基类。
 
 ```py
-embedding_dims() → List[int]¶
+embedding_dims() → List[int]
 ```
 
 ```py
-embedding_names() → List[str]¶
+embedding_names() → List[str]
 ```
 
 ```py
-embedding_names_per_rank() → List[List[str]]¶
+embedding_names_per_rank() → List[List[str]]
 ```
 
 ```py
-embedding_shard_metadata() → List[Optional[ShardMetadata]]¶
+embedding_shard_metadata() → List[Optional[ShardMetadata]]
 ```
 
 ```py
-feature_names() → List[str]¶
+feature_names() → List[str]
 ```
 
 ```py
-class torchrec.distributed.sharding.twrw_sharding.TwRwPooledEmbeddingDist(rank: int, cross_pg: ProcessGroup, intra_pg: ProcessGroup, dim_sum_per_node: List[int], emb_dim_per_node_per_feature: List[List[int]], device: Optional[device] = None, qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)¶
+class torchrec.distributed.sharding.twrw_sharding.TwRwPooledEmbeddingDist(rank: int, cross_pg: ProcessGroup, intra_pg: ProcessGroup, dim_sum_per_node: List[int], emb_dim_per_node_per_feature: List[List[int]], device: Optional[device] = None, qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)
 ```
 
 基类：`BaseEmbeddingDist`[`EmbeddingShardingContext`, `Tensor`, `Tensor`]
@@ -1454,7 +1454,7 @@ class torchrec.distributed.sharding.twrw_sharding.TwRwPooledEmbeddingDist(rank: 
 +   **qcomm_codecs_registry** (*可选****Dict**[**str**,* [*QuantizedCommCodecs**]**]*) –
 
 ```py
-forward(local_embs: Tensor, sharding_ctx: Optional[EmbeddingShardingContext] = None) → Awaitable[Tensor]¶
+forward(local_embs: Tensor, sharding_ctx: Optional[EmbeddingShardingContext] = None) → Awaitable[Tensor]
 ```
 
 对池化嵌入张量执行 reduce-scatter 池化操作，然后进行全对全池化操作。
@@ -1472,11 +1472,11 @@ forward(local_embs: Tensor, sharding_ctx: Optional[EmbeddingShardingContext] = N
 可等待对象[torch.Tensor]
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.distributed.sharding.twrw_sharding.TwRwPooledEmbeddingSharding(sharding_infos: List[EmbeddingShardingInfo], env: ShardingEnv, device: Optional[device] = None, need_pos: bool = False, qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)¶
+class torchrec.distributed.sharding.twrw_sharding.TwRwPooledEmbeddingSharding(sharding_infos: List[EmbeddingShardingInfo], env: ShardingEnv, device: Optional[device] = None, need_pos: bool = False, qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)
 ```
 
 基类：`BaseTwRwEmbeddingSharding`[`EmbeddingShardingContext`, `KeyedJaggedTensor`, `Tensor`, `Tensor`]
@@ -1484,19 +1484,19 @@ class torchrec.distributed.sharding.twrw_sharding.TwRwPooledEmbeddingSharding(sh
 按表格方式分片嵌入包，然后按行方式分片。
 
 ```py
-create_input_dist(device: Optional[device] = None) → BaseSparseFeaturesDist[KeyedJaggedTensor]¶
+create_input_dist(device: Optional[device] = None) → BaseSparseFeaturesDist[KeyedJaggedTensor]
 ```
 
 ```py
-create_lookup(device: Optional[device] = None, fused_params: Optional[Dict[str, Any]] = None, feature_processor: Optional[BaseGroupedFeatureProcessor] = None) → BaseEmbeddingLookup¶
+create_lookup(device: Optional[device] = None, fused_params: Optional[Dict[str, Any]] = None, feature_processor: Optional[BaseGroupedFeatureProcessor] = None) → BaseEmbeddingLookup
 ```
 
 ```py
-create_output_dist(device: Optional[device] = None) → BaseEmbeddingDist[EmbeddingShardingContext, Tensor, Tensor]¶
+create_output_dist(device: Optional[device] = None) → BaseEmbeddingDist[EmbeddingShardingContext, Tensor, Tensor]
 ```
 
 ```py
-class torchrec.distributed.sharding.twrw_sharding.TwRwSparseFeaturesDist(pg: ProcessGroup, local_size: int, features_per_rank: List[int], feature_hash_sizes: List[int], device: Optional[device] = None, has_feature_processor: bool = False, need_pos: bool = False)¶
+class torchrec.distributed.sharding.twrw_sharding.TwRwSparseFeaturesDist(pg: ProcessGroup, local_size: int, features_per_rank: List[int], feature_hash_sizes: List[int], device: Optional[device] = None, has_feature_processor: bool = False, need_pos: bool = False)
 ```
 
 基类：`BaseSparseFeaturesDist`[`KeyedJaggedTensor`]
@@ -1551,7 +1551,7 @@ Result:
 ```
 
 ```py
-forward(sparse_features: KeyedJaggedTensor) → Awaitable[Awaitable[KeyedJaggedTensor]]¶
+forward(sparse_features: KeyedJaggedTensor) → Awaitable[Awaitable[KeyedJaggedTensor]]
 ```
 
 将稀疏特征值分桶为本地世界大小的桶数，对稀疏特征执行交错洗牌，然后执行 AlltoAll 操作。
@@ -1569,5 +1569,5 @@ KeyedJaggedTensor 的可等待对象。
 Awaitable[KeyedJaggedTensor]
 
 ```py
-training: bool¶
+training: bool
 ```

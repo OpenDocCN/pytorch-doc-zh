@@ -11,7 +11,7 @@ torchrec 的自定义 FX 跟踪器
 torchrec.fx.tracer
 
 ```py
-class torchrec.fx.tracer.Tracer(leaf_modules: Optional[List[str]] = None)¶
+class torchrec.fx.tracer.Tracer(leaf_modules: Optional[List[str]] = None)
 ```
 
 基类：`跟踪器`
@@ -23,7 +23,7 @@ torchrec 的自定义 FX 跟踪器
 我们创建了一个自定义的 FX 跟踪器来跟踪基于 torchrec 的模型。自定义跟踪器处理 Python 通用类型（即 NoWait[T]，Awaitable[T]），并在需要时将其降级为 TorchScript
 
 ```py
-create_arg(a: Any) → Optional[Union[Tuple[Any, ...], List[Any], Dict[str, Any], slice, range, Node, str, int, float, bool, complex, dtype, Tensor, device, memory_format, layout, OpOverload]]¶
+create_arg(a: Any) → Optional[Union[Tuple[Any, ...], List[Any], Dict[str, Any], slice, range, Node, str, int, float, bool, complex, dtype, Tensor, device, memory_format, layout, OpOverload]]
 ```
 
 一种指定跟踪行为的方法，用于准备作为“图形”中节点参数使用的值
@@ -43,35 +43,35 @@ create_arg(a: Any) → Optional[Union[Tuple[Any, ...], List[Any], Dict[str, Any]
 参数
 
 ```py
-graph: Graph¶
+graph: Graph
 ```
 
 ```py
-is_leaf_module(m: Module, module_qualified_name: str) → bool¶
+is_leaf_module(m: Module, module_qualified_name: str) → bool
 ```
 
 覆盖 FX 定义以包括量化嵌入袋
 
 ```py
-module_stack: OrderedDict[str, Tuple[str, Any]]¶
+module_stack: OrderedDict[str, Tuple[str, Any]]
 ```
 
 ```py
-node_name_to_scope: Dict[str, Tuple[str, type]]¶
+node_name_to_scope: Dict[str, Tuple[str, type]]
 ```
 
 ```py
-path_of_module(mod: Module) → str¶
+path_of_module(mod: Module) → str
 ```
 
 允许跟踪非注册模块。这通常用于使表批量嵌入看起来像 nn.EmbeddingBags
 
 ```py
-scope: Scope¶
+scope: Scope
 ```
 
 ```py
-trace(root: Union[Module, Callable[[...], Any]], concrete_args: Optional[Dict[str, Any]] = None) → Graph¶
+trace(root: Union[Module, Callable[[...], Any]], concrete_args: Optional[Dict[str, Any]] = None) → Graph
 ```
 
 注意
@@ -79,11 +79,11 @@ trace(root: Union[Module, Callable[[...], Any]], concrete_args: Optional[Dict[st
 此 API 的向后兼容性得到保证。
 
 ```py
-torchrec.fx.tracer.is_fx_tracing() → bool¶
+torchrec.fx.tracer.is_fx_tracing() → bool
 ```
 
 ```py
-torchrec.fx.tracer.symbolic_trace(root: Union[Module, Callable], concrete_args: Optional[Dict[str, Any]] = None, leaf_modules: Optional[List[str]] = None) → GraphModule¶
+torchrec.fx.tracer.symbolic_trace(root: Union[Module, Callable], concrete_args: Optional[Dict[str, Any]] = None, leaf_modules: Optional[List[str]] = None) → GraphModule
 ```
 
 符号跟踪 API

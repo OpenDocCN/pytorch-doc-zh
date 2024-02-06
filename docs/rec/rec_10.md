@@ -18,12 +18,12 @@ torchrec 模块包含各种模块的集合。
 
 +   EmbeddingTower 和 EmbeddingTowerCollection，逻辑上的“塔”嵌入传递给提供的交互模块。
 
-## torchrec.modules.activation[](#module-torchrec.modules.activation "Permalink to this heading")
+## torchrec.modules.activation
 
 激活模块
 
 ```py
-class torchrec.modules.activation.SwishLayerNorm(input_dims: Union[int, List[int], Size], device: Optional[device] = None)¶
+class torchrec.modules.activation.SwishLayerNorm(input_dims: Union[int, List[int], Size], device: Optional[device] = None)
 ```
 
 基类：`Module`
@@ -43,7 +43,7 @@ sln = SwishLayerNorm(100)
 ```
 
 ```py
-forward(input: Tensor) → Tensor¶
+forward(input: Tensor) → Tensor
 ```
 
 参数：
@@ -59,13 +59,13 @@ forward(input: Tensor) → Tensor¶
 torch.Tensor
 
 ```py
-training: bool¶
-```  ## torchrec.modules.crossnet[](#module-torchrec.modules.crossnet "Permalink to this heading")
+training: bool
+```  ## torchrec.modules.crossnet
 
 CrossNet API
 
 ```py
-class torchrec.modules.crossnet.CrossNet(in_features: int, num_layers: int)¶
+class torchrec.modules.crossnet.CrossNet(in_features: int, num_layers: int)
 ```
 
 基类：`Module`
@@ -98,7 +98,7 @@ output = dcn(input)
 ```
 
 ```py
-forward(input: Tensor) → Tensor¶
+forward(input: Tensor) → Tensor
 ```
 
 参数：
@@ -114,11 +114,11 @@ forward(input: Tensor) → Tensor¶
 torch.Tensor
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.modules.crossnet.LowRankCrossNet(in_features: int, num_layers: int, low_rank: int = 1)¶
+class torchrec.modules.crossnet.LowRankCrossNet(in_features: int, num_layers: int, low_rank: int = 1)
 ```
 
 基类：`Module`
@@ -155,7 +155,7 @@ output = dcn(input)
 ```
 
 ```py
-forward(input: Tensor) → Tensor¶
+forward(input: Tensor) → Tensor
 ```
 
 参数：
@@ -171,11 +171,11 @@ forward(input: Tensor) → Tensor¶
 torch.Tensor
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.modules.crossnet.LowRankMixtureCrossNet(in_features: int, num_layers: int, num_experts: int = 1, low_rank: int = 1, activation: ~typing.Union[~torch.nn.modules.module.Module, ~typing.Callable[[~torch.Tensor], ~torch.Tensor]] = <built-in method relu of type object>)¶
+class torchrec.modules.crossnet.LowRankMixtureCrossNet(in_features: int, num_layers: int, num_experts: int = 1, low_rank: int = 1, activation: ~typing.Union[~torch.nn.modules.module.Module, ~typing.Callable[[~torch.Tensor], ~torch.Tensor]] = <built-in method relu of type object>)
 ```
 
 基类：`Module`
@@ -218,7 +218,7 @@ output = dcn(input)
 ```
 
 ```py
-forward(input: Tensor) → Tensor¶
+forward(input: Tensor) → Tensor
 ```
 
 参数：
@@ -234,11 +234,11 @@ forward(input: Tensor) → Tensor¶
 torch.Tensor
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.modules.crossnet.VectorCrossNet(in_features: int, num_layers: int)¶
+class torchrec.modules.crossnet.VectorCrossNet(in_features: int, num_layers: int)
 ```
 
 基类：`Module`
@@ -271,7 +271,7 @@ output = dcn(input)
 ```
 
 ```py
-forward(input: Tensor) → Tensor¶
+forward(input: Tensor) → Tensor
 ```
 
 参数：
@@ -287,8 +287,8 @@ forward(input: Tensor) → Tensor¶
 torch.Tensor
 
 ```py
-training: bool¶
-```  ## torchrec.modules.deepfm[](#module-torchrec.modules.deepfm "Permalink to this heading")
+training: bool
+```  ## torchrec.modules.deepfm
 
 深度因子分解机模块
 
@@ -299,7 +299,7 @@ training: bool¶
 +   类 FactorizationMachine 实现了上述论文中提到的 FM。
 
 ```py
-class torchrec.modules.deepfm.DeepFM(dense_module: Module)¶
+class torchrec.modules.deepfm.DeepFM(dense_module: Module)
 ```
 
 基类：`Module`
@@ -351,7 +351,7 @@ deep_fm_output = deepfm(embeddings=input_embeddings)
 ```
 
 ```py
-forward(embeddings: List[Tensor]) → Tensor¶
+forward(embeddings: List[Tensor]) → Tensor
 ```
 
 参数：
@@ -385,11 +385,11 @@ tensor(B, 3, 16) (dense_features with num_embeddings=3, embedding_dim=32)
 torch.Tensor
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.modules.deepfm.FactorizationMachine¶
+class torchrec.modules.deepfm.FactorizationMachine
 ```
 
 继承：`Module`
@@ -430,7 +430,7 @@ output = fm(embeddings=input_embeddings)
 ```
 
 ```py
-forward(embeddings: List[Tensor]) → Tensor¶
+forward(embeddings: List[Tensor]) → Tensor
 ```
 
 参数：
@@ -464,119 +464,119 @@ tensor(B, 3, 16) (dense_features with num_embeddings=3, embedding_dim=32)
 torch.Tensor
 
 ```py
-training: bool¶
-```  ## torchrec.modules.embedding_configs[](#module-torchrec.modules.embedding_configs "Permalink to this heading")
+training: bool
+```  ## torchrec.modules.embedding_configs
 
 ```py
-class torchrec.modules.embedding_configs.BaseEmbeddingConfig(num_embeddings: int, embedding_dim: int, name: str = '', data_type: torchrec.types.DataType = <DataType.FP32: 'FP32'>, feature_names: List[str] = <factory>, weight_init_max: Union[float, NoneType] = None, weight_init_min: Union[float, NoneType] = None, pruning_indices_remapping: Union[torch.Tensor, NoneType] = None, init_fn: Union[Callable[[torch.Tensor], Union[torch.Tensor, NoneType]], NoneType] = None, need_pos: bool = False)¶
+class torchrec.modules.embedding_configs.BaseEmbeddingConfig(num_embeddings: int, embedding_dim: int, name: str = '', data_type: torchrec.types.DataType = <DataType.FP32: 'FP32'>, feature_names: List[str] = <factory>, weight_init_max: Union[float, NoneType] = None, weight_init_min: Union[float, NoneType] = None, pruning_indices_remapping: Union[torch.Tensor, NoneType] = None, init_fn: Union[Callable[[torch.Tensor], Union[torch.Tensor, NoneType]], NoneType] = None, need_pos: bool = False)
 ```
 
 继承：`object`
 
 ```py
-data_type: DataType = 'FP32'¶
+data_type: DataType = 'FP32'
 ```
 
 ```py
-embedding_dim: int¶
+embedding_dim: int
 ```
 
 ```py
-feature_names: List[str]¶
+feature_names: List[str]
 ```
 
 ```py
-get_weight_init_max() → float¶
+get_weight_init_max() → float
 ```
 
 ```py
-get_weight_init_min() → float¶
+get_weight_init_min() → float
 ```
 
 ```py
-init_fn: Optional[Callable[[Tensor], Optional[Tensor]]] = None¶
+init_fn: Optional[Callable[[Tensor], Optional[Tensor]]] = None
 ```
 
 ```py
-name: str = ''¶
+name: str = ''
 ```
 
 ```py
-need_pos: bool = False¶
+need_pos: bool = False
 ```
 
 ```py
-num_embeddings: int¶
+num_embeddings: int
 ```
 
 ```py
-num_features() → int¶
+num_features() → int
 ```
 
 ```py
-pruning_indices_remapping: Optional[Tensor] = None¶
+pruning_indices_remapping: Optional[Tensor] = None
 ```
 
 ```py
-weight_init_max: Optional[float] = None¶
+weight_init_max: Optional[float] = None
 ```
 
 ```py
-weight_init_min: Optional[float] = None¶
+weight_init_min: Optional[float] = None
 ```
 
 ```py
-class torchrec.modules.embedding_configs.EmbeddingBagConfig(num_embeddings: int, embedding_dim: int, name: str = '', data_type: torchrec.types.DataType = <DataType.FP32: 'FP32'>, feature_names: List[str] = <factory>, weight_init_max: Union[float, NoneType] = None, weight_init_min: Union[float, NoneType] = None, pruning_indices_remapping: Union[torch.Tensor, NoneType] = None, init_fn: Union[Callable[[torch.Tensor], Union[torch.Tensor, NoneType]], NoneType] = None, need_pos: bool = False, pooling: torchrec.modules.embedding_configs.PoolingType = <PoolingType.SUM: 'SUM'>)¶
-```
-
-继承：`BaseEmbeddingConfig`
-
-```py
-pooling: PoolingType = 'SUM'¶
-```
-
-```py
-class torchrec.modules.embedding_configs.EmbeddingConfig(num_embeddings: int, embedding_dim: int, name: str = '', data_type: torchrec.types.DataType = <DataType.FP32: 'FP32'>, feature_names: List[str] = <factory>, weight_init_max: Union[float, NoneType] = None, weight_init_min: Union[float, NoneType] = None, pruning_indices_remapping: Union[torch.Tensor, NoneType] = None, init_fn: Union[Callable[[torch.Tensor], Union[torch.Tensor, NoneType]], NoneType] = None, need_pos: bool = False)¶
+class torchrec.modules.embedding_configs.EmbeddingBagConfig(num_embeddings: int, embedding_dim: int, name: str = '', data_type: torchrec.types.DataType = <DataType.FP32: 'FP32'>, feature_names: List[str] = <factory>, weight_init_max: Union[float, NoneType] = None, weight_init_min: Union[float, NoneType] = None, pruning_indices_remapping: Union[torch.Tensor, NoneType] = None, init_fn: Union[Callable[[torch.Tensor], Union[torch.Tensor, NoneType]], NoneType] = None, need_pos: bool = False, pooling: torchrec.modules.embedding_configs.PoolingType = <PoolingType.SUM: 'SUM'>)
 ```
 
 继承：`BaseEmbeddingConfig`
 
 ```py
-embedding_dim: int¶
+pooling: PoolingType = 'SUM'
 ```
 
 ```py
-feature_names: List[str]¶
-```
-
-```py
-num_embeddings: int¶
-```
-
-```py
-class torchrec.modules.embedding_configs.EmbeddingTableConfig(num_embeddings: int, embedding_dim: int, name: str = '', data_type: torchrec.types.DataType = <DataType.FP32: 'FP32'>, feature_names: List[str] = <factory>, weight_init_max: Union[float, NoneType] = None, weight_init_min: Union[float, NoneType] = None, pruning_indices_remapping: Union[torch.Tensor, NoneType] = None, init_fn: Union[Callable[[torch.Tensor], Union[torch.Tensor, NoneType]], NoneType] = None, need_pos: bool = False, pooling: torchrec.modules.embedding_configs.PoolingType = <PoolingType.SUM: 'SUM'>, is_weighted: bool = False, has_feature_processor: bool = False, embedding_names: List[str] = <factory>)¶
+class torchrec.modules.embedding_configs.EmbeddingConfig(num_embeddings: int, embedding_dim: int, name: str = '', data_type: torchrec.types.DataType = <DataType.FP32: 'FP32'>, feature_names: List[str] = <factory>, weight_init_max: Union[float, NoneType] = None, weight_init_min: Union[float, NoneType] = None, pruning_indices_remapping: Union[torch.Tensor, NoneType] = None, init_fn: Union[Callable[[torch.Tensor], Union[torch.Tensor, NoneType]], NoneType] = None, need_pos: bool = False)
 ```
 
 继承：`BaseEmbeddingConfig`
 
 ```py
-embedding_names: List[str]¶
+embedding_dim: int
 ```
 
 ```py
-has_feature_processor: bool = False¶
+feature_names: List[str]
 ```
 
 ```py
-is_weighted: bool = False¶
+num_embeddings: int
 ```
 
 ```py
-pooling: PoolingType = 'SUM'¶
+class torchrec.modules.embedding_configs.EmbeddingTableConfig(num_embeddings: int, embedding_dim: int, name: str = '', data_type: torchrec.types.DataType = <DataType.FP32: 'FP32'>, feature_names: List[str] = <factory>, weight_init_max: Union[float, NoneType] = None, weight_init_min: Union[float, NoneType] = None, pruning_indices_remapping: Union[torch.Tensor, NoneType] = None, init_fn: Union[Callable[[torch.Tensor], Union[torch.Tensor, NoneType]], NoneType] = None, need_pos: bool = False, pooling: torchrec.modules.embedding_configs.PoolingType = <PoolingType.SUM: 'SUM'>, is_weighted: bool = False, has_feature_processor: bool = False, embedding_names: List[str] = <factory>)
+```
+
+继承：`BaseEmbeddingConfig`
+
+```py
+embedding_names: List[str]
 ```
 
 ```py
-class torchrec.modules.embedding_configs.PoolingType(value)¶
+has_feature_processor: bool = False
+```
+
+```py
+is_weighted: bool = False
+```
+
+```py
+pooling: PoolingType = 'SUM'
+```
+
+```py
+class torchrec.modules.embedding_configs.PoolingType(value)
 ```
 
 继承：`Enum`
@@ -584,63 +584,63 @@ class torchrec.modules.embedding_configs.PoolingType(value)¶
 一个枚举。
 
 ```py
-MEAN = 'MEAN'¶
+MEAN = 'MEAN'
 ```
 
 ```py
-NONE = 'NONE'¶
+NONE = 'NONE'
 ```
 
 ```py
-SUM = 'SUM'¶
+SUM = 'SUM'
 ```
 
 ```py
-class torchrec.modules.embedding_configs.QuantConfig(activation, weight, per_table_weight_dtype)¶
+class torchrec.modules.embedding_configs.QuantConfig(activation, weight, per_table_weight_dtype)
 ```
 
 继承：`tuple`
 
 ```py
-activation: PlaceholderObserver¶
+activation: PlaceholderObserver
 ```
 
 字段编号 0 的别名
 
 ```py
-per_table_weight_dtype: Optional[Dict[str, dtype]]¶
+per_table_weight_dtype: Optional[Dict[str, dtype]]
 ```
 
 字段编号 2 的别名
 
 ```py
-weight: PlaceholderObserver¶
+weight: PlaceholderObserver
 ```
 
 字段编号 1 的别名
 
 ```py
-torchrec.modules.embedding_configs.data_type_to_dtype(data_type: DataType) → dtype¶
+torchrec.modules.embedding_configs.data_type_to_dtype(data_type: DataType) → dtype
 ```
 
 ```py
-torchrec.modules.embedding_configs.data_type_to_sparse_type(data_type: DataType) → SparseType¶
+torchrec.modules.embedding_configs.data_type_to_sparse_type(data_type: DataType) → SparseType
 ```
 
 ```py
-torchrec.modules.embedding_configs.dtype_to_data_type(dtype: dtype) → DataType¶
+torchrec.modules.embedding_configs.dtype_to_data_type(dtype: dtype) → DataType
 ```
 
 ```py
-torchrec.modules.embedding_configs.pooling_type_to_pooling_mode(pooling_type: PoolingType) → PoolingMode¶
+torchrec.modules.embedding_configs.pooling_type_to_pooling_mode(pooling_type: PoolingType) → PoolingMode
 ```
 
 ```py
-torchrec.modules.embedding_configs.pooling_type_to_str(pooling_type: PoolingType) → str¶
-```  ## torchrec.modules.embedding_modules[](#module-torchrec.modules.embedding_modules "Permalink to this heading")
+torchrec.modules.embedding_configs.pooling_type_to_str(pooling_type: PoolingType) → str
+```  ## torchrec.modules.embedding_modules
 
 ```py
-class torchrec.modules.embedding_modules.EmbeddingBagCollection(tables: List[EmbeddingBagConfig], is_weighted: bool = False, device: Optional[device] = None)¶
+class torchrec.modules.embedding_modules.EmbeddingBagCollection(tables: List[EmbeddingBagConfig], is_weighted: bool = False, device: Optional[device] = None)
 ```
 
 继承：`EmbeddingBagCollectionInterface`
@@ -708,15 +708,15 @@ tensor([0, 3, 7])
 ```
 
 ```py
-property device: device¶
+property device: device
 ```
 
 ```py
-embedding_bag_configs() → List[EmbeddingBagConfig]¶
+embedding_bag_configs() → List[EmbeddingBagConfig]
 ```
 
 ```py
-forward(features: KeyedJaggedTensor) → KeyedTensor¶
+forward(features: KeyedJaggedTensor) → KeyedTensor
 ```
 
 参数：
@@ -728,19 +728,19 @@ forward(features: KeyedJaggedTensor) → KeyedTensor¶
 KeyedTensor
 
 ```py
-is_weighted() → bool¶
+is_weighted() → bool
 ```
 
 ```py
-reset_parameters() → None¶
+reset_parameters() → None
 ```
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.modules.embedding_modules.EmbeddingBagCollectionInterface(*args, **kwargs)¶
+class torchrec.modules.embedding_modules.EmbeddingBagCollectionInterface(*args, **kwargs)
 ```
 
 基类：`ABC`，`Module`
@@ -748,11 +748,11 @@ class torchrec.modules.embedding_modules.EmbeddingBagCollectionInterface(*args, 
 嵌入袋集合的接口。
 
 ```py
-abstract embedding_bag_configs() → List[EmbeddingBagConfig]¶
+abstract embedding_bag_configs() → List[EmbeddingBagConfig]
 ```
 
 ```py
-abstract forward(features: KeyedJaggedTensor) → KeyedTensor¶
+abstract forward(features: KeyedJaggedTensor) → KeyedTensor
 ```
 
 定义每次调用时执行的计算。
@@ -764,15 +764,15 @@ abstract forward(features: KeyedJaggedTensor) → KeyedTensor¶
 虽然前向传递的配方需要在此函数内定义，但应该在此之后调用`Module`实例，而不是在此之后调用，因为前者负责运行注册的钩子，而后者则默默地忽略它们。
 
 ```py
-abstract is_weighted() → bool¶
+abstract is_weighted() → bool
 ```
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.modules.embedding_modules.EmbeddingCollection(tables: List[EmbeddingConfig], device: Optional[device] = None, need_indices: bool = False)¶
+class torchrec.modules.embedding_modules.EmbeddingCollection(tables: List[EmbeddingConfig], device: Optional[device] = None, need_indices: bool = False)
 ```
 
 基类：`EmbeddingCollectionInterface`
@@ -836,23 +836,23 @@ tensor([[-0.2050,  0.5478,  0.6054],
 ```
 
 ```py
-property device: device¶
+property device: device
 ```
 
 ```py
-embedding_configs() → List[EmbeddingConfig]¶
+embedding_configs() → List[EmbeddingConfig]
 ```
 
 ```py
-embedding_dim() → int¶
+embedding_dim() → int
 ```
 
 ```py
-embedding_names_by_table() → List[List[str]]¶
+embedding_names_by_table() → List[List[str]]
 ```
 
 ```py
-forward(features: KeyedJaggedTensor) → Dict[str, JaggedTensor]¶
+forward(features: KeyedJaggedTensor) → Dict[str, JaggedTensor]
 ```
 
 参数：
@@ -864,19 +864,19 @@ forward(features: KeyedJaggedTensor) → Dict[str, JaggedTensor]¶
 字典[str, JaggedTensor]
 
 ```py
-need_indices() → bool¶
+need_indices() → bool
 ```
 
 ```py
-reset_parameters() → None¶
+reset_parameters() → None
 ```
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.modules.embedding_modules.EmbeddingCollectionInterface(*args, **kwargs)¶
+class torchrec.modules.embedding_modules.EmbeddingCollectionInterface(*args, **kwargs)
 ```
 
 基类：`ABC`，`Module`
@@ -884,19 +884,19 @@ class torchrec.modules.embedding_modules.EmbeddingCollectionInterface(*args, **k
 嵌入集合的接口。
 
 ```py
-abstract embedding_configs() → List[EmbeddingConfig]¶
+abstract embedding_configs() → List[EmbeddingConfig]
 ```
 
 ```py
-abstract embedding_dim() → int¶
+abstract embedding_dim() → int
 ```
 
 ```py
-abstract embedding_names_by_table() → List[List[str]]¶
+abstract embedding_names_by_table() → List[List[str]]
 ```
 
 ```py
-abstract forward(features: KeyedJaggedTensor) → Dict[str, JaggedTensor]¶
+abstract forward(features: KeyedJaggedTensor) → Dict[str, JaggedTensor]
 ```
 
 定义每次调用时执行的计算。
@@ -908,27 +908,27 @@ abstract forward(features: KeyedJaggedTensor) → Dict[str, JaggedTensor]¶
 虽然前向传递的配方需要在此函数内定义，但应该在此之后调用`Module`实例，而不是在此之后调用，因为前者负责运行注册的钩子，而后者则默默地忽略它们。
 
 ```py
-abstract need_indices() → bool¶
+abstract need_indices() → bool
 ```
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-torchrec.modules.embedding_modules.get_embedding_names_by_table(tables: Union[List[EmbeddingBagConfig], List[EmbeddingConfig]]) → List[List[str]]¶
+torchrec.modules.embedding_modules.get_embedding_names_by_table(tables: Union[List[EmbeddingBagConfig], List[EmbeddingConfig]]) → List[List[str]]
 ```
 
 ```py
-torchrec.modules.embedding_modules.process_pooled_embeddings(pooled_embeddings: List[Tensor], inverse_indices: Tensor) → Tensor¶
+torchrec.modules.embedding_modules.process_pooled_embeddings(pooled_embeddings: List[Tensor], inverse_indices: Tensor) → Tensor
 ```
 
 ```py
-torchrec.modules.embedding_modules.reorder_inverse_indices(inverse_indices: Optional[Tuple[List[str], Tensor]], feature_names: List[str]) → Tensor¶
-```  ## torchrec.modules.feature_processor[](#module-torchrec.modules.feature_processor "Permalink to this heading")
+torchrec.modules.embedding_modules.reorder_inverse_indices(inverse_indices: Optional[Tuple[List[str], Tensor]], feature_names: List[str]) → Tensor
+```  ## torchrec.modules.feature_processor
 
 ```py
-class torchrec.modules.feature_processor.BaseFeatureProcessor(*args, **kwargs)¶
+class torchrec.modules.feature_processor.BaseFeatureProcessor(*args, **kwargs)
 ```
 
 基类：`Module`
@@ -936,7 +936,7 @@ class torchrec.modules.feature_processor.BaseFeatureProcessor(*args, **kwargs)¶
 特征处理器的抽象基类。
 
 ```py
-abstract forward(features: Dict[str, JaggedTensor]) → Dict[str, JaggedTensor]¶
+abstract forward(features: Dict[str, JaggedTensor]) → Dict[str, JaggedTensor]
 ```
 
 定义每次调用时执行的计算。
@@ -948,11 +948,11 @@ abstract forward(features: Dict[str, JaggedTensor]) → Dict[str, JaggedTensor]�
 虽然前向传递的配方需要在此函数内定义，但应该在此之后调用`Module`实例，而不是在此之后调用，因为前者负责运行注册的钩子，而后者则默默地忽略它们。
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.modules.feature_processor.BaseGroupedFeatureProcessor(*args, **kwargs)¶
+class torchrec.modules.feature_processor.BaseGroupedFeatureProcessor(*args, **kwargs)
 ```
 
 基类：`Module`
@@ -960,7 +960,7 @@ class torchrec.modules.feature_processor.BaseGroupedFeatureProcessor(*args, **kw
 分组特征处理器的抽象基类
 
 ```py
-abstract forward(features: KeyedJaggedTensor) → KeyedJaggedTensor¶
+abstract forward(features: KeyedJaggedTensor) → KeyedJaggedTensor
 ```
 
 定义每次调用时执行的计算。
@@ -972,11 +972,11 @@ abstract forward(features: KeyedJaggedTensor) → KeyedJaggedTensor¶
 虽然前向传递的配方需要在此函数内定义，但应该在此之后调用`Module`实例，而不是在此之后调用，因为前者负责运行注册的钩子，而后者则默默地忽略它们。
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.modules.feature_processor.PositionWeightedModule(max_feature_lengths: Dict[str, int], device: Optional[device] = None)¶
+class torchrec.modules.feature_processor.PositionWeightedModule(max_feature_lengths: Dict[str, int], device: Optional[device] = None)
 ```
 
 基类：`BaseFeatureProcessor`
@@ -988,7 +988,7 @@ class torchrec.modules.feature_processor.PositionWeightedModule(max_feature_leng
 **max_feature_lengths**（*字典**[**str**,* *int**]*）- 特征名称到最大长度的映射。max_length，也称为截断大小，指定每个样本具有的最大 id 数量。对于每个特征，其位置权重参数大小为 max_length。
 
 ```py
-forward(features: Dict[str, JaggedTensor]) → Dict[str, JaggedTensor]¶
+forward(features: Dict[str, JaggedTensor]) → Dict[str, JaggedTensor]
 ```
 
 参数：
@@ -1004,15 +1004,15 @@ forward(features: Dict[str, JaggedTensor]) → Dict[str, JaggedTensor]¶
 Dictstr，[JaggedTensor]
 
 ```py
-reset_parameters() → None¶
+reset_parameters() → None
 ```
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.modules.feature_processor.PositionWeightedProcessor(max_feature_lengths: Dict[str, int], device: Optional[device] = None)¶
+class torchrec.modules.feature_processor.PositionWeightedProcessor(max_feature_lengths: Dict[str, int], device: Optional[device] = None)
 ```
 
 基类：`BaseGroupedFeatureProcessor`
@@ -1056,7 +1056,7 @@ result = pw(features)
 ```
 
 ```py
-forward(features: KeyedJaggedTensor) → KeyedJaggedTensor¶
+forward(features: KeyedJaggedTensor) → KeyedJaggedTensor
 ```
 
 在非分片或非流水线模型中，输入特征同时包含 fp_feature 和 non_fp_features，输出将过滤掉 non_fp 特征。在分片流水线模型中，输入特征只能包含所有或所有 feature_processed 特征，因为输入特征来自 ebc 的 input_dist()，该函数将过滤掉不在 ebc 中的键。输入大小与输出大小相同
@@ -1070,7 +1070,7 @@ forward(features: KeyedJaggedTensor) → KeyedJaggedTensor¶
 KeyedJaggedTensor
 
 ```py
-named_buffers(prefix: str = '', recurse: bool = True, remove_duplicate: bool = True) → Iterator[Tuple[str, Tensor]]¶
+named_buffers(prefix: str = '', recurse: bool = True, remove_duplicate: bool = True) → Iterator[Tuple[str, Tensor]]
 ```
 
 返回一个模块缓冲区的迭代器，同时生成缓冲区的名称和缓冲区本身。
@@ -1097,7 +1097,7 @@ named_buffers(prefix: str = '', recurse: bool = True, remove_duplicate: bool = T
 ```
 
 ```py
-state_dict(destination: Optional[Dict[str, Any]] = None, prefix: str = '', keep_vars: bool = False) → Dict[str, Any]¶
+state_dict(destination: Optional[Dict[str, Any]] = None, prefix: str = '', keep_vars: bool = False) → Dict[str, Any]
 ```
 
 返回包含模块整个状态的字典。
@@ -1141,15 +1141,15 @@ state_dict(destination: Optional[Dict[str, Any]] = None, prefix: str = '', keep_
 ```
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-torchrec.modules.feature_processor.position_weighted_module_update_features(features: Dict[str, JaggedTensor], weighted_features: Dict[str, JaggedTensor]) → Dict[str, JaggedTensor]¶
-```  ## torchrec.modules.lazy_extension[](#module-torchrec.modules.lazy_extension "Permalink to this heading")
+torchrec.modules.feature_processor.position_weighted_module_update_features(features: Dict[str, JaggedTensor], weighted_features: Dict[str, JaggedTensor]) → Dict[str, JaggedTensor]
+```  ## torchrec.modules.lazy_extension
 
 ```py
-class torchrec.modules.lazy_extension.LazyModuleExtensionMixin(*args, **kwargs)¶
+class torchrec.modules.lazy_extension.LazyModuleExtensionMixin(*args, **kwargs)
 ```
 
 基类：`LazyModuleMixin`
@@ -1165,7 +1165,7 @@ class torchrec.modules.lazy_extension.LazyModuleExtensionMixin(*args, **kwargs)�
 +   LazyModuleExtensionMixin._call_impl 的源代码与 torch.nn.Module._call_impl 具有相同的代码平等性，只是前者可以将关键字参数传递给 forward pre hooks。
 
 ```py
-apply(fn: Callable[[Module], None]) → Module¶
+apply(fn: Callable[[Module], None]) → Module
 ```
 
 将 fn 递归地应用于每个子模块（由.children()返回），以及 self。典型用法包括初始化模型的参数。
@@ -1206,7 +1206,7 @@ linear.apply(init_weights)  # this works now
 ```
 
 ```py
-torchrec.modules.lazy_extension.lazy_apply(module: Module, fn: Callable[[Module], None]) → Module¶
+torchrec.modules.lazy_extension.lazy_apply(module: Module, fn: Callable[[Module], None]) → Module
 ```
 
 将一个函数附加到一个模块，该函数将递归地应用于模块的每个子模块（由.children()返回）以及模块本身，就在第一次前向传递之后（即在所有子模块和参数初始化之后）。
@@ -1250,10 +1250,10 @@ seq = torch.nn.Sequential(torch.nn.LazyLinear(2), torch.nn.LazyLinear(2))
 lazy_apply(seq, init_weights)  # doesn't run `init_weights` immediately
 input = torch.randn(2, 10)
 seq(input)  # runs `init_weights` only once, right after first forward pass 
-```  ## torchrec.modules.mlp[](#module-torchrec.modules.mlp "Permalink to this heading")
+```  ## torchrec.modules.mlp
 
 ```py
-class torchrec.modules.mlp.MLP(in_size: int, layer_sizes: ~typing.List[int], bias: bool = True, activation: ~typing.Union[str, ~typing.Callable[[], ~torch.nn.modules.module.Module], ~torch.nn.modules.module.Module, ~typing.Callable[[~torch.Tensor], ~torch.Tensor]] = <built-in method relu of type object>, device: ~typing.Optional[~torch.device] = None, dtype: ~torch.dtype = torch.float32)¶
+class torchrec.modules.mlp.MLP(in_size: int, layer_sizes: ~typing.List[int], bias: bool = True, activation: ~typing.Union[str, ~typing.Callable[[], ~torch.nn.modules.module.Module], ~torch.nn.modules.module.Module, ~typing.Callable[[~torch.Tensor], ~torch.Tensor]] = <built-in method relu of type object>, device: ~typing.Optional[~torch.device] = None, dtype: ~torch.dtype = torch.float32)
 ```
 
 基类：`Module`
@@ -1286,7 +1286,7 @@ assert list(output.shape) == [batch_size, layer_sizes[-1]]
 ```
 
 ```py
-forward(input: Tensor) → Tensor¶
+forward(input: Tensor) → Tensor
 ```
 
 参数：
@@ -1302,11 +1302,11 @@ forward(input: Tensor) → Tensor¶
 torch.Tensor
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.modules.mlp.Perceptron(in_size: int, out_size: int, bias: bool = True, activation: ~typing.Union[~torch.nn.modules.module.Module, ~typing.Callable[[~torch.Tensor], ~torch.Tensor]] = <built-in method relu of type object>, device: ~typing.Optional[~torch.device] = None, dtype: ~torch.dtype = torch.float32)¶
+class torchrec.modules.mlp.Perceptron(in_size: int, out_size: int, bias: bool = True, activation: ~typing.Union[~torch.nn.modules.module.Module, ~typing.Callable[[~torch.Tensor], ~torch.Tensor]] = <built-in method relu of type object>, device: ~typing.Optional[~torch.device] = None, dtype: ~torch.dtype = torch.float32)
 ```
 
 基类：`Module`
@@ -1340,7 +1340,7 @@ assert list(output) == [batch_size, out_size]
 ```
 
 ```py
-forward(input: Tensor) → Tensor¶
+forward(input: Tensor) → Tensor
 ```
 
 参数：
@@ -1358,51 +1358,51 @@ forward(input: Tensor) → Tensor¶
 torch.Tensor
 
 ```py
-training: bool¶
-```  ## torchrec.modules.utils[](#module-torchrec.modules.utils "Permalink to this heading")
+training: bool
+```  ## torchrec.modules.utils
 
 ```py
-torchrec.modules.utils.check_module_output_dimension(module: Union[Iterable[Module], Module], in_features: int, out_features: int) → bool¶
+torchrec.modules.utils.check_module_output_dimension(module: Union[Iterable[Module], Module], in_features: int, out_features: int) → bool
 ```
 
 验证给定模块或模块列表的 out_features 是否与指定的数字匹配。如果给定模块列表或 ModuleList，则递归检查所有子模块。
 
 ```py
-torchrec.modules.utils.construct_jagged_tensors(embeddings: Tensor, features: KeyedJaggedTensor, embedding_names: List[str], need_indices: bool = False, features_to_permute_indices: Optional[Dict[str, List[int]]] = None, original_features: Optional[KeyedJaggedTensor] = None, reverse_indices: Optional[Tensor] = None) → Dict[str, JaggedTensor]¶
+torchrec.modules.utils.construct_jagged_tensors(embeddings: Tensor, features: KeyedJaggedTensor, embedding_names: List[str], need_indices: bool = False, features_to_permute_indices: Optional[Dict[str, List[int]]] = None, original_features: Optional[KeyedJaggedTensor] = None, reverse_indices: Optional[Tensor] = None) → Dict[str, JaggedTensor]
 ```
 
 ```py
-torchrec.modules.utils.construct_modulelist_from_single_module(module: Module, sizes: Tuple[int, ...]) → Module¶
+torchrec.modules.utils.construct_modulelist_from_single_module(module: Module, sizes: Tuple[int, ...]) → Module
 ```
 
 给定单个模块，通过复制提供的模块并重新初始化线性层来构造大小为 sizes 的（嵌套的）ModuleList。
 
 ```py
-torchrec.modules.utils.convert_list_of_modules_to_modulelist(modules: Iterable[Module], sizes: Tuple[int, ...]) → Module¶
+torchrec.modules.utils.convert_list_of_modules_to_modulelist(modules: Iterable[Module], sizes: Tuple[int, ...]) → Module
 ```
 
 ```py
-torchrec.modules.utils.extract_module_or_tensor_callable(module_or_callable: Union[Callable[[], Module], Module, Callable[[Tensor], Tensor]]) → Union[Module, Callable[[Tensor], Tensor]]¶
+torchrec.modules.utils.extract_module_or_tensor_callable(module_or_callable: Union[Callable[[], Module], Module, Callable[[Tensor], Tensor]]) → Union[Module, Callable[[Tensor], Tensor]]
 ```
 
 ```py
-torchrec.modules.utils.get_module_output_dimension(module: Union[Callable[[Tensor], Tensor], Module], in_features: int) → int¶
+torchrec.modules.utils.get_module_output_dimension(module: Union[Callable[[Tensor], Tensor], Module], in_features: int) → int
 ```
 
 ```py
-torchrec.modules.utils.init_mlp_weights_xavier_uniform(m: Module) → None¶
+torchrec.modules.utils.init_mlp_weights_xavier_uniform(m: Module) → None
 ```
 
-## torchrec.modules.mc_modules[](#torchrec-modules-mc-modules "此标题的永久链接")
+## torchrec.modules.mc_modules
 
 ```py
-class torchrec.modules.mc_modules.DistanceLFU_EvictionPolicy(decay_exponent: float = 1.0, threshold_filtering_func: Optional[Callable[[Tensor], Tuple[Tensor, Union[float, Tensor]]]] = None)¶
+class torchrec.modules.mc_modules.DistanceLFU_EvictionPolicy(decay_exponent: float = 1.0, threshold_filtering_func: Optional[Callable[[Tensor], Tuple[Tensor, Union[float, Tensor]]]] = None)
 ```
 
 基类：`MCHEvictionPolicy`
 
 ```py
-coalesce_history_metadata(current_iter: int, history_metadata: Dict[str, Tensor], unique_ids_counts: Tensor, unique_inverse_mapping: Tensor, additional_ids: Optional[Tensor] = None, threshold_mask: Optional[Tensor] = None) → Dict[str, Tensor]¶
+coalesce_history_metadata(current_iter: int, history_metadata: Dict[str, Tensor], unique_ids_counts: Tensor, unique_inverse_mapping: Tensor, additional_ids: Optional[Tensor] = None, threshold_mask: Optional[Tensor] = None) → Dict[str, Tensor]
 ```
 
 参数：history_metadata（Dict[str，torch.Tensor]）：历史元数据字典 additional_ids（torch.Tensor）：要用作历史的一部分的额外 ids unique_inverse_mapping（torch.Tensor）：从 torch.unique 生成的逆映射
@@ -1412,11 +1412,11 @@ coalesce_history_metadata(current_iter: int, history_metadata: Dict[str, Tensor]
 合并元数据历史缓冲区并返回处理后的元数据张量字典。
 
 ```py
-property metadata_info: List[MCHEvictionPolicyMetadataInfo]¶
+property metadata_info: List[MCHEvictionPolicyMetadataInfo]
 ```
 
 ```py
-record_history_metadata(current_iter: int, incoming_ids: Tensor, history_metadata: Dict[str, Tensor]) → None¶
+record_history_metadata(current_iter: int, incoming_ids: Tensor, history_metadata: Dict[str, Tensor]) → None
 ```
 
 参数：current_iter（int）：当前迭代 incoming_ids（torch.Tensor）：传入的 ids history_metadata（Dict[str，torch.Tensor]）：历史元数据字典
@@ -1426,7 +1426,7 @@ record_history_metadata(current_iter: int, incoming_ids: Tensor, history_metadat
 对于实现的驱逐策略。
 
 ```py
-update_metadata_and_generate_eviction_scores(current_iter: int, mch_size: int, coalesced_history_argsort_mapping: Tensor, coalesced_history_sorted_unique_ids_counts: Tensor, coalesced_history_mch_matching_elements_mask: Tensor, coalesced_history_mch_matching_indices: Tensor, mch_metadata: Dict[str, Tensor], coalesced_history_metadata: Dict[str, Tensor]) → Tuple[Tensor, Tensor]¶
+update_metadata_and_generate_eviction_scores(current_iter: int, mch_size: int, coalesced_history_argsort_mapping: Tensor, coalesced_history_sorted_unique_ids_counts: Tensor, coalesced_history_mch_matching_elements_mask: Tensor, coalesced_history_mch_matching_indices: Tensor, mch_metadata: Dict[str, Tensor], coalesced_history_metadata: Dict[str, Tensor]) → Tuple[Tensor, Tensor]
 ```
 
 参数：
@@ -1436,13 +1436,13 @@ update_metadata_and_generate_eviction_scores(current_iter: int, mch_size: int, c
 被驱逐的索引是要被驱逐的 mch 映射中的索引，而 selected_new_indices 是要添加到 mch 中的合并历史中 ids 的索引。
 
 ```py
-class torchrec.modules.mc_modules.LFU_EvictionPolicy(threshold_filtering_func: Optional[Callable[[Tensor], Tuple[Tensor, Union[float, Tensor]]]] = None)¶
+class torchrec.modules.mc_modules.LFU_EvictionPolicy(threshold_filtering_func: Optional[Callable[[Tensor], Tuple[Tensor, Union[float, Tensor]]]] = None)
 ```
 
 基类：`MCHEvictionPolicy`
 
 ```py
-coalesce_history_metadata(current_iter: int, history_metadata: Dict[str, Tensor], unique_ids_counts: Tensor, unique_inverse_mapping: Tensor, additional_ids: Optional[Tensor] = None, threshold_mask: Optional[Tensor] = None) → Dict[str, Tensor]¶
+coalesce_history_metadata(current_iter: int, history_metadata: Dict[str, Tensor], unique_ids_counts: Tensor, unique_inverse_mapping: Tensor, additional_ids: Optional[Tensor] = None, threshold_mask: Optional[Tensor] = None) → Dict[str, Tensor]
 ```
 
 参数：history_metadata（Dict[str，torch.Tensor]）：历史元数据字典 additional_ids（torch.Tensor）：要用作历史的一部分的额外 ids unique_inverse_mapping（torch.Tensor）：从 torch.unique 生成的逆映射
@@ -1452,11 +1452,11 @@ coalesce_history_metadata(current_iter: int, history_metadata: Dict[str, Tensor]
 合并元数据历史缓冲区并返回处理后的元数据张量字典。
 
 ```py
-property metadata_info: List[MCHEvictionPolicyMetadataInfo]¶
+property metadata_info: List[MCHEvictionPolicyMetadataInfo]
 ```
 
 ```py
-record_history_metadata(current_iter: int, incoming_ids: Tensor, history_metadata: Dict[str, Tensor]) → None¶
+record_history_metadata(current_iter: int, incoming_ids: Tensor, history_metadata: Dict[str, Tensor]) → None
 ```
 
 参数：current_iter（int）：当前迭代 incoming_ids（torch.Tensor）：传入的 ids history_metadata（Dict[str，torch.Tensor]）：历史元数据字典
@@ -1466,7 +1466,7 @@ record_history_metadata(current_iter: int, incoming_ids: Tensor, history_metadat
 对于实现的驱逐策略。
 
 ```py
-update_metadata_and_generate_eviction_scores(current_iter: int, mch_size: int, coalesced_history_argsort_mapping: Tensor, coalesced_history_sorted_unique_ids_counts: Tensor, coalesced_history_mch_matching_elements_mask: Tensor, coalesced_history_mch_matching_indices: Tensor, mch_metadata: Dict[str, Tensor], coalesced_history_metadata: Dict[str, Tensor]) → Tuple[Tensor, Tensor]¶
+update_metadata_and_generate_eviction_scores(current_iter: int, mch_size: int, coalesced_history_argsort_mapping: Tensor, coalesced_history_sorted_unique_ids_counts: Tensor, coalesced_history_mch_matching_elements_mask: Tensor, coalesced_history_mch_matching_indices: Tensor, mch_metadata: Dict[str, Tensor], coalesced_history_metadata: Dict[str, Tensor]) → Tuple[Tensor, Tensor]
 ```
 
 参数：
@@ -1476,13 +1476,13 @@ update_metadata_and_generate_eviction_scores(current_iter: int, mch_size: int, c
 被驱逐的索引是要被驱逐的 mch 映射中的索引，而 selected_new_indices 是要添加到 mch 中的合并历史中 ids 的索引。
 
 ```py
-class torchrec.modules.mc_modules.LRU_EvictionPolicy(decay_exponent: float = 1.0, threshold_filtering_func: Optional[Callable[[Tensor], Tuple[Tensor, Union[float, Tensor]]]] = None)¶
+class torchrec.modules.mc_modules.LRU_EvictionPolicy(decay_exponent: float = 1.0, threshold_filtering_func: Optional[Callable[[Tensor], Tuple[Tensor, Union[float, Tensor]]]] = None)
 ```
 
 基类：`MCHEvictionPolicy`
 
 ```py
-coalesce_history_metadata(current_iter: int, history_metadata: Dict[str, Tensor], unique_ids_counts: Tensor, unique_inverse_mapping: Tensor, additional_ids: Optional[Tensor] = None, threshold_mask: Optional[Tensor] = None) → Dict[str, Tensor]¶
+coalesce_history_metadata(current_iter: int, history_metadata: Dict[str, Tensor], unique_ids_counts: Tensor, unique_inverse_mapping: Tensor, additional_ids: Optional[Tensor] = None, threshold_mask: Optional[Tensor] = None) → Dict[str, Tensor]
 ```
 
 参数：history_metadata（Dict[str，torch.Tensor]）：历史元数据字典 additional_ids（torch.Tensor）：要用作历史的一部分的额外 ids unique_inverse_mapping（torch.Tensor）：从 torch.unique 生成的逆映射
@@ -1492,11 +1492,11 @@ coalesce_history_metadata(current_iter: int, history_metadata: Dict[str, Tensor]
 合并元数据历史缓冲区并返回处理后的元数据张量字典。
 
 ```py
-property metadata_info: List[MCHEvictionPolicyMetadataInfo]¶
+property metadata_info: List[MCHEvictionPolicyMetadataInfo]
 ```
 
 ```py
-record_history_metadata(current_iter: int, incoming_ids: Tensor, history_metadata: Dict[str, Tensor]) → None¶
+record_history_metadata(current_iter: int, incoming_ids: Tensor, history_metadata: Dict[str, Tensor]) → None
 ```
 
 参数：current_iter（int）：当前迭代 incoming_ids（torch.Tensor）：传入的 ids history_metadata（Dict[str，torch.Tensor]）：历史元数据字典
@@ -1506,7 +1506,7 @@ record_history_metadata(current_iter: int, incoming_ids: Tensor, history_metadat
 对于实现的驱逐策略。
 
 ```py
-update_metadata_and_generate_eviction_scores(current_iter: int, mch_size: int, coalesced_history_argsort_mapping: Tensor, coalesced_history_sorted_unique_ids_counts: Tensor, coalesced_history_mch_matching_elements_mask: Tensor, coalesced_history_mch_matching_indices: Tensor, mch_metadata: Dict[str, Tensor], coalesced_history_metadata: Dict[str, Tensor]) → Tuple[Tensor, Tensor]¶
+update_metadata_and_generate_eviction_scores(current_iter: int, mch_size: int, coalesced_history_argsort_mapping: Tensor, coalesced_history_sorted_unique_ids_counts: Tensor, coalesced_history_mch_matching_elements_mask: Tensor, coalesced_history_mch_matching_indices: Tensor, mch_metadata: Dict[str, Tensor], coalesced_history_metadata: Dict[str, Tensor]) → Tuple[Tensor, Tensor]
 ```
 
 参数：
@@ -1516,13 +1516,13 @@ update_metadata_and_generate_eviction_scores(current_iter: int, mch_size: int, c
 被驱逐的索引是要被驱逐的 mch 映射中的索引，而 selected_new_indices 是要添加到 mch 中的合并历史中 ids 的索引。
 
 ```py
-class torchrec.modules.mc_modules.MCHEvictionPolicy(metadata_info: List[MCHEvictionPolicyMetadataInfo], threshold_filtering_func: Optional[Callable[[Tensor], Tuple[Tensor, Union[float, Tensor]]]] = None)¶
+class torchrec.modules.mc_modules.MCHEvictionPolicy(metadata_info: List[MCHEvictionPolicyMetadataInfo], threshold_filtering_func: Optional[Callable[[Tensor], Tuple[Tensor, Union[float, Tensor]]]] = None)
 ```
 
 基类：`ABC`
 
 ```py
-abstract coalesce_history_metadata(current_iter: int, history_metadata: Dict[str, Tensor], unique_ids_counts: Tensor, unique_inverse_mapping: Tensor, additional_ids: Optional[Tensor] = None, threshold_mask: Optional[Tensor] = None) → Dict[str, Tensor]¶
+abstract coalesce_history_metadata(current_iter: int, history_metadata: Dict[str, Tensor], unique_ids_counts: Tensor, unique_inverse_mapping: Tensor, additional_ids: Optional[Tensor] = None, threshold_mask: Optional[Tensor] = None) → Dict[str, Tensor]
 ```
 
 参数：history_metadata（Dict[str，torch.Tensor]）：历史元数据字典 additional_ids（torch.Tensor）：要用作历史的一部分的额外 ids unique_inverse_mapping（torch.Tensor）：从 torch.unique 生成的逆映射
@@ -1532,11 +1532,11 @@ abstract coalesce_history_metadata(current_iter: int, history_metadata: Dict[str
 合并元数据历史缓冲区并返回处理后的元数据张量字典。
 
 ```py
-abstract property metadata_info: List[MCHEvictionPolicyMetadataInfo]¶
+abstract property metadata_info: List[MCHEvictionPolicyMetadataInfo]
 ```
 
 ```py
-abstract record_history_metadata(current_iter: int, incoming_ids: Tensor, history_metadata: Dict[str, Tensor]) → None¶
+abstract record_history_metadata(current_iter: int, incoming_ids: Tensor, history_metadata: Dict[str, Tensor]) → None
 ```
 
 参数：current_iter（int）：当前迭代 incoming_ids（torch.Tensor）：传入的 ids history_metadata（Dict[str，torch.Tensor]）：历史元数据字典
@@ -1546,7 +1546,7 @@ abstract record_history_metadata(current_iter: int, incoming_ids: Tensor, histor
 用于实现驱逐策略。
 
 ```py
-abstract update_metadata_and_generate_eviction_scores(current_iter: int, mch_size: int, coalesced_history_argsort_mapping: Tensor, coalesced_history_sorted_unique_ids_counts: Tensor, coalesced_history_mch_matching_elements_mask: Tensor, coalesced_history_mch_matching_indices: Tensor, mch_metadata: Dict[str, Tensor], coalesced_history_metadata: Dict[str, Tensor]) → Tuple[Tensor, Tensor]¶
+abstract update_metadata_and_generate_eviction_scores(current_iter: int, mch_size: int, coalesced_history_argsort_mapping: Tensor, coalesced_history_sorted_unique_ids_counts: Tensor, coalesced_history_mch_matching_elements_mask: Tensor, coalesced_history_mch_matching_indices: Tensor, mch_metadata: Dict[str, Tensor], coalesced_history_metadata: Dict[str, Tensor]) → Tuple[Tensor, Tensor]
 ```
 
 参数：
@@ -1556,31 +1556,31 @@ abstract update_metadata_and_generate_eviction_scores(current_iter: int, mch_siz
 被驱逐的索引是要被驱逐的 mch 映射中的索引，而选择的新索引是要添加到 mch 中的合并历史中的 id 的索引。
 
 ```py
-class torchrec.modules.mc_modules.MCHEvictionPolicyMetadataInfo(metadata_name, is_mch_metadata, is_history_metadata)¶
+class torchrec.modules.mc_modules.MCHEvictionPolicyMetadataInfo(metadata_name, is_mch_metadata, is_history_metadata)
 ```
 
 基础：`tuple`
 
 ```py
-is_history_metadata: bool¶
+is_history_metadata: bool
 ```
 
 字段编号 2 的别名
 
 ```py
-is_mch_metadata: bool¶
+is_mch_metadata: bool
 ```
 
 字段编号 1 的别名
 
 ```py
-metadata_name: str¶
+metadata_name: str
 ```
 
 字段编号 0 的别名
 
 ```py
-class torchrec.modules.mc_modules.MCHManagedCollisionModule(zch_size: int, device: device, eviction_policy: MCHEvictionPolicy, eviction_interval: int, input_hash_size: int = 9223372036854775808, input_hash_func: Optional[Callable[[Tensor, int], Tensor]] = None, mch_size: Optional[int] = None, mch_hash_func: Optional[Callable[[Tensor, int], Tensor]] = None, name: Optional[str] = None, output_global_offset: int = 0)¶
+class torchrec.modules.mc_modules.MCHManagedCollisionModule(zch_size: int, device: device, eviction_policy: MCHEvictionPolicy, eviction_interval: int, input_hash_size: int = 9223372036854775808, input_hash_func: Optional[Callable[[Tensor, int], Tensor]] = None, mch_size: Optional[int] = None, mch_hash_func: Optional[Callable[[Tensor, int], Tensor]] = None, name: Optional[str] = None, output_global_offset: int = 0)
 ```
 
 基础：`ManagedCollisionModule`
@@ -1608,53 +1608,53 @@ ZCH / MCH 管理的碰撞模块
 +   **output_global_offset**（*int*）-输出范围的输出 id 的偏移量，通常仅在分片应用程序中使用。
 
 ```py
-evict() → Optional[Tensor]¶
+evict() → Optional[Tensor]
 ```
 
 如果此迭代不应进行驱逐，则返回 None。否则，返回要重置的插槽的 id。在驱逐时，此模块应为这些插槽重置其状态，并假设下游模块将正确处理此操作。
 
 ```py
-forward(features: Dict[str, JaggedTensor]) → Dict[str, JaggedTensor]¶
+forward(features: Dict[str, JaggedTensor]) → Dict[str, JaggedTensor]
 ```
 
 参数：feature（JaggedTensor]）：特征表示：返回：修改后的 JT：rtype：Dict[str，JaggedTensor]
 
 ```py
-input_size() → int¶
+input_size() → int
 ```
 
 返回输入的数字范围，用于分片信息
 
 ```py
-output_size() → int¶
+output_size() → int
 ```
 
 返回输出的数字范围，用于验证与下游嵌入查找
 
 ```py
-preprocess(features: Dict[str, JaggedTensor]) → Dict[str, JaggedTensor]¶
+preprocess(features: Dict[str, JaggedTensor]) → Dict[str, JaggedTensor]
 ```
 
 ```py
-profile(features: Dict[str, JaggedTensor]) → Dict[str, JaggedTensor]¶
+profile(features: Dict[str, JaggedTensor]) → Dict[str, JaggedTensor]
 ```
 
 ```py
-rebuild_with_output_id_range(output_id_range: Tuple[int, int], device: Optional[device] = None) → MCHManagedCollisionModule¶
+rebuild_with_output_id_range(output_id_range: Tuple[int, int], device: Optional[device] = None) → MCHManagedCollisionModule
 ```
 
 用于为 RW 分片创建本地 MC 模块，现在是一个 hack
 
 ```py
-remap(features: Dict[str, JaggedTensor]) → Dict[str, JaggedTensor]¶
+remap(features: Dict[str, JaggedTensor]) → Dict[str, JaggedTensor]
 ```
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.modules.mc_modules.ManagedCollisionCollection(managed_collision_modules: Dict[str, ManagedCollisionModule], embedding_configs: List[BaseEmbeddingConfig])¶
+class torchrec.modules.mc_modules.ManagedCollisionCollection(managed_collision_modules: Dict[str, ManagedCollisionModule], embedding_configs: List[BaseEmbeddingConfig])
 ```
 
 基础：`Module`
@@ -1670,15 +1670,15 @@ ManagedCollisionCollection 表示一组受管理的碰撞模块。传递给 MCC 
 +   **embedding_confgs**（*List***[*BaseEmbeddingConfig**]）-每个具有受管理碰撞模块的表的嵌入配置列表
 
 ```py
-embedding_configs() → List[BaseEmbeddingConfig]¶
+embedding_configs() → List[BaseEmbeddingConfig]
 ```
 
 ```py
-evict() → Dict[str, Optional[Tensor]]¶
+evict() → Dict[str, Optional[Tensor]]
 ```
 
 ```py
-forward(features: KeyedJaggedTensor) → KeyedJaggedTensor¶
+forward(features: KeyedJaggedTensor) → KeyedJaggedTensor
 ```
 
 定义每次调用时执行的计算。
@@ -1690,11 +1690,11 @@ forward(features: KeyedJaggedTensor) → KeyedJaggedTensor¶
 尽管前向传递的配方需要在此函数内定义，但应该在此之后调用`Module`实例，而不是这样做，因为前者负责运行注册的钩子，而后者则会默默地忽略它们。
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.modules.mc_modules.ManagedCollisionModule(device: device)¶
+class torchrec.modules.mc_modules.ManagedCollisionModule(device: device)
 ```
 
 基础：`Module`
@@ -1716,17 +1716,17 @@ ManagedCollisionModule 的抽象基类。将输入 id 映射到范围[0，max_ou
 jt = JaggedTensor(…) mcm = ManagedCollisionModule(…) mcm_jt = mcm(fp)
 
 ```py
-property device: device¶
+property device: device
 ```
 
 ```py
-abstract evict() → Optional[Tensor]¶
+abstract evict() → Optional[Tensor]
 ```
 
 如果本次迭代不应进行驱逐，则返回 None。否则，返回要重置的插槽的 ID。在驱逐时，此模块应为这些插槽重置其状态，假设下游模块将正确处理此操作。
 
 ```py
-abstract forward(features: Dict[str, JaggedTensor]) → Dict[str, JaggedTensor]¶
+abstract forward(features: Dict[str, JaggedTensor]) → Dict[str, JaggedTensor]
 ```
 
 定义每次调用时执行的计算。
@@ -1738,49 +1738,49 @@ abstract forward(features: Dict[str, JaggedTensor]) → Dict[str, JaggedTensor]�
 虽然前向传递的配方需要在此函数内定义，但应该在此之后调用`Module`实例，而不是这个，因为前者负责运行注册的钩子，而后者会默默地忽略它们。
 
 ```py
-abstract input_size() → int¶
+abstract input_size() → int
 ```
 
 返回输入的数值范围，用于分片信息
 
 ```py
-abstract output_size() → int¶
+abstract output_size() → int
 ```
 
 返回输出的数值范围，用于验证与下游嵌入查找的比较
 
 ```py
-abstract preprocess(features: Dict[str, JaggedTensor]) → Dict[str, JaggedTensor]¶
+abstract preprocess(features: Dict[str, JaggedTensor]) → Dict[str, JaggedTensor]
 ```
 
 ```py
-abstract rebuild_with_output_id_range(output_id_range: Tuple[int, int], device: Optional[device] = None) → ManagedCollisionModule¶
+abstract rebuild_with_output_id_range(output_id_range: Tuple[int, int], device: Optional[device] = None) → ManagedCollisionModule
 ```
 
 用于为 RW 分片创建本地 MC 模块，目前是一个 hack
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-torchrec.modules.mc_modules.apply_mc_method_to_jt_dict(method: str, features_dict: Dict[str, JaggedTensor], table_to_features: Dict[str, List[str]], managed_collisions: ModuleDict) → Dict[str, JaggedTensor]¶
+torchrec.modules.mc_modules.apply_mc_method_to_jt_dict(method: str, features_dict: Dict[str, JaggedTensor], table_to_features: Dict[str, List[str]], managed_collisions: ModuleDict) → Dict[str, JaggedTensor]
 ```
 
 将 MC 方法应用于 JaggedTensors 字典，返回具有相同顺序的更新字典
 
 ```py
-torchrec.modules.mc_modules.average_threshold_filter(id_counts: Tensor) → Tuple[Tensor, Tensor]¶
+torchrec.modules.mc_modules.average_threshold_filter(id_counts: Tensor) → Tuple[Tensor, Tensor]
 ```
 
 ```py
-torchrec.modules.mc_modules.dynamic_threshold_filter(id_counts: Tensor, threshold_skew_multiplier: float = 10.0) → Tuple[Tensor, Tensor]¶
+torchrec.modules.mc_modules.dynamic_threshold_filter(id_counts: Tensor, threshold_skew_multiplier: float = 10.0) → Tuple[Tensor, Tensor]
 ```
 
-## torchrec.modules.mc_embedding_modules[](#torchrec-modules-mc-embedding-modules "Permalink to this heading")
+## torchrec.modules.mc_embedding_modules
 
 ```py
-class torchrec.modules.mc_embedding_modules.BaseManagedCollisionEmbeddingCollection(embedding_module: Union[EmbeddingBagCollection, EmbeddingCollection], managed_collision_collection: ManagedCollisionCollection, return_remapped_features: bool = False)¶
+class torchrec.modules.mc_embedding_modules.BaseManagedCollisionEmbeddingCollection(embedding_module: Union[EmbeddingBagCollection, EmbeddingCollection], managed_collision_collection: ManagedCollisionCollection, return_remapped_features: bool = False)
 ```
 
 基类：`Module`
@@ -1796,7 +1796,7 @@ BaseManagedCollisionEmbeddingCollection 代表一个 EC/EBC 模块和一组管�
 +   **return_remapped_features** (*bool*) – 是否返回重新映射的输入特征以及嵌入
 
 ```py
-forward(features: KeyedJaggedTensor) → Tuple[Union[KeyedTensor, Dict[str, JaggedTensor]], Optional[KeyedJaggedTensor]]¶
+forward(features: KeyedJaggedTensor) → Tuple[Union[KeyedTensor, Dict[str, JaggedTensor]], Optional[KeyedJaggedTensor]]
 ```
 
 定义每次调用时执行的计算。
@@ -1808,11 +1808,11 @@ forward(features: KeyedJaggedTensor) → Tuple[Union[KeyedTensor, Dict[str, Jagg
 虽然前向传递的配方需要在此函数内定义，但应该在此之后调用`Module`实例，而不是这个，因为前者负责运行注册的钩子，而后者会默默地忽略它们。
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.modules.mc_embedding_modules.ManagedCollisionEmbeddingBagCollection(embedding_bag_collection: EmbeddingBagCollection, managed_collision_collection: ManagedCollisionCollection, return_remapped_features: bool = False)¶
+class torchrec.modules.mc_embedding_modules.ManagedCollisionEmbeddingBagCollection(embedding_bag_collection: EmbeddingBagCollection, managed_collision_collection: ManagedCollisionCollection, return_remapped_features: bool = False)
 ```
 
 基类：`BaseManagedCollisionEmbeddingCollection`
@@ -1830,11 +1830,11 @@ ManagedCollisionEmbeddingBagCollection 代表一个 EmbeddingBagCollection 模�
 +   **return_remapped_features** (*bool*) – 是否返回重新映射的输入特征以及嵌入
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.modules.mc_embedding_modules.ManagedCollisionEmbeddingCollection(embedding_collection: EmbeddingCollection, managed_collision_collection: ManagedCollisionCollection, return_remapped_features: bool = False)¶
+class torchrec.modules.mc_embedding_modules.ManagedCollisionEmbeddingCollection(embedding_collection: EmbeddingCollection, managed_collision_collection: ManagedCollisionCollection, return_remapped_features: bool = False)
 ```
 
 基类：`BaseManagedCollisionEmbeddingCollection`
@@ -1852,9 +1852,9 @@ ManagedCollisionEmbeddingCollection 代表一个 EmbeddingCollection 模块和�
 +   **return_remapped_features** (*bool*) – 是否返回重新映射的输入特征以及嵌入
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-torchrec.modules.mc_embedding_modules.evict(evictions: Dict[str, Optional[Tensor]], ebc: Union[EmbeddingBagCollection, EmbeddingCollection]) → None¶
+torchrec.modules.mc_embedding_modules.evict(evictions: Dict[str, Optional[Tensor]], ebc: Union[EmbeddingBagCollection, EmbeddingCollection]) → None
 ```

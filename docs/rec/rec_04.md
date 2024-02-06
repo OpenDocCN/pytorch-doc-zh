@@ -24,12 +24,12 @@ Torchrec distributed 提供了必要的模块和操作来实现模型并行处�
 
 +   支持减少精度训练和推断的量化。
 
-## torchrec.distributed.collective_utils[](#module-torchrec.distributed.collective_utils "Permalink to this heading")
+## torchrec.distributed.collective_utils
 
 此文件包含用于构建基于集合的控制流的实用程序。
 
 ```py
-torchrec.distributed.collective_utils.invoke_on_rank_and_broadcast_result(pg: ProcessGroup, rank: int, func: Callable[[...], T], *args: Any, **kwargs: Any) → T¶
+torchrec.distributed.collective_utils.invoke_on_rank_and_broadcast_result(pg: ProcessGroup, rank: int, func: Callable[[...], T], *args: Any, **kwargs: Any) → T
 ```
 
 在指定的 rank 上调用函数，并将结果广播给组内的所有成员。
@@ -41,7 +41,7 @@ id = invoke_on_rank_and_broadcast_result(pg, 0, allocate_id)
 ```
 
 ```py
-torchrec.distributed.collective_utils.is_leader(pg: Optional[ProcessGroup], leader_rank: int = 0) → bool¶
+torchrec.distributed.collective_utils.is_leader(pg: Optional[ProcessGroup], leader_rank: int = 0) → bool
 ```
 
 检查当前进程是否为领导者。
@@ -53,39 +53,39 @@ torchrec.distributed.collective_utils.is_leader(pg: Optional[ProcessGroup], lead
 +   **leader_rank** (*int*) – 领导者的定义（默认为 0）。调用者可以使用特定于上下文的定义进行覆盖。
 
 ```py
-torchrec.distributed.collective_utils.run_on_leader(pg: ProcessGroup, rank: int)¶
-```  ## torchrec.distributed.comm[](#module-torchrec.distributed.comm "Permalink to this heading")
+torchrec.distributed.collective_utils.run_on_leader(pg: ProcessGroup, rank: int)
+```  ## torchrec.distributed.comm
 
 ```py
-torchrec.distributed.comm.get_group_rank(world_size: Optional[int] = None, rank: Optional[int] = None) → int¶
+torchrec.distributed.comm.get_group_rank(world_size: Optional[int] = None, rank: Optional[int] = None) → int
 ```
 
 获取工作组的组排名。也可通过 GROUP_RANK 环境变量获得，介于 0 和 get_num_groups()之间（参见[`pytorch.org/docs/stable/elastic/run.html`](https://pytorch.org/docs/stable/elastic/run.html)）
 
 ```py
-torchrec.distributed.comm.get_local_rank(world_size: Optional[int] = None, rank: Optional[int] = None) → int¶
+torchrec.distributed.comm.get_local_rank(world_size: Optional[int] = None, rank: Optional[int] = None) → int
 ```
 
 获取本地进程的本地排名（参见[`pytorch.org/docs/stable/elastic/run.html`](https://pytorch.org/docs/stable/elastic/run.html)）通常是工作节点上的工作进程的排名
 
 ```py
-torchrec.distributed.comm.get_local_size(world_size: Optional[int] = None) → int¶
+torchrec.distributed.comm.get_local_size(world_size: Optional[int] = None) → int
 ```
 
 ```py
-torchrec.distributed.comm.get_num_groups(world_size: Optional[int] = None) → int¶
+torchrec.distributed.comm.get_num_groups(world_size: Optional[int] = None) → int
 ```
 
 获取工作组的数量。通常等同于 max_nnodes（参见[`pytorch.org/docs/stable/elastic/run.html`](https://pytorch.org/docs/stable/elastic/run.html)）
 
 ```py
-torchrec.distributed.comm.intra_and_cross_node_pg(device: Optional[device] = None, backend: Optional[str] = None) → Tuple[Optional[ProcessGroup], Optional[ProcessGroup]]¶
+torchrec.distributed.comm.intra_and_cross_node_pg(device: Optional[device] = None, backend: Optional[str] = None) → Tuple[Optional[ProcessGroup], Optional[ProcessGroup]]
 ```
 
-创建子进程组（节点内和跨节点）  ## torchrec.distributed.comm_ops[](#module-torchrec.distributed.comm_ops "Permalink to this heading")
+创建子进程组（节点内和跨节点）  ## torchrec.distributed.comm_ops
 
 ```py
-class torchrec.distributed.comm_ops.All2AllDenseInfo(output_splits: List[int], batch_size: int, input_shape: List[int], input_splits: List[int])¶
+class torchrec.distributed.comm_ops.All2AllDenseInfo(output_splits: List[int], batch_size: int, input_shape: List[int], input_splits: List[int])
 ```
 
 基类：`object`
@@ -93,23 +93,23 @@ class torchrec.distributed.comm_ops.All2AllDenseInfo(output_splits: List[int], b
 在调用 alltoall_dense 操作时收集属性的数据类。
 
 ```py
-batch_size: int¶
+batch_size: int
 ```
 
 ```py
-input_shape: List[int]¶
+input_shape: List[int]
 ```
 
 ```py
-input_splits: List[int]¶
+input_splits: List[int]
 ```
 
 ```py
-output_splits: List[int]¶
+output_splits: List[int]
 ```
 
 ```py
-class torchrec.distributed.comm_ops.All2AllPooledInfo(batch_size_per_rank: List[int], dim_sum_per_rank: List[int], dim_sum_per_rank_tensor: Optional[Tensor], cumsum_dim_sum_per_rank_tensor: Optional[Tensor], codecs: Optional[QuantizedCommCodecs] = None)¶
+class torchrec.distributed.comm_ops.All2AllPooledInfo(batch_size_per_rank: List[int], dim_sum_per_rank: List[int], dim_sum_per_rank_tensor: Optional[Tensor], cumsum_dim_sum_per_rank_tensor: Optional[Tensor], codecs: Optional[QuantizedCommCodecs] = None)
 ```
 
 基类：`object`
@@ -117,7 +117,7 @@ class torchrec.distributed.comm_ops.All2AllPooledInfo(batch_size_per_rank: List[
 在调用 alltoall_pooled 操作时收集属性的数据类。
 
 ```py
-batch_size_per_rank¶
+batch_size_per_rank
 ```
 
 每个 rank 中的批处理大小
@@ -127,7 +127,7 @@ batch_size_per_rank¶
 List[int]
 
 ```py
-dim_sum_per_rank¶
+dim_sum_per_rank
 ```
 
 每个 rank 中嵌入的特征数量（维度之和）。
@@ -137,7 +137,7 @@ dim_sum_per_rank¶
 List[int]
 
 ```py
-dim_sum_per_rank_tensor¶
+dim_sum_per_rank_tensor
 ```
 
 dim_sum_per_rank 的张量版本，仅由 _recat_pooled_embedding_grad_out 的快速内核使用。
@@ -147,7 +147,7 @@ dim_sum_per_rank 的张量版本，仅由 _recat_pooled_embedding_grad_out 的�
 Optional[Tensor]
 
 ```py
-cumsum_dim_sum_per_rank_tensor¶
+cumsum_dim_sum_per_rank_tensor
 ```
 
 dim_sum_per_rank 的累积和，仅由 _recat_pooled_embedding_grad_out 的快速内核使用。
@@ -157,7 +157,7 @@ dim_sum_per_rank 的累积和，仅由 _recat_pooled_embedding_grad_out 的快�
 Optional[Tensor]
 
 ```py
-codecs¶
+codecs
 ```
 
 量化通信编解码器。
@@ -167,27 +167,27 @@ codecs¶
 Optional[QuantizedCommCodecs]
 
 ```py
-batch_size_per_rank: List[int]¶
+batch_size_per_rank: List[int]
 ```
 
 ```py
-codecs: Optional[QuantizedCommCodecs] = None¶
+codecs: Optional[QuantizedCommCodecs] = None
 ```
 
 ```py
-cumsum_dim_sum_per_rank_tensor: Optional[Tensor]¶
+cumsum_dim_sum_per_rank_tensor: Optional[Tensor]
 ```
 
 ```py
-dim_sum_per_rank: List[int]¶
+dim_sum_per_rank: List[int]
 ```
 
 ```py
-dim_sum_per_rank_tensor: Optional[Tensor]¶
+dim_sum_per_rank_tensor: Optional[Tensor]
 ```
 
 ```py
-class torchrec.distributed.comm_ops.All2AllSequenceInfo(embedding_dim: int, lengths_after_sparse_data_all2all: Tensor, forward_recat_tensor: Optional[Tensor], backward_recat_tensor: Tensor, input_splits: List[int], output_splits: List[int], variable_batch_size: bool = False, codecs: Optional[QuantizedCommCodecs] = None, permuted_lengths_after_sparse_data_all2all: Optional[Tensor] = None)¶
+class torchrec.distributed.comm_ops.All2AllSequenceInfo(embedding_dim: int, lengths_after_sparse_data_all2all: Tensor, forward_recat_tensor: Optional[Tensor], backward_recat_tensor: Tensor, input_splits: List[int], output_splits: List[int], variable_batch_size: bool = False, codecs: Optional[QuantizedCommCodecs] = None, permuted_lengths_after_sparse_data_all2all: Optional[Tensor] = None)
 ```
 
 基类：`object`
@@ -195,7 +195,7 @@ class torchrec.distributed.comm_ops.All2AllSequenceInfo(embedding_dim: int, leng
 在调用 alltoall_sequence 操作时收集属性的数据类。
 
 ```py
-embedding_dim¶
+embedding_dim
 ```
 
 嵌入维度。
@@ -205,7 +205,7 @@ embedding_dim¶
 int
 
 ```py
-lengths_after_sparse_data_all2all¶
+lengths_after_sparse_data_all2all
 ```
 
 AlltoAll 后稀疏特征的长度。
@@ -215,7 +215,7 @@ AlltoAll 后稀疏特征的长度。
 张量
 
 ```py
-forward_recat_tensor¶
+forward_recat_tensor
 ```
 
 前向传递的 recat 张量。
@@ -225,7 +225,7 @@ forward_recat_tensor¶
 Optional[Tensor]
 
 ```py
-backward_recat_tensor¶
+backward_recat_tensor
 ```
 
 为后向传递的 recat 张量。
@@ -235,7 +235,7 @@ backward_recat_tensor¶
 张量
 
 ```py
-input_splits¶
+input_splits
 ```
 
 输入分割。
@@ -245,7 +245,7 @@ input_splits¶
 List[int]
 
 ```py
-output_splits¶
+output_splits
 ```
 
 输出分割。
@@ -255,7 +255,7 @@ output_splits¶
 List[int]
 
 ```py
-variable_batch_size¶
+variable_batch_size
 ```
 
 是否启用可变批处理大小。
@@ -265,7 +265,7 @@ variable_batch_size¶
 布尔值
 
 ```py
-codecs¶
+codecs
 ```
 
 量化通信编解码器。
@@ -275,7 +275,7 @@ codecs¶
 Optional[QuantizedCommCodecs]
 
 ```py
-permuted_lengths_after_sparse_data_all2all¶
+permuted_lengths_after_sparse_data_all2all
 ```
 
 AlltoAll 之前稀疏特征的长度。
@@ -285,43 +285,43 @@ AlltoAll 之前稀疏特征的长度。
 Optional[Tensor]
 
 ```py
-backward_recat_tensor: Tensor¶
+backward_recat_tensor: Tensor
 ```
 
 ```py
-codecs: Optional[QuantizedCommCodecs] = None¶
+codecs: Optional[QuantizedCommCodecs] = None
 ```
 
 ```py
-embedding_dim: int¶
+embedding_dim: int
 ```
 
 ```py
-forward_recat_tensor: Optional[Tensor]¶
+forward_recat_tensor: Optional[Tensor]
 ```
 
 ```py
-input_splits: List[int]¶
+input_splits: List[int]
 ```
 
 ```py
-lengths_after_sparse_data_all2all: Tensor¶
+lengths_after_sparse_data_all2all: Tensor
 ```
 
 ```py
-output_splits: List[int]¶
+output_splits: List[int]
 ```
 
 ```py
-permuted_lengths_after_sparse_data_all2all: Optional[Tensor] = None¶
+permuted_lengths_after_sparse_data_all2all: Optional[Tensor] = None
 ```
 
 ```py
-variable_batch_size: bool = False¶
+variable_batch_size: bool = False
 ```
 
 ```py
-class torchrec.distributed.comm_ops.All2AllVInfo(dims_sum_per_rank: ~typing.List[int], B_global: int, B_local: int, B_local_list: ~typing.List[int], D_local_list: ~typing.List[int], input_split_sizes: ~typing.List[int] = <factory>, output_split_sizes: ~typing.List[int] = <factory>, codecs: ~typing.Optional[~torchrec.distributed.types.QuantizedCommCodecs] = None)¶
+class torchrec.distributed.comm_ops.All2AllVInfo(dims_sum_per_rank: ~typing.List[int], B_global: int, B_local: int, B_local_list: ~typing.List[int], D_local_list: ~typing.List[int], input_split_sizes: ~typing.List[int] = <factory>, output_split_sizes: ~typing.List[int] = <factory>, codecs: ~typing.Optional[~torchrec.distributed.types.QuantizedCommCodecs] = None)
 ```
 
 基类：`object`
@@ -329,7 +329,7 @@ class torchrec.distributed.comm_ops.All2AllVInfo(dims_sum_per_rank: ~typing.List
 调用 alltoallv 操作时收集属性的数据类。
 
 ```py
-dim_sum_per_rank¶
+dim_sum_per_rank
 ```
 
 每个排名中嵌入的特征数量（维度之和）。
@@ -339,7 +339,7 @@ dim_sum_per_rank¶
 List[int]
 
 ```py
-B_global¶
+B_global
 ```
 
 每个排名的全局批量大小。
@@ -349,7 +349,7 @@ B_global¶
 int
 
 ```py
-B_local¶
+B_local
 ```
 
 分散之前的本地批量大小。 
@@ -359,7 +359,7 @@ B_local¶
 int
 
 ```py
-B_local_list¶
+B_local_list
 ```
 
 (List[int])：每个嵌入表在我的当前排名中的本地批量大小。
@@ -369,7 +369,7 @@ B_local_list¶
 List[int]
 
 ```py
-D_local_list¶
+D_local_list
 ```
 
 每个嵌入表的嵌入维度（在我的当前排名中）。
@@ -379,7 +379,7 @@ D_local_list¶
 List[int]
 
 ```py
-input_split_sizes¶
+input_split_sizes
 ```
 
 每个排名的输入分割大小，这记住了在执行 all_to_all_single 操作时如何分割输入。
@@ -389,7 +389,7 @@ input_split_sizes¶
 List[int]
 
 ```py
-output_split_sizes¶
+output_split_sizes
 ```
 
 每个排名的输出分割大小，这记住了在执行 all_to_all_single 操作时如何填充输出。
@@ -399,45 +399,45 @@ output_split_sizes¶
 List[int]
 
 ```py
-B_global: int¶
+B_global: int
 ```
 
 ```py
-B_local: int¶
+B_local: int
 ```
 
 ```py
-B_local_list: List[int]¶
+B_local_list: List[int]
 ```
 
 ```py
-D_local_list: List[int]¶
+D_local_list: List[int]
 ```
 
 ```py
-codecs: Optional[QuantizedCommCodecs] = None¶
+codecs: Optional[QuantizedCommCodecs] = None
 ```
 
 ```py
-dims_sum_per_rank: List[int]¶
+dims_sum_per_rank: List[int]
 ```
 
 ```py
-input_split_sizes: List[int]¶
+input_split_sizes: List[int]
 ```
 
 ```py
-output_split_sizes: List[int]¶
+output_split_sizes: List[int]
 ```
 
 ```py
-class torchrec.distributed.comm_ops.All2All_Pooled_Req(*args, **kwargs)¶
+class torchrec.distributed.comm_ops.All2All_Pooled_Req(*args, **kwargs)
 ```
 
 基类：`Function`
 
 ```py
-static backward(ctx, *unused) → Tuple[None, None, None, Tensor]¶
+static backward(ctx, *unused) → Tuple[None, None, None, Tensor]
 ```
 
 定义使用反向模式自动微分区分操作的公式。
@@ -449,7 +449,7 @@ static backward(ctx, *unused) → Tuple[None, None, None, Tensor]¶
 上下文可用于检索在前向传递期间保存的张量。它还有一个属性`ctx.needs_input_grad`，是一个布尔值元组，表示每个输入是否需要梯度。例如，`backward()`将在第一个输入需要计算相对于输出的梯度时具有`ctx.needs_input_grad[0] = True`。
 
 ```py
-static forward(ctx, pg: ProcessGroup, myreq: Request[Tensor], a2ai: All2AllPooledInfo, input_embeddings: Tensor) → Tensor¶
+static forward(ctx, pg: ProcessGroup, myreq: Request[Tensor], a2ai: All2AllPooledInfo, input_embeddings: Tensor) → Tensor
 ```
 
 定义自定义自动求导函数的前向。
@@ -489,13 +489,13 @@ def setup_context(ctx: Any, inputs: Tuple[Any, ...], output: Any) -> None:
 上下文可用于存储在反向传递期间可以检索的任意数据。张量不应直接存储在 ctx 上（尽管出于向后兼容性目的目前未强制执行）。相反，如果打算在`backward`中使用它们（等效地，`vjp`），则应使用`ctx.save_for_backward()`保存张量，或者如果打算在`jvp`中使用它们，则应使用`ctx.save_for_forward()`保存张量。
 
 ```py
-class torchrec.distributed.comm_ops.All2All_Pooled_Wait(*args, **kwargs)¶
+class torchrec.distributed.comm_ops.All2All_Pooled_Wait(*args, **kwargs)
 ```
 
 基类：`Function`
 
 ```py
-static backward(ctx, grad_output: Tensor) → Tuple[None, None, Tensor]¶
+static backward(ctx, grad_output: Tensor) → Tuple[None, None, Tensor]
 ```
 
 定义使用反向模式自动微分区分操作的公式。
@@ -507,7 +507,7 @@ static backward(ctx, grad_output: Tensor) → Tuple[None, None, Tensor]¶
 上下文可以用来检索在前向传递期间保存的张量。它还有一个属性 `ctx.needs_input_grad`，是一个布尔值元组，表示每个输入是否需要梯度。例如，如果 `forward()` 的第一个输入需要计算相对于输出的梯度，则 `backward()` 将具有 `ctx.needs_input_grad[0] = True`。
 
 ```py
-static forward(ctx, pg: ProcessGroup, myreq: Request[Tensor], *dummy_tensor: Tensor) → Tensor¶
+static forward(ctx, pg: ProcessGroup, myreq: Request[Tensor], *dummy_tensor: Tensor) → Tensor
 ```
 
 定义自定义 autograd 函数的前向。
@@ -547,13 +547,13 @@ def setup_context(ctx: Any, inputs: Tuple[Any, ...], output: Any) -> None:
 上下文可以用来存储任意数据，然后在反向传播期间检索。张量不应直接存储在 ctx 上（尽管为了向后兼容性，目前没有强制执行）。相反，如果打算在 `backward` 中使用张量，则应使用 `ctx.save_for_backward()` 保存它们（等效地，`vjp`），或者如果打算在 `jvp` 中使用，则应使用 `ctx.save_for_forward()` 保存它们。
 
 ```py
-class torchrec.distributed.comm_ops.All2All_Seq_Req(*args, **kwargs)¶
+class torchrec.distributed.comm_ops.All2All_Seq_Req(*args, **kwargs)
 ```
 
 基类：`Function`
 
 ```py
-static backward(ctx, *unused) → Tuple[None, None, None, Tensor]¶
+static backward(ctx, *unused) → Tuple[None, None, None, Tensor]
 ```
 
 定义一个用于反向模式自动微分的操作的公式。
@@ -565,7 +565,7 @@ static backward(ctx, *unused) → Tuple[None, None, None, Tensor]¶
 上下文可以用来检索在前向传递期间保存的张量。它还有一个属性 `ctx.needs_input_grad`，是一个布尔值元组，表示每个输入是否需要梯度。例如，如果 `forward()` 的第一个输入需要计算相对于输出的梯度，则 `backward()` 将具有 `ctx.needs_input_grad[0] = True`。
 
 ```py
-static forward(ctx, pg: ProcessGroup, myreq: Request[Tensor], a2ai: All2AllSequenceInfo, sharded_input_embeddings: Tensor) → Tensor¶
+static forward(ctx, pg: ProcessGroup, myreq: Request[Tensor], a2ai: All2AllSequenceInfo, sharded_input_embeddings: Tensor) → Tensor
 ```
 
 定义自定义自动微分函数的前向。
@@ -605,13 +605,13 @@ def setup_context(ctx: Any, inputs: Tuple[Any, ...], output: Any) -> None:
 上下文可用于存储在反向传递期间可以检索的任意数据。张量不应直接存储在 ctx 上（尽管目前为了向后兼容性而没有强制执行）。相反，如果打算在`backward`（等效于`vjp`）中使用它们，则应使用`ctx.save_for_backward()`保存张量，如果打算在`jvp`中使用它们，则应使用`ctx.save_for_forward()`保存张量。
 
 ```py
-class torchrec.distributed.comm_ops.All2All_Seq_Req_Wait(*args, **kwargs)¶
+class torchrec.distributed.comm_ops.All2All_Seq_Req_Wait(*args, **kwargs)
 ```
 
 基类：`Function`
 
 ```py
-static backward(ctx, sharded_grad_output: Tensor) → Tuple[None, None, Tensor]¶
+static backward(ctx, sharded_grad_output: Tensor) → Tuple[None, None, Tensor]
 ```
 
 定义一个公式，用于对反向模式自动微分的操作进行微分。
@@ -623,7 +623,7 @@ static backward(ctx, sharded_grad_output: Tensor) → Tuple[None, None, Tensor]�
 上下文可用于检索在前向传递期间保存的张量。它还具有属性`ctx.needs_input_grad`，作为一个布尔值元组，表示每个输入是否需要梯度。例如，如果`forward()`的第一个输入需要计算相对于输出的梯度，则`backward()`将具有`ctx.needs_input_grad[0] = True`。
 
 ```py
-static forward(ctx, pg: ProcessGroup, myreq: Request[Tensor], *dummy_tensor: Tensor) → Tensor¶
+static forward(ctx, pg: ProcessGroup, myreq: Request[Tensor], *dummy_tensor: Tensor) → Tensor
 ```
 
 定义自定义自动微分函数的前向。
@@ -663,13 +663,13 @@ def setup_context(ctx: Any, inputs: Tuple[Any, ...], output: Any) -> None:
 上下文可用于存储在反向传递期间可以检索的任意数据。张量不应直接存储在 ctx 上（尽管目前为了向后兼容性而没有强制执行）。相反，如果打算在`backward`（等效于`vjp`）中使用它们，则应使用`ctx.save_for_backward()`保存张量，如果打算在`jvp`中使用它们，则应使用`ctx.save_for_forward()`保存张量。
 
 ```py
-class torchrec.distributed.comm_ops.All2Allv_Req(*args, **kwargs)¶
+class torchrec.distributed.comm_ops.All2Allv_Req(*args, **kwargs)
 ```
 
 基类：`Function`
 
 ```py
-static backward(ctx, *grad_output)¶
+static backward(ctx, *grad_output)
 ```
 
 定义一个公式，用于对反向模式自动微分的操作进行微分。
@@ -681,7 +681,7 @@ static backward(ctx, *grad_output)¶
 上下文可用于检索在前向传递期间保存的张量。它还具有属性`ctx.needs_input_grad`，作为布尔值元组，表示每个输入是否需要梯度。例如，如果`forward()`的第一个输入需要计算相对于输出的梯度，则`backward()`将具有`ctx.needs_input_grad[0] = True`。
 
 ```py
-static forward(ctx, pg: ProcessGroup, myreq: Request[Tensor], a2ai: All2AllVInfo, inputs: List[Tensor]) → Tensor¶
+static forward(ctx, pg: ProcessGroup, myreq: Request[Tensor], a2ai: All2AllVInfo, inputs: List[Tensor]) → Tensor
 ```
 
 定义自定义 autograd 函数的前向。
@@ -721,13 +721,13 @@ def setup_context(ctx: Any, inputs: Tuple[Any, ...], output: Any) -> None:
 上下文可用于存储在反向传递期间可以检索的任意数据。张量不应直接存储在 ctx 上（尽管出于向后兼容性目的目前未强制执行）。相反，如果打算在`backward`（等效于`vjp`）中使用它们，则应使用`ctx.save_for_backward()`保存张量，如果打算在`jvp`中使用它们，则应使用`ctx.save_for_forward()`保存张量。
 
 ```py
-class torchrec.distributed.comm_ops.All2Allv_Wait(*args, **kwargs)¶
+class torchrec.distributed.comm_ops.All2Allv_Wait(*args, **kwargs)
 ```
 
 基类：`Function`
 
 ```py
-static backward(ctx, *grad_outputs) → Tuple[None, None, Tensor]¶
+static backward(ctx, *grad_outputs) → Tuple[None, None, Tensor]
 ```
 
 定义使用反向模式自动微分的操作的微分公式。
@@ -739,7 +739,7 @@ static backward(ctx, *grad_outputs) → Tuple[None, None, Tensor]¶
 上下文可用于检索在前向传递期间保存的张量。它还具有属性 `ctx.needs_input_grad`，作为表示每个输入是否需要梯度的布尔值元组。例如，如果 `forward()` 的第一个输入需要计算相对于输出的梯度，则 `backward()` 将具有 `ctx.needs_input_grad[0] = True`。
 
 ```py
-static forward(ctx, pg: ProcessGroup, myreq: Request[Tensor], *dummy_tensor: Tensor) → Tuple[Tensor]¶
+static forward(ctx, pg: ProcessGroup, myreq: Request[Tensor], *dummy_tensor: Tensor) → Tuple[Tensor]
 ```
 
 定义自定义 autograd 函数的前向传播。
@@ -779,7 +779,7 @@ def setup_context(ctx: Any, inputs: Tuple[Any, ...], output: Any) -> None:
 上下文可用于存储在反向传递期间可以检索的任意数据。张量不应直接存储在 ctx 上（尽管目前为了向后兼容性而未强制执行）。相反，如果打算在 `backward` 中使用，则应使用 `ctx.save_for_backward()` 保存张量（等效地，`vjp`），或者如果打算在 `jvp` 中使用，则应使用 `ctx.save_for_forward()` 保存张量。
 
 ```py
-class torchrec.distributed.comm_ops.AllGatherBaseInfo(input_size: Size, codecs: Optional[QuantizedCommCodecs] = None)¶
+class torchrec.distributed.comm_ops.AllGatherBaseInfo(input_size: Size, codecs: Optional[QuantizedCommCodecs] = None)
 ```
 
 基类：`object`
@@ -787,7 +787,7 @@ class torchrec.distributed.comm_ops.AllGatherBaseInfo(input_size: Size, codecs: 
 在调用 all_gatther_base_pooled 操作时收集属性的数据类。
 
 ```py
-input_size¶
+input_size
 ```
 
 输入张量的大小。
@@ -797,21 +797,21 @@ input_size¶
 整数
 
 ```py
-codecs: Optional[QuantizedCommCodecs] = None¶
+codecs: Optional[QuantizedCommCodecs] = None
 ```
 
 ```py
-input_size: Size¶
+input_size: Size
 ```
 
 ```py
-class torchrec.distributed.comm_ops.AllGatherBase_Req(*args, **kwargs)¶
+class torchrec.distributed.comm_ops.AllGatherBase_Req(*args, **kwargs)
 ```
 
 基类：`Function`
 
 ```py
-static backward(ctx, *unused: Tensor) → Tuple[Optional[Tensor], ...]¶
+static backward(ctx, *unused: Tensor) → Tuple[Optional[Tensor], ...]
 ```
 
 定义使用反向模式自动微分区分操作的公式。
@@ -823,7 +823,7 @@ static backward(ctx, *unused: Tensor) → Tuple[Optional[Tensor], ...]¶
 上下文可用于检索在前向传递期间保存的张量。它还具有属性 `ctx.needs_input_grad`，作为表示每个输入是否需要梯度的布尔值元组。例如，如果 `backward()` 的第一个输入需要计算相对于输出的梯度，则 `forward()` 将具有 `ctx.needs_input_grad[0] = True`。
 
 ```py
-static forward(ctx, pg: ProcessGroup, myreq: Request[Tensor], agi: AllGatherBaseInfo, input: Tensor) → Tensor¶
+static forward(ctx, pg: ProcessGroup, myreq: Request[Tensor], agi: AllGatherBaseInfo, input: Tensor) → Tensor
 ```
 
 定义自定义 autograd 函数的前向传播。
@@ -863,13 +863,13 @@ def setup_context(ctx: Any, inputs: Tuple[Any, ...], output: Any) -> None:
 上下文可用于存储在反向传播期间可以检索的任意数据。不应直接在 ctx 上存储张量（尽管目前为了向后兼容性而未强制执行）。相反，如果打算在`backward`（等效于`vjp`）中使用张量，则应使用`ctx.save_for_backward()`保存张量，如果打算在`jvp`中使用张量，则应使用`ctx.save_for_forward()`保存张量。
 
 ```py
-class torchrec.distributed.comm_ops.AllGatherBase_Wait(*args, **kwargs)¶
+class torchrec.distributed.comm_ops.AllGatherBase_Wait(*args, **kwargs)
 ```
 
 基类：`Function`
 
 ```py
-static backward(ctx, grad_outputs: Tensor) → Tuple[None, None, Tensor]¶
+static backward(ctx, grad_outputs: Tensor) → Tuple[None, None, Tensor]
 ```
 
 为使用后向模式自动微分区分操作定义一个公式。
@@ -881,7 +881,7 @@ static backward(ctx, grad_outputs: Tensor) → Tuple[None, None, Tensor]¶
 上下文可用于检索在前向传递期间保存的张量。它还具有一个属性`ctx.needs_input_grad`，作为布尔值元组，表示每个输入是否需要梯度。例如，如果`forward()`的第一个输入需要计算相对于输出的梯度，则`backward()`将具有`ctx.needs_input_grad[0] = True`。
 
 ```py
-static forward(ctx, pg: ProcessGroup, myreq: Request[Tensor], *dummy_tensor: Tensor) → Tensor¶
+static forward(ctx, pg: ProcessGroup, myreq: Request[Tensor], *dummy_tensor: Tensor) → Tensor
 ```
 
 定义自定义 autograd 函数的前向。
@@ -921,7 +921,7 @@ def setup_context(ctx: Any, inputs: Tuple[Any, ...], output: Any) -> None:
 上下文可用于存储在反向传播期间可以检索的任意数据。不应直接在 ctx 上存储张量（尽管目前为了向后兼容性而未强制执行）。相反，如果打算在`backward`（等效于`vjp`）中使用张量，则应使用`ctx.save_for_backward()`保存张量，如果打算在`jvp`中使用张量，则应使用`ctx.save_for_forward()`保存张量。
 
 ```py
-class torchrec.distributed.comm_ops.ReduceScatterBaseInfo(input_sizes: Size, codecs: Optional[QuantizedCommCodecs] = None)¶
+class torchrec.distributed.comm_ops.ReduceScatterBaseInfo(input_sizes: Size, codecs: Optional[QuantizedCommCodecs] = None)
 ```
 
 基类：`object`
@@ -929,7 +929,7 @@ class torchrec.distributed.comm_ops.ReduceScatterBaseInfo(input_sizes: Size, cod
 在调用 reduce_scatter_base_pooled 操作时收集属性的数据类。
 
 ```py
-input_sizes¶
+input_sizes
 ```
 
 输入展平张量的大小。
@@ -939,21 +939,21 @@ input_sizes¶
 torch.Size
 
 ```py
-codecs: Optional[QuantizedCommCodecs] = None¶
+codecs: Optional[QuantizedCommCodecs] = None
 ```
 
 ```py
-input_sizes: Size¶
+input_sizes: Size
 ```
 
 ```py
-class torchrec.distributed.comm_ops.ReduceScatterBase_Req(*args, **kwargs)¶
+class torchrec.distributed.comm_ops.ReduceScatterBase_Req(*args, **kwargs)
 ```
 
 基类：`Function`
 
 ```py
-static backward(ctx, *unused: Tensor) → Tuple[Optional[Tensor], ...]¶
+static backward(ctx, *unused: Tensor) → Tuple[Optional[Tensor], ...]
 ```
 
 为使用后向模式自动微分区分操作定义一个公式。
@@ -965,7 +965,7 @@ static backward(ctx, *unused: Tensor) → Tuple[Optional[Tensor], ...]¶
 上下文可以用来检索在前向传递期间保存的张量。它还有一个属性`ctx.needs_input_grad`，是一个布尔值元组，表示每个输入是否需要梯度。例如，如果`forward()`的第一个输入需要计算相对于输出的梯度，则`backward()`将具有`ctx.needs_input_grad[0] = True`。
 
 ```py
-static forward(ctx, pg: ProcessGroup, myreq: Request[Tensor], rsi: ReduceScatterBaseInfo, inputs: Tensor) → Tensor¶
+static forward(ctx, pg: ProcessGroup, myreq: Request[Tensor], rsi: ReduceScatterBaseInfo, inputs: Tensor) → Tensor
 ```
 
 定义自定义自动微分函数的前向。
@@ -1005,13 +1005,13 @@ def setup_context(ctx: Any, inputs: Tuple[Any, ...], output: Any) -> None:
 上下文可以用来存储在反向传递期间可以检索的任意数据。张量不应直接存储在 ctx 上（尽管为了向后兼容性，目前没有强制执行）。相反，如果打算在`backward`中使用它们，则应使用`ctx.save_for_backward()`保存张量（等效地，`vjp`），或者如果打算在`jvp`中使用它们，则应使用`ctx.save_for_forward()`保存张量。
 
 ```py
-class torchrec.distributed.comm_ops.ReduceScatterBase_Wait(*args, **kwargs)¶
+class torchrec.distributed.comm_ops.ReduceScatterBase_Wait(*args, **kwargs)
 ```
 
 基类：`Function`
 
 ```py
-static backward(ctx, grad_output: Tensor) → Tuple[None, None, Tensor]¶
+static backward(ctx, grad_output: Tensor) → Tuple[None, None, Tensor]
 ```
 
 为使用反向模式自动微分区分操作定义一个公式。
@@ -1023,7 +1023,7 @@ static backward(ctx, grad_output: Tensor) → Tuple[None, None, Tensor]¶
 上下文可用于检索在前向传递期间保存的张量。它还具有属性`ctx.needs_input_grad`，作为表示每个输入是否需要梯度的布尔值元组。例如，如果`forward()`的第一个输入需要计算相对于输出的梯度，则`backward()`将具有`ctx.needs_input_grad[0] = True`。
 
 ```py
-static forward(ctx, pg: ProcessGroup, myreq: Request[Tensor], *dummy_Tensor: Tensor) → Tensor¶
+static forward(ctx, pg: ProcessGroup, myreq: Request[Tensor], *dummy_Tensor: Tensor) → Tensor
 ```
 
 定义自定义 autograd Function 的前向。
@@ -1063,7 +1063,7 @@ def setup_context(ctx: Any, inputs: Tuple[Any, ...], output: Any) -> None:
 上下文可用于存储在反向传播期间可以检索的任意数据。张量不应直接存储在 ctx 上（尽管出于向后兼容性目的目前尚未强制执行）。相反，如果打算在`backward`（等效地，`vjp`）中使用它们，则应使用`ctx.save_for_backward()`保存张量，或者如果打算在`jvp`中使用它们，则应使用`ctx.save_for_forward()`保存张量。
 
 ```py
-class torchrec.distributed.comm_ops.ReduceScatterInfo(input_sizes: List[Size], codecs: Optional[QuantizedCommCodecs] = None)¶
+class torchrec.distributed.comm_ops.ReduceScatterInfo(input_sizes: List[Size], codecs: Optional[QuantizedCommCodecs] = None)
 ```
 
 基类：`object`
@@ -1071,7 +1071,7 @@ class torchrec.distributed.comm_ops.ReduceScatterInfo(input_sizes: List[Size], c
 在调用 reduce_scatter_pooled 操作时收集属性的数据类。
 
 ```py
-input_sizes¶
+input_sizes
 ```
 
 输入张量的大小。这会在运行反向传播并产生梯度时记住输入张量的大小。
@@ -1081,15 +1081,15 @@ input_sizes¶
 列表[torch.Size]
 
 ```py
-codecs: Optional[QuantizedCommCodecs] = None¶
+codecs: Optional[QuantizedCommCodecs] = None
 ```
 
 ```py
-input_sizes: List[Size]¶
+input_sizes: List[Size]
 ```
 
 ```py
-class torchrec.distributed.comm_ops.ReduceScatterVInfo(input_sizes: List[Size], input_splits: List[int], equal_splits: bool, total_input_size: List[int], codecs: Optional[QuantizedCommCodecs])¶
+class torchrec.distributed.comm_ops.ReduceScatterVInfo(input_sizes: List[Size], input_splits: List[int], equal_splits: bool, total_input_size: List[int], codecs: Optional[QuantizedCommCodecs])
 ```
 
 基类：`object`
@@ -1097,7 +1097,7 @@ class torchrec.distributed.comm_ops.ReduceScatterVInfo(input_sizes: List[Size], 
 在调用 reduce_scatter_v_pooled 操作时收集属性的数据类。
 
 ```py
-input_sizes¶
+input_sizes
 ```
 
 输入张量的大小。这会在运行反向传播并产生梯度时保存输入张量的大小。
@@ -1107,7 +1107,7 @@ input_sizes¶
 列表[torch.Size]
 
 ```py
-input_splits¶
+input_splits
 ```
 
 输入张量沿 dim 0 的拆分。
@@ -1117,7 +1117,7 @@ input_splits¶
 列表[int]
 
 ```py
-total_input_size¶
+total_input_size
 ```
 
 （列表[int]）：总输入大小。
@@ -1127,33 +1127,33 @@ total_input_size¶
 列表[int]
 
 ```py
-codecs: Optional[QuantizedCommCodecs]¶
+codecs: Optional[QuantizedCommCodecs]
 ```
 
 ```py
-equal_splits: bool¶
+equal_splits: bool
 ```
 
 ```py
-input_sizes: List[Size]¶
+input_sizes: List[Size]
 ```
 
 ```py
-input_splits: List[int]¶
+input_splits: List[int]
 ```
 
 ```py
-total_input_size: List[int]¶
+total_input_size: List[int]
 ```
 
 ```py
-class torchrec.distributed.comm_ops.ReduceScatterV_Req(*args, **kwargs)¶
+class torchrec.distributed.comm_ops.ReduceScatterV_Req(*args, **kwargs)
 ```
 
 基类：`Function`
 
 ```py
-static backward(ctx, *unused: Tensor) → Tuple[Optional[Tensor], ...]¶
+static backward(ctx, *unused: Tensor) → Tuple[Optional[Tensor], ...]
 ```
 
 定义使用反向模式自动微分区分操作的公式。
@@ -1165,7 +1165,7 @@ static backward(ctx, *unused: Tensor) → Tuple[Optional[Tensor], ...]¶
 上下文可用于检索在前向传递期间保存的张量。它还具有属性`ctx.needs_input_grad`，作为表示每个输入是否需要梯度的布尔值元组。例如，如果`forward()`的第一个输入需要计算相对于输出的梯度，则`backward()`将具有`ctx.needs_input_grad[0] = True`。
 
 ```py
-static forward(ctx, pg: ProcessGroup, myreq: Request[Tensor], rsi: ReduceScatterVInfo, input: Tensor) → Tensor¶
+static forward(ctx, pg: ProcessGroup, myreq: Request[Tensor], rsi: ReduceScatterVInfo, input: Tensor) → Tensor
 ```
 
 定义自定义 autograd Function 的前向。
@@ -1205,13 +1205,13 @@ def setup_context(ctx: Any, inputs: Tuple[Any, ...], output: Any) -> None:
 上下文可以用来存储任意数据，然后在反向传播期间检索这些数据。张量不应直接存储在 ctx 上（尽管目前为了向后兼容性而没有强制执行）。相反，如果打算在`backward`（或等效的`vjp`）中使用张量，则应使用`ctx.save_for_backward()`保存张量，如果打算在`jvp`中使用张量，则应使用`ctx.save_for_forward()`保存张量。
 
 ```py
-class torchrec.distributed.comm_ops.ReduceScatterV_Wait(*args, **kwargs)¶
+class torchrec.distributed.comm_ops.ReduceScatterV_Wait(*args, **kwargs)
 ```
 
 基类：`Function`
 
 ```py
-static backward(ctx, grad_output: Tensor) → Tuple[None, None, Tensor]¶
+static backward(ctx, grad_output: Tensor) → Tuple[None, None, Tensor]
 ```
 
 为使用反向模式自动微分定义一个操作的求导公式。
@@ -1223,7 +1223,7 @@ static backward(ctx, grad_output: Tensor) → Tuple[None, None, Tensor]¶
 上下文可用于检索在前向传递期间保存的张量。它还有一个属性`ctx.needs_input_grad`，作为布尔值元组，表示每个输入是否需要梯度。例如，如果`forward()`的第一个输入需要计算相对于输出的梯度，则`ctx.needs_input_grad[0] = True`。
 
 ```py
-static forward(ctx, pg: ProcessGroup, myreq: Request[Tensor], *dummy_tensor: Tensor) → Tensor¶
+static forward(ctx, pg: ProcessGroup, myreq: Request[Tensor], *dummy_tensor: Tensor) → Tensor
 ```
 
 定义自定义 autograd 函数的前向。
@@ -1263,13 +1263,13 @@ def setup_context(ctx: Any, inputs: Tuple[Any, ...], output: Any) -> None:
 上下文可以用来存储任意数据，然后在反向传播期间检索这些数据。张量不应直接存储在 ctx 上（尽管目前为了向后兼容性而没有强制执行）。相反，如果打算在`backward`（或等效的`vjp`）中使用张量，则应使用`ctx.save_for_backward()`保存张量，如果打算在`jvp`中使用张量，则应使用`ctx.save_for_forward()`保存张量。
 
 ```py
-class torchrec.distributed.comm_ops.ReduceScatter_Req(*args, **kwargs)¶
+class torchrec.distributed.comm_ops.ReduceScatter_Req(*args, **kwargs)
 ```
 
 基类：`Function`
 
 ```py
-static backward(ctx, *unused: Tensor) → Tuple[Optional[Tensor], ...]¶
+static backward(ctx, *unused: Tensor) → Tuple[Optional[Tensor], ...]
 ```
 
 为使用反向模式自动微分定义一个操作的求导公式。
@@ -1281,7 +1281,7 @@ static backward(ctx, *unused: Tensor) → Tuple[Optional[Tensor], ...]¶
 上下文可用于检索在前向传播期间保存的张量。它还具有属性`ctx.needs_input_grad`，作为表示每个输入是否需要梯度的布尔值元组。例如，如果`forward()`的第一个输入需要计算相对于输出的梯度，则`backward()`将具有`ctx.needs_input_grad[0] = True`。
 
 ```py
-static forward(ctx, pg: ProcessGroup, myreq: Request[Tensor], rsi: ReduceScatterInfo, *inputs: Any) → Tensor¶
+static forward(ctx, pg: ProcessGroup, myreq: Request[Tensor], rsi: ReduceScatterInfo, *inputs: Any) → Tensor
 ```
 
 定义自定义自动微分函数的前向。
@@ -1321,13 +1321,13 @@ def setup_context(ctx: Any, inputs: Tuple[Any, ...], output: Any) -> None:
 上下文可用于存储在反向传播期间可以检索的任意数据。张量不应直接存储在 ctx 上（尽管目前为了向后兼容性而未强制执行）。相反，如果打算在`backward`中使用它们，则应使用`ctx.save_for_backward()`保存张量，或者如果打算在`jvp`中使用它们，则应使用`ctx.save_for_forward()`保存张量。
 
 ```py
-class torchrec.distributed.comm_ops.ReduceScatter_Wait(*args, **kwargs)¶
+class torchrec.distributed.comm_ops.ReduceScatter_Wait(*args, **kwargs)
 ```
 
 基类：`Function`
 
 ```py
-static backward(ctx, grad_output: Tensor) → Tuple[None, None, Tensor]¶
+static backward(ctx, grad_output: Tensor) → Tuple[None, None, Tensor]
 ```
 
 定义用于使用反向模式自动微分区分操作的公式。
@@ -1339,7 +1339,7 @@ static backward(ctx, grad_output: Tensor) → Tuple[None, None, Tensor]¶
 上下文可用于检索在前向传播期间保存的张量。它还具有属性`ctx.needs_input_grad`，作为表示每个输入是否需要梯度的布尔值元组。例如，如果`forward()`的第一个输入需要计算相对于输出的梯度，则`backward()`将具有`ctx.needs_input_grad[0] = True`。
 
 ```py
-static forward(ctx, pg: ProcessGroup, myreq: Request[Tensor], *dummy_tensor: Tensor) → Tensor¶
+static forward(ctx, pg: ProcessGroup, myreq: Request[Tensor], *dummy_tensor: Tensor) → Tensor
 ```
 
 定义自定义自动微分函数的前向。
@@ -1379,7 +1379,7 @@ def setup_context(ctx: Any, inputs: Tuple[Any, ...], output: Any) -> None:
 上下文可以用来存储任意数据，然后在反向传播期间检索。张量不应直接存储在 ctx 上（尽管为了向后兼容性，目前没有强制执行）。相反，如果打算在`backward`（等效地，`vjp`）中使用它们，则应使用`ctx.save_for_backward()`保存张量，如果打算在`jvp`中使用它们，则应使用`ctx.save_for_forward()`保存张量。
 
 ```py
-class torchrec.distributed.comm_ops.Request(pg: ProcessGroup, device: device)¶
+class torchrec.distributed.comm_ops.Request(pg: ProcessGroup, device: device)
 ```
 
 基类：`Awaitable`[`W`]
@@ -1391,7 +1391,7 @@ class torchrec.distributed.comm_ops.Request(pg: ProcessGroup, device: device)¶
 **pg**（*dist.ProcessGroup*）- 请求所属的进程组。
 
 ```py
-class torchrec.distributed.comm_ops.VariableBatchAll2AllPooledInfo(batch_size_per_rank_per_feature: List[List[int]], batch_size_per_feature_pre_a2a: List[int], emb_dim_per_rank_per_feature: List[List[int]], codecs: Optional[QuantizedCommCodecs] = None, input_splits: Optional[List[int]] = None, output_splits: Optional[List[int]] = None)¶
+class torchrec.distributed.comm_ops.VariableBatchAll2AllPooledInfo(batch_size_per_rank_per_feature: List[List[int]], batch_size_per_feature_pre_a2a: List[int], emb_dim_per_rank_per_feature: List[List[int]], codecs: Optional[QuantizedCommCodecs] = None, input_splits: Optional[List[int]] = None, output_splits: Optional[List[int]] = None)
 ```
 
 基类：`object`
@@ -1399,7 +1399,7 @@ class torchrec.distributed.comm_ops.VariableBatchAll2AllPooledInfo(batch_size_pe
 调用 variable_batch_alltoall_pooled 操作时收集属性的数据类。
 
 ```py
-batch_size_per_rank_per_feature¶
+batch_size_per_rank_per_feature
 ```
 
 每个秩每个特征的批量大小。
@@ -1409,7 +1409,7 @@ batch_size_per_rank_per_feature¶
 List[List[int]]
 
 ```py
-batch_size_per_feature_pre_a2a¶
+batch_size_per_feature_pre_a2a
 ```
 
 散播之前的本地批量大小。
@@ -1419,7 +1419,7 @@ batch_size_per_feature_pre_a2a¶
 List[int]
 
 ```py
-emb_dim_per_rank_per_feature¶
+emb_dim_per_rank_per_feature
 ```
 
 每个秩每个特征的嵌入维度
@@ -1429,7 +1429,7 @@ emb_dim_per_rank_per_feature¶
 List[List[int]]
 
 ```py
-codecs¶
+codecs
 ```
 
 量化通信编解码器。
@@ -1439,7 +1439,7 @@ codecs¶
 可选[QuantizedCommCodecs]
 
 ```py
-input_splits¶
+input_splits
 ```
 
 张量的所有输入拆分到所有。
@@ -1449,7 +1449,7 @@ input_splits¶
 可选[List[int]]
 
 ```py
-output_splits¶
+output_splits
 ```
 
 张量的所有输出拆分到所有。
@@ -1459,37 +1459,37 @@ output_splits¶
 可选[List[int]]
 
 ```py
-batch_size_per_feature_pre_a2a: List[int]¶
+batch_size_per_feature_pre_a2a: List[int]
 ```
 
 ```py
-batch_size_per_rank_per_feature: List[List[int]]¶
+batch_size_per_rank_per_feature: List[List[int]]
 ```
 
 ```py
-codecs: Optional[QuantizedCommCodecs] = None¶
+codecs: Optional[QuantizedCommCodecs] = None
 ```
 
 ```py
-emb_dim_per_rank_per_feature: List[List[int]]¶
+emb_dim_per_rank_per_feature: List[List[int]]
 ```
 
 ```py
-input_splits: Optional[List[int]] = None¶
+input_splits: Optional[List[int]] = None
 ```
 
 ```py
-output_splits: Optional[List[int]] = None¶
+output_splits: Optional[List[int]] = None
 ```
 
 ```py
-class torchrec.distributed.comm_ops.Variable_Batch_All2All_Pooled_Req(*args, **kwargs)¶
+class torchrec.distributed.comm_ops.Variable_Batch_All2All_Pooled_Req(*args, **kwargs)
 ```
 
 基类：`Function`
 
 ```py
-static backward(ctx, *unused) → Tuple[None, None, None, Tensor]¶
+static backward(ctx, *unused) → Tuple[None, None, None, Tensor]
 ```
 
 定义使用反向模式自动微分区分操作的公式。
@@ -1501,7 +1501,7 @@ static backward(ctx, *unused) → Tuple[None, None, None, Tensor]¶
 上下文可以用来检索在前向传递期间保存的张量。它还具有属性`ctx.needs_input_grad`，表示每个输入是否需要梯度的布尔值元组。例如，如果第一个输入需要计算相对于输出的梯度，则`backward()`将具有`ctx.needs_input_grad[0] = True`。
 
 ```py
-static forward(ctx, pg: ProcessGroup, myreq: Request[Tensor], a2ai: VariableBatchAll2AllPooledInfo, input_embeddings: Tensor) → Tensor¶
+static forward(ctx, pg: ProcessGroup, myreq: Request[Tensor], a2ai: VariableBatchAll2AllPooledInfo, input_embeddings: Tensor) → Tensor
 ```
 
 定义自定义自动微分函数的前向。
@@ -1541,13 +1541,13 @@ def setup_context(ctx: Any, inputs: Tuple[Any, ...], output: Any) -> None:
 上下文可用于存储任意数据，然后在反向传递期间检索。张量不应直接存储在 ctx 上（尽管目前为了向后兼容性而未强制执行）。相反，如果打算在`backward`（等效于`vjp`）中使用它们，则应使用`ctx.save_for_backward()`保存张量，如果打算在`jvp`中使用它们，则应使用`ctx.save_for_forward()`保存张量。
 
 ```py
-class torchrec.distributed.comm_ops.Variable_Batch_All2All_Pooled_Wait(*args, **kwargs)¶
+class torchrec.distributed.comm_ops.Variable_Batch_All2All_Pooled_Wait(*args, **kwargs)
 ```
 
 基类：`Function`
 
 ```py
-static backward(ctx, grad_output: Tensor) → Tuple[None, None, Tensor]¶
+static backward(ctx, grad_output: Tensor) → Tuple[None, None, Tensor]
 ```
 
 定义使用反向模式自动微分区分操作的公式。
@@ -1559,7 +1559,7 @@ static backward(ctx, grad_output: Tensor) → Tuple[None, None, Tensor]¶
 上下文可用于检索在前向传递期间保存的张量。它还具有一个属性`ctx.needs_input_grad`，作为表示每个输入是否需要梯度的布尔值元组。例如，如果`forward()`的第一个输入需要计算相对于输出的梯度，则`backward()`将具有`ctx.needs_input_grad[0] = True`。
 
 ```py
-static forward(ctx, pg: ProcessGroup, myreq: Request[Tensor], *dummy_tensor: Tensor) → Tensor¶
+static forward(ctx, pg: ProcessGroup, myreq: Request[Tensor], *dummy_tensor: Tensor) → Tensor
 ```
 
 定义自定义自动微分函数的前向传递。
@@ -1599,7 +1599,7 @@ def setup_context(ctx: Any, inputs: Tuple[Any, ...], output: Any) -> None:
 上下文可用于存储任意数据，然后在反向传递期间检索。张量不应直接存储在 ctx 上（尽管目前为了向后兼容性而未强制执行）。相反，如果打算在`backward`（等效于`vjp`）中使用它们，则应使用`ctx.save_for_backward()`保存张量，如果打算在`jvp`中使用它们，则应使用`ctx.save_for_forward()`保存张量。
 
 ```py
-torchrec.distributed.comm_ops.all_gather_base_pooled(input: Tensor, group: Optional[ProcessGroup] = None, codecs: Optional[QuantizedCommCodecs] = None) → Awaitable[Tensor]¶
+torchrec.distributed.comm_ops.all_gather_base_pooled(input: Tensor, group: Optional[ProcessGroup] = None, codecs: Optional[QuantizedCommCodecs] = None) → Awaitable[Tensor]
 ```
 
 从组中的所有进程中聚集张量以形成扁平化的汇总嵌入张量。输入张量的大小为 output_tensor_size / world_size。
@@ -1623,7 +1623,7 @@ Awaitable[Tensor]
 all_gather_base_pooled 是实验性的，可能会发生变化。
 
 ```py
-torchrec.distributed.comm_ops.alltoall_pooled(a2a_pooled_embs_tensor: Tensor, batch_size_per_rank: List[int], dim_sum_per_rank: List[int], dim_sum_per_rank_tensor: Optional[Tensor] = None, cumsum_dim_sum_per_rank_tensor: Optional[Tensor] = None, group: Optional[ProcessGroup] = None, codecs: Optional[QuantizedCommCodecs] = None) → Awaitable[Tensor]¶
+torchrec.distributed.comm_ops.alltoall_pooled(a2a_pooled_embs_tensor: Tensor, batch_size_per_rank: List[int], dim_sum_per_rank: List[int], dim_sum_per_rank_tensor: Optional[Tensor] = None, cumsum_dim_sum_per_rank_tensor: Optional[Tensor] = None, group: Optional[ProcessGroup] = None, codecs: Optional[QuantizedCommCodecs] = None) → Awaitable[Tensor]
 ```
 
 对单个池化嵌入张量执行 AlltoAll 操作。每个进程根据世界大小拆分输入池化嵌入张量，然后将拆分列表分发给组中的所有进程。然后将来自组中所有进程的接收张量连接起来并返回单个输出张量。
@@ -1657,7 +1657,7 @@ Awaitable[Tensor]
 alltoall_pooled 是实验性的，可能会发生变化。
 
 ```py
-torchrec.distributed.comm_ops.alltoall_sequence(a2a_sequence_embs_tensor: Tensor, forward_recat_tensor: Tensor, backward_recat_tensor: Tensor, lengths_after_sparse_data_all2all: Tensor, input_splits: List[int], output_splits: List[int], variable_batch_size: bool = False, group: Optional[ProcessGroup] = None, codecs: Optional[QuantizedCommCodecs] = None) → Awaitable[Tensor]¶
+torchrec.distributed.comm_ops.alltoall_sequence(a2a_sequence_embs_tensor: Tensor, forward_recat_tensor: Tensor, backward_recat_tensor: Tensor, lengths_after_sparse_data_all2all: Tensor, input_splits: List[int], output_splits: List[int], variable_batch_size: bool = False, group: Optional[ProcessGroup] = None, codecs: Optional[QuantizedCommCodecs] = None) → Awaitable[Tensor]
 ```
 
 对序列嵌入执行 AlltoAll 操作。每个进程根据世界大小拆分输入张量，然后将拆分列表分发给组中的所有进程。然后将来自组中所有进程的接收张量连接起来并返回单个输出张量。
@@ -1699,7 +1699,7 @@ Awaitable[List[Tensor]]
 alltoall_sequence 是实验性的，可能会发生变化。
 
 ```py
-torchrec.distributed.comm_ops.alltoallv(inputs: List[Tensor], out_split: Optional[List[int]] = None, per_rank_split_lengths: Optional[List[int]] = None, group: Optional[ProcessGroup] = None, codecs: Optional[QuantizedCommCodecs] = None) → Awaitable[List[Tensor]]¶
+torchrec.distributed.comm_ops.alltoallv(inputs: List[Tensor], out_split: Optional[List[int]] = None, per_rank_split_lengths: Optional[List[int]] = None, group: Optional[ProcessGroup] = None, codecs: Optional[QuantizedCommCodecs] = None) → Awaitable[List[Tensor]]
 ```
 
 对一组输入嵌入执行 alltoallv 操作。每个进程将列表分发给组中的所有进程。
@@ -1729,11 +1729,11 @@ Awaitable[List[Tensor]]
 alltoallv 是实验性的，可能会发生变化。
 
 ```py
-torchrec.distributed.comm_ops.get_gradient_division() → bool¶
+torchrec.distributed.comm_ops.get_gradient_division() → bool
 ```
 
 ```py
-torchrec.distributed.comm_ops.reduce_scatter_base_pooled(input: Tensor, group: Optional[ProcessGroup] = None, codecs: Optional[QuantizedCommCodecs] = None) → Awaitable[Tensor]¶
+torchrec.distributed.comm_ops.reduce_scatter_base_pooled(input: Tensor, group: Optional[ProcessGroup] = None, codecs: Optional[QuantizedCommCodecs] = None) → Awaitable[Tensor]
 ```
 
 将一个扁平的池化嵌入张量减少然后分散到组中的所有进程。输入张量的大小为 output_tensor_size * world_size。
@@ -1759,7 +1759,7 @@ Awaitable[Tensor]
 reduce_scatter_base_pooled 是实验性的，可能会发生变化。
 
 ```py
-torchrec.distributed.comm_ops.reduce_scatter_pooled(inputs: List[Tensor], group: Optional[ProcessGroup] = None, codecs: Optional[QuantizedCommCodecs] = None) → Awaitable[Tensor]¶
+torchrec.distributed.comm_ops.reduce_scatter_pooled(inputs: List[Tensor], group: Optional[ProcessGroup] = None, codecs: Optional[QuantizedCommCodecs] = None) → Awaitable[Tensor]
 ```
 
 对一个分成世界大小数量的块的池化嵌入张量执行 reduce-scatter 操作。减少操作的结果被分散到组中的所有进程。
@@ -1785,7 +1785,7 @@ Awaitable[Tensor]
 reduce_scatter_pooled 是实验性的，可能会发生变化。
 
 ```py
-torchrec.distributed.comm_ops.reduce_scatter_v_per_feature_pooled(input: Tensor, batch_size_per_rank_per_feature: List[List[int]], embedding_dims: List[int], group: Optional[ProcessGroup] = None, codecs: Optional[QuantizedCommCodecs] = None) → Awaitable[Tensor]¶
+torchrec.distributed.comm_ops.reduce_scatter_v_per_feature_pooled(input: Tensor, batch_size_per_rank_per_feature: List[List[int]], embedding_dims: List[int], group: Optional[ProcessGroup] = None, codecs: Optional[QuantizedCommCodecs] = None) → Awaitable[Tensor]
 ```
 
 对一个 1 维池化嵌入张量执行 reduce-scatter-v 操作，每个特征的批处理大小不同，分成世界大小数量的块。减少操作的结果根据输入拆分分散到组中的所有进程。
@@ -1815,7 +1815,7 @@ Awaitable[Tensor]
 reduce_scatter_v_per_feature_pooled 是实验性的，可能会发生变化。
 
 ```py
-torchrec.distributed.comm_ops.reduce_scatter_v_pooled(input: Tensor, input_splits: List[int], group: Optional[ProcessGroup] = None, codecs: Optional[QuantizedCommCodecs] = None) → Awaitable[Tensor]¶
+torchrec.distributed.comm_ops.reduce_scatter_v_pooled(input: Tensor, input_splits: List[int], group: Optional[ProcessGroup] = None, codecs: Optional[QuantizedCommCodecs] = None) → Awaitable[Tensor]
 ```
 
 对一个分成世界大小数量的块的池化嵌入张量执行 reduce-scatter-v 操作。减少操作的结果根据输入拆分分散到组中的所有进程。
@@ -1841,15 +1841,15 @@ Awaitable[Tensor]
 reduce_scatter_v_pooled 是实验性的，可能会发生变化。
 
 ```py
-torchrec.distributed.comm_ops.set_gradient_division(val: bool) → None¶
+torchrec.distributed.comm_ops.set_gradient_division(val: bool) → None
 ```
 
 ```py
-torchrec.distributed.comm_ops.variable_batch_alltoall_pooled(a2a_pooled_embs_tensor: Tensor, batch_size_per_rank_per_feature: List[List[int]], batch_size_per_feature_pre_a2a: List[int], emb_dim_per_rank_per_feature: List[List[int]], group: Optional[ProcessGroup] = None, codecs: Optional[QuantizedCommCodecs] = None) → Awaitable[Tensor]¶
-```  ## torchrec.distributed.dist_data[](#module-torchrec.distributed.dist_data "Permalink to this heading")
+torchrec.distributed.comm_ops.variable_batch_alltoall_pooled(a2a_pooled_embs_tensor: Tensor, batch_size_per_rank_per_feature: List[List[int]], batch_size_per_feature_pre_a2a: List[int], emb_dim_per_rank_per_feature: List[List[int]], group: Optional[ProcessGroup] = None, codecs: Optional[QuantizedCommCodecs] = None) → Awaitable[Tensor]
+```  ## torchrec.distributed.dist_data
 
 ```py
-class torchrec.distributed.dist_data.EmbeddingsAllToOne(device: device, world_size: int, cat_dim: int)¶
+class torchrec.distributed.dist_data.EmbeddingsAllToOne(device: device, world_size: int, cat_dim: int)
 ```
 
 基类：`Module`
@@ -1865,7 +1865,7 @@ class torchrec.distributed.dist_data.EmbeddingsAllToOne(device: device, world_si
 +   **cat_dim**（*int*）- 您希望在哪个维度上进行连接。对于汇总嵌入，它是 1；对于序列嵌入，它是 0。
 
 ```py
-forward(tensors: List[Tensor]) → Tensor¶
+forward(tensors: List[Tensor]) → Tensor
 ```
 
 对汇总/序列嵌入张量执行 AlltoOne 操作。
@@ -1883,15 +1883,15 @@ forward(tensors: List[Tensor]) → Tensor¶
 Awaitable[torch.Tensor]
 
 ```py
-set_device(device_str: str) → None¶
+set_device(device_str: str) → None
 ```
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.distributed.dist_data.EmbeddingsAllToOneReduce(device: device, world_size: int)¶
+class torchrec.distributed.dist_data.EmbeddingsAllToOneReduce(device: device, world_size: int)
 ```
 
 基类：`Module`
@@ -1905,7 +1905,7 @@ class torchrec.distributed.dist_data.EmbeddingsAllToOneReduce(device: device, wo
 +   **world_size**（*int*）- 拓扑中的设备数量。
 
 ```py
-forward(tensors: List[Tensor]) → Tensor¶
+forward(tensors: List[Tensor]) → Tensor
 ```
 
 对汇总嵌入张量执行 Reduce 的 AlltoOne 操作。
@@ -1923,15 +1923,15 @@ forward(tensors: List[Tensor]) → Tensor¶
 Awaitable[torch.Tensor]
 
 ```py
-set_device(device_str: str) → None¶
+set_device(device_str: str) → None
 ```
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.distributed.dist_data.KJTAllToAll(pg: ProcessGroup, splits: List[int], stagger: int = 1)¶
+class torchrec.distributed.dist_data.KJTAllToAll(pg: ProcessGroup, splits: List[int], stagger: int = 1)
 ```
 
 基类：`Module`
@@ -1988,7 +1988,7 @@ rank0_output = awaitable.wait()
 ```
 
 ```py
-forward(input: KeyedJaggedTensor) → Awaitable[KJTAllToAllTensorsAwaitable]¶
+forward(input: KeyedJaggedTensor) → Awaitable[KJTAllToAllTensorsAwaitable]
 ```
 
 将输入发送到相关的 ProcessGroup 等级。
@@ -2008,11 +2008,11 @@ KJTAllToAllTensorsAwaitable 的等待。
 Awaitable[KJTAllToAllTensorsAwaitable]
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.distributed.dist_data.KJTAllToAllSplitsAwaitable(pg: ProcessGroup, input: KeyedJaggedTensor, splits: List[int], labels: List[str], tensor_splits: List[List[int]], input_tensors: List[Tensor], keys: List[str], device: device, stagger: int)¶
+class torchrec.distributed.dist_data.KJTAllToAllSplitsAwaitable(pg: ProcessGroup, input: KeyedJaggedTensor, splits: List[int], labels: List[str], tensor_splits: List[List[int]], input_tensors: List[Tensor], keys: List[str], device: device, stagger: int)
 ```
 
 基类：`Awaitable`[`KJTAllToAllTensorsAwaitable`]
@@ -2038,7 +2038,7 @@ KJT 张量拆分 AlltoAll 的等待。
 +   **stagger** (*int*) – 应用于 recat 张量的 stagger 值。
 
 ```py
-class torchrec.distributed.dist_data.KJTAllToAllTensorsAwaitable(pg: ProcessGroup, input: KeyedJaggedTensor, splits: List[int], input_splits: List[List[int]], output_splits: List[List[int]], input_tensors: List[Tensor], labels: List[str], keys: List[str], device: device, stagger: int, stride_per_rank: Optional[List[int]])¶
+class torchrec.distributed.dist_data.KJTAllToAllTensorsAwaitable(pg: ProcessGroup, input: KeyedJaggedTensor, splits: List[int], input_splits: List[List[int]], output_splits: List[List[int]], input_tensors: List[Tensor], labels: List[str], keys: List[str], device: device, stagger: int, stride_per_rank: Optional[List[int]])
 ```
 
 基类：`Awaitable`[`KeyedJaggedTensor`]
@@ -2070,7 +2070,7 @@ KJT 张量 AlltoAll 的 Awaitable。
 +   **stride_per_rank** (*Optional**[**List**[**int**]**]*) – 在非可变批次每个特征情况下的每个排名的步幅。
 
 ```py
-class torchrec.distributed.dist_data.KJTOneToAll(splits: List[int], world_size: int, device: Optional[device] = None)¶
+class torchrec.distributed.dist_data.KJTOneToAll(splits: List[int], world_size: int, device: Optional[device] = None)
 ```
 
 基类：`Module`
@@ -2088,7 +2088,7 @@ class torchrec.distributed.dist_data.KJTOneToAll(splits: List[int], world_size: 
 +   **device** (*torch.device*) – 将分配 KJT 的设备。
 
 ```py
-forward(kjt: KeyedJaggedTensor) → KJTList¶
+forward(kjt: KeyedJaggedTensor) → KJTList
 ```
 
 首先拆分特征，然后将切片发送到相应的设备。
@@ -2106,11 +2106,11 @@ KeyedJaggedTensor 拆分的 Awaitable。
 AwaitableList[[KeyedJaggedTensor]]
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.distributed.dist_data.PooledEmbeddingsAllGather(pg: ProcessGroup, codecs: Optional[QuantizedCommCodecs] = None)¶
+class torchrec.distributed.dist_data.PooledEmbeddingsAllGather(pg: ProcessGroup, codecs: Optional[QuantizedCommCodecs] = None)
 ```
 
 基类：`Module`
@@ -2139,7 +2139,7 @@ tensor = output.wait()
 ```
 
 ```py
-forward(local_emb: Tensor) → PooledEmbeddingsAwaitable¶
+forward(local_emb: Tensor) → PooledEmbeddingsAwaitable
 ```
 
 对汇总嵌入张量执行 reduce scatter 操作。
@@ -2157,11 +2157,11 @@ forward(local_emb: Tensor) → PooledEmbeddingsAwaitable¶
 PooledEmbeddingsAwaitable
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.distributed.dist_data.PooledEmbeddingsAllToAll(pg: ProcessGroup, dim_sum_per_rank: List[int], device: Optional[device] = None, callbacks: Optional[List[Callable[[Tensor], Tensor]]] = None, codecs: Optional[QuantizedCommCodecs] = None)¶
+class torchrec.distributed.dist_data.PooledEmbeddingsAllToAll(pg: ProcessGroup, dim_sum_per_rank: List[int], device: Optional[device] = None, callbacks: Optional[List[Callable[[Tensor], Tensor]]] = None, codecs: Optional[QuantizedCommCodecs] = None)
 ```
 
 基类：`Module`
@@ -2199,11 +2199,11 @@ print(rank1_output.size())
 ```
 
 ```py
-property callbacks: List[Callable[[Tensor], Tensor]]¶
+property callbacks: List[Callable[[Tensor], Tensor]]
 ```
 
 ```py
-forward(local_embs: Tensor, batch_size_per_rank: Optional[List[int]] = None) → PooledEmbeddingsAwaitable¶
+forward(local_embs: Tensor, batch_size_per_rank: Optional[List[int]] = None) → PooledEmbeddingsAwaitable
 ```
 
 对池化嵌入张量执行 AlltoAll 池化操作。
@@ -2223,11 +2223,11 @@ forward(local_embs: Tensor, batch_size_per_rank: Optional[List[int]] = None) →
 PooledEmbeddingsAwaitable
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.distributed.dist_data.PooledEmbeddingsAwaitable(tensor_awaitable: Awaitable[Tensor])¶
+class torchrec.distributed.dist_data.PooledEmbeddingsAwaitable(tensor_awaitable: Awaitable[Tensor])
 ```
 
 基类：`Awaitable`[`Tensor`]
@@ -2239,11 +2239,11 @@ class torchrec.distributed.dist_data.PooledEmbeddingsAwaitable(tensor_awaitable:
 **tensor_awaitable** (*Awaitable**[**torch.Tensor**]*) – 集体后来自组内所有进程的张量的连接张量的 awaitable。
 
 ```py
-property callbacks: List[Callable[[Tensor], Tensor]]¶
+property callbacks: List[Callable[[Tensor], Tensor]]
 ```
 
 ```py
-class torchrec.distributed.dist_data.PooledEmbeddingsReduceScatter(pg: ProcessGroup, codecs: Optional[QuantizedCommCodecs] = None)¶
+class torchrec.distributed.dist_data.PooledEmbeddingsReduceScatter(pg: ProcessGroup, codecs: Optional[QuantizedCommCodecs] = None)
 ```
 
 基类：`Module`
@@ -2261,7 +2261,7 @@ class torchrec.distributed.dist_data.PooledEmbeddingsReduceScatter(pg: ProcessGr
 +   **codecs** – 量化通信编解码器。
 
 ```py
-forward(local_embs: Tensor, input_splits: Optional[List[int]] = None) → PooledEmbeddingsAwaitable¶
+forward(local_embs: Tensor, input_splits: Optional[List[int]] = None) → PooledEmbeddingsAwaitable
 ```
 
 对池化嵌入张量执行 reduce scatter 操作。
@@ -2281,11 +2281,11 @@ tensor 的池化嵌入的 awaitable，形状为[batch_size, dimension]。
 PooledEmbeddingsAwaitable
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.distributed.dist_data.SeqEmbeddingsAllToOne(device: device, world_size: int)¶
+class torchrec.distributed.dist_data.SeqEmbeddingsAllToOne(device: device, world_size: int)
 ```
 
 基类：`Module`
@@ -2301,7 +2301,7 @@ class torchrec.distributed.dist_data.SeqEmbeddingsAllToOne(device: device, world
 +   **cat_dim** (*int*) – 您希望在其上连接的维度。对于池化嵌入，它是 1；对于序列嵌入，它是 0。
 
 ```py
-forward(tensors: List[Tensor]) → List[Tensor]¶
+forward(tensors: List[Tensor]) → List[Tensor]
 ```
 
 对池化嵌入张量执行 AlltoOne 操作。
@@ -2319,15 +2319,15 @@ forward(tensors: List[Tensor]) → List[Tensor]¶
 Awaitable[torch.Tensor]
 
 ```py
-set_device(device_str: str) → None¶
+set_device(device_str: str) → None
 ```
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.distributed.dist_data.SequenceEmbeddingsAllToAll(pg: ProcessGroup, features_per_rank: List[int], device: Optional[device] = None, codecs: Optional[QuantizedCommCodecs] = None)¶
+class torchrec.distributed.dist_data.SequenceEmbeddingsAllToAll(pg: ProcessGroup, features_per_rank: List[int], device: Optional[device] = None, codecs: Optional[QuantizedCommCodecs] = None)
 ```
 
 基类：`Module`
@@ -2364,7 +2364,7 @@ tensor = output.wait()
 ```
 
 ```py
-forward(local_embs: Tensor, lengths: Tensor, input_splits: List[int], output_splits: List[int], unbucketize_permute_tensor: Optional[Tensor] = None, batch_size_per_rank: Optional[List[int]] = None, sparse_features_recat: Optional[Tensor] = None) → SequenceEmbeddingsAwaitable¶
+forward(local_embs: Tensor, lengths: Tensor, input_splits: List[int], output_splits: List[int], unbucketize_permute_tensor: Optional[Tensor] = None, batch_size_per_rank: Optional[List[int]] = None, sparse_features_recat: Optional[Tensor] = None) → SequenceEmbeddingsAwaitable
 ```
 
 在序列嵌入张量上执行 AlltoAll 操作。
@@ -2394,11 +2394,11 @@ forward(local_embs: Tensor, lengths: Tensor, input_splits: List[int], output_spl
 SequenceEmbeddingsAwaitable
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.distributed.dist_data.SequenceEmbeddingsAwaitable(tensor_awaitable: Awaitable[Tensor], unbucketize_permute_tensor: Optional[Tensor], embedding_dim: int)¶
+class torchrec.distributed.dist_data.SequenceEmbeddingsAwaitable(tensor_awaitable: Awaitable[Tensor], unbucketize_permute_tensor: Optional[Tensor], embedding_dim: int)
 ```
 
 基类：`Awaitable`[`Tensor`]
@@ -2414,7 +2414,7 @@ class torchrec.distributed.dist_data.SequenceEmbeddingsAwaitable(tensor_awaitabl
 +   **embedding_dim**（*int*）- 嵌入维度。
 
 ```py
-class torchrec.distributed.dist_data.SplitsAllToAllAwaitable(input_tensors: List[Tensor], pg: ProcessGroup)¶
+class torchrec.distributed.dist_data.SplitsAllToAllAwaitable(input_tensors: List[Tensor], pg: ProcessGroup)
 ```
 
 基类：`Awaitable`[`List`[`List`[`int`]]]
@@ -2428,7 +2428,7 @@ class torchrec.distributed.dist_data.SplitsAllToAllAwaitable(input_tensors: List
 +   **pg**（*dist.ProcessGroup*）- 用于 AlltoAll 通信的 ProcessGroup。
 
 ```py
-class torchrec.distributed.dist_data.VariableBatchPooledEmbeddingsAllToAll(pg: ProcessGroup, emb_dim_per_rank_per_feature: List[List[int]], device: Optional[device] = None, callbacks: Optional[List[Callable[[Tensor], Tensor]]] = None, codecs: Optional[QuantizedCommCodecs] = None)¶
+class torchrec.distributed.dist_data.VariableBatchPooledEmbeddingsAllToAll(pg: ProcessGroup, emb_dim_per_rank_per_feature: List[List[int]], device: Optional[device] = None, callbacks: Optional[List[Callable[[Tensor], Tensor]]] = None, codecs: Optional[QuantizedCommCodecs] = None)
 ```
 
 基类：`Module`
@@ -2494,11 +2494,11 @@ print(rank1_output.size())
 ```
 
 ```py
-property callbacks: List[Callable[[Tensor], Tensor]]¶
+property callbacks: List[Callable[[Tensor], Tensor]]
 ```
 
 ```py
-forward(local_embs: Tensor, batch_size_per_rank_per_feature: List[List[int]], batch_size_per_feature_pre_a2a: List[int]) → PooledEmbeddingsAwaitable¶
+forward(local_embs: Tensor, batch_size_per_rank_per_feature: List[List[int]], batch_size_per_feature_pre_a2a: List[int]) → PooledEmbeddingsAwaitable
 ```
 
 在池化嵌入张量上执行具有可变特征批次大小的 AlltoAll 池化操作。
@@ -2520,11 +2520,11 @@ forward(local_embs: Tensor, batch_size_per_rank_per_feature: List[List[int]], ba
 PooledEmbeddingsAwaitable
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.distributed.dist_data.VariableBatchPooledEmbeddingsReduceScatter(pg: ProcessGroup, codecs: Optional[QuantizedCommCodecs] = None)¶
+class torchrec.distributed.dist_data.VariableBatchPooledEmbeddingsReduceScatter(pg: ProcessGroup, codecs: Optional[QuantizedCommCodecs] = None)
 ```
 
 基类：`Module`
@@ -2542,7 +2542,7 @@ class torchrec.distributed.dist_data.VariableBatchPooledEmbeddingsReduceScatter(
 +   **codecs** – 量化通信编解码器。
 
 ```py
-forward(local_embs: Tensor, batch_size_per_rank_per_feature: List[List[int]], embedding_dims: List[int]) → PooledEmbeddingsAwaitable¶
+forward(local_embs: Tensor, batch_size_per_rank_per_feature: List[List[int]], embedding_dims: List[int]) → PooledEmbeddingsAwaitable
 ```
 
 在池化嵌入张量上执行 reduce scatter 操作。
@@ -2564,51 +2564,51 @@ forward(local_embs: Tensor, batch_size_per_rank_per_feature: List[List[int]], em
 PooledEmbeddingsAwaitable
 
 ```py
-training: bool¶
-```  ## torchrec.distributed.embedding[](#module-torchrec.distributed.embedding "Permalink to this heading")
+training: bool
+```  ## torchrec.distributed.embedding
 
 ```py
-class torchrec.distributed.embedding.EmbeddingCollectionAwaitable(*args, **kwargs)¶
+class torchrec.distributed.embedding.EmbeddingCollectionAwaitable(*args, **kwargs)
 ```
 
 基类：`LazyAwaitable``Dict`[`str`, [`JaggedTensor`]]
 
 ```py
-class torchrec.distributed.embedding.EmbeddingCollectionContext(sharding_contexts: List[torchrec.distributed.sharding.sequence_sharding.SequenceShardingContext] = <factory>, input_features: List[torchrec.sparse.jagged_tensor.KeyedJaggedTensor] = <factory>, reverse_indices: List[torch.Tensor] = <factory>)¶
+class torchrec.distributed.embedding.EmbeddingCollectionContext(sharding_contexts: List[torchrec.distributed.sharding.sequence_sharding.SequenceShardingContext] = <factory>, input_features: List[torchrec.sparse.jagged_tensor.KeyedJaggedTensor] = <factory>, reverse_indices: List[torch.Tensor] = <factory>)
 ```
 
 基类：`Multistreamable`
 
 ```py
-input_features: List[KeyedJaggedTensor]¶
+input_features: List[KeyedJaggedTensor]
 ```
 
 ```py
-record_stream(stream: Stream) → None¶
+record_stream(stream: Stream) → None
 ```
 
 参见 [`pytorch.org/docs/stable/generated/torch.Tensor.record_stream.html`](https://pytorch.org/docs/stable/generated/torch.Tensor.record_stream.html)
 
 ```py
-reverse_indices: List[Tensor]¶
+reverse_indices: List[Tensor]
 ```
 
 ```py
-sharding_contexts: List[SequenceShardingContext]¶
+sharding_contexts: List[SequenceShardingContext]
 ```
 
 ```py
-class torchrec.distributed.embedding.EmbeddingCollectionSharder(fused_params: Optional[Dict[str, Any]] = None, qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None, use_index_dedup: bool = False)¶
+class torchrec.distributed.embedding.EmbeddingCollectionSharder(fused_params: Optional[Dict[str, Any]] = None, qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None, use_index_dedup: bool = False)
 ```
 
 基类：`BaseEmbeddingSharder`[`EmbeddingCollection`]
 
 ```py
-property module_type: Type[EmbeddingCollection]¶
+property module_type: Type[EmbeddingCollection]
 ```
 
 ```py
-shard(module: EmbeddingCollection, params: Dict[str, ParameterSharding], env: ShardingEnv, device: Optional[device] = None) → ShardedEmbeddingCollection¶
+shard(module: EmbeddingCollection, params: Dict[str, ParameterSharding], env: ShardingEnv, device: Optional[device] = None) → ShardedEmbeddingCollection
 ```
 
 执行实际的分片。它将根据相应的 ParameterSharding 指定的位置在请求的位置上分配参数。
@@ -2634,19 +2634,19 @@ shard(module: EmbeddingCollection, params: Dict[str, ParameterSharding], env: Sh
 ShardedModule[Any, Any, Any]
 
 ```py
-shardable_parameters(module: EmbeddingCollection) → Dict[str, Parameter]¶
+shardable_parameters(module: EmbeddingCollection) → Dict[str, Parameter]
 ```
 
 可以分片的参数列表。
 
 ```py
-sharding_types(compute_device_type: str) → List[str]¶
+sharding_types(compute_device_type: str) → List[str]
 ```
 
 支持的分片类型列表。请参阅 ShardingType 以获取众所周知的示例。
 
 ```py
-class torchrec.distributed.embedding.ShardedEmbeddingCollection(module: EmbeddingCollection, table_name_to_parameter_sharding: Dict[str, ParameterSharding], env: ShardingEnv, fused_params: Optional[Dict[str, Any]] = None, device: Optional[device] = None, qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None, use_index_dedup: bool = False)¶
+class torchrec.distributed.embedding.ShardedEmbeddingCollection(module: EmbeddingCollection, table_name_to_parameter_sharding: Dict[str, ParameterSharding], env: ShardingEnv, fused_params: Optional[Dict[str, Any]] = None, device: Optional[device] = None, qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None, use_index_dedup: bool = False)
 ```
 
 基类：`ShardedEmbeddingModule`[`KJTList`, `List`[`Tensor`], `Dict``str`, [`JaggedTensor`], `EmbeddingCollectionContext`], `FusedOptimizerModule`
@@ -2654,63 +2654,63 @@ class torchrec.distributed.embedding.ShardedEmbeddingCollection(module: Embeddin
 ShardedEmbeddingCollection 的实现。这是公共 API 的一部分，允许手动数据分发流水线。
 
 ```py
-compute(ctx: EmbeddingCollectionContext, dist_input: KJTList) → List[Tensor]¶
+compute(ctx: EmbeddingCollectionContext, dist_input: KJTList) → List[Tensor]
 ```
 
 ```py
-compute_and_output_dist(ctx: EmbeddingCollectionContext, input: KJTList) → LazyAwaitable[Dict[str, JaggedTensor]]¶
+compute_and_output_dist(ctx: EmbeddingCollectionContext, input: KJTList) → LazyAwaitable[Dict[str, JaggedTensor]]
 ```
 
 在存在多个输出分布的情况下，重写此方法并在相应的计算完成后立即启动输出分布是有意义的。
 
 ```py
-create_context() → EmbeddingCollectionContext¶
+create_context() → EmbeddingCollectionContext
 ```
 
 ```py
-property fused_optimizer: KeyedOptimizer¶
+property fused_optimizer: KeyedOptimizer
 ```
 
 ```py
-input_dist(ctx: EmbeddingCollectionContext, features: KeyedJaggedTensor) → Awaitable[Awaitable[KJTList]]¶
+input_dist(ctx: EmbeddingCollectionContext, features: KeyedJaggedTensor) → Awaitable[Awaitable[KJTList]]
 ```
 
 ```py
-output_dist(ctx: EmbeddingCollectionContext, output: List[Tensor]) → LazyAwaitable[Dict[str, JaggedTensor]]¶
+output_dist(ctx: EmbeddingCollectionContext, output: List[Tensor]) → LazyAwaitable[Dict[str, JaggedTensor]]
 ```
 
 ```py
-reset_parameters() → None¶
+reset_parameters() → None
 ```
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-torchrec.distributed.embedding.create_embedding_sharding(sharding_type: str, sharding_infos: List[EmbeddingShardingInfo], env: ShardingEnv, device: Optional[device] = None, qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None) → EmbeddingSharding[SequenceShardingContext, KeyedJaggedTensor, Tensor, Tensor]¶
+torchrec.distributed.embedding.create_embedding_sharding(sharding_type: str, sharding_infos: List[EmbeddingShardingInfo], env: ShardingEnv, device: Optional[device] = None, qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None) → EmbeddingSharding[SequenceShardingContext, KeyedJaggedTensor, Tensor, Tensor]
 ```
 
 ```py
-torchrec.distributed.embedding.create_sharding_infos_by_sharding(module: EmbeddingCollectionInterface, table_name_to_parameter_sharding: Dict[str, ParameterSharding], fused_params: Optional[Dict[str, Any]]) → Dict[str, List[EmbeddingShardingInfo]]¶
+torchrec.distributed.embedding.create_sharding_infos_by_sharding(module: EmbeddingCollectionInterface, table_name_to_parameter_sharding: Dict[str, ParameterSharding], fused_params: Optional[Dict[str, Any]]) → Dict[str, List[EmbeddingShardingInfo]]
 ```
 
 ```py
-torchrec.distributed.embedding.get_ec_index_dedup() → bool¶
+torchrec.distributed.embedding.get_ec_index_dedup() → bool
 ```
 
 ```py
-torchrec.distributed.embedding.set_ec_index_dedup(val: bool) → None¶
-```  ## torchrec.distributed.embedding_lookup[](#module-torchrec.distributed.embedding_lookup "Permalink to this heading")
+torchrec.distributed.embedding.set_ec_index_dedup(val: bool) → None
+```  ## torchrec.distributed.embedding_lookup
 
 ```py
-class torchrec.distributed.embedding_lookup.CommOpGradientScaling(*args, **kwargs)¶
+class torchrec.distributed.embedding_lookup.CommOpGradientScaling(*args, **kwargs)
 ```
 
 基类：`Function`
 
 ```py
-static backward(ctx: FunctionCtx, grad_output: Tensor) → Tuple[Tensor, None]¶
+static backward(ctx: FunctionCtx, grad_output: Tensor) → Tuple[Tensor, None]
 ```
 
 为不同 iating 操作定义一个用于反向模式自动微分的公式。
@@ -2722,7 +2722,7 @@ static backward(ctx: FunctionCtx, grad_output: Tensor) → Tuple[Tensor, None]¶
 上下文可用于检索在正向传递期间保存的张量。它还具有属性`ctx.needs_input_grad`，表示每个输入是否需要梯度的布尔值元组。例如，如果`forward()`的第一个输入需要计算相对于输出的梯度，则`backward()`将具有`ctx.needs_input_grad[0] = True`。
 
 ```py
-static forward(ctx: FunctionCtx, input_tensor: Tensor, scale_gradient_factor: int) → Tensor¶
+static forward(ctx: FunctionCtx, input_tensor: Tensor, scale_gradient_factor: int) → Tensor
 ```
 
 定义自定义 autograd 函数的正向传递。
@@ -2762,7 +2762,7 @@ def setup_context(ctx: Any, inputs: Tuple[Any, ...], output: Any) -> None:
 上下文可用于存储在反向传递期间可以检索的任意数据。不应直接在 ctx 上存储张量（尽管出于向后兼容性目的目前未强制执行）。相反，如果打算在`backward`（等效于`vjp`）中使用张量，则应使用`ctx.save_for_backward()`保存张量，如果打算在`jvp`中使用张量，则应使用`ctx.save_for_forward()`保存张量。
 
 ```py
-class torchrec.distributed.embedding_lookup.GroupedEmbeddingsLookup(grouped_configs: List[GroupedEmbeddingConfig], pg: Optional[ProcessGroup] = None, device: Optional[device] = None)¶
+class torchrec.distributed.embedding_lookup.GroupedEmbeddingsLookup(grouped_configs: List[GroupedEmbeddingConfig], pg: Optional[ProcessGroup] = None, device: Optional[device] = None)
 ```
 
 基类：`BaseEmbeddingLookup`[`KeyedJaggedTensor`, `Tensor`]
@@ -2770,11 +2770,11 @@ class torchrec.distributed.embedding_lookup.GroupedEmbeddingsLookup(grouped_conf
 查找序列嵌入的模块（即嵌入）
 
 ```py
-flush() → None¶
+flush() → None
 ```
 
 ```py
-forward(sparse_features: KeyedJaggedTensor) → Tensor¶
+forward(sparse_features: KeyedJaggedTensor) → Tensor
 ```
 
 定义每次调用时执行的计算。
@@ -2786,7 +2786,7 @@ forward(sparse_features: KeyedJaggedTensor) → Tensor¶
 尽管前向传播的配方需要在此函数内定义，但应该在此之后调用`Module`实例，而不是这个函数，因为前者负责运行注册的钩子，而后者则会默默地忽略它们。
 
 ```py
-load_state_dict(state_dict: OrderedDict[str, Union[torch.Tensor, ShardedTensor]], strict: bool = True) → _IncompatibleKeys¶
+load_state_dict(state_dict: OrderedDict[str, Union[torch.Tensor, ShardedTensor]], strict: bool = True) → _IncompatibleKeys
 ```
 
 从`state_dict`中复制参数和缓冲区到此模块及其后代。
@@ -2820,7 +2820,7 @@ load_state_dict(state_dict: OrderedDict[str, Union[torch.Tensor, ShardedTensor]]
 如果参数或缓冲区注册为`None`，并且其对应的键存在于`state_dict`中，`load_state_dict()`将引发`RuntimeError`。
 
 ```py
-named_buffers(prefix: str = '', recurse: bool = True, remove_duplicate: bool = True) → Iterator[Tuple[str, Tensor]]¶
+named_buffers(prefix: str = '', recurse: bool = True, remove_duplicate: bool = True) → Iterator[Tuple[str, Tensor]]
 ```
 
 返回一个模块缓冲区的迭代器，产生缓冲区的名称以及缓冲区本身。
@@ -2847,7 +2847,7 @@ named_buffers(prefix: str = '', recurse: bool = True, remove_duplicate: bool = T
 ```
 
 ```py
-named_parameters(prefix: str = '', recurse: bool = True, remove_duplicate: bool = True) → Iterator[Tuple[str, Parameter]]¶
+named_parameters(prefix: str = '', recurse: bool = True, remove_duplicate: bool = True) → Iterator[Tuple[str, Parameter]]
 ```
 
 返回一个模块参数的迭代器，产生参数的名称以及参数本身。
@@ -2874,21 +2874,21 @@ named_parameters(prefix: str = '', recurse: bool = True, remove_duplicate: bool 
 ```
 
 ```py
-named_parameters_by_table() → Iterator[Tuple[str, TableBatchedEmbeddingSlice]]¶
+named_parameters_by_table() → Iterator[Tuple[str, TableBatchedEmbeddingSlice]]
 ```
 
 类似于 named_parameters()，但会产出包含在 TableBatchedEmbeddingSlice 中的 table_name 和 embedding_weights。对于具有多个分片的单个表（即 CW），这些会合并成一个表/权重。用于可组合性。
 
 ```py
-prefetch(sparse_features: KeyedJaggedTensor, forward_stream: Optional[Stream] = None) → None¶
+prefetch(sparse_features: KeyedJaggedTensor, forward_stream: Optional[Stream] = None) → None
 ```
 
 ```py
-purge() → None¶
+purge() → None
 ```
 
 ```py
-state_dict(destination: Optional[Dict[str, Any]] = None, prefix: str = '', keep_vars: bool = False) → Dict[str, Any]¶
+state_dict(destination: Optional[Dict[str, Any]] = None, prefix: str = '', keep_vars: bool = False) → Dict[str, Any]
 ```
 
 返回一个包含模块整体状态引用的字典。
@@ -2932,11 +2932,11 @@ state_dict(destination: Optional[Dict[str, Any]] = None, prefix: str = '', keep_
 ```
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.distributed.embedding_lookup.GroupedPooledEmbeddingsLookup(grouped_configs: List[GroupedEmbeddingConfig], device: Optional[device] = None, pg: Optional[ProcessGroup] = None, feature_processor: Optional[BaseGroupedFeatureProcessor] = None, scale_weight_gradients: bool = True)¶
+class torchrec.distributed.embedding_lookup.GroupedPooledEmbeddingsLookup(grouped_configs: List[GroupedEmbeddingConfig], device: Optional[device] = None, pg: Optional[ProcessGroup] = None, feature_processor: Optional[BaseGroupedFeatureProcessor] = None, scale_weight_gradients: bool = True)
 ```
 
 基类：`BaseEmbeddingLookup`[`KeyedJaggedTensor`, `Tensor`]
@@ -2944,11 +2944,11 @@ class torchrec.distributed.embedding_lookup.GroupedPooledEmbeddingsLookup(groupe
 Pooled embeddings 的查找模块（即 EmbeddingBags）
 
 ```py
-flush() → None¶
+flush() → None
 ```
 
 ```py
-forward(sparse_features: KeyedJaggedTensor) → Tensor¶
+forward(sparse_features: KeyedJaggedTensor) → Tensor
 ```
 
 定义每次调用时执行的计算。
@@ -2960,7 +2960,7 @@ forward(sparse_features: KeyedJaggedTensor) → Tensor¶
 虽然前向传递的配方需要在此函数内定义，但应该在此之后调用`Module`实例，而不是在此处调用，因为前者负责运行注册的钩子，而后者会默默地忽略它们。
 
 ```py
-load_state_dict(state_dict: OrderedDict[str, Union[ShardedTensor, torch.Tensor]], strict: bool = True) → _IncompatibleKeys¶
+load_state_dict(state_dict: OrderedDict[str, Union[ShardedTensor, torch.Tensor]], strict: bool = True) → _IncompatibleKeys
 ```
 
 从`state_dict`中复制参数和缓冲区到此模块及其后代。
@@ -2994,7 +2994,7 @@ load_state_dict(state_dict: OrderedDict[str, Union[ShardedTensor, torch.Tensor]]
 如果参数或缓冲区注册为`None`，并且其对应的键存在于`state_dict`中，`load_state_dict()`将引发`RuntimeError`。
 
 ```py
-named_buffers(prefix: str = '', recurse: bool = True, remove_duplicate: bool = True) → Iterator[Tuple[str, Tensor]]¶
+named_buffers(prefix: str = '', recurse: bool = True, remove_duplicate: bool = True) → Iterator[Tuple[str, Tensor]]
 ```
 
 返回一个迭代器，遍历模块缓冲区，同时产生缓冲区的名称和缓冲区本身。
@@ -3021,7 +3021,7 @@ named_buffers(prefix: str = '', recurse: bool = True, remove_duplicate: bool = T
 ```
 
 ```py
-named_parameters(prefix: str = '', recurse: bool = True, remove_duplicate: bool = True) → Iterator[Tuple[str, Parameter]]¶
+named_parameters(prefix: str = '', recurse: bool = True, remove_duplicate: bool = True) → Iterator[Tuple[str, Parameter]]
 ```
 
 返回一个迭代器，遍历模块参数，同时产生参数的名称和参数本身。
@@ -3048,21 +3048,21 @@ named_parameters(prefix: str = '', recurse: bool = True, remove_duplicate: bool 
 ```
 
 ```py
-named_parameters_by_table() → Iterator[Tuple[str, TableBatchedEmbeddingSlice]]¶
+named_parameters_by_table() → Iterator[Tuple[str, TableBatchedEmbeddingSlice]]
 ```
 
 类似于 named_parameters()，但产生包含在 TableBatchedEmbeddingSlice 中的 table_name 和 embedding_weights。对于具有多个分片的单个表（即 CW），这些被合并为一个表/权重。用于可组合性。
 
 ```py
-prefetch(sparse_features: KeyedJaggedTensor, forward_stream: Optional[Stream] = None) → None¶
+prefetch(sparse_features: KeyedJaggedTensor, forward_stream: Optional[Stream] = None) → None
 ```
 
 ```py
-purge() → None¶
+purge() → None
 ```
 
 ```py
-state_dict(destination: Optional[Dict[str, Any]] = None, prefix: str = '', keep_vars: bool = False) → Dict[str, Any]¶
+state_dict(destination: Optional[Dict[str, Any]] = None, prefix: str = '', keep_vars: bool = False) → Dict[str, Any]
 ```
 
 返回一个包含对模块整体状态的引用的字典。
@@ -3106,65 +3106,65 @@ state_dict(destination: Optional[Dict[str, Any]] = None, prefix: str = '', keep_
 ```
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.distributed.embedding_lookup.InferGroupedEmbeddingsLookup(grouped_configs_per_rank: List[List[GroupedEmbeddingConfig]], world_size: int, fused_params: Optional[Dict[str, Any]] = None, device: Optional[device] = None)¶
+class torchrec.distributed.embedding_lookup.InferGroupedEmbeddingsLookup(grouped_configs_per_rank: List[List[GroupedEmbeddingConfig]], world_size: int, fused_params: Optional[Dict[str, Any]] = None, device: Optional[device] = None)
 ```
 
 基类：`InferGroupedLookupMixin`, `BaseEmbeddingLookup`[`KJTList`, `List`[`Tensor`]], `TBEToRegisterMixIn`
 
 ```py
-get_tbes_to_register() → Dict[IntNBitTableBatchedEmbeddingBagsCodegen, GroupedEmbeddingConfig]¶
+get_tbes_to_register() → Dict[IntNBitTableBatchedEmbeddingBagsCodegen, GroupedEmbeddingConfig]
 ```
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.distributed.embedding_lookup.InferGroupedLookupMixin¶
+class torchrec.distributed.embedding_lookup.InferGroupedLookupMixin
 ```
 
 基类：`ABC`
 
 ```py
-forward(sparse_features: KJTList) → List[Tensor]¶
+forward(sparse_features: KJTList) → List[Tensor]
 ```
 
 ```py
-load_state_dict(state_dict: OrderedDict[str, torch.Tensor], strict: bool = True) → _IncompatibleKeys¶
+load_state_dict(state_dict: OrderedDict[str, torch.Tensor], strict: bool = True) → _IncompatibleKeys
 ```
 
 ```py
-named_buffers(prefix: str = '', recurse: bool = True) → Iterator[Tuple[str, Tensor]]¶
+named_buffers(prefix: str = '', recurse: bool = True) → Iterator[Tuple[str, Tensor]]
 ```
 
 ```py
-named_parameters(prefix: str = '', recurse: bool = True) → Iterator[Tuple[str, Parameter]]¶
+named_parameters(prefix: str = '', recurse: bool = True) → Iterator[Tuple[str, Parameter]]
 ```
 
 ```py
-state_dict(destination: Optional[Dict[str, Any]] = None, prefix: str = '', keep_vars: bool = False) → Dict[str, Any]¶
+state_dict(destination: Optional[Dict[str, Any]] = None, prefix: str = '', keep_vars: bool = False) → Dict[str, Any]
 ```
 
 ```py
-class torchrec.distributed.embedding_lookup.InferGroupedPooledEmbeddingsLookup(grouped_configs_per_rank: List[List[GroupedEmbeddingConfig]], world_size: int, fused_params: Optional[Dict[str, Any]] = None, device: Optional[device] = None)¶
+class torchrec.distributed.embedding_lookup.InferGroupedPooledEmbeddingsLookup(grouped_configs_per_rank: List[List[GroupedEmbeddingConfig]], world_size: int, fused_params: Optional[Dict[str, Any]] = None, device: Optional[device] = None)
 ```
 
 基类：`InferGroupedLookupMixin`, `BaseEmbeddingLookup`[`KJTList`, `List`[`Tensor`]], `TBEToRegisterMixIn`
 
 ```py
-get_tbes_to_register() → Dict[IntNBitTableBatchedEmbeddingBagsCodegen, GroupedEmbeddingConfig]¶
+get_tbes_to_register() → Dict[IntNBitTableBatchedEmbeddingBagsCodegen, GroupedEmbeddingConfig]
 ```
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.distributed.embedding_lookup.MetaInferGroupedEmbeddingsLookup(grouped_configs: List[GroupedEmbeddingConfig], device: Optional[device] = None, fused_params: Optional[Dict[str, Any]] = None)¶
+class torchrec.distributed.embedding_lookup.MetaInferGroupedEmbeddingsLookup(grouped_configs: List[GroupedEmbeddingConfig], device: Optional[device] = None, fused_params: Optional[Dict[str, Any]] = None)
 ```
 
 基类：`BaseEmbeddingLookup`[`KeyedJaggedTensor`, `Tensor`], `TBEToRegisterMixIn`
@@ -3172,11 +3172,11 @@ class torchrec.distributed.embedding_lookup.MetaInferGroupedEmbeddingsLookup(gro
 元嵌入查找模块用于推断，因为推断查找引用了所有 GPU 工作器上的多个 TBE 操作。推断分组嵌入查找模块包含在 GPU 工作器上分配的元模块。
 
 ```py
-flush() → None¶
+flush() → None
 ```
 
 ```py
-forward(sparse_features: KeyedJaggedTensor) → Tensor¶
+forward(sparse_features: KeyedJaggedTensor) → Tensor
 ```
 
 定义每次调用时执行的计算。
@@ -3188,11 +3188,11 @@ forward(sparse_features: KeyedJaggedTensor) → Tensor¶
 虽然前向传递的配方需要在此函数内定义，但应该在此之后调用`Module`实例，而不是在此之后调用，因为前者负责运行注册的钩子，而后者会默默地忽略它们。
 
 ```py
-get_tbes_to_register() → Dict[IntNBitTableBatchedEmbeddingBagsCodegen, GroupedEmbeddingConfig]¶
+get_tbes_to_register() → Dict[IntNBitTableBatchedEmbeddingBagsCodegen, GroupedEmbeddingConfig]
 ```
 
 ```py
-load_state_dict(state_dict: OrderedDict[str, Union[ShardedTensor, torch.Tensor]], strict: bool = True) → _IncompatibleKeys¶
+load_state_dict(state_dict: OrderedDict[str, Union[ShardedTensor, torch.Tensor]], strict: bool = True) → _IncompatibleKeys
 ```
 
 将参数和缓冲区从`state_dict`复制到此模块及其后代中。
@@ -3226,7 +3226,7 @@ load_state_dict(state_dict: OrderedDict[str, Union[ShardedTensor, torch.Tensor]]
 如果参数或缓冲区注册为`None`，并且其对应的键存在于`state_dict`中，`load_state_dict()`将引发`RuntimeError`。
 
 ```py
-named_buffers(prefix: str = '', recurse: bool = True, remove_duplicate: bool = True) → Iterator[Tuple[str, Tensor]]¶
+named_buffers(prefix: str = '', recurse: bool = True, remove_duplicate: bool = True) → Iterator[Tuple[str, Tensor]]
 ```
 
 返回一个迭代器，遍历模块缓冲区，同时返回缓冲区的名称和缓冲区本身。
@@ -3253,7 +3253,7 @@ named_buffers(prefix: str = '', recurse: bool = True, remove_duplicate: bool = T
 ```
 
 ```py
-named_parameters(prefix: str = '', recurse: bool = True, remove_duplicate: bool = True) → Iterator[Tuple[str, Parameter]]¶
+named_parameters(prefix: str = '', recurse: bool = True, remove_duplicate: bool = True) → Iterator[Tuple[str, Parameter]]
 ```
 
 返回一个迭代器，遍历模块参数，同时返回参数的名称和参数本身。
@@ -3280,11 +3280,11 @@ named_parameters(prefix: str = '', recurse: bool = True, remove_duplicate: bool 
 ```
 
 ```py
-purge() → None¶
+purge() → None
 ```
 
 ```py
-state_dict(destination: Optional[Dict[str, Any]] = None, prefix: str = '', keep_vars: bool = False) → Dict[str, Any]¶
+state_dict(destination: Optional[Dict[str, Any]] = None, prefix: str = '', keep_vars: bool = False) → Dict[str, Any]
 ```
 
 返回一个包含模块整体状态引用的字典。
@@ -3328,11 +3328,11 @@ state_dict(destination: Optional[Dict[str, Any]] = None, prefix: str = '', keep_
 ```
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.distributed.embedding_lookup.MetaInferGroupedPooledEmbeddingsLookup(grouped_configs: List[GroupedEmbeddingConfig], device: Optional[device] = None, feature_processor: Optional[BaseGroupedFeatureProcessor] = None, fused_params: Optional[Dict[str, Any]] = None)¶
+class torchrec.distributed.embedding_lookup.MetaInferGroupedPooledEmbeddingsLookup(grouped_configs: List[GroupedEmbeddingConfig], device: Optional[device] = None, feature_processor: Optional[BaseGroupedFeatureProcessor] = None, fused_params: Optional[Dict[str, Any]] = None)
 ```
 
 基类：`BaseEmbeddingLookup`[`KeyedJaggedTensor`, `Tensor`], `TBEToRegisterMixIn`
@@ -3340,11 +3340,11 @@ class torchrec.distributed.embedding_lookup.MetaInferGroupedPooledEmbeddingsLook
 元嵌入袋查找模块用于推理，因为推理查找引用了所有 GPU 工作器上的多个 TBE 操作。推理分组嵌入袋查找模块包含在 GPU 工作器上分配的元模块。
 
 ```py
-flush() → None¶
+flush() → None
 ```
 
 ```py
-forward(sparse_features: KeyedJaggedTensor) → Tensor¶
+forward(sparse_features: KeyedJaggedTensor) → Tensor
 ```
 
 定义每次调用时执行的计算。
@@ -3356,11 +3356,11 @@ forward(sparse_features: KeyedJaggedTensor) → Tensor¶
 虽然前向传递的配方需要在此函数中定义，但应该在此之后调用`Module`实例，而不是在此之后调用，因为前者负责运行注册的钩子，而后者会默默地忽略它们。
 
 ```py
-get_tbes_to_register() → Dict[IntNBitTableBatchedEmbeddingBagsCodegen, GroupedEmbeddingConfig]¶
+get_tbes_to_register() → Dict[IntNBitTableBatchedEmbeddingBagsCodegen, GroupedEmbeddingConfig]
 ```
 
 ```py
-load_state_dict(state_dict: OrderedDict[str, Union[ShardedTensor, torch.Tensor]], strict: bool = True) → _IncompatibleKeys¶
+load_state_dict(state_dict: OrderedDict[str, Union[ShardedTensor, torch.Tensor]], strict: bool = True) → _IncompatibleKeys
 ```
 
 将参数和缓冲区从`state_dict`复制到此模块及其后代。
@@ -3394,7 +3394,7 @@ load_state_dict(state_dict: OrderedDict[str, Union[ShardedTensor, torch.Tensor]]
 如果参数或缓冲区注册为`None`，并且其对应的键存在于`state_dict`中，`load_state_dict()`将引发`RuntimeError`。
 
 ```py
-named_buffers(prefix: str = '', recurse: bool = True, remove_duplicate: bool = True) → Iterator[Tuple[str, Tensor]]¶
+named_buffers(prefix: str = '', recurse: bool = True, remove_duplicate: bool = True) → Iterator[Tuple[str, Tensor]]
 ```
 
 返回一个模块缓冲区的迭代器，产出缓冲区的名称以及缓冲区本身。
@@ -3421,7 +3421,7 @@ named_buffers(prefix: str = '', recurse: bool = True, remove_duplicate: bool = T
 ```
 
 ```py
-named_parameters(prefix: str = '', recurse: bool = True, remove_duplicate: bool = True) → Iterator[Tuple[str, Parameter]]¶
+named_parameters(prefix: str = '', recurse: bool = True, remove_duplicate: bool = True) → Iterator[Tuple[str, Parameter]]
 ```
 
 返回一个模块参数的迭代器，产出参数的名称以及参数本身。
@@ -3448,11 +3448,11 @@ named_parameters(prefix: str = '', recurse: bool = True, remove_duplicate: bool 
 ```
 
 ```py
-purge() → None¶
+purge() → None
 ```
 
 ```py
-state_dict(destination: Optional[Dict[str, Any]] = None, prefix: str = '', keep_vars: bool = False) → Dict[str, Any]¶
+state_dict(destination: Optional[Dict[str, Any]] = None, prefix: str = '', keep_vars: bool = False) → Dict[str, Any]
 ```
 
 返回一个包含模块整体状态引用的字典。
@@ -3496,19 +3496,19 @@ state_dict(destination: Optional[Dict[str, Any]] = None, prefix: str = '', keep_
 ```
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-torchrec.distributed.embedding_lookup.embeddings_cat_empty_rank_handle(embeddings: List[Tensor], dummy_embs_tensor: Tensor, dim: int = 0) → Tensor¶
+torchrec.distributed.embedding_lookup.embeddings_cat_empty_rank_handle(embeddings: List[Tensor], dummy_embs_tensor: Tensor, dim: int = 0) → Tensor
 ```
 
 ```py
-torchrec.distributed.embedding_lookup.fx_wrap_tensor_view2d(x: Tensor, dim0: int, dim1: int) → Tensor¶
-```  ## torchrec.distributed.embedding_sharding[](#module-torchrec.distributed.embedding_sharding "Permalink to this heading")
+torchrec.distributed.embedding_lookup.fx_wrap_tensor_view2d(x: Tensor, dim0: int, dim1: int) → Tensor
+```  ## torchrec.distributed.embedding_sharding
 
 ```py
-class torchrec.distributed.embedding_sharding.BaseEmbeddingDist(*args, **kwargs)¶
+class torchrec.distributed.embedding_sharding.BaseEmbeddingDist(*args, **kwargs)
 ```
 
 基类：`ABC`，`Module`，`Generic`[`C`，`T`，`W`]
@@ -3516,7 +3516,7 @@ class torchrec.distributed.embedding_sharding.BaseEmbeddingDist(*args, **kwargs)
 将 EmbeddingLookup 的输出从模型并行转换为数据并行。
 
 ```py
-abstract forward(local_embs: T, sharding_ctx: Optional[C] = None) → Union[Awaitable[W], W]¶
+abstract forward(local_embs: T, sharding_ctx: Optional[C] = None) → Union[Awaitable[W], W]
 ```
 
 定义每次调用时执行的计算。
@@ -3528,11 +3528,11 @@ abstract forward(local_embs: T, sharding_ctx: Optional[C] = None) → Union[Awai
 虽然前向传播的配方需要在此函数内定义，但应该在此之后调用`Module`实例，而不是这个函数，因为前者负责运行注册的钩子，而后者则默默地忽略它们。
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.distributed.embedding_sharding.BaseSparseFeaturesDist(*args, **kwargs)¶
+class torchrec.distributed.embedding_sharding.BaseSparseFeaturesDist(*args, **kwargs)
 ```
 
 基类：`ABC`，`Module`，`Generic`[`F`]
@@ -3540,7 +3540,7 @@ class torchrec.distributed.embedding_sharding.BaseSparseFeaturesDist(*args, **kw
 将输入从数据并行转换为模型并行。
 
 ```py
-abstract forward(sparse_features: KeyedJaggedTensor) → Union[Awaitable[Awaitable[F]], F]¶
+abstract forward(sparse_features: KeyedJaggedTensor) → Union[Awaitable[Awaitable[F]], F]
 ```
 
 定义每次调用时执行的计算。
@@ -3552,11 +3552,11 @@ abstract forward(sparse_features: KeyedJaggedTensor) → Union[Awaitable[Awaitab
 虽然前向传播的配方需要在此函数内定义，但应该在此之后调用`Module`实例，而不是这个函数，因为前者负责运行注册的钩子，而后者则默默地忽略它们。
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.distributed.embedding_sharding.EmbeddingSharding(qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)¶
+class torchrec.distributed.embedding_sharding.EmbeddingSharding(qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)
 ```
 
 基类：`ABC`，`Generic`[`C`，`F`，`T`，`W`]，`FeatureShardingMixIn`
@@ -3564,107 +3564,107 @@ class torchrec.distributed.embedding_sharding.EmbeddingSharding(qcomm_codecs_reg
 用于为 EmbeddingBagCollection 实现不同的分片类型，例如 table_wise。
 
 ```py
-abstract create_input_dist(device: Optional[device] = None) → BaseSparseFeaturesDist[F]¶
+abstract create_input_dist(device: Optional[device] = None) → BaseSparseFeaturesDist[F]
 ```
 
 ```py
-abstract create_lookup(device: Optional[device] = None, fused_params: Optional[Dict[str, Any]] = None, feature_processor: Optional[BaseGroupedFeatureProcessor] = None) → BaseEmbeddingLookup[F, T]¶
+abstract create_lookup(device: Optional[device] = None, fused_params: Optional[Dict[str, Any]] = None, feature_processor: Optional[BaseGroupedFeatureProcessor] = None) → BaseEmbeddingLookup[F, T]
 ```
 
 ```py
-abstract create_output_dist(device: Optional[device] = None) → BaseEmbeddingDist[C, T, W]¶
+abstract create_output_dist(device: Optional[device] = None) → BaseEmbeddingDist[C, T, W]
 ```
 
 ```py
-abstract embedding_dims() → List[int]¶
+abstract embedding_dims() → List[int]
 ```
 
 ```py
-abstract embedding_names() → List[str]¶
+abstract embedding_names() → List[str]
 ```
 
 ```py
-abstract embedding_names_per_rank() → List[List[str]]¶
+abstract embedding_names_per_rank() → List[List[str]]
 ```
 
 ```py
-abstract embedding_shard_metadata() → List[Optional[ShardMetadata]]¶
+abstract embedding_shard_metadata() → List[Optional[ShardMetadata]]
 ```
 
 ```py
-embedding_tables() → List[ShardedEmbeddingTable]¶
+embedding_tables() → List[ShardedEmbeddingTable]
 ```
 
 ```py
-property qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]]¶
+property qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]]
 ```
 
 ```py
-uncombined_embedding_dims() → List[int]¶
+uncombined_embedding_dims() → List[int]
 ```
 
 ```py
-uncombined_embedding_names() → List[str]¶
+uncombined_embedding_names() → List[str]
 ```
 
 ```py
-class torchrec.distributed.embedding_sharding.EmbeddingShardingContext(batch_size_per_rank: List[int] = <factory>, batch_size_per_rank_per_feature: List[List[int]] = <factory>, batch_size_per_feature_pre_a2a: List[int] = <factory>, variable_batch_per_feature: bool = False)¶
+class torchrec.distributed.embedding_sharding.EmbeddingShardingContext(batch_size_per_rank: List[int] = <factory>, batch_size_per_rank_per_feature: List[List[int]] = <factory>, batch_size_per_feature_pre_a2a: List[int] = <factory>, variable_batch_per_feature: bool = False)
 ```
 
 基类：`Multistreamable`
 
 ```py
-batch_size_per_feature_pre_a2a: List[int]¶
+batch_size_per_feature_pre_a2a: List[int]
 ```
 
 ```py
-batch_size_per_rank: List[int]¶
+batch_size_per_rank: List[int]
 ```
 
 ```py
-batch_size_per_rank_per_feature: List[List[int]]¶
+batch_size_per_rank_per_feature: List[List[int]]
 ```
 
 ```py
-record_stream(stream: Stream) → None¶
+record_stream(stream: Stream) → None
 ```
 
 参见[`pytorch.org/docs/stable/generated/torch.Tensor.record_stream.html`](https://pytorch.org/docs/stable/generated/torch.Tensor.record_stream.html)
 
 ```py
-variable_batch_per_feature: bool = False¶
+variable_batch_per_feature: bool = False
 ```
 
 ```py
-class torchrec.distributed.embedding_sharding.EmbeddingShardingInfo(embedding_config: torchrec.modules.embedding_configs.EmbeddingTableConfig, param_sharding: torchrec.distributed.types.ParameterSharding, param: torch.Tensor, fused_params: Union[Dict[str, Any], NoneType] = None)¶
+class torchrec.distributed.embedding_sharding.EmbeddingShardingInfo(embedding_config: torchrec.modules.embedding_configs.EmbeddingTableConfig, param_sharding: torchrec.distributed.types.ParameterSharding, param: torch.Tensor, fused_params: Union[Dict[str, Any], NoneType] = None)
 ```
 
 基类：`object`
 
 ```py
-embedding_config: EmbeddingTableConfig¶
+embedding_config: EmbeddingTableConfig
 ```
 
 ```py
-fused_params: Optional[Dict[str, Any]] = None¶
+fused_params: Optional[Dict[str, Any]] = None
 ```
 
 ```py
-param: Tensor¶
+param: Tensor
 ```
 
 ```py
-param_sharding: ParameterSharding¶
+param_sharding: ParameterSharding
 ```
 
 ```py
-class torchrec.distributed.embedding_sharding.FusedKJTListSplitsAwaitable(requests: List[KJTListSplitsAwaitable[C]], contexts: List[C], pg: Optional[ProcessGroup])¶
+class torchrec.distributed.embedding_sharding.FusedKJTListSplitsAwaitable(requests: List[KJTListSplitsAwaitable[C]], contexts: List[C], pg: Optional[ProcessGroup])
 ```
 
 基类：`Awaitable``List`[[`KJTListAwaitable`]]
 
 ```py
-class torchrec.distributed.embedding_sharding.KJTListAwaitable(awaitables: List[Awaitable[KeyedJaggedTensor]], ctx: C)¶
+class torchrec.distributed.embedding_sharding.KJTListAwaitable(awaitables: List[Awaitable[KeyedJaggedTensor]], ctx: C)
 ```
 
 基类：`Awaitable`[`KJTList`]
@@ -3678,7 +3678,7 @@ class torchrec.distributed.embedding_sharding.KJTListAwaitable(awaitables: List[
 +   **ctx**（*C*）- 用于保存从 KJT 到嵌入 AlltoAll 的批量大小信息的分片上下文。
 
 ```py
-class torchrec.distributed.embedding_sharding.KJTListSplitsAwaitable(awaitables: List[Awaitable[Awaitable[KeyedJaggedTensor]]], ctx: C)¶
+class torchrec.distributed.embedding_sharding.KJTListSplitsAwaitable(awaitables: List[Awaitable[Awaitable[KeyedJaggedTensor]]], ctx: C)
 ```
 
 基类：`Awaitable`[`Awaitable`[`KJTList`]]，`Generic`[`C`]
@@ -3692,53 +3692,53 @@ class torchrec.distributed.embedding_sharding.KJTListSplitsAwaitable(awaitables:
 +   **ctx** (*C*) – 保存从输入分布到嵌入 AlltoAll 的元数据的分片上下文。
 
 ```py
-class torchrec.distributed.embedding_sharding.KJTSplitsAllToAllMeta(pg: torch.distributed.distributed_c10d.ProcessGroup, _input: torchrec.sparse.jagged_tensor.KeyedJaggedTensor, splits: List[int], splits_tensors: List[torch.Tensor], input_splits: List[List[int]], input_tensors: List[torch.Tensor], labels: List[str], keys: List[str], device: torch.device, stagger: int, splits_cumsum: List[int])¶
+class torchrec.distributed.embedding_sharding.KJTSplitsAllToAllMeta(pg: torch.distributed.distributed_c10d.ProcessGroup, _input: torchrec.sparse.jagged_tensor.KeyedJaggedTensor, splits: List[int], splits_tensors: List[torch.Tensor], input_splits: List[List[int]], input_tensors: List[torch.Tensor], labels: List[str], keys: List[str], device: torch.device, stagger: int, splits_cumsum: List[int])
 ```
 
 基类：`object`
 
 ```py
-device: device¶
+device: device
 ```
 
 ```py
-input_splits: List[List[int]]¶
+input_splits: List[List[int]]
 ```
 
 ```py
-input_tensors: List[Tensor]¶
+input_tensors: List[Tensor]
 ```
 
 ```py
-keys: List[str]¶
+keys: List[str]
 ```
 
 ```py
-labels: List[str]¶
+labels: List[str]
 ```
 
 ```py
-pg: ProcessGroup¶
+pg: ProcessGroup
 ```
 
 ```py
-splits: List[int]¶
+splits: List[int]
 ```
 
 ```py
-splits_cumsum: List[int]¶
+splits_cumsum: List[int]
 ```
 
 ```py
-splits_tensors: List[Tensor]¶
+splits_tensors: List[Tensor]
 ```
 
 ```py
-stagger: int¶
+stagger: int
 ```
 
 ```py
-class torchrec.distributed.embedding_sharding.ListOfKJTListAwaitable(awaitables: List[Awaitable[KJTList]])¶
+class torchrec.distributed.embedding_sharding.ListOfKJTListAwaitable(awaitables: List[Awaitable[KJTList]])
 ```
 
 基类：`Awaitable`[`ListOfKJTList`]
@@ -3750,7 +3750,7 @@ class torchrec.distributed.embedding_sharding.ListOfKJTListAwaitable(awaitables:
 **awaitables** (*List***[*Awaitable***[*KJTList**]**]*) – KJTList 的 Awaitable 列表。
 
 ```py
-class torchrec.distributed.embedding_sharding.ListOfKJTListSplitsAwaitable(awaitables: List[Awaitable[Awaitable[KJTList]]])¶
+class torchrec.distributed.embedding_sharding.ListOfKJTListSplitsAwaitable(awaitables: List[Awaitable[Awaitable[KJTList]]])
 ```
 
 基类：`Awaitable`[`Awaitable`[`ListOfKJTList`]]
@@ -3762,7 +3762,7 @@ Awaitable 的 Awaitable 的 ListOfKJTList。
 **awaitables** (*List***[*Awaitable***[*Awaitable***[*KJTList**]**]**]*) – 稀疏特征列表的 Awaitable 的 Awaitable 列表。
 
 ```py
-torchrec.distributed.embedding_sharding.bucketize_kjt_before_all2all(kjt: KeyedJaggedTensor, num_buckets: int, block_sizes: Tensor, output_permute: bool = False, bucketize_pos: bool = False, block_bucketize_row_pos: Optional[List[Tensor]] = None) → Tuple[KeyedJaggedTensor, Optional[Tensor]]¶
+torchrec.distributed.embedding_sharding.bucketize_kjt_before_all2all(kjt: KeyedJaggedTensor, num_buckets: int, block_sizes: Tensor, output_permute: bool = False, bucketize_pos: bool = False, block_bucketize_row_pos: Optional[List[Tensor]] = None) → Tuple[KeyedJaggedTensor, Optional[Tensor]]
 ```
 
 将 KeyedJaggedTensor 中的值分桶为 num_buckets 个桶，长度根据桶化结果重新调整。
@@ -3790,7 +3790,7 @@ torchrec.distributed.embedding_sharding.bucketize_kjt_before_all2all(kjt: KeyedJ
 Tuple[KeyedJaggedTensor, Optional[torch.Tensor]]
 
 ```py
-torchrec.distributed.embedding_sharding.group_tables(tables_per_rank: List[List[ShardedEmbeddingTable]]) → List[List[GroupedEmbeddingConfig]]¶
+torchrec.distributed.embedding_sharding.group_tables(tables_per_rank: List[List[ShardedEmbeddingTable]]) → List[List[GroupedEmbeddingConfig]]
 ```
 
 按照 DataType、PoolingType 和 EmbeddingComputeKernel 对表进行分组。
@@ -3805,10 +3805,10 @@ torchrec.distributed.embedding_sharding.group_tables(tables_per_rank: List[List[
 
 返回类型：
 
-ListList[[GroupedEmbeddingConfig]]  ## torchrec.distributed.embedding_types[](#module-torchrec.distributed.embedding_types "Permalink to this heading")
+ListList[[GroupedEmbeddingConfig]]  ## torchrec.distributed.embedding_types
 
 ```py
-class torchrec.distributed.embedding_types.BaseEmbeddingLookup(*args, **kwargs)¶
+class torchrec.distributed.embedding_types.BaseEmbeddingLookup(*args, **kwargs)
 ```
 
 基类：`ABC`，`Module`，`Generic`[`F`，`T`]
@@ -3816,7 +3816,7 @@ class torchrec.distributed.embedding_types.BaseEmbeddingLookup(*args, **kwargs)�
 由不同的嵌入实现实现的接口：例如，依赖于 nn.EmbeddingBag 或表批处理的接口等。
 
 ```py
-abstract forward(sparse_features: F) → T¶
+abstract forward(sparse_features: F) → T
 ```
 
 定义每次调用时执行的计算。
@@ -3828,39 +3828,39 @@ abstract forward(sparse_features: F) → T¶
 虽然前向传递的配方需要在此函数内定义，但应该在此之后调用`Module`实例，而不是这个，因为前者会负责运行注册的钩子，而后者会默默地忽略它们。
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.distributed.embedding_types.BaseEmbeddingSharder(fused_params: Optional[Dict[str, Any]] = None, qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)¶
+class torchrec.distributed.embedding_types.BaseEmbeddingSharder(fused_params: Optional[Dict[str, Any]] = None, qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)
 ```
 
 基类：`ModuleSharder`[`M`]
 
 ```py
-compute_kernels(sharding_type: str, compute_device_type: str) → List[str]¶
+compute_kernels(sharding_type: str, compute_device_type: str) → List[str]
 ```
 
 给定分片类型和计算设备的支持计算内核列表。
 
 ```py
-property fused_params: Optional[Dict[str, Any]]¶
+property fused_params: Optional[Dict[str, Any]]
 ```
 
 ```py
-sharding_types(compute_device_type: str) → List[str]¶
+sharding_types(compute_device_type: str) → List[str]
 ```
 
 支持的分片类型列表。查看 ShardingType 以获取常见示例。
 
 ```py
-storage_usage(tensor: Tensor, compute_device_type: str, compute_kernel: str) → Dict[str, int]¶
+storage_usage(tensor: Tensor, compute_device_type: str, compute_kernel: str) → Dict[str, int]
 ```
 
 给定计算设备和计算内核，列出系统资源及相应的使用情况
 
 ```py
-class torchrec.distributed.embedding_types.BaseGroupedFeatureProcessor(*args, **kwargs)¶
+class torchrec.distributed.embedding_types.BaseGroupedFeatureProcessor(*args, **kwargs)
 ```
 
 基类：`Module`
@@ -3868,7 +3868,7 @@ class torchrec.distributed.embedding_types.BaseGroupedFeatureProcessor(*args, **
 分组特征处理器的抽象基类
 
 ```py
-abstract forward(features: KeyedJaggedTensor) → KeyedJaggedTensor¶
+abstract forward(features: KeyedJaggedTensor) → KeyedJaggedTensor
 ```
 
 定义每次调用时执行的计算。
@@ -3880,55 +3880,55 @@ abstract forward(features: KeyedJaggedTensor) → KeyedJaggedTensor¶
 虽然前向传递的配方需要在此函数内定义，但应该在此之后调用`Module`实例，而不是这个，因为前者会负责运行注册的钩子，而后者会默默地忽略它们。
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.distributed.embedding_types.BaseQuantEmbeddingSharder(fused_params: Optional[Dict[str, Any]] = None, shardable_params: Optional[List[str]] = None)¶
+class torchrec.distributed.embedding_types.BaseQuantEmbeddingSharder(fused_params: Optional[Dict[str, Any]] = None, shardable_params: Optional[List[str]] = None)
 ```
 
 基类：`ModuleSharder`[`M`]
 
 ```py
-compute_kernels(sharding_type: str, compute_device_type: str) → List[str]¶
+compute_kernels(sharding_type: str, compute_device_type: str) → List[str]
 ```
 
 给定分片类型和计算设备的支持计算内核列表。
 
 ```py
-property fused_params: Optional[Dict[str, Any]]¶
+property fused_params: Optional[Dict[str, Any]]
 ```
 
 ```py
-shardable_parameters(module: M) → Dict[str, Parameter]¶
+shardable_parameters(module: M) → Dict[str, Parameter]
 ```
 
 可以进行分片的参数列表。
 
 ```py
-sharding_types(compute_device_type: str) → List[str]¶
+sharding_types(compute_device_type: str) → List[str]
 ```
 
 支持的分片类型列表。查看 ShardingType 以获取常见示例。
 
 ```py
-storage_usage(tensor: Tensor, compute_device_type: str, compute_kernel: str) → Dict[str, int]¶
+storage_usage(tensor: Tensor, compute_device_type: str, compute_kernel: str) → Dict[str, int]
 ```
 
 给定计算设备和计算内核，列出系统资源及相应的使用情况
 
 ```py
-class torchrec.distributed.embedding_types.EmbeddingAttributes(compute_kernel: torchrec.distributed.embedding_types.EmbeddingComputeKernel = <EmbeddingComputeKernel.DENSE: 'dense'>)¶
+class torchrec.distributed.embedding_types.EmbeddingAttributes(compute_kernel: torchrec.distributed.embedding_types.EmbeddingComputeKernel = <EmbeddingComputeKernel.DENSE: 'dense'>)
 ```
 
 基类：`object`
 
 ```py
-compute_kernel: EmbeddingComputeKernel = 'dense'¶
+compute_kernel: EmbeddingComputeKernel = 'dense'
 ```
 
 ```py
-class torchrec.distributed.embedding_types.EmbeddingComputeKernel(value)¶
+class torchrec.distributed.embedding_types.EmbeddingComputeKernel(value)
 ```
 
 基类：`Enum`
@@ -3936,35 +3936,35 @@ class torchrec.distributed.embedding_types.EmbeddingComputeKernel(value)¶
 一个枚举。
 
 ```py
-DENSE = 'dense'¶
+DENSE = 'dense'
 ```
 
 ```py
-FUSED = 'fused'¶
+FUSED = 'fused'
 ```
 
 ```py
-FUSED_UVM = 'fused_uvm'¶
+FUSED_UVM = 'fused_uvm'
 ```
 
 ```py
-FUSED_UVM_CACHING = 'fused_uvm_caching'¶
+FUSED_UVM_CACHING = 'fused_uvm_caching'
 ```
 
 ```py
-QUANT = 'quant'¶
+QUANT = 'quant'
 ```
 
 ```py
-QUANT_UVM = 'quant_uvm'¶
+QUANT_UVM = 'quant_uvm'
 ```
 
 ```py
-QUANT_UVM_CACHING = 'quant_uvm_caching'¶
+QUANT_UVM_CACHING = 'quant_uvm_caching'
 ```
 
 ```py
-class torchrec.distributed.embedding_types.FeatureShardingMixIn¶
+class torchrec.distributed.embedding_types.FeatureShardingMixIn
 ```
 
 基类：`object`
@@ -3972,109 +3972,109 @@ class torchrec.distributed.embedding_types.FeatureShardingMixIn¶
 特征分片接口，提供分片感知特征元数据。
 
 ```py
-feature_names() → List[str]¶
+feature_names() → List[str]
 ```
 
 ```py
-feature_names_per_rank() → List[List[str]]¶
+feature_names_per_rank() → List[List[str]]
 ```
 
 ```py
-features_per_rank() → List[int]¶
+features_per_rank() → List[int]
 ```
 
 ```py
-class torchrec.distributed.embedding_types.GroupedEmbeddingConfig(data_type: torchrec.types.DataType, pooling: torchrec.modules.embedding_configs.PoolingType, is_weighted: bool, has_feature_processor: bool, compute_kernel: torchrec.distributed.embedding_types.EmbeddingComputeKernel, embedding_tables: List[torchrec.distributed.embedding_types.ShardedEmbeddingTable], fused_params: Union[Dict[str, Any], NoneType] = None)¶
+class torchrec.distributed.embedding_types.GroupedEmbeddingConfig(data_type: torchrec.types.DataType, pooling: torchrec.modules.embedding_configs.PoolingType, is_weighted: bool, has_feature_processor: bool, compute_kernel: torchrec.distributed.embedding_types.EmbeddingComputeKernel, embedding_tables: List[torchrec.distributed.embedding_types.ShardedEmbeddingTable], fused_params: Union[Dict[str, Any], NoneType] = None)
 ```
 
 基类：`object`
 
 ```py
-compute_kernel: EmbeddingComputeKernel¶
+compute_kernel: EmbeddingComputeKernel
 ```
 
 ```py
-data_type: DataType¶
+data_type: DataType
 ```
 
 ```py
-dim_sum() → int¶
+dim_sum() → int
 ```
 
 ```py
-embedding_dims() → List[int]¶
+embedding_dims() → List[int]
 ```
 
 ```py
-embedding_names() → List[str]¶
+embedding_names() → List[str]
 ```
 
 ```py
-embedding_shard_metadata() → List[Optional[ShardMetadata]]¶
+embedding_shard_metadata() → List[Optional[ShardMetadata]]
 ```
 
 ```py
-embedding_tables: List[ShardedEmbeddingTable]¶
+embedding_tables: List[ShardedEmbeddingTable]
 ```
 
 ```py
-feature_hash_sizes() → List[int]¶
+feature_hash_sizes() → List[int]
 ```
 
 ```py
-feature_names() → List[str]¶
+feature_names() → List[str]
 ```
 
 ```py
-fused_params: Optional[Dict[str, Any]] = None¶
+fused_params: Optional[Dict[str, Any]] = None
 ```
 
 ```py
-has_feature_processor: bool¶
+has_feature_processor: bool
 ```
 
 ```py
-is_weighted: bool¶
+is_weighted: bool
 ```
 
 ```py
-num_features() → int¶
+num_features() → int
 ```
 
 ```py
-pooling: PoolingType¶
+pooling: PoolingType
 ```
 
 ```py
-table_names() → List[str]¶
+table_names() → List[str]
 ```
 
 ```py
-class torchrec.distributed.embedding_types.KJTList(features: List[KeyedJaggedTensor])¶
-```
-
-基类：`Multistreamable`
-
-```py
-record_stream(stream: Stream) → None¶
-```
-
-参见[`pytorch.org/docs/stable/generated/torch.Tensor.record_stream.html`](https://pytorch.org/docs/stable/generated/torch.Tensor.record_stream.html)
-
-```py
-class torchrec.distributed.embedding_types.ListOfKJTList(features: List[KJTList])¶
+class torchrec.distributed.embedding_types.KJTList(features: List[KeyedJaggedTensor])
 ```
 
 基类：`Multistreamable`
 
 ```py
-record_stream(stream: Stream) → None¶
+record_stream(stream: Stream) → None
 ```
 
 参见[`pytorch.org/docs/stable/generated/torch.Tensor.record_stream.html`](https://pytorch.org/docs/stable/generated/torch.Tensor.record_stream.html)
 
 ```py
-class torchrec.distributed.embedding_types.ModuleShardingMixIn¶
+class torchrec.distributed.embedding_types.ListOfKJTList(features: List[KJTList])
+```
+
+基类：`Multistreamable`
+
+```py
+record_stream(stream: Stream) → None
+```
+
+参见[`pytorch.org/docs/stable/generated/torch.Tensor.record_stream.html`](https://pytorch.org/docs/stable/generated/torch.Tensor.record_stream.html)
+
+```py
+class torchrec.distributed.embedding_types.ModuleShardingMixIn
 ```
 
 基类：`object`
@@ -4082,11 +4082,11 @@ class torchrec.distributed.embedding_types.ModuleShardingMixIn¶
 访问分片模块的分片方案的接口。
 
 ```py
-property shardings: Dict[str, FeatureShardingMixIn]¶
+property shardings: Dict[str, FeatureShardingMixIn]
 ```
 
 ```py
-class torchrec.distributed.embedding_types.OptimType(value)¶
+class torchrec.distributed.embedding_types.OptimType(value)
 ```
 
 基类：`Enum`
@@ -4094,69 +4094,69 @@ class torchrec.distributed.embedding_types.OptimType(value)¶
 一个枚举。
 
 ```py
-ADAGRAD = 'ADAGRAD'¶
+ADAGRAD = 'ADAGRAD'
 ```
 
 ```py
-ADAM = 'ADAM'¶
+ADAM = 'ADAM'
 ```
 
 ```py
-ADAMW = 'ADAMW'¶
+ADAMW = 'ADAMW'
 ```
 
 ```py
-LAMB = 'LAMB'¶
+LAMB = 'LAMB'
 ```
 
 ```py
-LARS_SGD = 'LARS_SGD'¶
+LARS_SGD = 'LARS_SGD'
 ```
 
 ```py
-LION = 'LION'¶
+LION = 'LION'
 ```
 
 ```py
-PARTIAL_ROWWISE_ADAM = 'PARTIAL_ROWWISE_ADAM'¶
+PARTIAL_ROWWISE_ADAM = 'PARTIAL_ROWWISE_ADAM'
 ```
 
 ```py
-PARTIAL_ROWWISE_LAMB = 'PARTIAL_ROWWISE_LAMB'¶
+PARTIAL_ROWWISE_LAMB = 'PARTIAL_ROWWISE_LAMB'
 ```
 
 ```py
-ROWWISE_ADAGRAD = 'ROWWISE_ADAGRAD'¶
+ROWWISE_ADAGRAD = 'ROWWISE_ADAGRAD'
 ```
 
 ```py
-SGD = 'SGD'¶
+SGD = 'SGD'
 ```
 
 ```py
-SHAMPOO = 'SHAMPOO'¶
+SHAMPOO = 'SHAMPOO'
 ```
 
 ```py
-SHAMPOO_V2 = 'SHAMPOO_V2'¶
+SHAMPOO_V2 = 'SHAMPOO_V2'
 ```
 
 ```py
-class torchrec.distributed.embedding_types.ShardedConfig(local_rows: int = 0, local_cols: int = 0)¶
+class torchrec.distributed.embedding_types.ShardedConfig(local_rows: int = 0, local_cols: int = 0)
 ```
 
 基类：`object`
 
 ```py
-local_cols: int = 0¶
+local_cols: int = 0
 ```
 
 ```py
-local_rows: int = 0¶
+local_rows: int = 0
 ```
 
 ```py
-class torchrec.distributed.embedding_types.ShardedEmbeddingModule(qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)¶
+class torchrec.distributed.embedding_types.ShardedEmbeddingModule(qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)
 ```
 
 基类：`ShardedModule`[`CompIn`, `DistOut`, `Out`, `ShrdCtx`], `ModuleShardingMixIn`
@@ -4168,87 +4168,87 @@ class torchrec.distributed.embedding_types.ShardedEmbeddingModule(qcomm_codecs_r
 qcomm_codecs_registry (Optional[Dict[str, QuantizedCommCodecs]]) : CommOp 名称到 QuantizedCommCodecs 的映射
 
 ```py
-extra_repr() → str¶
+extra_repr() → str
 ```
 
 漂亮地打印模块的查找模块、输入分布和输出分布的表示
 
 ```py
-prefetch(dist_input: KJTList, forward_stream: Optional[Stream] = None) → None¶
+prefetch(dist_input: KJTList, forward_stream: Optional[Stream] = None) → None
 ```
 
 为每个查找模块预取输入特征。
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.distributed.embedding_types.ShardedEmbeddingTable(num_embeddings: int, embedding_dim: int, name: str = '', data_type: torchrec.types.DataType = <DataType.FP32: 'FP32'>, feature_names: List[str] = <factory>, weight_init_max: Union[float, NoneType] = None, weight_init_min: Union[float, NoneType] = None, pruning_indices_remapping: Union[torch.Tensor, NoneType] = None, init_fn: Union[Callable[[torch.Tensor], Union[torch.Tensor, NoneType]], NoneType] = None, need_pos: bool = False, pooling: torchrec.modules.embedding_configs.PoolingType = <PoolingType.SUM: 'SUM'>, is_weighted: bool = False, has_feature_processor: bool = False, embedding_names: List[str] = <factory>, compute_kernel: torchrec.distributed.embedding_types.EmbeddingComputeKernel = <EmbeddingComputeKernel.DENSE: 'dense'>, local_rows: int = 0, local_cols: int = 0, local_metadata: Union[torch.distributed._shard.metadata.ShardMetadata, NoneType] = None, global_metadata: Union[torch.distributed._shard.sharded_tensor.metadata.ShardedTensorMetadata, NoneType] = None, fused_params: Union[Dict[str, Any], NoneType] = None)¶
+class torchrec.distributed.embedding_types.ShardedEmbeddingTable(num_embeddings: int, embedding_dim: int, name: str = '', data_type: torchrec.types.DataType = <DataType.FP32: 'FP32'>, feature_names: List[str] = <factory>, weight_init_max: Union[float, NoneType] = None, weight_init_min: Union[float, NoneType] = None, pruning_indices_remapping: Union[torch.Tensor, NoneType] = None, init_fn: Union[Callable[[torch.Tensor], Union[torch.Tensor, NoneType]], NoneType] = None, need_pos: bool = False, pooling: torchrec.modules.embedding_configs.PoolingType = <PoolingType.SUM: 'SUM'>, is_weighted: bool = False, has_feature_processor: bool = False, embedding_names: List[str] = <factory>, compute_kernel: torchrec.distributed.embedding_types.EmbeddingComputeKernel = <EmbeddingComputeKernel.DENSE: 'dense'>, local_rows: int = 0, local_cols: int = 0, local_metadata: Union[torch.distributed._shard.metadata.ShardMetadata, NoneType] = None, global_metadata: Union[torch.distributed._shard.sharded_tensor.metadata.ShardedTensorMetadata, NoneType] = None, fused_params: Union[Dict[str, Any], NoneType] = None)
 ```
 
 基类：`ShardedMetaConfig`, `EmbeddingAttributes`, `EmbeddingTableConfig`
 
 ```py
-fused_params: Optional[Dict[str, Any]] = None¶
+fused_params: Optional[Dict[str, Any]] = None
 ```
 
 ```py
-class torchrec.distributed.embedding_types.ShardedMetaConfig(local_rows: int = 0, local_cols: int = 0, local_metadata: Union[torch.distributed._shard.metadata.ShardMetadata, NoneType] = None, global_metadata: Union[torch.distributed._shard.sharded_tensor.metadata.ShardedTensorMetadata, NoneType] = None)¶
+class torchrec.distributed.embedding_types.ShardedMetaConfig(local_rows: int = 0, local_cols: int = 0, local_metadata: Union[torch.distributed._shard.metadata.ShardMetadata, NoneType] = None, global_metadata: Union[torch.distributed._shard.sharded_tensor.metadata.ShardedTensorMetadata, NoneType] = None)
 ```
 
 基类：`ShardedConfig`
 
 ```py
-global_metadata: Optional[ShardedTensorMetadata] = None¶
+global_metadata: Optional[ShardedTensorMetadata] = None
 ```
 
 ```py
-local_metadata: Optional[ShardMetadata] = None¶
+local_metadata: Optional[ShardMetadata] = None
 ```
 
 ```py
-torchrec.distributed.embedding_types.compute_kernel_to_embedding_location(compute_kernel: EmbeddingComputeKernel) → EmbeddingLocation¶
-```  ## torchrec.distributed.embeddingbag[](#module-torchrec.distributed.embeddingbag "Permalink to this heading")
+torchrec.distributed.embedding_types.compute_kernel_to_embedding_location(compute_kernel: EmbeddingComputeKernel) → EmbeddingLocation
+```  ## torchrec.distributed.embeddingbag
 
 ```py
-class torchrec.distributed.embeddingbag.EmbeddingAwaitable(*args, **kwargs)¶
+class torchrec.distributed.embeddingbag.EmbeddingAwaitable(*args, **kwargs)
 ```
 
 基类：`LazyAwaitable`[`Tensor`]
 
 ```py
-class torchrec.distributed.embeddingbag.EmbeddingBagCollectionAwaitable(*args, **kwargs)¶
+class torchrec.distributed.embeddingbag.EmbeddingBagCollectionAwaitable(*args, **kwargs)
 ```
 
 基类：`LazyAwaitable`[`KeyedTensor`]
 
 ```py
-class torchrec.distributed.embeddingbag.EmbeddingBagCollectionContext(sharding_contexts: List[Union[torchrec.distributed.embedding_sharding.EmbeddingShardingContext, NoneType]] = <factory>, inverse_indices: Union[Tuple[List[str], torch.Tensor], NoneType] = None, variable_batch_per_feature: bool = False)¶
+class torchrec.distributed.embeddingbag.EmbeddingBagCollectionContext(sharding_contexts: List[Union[torchrec.distributed.embedding_sharding.EmbeddingShardingContext, NoneType]] = <factory>, inverse_indices: Union[Tuple[List[str], torch.Tensor], NoneType] = None, variable_batch_per_feature: bool = False)
 ```
 
 基类：`Multistreamable`
 
 ```py
-inverse_indices: Optional[Tuple[List[str], Tensor]] = None¶
+inverse_indices: Optional[Tuple[List[str], Tensor]] = None
 ```
 
 ```py
-record_stream(stream: Stream) → None¶
+record_stream(stream: Stream) → None
 ```
 
 参见[`pytorch.org/docs/stable/generated/torch.Tensor.record_stream.html`](https://pytorch.org/docs/stable/generated/torch.Tensor.record_stream.html)
 
 ```py
-sharding_contexts: List[Optional[EmbeddingShardingContext]]¶
+sharding_contexts: List[Optional[EmbeddingShardingContext]]
 ```
 
 ```py
-variable_batch_per_feature: bool = False¶
+variable_batch_per_feature: bool = False
 ```
 
 ```py
-class torchrec.distributed.embeddingbag.EmbeddingBagCollectionSharder(fused_params: Optional[Dict[str, Any]] = None, qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)¶
+class torchrec.distributed.embeddingbag.EmbeddingBagCollectionSharder(fused_params: Optional[Dict[str, Any]] = None, qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)
 ```
 
 基类：`BaseEmbeddingSharder`[`EmbeddingBagCollection`]
@@ -4256,11 +4256,11 @@ class torchrec.distributed.embeddingbag.EmbeddingBagCollectionSharder(fused_para
 此实现使用非融合的 EmbeddingBagCollection
 
 ```py
-property module_type: Type[EmbeddingBagCollection]¶
+property module_type: Type[EmbeddingBagCollection]
 ```
 
 ```py
-shard(module: EmbeddingBagCollection, params: Dict[str, ParameterSharding], env: ShardingEnv, device: Optional[device] = None) → ShardedEmbeddingBagCollection¶
+shard(module: EmbeddingBagCollection, params: Dict[str, ParameterSharding], env: ShardingEnv, device: Optional[device] = None) → ShardedEmbeddingBagCollection
 ```
 
 执行实际的分片。它将根据相应的 ParameterSharding 在请求的位置上分配参数。
@@ -4286,13 +4286,13 @@ shard(module: EmbeddingBagCollection, params: Dict[str, ParameterSharding], env:
 ShardedModule[Any, Any, Any]
 
 ```py
-shardable_parameters(module: EmbeddingBagCollection) → Dict[str, Parameter]¶
+shardable_parameters(module: EmbeddingBagCollection) → Dict[str, Parameter]
 ```
 
 可以分片的参数列表。
 
 ```py
-class torchrec.distributed.embeddingbag.EmbeddingBagSharder(fused_params: Optional[Dict[str, Any]] = None, qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)¶
+class torchrec.distributed.embeddingbag.EmbeddingBagSharder(fused_params: Optional[Dict[str, Any]] = None, qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)
 ```
 
 基类：`BaseEmbeddingSharder`[`EmbeddingBag`]
@@ -4300,11 +4300,11 @@ class torchrec.distributed.embeddingbag.EmbeddingBagSharder(fused_params: Option
 此实现使用非融合的 nn.EmbeddingBag
 
 ```py
-property module_type: Type[EmbeddingBag]¶
+property module_type: Type[EmbeddingBag]
 ```
 
 ```py
-shard(module: EmbeddingBag, params: Dict[str, ParameterSharding], env: ShardingEnv, device: Optional[device] = None) → ShardedEmbeddingBag¶
+shard(module: EmbeddingBag, params: Dict[str, ParameterSharding], env: ShardingEnv, device: Optional[device] = None) → ShardedEmbeddingBag
 ```
 
 执行实际的分片。它将根据相应的 ParameterSharding 在请求的位置上分配参数。
@@ -4330,13 +4330,13 @@ shard(module: EmbeddingBag, params: Dict[str, ParameterSharding], env: ShardingE
 ShardedModule[Any, Any, Any]
 
 ```py
-shardable_parameters(module: EmbeddingBag) → Dict[str, Parameter]¶
+shardable_parameters(module: EmbeddingBag) → Dict[str, Parameter]
 ```
 
 可以分片的参数列表。
 
 ```py
-class torchrec.distributed.embeddingbag.ShardedEmbeddingBag(module: EmbeddingBag, table_name_to_parameter_sharding: Dict[str, ParameterSharding], env: ShardingEnv, fused_params: Optional[Dict[str, Any]] = None, device: Optional[device] = None)¶
+class torchrec.distributed.embeddingbag.ShardedEmbeddingBag(module: EmbeddingBag, table_name_to_parameter_sharding: Dict[str, ParameterSharding], env: ShardingEnv, fused_params: Optional[Dict[str, Any]] = None, device: Optional[device] = None)
 ```
 
 基类：`ShardedEmbeddingModule`[`KeyedJaggedTensor`, `Tensor`, `Tensor`, `NullShardedModuleContext`], `FusedOptimizerModule`
@@ -4344,23 +4344,23 @@ class torchrec.distributed.embeddingbag.ShardedEmbeddingBag(module: EmbeddingBag
 nn.EmbeddingBag 的分片实现。这是公共 API 的一部分，允许手动数据分布流水线。
 
 ```py
-compute(ctx: NullShardedModuleContext, dist_input: KeyedJaggedTensor) → Tensor¶
+compute(ctx: NullShardedModuleContext, dist_input: KeyedJaggedTensor) → Tensor
 ```
 
 ```py
-create_context() → NullShardedModuleContext¶
+create_context() → NullShardedModuleContext
 ```
 
 ```py
-property fused_optimizer: KeyedOptimizer¶
+property fused_optimizer: KeyedOptimizer
 ```
 
 ```py
-input_dist(ctx: NullShardedModuleContext, input: Tensor, offsets: Optional[Tensor] = None, per_sample_weights: Optional[Tensor] = None) → Awaitable[Awaitable[KeyedJaggedTensor]]¶
+input_dist(ctx: NullShardedModuleContext, input: Tensor, offsets: Optional[Tensor] = None, per_sample_weights: Optional[Tensor] = None) → Awaitable[Awaitable[KeyedJaggedTensor]]
 ```
 
 ```py
-load_state_dict(state_dict: OrderedDict[str, torch.Tensor], strict: bool = True) → _IncompatibleKeys¶
+load_state_dict(state_dict: OrderedDict[str, torch.Tensor], strict: bool = True) → _IncompatibleKeys
 ```
 
 将参数和缓冲区从`state_dict`复制到此模块及其后代。
@@ -4394,7 +4394,7 @@ load_state_dict(state_dict: OrderedDict[str, torch.Tensor], strict: bool = True)
 如果将参数或缓冲区注册为`None`，并且其相应的键存在于`state_dict`中，`load_state_dict()`将引发`RuntimeError`。
 
 ```py
-named_buffers(prefix: str = '', recurse: bool = True, remove_duplicate: bool = True) → Iterator[Tuple[str, Tensor]]¶
+named_buffers(prefix: str = '', recurse: bool = True, remove_duplicate: bool = True) → Iterator[Tuple[str, Tensor]]
 ```
 
 返回一个迭代器，遍历模块缓冲区，产生缓冲区的名称以及缓冲区本身。
@@ -4421,7 +4421,7 @@ named_buffers(prefix: str = '', recurse: bool = True, remove_duplicate: bool = T
 ```
 
 ```py
-named_modules(memo: Optional[Set[Module]] = None, prefix: str = '', remove_duplicate: bool = True) → Iterator[Tuple[str, Module]]¶
+named_modules(memo: Optional[Set[Module]] = None, prefix: str = '', remove_duplicate: bool = True) → Iterator[Tuple[str, Module]]
 ```
 
 返回一个迭代器，遍历网络中的所有模块，产生模块的名称以及模块本身。
@@ -4458,7 +4458,7 @@ named_modules(memo: Optional[Set[Module]] = None, prefix: str = '', remove_dupli
 ```
 
 ```py
-named_parameters(prefix: str = '', recurse: bool = True, remove_duplicate: bool = True) → Iterator[Tuple[str, Parameter]]¶
+named_parameters(prefix: str = '', recurse: bool = True, remove_duplicate: bool = True) → Iterator[Tuple[str, Parameter]]
 ```
 
 返回一个迭代器，遍历模块参数，产生参数的名称以及参数本身。
@@ -4485,15 +4485,15 @@ named_parameters(prefix: str = '', recurse: bool = True, remove_duplicate: bool 
 ```
 
 ```py
-output_dist(ctx: NullShardedModuleContext, output: Tensor) → LazyAwaitable[Tensor]¶
+output_dist(ctx: NullShardedModuleContext, output: Tensor) → LazyAwaitable[Tensor]
 ```
 
 ```py
-sharded_parameter_names(prefix: str = '') → Iterator[str]¶
+sharded_parameter_names(prefix: str = '') → Iterator[str]
 ```
 
 ```py
-state_dict(destination: Optional[Dict[str, Any]] = None, prefix: str = '', keep_vars: bool = False) → Dict[str, Any]¶
+state_dict(destination: Optional[Dict[str, Any]] = None, prefix: str = '', keep_vars: bool = False) → Dict[str, Any]
 ```
 
 返回一个包含模块整体状态引用的字典。
@@ -4537,11 +4537,11 @@ state_dict(destination: Optional[Dict[str, Any]] = None, prefix: str = '', keep_
 ```
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.distributed.embeddingbag.ShardedEmbeddingBagCollection(module: EmbeddingBagCollectionInterface, table_name_to_parameter_sharding: Dict[str, ParameterSharding], env: ShardingEnv, fused_params: Optional[Dict[str, Any]] = None, device: Optional[device] = None, qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)¶
+class torchrec.distributed.embeddingbag.ShardedEmbeddingBagCollection(module: EmbeddingBagCollectionInterface, table_name_to_parameter_sharding: Dict[str, ParameterSharding], env: ShardingEnv, fused_params: Optional[Dict[str, Any]] = None, device: Optional[device] = None, qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)
 ```
 
 基类：`ShardedEmbeddingModule`[`KJTList`, `List`[`Tensor`], `KeyedTensor`, `EmbeddingBagCollectionContext`], `FusedOptimizerModule`
@@ -4549,71 +4549,71 @@ class torchrec.distributed.embeddingbag.ShardedEmbeddingBagCollection(module: Em
 EmbeddingBagCollection 的分片实现。这是公共 API 的一部分，允许手动数据分布流水线化。
 
 ```py
-compute(ctx: EmbeddingBagCollectionContext, dist_input: KJTList) → List[Tensor]¶
+compute(ctx: EmbeddingBagCollectionContext, dist_input: KJTList) → List[Tensor]
 ```
 
 ```py
-compute_and_output_dist(ctx: EmbeddingBagCollectionContext, input: KJTList) → LazyAwaitable[KeyedTensor]¶
+compute_and_output_dist(ctx: EmbeddingBagCollectionContext, input: KJTList) → LazyAwaitable[KeyedTensor]
 ```
 
 在存在多个输出分布的情况下，重写此方法并在相应的计算完成后立即初始化输出分布是有意义的。
 
 ```py
-create_context() → EmbeddingBagCollectionContext¶
+create_context() → EmbeddingBagCollectionContext
 ```
 
 ```py
-property fused_optimizer: KeyedOptimizer¶
+property fused_optimizer: KeyedOptimizer
 ```
 
 ```py
-input_dist(ctx: EmbeddingBagCollectionContext, features: KeyedJaggedTensor) → Awaitable[Awaitable[KJTList]]¶
+input_dist(ctx: EmbeddingBagCollectionContext, features: KeyedJaggedTensor) → Awaitable[Awaitable[KJTList]]
 ```
 
 ```py
-output_dist(ctx: EmbeddingBagCollectionContext, output: List[Tensor]) → LazyAwaitable[KeyedTensor]¶
+output_dist(ctx: EmbeddingBagCollectionContext, output: List[Tensor]) → LazyAwaitable[KeyedTensor]
 ```
 
 ```py
-reset_parameters() → None¶
+reset_parameters() → None
 ```
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.distributed.embeddingbag.VariableBatchEmbeddingBagCollectionAwaitable(*args, **kwargs)¶
+class torchrec.distributed.embeddingbag.VariableBatchEmbeddingBagCollectionAwaitable(*args, **kwargs)
 ```
 
 基类：`LazyAwaitable`[`KeyedTensor`]
 
 ```py
-torchrec.distributed.embeddingbag.construct_output_kt(embeddings: List[Tensor], embedding_names: List[str], embedding_dims: List[int]) → KeyedTensor¶
+torchrec.distributed.embeddingbag.construct_output_kt(embeddings: List[Tensor], embedding_names: List[str], embedding_dims: List[int]) → KeyedTensor
 ```
 
 ```py
-torchrec.distributed.embeddingbag.create_embedding_bag_sharding(sharding_type: str, sharding_infos: List[EmbeddingShardingInfo], env: ShardingEnv, device: Optional[device] = None, permute_embeddings: bool = False, qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None) → EmbeddingSharding[EmbeddingShardingContext, KeyedJaggedTensor, Tensor, Tensor]¶
+torchrec.distributed.embeddingbag.create_embedding_bag_sharding(sharding_type: str, sharding_infos: List[EmbeddingShardingInfo], env: ShardingEnv, device: Optional[device] = None, permute_embeddings: bool = False, qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None) → EmbeddingSharding[EmbeddingShardingContext, KeyedJaggedTensor, Tensor, Tensor]
 ```
 
 ```py
-torchrec.distributed.embeddingbag.create_sharding_infos_by_sharding(module: EmbeddingBagCollectionInterface, table_name_to_parameter_sharding: Dict[str, ParameterSharding], prefix: str, fused_params: Optional[Dict[str, Any]], suffix: Optional[str] = 'weight') → Dict[str, List[EmbeddingShardingInfo]]¶
+torchrec.distributed.embeddingbag.create_sharding_infos_by_sharding(module: EmbeddingBagCollectionInterface, table_name_to_parameter_sharding: Dict[str, ParameterSharding], prefix: str, fused_params: Optional[Dict[str, Any]], suffix: Optional[str] = 'weight') → Dict[str, List[EmbeddingShardingInfo]]
 ```
 
 ```py
-torchrec.distributed.embeddingbag.replace_placement_with_meta_device(sharding_infos: List[EmbeddingShardingInfo]) → None¶
+torchrec.distributed.embeddingbag.replace_placement_with_meta_device(sharding_infos: List[EmbeddingShardingInfo]) → None
 ```
 
-在某些情况下，放置设备和张量设备可能不匹配，例如将元设备传递给 DMP 并将 cuda 传递给 EmbeddingShardingPlanner。在获取分片规划器后，我们需要使设备保持一致。## torchrec.distributed.grouped_position_weighted[](#module-torchrec.distributed.grouped_position_weighted "Permalink to this heading")
+在某些情况下，放置设备和张量设备可能不匹配，例如将元设备传递给 DMP 并将 cuda 传递给 EmbeddingShardingPlanner。在获取分片规划器后，我们需要使设备保持一致。## torchrec.distributed.grouped_position_weighted
 
 ```py
-class torchrec.distributed.grouped_position_weighted.GroupedPositionWeightedModule(max_feature_lengths: Dict[str, int], device: Optional[device] = None)¶
+class torchrec.distributed.grouped_position_weighted.GroupedPositionWeightedModule(max_feature_lengths: Dict[str, int], device: Optional[device] = None)
 ```
 
 基类：`BaseGroupedFeatureProcessor`
 
 ```py
-forward(features: KeyedJaggedTensor) → KeyedJaggedTensor¶
+forward(features: KeyedJaggedTensor) → KeyedJaggedTensor
 ```
 
 定义每次调用时执行的计算。
@@ -4625,7 +4625,7 @@ forward(features: KeyedJaggedTensor) → KeyedJaggedTensor¶
 尽管前向传递的配方需要在此函数内定义，但应该在此之后调用`Module`实例，而不是在此处调用，因为前者会负责运行注册的钩子，而后者会默默地忽略它们。
 
 ```py
-named_buffers(prefix: str = '', recurse: bool = True, remove_duplicate: bool = True) → Iterator[Tuple[str, Tensor]]¶
+named_buffers(prefix: str = '', recurse: bool = True, remove_duplicate: bool = True) → Iterator[Tuple[str, Tensor]]
 ```
 
 返回一个模块缓冲区的迭代器，同时返回缓冲区的名称和缓冲区本身。
@@ -4652,7 +4652,7 @@ named_buffers(prefix: str = '', recurse: bool = True, remove_duplicate: bool = T
 ```
 
 ```py
-named_parameters(prefix: str = '', recurse: bool = True, remove_duplicate: bool = True) → Iterator[Tuple[str, Parameter]]¶
+named_parameters(prefix: str = '', recurse: bool = True, remove_duplicate: bool = True) → Iterator[Tuple[str, Parameter]]
 ```
 
 返回一个模块参数的迭代器，同时返回参数的名称和参数本身。
@@ -4679,7 +4679,7 @@ named_parameters(prefix: str = '', recurse: bool = True, remove_duplicate: bool 
 ```
 
 ```py
-state_dict(destination: Optional[Dict[str, Any]] = None, prefix: str = '', keep_vars: bool = False) → Dict[str, Any]¶
+state_dict(destination: Optional[Dict[str, Any]] = None, prefix: str = '', keep_vars: bool = False) → Dict[str, Any]
 ```
 
 返回一个包含对模块整体状态的引用的字典。
@@ -4723,11 +4723,11 @@ state_dict(destination: Optional[Dict[str, Any]] = None, prefix: str = '', keep_
 ```
 
 ```py
-training: bool¶
-```  ## torchrec.distributed.model_parallel[](#module-torchrec.distributed.model_parallel "Permalink to this heading")
+training: bool
+```  ## torchrec.distributed.model_parallel
 
 ```py
-class torchrec.distributed.model_parallel.DataParallelWrapper¶
+class torchrec.distributed.model_parallel.DataParallelWrapper
 ```
 
 基类：`ABC`
@@ -4735,11 +4735,11 @@ class torchrec.distributed.model_parallel.DataParallelWrapper¶
 由自定义数据并行包装器实现的接口。
 
 ```py
-abstract wrap(dmp: DistributedModelParallel, env: ShardingEnv, device: device) → None¶
+abstract wrap(dmp: DistributedModelParallel, env: ShardingEnv, device: device) → None
 ```
 
 ```py
-class torchrec.distributed.model_parallel.DefaultDataParallelWrapper(bucket_cap_mb: int = 25, static_graph: bool = True, find_unused_parameters: bool = False, allreduce_comm_precision: Optional[str] = None)¶
+class torchrec.distributed.model_parallel.DefaultDataParallelWrapper(bucket_cap_mb: int = 25, static_graph: bool = True, find_unused_parameters: bool = False, allreduce_comm_precision: Optional[str] = None)
 ```
 
 基类：`DataParallelWrapper`
@@ -4747,11 +4747,11 @@ class torchrec.distributed.model_parallel.DefaultDataParallelWrapper(bucket_cap_
 默认数据并行包装器，将数据并行应用于所有未分片的模块。
 
 ```py
-wrap(dmp: DistributedModelParallel, env: ShardingEnv, device: device) → None¶
+wrap(dmp: DistributedModelParallel, env: ShardingEnv, device: device) → None
 ```
 
 ```py
-class torchrec.distributed.model_parallel.DistributedModelParallel(module: Module, env: Optional[ShardingEnv] = None, device: Optional[device] = None, plan: Optional[ShardingPlan] = None, sharders: Optional[List[ModuleSharder[Module]]] = None, init_data_parallel: bool = True, init_parameters: bool = True, data_parallel_wrapper: Optional[DataParallelWrapper] = None)¶
+class torchrec.distributed.model_parallel.DistributedModelParallel(module: Module, env: Optional[ShardingEnv] = None, device: Optional[device] = None, plan: Optional[ShardingPlan] = None, sharders: Optional[List[ModuleSharder[Module]]] = None, init_data_parallel: bool = True, init_parameters: bool = True, data_parallel_wrapper: Optional[DataParallelWrapper] = None)
 ```
 
 基类：`Module`，`FusedOptimizerModule`
@@ -4793,17 +4793,17 @@ m.apply(init_weights)
 ```
 
 ```py
-bare_named_parameters(prefix: str = '', recurse: bool = True) → Iterator[Tuple[str, Parameter]]¶
+bare_named_parameters(prefix: str = '', recurse: bool = True) → Iterator[Tuple[str, Parameter]]
 ```
 
 ```py
-copy(device: device) → DistributedModelParallel¶
+copy(device: device) → DistributedModelParallel
 ```
 
 通过调用每个模块的自定义复制过程递归地将子模块复制到新设备，因为一些模块需要使用原始引用（例如用于推理的 ShardedModule）。
 
 ```py
-forward(*args, **kwargs) → Any¶
+forward(*args, **kwargs) → Any
 ```
 
 定义每次调用时执行的计算。
@@ -4815,17 +4815,17 @@ forward(*args, **kwargs) → Any¶
 尽管前向传递的方法需要在此函数内定义，但应该在此之后调用`Module`实例，而不是此方法，因为前者会负责运行注册的钩子，而后者会默默地忽略它们。
 
 ```py
-property fused_optimizer: KeyedOptimizer¶
+property fused_optimizer: KeyedOptimizer
 ```
 
 ```py
-init_data_parallel() → None¶
+init_data_parallel() → None
 ```
 
 查看 init_data_parallel c-tor 参数的用法。可以多次调用此方法。
 
 ```py
-load_state_dict(state_dict: OrderedDict[str, torch.Tensor], prefix: str = '', strict: bool = True) → _IncompatibleKeys¶
+load_state_dict(state_dict: OrderedDict[str, torch.Tensor], prefix: str = '', strict: bool = True) → _IncompatibleKeys
 ```
 
 将参数和缓冲区从`state_dict`复制到此模块及其后代中。
@@ -4859,13 +4859,13 @@ load_state_dict(state_dict: OrderedDict[str, torch.Tensor], prefix: str = '', st
 如果参数或缓冲区注册为`None`，并且其对应的键存在于`state_dict`中，`load_state_dict()`将引发`RuntimeError`。
 
 ```py
-property module: Module¶
+property module: Module
 ```
 
 直接访问分片模块的属性，该模块不会包含在 DDP、FSDP、DMP 或任何其他并行包装器中。
 
 ```py
-named_buffers(prefix: str = '', recurse: bool = True, remove_duplicate: bool = True) → Iterator[Tuple[str, Tensor]]¶
+named_buffers(prefix: str = '', recurse: bool = True, remove_duplicate: bool = True) → Iterator[Tuple[str, Tensor]]
 ```
 
 返回一个迭代器，遍历模块缓冲区，产出缓冲区的名称以及缓冲区本身。
@@ -4892,7 +4892,7 @@ named_buffers(prefix: str = '', recurse: bool = True, remove_duplicate: bool = T
 ```
 
 ```py
-named_parameters(prefix: str = '', recurse: bool = True, remove_duplicate: bool = True) → Iterator[Tuple[str, Parameter]]¶
+named_parameters(prefix: str = '', recurse: bool = True, remove_duplicate: bool = True) → Iterator[Tuple[str, Parameter]]
 ```
 
 返回一个迭代器，遍历模块参数，产出参数的名称以及参数本身。
@@ -4919,15 +4919,15 @@ named_parameters(prefix: str = '', recurse: bool = True, remove_duplicate: bool 
 ```
 
 ```py
-property plan: ShardingPlan¶
+property plan: ShardingPlan
 ```
 
 ```py
-sparse_grad_parameter_names(destination: Optional[List[str]] = None, prefix: str = '') → List[str]¶
+sparse_grad_parameter_names(destination: Optional[List[str]] = None, prefix: str = '') → List[str]
 ```
 
 ```py
-state_dict(destination: Optional[Dict[str, Any]] = None, prefix: str = '', keep_vars: bool = False) → Dict[str, Any]¶
+state_dict(destination: Optional[Dict[str, Any]] = None, prefix: str = '', keep_vars: bool = False) → Dict[str, Any]
 ```
 
 返回一个包含模块整体状态引用的字典。
@@ -4971,11 +4971,11 @@ state_dict(destination: Optional[Dict[str, Any]] = None, prefix: str = '', keep_
 ```
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-torchrec.distributed.model_parallel.get_module(module: Module) → Module¶
+torchrec.distributed.model_parallel.get_module(module: Module) → Module
 ```
 
 解开 DMP 模块。
@@ -4983,23 +4983,23 @@ torchrec.distributed.model_parallel.get_module(module: Module) → Module¶
 不解开数据并行包装器（即 DDP/FSDP），因此可以使用包装器的覆盖实现。
 
 ```py
-torchrec.distributed.model_parallel.get_unwrapped_module(module: Module) → Module¶
+torchrec.distributed.model_parallel.get_unwrapped_module(module: Module) → Module
 ```
 
-解开由 DMP、DDP 或 FSDP 包装的模块。## torchrec.distributed.quant_embeddingbag[](#module-torchrec.distributed.quant_embeddingbag "Permalink to this heading")
+解开由 DMP、DDP 或 FSDP 包装的模块。## torchrec.distributed.quant_embeddingbag
 
 ```py
-class torchrec.distributed.quant_embeddingbag.QuantEmbeddingBagCollectionSharder(fused_params: Optional[Dict[str, Any]] = None, shardable_params: Optional[List[str]] = None)¶
+class torchrec.distributed.quant_embeddingbag.QuantEmbeddingBagCollectionSharder(fused_params: Optional[Dict[str, Any]] = None, shardable_params: Optional[List[str]] = None)
 ```
 
 基类：`BaseQuantEmbeddingSharder`[`EmbeddingBagCollection`]
 
 ```py
-property module_type: Type[EmbeddingBagCollection]¶
+property module_type: Type[EmbeddingBagCollection]
 ```
 
 ```py
-shard(module: EmbeddingBagCollection, params: Dict[str, ParameterSharding], env: ShardingEnv, device: Optional[device] = None) → ShardedQuantEmbeddingBagCollection¶
+shard(module: EmbeddingBagCollection, params: Dict[str, ParameterSharding], env: ShardingEnv, device: Optional[device] = None) → ShardedQuantEmbeddingBagCollection
 ```
 
 执行实际分片。它将根据相应的 ParameterSharding 在请求的位置上分配参数。
@@ -5013,23 +5013,23 @@ shard(module: EmbeddingBagCollection, params: Dict[str, ParameterSharding], env:
 +   **params**（*EmbeddingModuleShardingPlan*[Any, Any, Any]
 
 ```py
-class torchrec.distributed.quant_embeddingbag.QuantFeatureProcessedEmbeddingBagCollectionSharder(fused_params: Optional[Dict[str, Any]] = None, shardable_params: Optional[List[str]] = None)¶
+class torchrec.distributed.quant_embeddingbag.QuantFeatureProcessedEmbeddingBagCollectionSharder(fused_params: Optional[Dict[str, Any]] = None, shardable_params: Optional[List[str]] = None)
 ```
 
 基类：`BaseQuantEmbeddingSharder`[`FeatureProcessedEmbeddingBagCollection`]
 
 ```py
-compute_kernels(sharding_type: str, compute_device_type: str) → List[str]¶
+compute_kernels(sharding_type: str, compute_device_type: str) → List[str]
 ```
 
 给定分片类型和计算设备的支持计算内核列表。
 
 ```py
-property module_type: Type[FeatureProcessedEmbeddingBagCollection]¶
+property module_type: Type[FeatureProcessedEmbeddingBagCollection]
 ```
 
 ```py
-shard(module: FeatureProcessedEmbeddingBagCollection, params: Dict[str, ParameterSharding], env: ShardingEnv, device: Optional[device] = None) → ShardedQuantEmbeddingBagCollection¶
+shard(module: FeatureProcessedEmbeddingBagCollection, params: Dict[str, ParameterSharding], env: ShardingEnv, device: Optional[device] = None) → ShardedQuantEmbeddingBagCollection
 ```
 
 执行实际分片。它将根据相应的 ParameterSharding 在请求的位置上分配参数。
@@ -5043,13 +5043,13 @@ shard(module: FeatureProcessedEmbeddingBagCollection, params: Dict[str, Paramete
 +   **params**（*EmbeddingModuleShardingPlan*[Any, Any, Any]
 
 ```py
-sharding_types(compute_device_type: str) → List[str]¶
+sharding_types(compute_device_type: str) → List[str]
 ```
 
 支持的分片类型列表。请参见 ShardingType 以获取知名示例。
 
 ```py
-class torchrec.distributed.quant_embeddingbag.ShardedQuantEmbeddingBagCollection(module: EmbeddingBagCollectionInterface, table_name_to_parameter_sharding: Dict[str, ParameterSharding], env: ShardingEnv, fused_params: Optional[Dict[str, Any]] = None, device: Optional[device] = None)¶
+class torchrec.distributed.quant_embeddingbag.ShardedQuantEmbeddingBagCollection(module: EmbeddingBagCollectionInterface, table_name_to_parameter_sharding: Dict[str, ParameterSharding], env: ShardingEnv, fused_params: Optional[Dict[str, Any]] = None, device: Optional[device] = None)
 ```
 
 基类：`ShardedQuantEmbeddingModuleState`[`ListOfKJTList`, `List`[`List`[`Tensor`]], `KeyedTensor`, `NullShardedModuleContext`]
@@ -5057,29 +5057,29 @@ class torchrec.distributed.quant_embeddingbag.ShardedQuantEmbeddingBagCollection
 EmbeddingBagCollection 的 Sharded 实现。这是公共 API 的一部分，允许手动数据分布流水线化。
 
 ```py
-compute(ctx: NullShardedModuleContext, dist_input: ListOfKJTList) → List[List[Tensor]]¶
+compute(ctx: NullShardedModuleContext, dist_input: ListOfKJTList) → List[List[Tensor]]
 ```
 
 ```py
-compute_and_output_dist(ctx: NullShardedModuleContext, input: ListOfKJTList) → KeyedTensor¶
+compute_and_output_dist(ctx: NullShardedModuleContext, input: ListOfKJTList) → KeyedTensor
 ```
 
 在存在多个输出分布的情况下，重写此方法并在相应的计算完成后立即启动输出分布是有意义的。
 
 ```py
-copy(device: device) → Module¶
+copy(device: device) → Module
 ```
 
 ```py
-create_context() → NullShardedModuleContext¶
+create_context() → NullShardedModuleContext
 ```
 
 ```py
-embedding_bag_configs() → List[EmbeddingBagConfig]¶
+embedding_bag_configs() → List[EmbeddingBagConfig]
 ```
 
 ```py
-forward(*input, **kwargs) → KeyedTensor¶
+forward(*input, **kwargs) → KeyedTensor
 ```
 
 执行输入 dist、compute 和输出 dist 步骤。
@@ -5099,67 +5099,67 @@ forward(*input, **kwargs) → KeyedTensor¶
 LazyAwaitable[Out]
 
 ```py
-input_dist(ctx: NullShardedModuleContext, features: KeyedJaggedTensor) → ListOfKJTList¶
+input_dist(ctx: NullShardedModuleContext, features: KeyedJaggedTensor) → ListOfKJTList
 ```
 
 ```py
-output_dist(ctx: NullShardedModuleContext, output: List[List[Tensor]]) → KeyedTensor¶
+output_dist(ctx: NullShardedModuleContext, output: List[List[Tensor]]) → KeyedTensor
 ```
 
 ```py
-sharding_type_to_sharding_infos() → Dict[str, List[EmbeddingShardingInfo]]¶
+sharding_type_to_sharding_infos() → Dict[str, List[EmbeddingShardingInfo]]
 ```
 
 ```py
-property shardings: Dict[str, FeatureShardingMixIn]¶
+property shardings: Dict[str, FeatureShardingMixIn]
 ```
 
 ```py
-tbes_configs() → Dict[IntNBitTableBatchedEmbeddingBagsCodegen, GroupedEmbeddingConfig]¶
+tbes_configs() → Dict[IntNBitTableBatchedEmbeddingBagsCodegen, GroupedEmbeddingConfig]
 ```
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.distributed.quant_embeddingbag.ShardedQuantFeatureProcessedEmbeddingBagCollection(module: EmbeddingBagCollectionInterface, table_name_to_parameter_sharding: Dict[str, ParameterSharding], env: ShardingEnv, fused_params: Optional[Dict[str, Any]] = None, device: Optional[device] = None, feature_processor: Optional[FeatureProcessorsCollection] = None)¶
+class torchrec.distributed.quant_embeddingbag.ShardedQuantFeatureProcessedEmbeddingBagCollection(module: EmbeddingBagCollectionInterface, table_name_to_parameter_sharding: Dict[str, ParameterSharding], env: ShardingEnv, fused_params: Optional[Dict[str, Any]] = None, device: Optional[device] = None, feature_processor: Optional[FeatureProcessorsCollection] = None)
 ```
 
 基类：`ShardedQuantEmbeddingBagCollection`
 
 ```py
-apply_feature_processor(kjt_list: KJTList) → KJTList¶
+apply_feature_processor(kjt_list: KJTList) → KJTList
 ```
 
 ```py
-compute(ctx: NullShardedModuleContext, dist_input: ListOfKJTList) → List[List[Tensor]]¶
+compute(ctx: NullShardedModuleContext, dist_input: ListOfKJTList) → List[List[Tensor]]
 ```
 
 ```py
-embedding_bags: nn.ModuleDict¶
+embedding_bags: nn.ModuleDict
 ```
 
 ```py
-tbes: torch.nn.ModuleList¶
+tbes: torch.nn.ModuleList
 ```
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-torchrec.distributed.quant_embeddingbag.create_infer_embedding_bag_sharding(sharding_type: str, sharding_infos: List[EmbeddingShardingInfo], env: ShardingEnv) → EmbeddingSharding[NullShardingContext, KJTList, List[Tensor], Tensor]¶
+torchrec.distributed.quant_embeddingbag.create_infer_embedding_bag_sharding(sharding_type: str, sharding_infos: List[EmbeddingShardingInfo], env: ShardingEnv) → EmbeddingSharding[NullShardingContext, KJTList, List[Tensor], Tensor]
 ```
 
 ```py
-torchrec.distributed.quant_embeddingbag.flatten_feature_lengths(features: KeyedJaggedTensor) → KeyedJaggedTensor¶
-```  ## torchrec.distributed.train_pipeline[](#module-torchrec.distributed.train_pipeline "Permalink to this heading")
+torchrec.distributed.quant_embeddingbag.flatten_feature_lengths(features: KeyedJaggedTensor) → KeyedJaggedTensor
+```  ## torchrec.distributed.train_pipeline
 
 注意：由于内部打包问题，train_pipeline.py 必须与较旧版本的 TorchRec 兼容。从其他文件导入新模块可能会破坏模型发布流程。
 
 ```py
-class torchrec.distributed.train_pipeline.ArgInfo(input_attrs: List[str], is_getitems: List[bool], name: Optional[str])¶
+class torchrec.distributed.train_pipeline.ArgInfo(input_attrs: List[str], is_getitems: List[bool], name: Optional[str])
 ```
 
 基类：`object`
@@ -5167,7 +5167,7 @@ class torchrec.distributed.train_pipeline.ArgInfo(input_attrs: List[str], is_get
 来自节点的参数表示。
 
 ```py
-input_attrs¶
+input_attrs
 ```
 
 输入批次的属性，例如 batch.attr1.attr2 将产生 [“attr1”, “attr2”]。
@@ -5177,7 +5177,7 @@ input_attrs¶
 List[str]
 
 ```py
-is_getitems¶
+is_getitems
 ```
 
 batch[attr1].attr2 将产生 [True, False]。
@@ -5187,7 +5187,7 @@ batch[attr1].attr2 将产生 [True, False]。
 List[bool]
 
 ```py
-name¶
+name
 ```
 
 用于流水线化 forward() 调用的关键字参数的名称，或者对于位置参数为 None。
@@ -5197,113 +5197,113 @@ name¶
 可选的[str]
 
 ```py
-input_attrs: List[str]¶
+input_attrs: List[str]
 ```
 
 ```py
-is_getitems: List[bool]¶
+is_getitems: List[bool]
 ```
 
 ```py
-name: Optional[str]¶
+name: Optional[str]
 ```
 
 ```py
-class torchrec.distributed.train_pipeline.BaseForward(name: str, args: List[ArgInfo], module: ShardedModule, context: TrainPipelineContext, stream: Optional[Stream])¶
+class torchrec.distributed.train_pipeline.BaseForward(name: str, args: List[ArgInfo], module: ShardedModule, context: TrainPipelineContext, stream: Optional[Stream])
 ```
 
 基类：`object`
 
 ```py
-property args: List[ArgInfo]¶
+property args: List[ArgInfo]
 ```
 
 ```py
-property name: str¶
+property name: str
 ```
 
 ```py
-class torchrec.distributed.train_pipeline.FusedKJTListSplitsAwaitable(requests: List[KJTListSplitsAwaitable[C]], contexts: List[C], pg: Optional[ProcessGroup])¶
+class torchrec.distributed.train_pipeline.FusedKJTListSplitsAwaitable(requests: List[KJTListSplitsAwaitable[C]], contexts: List[C], pg: Optional[ProcessGroup])
 ```
 
 基类：`Awaitable``List`[[`KJTListAwaitable`]]
 
 ```py
-class torchrec.distributed.train_pipeline.KJTAllToAllForward(pg: ProcessGroup, splits: List[int], stagger: int = 1)¶
+class torchrec.distributed.train_pipeline.KJTAllToAllForward(pg: ProcessGroup, splits: List[int], stagger: int = 1)
 ```
 
 基类：`object`
 
 ```py
-class torchrec.distributed.train_pipeline.KJTSplitsAllToAllMeta(pg: torch.distributed.distributed_c10d.ProcessGroup, _input: torchrec.sparse.jagged_tensor.KeyedJaggedTensor, splits: List[int], splits_tensors: List[torch.Tensor], input_splits: List[List[int]], input_tensors: List[torch.Tensor], labels: List[str], keys: List[str], device: torch.device, stagger: int)¶
+class torchrec.distributed.train_pipeline.KJTSplitsAllToAllMeta(pg: torch.distributed.distributed_c10d.ProcessGroup, _input: torchrec.sparse.jagged_tensor.KeyedJaggedTensor, splits: List[int], splits_tensors: List[torch.Tensor], input_splits: List[List[int]], input_tensors: List[torch.Tensor], labels: List[str], keys: List[str], device: torch.device, stagger: int)
 ```
 
 基类：`object`
 
 ```py
-device: device¶
+device: device
 ```
 
 ```py
-input_splits: List[List[int]]¶
+input_splits: List[List[int]]
 ```
 
 ```py
-input_tensors: List[Tensor]¶
+input_tensors: List[Tensor]
 ```
 
 ```py
-keys: List[str]¶
+keys: List[str]
 ```
 
 ```py
-labels: List[str]¶
+labels: List[str]
 ```
 
 ```py
-pg: ProcessGroup¶
+pg: ProcessGroup
 ```
 
 ```py
-splits: List[int]¶
+splits: List[int]
 ```
 
 ```py
-splits_tensors: List[Tensor]¶
+splits_tensors: List[Tensor]
 ```
 
 ```py
-stagger: int¶
+stagger: int
 ```
 
 ```py
-class torchrec.distributed.train_pipeline.PipelinedForward(name: str, args: List[ArgInfo], module: ShardedModule, context: TrainPipelineContext, stream: Optional[Stream])¶
-```
-
-基类：`BaseForward`
-
-```py
-class torchrec.distributed.train_pipeline.PrefetchPipelinedForward(name: str, args: List[ArgInfo], module: ShardedModule, context: PrefetchTrainPipelineContext, prefetch_stream: Optional[Stream])¶
+class torchrec.distributed.train_pipeline.PipelinedForward(name: str, args: List[ArgInfo], module: ShardedModule, context: TrainPipelineContext, stream: Optional[Stream])
 ```
 
 基类：`BaseForward`
 
 ```py
-class torchrec.distributed.train_pipeline.PrefetchTrainPipelineContext(input_dist_splits_requests: Dict[str, torchrec.distributed.types.Awaitable[Any]] = <factory>, input_dist_tensors_requests: Dict[str, torchrec.distributed.types.Awaitable[Any]] = <factory>, module_contexts: Dict[str, torchrec.streamable.Multistreamable] = <factory>, module_contexts_next_batch: Dict[str, torchrec.streamable.Multistreamable] = <factory>, fused_splits_awaitables: List[Tuple[List[str], torchrec.distributed.train_pipeline.FusedKJTListSplitsAwaitable]] = <factory>, module_input_post_prefetch: Dict[str, torchrec.streamable.Multistreamable] = <factory>, module_contexts_post_prefetch: Dict[str, torchrec.streamable.Multistreamable] = <factory>)¶
+class torchrec.distributed.train_pipeline.PrefetchPipelinedForward(name: str, args: List[ArgInfo], module: ShardedModule, context: PrefetchTrainPipelineContext, prefetch_stream: Optional[Stream])
+```
+
+基类：`BaseForward`
+
+```py
+class torchrec.distributed.train_pipeline.PrefetchTrainPipelineContext(input_dist_splits_requests: Dict[str, torchrec.distributed.types.Awaitable[Any]] = <factory>, input_dist_tensors_requests: Dict[str, torchrec.distributed.types.Awaitable[Any]] = <factory>, module_contexts: Dict[str, torchrec.streamable.Multistreamable] = <factory>, module_contexts_next_batch: Dict[str, torchrec.streamable.Multistreamable] = <factory>, fused_splits_awaitables: List[Tuple[List[str], torchrec.distributed.train_pipeline.FusedKJTListSplitsAwaitable]] = <factory>, module_input_post_prefetch: Dict[str, torchrec.streamable.Multistreamable] = <factory>, module_contexts_post_prefetch: Dict[str, torchrec.streamable.Multistreamable] = <factory>)
 ```
 
 基类：`TrainPipelineContext`
 
 ```py
-module_contexts_post_prefetch: Dict[str, Multistreamable]¶
+module_contexts_post_prefetch: Dict[str, Multistreamable]
 ```
 
 ```py
-module_input_post_prefetch: Dict[str, Multistreamable]¶
+module_input_post_prefetch: Dict[str, Multistreamable]
 ```
 
 ```py
-class torchrec.distributed.train_pipeline.PrefetchTrainPipelineSparseDist(model: Module, optimizer: Optimizer, device: device, execute_all_batches: bool = True, apply_jit: bool = False)¶
+class torchrec.distributed.train_pipeline.PrefetchTrainPipelineSparseDist(model: Module, optimizer: Optimizer, device: device, execute_all_batches: bool = True, apply_jit: bool = False)
 ```
 
 基类：`TrainPipelineSparseDist`[`In`, `Out`]
@@ -5329,17 +5329,17 @@ ShardedModule.input_dist() 仅针对调用图中的顶层模块执行。要被�
 +   **apply_jit** (*bool*) – 对非流水线化（未分片）模块应用 torch.jit.script。
 
 ```py
-progress(dataloader_iter: Iterator[In]) → Out¶
+progress(dataloader_iter: Iterator[In]) → Out
 ```
 
 ```py
-class torchrec.distributed.train_pipeline.SplitsAllToAllAwaitable(input_tensors: List[Tensor], pg: ProcessGroup)¶
+class torchrec.distributed.train_pipeline.SplitsAllToAllAwaitable(input_tensors: List[Tensor], pg: ProcessGroup)
 ```
 
 基类：`Awaitable`[`List`[`List`[`int`]]]
 
 ```py
-class torchrec.distributed.train_pipeline.Tracer(leaf_modules: Optional[List[str]] = None)¶
+class torchrec.distributed.train_pipeline.Tracer(leaf_modules: Optional[List[str]] = None)
 ```
 
 基类：`Tracer`
@@ -5347,11 +5347,11 @@ class torchrec.distributed.train_pipeline.Tracer(leaf_modules: Optional[List[str
 在跟踪期间禁用代理缓冲区。理想情况下，代理缓冲区应该被禁用，但是一些模型目前正在改变缓冲区的值，这会在跟踪期间导致错误。如果这些模型可以重写以避免这种情况，我们很可能可以删除这行。
 
 ```py
-graph: Graph¶
+graph: Graph
 ```
 
 ```py
-is_leaf_module(m: Module, module_qualified_name: str) → bool¶
+is_leaf_module(m: Module, module_qualified_name: str) → bool
 ```
 
 指定给定的 `nn.Module` 是否是“叶”模块的方法。
@@ -5369,33 +5369,33 @@ is_leaf_module(m: Module, module_qualified_name: str) → bool¶
 此 API 的向后兼容性已得到保证。
 
 ```py
-module_stack: OrderedDict[str, Tuple[str, Any]]¶
+module_stack: OrderedDict[str, Tuple[str, Any]]
 ```
 
 ```py
-node_name_to_scope: Dict[str, Tuple[str, type]]¶
+node_name_to_scope: Dict[str, Tuple[str, type]]
 ```
 
 ```py
-proxy_buffer_attributes: bool = False¶
+proxy_buffer_attributes: bool = False
 ```
 
 ```py
-scope: Scope¶
+scope: Scope
 ```
 
 ```py
-class torchrec.distributed.train_pipeline.TrainPipeline(*args, **kwds)¶
+class torchrec.distributed.train_pipeline.TrainPipeline(*args, **kwds)
 ```
 
 基类：`ABC`，`Generic`[`In`, `Out`]
 
 ```py
-abstract progress(dataloader_iter: Iterator[In]) → Out¶
+abstract progress(dataloader_iter: Iterator[In]) → Out
 ```
 
 ```py
-class torchrec.distributed.train_pipeline.TrainPipelineBase(model: Module, optimizer: Optimizer, device: device)¶
+class torchrec.distributed.train_pipeline.TrainPipelineBase(model: Module, optimizer: Optimizer, device: device)
 ```
 
 基类：`TrainPipeline`[`In`, `Out`]
@@ -5403,11 +5403,11 @@ class torchrec.distributed.train_pipeline.TrainPipelineBase(model: Module, optim
 此类使用两个阶段的管道运行训练迭代，每个阶段作为一个 CUDA 流，即当前（默认）流和 self._memcpy_stream。对于每次迭代，self._memcpy_stream 将输入从主机（CPU）内存移动到 GPU 内存，而默认流则运行前向、后向和优化。
 
 ```py
-progress(dataloader_iter: Iterator[In]) → Out¶
+progress(dataloader_iter: Iterator[In]) → Out
 ```
 
 ```py
-class torchrec.distributed.train_pipeline.TrainPipelineContext(input_dist_splits_requests: ~typing.Dict[str, ~torchrec.distributed.types.Awaitable[~typing.Any]] = <factory>, input_dist_tensors_requests: ~typing.Dict[str, ~torchrec.distributed.types.Awaitable[~typing.Any]] = <factory>, module_contexts: ~typing.Dict[str, ~torchrec.streamable.Multistreamable] = <factory>, module_contexts_next_batch: ~typing.Dict[str, ~torchrec.streamable.Multistreamable] = <factory>, fused_splits_awaitables: ~typing.List[~typing.Tuple[~typing.List[str], ~torchrec.distributed.train_pipeline.FusedKJTListSplitsAwaitable]] = <factory>)¶
+class torchrec.distributed.train_pipeline.TrainPipelineContext(input_dist_splits_requests: ~typing.Dict[str, ~torchrec.distributed.types.Awaitable[~typing.Any]] = <factory>, input_dist_tensors_requests: ~typing.Dict[str, ~torchrec.distributed.types.Awaitable[~typing.Any]] = <factory>, module_contexts: ~typing.Dict[str, ~torchrec.streamable.Multistreamable] = <factory>, module_contexts_next_batch: ~typing.Dict[str, ~torchrec.streamable.Multistreamable] = <factory>, fused_splits_awaitables: ~typing.List[~typing.Tuple[~typing.List[str], ~torchrec.distributed.train_pipeline.FusedKJTListSplitsAwaitable]] = <factory>)
 ```
 
 基类：`object`
@@ -5415,7 +5415,7 @@ class torchrec.distributed.train_pipeline.TrainPipelineContext(input_dist_splits
 TrainPipelineSparseDist 实例的上下文信息。
 
 ```py
-input_dist_splits_requests¶
+input_dist_splits_requests
 ```
 
 将输入分布请求存储在分片等待阶段，在启动输入分布之后发生。
@@ -5425,7 +5425,7 @@ input_dist_splits_requests¶
 Dictstr, [Awaitable[Any]]
 
 ```py
-input_dist_tensors_requests¶
+input_dist_tensors_requests
 ```
 
 存储在张量等待阶段的输入分布请求，发生在对分片等待进行等待()之后。
@@ -5435,7 +5435,7 @@ input_dist_tensors_requests¶
 Dictstr, [Awaitable[Any]]
 
 ```py
-module_contexts¶
+module_contexts
 ```
 
 存储来自输入分布的模块上下文，用于当前批次。
@@ -5445,7 +5445,7 @@ module_contexts¶
 Dict[str, Multistreamable]
 
 ```py
-module_contexts_next_batch¶
+module_contexts_next_batch
 ```
 
 存储来自输入分布的模块上下文，用于下一批次。
@@ -5455,7 +5455,7 @@ module_contexts_next_batch¶
 Dict[str, Multistreamable]
 
 ```py
-fused_splits_awaitables¶
+fused_splits_awaitables
 ```
 
 融合分片输入分布等待和每个等待的相应模块名称的列表。
@@ -5465,27 +5465,27 @@ fused_splits_awaitables¶
 List[Tuple[List[str], FusedKJTListSplitsAwaitable]]
 
 ```py
-fused_splits_awaitables: List[Tuple[List[str], FusedKJTListSplitsAwaitable]]¶
+fused_splits_awaitables: List[Tuple[List[str], FusedKJTListSplitsAwaitable]]
 ```
 
 ```py
-input_dist_splits_requests: Dict[str, Awaitable[Any]]¶
+input_dist_splits_requests: Dict[str, Awaitable[Any]]
 ```
 
 ```py
-input_dist_tensors_requests: Dict[str, Awaitable[Any]]¶
+input_dist_tensors_requests: Dict[str, Awaitable[Any]]
 ```
 
 ```py
-module_contexts: Dict[str, Multistreamable]¶
+module_contexts: Dict[str, Multistreamable]
 ```
 
 ```py
-module_contexts_next_batch: Dict[str, Multistreamable]¶
+module_contexts_next_batch: Dict[str, Multistreamable]
 ```
 
 ```py
-class torchrec.distributed.train_pipeline.TrainPipelineSparseDist(model: Module, optimizer: Optimizer, device: device, execute_all_batches: bool = True, apply_jit: bool = False)¶
+class torchrec.distributed.train_pipeline.TrainPipelineSparseDist(model: Module, optimizer: Optimizer, device: device, execute_all_batches: bool = True, apply_jit: bool = False)
 ```
 
 基类：`TrainPipeline`[`In`, `Out`]
@@ -5511,67 +5511,67 @@ ShardedModule.input_dist()仅针对调用图中的顶级模块执行。要被视
 +   **apply_jit** (*bool*) – 对非流水线（未分片）模块应用 torch.jit.script。
 
 ```py
-progress(dataloader_iter: Iterator[In]) → Out¶
-```  ## torchrec.distributed.types[](#module-torchrec.distributed.types "Permalink to this heading")
+progress(dataloader_iter: Iterator[In]) → Out
+```  ## torchrec.distributed.types
 
 ```py
-class torchrec.distributed.types.Awaitable¶
+class torchrec.distributed.types.Awaitable
 ```
 
 基类：`ABC`，`Generic`[`W`]
 
 ```py
-property callbacks: List[Callable[[W], W]]¶
+property callbacks: List[Callable[[W], W]]
 ```
 
 ```py
-wait() → W¶
+wait() → W
 ```
 
 ```py
-class torchrec.distributed.types.CacheParams(algorithm: Union[fbgemm_gpu.split_table_batched_embeddings_ops_common.CacheAlgorithm, NoneType] = None, load_factor: Union[float, NoneType] = None, reserved_memory: Union[float, NoneType] = None, precision: Union[torchrec.types.DataType, NoneType] = None, prefetch_pipeline: Union[bool, NoneType] = None, stats: Union[torchrec.distributed.types.CacheStatistics, NoneType] = None)¶
+class torchrec.distributed.types.CacheParams(algorithm: Union[fbgemm_gpu.split_table_batched_embeddings_ops_common.CacheAlgorithm, NoneType] = None, load_factor: Union[float, NoneType] = None, reserved_memory: Union[float, NoneType] = None, precision: Union[torchrec.types.DataType, NoneType] = None, prefetch_pipeline: Union[bool, NoneType] = None, stats: Union[torchrec.distributed.types.CacheStatistics, NoneType] = None)
 ```
 
 基类：`object`
 
 ```py
-algorithm: Optional[CacheAlgorithm] = None¶
+algorithm: Optional[CacheAlgorithm] = None
 ```
 
 ```py
-load_factor: Optional[float] = None¶
+load_factor: Optional[float] = None
 ```
 
 ```py
-precision: Optional[DataType] = None¶
+precision: Optional[DataType] = None
 ```
 
 ```py
-prefetch_pipeline: Optional[bool] = None¶
+prefetch_pipeline: Optional[bool] = None
 ```
 
 ```py
-reserved_memory: Optional[float] = None¶
+reserved_memory: Optional[float] = None
 ```
 
 ```py
-stats: Optional[CacheStatistics] = None¶
+stats: Optional[CacheStatistics] = None
 ```
 
 ```py
-class torchrec.distributed.types.CacheStatistics¶
+class torchrec.distributed.types.CacheStatistics
 ```
 
 基类：`ABC`
 
 ```py
-abstract property cacheability: float¶
+abstract property cacheability: float
 ```
 
 缓存数据集的难度的总结性度量，独立于缓存大小。得分为 0 表示数据集非常适合缓存（例如，访问之间的局部性很高），得分为 1 表示非常难以缓存。
 
 ```py
-abstract property expected_lookups: float¶
+abstract property expected_lookups: float
 ```
 
 每个训练步骤中预期的缓存查找次数。
@@ -5579,7 +5579,7 @@ abstract property expected_lookups: float¶
 这是全局训练批次中预期的不同值的数量。
 
 ```py
-abstract expected_miss_rate(clf: float) → float¶
+abstract expected_miss_rate(clf: float) → float
 ```
 
 给定缓存大小的预期缓存查找未命中率。
@@ -5587,7 +5587,7 @@ abstract expected_miss_rate(clf: float) → float¶
 当 clf（缓存加载因子）为 0 时，返回 1.0（100% 未命中）。当 clf 为 1.0 时，返回 0（100% 命中）。对于介于这些极端值之间的 clf 值，返回缓存的估计未命中率，例如基于训练数据集的统计属性的知识。
 
 ```py
-class torchrec.distributed.types.CommOp(value)¶
+class torchrec.distributed.types.CommOp(value)
 ```
 
 基类：`Enum`
@@ -5595,19 +5595,19 @@ class torchrec.distributed.types.CommOp(value)¶
 一个枚举。
 
 ```py
-POOLED_EMBEDDINGS_ALL_TO_ALL = 'pooled_embeddings_all_to_all'¶
+POOLED_EMBEDDINGS_ALL_TO_ALL = 'pooled_embeddings_all_to_all'
 ```
 
 ```py
-POOLED_EMBEDDINGS_REDUCE_SCATTER = 'pooled_embeddings_reduce_scatter'¶
+POOLED_EMBEDDINGS_REDUCE_SCATTER = 'pooled_embeddings_reduce_scatter'
 ```
 
 ```py
-SEQUENCE_EMBEDDINGS_ALL_TO_ALL = 'sequence_embeddings_all_to_all'¶
+SEQUENCE_EMBEDDINGS_ALL_TO_ALL = 'sequence_embeddings_all_to_all'
 ```
 
 ```py
-class torchrec.distributed.types.ComputeKernel(value)¶
+class torchrec.distributed.types.ComputeKernel(value)
 ```
 
 基类：`Enum`
@@ -5615,11 +5615,11 @@ class torchrec.distributed.types.ComputeKernel(value)¶
 一个枚举。
 
 ```py
-DEFAULT = 'default'¶
+DEFAULT = 'default'
 ```
 
 ```py
-class torchrec.distributed.types.EmbeddingModuleShardingPlan¶
+class torchrec.distributed.types.EmbeddingModuleShardingPlan
 ```
 
 基类：`ModuleShardingPlan`，`Dict``str`, [`ParameterSharding`]
@@ -5627,13 +5627,13 @@ class torchrec.distributed.types.EmbeddingModuleShardingPlan¶
 每个参数（通常是一个表）的 ParameterSharding 映射。这描述了 torchrec 模块的分片计划（例如 EmbeddingBagCollection）
 
 ```py
-class torchrec.distributed.types.GenericMeta¶
+class torchrec.distributed.types.GenericMeta
 ```
 
 基类：`type`
 
 ```py
-class torchrec.distributed.types.LazyAwaitable(*args, **kwargs)¶
+class torchrec.distributed.types.LazyAwaitable(*args, **kwargs)
 ```
 
 基类：`Awaitable`[`W`]
@@ -5649,13 +5649,13 @@ LazyAwaitable 类型公开了一个 wait() API，具体类型可以控制如何�
 +   在一个函数有两个或更多个 LazyAwaitable 参数的情况下，懒惰等待机制无法确保完美的计算/通信重叠（即快速等待第一个，但在第二个上等待时间较长）
 
 ```py
-class torchrec.distributed.types.LazyNoWait(*args, **kwargs)¶
+class torchrec.distributed.types.LazyNoWait(*args, **kwargs)
 ```
 
 基类：`LazyAwaitable`[`W`]
 
 ```py
-class torchrec.distributed.types.ModuleSharder(qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)¶
+class torchrec.distributed.types.ModuleSharder(qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)
 ```
 
 基类：`ABC`，`Generic`[`M`]
@@ -5667,21 +5667,21 @@ ModuleSharder 是每个支持分片的模块，例如 EmbeddingBagCollection。
 qcomm_codecs_registry（可选[Dict[str, QuantizedCommCodecs]]）：CommOp 名称到 QuantizedCommCodecs 的映射
 
 ```py
-compute_kernels(sharding_type: str, compute_device_type: str) → List[str]¶
+compute_kernels(sharding_type: str, compute_device_type: str) → List[str]
 ```
 
 给定分片类型和计算设备的支持的计算内核列表。
 
 ```py
-abstract property module_type: Type[M]¶
+abstract property module_type: Type[M]
 ```
 
 ```py
-property qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]]¶
+property qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]]
 ```
 
 ```py
-abstract classmethod shard(module: M, params: EmbeddingModuleShardingPlan, env: ShardingEnv, device: Optional[device] = None) → ShardedModule[Any, Any, Any, Any]¶
+abstract classmethod shard(module: M, params: EmbeddingModuleShardingPlan, env: ShardingEnv, device: Optional[device] = None) → ShardedModule[Any, Any, Any, Any]
 ```
 
 执行实际的分片。它将根据相应的 ParameterSharding 在请求的位置上分配参数。
@@ -5707,31 +5707,31 @@ abstract classmethod shard(module: M, params: EmbeddingModuleShardingPlan, env: 
 ShardedModule[Any, Any, Any]
 
 ```py
-shardable_parameters(module: M) → Dict[str, Parameter]¶
+shardable_parameters(module: M) → Dict[str, Parameter]
 ```
 
 可以分片的参数列表。
 
 ```py
-sharding_types(compute_device_type: str) → List[str]¶
+sharding_types(compute_device_type: str) → List[str]
 ```
 
 支持的分片类型列表。查看 ShardingType 以获取知名示例。
 
 ```py
-storage_usage(tensor: Tensor, compute_device_type: str, compute_kernel: str) → Dict[str, int]¶
+storage_usage(tensor: Tensor, compute_device_type: str, compute_kernel: str) → Dict[str, int]
 ```
 
 给定计算设备和计算内核的系统资源列表及相应的使用情况。
 
 ```py
-class torchrec.distributed.types.ModuleShardingPlan¶
+class torchrec.distributed.types.ModuleShardingPlan
 ```
 
 基类：`object`
 
 ```py
-class torchrec.distributed.types.NoOpQuantizedCommCodec(*args, **kwds)¶
+class torchrec.distributed.types.NoOpQuantizedCommCodec(*args, **kwds)
 ```
 
 基类：`Generic`[`QuantizationContext`]
@@ -5739,57 +5739,57 @@ class torchrec.distributed.types.NoOpQuantizedCommCodec(*args, **kwds)¶
 QuantizedCommCodec 的默认无操作实现
 
 ```py
-calc_quantized_size(input_len: int, ctx: Optional[QuantizationContext] = None) → int¶
+calc_quantized_size(input_len: int, ctx: Optional[QuantizationContext] = None) → int
 ```
 
 ```py
-create_context() → Optional[QuantizationContext]¶
+create_context() → Optional[QuantizationContext]
 ```
 
 ```py
-decode(input_grad: Tensor, ctx: Optional[QuantizationContext] = None) → Tensor¶
+decode(input_grad: Tensor, ctx: Optional[QuantizationContext] = None) → Tensor
 ```
 
 ```py
-encode(input_tensor: Tensor, ctx: Optional[QuantizationContext] = None) → Tensor¶
+encode(input_tensor: Tensor, ctx: Optional[QuantizationContext] = None) → Tensor
 ```
 
 ```py
-quantized_dtype() → dtype¶
+quantized_dtype() → dtype
 ```
 
 ```py
-class torchrec.distributed.types.NoWait(obj: W)¶
+class torchrec.distributed.types.NoWait(obj: W)
 ```
 
 基类：`Awaitable`[`W`]
 
 ```py
-class torchrec.distributed.types.NullShardedModuleContext¶
+class torchrec.distributed.types.NullShardedModuleContext
 ```
 
 基类：`Multistreamable`
 
 ```py
-record_stream(stream: Stream) → None¶
+record_stream(stream: Stream) → None
 ```
 
 参见[`pytorch.org/docs/stable/generated/torch.Tensor.record_stream.html`](https://pytorch.org/docs/stable/generated/torch.Tensor.record_stream.html)
 
 ```py
-class torchrec.distributed.types.NullShardingContext¶
+class torchrec.distributed.types.NullShardingContext
 ```
 
 基类：`Multistreamable`
 
 ```py
-record_stream(stream: Stream) → None¶
+record_stream(stream: Stream) → None
 ```
 
 参见[`pytorch.org/docs/stable/generated/torch.Tensor.record_stream.html`](https://pytorch.org/docs/stable/generated/torch.Tensor.record_stream.html)
 
 ```py
-class torchrec.distributed.types.ParameterSharding(sharding_type: str, compute_kernel: str, ranks: Optional[List[int]] = None, sharding_spec: Optional[ShardingSpec] = None, cache_params: Optional[CacheParams] = None, enforce_hbm: Optional[bool] = None, stochastic_rounding: Optional[bool] = None, bounds_check_mode: Optional[BoundsCheckMode] = None)¶
+class torchrec.distributed.types.ParameterSharding(sharding_type: str, compute_kernel: str, ranks: Optional[List[int]] = None, sharding_spec: Optional[ShardingSpec] = None, cache_params: Optional[CacheParams] = None, enforce_hbm: Optional[bool] = None, stochastic_rounding: Optional[bool] = None, bounds_check_mode: Optional[BoundsCheckMode] = None)
 ```
 
 基类：`object`
@@ -5807,39 +5807,39 @@ class torchrec.distributed.types.ParameterSharding(sharding_type: str, compute_k
 ShardingType.TABLE_WISE - 放置此嵌入的等级 ShardingType.COLUMN_WISE - 放置嵌入分片的等级，视为单独的表 ShardingType.TABLE_ROW_WISE - 放置此嵌入时的第一个等级 ShardingType.ROW_WISE，ShardingType.DATA_PARALLEL - 未使用
 
 ```py
-bounds_check_mode: Optional[BoundsCheckMode] = None¶
+bounds_check_mode: Optional[BoundsCheckMode] = None
 ```
 
 ```py
-cache_params: Optional[CacheParams] = None¶
+cache_params: Optional[CacheParams] = None
 ```
 
 ```py
-compute_kernel: str¶
+compute_kernel: str
 ```
 
 ```py
-enforce_hbm: Optional[bool] = None¶
+enforce_hbm: Optional[bool] = None
 ```
 
 ```py
-ranks: Optional[List[int]] = None¶
+ranks: Optional[List[int]] = None
 ```
 
 ```py
-sharding_spec: Optional[ShardingSpec] = None¶
+sharding_spec: Optional[ShardingSpec] = None
 ```
 
 ```py
-sharding_type: str¶
+sharding_type: str
 ```
 
 ```py
-stochastic_rounding: Optional[bool] = None¶
+stochastic_rounding: Optional[bool] = None
 ```
 
 ```py
-class torchrec.distributed.types.ParameterStorage(value)¶
+class torchrec.distributed.types.ParameterStorage(value)
 ```
 
 基类：`Enum`
@@ -5847,15 +5847,15 @@ class torchrec.distributed.types.ParameterStorage(value)¶
 众所周知的物理资源，可用作 ShardingPlanner 的约束。
 
 ```py
-DDR = 'ddr'¶
+DDR = 'ddr'
 ```
 
 ```py
-HBM = 'hbm'¶
+HBM = 'hbm'
 ```
 
 ```py
-class torchrec.distributed.types.QuantizedCommCodec(*args, **kwds)¶
+class torchrec.distributed.types.QuantizedCommCodec(*args, **kwds)
 ```
 
 基类：`Generic`[`QuantizationContext`]
@@ -5875,33 +5875,33 @@ class torchrec.distributed.types.QuantizedCommCodec(*args, **kwds)¶
 > torch.assert_close(input_tensors, output_tensor)
 
 ```py
-calc_quantized_size(input_len: int, ctx: Optional[QuantizationContext] = None) → int¶
+calc_quantized_size(input_len: int, ctx: Optional[QuantizationContext] = None) → int
 ```
 
 根据输入张量的长度，返回量化后的张量长度。由 INT8 编解码器使用，其中量化张量具有一些额外参数。对于其他情况，量化张量应与输入具有相同的长度。
 
 ```py
-create_context() → Optional[QuantizationContext]¶
+create_context() → Optional[QuantizationContext]
 ```
 
 创建一个可用于在编码器和解码器之间传递基于会话的参数的上下文对象。
 
 ```py
-decode(input_grad: Tensor, ctx: Optional[QuantizationContext] = None) → Tensor¶
+decode(input_grad: Tensor, ctx: Optional[QuantizationContext] = None) → Tensor
 ```
 
 ```py
-encode(input_tensor: Tensor, ctx: Optional[QuantizationContext] = None) → Tensor¶
+encode(input_tensor: Tensor, ctx: Optional[QuantizationContext] = None) → Tensor
 ```
 
 ```py
-property quantized_dtype: dtype¶
+property quantized_dtype: dtype
 ```
 
 结果编码（input_tensor）的张量数据类型
 
 ```py
-class torchrec.distributed.types.QuantizedCommCodecs(forward: ~torchrec.distributed.types.QuantizedCommCodec = <torchrec.distributed.types.NoOpQuantizedCommCodec object>, backward: ~torchrec.distributed.types.QuantizedCommCodec = <torchrec.distributed.types.NoOpQuantizedCommCodec object>)¶
+class torchrec.distributed.types.QuantizedCommCodecs(forward: ~torchrec.distributed.types.QuantizedCommCodec = <torchrec.distributed.types.NoOpQuantizedCommCodec object>, backward: ~torchrec.distributed.types.QuantizedCommCodec = <torchrec.distributed.types.NoOpQuantizedCommCodec object>)
 ```
 
 基类：`object`
@@ -5909,15 +5909,15 @@ class torchrec.distributed.types.QuantizedCommCodecs(forward: ~torchrec.distribu
 用于 comm op（例如 pooled_all_to_all、reduce_scatter、sequence_all_to_all）的前向和后向传递的量化编解码器。
 
 ```py
-backward: QuantizedCommCodec = <torchrec.distributed.types.NoOpQuantizedCommCodec object>¶
+backward: QuantizedCommCodec = <torchrec.distributed.types.NoOpQuantizedCommCodec object>
 ```
 
 ```py
-forward: QuantizedCommCodec = <torchrec.distributed.types.NoOpQuantizedCommCodec object>¶
+forward: QuantizedCommCodec = <torchrec.distributed.types.NoOpQuantizedCommCodec object>
 ```
 
 ```py
-class torchrec.distributed.types.ShardedModule(qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)¶
+class torchrec.distributed.types.ShardedModule(qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)
 ```
 
 基类：`ABC`，`Module`，`Generic`[`CompIn`，`DistOut`，`Out`，`ShrdCtx`]，`ModuleNoCopyMixin`
@@ -5933,21 +5933,21 @@ qcomm_codecs_registry（Optional[Dict[str, QuantizedCommCodecs]]）：CommOp 名
 ‘input_dist’ / ‘output_dist’负责将输入/输出从数据并行转换为模型并行，反之亦然。
 
 ```py
-abstract compute(ctx: ShrdCtx, dist_input: CompIn) → DistOut¶
+abstract compute(ctx: ShrdCtx, dist_input: CompIn) → DistOut
 ```
 
 ```py
-compute_and_output_dist(ctx: ShrdCtx, input: CompIn) → LazyAwaitable[Out]¶
+compute_and_output_dist(ctx: ShrdCtx, input: CompIn) → LazyAwaitable[Out]
 ```
 
 在存在多个输出分布的情况下，重写此方法并在相应的计算完成后立即启动输出分布是有意义的。
 
 ```py
-abstract create_context() → ShrdCtx¶
+abstract create_context() → ShrdCtx
 ```
 
 ```py
-forward(*input, **kwargs) → LazyAwaitable[Out]¶
+forward(*input, **kwargs) → LazyAwaitable[Out]
 ```
 
 执行输入分布、计算和输出分布步骤。
@@ -5967,27 +5967,27 @@ forward(*input, **kwargs) → LazyAwaitable[Out]¶
 LazyAwaitable[Out]
 
 ```py
-abstract input_dist(ctx: ShrdCtx, *input, **kwargs) → Awaitable[Awaitable[CompIn]]¶
+abstract input_dist(ctx: ShrdCtx, *input, **kwargs) → Awaitable[Awaitable[CompIn]]
 ```
 
 ```py
-abstract output_dist(ctx: ShrdCtx, output: DistOut) → LazyAwaitable[Out]¶
+abstract output_dist(ctx: ShrdCtx, output: DistOut) → LazyAwaitable[Out]
 ```
 
 ```py
-property qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]]¶
+property qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]]
 ```
 
 ```py
-sharded_parameter_names(prefix: str = '') → Iterator[str]¶
+sharded_parameter_names(prefix: str = '') → Iterator[str]
 ```
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.distributed.types.ShardingEnv(world_size: int, rank: int, pg: Optional[ProcessGroup] = None)¶
+class torchrec.distributed.types.ShardingEnv(world_size: int, rank: int, pg: Optional[ProcessGroup] = None)
 ```
 
 基类：`object`
@@ -5995,7 +5995,7 @@ class torchrec.distributed.types.ShardingEnv(world_size: int, rank: int, pg: Opt
 提供了一个对 torch.distributed.ProcessGroup 的抽象，实际上使得 DistributedModelParallel 在推断期间可用。
 
 ```py
-classmethod from_local(world_size: int, rank: int) → ShardingEnv¶
+classmethod from_local(world_size: int, rank: int) → ShardingEnv
 ```
 
 创建一个基于本地主机的分片环境。
@@ -6005,7 +6005,7 @@ classmethod from_local(world_size: int, rank: int) → ShardingEnv¶
 通常在单个主机推断期间使用。
 
 ```py
-classmethod from_process_group(pg: ProcessGroup) → ShardingEnv¶
+classmethod from_process_group(pg: ProcessGroup) → ShardingEnv
 ```
 
 创建基于 ProcessGroup 的分片环境。
@@ -6015,7 +6015,7 @@ classmethod from_process_group(pg: ProcessGroup) → ShardingEnv¶
 通常在训练期间使用。
 
 ```py
-class torchrec.distributed.types.ShardingPlan(plan: Dict[str, ModuleShardingPlan])¶
+class torchrec.distributed.types.ShardingPlan(plan: Dict[str, ModuleShardingPlan])
 ```
 
 基类：`object`
@@ -6023,7 +6023,7 @@ class torchrec.distributed.types.ShardingPlan(plan: Dict[str, ModuleShardingPlan
 分片计划的表示。这使用了较大包装模型的 FQN（即使用 DistributedModelParallel 包装的模型）。当需要 TorchRec 的可组合性时，应使用 EmbeddingModuleShardingPlan。
 
 ```py
-plan¶
+plan
 ```
 
 按模块路径为键的字典，按参数名称为键的参数分片规范字典。
@@ -6033,7 +6033,7 @@ plan¶
 Dictstr，[EmbeddingModuleShardingPlan]
 
 ```py
-get_plan_for_module(module_path: str) → Optional[ModuleShardingPlan]¶
+get_plan_for_module(module_path: str) → Optional[ModuleShardingPlan]
 ```
 
 参数：
@@ -6049,11 +6049,11 @@ get_plan_for_module(module_path: str) → Optional[ModuleShardingPlan]¶
 Optional[ModuleShardingPlan]
 
 ```py
-plan: Dict[str, ModuleShardingPlan]¶
+plan: Dict[str, ModuleShardingPlan]
 ```
 
 ```py
-class torchrec.distributed.types.ShardingPlanner¶
+class torchrec.distributed.types.ShardingPlanner
 ```
 
 基类：`ABC`
@@ -6061,7 +6061,7 @@ class torchrec.distributed.types.ShardingPlanner¶
 计划分片。此计划可以保存并重复使用以确保分片稳定。
 
 ```py
-abstract collective_plan(module: Module, sharders: List[ModuleSharder[Module]]) → ShardingPlan¶
+abstract collective_plan(module: Module, sharders: List[ModuleSharder[Module]]) → ShardingPlan
 ```
 
 在 rank 0 上调用 self.plan(…)并广播。
@@ -6081,7 +6081,7 @@ abstract collective_plan(module: Module, sharders: List[ModuleSharder[Module]]) 
 ShardingPlan
 
 ```py
-abstract plan(module: Module, sharders: List[ModuleSharder[Module]]) → ShardingPlan¶
+abstract plan(module: Module, sharders: List[ModuleSharder[Module]]) → ShardingPlan
 ```
 
 为提供的模块和给定的分片器制定分片计划。
@@ -6101,7 +6101,7 @@ abstract plan(module: Module, sharders: List[ModuleSharder[Module]]) → Shardin
 ShardingPlan
 
 ```py
-class torchrec.distributed.types.ShardingType(value)¶
+class torchrec.distributed.types.ShardingType(value)
 ```
 
 基类：`Enum`
@@ -6109,39 +6109,39 @@ class torchrec.distributed.types.ShardingType(value)¶
 已知的分片类型，用于模块间优化。
 
 ```py
-COLUMN_WISE = 'column_wise'¶
+COLUMN_WISE = 'column_wise'
 ```
 
 ```py
-DATA_PARALLEL = 'data_parallel'¶
+DATA_PARALLEL = 'data_parallel'
 ```
 
 ```py
-ROW_WISE = 'row_wise'¶
+ROW_WISE = 'row_wise'
 ```
 
 ```py
-TABLE_COLUMN_WISE = 'table_column_wise'¶
+TABLE_COLUMN_WISE = 'table_column_wise'
 ```
 
 ```py
-TABLE_ROW_WISE = 'table_row_wise'¶
+TABLE_ROW_WISE = 'table_row_wise'
 ```
 
 ```py
-TABLE_WISE = 'table_wise'¶
+TABLE_WISE = 'table_wise'
 ```
 
 ```py
-torchrec.distributed.types.get_tensor_size_bytes(t: Tensor) → int¶
+torchrec.distributed.types.get_tensor_size_bytes(t: Tensor) → int
 ```
 
 ```py
-torchrec.distributed.types.scope(method)¶
-```  ## torchrec.distributed.utils[](#module-torchrec.distributed.utils "Permalink to this heading")
+torchrec.distributed.types.scope(method)
+```  ## torchrec.distributed.utils
 
 ```py
-class torchrec.distributed.utils.CopyableMixin(*args, **kwargs)¶
+class torchrec.distributed.utils.CopyableMixin(*args, **kwargs)
 ```
 
 基类：`Module`
@@ -6164,21 +6164,21 @@ class MyModule(CopyableMixin):
 在新设备上的 nn.Module
 
 ```py
-copy(device: device) → Module¶
+copy(device: device) → Module
 ```
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.distributed.utils.PermutePooledEmbeddings(embs_dims: List[int], permute: List[int], device: Optional[device] = None)¶
+class torchrec.distributed.utils.PermutePooledEmbeddings(embs_dims: List[int], permute: List[int], device: Optional[device] = None)
 ```
 
 基类：`object`
 
 ```py
-torchrec.distributed.utils.add_params_from_parameter_sharding(fused_params: Optional[Dict[str, Any]], parameter_sharding: ParameterSharding) → Dict[str, Any]¶
+torchrec.distributed.utils.add_params_from_parameter_sharding(fused_params: Optional[Dict[str, Any]], parameter_sharding: ParameterSharding) → Dict[str, Any]
 ```
 
 从参数分片中提取参数，然后将它们添加到融合参数中。
@@ -6200,7 +6200,7 @@ torchrec.distributed.utils.add_params_from_parameter_sharding(fused_params: Opti
 [Dict[str, Any]]
 
 ```py
-torchrec.distributed.utils.add_prefix_to_state_dict(state_dict: Dict[str, Any], prefix: str) → None¶
+torchrec.distributed.utils.add_prefix_to_state_dict(state_dict: Dict[str, Any], prefix: str) → None
 ```
 
 将状态字典中所有键添加前缀，原地操作。
@@ -6216,21 +6216,21 @@ torchrec.distributed.utils.add_prefix_to_state_dict(state_dict: Dict[str, Any], 
 无。
 
 ```py
-torchrec.distributed.utils.append_prefix(prefix: str, name: str) → str¶
+torchrec.distributed.utils.append_prefix(prefix: str, name: str) → str
 ```
 
 将提供的前缀附加到提供的名称。
 
 ```py
-torchrec.distributed.utils.convert_to_fbgemm_types(fused_params: Dict[str, Any]) → Dict[str, Any]¶
+torchrec.distributed.utils.convert_to_fbgemm_types(fused_params: Dict[str, Any]) → Dict[str, Any]
 ```
 
 ```py
-torchrec.distributed.utils.copy_to_device(module: Module, current_device: device, to_device: device) → Module¶
+torchrec.distributed.utils.copy_to_device(module: Module, current_device: device, to_device: device) → Module
 ```
 
 ```py
-torchrec.distributed.utils.filter_state_dict(state_dict: OrderedDict[str, torch.Tensor], name: str) → OrderedDict[str, torch.Tensor]¶
+torchrec.distributed.utils.filter_state_dict(state_dict: OrderedDict[str, torch.Tensor], name: str) → OrderedDict[str, torch.Tensor]
 ```
 
 过滤以提供的名称开头的状态字典键。从结果状态字典的键的开头剥离提供的名称。
@@ -6250,7 +6250,7 @@ torchrec.distributed.utils.filter_state_dict(state_dict: OrderedDict[str, torch.
 OrderedDict[str, torch.Tensor]
 
 ```py
-torchrec.distributed.utils.get_unsharded_module_names(model: Module) → List[str]¶
+torchrec.distributed.utils.get_unsharded_module_names(model: Module) → List[str]
 ```
 
 检索不包含任何分片子模块的顶层模块的名称。
@@ -6268,11 +6268,11 @@ torchrec.distributed.utils.get_unsharded_module_names(model: Module) → List[st
 List[str]
 
 ```py
-torchrec.distributed.utils.init_parameters(module: Module, device: device) → None¶
+torchrec.distributed.utils.init_parameters(module: Module, device: device) → None
 ```
 
 ```py
-torchrec.distributed.utils.merge_fused_params(fused_params: Optional[Dict[str, Any]] = None, param_fused_params: Optional[Dict[str, Any]] = None) → Dict[str, Any]¶
+torchrec.distributed.utils.merge_fused_params(fused_params: Optional[Dict[str, Any]] = None, param_fused_params: Optional[Dict[str, Any]] = None) → Dict[str, Any]
 ```
 
 配置融合参数，包括 cache_precision，如果值未设置。
@@ -6294,17 +6294,17 @@ torchrec.distributed.utils.merge_fused_params(fused_params: Optional[Dict[str, A
 [Dict[str, Any]]
 
 ```py
-torchrec.distributed.utils.none_throws(optional: Optional[_T], message: str = 'Unexpected `None`') → _T¶
+torchrec.distributed.utils.none_throws(optional: Optional[_T], message: str = 'Unexpected `None`') → _T
 ```
 
 将可选项转换为其值。如果值为 None，则引发 AssertionError
 
 ```py
-torchrec.distributed.utils.optimizer_type_to_emb_opt_type(optimizer_class: Type[Optimizer]) → Optional[EmbOptimType]¶
+torchrec.distributed.utils.optimizer_type_to_emb_opt_type(optimizer_class: Type[Optimizer]) → Optional[EmbOptimType]
 ```
 
 ```py
-class torchrec.distributed.utils.sharded_model_copy(device: Optional[Union[str, int, device]])¶
+class torchrec.distributed.utils.sharded_model_copy(device: Optional[Union[str, int, device]])
 ```
 
 基类：`object`
@@ -6321,44 +6321,44 @@ with sharded_model_copy("cpu"):
     m_cpu = copy.deepcopy(m) 
 ```
 
-## torchrec.distributed.mc_modules[](#torchrec-distributed-mc-modules "Permalink to this heading")
+## torchrec.distributed.mc_modules
 
 ```py
-class torchrec.distributed.mc_modules.ManagedCollisionCollectionAwaitable(*args, **kwargs)¶
+class torchrec.distributed.mc_modules.ManagedCollisionCollectionAwaitable(*args, **kwargs)
 ```
 
 基类：`LazyAwaitable`[`KeyedJaggedTensor`]
 
 ```py
-class torchrec.distributed.mc_modules.ManagedCollisionCollectionContext(sharding_contexts: List[torchrec.distributed.sharding.sequence_sharding.SequenceShardingContext] = <factory>, input_features: List[torchrec.sparse.jagged_tensor.KeyedJaggedTensor] = <factory>, reverse_indices: List[torch.Tensor] = <factory>)¶
+class torchrec.distributed.mc_modules.ManagedCollisionCollectionContext(sharding_contexts: List[torchrec.distributed.sharding.sequence_sharding.SequenceShardingContext] = <factory>, input_features: List[torchrec.sparse.jagged_tensor.KeyedJaggedTensor] = <factory>, reverse_indices: List[torch.Tensor] = <factory>)
 ```
 
 基类：`EmbeddingCollectionContext`
 
 ```py
-input_features: List[KeyedJaggedTensor]¶
+input_features: List[KeyedJaggedTensor]
 ```
 
 ```py
-reverse_indices: List[Tensor]¶
+reverse_indices: List[Tensor]
 ```
 
 ```py
-sharding_contexts: List[SequenceShardingContext]¶
+sharding_contexts: List[SequenceShardingContext]
 ```
 
 ```py
-class torchrec.distributed.mc_modules.ManagedCollisionCollectionSharder(qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)¶
+class torchrec.distributed.mc_modules.ManagedCollisionCollectionSharder(qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)
 ```
 
 基类：`BaseEmbeddingSharder`[`ManagedCollisionCollection`]
 
 ```py
-property module_type: Type[ManagedCollisionCollection]¶
+property module_type: Type[ManagedCollisionCollection]
 ```
 
 ```py
-shard(module: ManagedCollisionCollection, params: Dict[str, ParameterSharding], env: ShardingEnv, sharding_type_to_sharding: Dict[str, EmbeddingSharding[EmbeddingShardingContext, KeyedJaggedTensor, Tensor, Tensor]], device: Optional[device] = None) → ShardedManagedCollisionCollection¶
+shard(module: ManagedCollisionCollection, params: Dict[str, ParameterSharding], env: ShardingEnv, sharding_type_to_sharding: Dict[str, EmbeddingSharding[EmbeddingShardingContext, KeyedJaggedTensor, Tensor, Tensor]], device: Optional[device] = None) → ShardedManagedCollisionCollection
 ```
 
 执行实际的分片。它将根据相应的 ParameterSharding 在请求的位置上分配参数。
@@ -6384,89 +6384,89 @@ shard(module: ManagedCollisionCollection, params: Dict[str, ParameterSharding], 
 ShardedModule[Any, Any, Any]
 
 ```py
-shardable_parameters(module: ManagedCollisionCollection) → Dict[str, Parameter]¶
+shardable_parameters(module: ManagedCollisionCollection) → Dict[str, Parameter]
 ```
 
 可分片的参数列表。
 
 ```py
-sharding_types(compute_device_type: str) → List[str]¶
+sharding_types(compute_device_type: str) → List[str]
 ```
 
 支持的分片类型列表。查看 ShardingType 以获取常见示例。
 
 ```py
-class torchrec.distributed.mc_modules.ShardedManagedCollisionCollection(module: ManagedCollisionCollection, table_name_to_parameter_sharding: Dict[str, ParameterSharding], env: ShardingEnv, device: device, sharding_type_to_sharding: Dict[str, EmbeddingSharding[EmbeddingShardingContext, KeyedJaggedTensor, Tensor, Tensor]], qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)¶
+class torchrec.distributed.mc_modules.ShardedManagedCollisionCollection(module: ManagedCollisionCollection, table_name_to_parameter_sharding: Dict[str, ParameterSharding], env: ShardingEnv, device: device, sharding_type_to_sharding: Dict[str, EmbeddingSharding[EmbeddingShardingContext, KeyedJaggedTensor, Tensor, Tensor]], qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)
 ```
 
 基类：`ShardedModule`[`KJTList`, `KJTList`, `KeyedJaggedTensor`, `ManagedCollisionCollectionContext`]
 
 ```py
-compute(ctx: ManagedCollisionCollectionContext, dist_input: KJTList) → KJTList¶
+compute(ctx: ManagedCollisionCollectionContext, dist_input: KJTList) → KJTList
 ```
 
 ```py
-create_context() → ManagedCollisionCollectionContext¶
+create_context() → ManagedCollisionCollectionContext
 ```
 
 ```py
-evict() → Dict[str, Optional[Tensor]]¶
+evict() → Dict[str, Optional[Tensor]]
 ```
 
 ```py
-input_dist(ctx: ManagedCollisionCollectionContext, features: KeyedJaggedTensor) → Awaitable[Awaitable[KJTList]]¶
+input_dist(ctx: ManagedCollisionCollectionContext, features: KeyedJaggedTensor) → Awaitable[Awaitable[KJTList]]
 ```
 
 ```py
-output_dist(ctx: ManagedCollisionCollectionContext, output: KJTList) → LazyAwaitable[KeyedJaggedTensor]¶
+output_dist(ctx: ManagedCollisionCollectionContext, output: KJTList) → LazyAwaitable[KeyedJaggedTensor]
 ```
 
 ```py
-sharded_parameter_names(prefix: str = '') → Iterator[str]¶
+sharded_parameter_names(prefix: str = '') → Iterator[str]
 ```
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-torchrec.distributed.mc_modules.create_mc_sharding(sharding_type: str, sharding_infos: List[EmbeddingShardingInfo], env: ShardingEnv, device: Optional[device] = None) → EmbeddingSharding[SequenceShardingContext, KeyedJaggedTensor, Tensor, Tensor]¶
+torchrec.distributed.mc_modules.create_mc_sharding(sharding_type: str, sharding_infos: List[EmbeddingShardingInfo], env: ShardingEnv, device: Optional[device] = None) → EmbeddingSharding[SequenceShardingContext, KeyedJaggedTensor, Tensor, Tensor]
 ```
 
-## torchrec.distributed.mc_embeddingbag[](#torchrec-distributed-mc-embeddingbag "Permalink to this heading")
+## torchrec.distributed.mc_embeddingbag
 
 ```py
-class torchrec.distributed.mc_embeddingbag.ManagedCollisionEmbeddingBagCollectionContext(sharding_contexts: List[Union[torchrec.distributed.embedding_sharding.EmbeddingShardingContext, NoneType]] = <factory>, inverse_indices: Union[Tuple[List[str], torch.Tensor], NoneType] = None, variable_batch_per_feature: bool = False, evictions_per_table: Union[Dict[str, Union[torch.Tensor, NoneType]], NoneType] = None, remapped_kjt: Union[torchrec.distributed.embedding_types.KJTList, NoneType] = None)¶
+class torchrec.distributed.mc_embeddingbag.ManagedCollisionEmbeddingBagCollectionContext(sharding_contexts: List[Union[torchrec.distributed.embedding_sharding.EmbeddingShardingContext, NoneType]] = <factory>, inverse_indices: Union[Tuple[List[str], torch.Tensor], NoneType] = None, variable_batch_per_feature: bool = False, evictions_per_table: Union[Dict[str, Union[torch.Tensor, NoneType]], NoneType] = None, remapped_kjt: Union[torchrec.distributed.embedding_types.KJTList, NoneType] = None)
 ```
 
 基类：`EmbeddingBagCollectionContext`
 
 ```py
-evictions_per_table: Optional[Dict[str, Optional[Tensor]]] = None¶
+evictions_per_table: Optional[Dict[str, Optional[Tensor]]] = None
 ```
 
 ```py
-record_stream(stream: Stream) → None¶
+record_stream(stream: Stream) → None
 ```
 
 查看[`pytorch.org/docs/stable/generated/torch.Tensor.record_stream.html`](https://pytorch.org/docs/stable/generated/torch.Tensor.record_stream.html)
 
 ```py
-remapped_kjt: Optional[KJTList] = None¶
+remapped_kjt: Optional[KJTList] = None
 ```
 
 ```py
-class torchrec.distributed.mc_embeddingbag.ManagedCollisionEmbeddingBagCollectionSharder(ebc_sharder: Optional[EmbeddingBagCollectionSharder] = None, mc_sharder: Optional[ManagedCollisionCollectionSharder] = None, qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)¶
+class torchrec.distributed.mc_embeddingbag.ManagedCollisionEmbeddingBagCollectionSharder(ebc_sharder: Optional[EmbeddingBagCollectionSharder] = None, mc_sharder: Optional[ManagedCollisionCollectionSharder] = None, qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)
 ```
 
 基类：`BaseManagedCollisionEmbeddingCollectionSharder`[`ManagedCollisionEmbeddingBagCollection`]
 
 ```py
-property module_type: Type[ManagedCollisionEmbeddingBagCollection]¶
+property module_type: Type[ManagedCollisionEmbeddingBagCollection]
 ```
 
 ```py
-shard(module: ManagedCollisionEmbeddingBagCollection, params: Dict[str, ParameterSharding], env: ShardingEnv, device: Optional[device] = None) → ShardedManagedCollisionEmbeddingBagCollection¶
+shard(module: ManagedCollisionEmbeddingBagCollection, params: Dict[str, ParameterSharding], env: ShardingEnv, device: Optional[device] = None) → ShardedManagedCollisionEmbeddingBagCollection
 ```
 
 执行实际的分片。它将根据相应的 ParameterSharding 在请求的位置上分配参数。
@@ -6492,53 +6492,53 @@ shard(module: ManagedCollisionEmbeddingBagCollection, params: Dict[str, Paramete
 ShardedModule[Any, Any, Any]
 
 ```py
-class torchrec.distributed.mc_embeddingbag.ShardedManagedCollisionEmbeddingBagCollection(module: ManagedCollisionEmbeddingBagCollection, table_name_to_parameter_sharding: Dict[str, ParameterSharding], ebc_sharder: EmbeddingBagCollectionSharder, mc_sharder: ManagedCollisionCollectionSharder, env: ShardingEnv, device: device)¶
+class torchrec.distributed.mc_embeddingbag.ShardedManagedCollisionEmbeddingBagCollection(module: ManagedCollisionEmbeddingBagCollection, table_name_to_parameter_sharding: Dict[str, ParameterSharding], ebc_sharder: EmbeddingBagCollectionSharder, mc_sharder: ManagedCollisionCollectionSharder, env: ShardingEnv, device: device)
 ```
 
 基类：`BaseShardedManagedCollisionEmbeddingCollection`[`ManagedCollisionEmbeddingBagCollectionContext`]
 
 ```py
-create_context() → ManagedCollisionEmbeddingBagCollectionContext¶
+create_context() → ManagedCollisionEmbeddingBagCollectionContext
 ```
 
 ```py
-training: bool¶
+training: bool
 ```
 
-## torchrec.distributed.mc_embedding[](#torchrec-distributed-mc-embedding "Permalink to this heading")
+## torchrec.distributed.mc_embedding
 
 ```py
-class torchrec.distributed.mc_embedding.ManagedCollisionEmbeddingCollectionContext(sharding_contexts: List[torchrec.distributed.sharding.sequence_sharding.SequenceShardingContext] = <factory>, input_features: List[torchrec.sparse.jagged_tensor.KeyedJaggedTensor] = <factory>, reverse_indices: List[torch.Tensor] = <factory>, evictions_per_table: Union[Dict[str, Union[torch.Tensor, NoneType]], NoneType] = None, remapped_kjt: Union[torchrec.distributed.embedding_types.KJTList, NoneType] = None)¶
+class torchrec.distributed.mc_embedding.ManagedCollisionEmbeddingCollectionContext(sharding_contexts: List[torchrec.distributed.sharding.sequence_sharding.SequenceShardingContext] = <factory>, input_features: List[torchrec.sparse.jagged_tensor.KeyedJaggedTensor] = <factory>, reverse_indices: List[torch.Tensor] = <factory>, evictions_per_table: Union[Dict[str, Union[torch.Tensor, NoneType]], NoneType] = None, remapped_kjt: Union[torchrec.distributed.embedding_types.KJTList, NoneType] = None)
 ```
 
 基类：`EmbeddingCollectionContext`
 
 ```py
-evictions_per_table: Optional[Dict[str, Optional[Tensor]]] = None¶
+evictions_per_table: Optional[Dict[str, Optional[Tensor]]] = None
 ```
 
 ```py
-record_stream(stream: Stream) → None¶
+record_stream(stream: Stream) → None
 ```
 
 参见[`pytorch.org/docs/stable/generated/torch.Tensor.record_stream.html`](https://pytorch.org/docs/stable/generated/torch.Tensor.record_stream.html)
 
 ```py
-remapped_kjt: Optional[KJTList] = None¶
+remapped_kjt: Optional[KJTList] = None
 ```
 
 ```py
-class torchrec.distributed.mc_embedding.ManagedCollisionEmbeddingCollectionSharder(ec_sharder: Optional[EmbeddingCollectionSharder] = None, mc_sharder: Optional[ManagedCollisionCollectionSharder] = None, qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)¶
+class torchrec.distributed.mc_embedding.ManagedCollisionEmbeddingCollectionSharder(ec_sharder: Optional[EmbeddingCollectionSharder] = None, mc_sharder: Optional[ManagedCollisionCollectionSharder] = None, qcomm_codecs_registry: Optional[Dict[str, QuantizedCommCodecs]] = None)
 ```
 
 基类：`BaseManagedCollisionEmbeddingCollectionSharder`[`ManagedCollisionEmbeddingCollection`]
 
 ```py
-property module_type: Type[ManagedCollisionEmbeddingCollection]¶
+property module_type: Type[ManagedCollisionEmbeddingCollection]
 ```
 
 ```py
-shard(module: ManagedCollisionEmbeddingCollection, params: Dict[str, ParameterSharding], env: ShardingEnv, device: Optional[device] = None) → ShardedManagedCollisionEmbeddingCollection¶
+shard(module: ManagedCollisionEmbeddingCollection, params: Dict[str, ParameterSharding], env: ShardingEnv, device: Optional[device] = None) → ShardedManagedCollisionEmbeddingCollection
 ```
 
 执行实际的分片。它将根据相应的 ParameterSharding 在请求的位置上分配参数。
@@ -6564,15 +6564,15 @@ shard(module: ManagedCollisionEmbeddingCollection, params: Dict[str, ParameterSh
 ShardedModule[Any, Any, Any]
 
 ```py
-class torchrec.distributed.mc_embedding.ShardedManagedCollisionEmbeddingCollection(module: ManagedCollisionEmbeddingCollection, table_name_to_parameter_sharding: Dict[str, ParameterSharding], ec_sharder: EmbeddingCollectionSharder, mc_sharder: ManagedCollisionCollectionSharder, env: ShardingEnv, device: device)¶
+class torchrec.distributed.mc_embedding.ShardedManagedCollisionEmbeddingCollection(module: ManagedCollisionEmbeddingCollection, table_name_to_parameter_sharding: Dict[str, ParameterSharding], ec_sharder: EmbeddingCollectionSharder, mc_sharder: ManagedCollisionCollectionSharder, env: ShardingEnv, device: device)
 ```
 
 基类：`BaseShardedManagedCollisionEmbeddingCollection`[`ManagedCollisionEmbeddingCollectionContext`]
 
 ```py
-create_context() → ManagedCollisionEmbeddingCollectionContext¶
+create_context() → ManagedCollisionEmbeddingCollectionContext
 ```
 
 ```py
-training: bool¶
+training: bool
 ```

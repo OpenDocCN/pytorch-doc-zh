@@ -26,28 +26,20 @@ Torchrec 推理提供了一个基于 Torch.Deploy 的库，用于 GPU 推理。
 
 +   examples/dlrm/inference/dlrm_predict.py: 这展示了如何基于现有模型使用 PredictModule 和 PredictFactory。
 
-## torchrec.inference.model_packager[](#torchrec-inference-model-packager "Permalink to this heading")
+## torchrec.inference.model_packager
 
 ```py
-class torchrec.inference.model_packager.PredictFactoryPackager¶
+class torchrec.inference.model_packager.PredictFactoryPackager
 ```
 
 基类：`object`
 
 ```py
-classmethod save_predict_factory(predict_factory: ~typing.Type[~torchrec.inference.modules.PredictFactory], configs: ~typing.Dict[str, ~typing.Any], output: ~typing.Union[str, ~pathlib.Path, ~typing.BinaryIO], extra_files: ~typing.Dict[str, ~typing.Union[str, bytes]], loader_code: str = '\nimport %PACKAGE%\n\nMODULE_FACTORY=%PACKAGE%.%CLASS%\n', package_importer: ~typing.Union[~torch.package.importer.Importer, ~typing.List[~torch.package.importer.Importer]] = <torch.package.importer._SysImporter object>) → None¶
+classmethod save_predict_factory(predict_factory: ~typing.Type[~torchrec.inference.modules.PredictFactory], configs: ~typing.Dict[str, ~typing.Any], output: ~typing.Union[str, ~pathlib.Path, ~typing.BinaryIO], extra_files: ~typing.Dict[str, ~typing.Union[str, bytes]], loader_code: str = '\nimport %PACKAGE%\n\nMODULE_FACTORY=%PACKAGE%.%CLASS%\n', package_importer: ~typing.Union[~torch.package.importer.Importer, ~typing.List[~torch.package.importer.Importer]] = <torch.package.importer._SysImporter object>) → None
 ```
 
 ```py
-abstract classmethod set_extern_modules()¶
-```
-
-指示抽象类方法的装饰器。
-
-已弃用，改用‘classmethod’和‘abstractmethod’。
-
-```py
-abstract classmethod set_mocked_modules()¶
+abstract classmethod set_extern_modules()
 ```
 
 指示抽象类方法的装饰器。
@@ -55,17 +47,25 @@ abstract classmethod set_mocked_modules()¶
 已弃用，改用‘classmethod’和‘abstractmethod’。
 
 ```py
-torchrec.inference.model_packager.load_config_text(name: str) → str¶
+abstract classmethod set_mocked_modules()
+```
+
+指示抽象类方法的装饰器。
+
+已弃用，改用‘classmethod’和‘abstractmethod’。
+
+```py
+torchrec.inference.model_packager.load_config_text(name: str) → str
 ```
 
 ```py
-torchrec.inference.model_packager.load_pickle_config(name: str, clazz: Type[T]) → T¶
+torchrec.inference.model_packager.load_pickle_config(name: str, clazz: Type[T]) → T
 ```
 
-## torchrec.inference.modules[](#torchrec-inference-modules "Permalink to this heading")
+## torchrec.inference.modules
 
 ```py
-class torchrec.inference.modules.BatchingMetadata(type: str, device: str, pinned: List[str])¶
+class torchrec.inference.modules.BatchingMetadata(type: str, device: str, pinned: List[str])
 ```
 
 基类：`object`
@@ -73,19 +73,19 @@ class torchrec.inference.modules.BatchingMetadata(type: str, device: str, pinned
 用于批处理的元数据类，这应该与 C++定义保持同步。
 
 ```py
-device: str¶
+device: str
 ```
 
 ```py
-pinned: List[str]¶
+pinned: List[str]
 ```
 
 ```py
-type: str¶
+type: str
 ```
 
 ```py
-class torchrec.inference.modules.PredictFactory¶
+class torchrec.inference.modules.PredictFactory
 ```
 
 基类：`ABC`
@@ -93,61 +93,61 @@ class torchrec.inference.modules.PredictFactory¶
 创建一个（已学习权重的）模型，用于推理时间。
 
 ```py
-abstract batching_metadata() → Dict[str, BatchingMetadata]¶
+abstract batching_metadata() → Dict[str, BatchingMetadata]
 ```
 
 返回一个从输入名称到 BatchingMetadata 的字典。此信息用于输入请求的批处理。
 
 ```py
-batching_metadata_json() → str¶
+batching_metadata_json() → str
 ```
 
 将批处理元数据序列化为 JSON，以便在 torch::deploy 环境中进行解析。
 
 ```py
-abstract create_predict_module() → Module¶
+abstract create_predict_module() → Module
 ```
 
 返回已经分片模型并分配了权重。state_dict()必须匹配 TransformModule.transform_state_dict()。它假定 torch.distributed.init_process_group 已经被调用，并将根据 torch.distributed.get_world_size()对模型进行分片。
 
 ```py
-model_inputs_data() → Dict[str, Any]¶
+model_inputs_data() → Dict[str, Any]
 ```
 
 返回一个包含各种数据的字典，用于基准测试输入生成。
 
 ```py
-qualname_metadata() → Dict[str, QualNameMetadata]¶
+qualname_metadata() → Dict[str, QualNameMetadata]
 ```
 
 返回一个从 qualname（方法名）到 QualNameMetadata 的字典。这是执行模型特定方法时的附加信息。
 
 ```py
-qualname_metadata_json() → str¶
+qualname_metadata_json() → str
 ```
 
 将 qualname 元数据序列化为 JSON，以便在 torch::deploy 环境中进行解析。
 
 ```py
-abstract result_metadata() → str¶
+abstract result_metadata() → str
 ```
 
 返回表示结果类型的字符串。此信息用于结果拆分。
 
 ```py
-abstract run_weights_dependent_transformations(predict_module: Module) → Module¶
+abstract run_weights_dependent_transformations(predict_module: Module) → Module
 ```
 
 运行依赖于预测模块权重的转换。例如降级到后端。
 
 ```py
-abstract run_weights_independent_tranformations(predict_module: Module) → Module¶
+abstract run_weights_independent_tranformations(predict_module: Module) → Module
 ```
 
 运行不依赖于预测模块权重的转换。例如 fx 追踪，模型拆分等。
 
 ```py
-class torchrec.inference.modules.PredictModule(module: Module)¶
+class torchrec.inference.modules.PredictModule(module: Module)
 ```
 
 基类：`Module`
@@ -179,7 +179,7 @@ module = PredictModule(torch.device("cuda", torch.cuda.current_device()))
 ```
 
 ```py
-forward(batch: Dict[str, Tensor]) → Any¶
+forward(batch: Dict[str, Tensor]) → Any
 ```
 
 定义每次调用执行的计算。
@@ -191,15 +191,15 @@ forward(batch: Dict[str, Tensor]) → Any¶
 虽然前向传递的步骤需要在此函数内定义，但应该在此之后调用`Module`实例，而不是在此处调用，因为前者负责运行已注册的钩子，而后者会默默忽略它们。
 
 ```py
-abstract predict_forward(batch: Dict[str, Tensor]) → Any¶
+abstract predict_forward(batch: Dict[str, Tensor]) → Any
 ```
 
 ```py
-property predict_module: Module¶
+property predict_module: Module
 ```
 
 ```py
-state_dict(destination: Optional[Dict[str, Any]] = None, prefix: str = '', keep_vars: bool = False) → Dict[str, Any]¶
+state_dict(destination: Optional[Dict[str, Any]] = None, prefix: str = '', keep_vars: bool = False) → Dict[str, Any]
 ```
 
 返回一个包含模块整个状态引用的字典。
@@ -243,33 +243,33 @@ state_dict(destination: Optional[Dict[str, Any]] = None, prefix: str = '', keep_
 ```
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.inference.modules.QualNameMetadata(need_preproc: bool)¶
+class torchrec.inference.modules.QualNameMetadata(need_preproc: bool)
 ```
 
 基类：`object`
 
 ```py
-need_preproc: bool¶
+need_preproc: bool
 ```
 
 ```py
-torchrec.inference.modules.quantize_dense(predict_module: PredictModule, dtype: dtype, additional_embedding_module_type: List[Type[Module]] = []) → Module¶
+torchrec.inference.modules.quantize_dense(predict_module: PredictModule, dtype: dtype, additional_embedding_module_type: List[Type[Module]] = []) → Module
 ```
 
 ```py
-torchrec.inference.modules.quantize_embeddings(module: Module, dtype: dtype, inplace: bool, additional_qconfig_spec_keys: Optional[List[Type[Module]]] = None, additional_mapping: Optional[Dict[Type[Module], Type[Module]]] = None, output_dtype: dtype = torch.float32, per_table_weight_dtype: Optional[Dict[str, dtype]] = None) → Module¶
+torchrec.inference.modules.quantize_embeddings(module: Module, dtype: dtype, inplace: bool, additional_qconfig_spec_keys: Optional[List[Type[Module]]] = None, additional_mapping: Optional[Dict[Type[Module], Type[Module]]] = None, output_dtype: dtype = torch.float32, per_table_weight_dtype: Optional[Dict[str, dtype]] = None) → Module
 ```
 
 ```py
-torchrec.inference.modules.quantize_feature(module: Module, inputs: Tuple[Tensor, ...]) → Tuple[Tensor, ...]¶
+torchrec.inference.modules.quantize_feature(module: Module, inputs: Tuple[Tensor, ...]) → Tuple[Tensor, ...]
 ```
 
 ```py
-torchrec.inference.modules.trim_torch_package_prefix_from_typename(typename: str) → str¶
+torchrec.inference.modules.trim_torch_package_prefix_from_typename(typename: str) → str
 ```  ## 模块内容[]（#module-0“此标题的永久链接”）
 
 Torchrec 推理

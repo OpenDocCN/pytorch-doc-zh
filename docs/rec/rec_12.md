@@ -28,10 +28,10 @@ Torchrec 为推断提供了 EmbeddingBagCollection 的量化版本。它依赖�
 >>> ) 
 ```
 
-## torchrec.quant.embedding_modules[](#module-torchrec.quant.embedding_modules "Permalink to this heading")
+## torchrec.quant.embedding_modules
 
 ```py
-class torchrec.quant.embedding_modules.EmbeddingBagCollection(tables: List[EmbeddingBagConfig], is_weighted: bool, device: device, output_dtype: dtype = torch.float32, table_name_to_quantized_weights: Optional[Dict[str, Tuple[Tensor, Tensor]]] = None, register_tbes: bool = False, quant_state_dict_split_scale_bias: bool = False, row_alignment: int = 16)¶
+class torchrec.quant.embedding_modules.EmbeddingBagCollection(tables: List[EmbeddingBagConfig], is_weighted: bool, device: device, output_dtype: dtype = torch.float32, table_name_to_quantized_weights: Optional[Dict[str, Tuple[Tensor, Tensor]]] = None, register_tbes: bool = False, quant_state_dict_split_scale_bias: bool = False, row_alignment: int = 16)
 ```
 
 基础：`EmbeddingBagCollectionInterface`, `ModuleNoCopyMixin`
@@ -94,36 +94,36 @@ quantized_embeddings = qebc(features)
 ```
 
 ```py
-property device: device¶
+property device: device
 ```
 
 ```py
-embedding_bag_configs() → List[EmbeddingBagConfig]¶
+embedding_bag_configs() → List[EmbeddingBagConfig]
 ```
 
 ```py
-forward(features: KeyedJaggedTensor) → KeyedTensor¶
+forward(features: KeyedJaggedTensor) → KeyedTensor
 ```
 
 参数：
 
-**特征**（*KeyedJaggedTensor* → EmbeddingBagCollection¶
+**特征**（*KeyedJaggedTensor* → EmbeddingBagCollection
 ```
 
 ```py
-is_weighted() → bool¶
+is_weighted() → bool
 ```
 
 ```py
-output_dtype() → dtype¶
+output_dtype() → dtype
 ```
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.quant.embedding_modules.EmbeddingCollection(tables: List[EmbeddingConfig], device: device, need_indices: bool = False, output_dtype: dtype = torch.float32, table_name_to_quantized_weights: Optional[Dict[str, Tuple[Tensor, Tensor]]] = None, register_tbes: bool = False, quant_state_dict_split_scale_bias: bool = False, row_alignment: int = 16)¶
+class torchrec.quant.embedding_modules.EmbeddingCollection(tables: List[EmbeddingConfig], device: device, need_indices: bool = False, output_dtype: dtype = torch.float32, table_name_to_quantized_weights: Optional[Dict[str, Tuple[Tensor, Tensor]]] = None, register_tbes: bool = False, quant_state_dict_split_scale_bias: bool = False, row_alignment: int = 16)
 ```
 
 基础：`EmbeddingCollectionInterface`, `ModuleNoCopyMixin`
@@ -187,96 +187,96 @@ tensor([[-0.2050,  0.5478,  0.6054],
 ```
 
 ```py
-property device: device¶
+property device: device
 ```
 
 ```py
-embedding_configs() → List[EmbeddingConfig]¶
+embedding_configs() → List[EmbeddingConfig]
 ```
 
 ```py
-embedding_dim() → int¶
+embedding_dim() → int
 ```
 
 ```py
-embedding_names_by_table() → List[List[str]]¶
+embedding_names_by_table() → List[List[str]]
 ```
 
 ```py
-forward(features: KeyedJaggedTensor) → Dict[str, JaggedTensor]¶
+forward(features: KeyedJaggedTensor) → Dict[str, JaggedTensor]
 ```
 
 参数：
 
-**特征**（*KeyedJaggedTensor* → EmbeddingCollection¶
+**特征**（*KeyedJaggedTensor* → EmbeddingCollection
 ```
 
 ```py
-need_indices() → bool¶
+need_indices() → bool
 ```
 
 ```py
-output_dtype() → dtype¶
+output_dtype() → dtype
 ```
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.quant.embedding_modules.FeatureProcessedEmbeddingBagCollection(tables: List[EmbeddingBagConfig], is_weighted: bool, device: device, output_dtype: dtype = torch.float32, table_name_to_quantized_weights: Optional[Dict[str, Tuple[Tensor, Tensor]]] = None, register_tbes: bool = False, quant_state_dict_split_scale_bias: bool = False, row_alignment: int = 16, feature_processor: Optional[FeatureProcessorsCollection] = None)¶
+class torchrec.quant.embedding_modules.FeatureProcessedEmbeddingBagCollection(tables: List[EmbeddingBagConfig], is_weighted: bool, device: device, output_dtype: dtype = torch.float32, table_name_to_quantized_weights: Optional[Dict[str, Tuple[Tensor, Tensor]]] = None, register_tbes: bool = False, quant_state_dict_split_scale_bias: bool = False, row_alignment: int = 16, feature_processor: Optional[FeatureProcessorsCollection] = None)
 ```
 
 基础：`EmbeddingBagCollection`
 
 ```py
-embedding_bags: nn.ModuleDict¶
+embedding_bags: nn.ModuleDict
 ```
 
 ```py
-forward(features: KeyedJaggedTensor) → KeyedTensor¶
+forward(features: KeyedJaggedTensor) → KeyedTensor
 ```
 
 参数：
 
-**特征**（*KeyedJaggedTensor* → FeatureProcessedEmbeddingBagCollection¶
+**特征**（*KeyedJaggedTensor* → FeatureProcessedEmbeddingBagCollection
 ```
 
 ```py
-tbes: torch.nn.ModuleList¶
+tbes: torch.nn.ModuleList
 ```
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-torchrec.quant.embedding_modules.for_each_module_of_type_do(module: Module, module_types: List[Type[Module]], op: Callable[[Module], None]) → None¶
+torchrec.quant.embedding_modules.for_each_module_of_type_do(module: Module, module_types: List[Type[Module]], op: Callable[[Module], None]) → None
 ```
 
 ```py
-torchrec.quant.embedding_modules.pruned_num_embeddings(pruning_indices_mapping: Tensor) → int¶
+torchrec.quant.embedding_modules.pruned_num_embeddings(pruning_indices_mapping: Tensor) → int
 ```
 
 ```py
-torchrec.quant.embedding_modules.quant_prep_customize_row_alignment(module: Module, module_types: List[Type[Module]], row_alignment: int) → None¶
+torchrec.quant.embedding_modules.quant_prep_customize_row_alignment(module: Module, module_types: List[Type[Module]], row_alignment: int) → None
 ```
 
 ```py
-torchrec.quant.embedding_modules.quant_prep_enable_quant_state_dict_split_scale_bias(module: Module) → None¶
+torchrec.quant.embedding_modules.quant_prep_enable_quant_state_dict_split_scale_bias(module: Module) → None
 ```
 
 ```py
-torchrec.quant.embedding_modules.quant_prep_enable_quant_state_dict_split_scale_bias_for_types(module: Module, module_types: List[Type[Module]]) → None¶
+torchrec.quant.embedding_modules.quant_prep_enable_quant_state_dict_split_scale_bias_for_types(module: Module, module_types: List[Type[Module]]) → None
 ```
 
 ```py
-torchrec.quant.embedding_modules.quant_prep_enable_register_tbes(module: Module, module_types: List[Type[Module]]) → None¶
+torchrec.quant.embedding_modules.quant_prep_enable_register_tbes(module: Module, module_types: List[Type[Module]]) → None
 ```
 
 ```py
-torchrec.quant.embedding_modules.quantize_state_dict(module: Module, table_name_to_quantized_weights: Dict[str, Tuple[Tensor, Tensor]], table_name_to_data_type: Dict[str, DataType], table_name_to_pruning_indices_mapping: Optional[Dict[str, Tensor]] = None) → device¶
-```  ## 模块内容[](#module-0 "Permalink to this heading")
+torchrec.quant.embedding_modules.quantize_state_dict(module: Module, table_name_to_quantized_weights: Dict[str, Tuple[Tensor, Tensor]], table_name_to_data_type: Dict[str, DataType], table_name_to_pruning_indices_mapping: Optional[Dict[str, Tensor]] = None) → device
+```  ## 模块内容
 
 Torchrec 量化
 

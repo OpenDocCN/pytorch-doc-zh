@@ -18,10 +18,10 @@ KeyedTensor
 
 KeyedTensor 保存了一个可以通过键访问的密集张量列表，每个张量可以通过键访问。键维度可以是可变长度（每个键的长度）。常见用例包括存储不同维度的池化嵌入。请参考 KeyedTensor docstring 以获取完整示例和更多信息。
 
-## torchrec.sparse.jagged_tensor[](#module-torchrec.sparse.jagged_tensor "Permalink to this heading")
+## torchrec.sparse.jagged_tensor
 
 ```py
-class torchrec.sparse.jagged_tensor.ComputeJTDictToKJT(*args, **kwargs)¶
+class torchrec.sparse.jagged_tensor.ComputeJTDictToKJT(*args, **kwargs)
 ```
 
 基类：`Module`
@@ -39,7 +39,7 @@ class torchrec.sparse.jagged_tensor.ComputeJTDictToKJT(*args, **kwargs)¶
 返回：带有内容的 kjt：# 0 1 2 <– dim_1 # “Feature0” [V0,V1] None [V2] # “Feature1” [V3] [V4] [V5,V6,V7] # ^ # dim_0
 
 ```py
-forward(jt_dict: Dict[str, JaggedTensor]) → KeyedJaggedTensor¶
+forward(jt_dict: Dict[str, JaggedTensor]) → KeyedJaggedTensor
 ```
 
 参数：
@@ -51,11 +51,11 @@ forward(jt_dict: Dict[str, JaggedTensor]) → KeyedJaggedTensor¶
 KeyedJaggedTensor
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.sparse.jagged_tensor.ComputeKJTToJTDict(*args, **kwargs)¶
+class torchrec.sparse.jagged_tensor.ComputeKJTToJTDict(*args, **kwargs)
 ```
 
 基类：`Module`
@@ -77,7 +77,7 @@ class torchrec.sparse.jagged_tensor.ComputeKJTToJTDict(*args, **kwargs)¶
 }
 
 ```py
-forward(keyed_jagged_tensor: KeyedJaggedTensor) → Dict[str, JaggedTensor]¶
+forward(keyed_jagged_tensor: KeyedJaggedTensor) → Dict[str, JaggedTensor]
 ```
 
 将 KeyedJaggedTensor 转换为 JaggedTensors 的字典。
@@ -91,11 +91,11 @@ forward(keyed_jagged_tensor: KeyedJaggedTensor) → Dict[str, JaggedTensor]¶
 Dict[str, JaggedTensor]
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.sparse.jagged_tensor.JaggedTensor(*args, **kwargs)¶
+class torchrec.sparse.jagged_tensor.JaggedTensor(*args, **kwargs)
 ```
 
 基类：`Pipelineable`
@@ -121,11 +121,11 @@ JaggedTensor 是一个具有*不规则维度*的张量，其切片可能具有�
 +   **offsets**（*可选**[**torch.Tensor**]）– 切片，表示为累积偏移。
 
 ```py
-static empty(is_weighted: bool = False, device: Optional[device] = None, values_dtype: Optional[dtype] = None, weights_dtype: Optional[dtype] = None, lengths_dtype: dtype = torch.int32) → JaggedTensor¶
+static empty(is_weighted: bool = False, device: Optional[device] = None, values_dtype: Optional[dtype] = None, weights_dtype: Optional[dtype] = None, lengths_dtype: dtype = torch.int32) → JaggedTensor
 ```
 
 ```py
-static from_dense(values: List[Tensor], weights: Optional[List[Tensor]] = None) → JaggedTensor¶
+static from_dense(values: List[Tensor], weights: Optional[List[Tensor]] = None) → JaggedTensor
 ```
 
 从形状为(B, N,)的密集值/权重构建 JaggedTensor。
@@ -170,7 +170,7 @@ j1 = JaggedTensor.from_dense(
 ```
 
 ```py
-static from_dense_lengths(values: Tensor, lengths: Tensor, weights: Optional[Tensor] = None) → JaggedTensor¶
+static from_dense_lengths(values: Tensor, lengths: Tensor, weights: Optional[Tensor] = None) → JaggedTensor
 ```
 
 从形状为(B, N,)的密集值/权重构建 JaggedTensor。
@@ -178,35 +178,35 @@ static from_dense_lengths(values: Tensor, lengths: Tensor, weights: Optional[Ten
 请注意，长度仍然是形状为(B,)的。
 
 ```py
-lengths() → Tensor¶
+lengths() → Tensor
 ```
 
 ```py
-lengths_or_none() → Optional[Tensor]¶
+lengths_or_none() → Optional[Tensor]
 ```
 
 ```py
-offsets() → Tensor¶
+offsets() → Tensor
 ```
 
 ```py
-offsets_or_none() → Optional[Tensor]¶
+offsets_or_none() → Optional[Tensor]
 ```
 
 ```py
-record_stream(stream: Stream) → None¶
+record_stream(stream: Stream) → None
 ```
 
 参见[`pytorch.org/docs/stable/generated/torch.Tensor.record_stream.html`](https://pytorch.org/docs/stable/generated/torch.Tensor.record_stream.html)
 
 ```py
-to(device: device, non_blocking: bool = False) → JaggedTensor¶
+to(device: device, non_blocking: bool = False) → JaggedTensor
 ```
 
 请注意，根据[`pytorch.org/docs/stable/generated/torch.Tensor.to.html`](https://pytorch.org/docs/stable/generated/torch.Tensor.to.html)，to 可能返回 self 或 self 的副本。因此，请记住要使用赋值运算符 to，例如，in = in.to(new_device)。
 
 ```py
-to_dense() → List[Tensor]¶
+to_dense() → List[Tensor]
 ```
 
 构建 JT 值的密集表示。
@@ -239,7 +239,7 @@ values_list = jt.to_dense()
 ```
 
 ```py
-to_dense_weights() → Optional[List[Tensor]]¶
+to_dense_weights() → Optional[List[Tensor]]
 ```
 
 构造 JT 的权重的稠密表示。
@@ -273,7 +273,7 @@ weights_list = jt.to_dense_weights()
 ```
 
 ```py
-to_padded_dense(desired_length: Optional[int] = None, padding_value: float = 0.0) → Tensor¶
+to_padded_dense(desired_length: Optional[int] = None, padding_value: float = 0.0) → Tensor
 ```
 
 从 JT 的值构造一个形状为(B, N,)的 2D 稠密张量。
@@ -319,7 +319,7 @@ dt = jt.to_padded_dense(
 ```
 
 ```py
-to_padded_dense_weights(desired_length: Optional[int] = None, padding_value: float = 0.0) → Optional[Tensor]¶
+to_padded_dense_weights(desired_length: Optional[int] = None, padding_value: float = 0.0) → Optional[Tensor]
 ```
 
 从 JT 的权重构造一个形状为(B, N,)的 2D 稠密张量。
@@ -366,25 +366,25 @@ d_wt = jt.to_padded_dense_weights(
 ```
 
 ```py
-values() → Tensor¶
+values() → Tensor
 ```
 
 ```py
-weights() → Tensor¶
+weights() → Tensor
 ```
 
 ```py
-weights_or_none() → Optional[Tensor]¶
+weights_or_none() → Optional[Tensor]
 ```
 
 ```py
-class torchrec.sparse.jagged_tensor.JaggedTensorMeta(name, bases, namespace, **kwargs)¶
+class torchrec.sparse.jagged_tensor.JaggedTensorMeta(name, bases, namespace, **kwargs)
 ```
 
 基类：`ABCMeta`，`ProxyableClassMeta`
 
 ```py
-class torchrec.sparse.jagged_tensor.KeyedJaggedTensor(*args, **kwargs)¶
+class torchrec.sparse.jagged_tensor.KeyedJaggedTensor(*args, **kwargs)
 ```
 
 基类：`Pipelineable`
@@ -446,43 +446,43 @@ offset_per_key: List[int] = [0, 3, 8]  # start offset for each key and final off
 ```
 
 ```py
-static concat(kjt_list: List[KeyedJaggedTensor]) → KeyedJaggedTensor¶
+static concat(kjt_list: List[KeyedJaggedTensor]) → KeyedJaggedTensor
 ```
 
 ```py
-device() → device¶
+device() → device
 ```
 
 ```py
-static dist_init(keys: List[str], tensors: List[Tensor], variable_stride_per_key: bool, num_workers: int, recat: Optional[Tensor], stride_per_rank: Optional[List[int]], stagger: int = 1) → KeyedJaggedTensor¶
+static dist_init(keys: List[str], tensors: List[Tensor], variable_stride_per_key: bool, num_workers: int, recat: Optional[Tensor], stride_per_rank: Optional[List[int]], stagger: int = 1) → KeyedJaggedTensor
 ```
 
 ```py
-dist_labels() → List[str]¶
+dist_labels() → List[str]
 ```
 
 ```py
-dist_splits(key_splits: List[int]) → List[List[int]]¶
+dist_splits(key_splits: List[int]) → List[List[int]]
 ```
 
 ```py
-dist_tensors() → List[Tensor]¶
+dist_tensors() → List[Tensor]
 ```
 
 ```py
-static empty(is_weighted: bool = False, device: Optional[device] = None, values_dtype: Optional[dtype] = None, weights_dtype: Optional[dtype] = None, lengths_dtype: dtype = torch.int32) → KeyedJaggedTensor¶
+static empty(is_weighted: bool = False, device: Optional[device] = None, values_dtype: Optional[dtype] = None, weights_dtype: Optional[dtype] = None, lengths_dtype: dtype = torch.int32) → KeyedJaggedTensor
 ```
 
 ```py
-static empty_like(kjt: KeyedJaggedTensor) → KeyedJaggedTensor¶
+static empty_like(kjt: KeyedJaggedTensor) → KeyedJaggedTensor
 ```
 
 ```py
-flatten_lengths() → KeyedJaggedTensor¶
+flatten_lengths() → KeyedJaggedTensor
 ```
 
 ```py
-static from_jt_dict(jt_dict: Dict[str, JaggedTensor]) → KeyedJaggedTensor¶
+static from_jt_dict(jt_dict: Dict[str, JaggedTensor]) → KeyedJaggedTensor
 ```
 
 从 Dict[str, JaggedTensor]构造一个 KeyedJaggedTensor，但是如果 JaggedTensors 都具有相同的“隐式”batch_size 维度，则此函数将仅起作用。
@@ -506,127 +506,127 @@ values: torch.Tensor = [V0, V1, V2, V3, V4, V5, V6, V7] # V == 任何张量数�
 基本上，此函数推断的长度张量将是[2, 1, 1, 1, 3]，表示可变的 batch_size dim_1 违反了现有的假设/前提，即 KeyedJaggedTensor 应该具有固定的 batch_size 维度。
 
 ```py
-static from_lengths_sync(keys: List[str], values: Tensor, lengths: Tensor, weights: Optional[Tensor] = None, stride: Optional[int] = None, stride_per_key_per_rank: Optional[List[List[int]]] = None, inverse_indices: Optional[Tuple[List[str], Tensor]] = None) → KeyedJaggedTensor¶
+static from_lengths_sync(keys: List[str], values: Tensor, lengths: Tensor, weights: Optional[Tensor] = None, stride: Optional[int] = None, stride_per_key_per_rank: Optional[List[List[int]]] = None, inverse_indices: Optional[Tuple[List[str], Tensor]] = None) → KeyedJaggedTensor
 ```
 
 ```py
-static from_offsets_sync(keys: List[str], values: Tensor, offsets: Tensor, weights: Optional[Tensor] = None, stride: Optional[int] = None, stride_per_key_per_rank: Optional[List[List[int]]] = None, inverse_indices: Optional[Tuple[List[str], Tensor]] = None) → KeyedJaggedTensor¶
+static from_offsets_sync(keys: List[str], values: Tensor, offsets: Tensor, weights: Optional[Tensor] = None, stride: Optional[int] = None, stride_per_key_per_rank: Optional[List[List[int]]] = None, inverse_indices: Optional[Tuple[List[str], Tensor]] = None) → KeyedJaggedTensor
 ```
 
 ```py
-inverse_indices() → Tuple[List[str], Tensor]¶
+inverse_indices() → Tuple[List[str], Tensor]
 ```
 
 ```py
-inverse_indices_or_none() → Optional[Tuple[List[str], Tensor]]¶
+inverse_indices_or_none() → Optional[Tuple[List[str], Tensor]]
 ```
 
 ```py
-keys() → List[str]¶
+keys() → List[str]
 ```
 
 ```py
-length_per_key() → List[int]¶
+length_per_key() → List[int]
 ```
 
 ```py
-length_per_key_or_none() → Optional[List[int]]¶
+length_per_key_or_none() → Optional[List[int]]
 ```
 
 ```py
-lengths() → Tensor¶
+lengths() → Tensor
 ```
 
 ```py
-lengths_offset_per_key() → List[int]¶
+lengths_offset_per_key() → List[int]
 ```
 
 ```py
-lengths_or_none() → Optional[Tensor]¶
+lengths_or_none() → Optional[Tensor]
 ```
 
 ```py
-offset_per_key() → List[int]¶
+offset_per_key() → List[int]
 ```
 
 ```py
-offset_per_key_or_none() → Optional[List[int]]¶
+offset_per_key_or_none() → Optional[List[int]]
 ```
 
 ```py
-offsets() → Tensor¶
+offsets() → Tensor
 ```
 
 ```py
-offsets_or_none() → Optional[Tensor]¶
+offsets_or_none() → Optional[Tensor]
 ```
 
 ```py
-permute(indices: List[int], indices_tensor: Optional[Tensor] = None) → KeyedJaggedTensor¶
+permute(indices: List[int], indices_tensor: Optional[Tensor] = None) → KeyedJaggedTensor
 ```
 
 ```py
-pin_memory() → KeyedJaggedTensor¶
+pin_memory() → KeyedJaggedTensor
 ```
 
 ```py
-record_stream(stream: Stream) → None¶
+record_stream(stream: Stream) → None
 ```
 
 请参阅[`pytorch.org/docs/stable/generated/torch.Tensor.record_stream.html`](https://pytorch.org/docs/stable/generated/torch.Tensor.record_stream.html)
 
 ```py
-split(segments: List[int]) → List[KeyedJaggedTensor]¶
+split(segments: List[int]) → List[KeyedJaggedTensor]
 ```
 
 ```py
-stride() → int¶
+stride() → int
 ```
 
 ```py
-stride_per_key() → List[int]¶
+stride_per_key() → List[int]
 ```
 
 ```py
-stride_per_key_per_rank() → List[List[int]]¶
+stride_per_key_per_rank() → List[List[int]]
 ```
 
 ```py
-sync() → KeyedJaggedTensor¶
+sync() → KeyedJaggedTensor
 ```
 
 ```py
-to(device: device, non_blocking: bool = False, dtype: Optional[dtype] = None) → KeyedJaggedTensor¶
+to(device: device, non_blocking: bool = False, dtype: Optional[dtype] = None) → KeyedJaggedTensor
 ```
 
 请注意，根据[`pytorch.org/docs/stable/generated/torch.Tensor.to.html`](https://pytorch.org/docs/stable/generated/torch.Tensor.to.html)，to 可能返回 self 或 self 的副本。因此，请记住使用赋值运算符 to，例如，in = in.to(new_device)。
 
 ```py
-to_dict() → Dict[str, JaggedTensor]¶
+to_dict() → Dict[str, JaggedTensor]
 ```
 
 ```py
-unsync() → KeyedJaggedTensor¶
+unsync() → KeyedJaggedTensor
 ```
 
 ```py
-values() → Tensor¶
+values() → Tensor
 ```
 
 ```py
-variable_stride_per_key() → bool¶
+variable_stride_per_key() → bool
 ```
 
 ```py
-weights() → Tensor¶
+weights() → Tensor
 ```
 
 ```py
-weights_or_none() → Optional[Tensor]¶
+weights_or_none() → Optional[Tensor]
 ```
 
 ```py
-class torchrec.sparse.jagged_tensor.KeyedTensor(*args, **kwargs)¶
+class torchrec.sparse.jagged_tensor.KeyedTensor(*args, **kwargs)
 ```
 
 基类：`Pipelineable`
@@ -681,62 +681,62 @@ kt["Embedding B"]
 ```
 
 ```py
-static from_tensor_list(keys: List[str], tensors: List[Tensor], key_dim: int = 1, cat_dim: int = 1) → KeyedTensor¶
+static from_tensor_list(keys: List[str], tensors: List[Tensor], key_dim: int = 1, cat_dim: int = 1) → KeyedTensor
 ```
 
 ```py
-key_dim() → int¶
+key_dim() → int
 ```
 
 ```py
-keys() → List[str]¶
+keys() → List[str]
 ```
 
 ```py
-length_per_key() → List[int]¶
+length_per_key() → List[int]
 ```
 
 ```py
-offset_per_key() → List[int]¶
+offset_per_key() → List[int]
 ```
 
 ```py
-record_stream(stream: Stream) → None¶
+record_stream(stream: Stream) → None
 ```
 
 请参阅[`pytorch.org/docs/stable/generated/torch.Tensor.record_stream.html`](https://pytorch.org/docs/stable/generated/torch.Tensor.record_stream.html)
 
 ```py
-static regroup(keyed_tensors: List[KeyedTensor], groups: List[List[str]]) → List[Tensor]¶
+static regroup(keyed_tensors: List[KeyedTensor], groups: List[List[str]]) → List[Tensor]
 ```
 
 ```py
-static regroup_as_dict(keyed_tensors: List[KeyedTensor], groups: List[List[str]], keys: List[str]) → Dict[str, Tensor]¶
+static regroup_as_dict(keyed_tensors: List[KeyedTensor], groups: List[List[str]], keys: List[str]) → Dict[str, Tensor]
 ```
 
 ```py
-to(device: device, non_blocking: bool = False) → KeyedTensor¶
+to(device: device, non_blocking: bool = False) → KeyedTensor
 ```
 
 请注意，根据[`pytorch.org/docs/stable/generated/torch.Tensor.to.html`](https://pytorch.org/docs/stable/generated/torch.Tensor.to.html)，to 可能返回 self 或 self 的副本。因此，请记住使用赋值运算符 to，例如，in = in.to(new_device)。
 
 ```py
-to_dict() → Dict[str, Tensor]¶
+to_dict() → Dict[str, Tensor]
 ```
 
 ```py
-values() → Tensor¶
+values() → Tensor
 ```
 
 ```py
-torchrec.sparse.jagged_tensor.jt_is_equal(jt_1: JaggedTensor, jt_2: JaggedTensor) → bool¶
+torchrec.sparse.jagged_tensor.jt_is_equal(jt_1: JaggedTensor, jt_2: JaggedTensor) → bool
 ```
 
 此函数通过比较它们的内部表示来检查两个 JaggedTensors 是否相等。比较是通过比较内部表示的值来完成的。对于可选字段，将 None 值视为相等。
 
 参数：
 
-+   **jt_1**（*JaggedTensor* → bool¶
++   **jt_1**（*JaggedTensor* → bool
 ```
 
 此函数通过比较它们的内部表示来检查两个 KeyedJaggedTensors 是否相等。比较是通过比较内部表示的值来完成的。对于可选字段，将 None 值视为相等。我们通过确保它们具有相同长度并且相应的键是相同顺序和相同值来比较键。

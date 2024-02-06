@@ -2,10 +2,10 @@
 
 > 原文：[`pytorch.org/torchrec/torchrec.models.html`](https://pytorch.org/torchrec/torchrec.models.html)
 
-## torchrec.models.deepfm[](#module-torchrec.models.deepfm "Permalink to this heading")
+## torchrec.models.deepfm
 
 ```py
-class torchrec.models.deepfm.DenseArch(in_features: int, hidden_layer_size: int, embedding_dim: int)¶
+class torchrec.models.deepfm.DenseArch(in_features: int, hidden_layer_size: int, embedding_dim: int)
 ```
 
 基类：`Module`
@@ -37,7 +37,7 @@ dense_embedded = dense_arch(dense_arch_input)
 ```
 
 ```py
-forward(features: Tensor) → Tensor¶
+forward(features: Tensor) → Tensor
 ```
 
 参数：
@@ -53,11 +53,11 @@ forward(features: Tensor) → Tensor¶
 torch.Tensor
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.models.deepfm.FMInteractionArch(fm_in_features: int, sparse_feature_names: List[str], deep_fm_dimension: int)¶
+class torchrec.models.deepfm.FMInteractionArch(fm_in_features: int, sparse_feature_names: List[str], deep_fm_dimension: int)
 ```
 
 基类：`Module`
@@ -92,7 +92,7 @@ cat_fm_output = fm_inter_arch(dense_features, sparse_features)
 ```
 
 ```py
-forward(dense_features: Tensor, sparse_features: KeyedTensor) → Tensor¶
+forward(dense_features: Tensor, sparse_features: KeyedTensor) → Tensor
 ```
 
 参数：
@@ -110,11 +110,11 @@ forward(dense_features: Tensor, sparse_features: KeyedTensor) → Tensor¶
 torch.Tensor
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.models.deepfm.OverArch(in_features: int)¶
+class torchrec.models.deepfm.OverArch(in_features: int)
 ```
 
 基类：`Module`
@@ -134,7 +134,7 @@ logits = over_arch(torch.rand((B, 10)))
 ```
 
 ```py
-forward(features: Tensor) → Tensor¶
+forward(features: Tensor) → Tensor
 ```
 
 参数：
@@ -150,11 +150,11 @@ forward(features: Tensor) → Tensor¶
 torch.Tensor
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.models.deepfm.SimpleDeepFMNN(num_dense_features: int, embedding_bag_collection: EmbeddingBagCollection, hidden_layer_size: int, deep_fm_dimension: int)¶
+class torchrec.models.deepfm.SimpleDeepFMNN(num_dense_features: int, embedding_bag_collection: EmbeddingBagCollection, hidden_layer_size: int, deep_fm_dimension: int)
 ```
 
 基类：`Module`
@@ -224,7 +224,7 @@ logits = sparse_nn(
 ```
 
 ```py
-forward(dense_features: Tensor, sparse_features: KeyedJaggedTensor) → Tensor¶
+forward(dense_features: Tensor, sparse_features: KeyedJaggedTensor) → Tensor
 ```
 
 参数：
@@ -242,11 +242,11 @@ forward(dense_features: Tensor, sparse_features: KeyedJaggedTensor) → Tensor¶
 torch.Tensor
 
 ```py
-training: bool¶
+training: bool
 ```
 
 ```py
-class torchrec.models.deepfm.SparseArch(embedding_bag_collection: EmbeddingBagCollection)¶
+class torchrec.models.deepfm.SparseArch(embedding_bag_collection: EmbeddingBagCollection)
 ```
 
 基类：`Module`
@@ -284,7 +284,7 @@ sparse_arch(features)
 ```
 
 ```py
-forward(features: KeyedJaggedTensor) → KeyedTensor¶
+forward(features: KeyedJaggedTensor) → KeyedTensor
 ```
 
 参数：
@@ -300,9 +300,9 @@ forward(features: KeyedJaggedTensor) → KeyedTensor¶
 KeyedJaggedTensor
 
 ```py
-training: bool¶
+training: bool
 ```
 
-## torchrec.models.dlrm[](#torchrec-models-dlrm "此标题的永久链接")
+## torchrec.models.dlrm
 
-## 模块内容[](#module-contents "此标题的永久链接")
+## 模块内容
